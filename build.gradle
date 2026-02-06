@@ -64,6 +64,10 @@ allprojects {
                 if (details.requested.group.startsWith('com.fasterxml.jackson.')) {
                     details.useVersion "2.17.0"
                 }
+                // Force commons-lang3 to 3.18.0+ for compatibility with commons-compress used by Testcontainers
+                if (details.requested.group == 'org.apache.commons' && details.requested.name == 'commons-lang3') {
+                    details.useVersion "3.18.0"
+                }
             }
         }
     }
@@ -86,6 +90,7 @@ allprojects {
         implementation('org.apache.logging.log4j:log4j-jul')
         implementation('org.apache.logging.log4j:log4j-web')
         implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
+        implementation "com.networknt:json-schema-validator:${revJSonSchemaValidator}"
         compileOnly 'org.projectlombok:lombok:1.18.34'
 
         annotationProcessor 'org.projectlombok:lombok:1.18.34'

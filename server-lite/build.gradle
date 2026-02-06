@@ -19,6 +19,7 @@ dependencies {
     implementation project(':conductor-core')
     implementation project(':conductor-rest')
     implementation project(':conductor-grpc-server')
+    implementation project(':conductor-ai')
 
     //Event Systems
     implementation project(':conductor-amqp')

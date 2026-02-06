@@ -51,9 +51,11 @@ import static org.junit.Assert.assertNotNull;
 @TestPropertySource(
         properties = {
             "conductor.indexing.enabled=true",
+            "conductor.indexing.type=elasticsearch",
             "conductor.elasticsearch.version=7",
             "conductor.queue.type=redis_standalone",
-            "conductor.db.type=redis_standalone"
+            "conductor.db.type=redis_standalone",
+            "conductor.app.ownerEmailMandatory=true"
         })
 public abstract class TestHarnessAbstractEndToEndTest {
 
@@ -68,8 +70,11 @@ public abstract class TestHarnessAbstractEndToEndTest {
 
     private static final ElasticsearchContainer container =
             new ElasticsearchContainer(
-                    DockerImageName.parse("elasticsearch")
-                            .withTag("7.17.11")); // this should match the client version
+                            DockerImageName.parse("elasticsearch")
+                                    .withTag("7.17.11")) // this should match the client version
+                    .withExposedPorts(9200, 9300)
+                    .withEnv("xpack.security.enabled", "false")
+                    .withEnv("discovery.type", "single-node");
 
     private static GenericContainer redis =
             new GenericContainer<>(DockerImageName.parse("redis:6.2-alpine"))

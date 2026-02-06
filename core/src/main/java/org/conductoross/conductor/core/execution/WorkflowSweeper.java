@@ -15,6 +15,7 @@ package org.conductoross.conductor.core.execution;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,7 +26,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
@@ -38,6 +38,7 @@ import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.ExecutionLockService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +63,7 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
     private final ConductorProperties properties;
     private final ObjectMapper objectMapper;
     private SystemTaskRegistry systemTaskRegistry;
+    private final ExecutionLockService executionLockService;
     private final Clock clock = Clock.systemDefaultZone();
     private AtomicBoolean stop = new AtomicBoolean(false);
 
@@ -73,7 +75,8 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
             ConductorProperties properties,
             SweeperProperties sweeperProperties,
             SystemTaskRegistry systemTaskRegistry,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            ExecutionLockService executionLockService) {
         this.queueDAO = queueDAO;
         this.executionDAO = executionDAO;
         this.sweeperProperties = sweeperProperties;
@@ -83,6 +86,7 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
         this.properties = properties;
         this.systemTaskRegistry = systemTaskRegistry;
         this.objectMapper = objectMapper;
+        this.executionLockService = executionLockService;
         log.info("Initializing sweeper with {} threads", properties.getSweeperThreadCount());
         for (int i = 0; i < properties.getSweeperThreadCount(); i++) {
             sweeperExecutor.execute(this::pollAndSweep);
@@ -147,7 +151,16 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
         }
     }
 
+    public CompletableFuture<Void> sweepAsync(String workflowId) {
+        sweep(workflowId);
+        return CompletableFuture.completedFuture(null);
+    }
+
     public void sweep(String workflowId) {
+        if (!executionLockService.acquireLock(workflowId)) {
+            log.error("Couldn't acquire lock to sweep workflow {}", workflowId);
+            return;
+        }
         log.info("Running sweeper for workflow {}", workflowId);
 
         try {
@@ -162,7 +175,7 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
                             .map(t -> t.getReferenceTaskName() + ":" + t.getStatus())
                             .toList()
                             .toString();
-            workflow = workflowExecutor.decideWithLock(workflow);
+            workflow = workflowExecutor.decide(workflowId);
             if (workflow == null) {
                 // couldn't get a lock
                 // Let's try again... with the lockTime timeout / 2
@@ -193,7 +206,29 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
             // Workflow has not completed and decide did not change the status of the tasks
             // Every task that is running MUST be in the queue
             if (tasks.equals(tasksAfterDecide)) {
-                workflow.getTasks().forEach(this::verifyAndRepairTask);
+                long now = System.currentTimeMillis();
+                workflow.getTasks().stream()
+                        .filter(isTaskRepairable)
+                        .forEach(
+                                task -> {
+                                    log.warn(
+                                            "Going to repair the task {} / {}, with status {}, workflow = {}, timeout = {}, now-wait = {}",
+                                            task.getTaskId(),
+                                            task.getReferenceTaskName(),
+                                            task.getStatus(),
+                                            workflowId,
+                                            task.getWaitTimeout(),
+                                            (now - task.getWaitTimeout()));
+                                    Monitors.recordQueueMessageRepushFromRepairService(
+                                            task.getTaskDefName());
+                                    String queueName = QueueUtils.getQueueName(task);
+                                    if (!queueDAO.containsMessage(queueName, task.getTaskId())) {
+                                        queueDAO.push(
+                                                queueName,
+                                                task.getTaskId(),
+                                                task.getCallbackAfterSeconds());
+                                    }
+                                });
             }
 
             // Workflow is in running status, there MUST be at-least one task that is not terminal
@@ -206,7 +241,7 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
                 // after the last task was completed
                 // To fix, we reset the executed flag of the last task and re-run decide
                 forceSetLastTaskAsNotExecuted(workflow);
-                workflow = workflowExecutor.decideWithLock(workflow);
+                workflow = workflowExecutor.decide(workflowId);
             }
 
             // If parent workflow exists, call repair on that too - meaning ensure the parent is in
@@ -216,21 +251,8 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
             }
         } catch (Throwable e) {
             log.error("Error running sweep for {}, error = {}", workflowId, e.getMessage(), e);
-        }
-    }
-
-    void verifyAndRepairTask(TaskModel task) {
-        if (isTaskRepairable.test(task)) {
-            // Ensure QueueDAO contains this taskId
-            String taskQueueName = QueueUtils.getQueueName(task);
-            if (!queueDAO.containsMessage(taskQueueName, task.getTaskId())) {
-                queueDAO.push(taskQueueName, task.getTaskId(), task.getCallbackAfterSeconds());
-                log.info(
-                        "Task {} in workflow {} re-queued for repairs",
-                        task.getTaskId(),
-                        task.getWorkflowInstanceId());
-                Monitors.recordQueueMessageRepushFromRepairService(task.getTaskDefName());
-            }
+        } finally {
+            executionLockService.releaseLock(workflowId);
         }
         if (task.getTaskType().equals(TaskType.TASK_TYPE_SUB_WORKFLOW)
                 && task.getStatus() == TaskModel.Status.IN_PROGRESS) {
