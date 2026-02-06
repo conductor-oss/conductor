@@ -34,7 +34,6 @@ LABEL maintainer="Orkes OSS <oss@orkes.io>"
 RUN corepack enable && corepack prepare yarn@stable --activate
 
 COPY ui /conductor/ui
-COPY docker/server/nginx/nginx.conf /conductor/docker/server/nginx/nginx.conf
 WORKDIR /conductor/ui
 
 # Include monaco sources into bundle (instead of using CDN)
@@ -43,10 +42,6 @@ ENV REACT_APP_ENABLE_ERRORS_INSPECTOR=true
 RUN yarn config set network-timeout 600000 -g
 RUN yarn ${YARN_OPTS} install && cp -r node_modules/monaco-editor public/ && yarn ${YARN_OPTS} build
 
-RUN echo "Copying UI to server"
-WORKDIR /conductor
-RUN rm -rf server/src/main/resources/static
-RUN cp -R ui/build/ server/src/main/resources/static
 
 # ===========================================================================================================
 # 2. Bin stage
@@ -72,7 +67,7 @@ COPY --from=builder /conductor/server/build/libs/*boot*.jar /app/libs/conductor-
 WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
 COPY --from=ui-builder /conductor/ui/build .
-COPY --from=ui-builder /conductor/docker/server/nginx/nginx.conf /etc/nginx/conf.d/default.conf
+COPY docker/server/nginx/nginx.conf  /etc/nginx/conf.d/default.conf
 
 # Copy the files for the server into the app folders
 RUN chmod +x /app/startup.sh
