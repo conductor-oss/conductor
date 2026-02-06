@@ -53,7 +53,7 @@ ext {
     revRxJava = '1.2.2'
     revSpock = '2.4-M4-groovy-4.0'
     revSpotifyCompletableFutures = '0.3.3'
-    revTestContainer = '1.19.3'
+    revTestContainer = '1.21.4'
     revFasterXml = '2.15.3'
     revAmqpClient = '5.13.0'
     revKafka = '2.6.0'

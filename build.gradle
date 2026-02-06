@@ -116,6 +116,8 @@ allprojects {
 
     test {
         useJUnitPlatform()
+        // Prefer provider auto-detection and ignore user-level forced client strategy pins.
+        systemProperty 'dockerconfig.source', 'autoIgnoringUserProperties'
         testLogging {
             events = ["SKIPPED", "FAILED"]
             exceptionFormat = "full"
