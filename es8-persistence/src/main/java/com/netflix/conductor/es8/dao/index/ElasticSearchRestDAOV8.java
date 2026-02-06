@@ -79,8 +79,8 @@ import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import co.elastic.clients.elasticsearch.indices.put_index_template.IndexTemplateMapping;
 import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.endpoints.BooleanResponse;
 import co.elastic.clients.transport.ElasticsearchTransport;
+import co.elastic.clients.transport.endpoints.BooleanResponse;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -407,8 +407,9 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
                                                                             a ->
                                                                                     a.rollover(
                                                                                             r ->
-                                                                                                    r.maxPrimaryShardSize(
-                                                                                                            ILM_ROLLOVER_MAX_PRIMARY_SHARD_SIZE))))));
+                                                                                                    r
+                                                                                                            .maxPrimaryShardSize(
+                                                                                                                    ILM_ROLLOVER_MAX_PRIMARY_SHARD_SIZE))))));
             executeWithRetry(
                     () -> {
                         elasticSearchClient
@@ -496,7 +497,6 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
         return builder.build();
     }
 
-
     private String formatRefreshInterval(Duration refreshInterval) {
         if (refreshInterval == null) {
             return null;
@@ -525,7 +525,8 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
 
     private void ensureWriteIndex(String aliasName) throws IOException {
         BooleanResponse exists =
-                executeWithRetry(() -> elasticSearchClient.indices().existsAlias(r -> r.name(aliasName)));
+                executeWithRetry(
+                        () -> elasticSearchClient.indices().existsAlias(r -> r.name(aliasName)));
         if (exists.value()) {
             return;
         }

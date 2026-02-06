@@ -17,14 +17,16 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.es8.config.ElasticSearchProperties;
-import com.sun.net.httpserver.HttpServer;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 import org.junit.After;
 import org.junit.Test;
 import org.springframework.retry.support.RetryTemplate;
+
+import com.netflix.conductor.es8.config.ElasticSearchProperties;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sun.net.httpserver.HttpServer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
