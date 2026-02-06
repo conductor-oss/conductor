@@ -49,7 +49,7 @@ public class ElasticSearchRestDAOV8ResourceExistenceTest {
     }
 
     @Test
-    public void dataStreamExistenceUsesGetAndReturnsFalseOn404() throws Exception {
+    public void headMissingReturnsFalse() throws Exception {
         List<String> methods = new ArrayList<>();
         startServer(
                 exchange -> {
@@ -60,8 +60,8 @@ public class ElasticSearchRestDAOV8ResourceExistenceTest {
 
         dao = newDao(server.getAddress().getPort());
 
-        assertFalse(dao.doesResourceExist("/_data_stream/conductor_task_log"));
-        assertEquals(List.of("GET"), methods);
+        assertFalse(dao.doesResourceExist("/_alias/conductor"));
+        assertEquals(List.of("HEAD"), methods);
     }
 
     @Test

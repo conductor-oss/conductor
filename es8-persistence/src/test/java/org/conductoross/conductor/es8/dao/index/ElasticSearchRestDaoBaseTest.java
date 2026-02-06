@@ -26,8 +26,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.springframework.retry.support.RetryTemplate;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 public abstract class ElasticSearchRestDaoBaseTest extends ElasticSearchTest {
 
     protected RestClient restClient;
@@ -60,21 +58,6 @@ public abstract class ElasticSearchRestDaoBaseTest extends ElasticSearchTest {
     }
 
     private void deleteAllIndices() throws IOException {
-        Response dataStreamsResponse =
-                restClient.performRequest(new Request("GET", "/_data_stream"));
-        JsonNode dataStreamsRoot =
-                objectMapper.readTree(dataStreamsResponse.getEntity().getContent());
-        JsonNode dataStreams = dataStreamsRoot.get("data_streams");
-        if (dataStreams != null && dataStreams.isArray()) {
-            for (JsonNode dataStream : dataStreams) {
-                JsonNode nameNode = dataStream.get("name");
-                if (nameNode != null) {
-                    restClient.performRequest(
-                            new Request("DELETE", "/_data_stream/" + nameNode.asText()));
-                }
-            }
-        }
-
         Response beforeResponse = restClient.performRequest(new Request("GET", "/_cat/indices"));
 
         Reader streamReader = new InputStreamReader(beforeResponse.getEntity().getContent());

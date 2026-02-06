@@ -704,8 +704,7 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
      * @throws IOException If an error occurred during requests to ES.
      */
     public boolean doesResourceExist(final String resourcePath) throws IOException {
-        boolean preferGet = resourcePath.startsWith("/_data_stream/");
-        Request request = new Request(preferGet ? HttpMethod.GET : HttpMethod.HEAD, resourcePath);
+        Request request = new Request(HttpMethod.HEAD, resourcePath);
         try {
             Response response = elasticSearchAdminClient.performRequest(request);
             return response.getStatusLine().getStatusCode() == HttpStatus.SC_OK;
