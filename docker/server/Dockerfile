@@ -1,8 +1,5 @@
-#
-# conductor:server - Build Conductor Server
-#
 # ===========================================================================================================
-# 0. Builder stage 1
+# Backend Builder stage
 # ===========================================================================================================
 FROM azul/zulu-openjdk-debian:21 AS builder
 
@@ -19,11 +16,8 @@ RUN ./gradlew build -x test -x spotlessCheck -PindexingBackend=${INDEXING_BACKEN
 WORKDIR /server/build/libs
 
 
-#
-# conductor:server - Build Conductor UI
-#
 # ===========================================================================================================
-# 1. Builder stage 2
+# UI Builder stage
 # ===========================================================================================================
 FROM node:lts AS ui-builder
 ARG YARN_OPTS
@@ -44,7 +38,7 @@ RUN yarn ${YARN_OPTS} install && cp -r node_modules/monaco-editor public/ && yar
 
 
 # ===========================================================================================================
-# 2. Bin stage
+# Bin builder stage
 # ===========================================================================================================
 FROM debian:stable-slim
 

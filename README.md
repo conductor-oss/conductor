@@ -144,9 +144,7 @@ Use this table as a reference for various backend configurations.
 | Redis + OS            | [config-redis-os.properties](docker/server/config/config-redis-os.properties)             |
 | Postgres              | [config-postgres.properties](docker/server/config/config-postgres.properties)             |
 | Postgres + ES7        | [config-postgres-es7.properties](docker/server/config/config-postgres-es7.properties)     |
-| Postgres + ES8        | [config-postgres-es8.properties](docker/server/config/config-postgres-es8.properties)     |
 | MySQL + ES7           | [config-mysql.properties](docker/server/config/config-mysql.properties)                   |
-| MySQL + ES8           | [config-mysql-es8.properties](docker/server/config/config-mysql-es8.properties)           |
 
 
 # Build from source
