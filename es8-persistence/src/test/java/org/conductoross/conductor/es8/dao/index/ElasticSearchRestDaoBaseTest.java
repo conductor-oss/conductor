@@ -16,6 +16,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.time.Duration;
 
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.Request;
@@ -38,6 +39,9 @@ public abstract class ElasticSearchRestDaoBaseTest extends ElasticSearchTest {
         int port = Integer.parseInt(httpHostAddress.split(":")[1]);
 
         properties.setUrl("http://" + httpHostAddress);
+        // Keep integration tests deterministic with near-immediate visibility in search.
+        properties.setIndexRefreshInterval(Duration.ofMillis(100));
+        properties.setWaitForIndexRefresh(true);
 
         RestClientBuilder restClientBuilder = RestClient.builder(new HttpHost(host, port, "http"));
         restClient = restClientBuilder.build();
