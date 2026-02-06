@@ -42,10 +42,9 @@ All other `conductor.elasticsearch.*` properties are shared with the ES7 module.
 (Default values shown below)
 
 ```properties
-# A comma separated list of schema/host/port of the ES nodes to communicate with.
-# Schema can be `http` or `https`. If schema is ignored then `http` transport will be used;
-# Since ES deprecated TransportClient, conductor will use only the REST transport protocol.
-conductor.elasticsearch.url=
+# A comma separated list of scheme/host/port of the ES nodes to communicate with.
+# Scheme can be `http` or `https`. If scheme is omitted then `http` will be used.
+conductor.elasticsearch.url=localhost:9200
 
 # The name of the workflow and task index.
 conductor.elasticsearch.indexPrefix=conductor

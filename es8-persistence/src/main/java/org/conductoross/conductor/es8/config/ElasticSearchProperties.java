@@ -30,7 +30,7 @@ public class ElasticSearchProperties {
      * The comma separated list of urls for the elasticsearch cluster. Format --
      * host1:port1,host2:port2
      */
-    private String url = "localhost:9300";
+    private String url = "localhost:9200";
 
     /** The index prefix to be used when creating indices */
     private String indexPrefix = "conductor";
@@ -246,22 +246,29 @@ public class ElasticSearchProperties {
     }
 
     public List<URL> toURLs() {
-        String clusterAddress = getUrl();
-        String[] hosts = clusterAddress.split(",");
-        return Arrays.stream(hosts)
-                .map(
-                        host ->
-                                (host.startsWith("http://") || host.startsWith("https://"))
-                                        ? toURL(host)
-                                        : toURL("http://" + host))
-                .collect(Collectors.toList());
+        String clusterAddress = getUrl() == null ? "" : getUrl();
+        List<URL> urls =
+                Arrays.stream(clusterAddress.split(","))
+                        .map(String::trim)
+                        .filter(host -> !host.isEmpty())
+                        .map(
+                                host ->
+                                        (host.startsWith("http://") || host.startsWith("https://"))
+                                                ? toURL(host)
+                                                : toURL("http://" + host))
+                        .collect(Collectors.toList());
+        if (urls.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "conductor.elasticsearch.url must include at least one host");
+        }
+        return urls;
     }
 
     private URL toURL(String url) {
         try {
             return new URL(url);
         } catch (MalformedURLException e) {
-            throw new IllegalArgumentException(url + "can not be converted to java.net.URL");
+            throw new IllegalArgumentException(url + " can not be converted to java.net.URL");
         }
     }
 }

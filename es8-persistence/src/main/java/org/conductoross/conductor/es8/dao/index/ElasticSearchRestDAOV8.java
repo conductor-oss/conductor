@@ -263,26 +263,27 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
         waitForHealthyCluster();
 
         if (properties.isAutoIndexManagementEnabled()) {
-            createIndexesTemplates();
-            createWorkflowIndex();
-            createTaskIndex();
-            createTaskLogIndex();
-            createMessageIndex();
-            createEventIndex();
+            try {
+                createIndexesTemplates();
+                createWorkflowIndex();
+                createTaskIndex();
+                createTaskLogIndex();
+                createMessageIndex();
+                createEventIndex();
+            } catch (Exception e) {
+                throw new NonTransientException(
+                        "Failed to initialize Elasticsearch index templates and aliases", e);
+            }
         }
     }
 
-    private void createIndexesTemplates() {
-        try {
-            ensureIlmPolicy();
-            ensureComponentTemplate();
-            initIndexesTemplates();
-        } catch (Exception e) {
-            logger.error("Error creating index templates!", e);
-        }
+    private void createIndexesTemplates() throws IOException {
+        ensureIlmPolicy();
+        ensureComponentTemplate();
+        initIndexesTemplates();
     }
 
-    private void initIndexesTemplates() {
+    private void initIndexesTemplates() throws IOException {
         TemplateDefinition workflowDefinition = loadTemplateDefinition("/template_workflow.json");
         initIndexAliasTemplate(
                 prefixedResourceName(resourcePrefix, "template_workflow"),
@@ -336,34 +337,30 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
             String indexPattern,
             JsonNode mappings,
             JsonNode additionalSettings,
-            String aliasName) {
-        try {
-            logger.info("Creating/updating the index template '{}'", templateName);
-            deleteLegacyIndexTemplateIfOwned(
-                    legacyTemplateName, templateName, indexPattern, aliasName);
-            IndexTemplateMapping.Builder template =
-                    new IndexTemplateMapping.Builder()
-                            .settings(buildIndexTemplateSettings(additionalSettings, aliasName))
-                            .aliases(aliasName, a -> a);
-            if (mappings != null) {
-                template.mappings(parseTypeMapping(mappings));
-            }
-            executeWithRetry(
-                    () -> {
-                        elasticSearchClient
-                                .indices()
-                                .putIndexTemplate(
-                                        r ->
-                                                r.name(templateName)
-                                                        .indexPatterns(indexPattern)
-                                                        .priority(500L)
-                                                        .composedOf(componentTemplateName)
-                                                        .template(template.build()));
-                        return null;
-                    });
-        } catch (Exception e) {
-            logger.error("Failed to init " + templateName, e);
+            String aliasName)
+            throws IOException {
+        logger.info("Creating/updating the index template '{}'", templateName);
+        deleteLegacyIndexTemplateIfOwned(legacyTemplateName, templateName, indexPattern, aliasName);
+        IndexTemplateMapping.Builder template =
+                new IndexTemplateMapping.Builder()
+                        .settings(buildIndexTemplateSettings(additionalSettings, aliasName))
+                        .aliases(aliasName, a -> a);
+        if (mappings != null) {
+            template.mappings(parseTypeMapping(mappings));
         }
+        executeWithRetry(
+                () -> {
+                    elasticSearchClient
+                            .indices()
+                            .putIndexTemplate(
+                                    r ->
+                                            r.name(templateName)
+                                                    .indexPatterns(indexPattern)
+                                                    .priority(500L)
+                                                    .composedOf(componentTemplateName)
+                                                    .template(template.build()));
+                    return null;
+                });
     }
 
     private void deleteLegacyIndexTemplateIfOwned(
@@ -430,95 +427,67 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
         }
     }
 
-    private void createWorkflowIndex() {
-        try {
-            ensureWriteIndex(workflowIndexName);
-        } catch (IOException e) {
-            logger.error("Failed to initialize index alias '{}'", workflowIndexName, e);
-        }
+    private void createWorkflowIndex() throws IOException {
+        ensureWriteIndex(workflowIndexName);
     }
 
-    private void createTaskIndex() {
-        try {
-            ensureWriteIndex(taskIndexName);
-        } catch (IOException e) {
-            logger.error("Failed to initialize index alias '{}'", taskIndexName, e);
-        }
+    private void createTaskIndex() throws IOException {
+        ensureWriteIndex(taskIndexName);
     }
 
-    private void createTaskLogIndex() {
-        try {
-            ensureWriteIndex(logIndexName);
-        } catch (IOException e) {
-            logger.error("Failed to initialize index alias '{}'", logIndexName, e);
-        }
+    private void createTaskLogIndex() throws IOException {
+        ensureWriteIndex(logIndexName);
     }
 
-    private void createMessageIndex() {
-        try {
-            ensureWriteIndex(messageIndexName);
-        } catch (IOException e) {
-            logger.error("Failed to initialize index alias '{}'", messageIndexName, e);
-        }
+    private void createMessageIndex() throws IOException {
+        ensureWriteIndex(messageIndexName);
     }
 
-    private void createEventIndex() {
-        try {
-            ensureWriteIndex(eventIndexName);
-        } catch (IOException e) {
-            logger.error("Failed to initialize index alias '{}'", eventIndexName, e);
-        }
+    private void createEventIndex() throws IOException {
+        ensureWriteIndex(eventIndexName);
     }
 
-    private void ensureIlmPolicy() {
-        try {
-            if (ilmPolicyExists(ilmPolicyName)) {
-                return;
-            }
-            IlmPolicy policy =
-                    IlmPolicy.of(
-                            p ->
-                                    p.phases(
-                                            ph ->
-                                                    ph.hot(
-                                                            hot ->
-                                                                    hot.actions(
-                                                                            a ->
-                                                                                    a.rollover(
-                                                                                            r ->
-                                                                                                    r
-                                                                                                            .maxPrimaryShardSize(
-                                                                                                                    ILM_ROLLOVER_MAX_PRIMARY_SHARD_SIZE))))));
-            executeWithRetry(
-                    () -> {
-                        elasticSearchClient
-                                .ilm()
-                                .putLifecycle(r -> r.name(ilmPolicyName).policy(policy));
-                        return null;
-                    });
-            logger.info("Created ILM policy '{}'", ilmPolicyName);
-        } catch (Exception e) {
-            logger.error("Failed to create ILM policy '{}'", ilmPolicyName, e);
+    private void ensureIlmPolicy() throws IOException {
+        if (ilmPolicyExists(ilmPolicyName)) {
+            return;
         }
+        IlmPolicy policy =
+                IlmPolicy.of(
+                        p ->
+                                p.phases(
+                                        ph ->
+                                                ph.hot(
+                                                        hot ->
+                                                                hot.actions(
+                                                                        a ->
+                                                                                a.rollover(
+                                                                                        r ->
+                                                                                                r
+                                                                                                        .maxPrimaryShardSize(
+                                                                                                                ILM_ROLLOVER_MAX_PRIMARY_SHARD_SIZE))))));
+        executeWithRetry(
+                () -> {
+                    elasticSearchClient
+                            .ilm()
+                            .putLifecycle(r -> r.name(ilmPolicyName).policy(policy));
+                    return null;
+                });
+        logger.info("Created ILM policy '{}'", ilmPolicyName);
     }
 
-    private void ensureComponentTemplate() {
-        try {
-            IndexSettings settings = buildCommonIndexSettings();
-            executeWithRetry(
-                    () -> {
-                        elasticSearchClient
-                                .cluster()
-                                .putComponentTemplate(
-                                        r ->
-                                                r.name(componentTemplateName)
-                                                        .template(t -> t.settings(settings)));
-                        return null;
-                    });
-            logger.info("Created/updated component template '{}'", componentTemplateName);
-        } catch (Exception e) {
-            logger.error("Failed to create component template '{}'", componentTemplateName, e);
-        }
+    private void ensureComponentTemplate() throws IOException {
+        IndexSettings settings = buildCommonIndexSettings();
+        executeWithRetry(
+                () -> {
+                    elasticSearchClient
+                            .cluster()
+                            .putComponentTemplate(
+                                    r ->
+                                            r.name(componentTemplateName)
+                                                    .template(t -> t.settings(settings)));
+                    return null;
+                });
+        logger.info("Created/updated component template '{}'", componentTemplateName);
     }
 
     private static HealthStatus parseHealthStatus(String value) {
@@ -1194,6 +1163,7 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
         if (taskSearchResult.getTotalHits() == 0) {
             logger.error("Task: {} does not belong to workflow: {}", taskId, workflowId);
             Monitors.error(className, "removeTask");
+            return;
         }
 
         try {
