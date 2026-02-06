@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
@@ -207,28 +208,64 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
             // Every task that is running MUST be in the queue
             if (tasks.equals(tasksAfterDecide)) {
                 long now = System.currentTimeMillis();
-                workflow.getTasks().stream()
-                        .filter(isTaskRepairable)
+                AtomicBoolean repairedSubWorkflowTask = new AtomicBoolean(false);
+                workflow.getTasks()
                         .forEach(
                                 task -> {
-                                    log.warn(
-                                            "Going to repair the task {} / {}, with status {}, workflow = {}, timeout = {}, now-wait = {}",
-                                            task.getTaskId(),
-                                            task.getReferenceTaskName(),
-                                            task.getStatus(),
-                                            workflowId,
-                                            task.getWaitTimeout(),
-                                            (now - task.getWaitTimeout()));
-                                    Monitors.recordQueueMessageRepushFromRepairService(
-                                            task.getTaskDefName());
-                                    String queueName = QueueUtils.getQueueName(task);
-                                    if (!queueDAO.containsMessage(queueName, task.getTaskId())) {
-                                        queueDAO.push(
-                                                queueName,
+                                    if (isTaskRepairable.test(task)) {
+                                        log.warn(
+                                                "Going to repair the task {} / {}, with status {}, workflow = {}, timeout = {}, now-wait = {}",
                                                 task.getTaskId(),
-                                                task.getCallbackAfterSeconds());
+                                                task.getReferenceTaskName(),
+                                                task.getStatus(),
+                                                workflowId,
+                                                task.getWaitTimeout(),
+                                                (now - task.getWaitTimeout()));
+                                        Monitors.recordQueueMessageRepushFromRepairService(
+                                                task.getTaskDefName());
+                                        String queueName = QueueUtils.getQueueName(task);
+                                        if (!queueDAO.containsMessage(
+                                                queueName, task.getTaskId())) {
+                                            queueDAO.push(
+                                                    queueName,
+                                                    task.getTaskId(),
+                                                    task.getCallbackAfterSeconds());
+                                        }
+                                        return;
+                                    }
+
+                                    if (TaskType.TASK_TYPE_SUB_WORKFLOW.equals(task.getTaskType())
+                                            && task.getStatus() == TaskModel.Status.IN_PROGRESS) {
+                                        WorkflowModel subWorkflow =
+                                                executionDAO.getWorkflow(
+                                                        task.getSubWorkflowId(), false);
+                                        if (subWorkflow == null) {
+                                            log.warn(
+                                                    "Sub workflow {} not found for task {} in workflow {}",
+                                                    task.getSubWorkflowId(),
+                                                    task.getTaskId(),
+                                                    task.getWorkflowInstanceId());
+                                            return;
+                                        }
+                                        if (subWorkflow.getStatus().isTerminal()) {
+                                            log.info(
+                                                    "Repairing sub workflow task {} for sub workflow {} in workflow {}",
+                                                    task.getTaskId(),
+                                                    task.getSubWorkflowId(),
+                                                    task.getWorkflowInstanceId());
+                                            repairSubWorkflowTask(task, subWorkflow);
+                                            repairedSubWorkflowTask.set(true);
+                                        }
                                     }
                                 });
+
+                if (repairedSubWorkflowTask.get()) {
+                    workflow = workflowExecutor.decide(workflowId);
+                    if (workflow != null && workflow.getStatus().isTerminal()) {
+                        queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());
+                        return;
+                    }
+                }
             }
 
             // Workflow is in running status, there MUST be at-least one task that is not terminal
@@ -253,26 +290,6 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
             log.error("Error running sweep for {}, error = {}", workflowId, e.getMessage(), e);
         } finally {
             executionLockService.releaseLock(workflowId);
-        }
-        if (task.getTaskType().equals(TaskType.TASK_TYPE_SUB_WORKFLOW)
-                && task.getStatus() == TaskModel.Status.IN_PROGRESS) {
-            WorkflowModel subWorkflow = executionDAO.getWorkflow(task.getSubWorkflowId(), false);
-            if (subWorkflow == null) {
-                log.warn(
-                        "Sub workflow {} not found for task {} in workflow {}",
-                        task.getSubWorkflowId(),
-                        task.getTaskId(),
-                        task.getWorkflowInstanceId());
-                return;
-            }
-            if (subWorkflow.getStatus().isTerminal()) {
-                log.info(
-                        "Repairing sub workflow task {} for sub workflow {} in workflow {}",
-                        task.getTaskId(),
-                        task.getSubWorkflowId(),
-                        task.getWorkflowInstanceId());
-                repairSubWorkflowTask(task, subWorkflow);
-            }
         }
     }
 
