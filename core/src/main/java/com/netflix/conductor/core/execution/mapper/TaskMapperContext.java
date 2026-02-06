@@ -31,6 +31,7 @@ public class TaskMapperContext {
     private final int retryCount;
     private final String retryTaskId;
     private final String taskId;
+    private final String parentTaskReferenceName;
     private final DeciderService deciderService;
 
     private TaskMapperContext(Builder builder) {
@@ -41,6 +42,7 @@ public class TaskMapperContext {
         retryCount = builder.retryCount;
         retryTaskId = builder.retryTaskId;
         taskId = builder.taskId;
+        parentTaskReferenceName = builder.parentTaskReferenceName;
         deciderService = builder.deciderService;
     }
 
@@ -100,6 +102,7 @@ public class TaskMapperContext {
     public TaskModel createTaskModel() {
         TaskModel taskModel = new TaskModel();
         taskModel.setReferenceTaskName(workflowTask.getTaskReferenceName());
+        taskModel.setOnStateChange(workflowTask.getOnStateChange());
         taskModel.setWorkflowInstanceId(workflowModel.getWorkflowId());
         taskModel.setWorkflowType(workflowModel.getWorkflowName());
         taskModel.setCorrelationId(workflowModel.getCorrelationId());
@@ -108,6 +111,7 @@ public class TaskMapperContext {
         taskModel.setTaskId(taskId);
         taskModel.setWorkflowTask(workflowTask);
         taskModel.setWorkflowPriority(workflowModel.getPriority());
+        taskModel.setParentTaskReferenceName(parentTaskReferenceName);
 
         // the following properties are overridden by some TaskMapper implementations
         taskModel.setTaskType(workflowTask.getType());
@@ -193,6 +197,7 @@ public class TaskMapperContext {
         private int retryCount;
         private String retryTaskId;
         private String taskId;
+        private String parentTaskReferenceName;
         private DeciderService deciderService;
 
         private Builder() {}
@@ -278,6 +283,11 @@ public class TaskMapperContext {
          */
         public Builder withTaskId(String val) {
             taskId = val;
+            return this;
+        }
+
+        public Builder withParentTaskReferenceName(String val) {
+            parentTaskReferenceName = val;
             return this;
         }
 
