@@ -101,6 +101,42 @@ public class ElasticSearchRestDAOV8ResourceExistenceTest {
         assertEquals(List.of("HEAD"), methods);
     }
 
+    @Test
+    public void getTaskExecutionLogsReturnsEmptyListOnSearchFailure() throws Exception {
+        startServer(
+                exchange -> {
+                    exchange.sendResponseHeaders(500, -1);
+                    exchange.close();
+                });
+        dao = newDao(server.getAddress().getPort());
+
+        assertTrue(dao.getTaskExecutionLogs("task-id").isEmpty());
+    }
+
+    @Test
+    public void getMessagesReturnsEmptyListOnSearchFailure() throws Exception {
+        startServer(
+                exchange -> {
+                    exchange.sendResponseHeaders(500, -1);
+                    exchange.close();
+                });
+        dao = newDao(server.getAddress().getPort());
+
+        assertTrue(dao.getMessages("queue").isEmpty());
+    }
+
+    @Test
+    public void getEventExecutionsReturnsEmptyListOnSearchFailure() throws Exception {
+        startServer(
+                exchange -> {
+                    exchange.sendResponseHeaders(500, -1);
+                    exchange.close();
+                });
+        dao = newDao(server.getAddress().getPort());
+
+        assertTrue(dao.getEventExecutions("event").isEmpty());
+    }
+
     private void startServer(com.sun.net.httpserver.HttpHandler handler) throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/", handler);

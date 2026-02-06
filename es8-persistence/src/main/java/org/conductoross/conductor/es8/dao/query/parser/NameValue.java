@@ -14,6 +14,7 @@ package org.conductoross.conductor.es8.dao.query.parser;
 
 import java.io.InputStream;
 import java.util.List;
+import java.util.Locale;
 
 import org.conductoross.conductor.es8.dao.query.parser.internal.AbstractNode;
 import org.conductoross.conductor.es8.dao.query.parser.internal.ComparisonOp;
@@ -97,7 +98,15 @@ public class NameValue extends AbstractNode implements FilterProvider {
     @Override
     public Query getFilterBuilder() {
         if (op.getOperator().equals(Operators.EQUALS.value())) {
-            return queryString(name.getName() + ":" + value.getValue().toString());
+            if (value.isSysConstant()) {
+                return systemConstantQuery(value.getSysConstant(), true);
+            }
+            return Query.of(
+                    q ->
+                            q.term(
+                                    t ->
+                                            t.field(name.getName())
+                                                    .value(toFieldValue(value.toString()))));
         } else if (op.getOperator().equals(Operators.BETWEEN.value())) {
             return Query.of(
                     q ->
@@ -115,11 +124,24 @@ public class NameValue extends AbstractNode implements FilterProvider {
                                                                                             .getHigh())))));
         } else if (op.getOperator().equals(Operators.IN.value())) {
             List<FieldValue> values =
-                    valueList.getList().stream().map(val -> FieldValue.of(val.toString())).toList();
+                    valueList.getList().stream()
+                            .map(value -> toFieldValue(String.valueOf(value)))
+                            .toList();
             return Query.of(
                     q -> q.terms(t -> t.field(name.getName()).terms(tf -> tf.value(values))));
         } else if (op.getOperator().equals(Operators.NOT_EQUALS.value())) {
-            Query query = queryString(name.getName() + ":" + value.getValue().toString());
+            if (value.isSysConstant()) {
+                return systemConstantQuery(value.getSysConstant(), false);
+            }
+            Query query =
+                    Query.of(
+                            q ->
+                                    q.term(
+                                            t ->
+                                                    t.field(name.getName())
+                                                            .value(
+                                                                    toFieldValue(
+                                                                            value.toString()))));
             return Query.of(q -> q.bool(b -> b.mustNot(query)));
         } else if (op.getOperator().equals(Operators.GREATER_THAN.value())) {
             return Query.of(
@@ -134,22 +156,7 @@ public class NameValue extends AbstractNode implements FilterProvider {
                                                                                     value
                                                                                             .getValue())))));
         } else if (op.getOperator().equals(Operators.IS.value())) {
-            if (value.getSysConstant().equals(ConstValue.SystemConsts.NULL)) {
-                return Query.of(
-                        q ->
-                                q.bool(
-                                        b ->
-                                                b.mustNot(
-                                                        Query.of(
-                                                                exists ->
-                                                                        exists.exists(
-                                                                                e ->
-                                                                                        e.field(
-                                                                                                name
-                                                                                                        .getName()))))));
-            } else if (value.getSysConstant().equals(ConstValue.SystemConsts.NOT_NULL)) {
-                return Query.of(q -> q.exists(e -> e.field(name.getName())));
-            }
+            return systemConstantQuery(value.getSysConstant(), true);
         } else if (op.getOperator().equals(Operators.LESS_THAN.value())) {
             return Query.of(
                     q ->
@@ -170,7 +177,59 @@ public class NameValue extends AbstractNode implements FilterProvider {
         throw new IllegalStateException("Incorrect/unsupported operators");
     }
 
-    private Query queryString(String query) {
-        return Query.of(q -> q.queryString(qs -> qs.query(query)));
+    private Query systemConstantQuery(ConstValue.SystemConsts sysConst, boolean isEqualityCheck) {
+        if (sysConst == ConstValue.SystemConsts.NULL) {
+            return isEqualityCheck ? missingFieldQuery() : existsFieldQuery();
+        }
+        if (sysConst == ConstValue.SystemConsts.NOT_NULL) {
+            return isEqualityCheck ? existsFieldQuery() : missingFieldQuery();
+        }
+        throw new IllegalStateException("Unsupported system constant: " + sysConst);
+    }
+
+    private Query existsFieldQuery() {
+        return Query.of(q -> q.exists(e -> e.field(name.getName())));
+    }
+
+    private Query missingFieldQuery() {
+        return Query.of(q -> q.bool(b -> b.mustNot(existsFieldQuery())));
+    }
+
+    private FieldValue toFieldValue(String rawValue) {
+        String token = rawValue == null ? "" : rawValue.trim();
+        if (token.isEmpty()) {
+            return FieldValue.of("");
+        }
+
+        if (isQuoted(token)) {
+            return FieldValue.of(unescapeQuoted(token.substring(1, token.length() - 1)));
+        }
+
+        String lower = token.toLowerCase(Locale.ROOT);
+        if ("true".equals(lower) || "false".equals(lower)) {
+            return FieldValue.of(Boolean.parseBoolean(lower));
+        }
+
+        try {
+            if (token.contains(".") || token.contains("e") || token.contains("E")) {
+                return FieldValue.of(Double.parseDouble(token));
+            }
+            return FieldValue.of(Long.parseLong(token));
+        } catch (NumberFormatException ignored) {
+            return FieldValue.of(token);
+        }
+    }
+
+    private boolean isQuoted(String token) {
+        if (token.length() < 2) {
+            return false;
+        }
+        char first = token.charAt(0);
+        char last = token.charAt(token.length() - 1);
+        return (first == '"' && last == '"') || (first == '\'' && last == '\'');
+    }
+
+    private String unescapeQuoted(String value) {
+        return value.replace("\\\\", "\\").replace("\\\"", "\"").replace("\\'", "'");
     }
 }

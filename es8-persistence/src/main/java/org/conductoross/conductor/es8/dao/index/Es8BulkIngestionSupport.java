@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.es8.dao.index;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -142,16 +143,16 @@ class Es8BulkIngestionSupport {
                                 "logQueue",
                                 ((ThreadPoolExecutor) logExecutorService).getQueue().size());
                         if (response.errors()) {
-                            long errorCount =
-                                    response.items().stream()
-                                            .filter(item -> item.error() != null)
-                                            .count();
+                            List<BulkOperation> failedOperations =
+                                    collectFailedOperations(request, response);
+                            long errorCount = failedOperations.size();
                             Monitors.error(className, "index");
                             logger.warn(
                                     "Bulk indexing reported {} failures for doc type {} ({} items)",
                                     errorCount,
                                     docType,
                                     response.items().size());
+                            retryFailedOperations(docType, failedOperations);
                         }
                     }
 
@@ -212,6 +213,39 @@ class Es8BulkIngestionSupport {
             return -1L;
         }
         return System.currentTimeMillis() - start;
+    }
+
+    static List<BulkOperation> collectFailedOperations(BulkRequest request, BulkResponse response) {
+        List<BulkOperation> operations = request.operations();
+        if (operations == null || operations.isEmpty()) {
+            return List.of();
+        }
+        List<BulkOperation> failedOperations = new ArrayList<>();
+        int itemCount = Math.min(operations.size(), response.items().size());
+        for (int i = 0; i < itemCount; i++) {
+            if (response.items().get(i).error() != null) {
+                failedOperations.add(operations.get(i));
+            }
+        }
+        return failedOperations;
+    }
+
+    private void retryFailedOperations(String docType, List<BulkOperation> failedOperations) {
+        if (failedOperations.isEmpty()) {
+            return;
+        }
+        try {
+            retryTemplate.execute(
+                    context -> {
+                        elasticSearchClient.bulk(b -> b.operations(failedOperations));
+                        return null;
+                    });
+        } catch (Exception retryException) {
+            logger.error(
+                    "Bulk indexing retry for failed items failed for doc type {}",
+                    docType,
+                    retryException);
+        }
     }
 
     private void shutdownScheduler() {

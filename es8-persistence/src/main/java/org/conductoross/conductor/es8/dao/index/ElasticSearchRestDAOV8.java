@@ -435,7 +435,7 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
         } catch (Exception e) {
             logger.error("Failed to get task execution logs for task: {}", taskId, e);
         }
-        return null;
+        return Collections.emptyList();
     }
 
     private List<TaskExecLog> mapTaskExecLogsResponse(SearchResponse<TaskExecLog> response) {
@@ -475,7 +475,7 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
         } catch (Exception e) {
             logger.error("Failed to get messages for queue: {}", queue, e);
         }
-        return null;
+        return Collections.emptyList();
     }
 
     private List<Message> mapGetMessagesResponse(SearchResponse<Map> response) {
@@ -525,7 +525,7 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
         } catch (Exception e) {
             logger.error("Failed to get executions for event: {}", event, e);
         }
-        return null;
+        return Collections.emptyList();
     }
 
     private List<EventExecution> mapEventExecutionsResponse(

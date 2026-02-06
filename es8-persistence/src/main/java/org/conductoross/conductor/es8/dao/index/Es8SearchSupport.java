@@ -54,10 +54,14 @@ class Es8SearchSupport {
             Expression exp = Expression.fromString(expression);
             queryBuilder = exp.getFilterBuilder();
         }
-        Query baseQuery = queryBuilder;
-        Query filterQuery = Query.of(q -> q.bool(b -> b.must(baseQuery)));
+
+        if (StringUtils.isBlank(queryString) || "*".equals(queryString.trim())) {
+            return queryBuilder;
+        }
+
         Query stringQuery = Query.of(q -> q.simpleQueryString(qs -> qs.query(queryString)));
-        return Query.of(q -> q.bool(b -> b.must(stringQuery).must(filterQuery)));
+        Query baseQuery = queryBuilder;
+        return Query.of(q -> q.bool(b -> b.must(stringQuery).must(baseQuery)));
     }
 
     <T> SearchResult<T> searchObjectsViaExpression(

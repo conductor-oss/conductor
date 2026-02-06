@@ -11,6 +11,10 @@
         "executionTime": {
           "type": "long"
         },
+        "correlationId": {
+          "type": "keyword",
+          "index": true
+        },
         "input": {
           "type": "text",
           "index": true
@@ -23,7 +27,8 @@
           "type": "long"
         },
         "reasonForIncompletion": {
-          "type": "text"
+          "type": "keyword",
+          "ignore_above": 1024
         },
         "scheduledTime": {
           "type": "date",

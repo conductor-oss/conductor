@@ -136,7 +136,6 @@ public abstract class AbstractNode {
         try {
             _parse();
         } catch (Exception e) {
-            System.out.println("\t" + this.getClass().getSimpleName() + "->" + this.toString());
             if (!(e instanceof ParserException)) {
                 throw new ParserException("Error parsing", e);
             } else {

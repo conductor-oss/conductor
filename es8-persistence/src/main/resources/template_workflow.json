@@ -25,7 +25,8 @@
           "type": "text"
         },
         "reasonForIncompletion": {
-          "type": "text"
+          "type": "keyword",
+          "ignore_above": 1024
         },
         "startTime": {
           "type": "date",
