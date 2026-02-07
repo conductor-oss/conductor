@@ -36,6 +36,8 @@ The Conductor AI module provides built-in integration with 11 popular LLM provid
 | **Pinecone** | ✅ | ✅ | Managed vector database |
 | **MongoDB Atlas** | ✅ | ✅ | MongoDB vector search |
 
+> **Note**: Multiple named instances of these providers can be configured. See [Vector Database Configuration](VECTORDB_CONFIGURATION.md) for details.
+
 ## AI Task Types
 
 ### Overview
@@ -185,7 +187,7 @@ Store text with auto-generated embeddings in a vector database.
 
 | Parameter | Type | Required | Description |
 |-----------|------|:--------:|-------------|
-| `vectorDB` | String | ✅ | Vector database name (e.g., `pgvectordb`, `pinecone`) |
+| `vectorDB` | String | ✅ | Configured vector database instance name |
 | `namespace` | String | ✅ | Namespace for organization |
 | `index` | String | ✅ | Index name |
 | `embeddingModelProvider` | String | ✅ | Provider for embeddings |
@@ -193,12 +195,6 @@ Store text with auto-generated embeddings in a vector database.
 | `text` | String | ✅ | Text to index |
 | `docId` | String | ❌ | Document identifier (auto-generated if not provided) |
 | `metadata` | Object | ❌ | Additional metadata to store |
-
-**Outputs:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `docId` | String | Document identifier |
 
 ---
 
@@ -210,18 +206,12 @@ Store pre-computed embeddings in a vector database.
 
 | Parameter | Type | Required | Description |
 |-----------|------|:--------:|-------------|
-| `vectorDB` | String | ✅ | Vector database name |
+| `vectorDB` | String | ✅ | Configured vector database instance name |
 | `namespace` | String | ✅ | Namespace for organization |
 | `index` | String | ✅ | Index name |
 | `embeddings` | Array\<Number\> | ✅ | Pre-computed embedding vector |
 | `docId` | String | ❌ | Document identifier |
 | `metadata` | Object | ❌ | Additional metadata |
-
-**Outputs:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `docId` | String | Document identifier |
 
 ---
 
@@ -233,19 +223,13 @@ Semantic search using a text query (auto-generates embeddings).
 
 | Parameter | Type | Required | Description |
 |-----------|------|:--------:|-------------|
-| `vectorDB` | String | ✅ | Vector database name |
+| `vectorDB` | String | ✅ | Configured vector database instance name |
 | `namespace` | String | ✅ | Namespace to search |
 | `index` | String | ✅ | Index name |
 | `embeddingModelProvider` | String | ✅ | Provider for query embedding |
 | `embeddingModel` | String | ✅ | Embedding model name |
 | `query` | String | ✅ | Search query text |
 | `llmMaxResults` | Integer | ❌ | Maximum results to return (default: 10) |
-
-**Outputs:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `result` | Array | Matching documents with `docId`, `score`, and `text` |
 
 ---
 
@@ -257,17 +241,11 @@ Search using pre-computed embedding vectors.
 
 | Parameter | Type | Required | Description |
 |-----------|------|:--------:|-------------|
-| `vectorDB` | String | ✅ | Vector database name |
+| `vectorDB` | String | ✅ | Configured vector database instance name |
 | `namespace` | String | ✅ | Namespace to search |
 | `index` | String | ✅ | Index name |
 | `embeddings` | Array\<Number\> | ✅ | Query embedding vector |
 | `llmMaxResults` | Integer | ❌ | Maximum results to return |
-
-**Outputs:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `result` | Array | Matching documents with `docId`, `score`, and `text` |
 
 ---
 
@@ -279,7 +257,7 @@ Retrieve stored embeddings by document ID.
 
 | Parameter | Type | Required | Description |
 |-----------|------|:--------:|-------------|
-| `vectorDB` | String | ✅ | Vector database name |
+| `vectorDB` | String | ✅ | Configured vector database instance name |
 | `namespace` | String | ✅ | Namespace |
 | `index` | String | ✅ | Index name |
 | `docId` | String | ✅ | Document identifier |
@@ -348,7 +326,11 @@ conductor.ai.payload-store-location=/tmp/conductor-ai
 
 > **Note**: AI workers are disabled by default. You must set `conductor.integrations.ai.enabled=true` to enable them.
 
-### Provider-Specific Configuration
+### Vector Database Configuration
+
+Vector databases support multiple named instances. For detailed configuration options and examples, see [Vector Database Configuration](VECTORDB_CONFIGURATION.md).
+
+### Provider-Specific Configuration (LLM)
 
 #### OpenAI
 
@@ -663,7 +645,7 @@ conductor.ai.ollama.auth-header=Bearer token-here
       "taskReferenceName": "index",
       "type": "LLM_INDEX_TEXT",
       "inputParameters": {
-        "vectorDB": "pgvectordb",
+        "vectorDB": "postgres-prod",
         "namespace": "documentation",
         "index": "tech_docs",
         "embeddingModelProvider": "openai",
@@ -677,7 +659,7 @@ conductor.ai.ollama.auth-header=Bearer token-here
       "taskReferenceName": "search",
       "type": "LLM_SEARCH_INDEX",
       "inputParameters": {
-        "vectorDB": "pgvectordb",
+        "vectorDB": "postgres-prod",
         "namespace": "documentation",
         "index": "tech_docs",
         "embeddingModelProvider": "openai",
@@ -705,10 +687,12 @@ conductor.ai.ollama.auth-header=Bearer token-here
 
 ### 6. RAG (Retrieval Augmented Generation)
 
+A basic RAG workflow that searches a knowledge base and generates an answer:
+
 ```json
 {
   "name": "rag_workflow",
-    "version": 1,
+  "version": 1,
   "schemaVersion": 2,
   "tasks": [
     {
@@ -716,7 +700,7 @@ conductor.ai.ollama.auth-header=Bearer token-here
       "taskReferenceName": "search",
       "type": "LLM_SEARCH_INDEX",
       "inputParameters": {
-        "vectorDB": "pgvectordb",
+        "vectorDB": "postgres-prod",
         "namespace": "kb",
         "index": "articles",
         "embeddingModelProvider": "openai",
@@ -747,6 +731,116 @@ conductor.ai.ollama.auth-header=Bearer token-here
     }
   ]
 }
+```
+
+#### Complete RAG Demo (Index + Search + Answer)
+
+A self-contained workflow that indexes documents, searches them, and generates an answer:
+
+```json
+{
+  "name": "complete_rag_demo",
+  "description": "Index documents, search, and generate RAG answer",
+  "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "index_doc_1",
+      "taskReferenceName": "index_doc_1_ref",
+      "type": "LLM_INDEX_TEXT",
+      "inputParameters": {
+        "vectorDB": "postgres-prod",
+        "index": "demo_index",
+        "namespace": "demo_docs",
+        "docId": "intro-001",
+        "text": "Conductor is a distributed workflow orchestration engine that runs in the cloud. It allows developers to build complex stateful applications by orchestrating microservices.",
+        "embeddingModelProvider": "openai",
+        "embeddingModel": "text-embedding-3-small",
+        "dimensions": 1536,
+        "metadata": { "category": "introduction" }
+      }
+    },
+    {
+      "name": "index_doc_2",
+      "taskReferenceName": "index_doc_2_ref",
+      "type": "LLM_INDEX_TEXT",
+      "inputParameters": {
+        "vectorDB": "postgres-prod",
+        "index": "demo_index",
+        "namespace": "demo_docs",
+        "docId": "features-002",
+        "text": "Conductor supports multiple vector databases including PostgreSQL (pgvector), MongoDB Atlas, and Pinecone. It also integrates with LLM providers like OpenAI, Anthropic, and Azure OpenAI.",
+        "embeddingModelProvider": "openai",
+        "embeddingModel": "text-embedding-3-small",
+        "dimensions": 1536,
+        "metadata": { "category": "features" }
+      }
+    },
+    {
+      "name": "index_doc_3",
+      "taskReferenceName": "index_doc_3_ref",
+      "type": "LLM_INDEX_TEXT",
+      "inputParameters": {
+        "vectorDB": "postgres-prod",
+        "index": "demo_index",
+        "namespace": "demo_docs",
+        "docId": "config-003",
+        "text": "You can configure multiple named instances of the same vector database type for different environments like production, development, and staging.",
+        "embeddingModelProvider": "openai",
+        "embeddingModel": "text-embedding-3-small",
+        "dimensions": 1536,
+        "metadata": { "category": "configuration" }
+      }
+    },
+    {
+      "name": "search_index",
+      "taskReferenceName": "search_ref",
+      "type": "LLM_SEARCH_INDEX",
+      "inputParameters": {
+        "vectorDB": "postgres-prod",
+        "index": "demo_index",
+        "namespace": "demo_docs",
+        "query": "What vector databases does Conductor support?",
+        "embeddingModelProvider": "openai",
+        "embeddingModel": "text-embedding-3-small",
+        "dimensions": 1536,
+        "maxResults": 3
+      }
+    },
+    {
+      "name": "generate_rag_answer",
+      "taskReferenceName": "answer_ref",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "gpt-4o-mini",
+        "messages": [
+          {
+            "role": "system",
+            "message": "You are a technical expert. Answer the question using only the provided context."
+          },
+          {
+            "role": "user",
+            "message": "Context:\n${search_ref.output.result}\n\nQuestion: What vector databases does Conductor support?"
+          }
+        ],
+        "temperature": 0.2
+      }
+    }
+  ],
+  "outputParameters": {
+    "indexed_docs": ["${index_doc_1_ref.output}", "${index_doc_2_ref.output}", "${index_doc_3_ref.output}"],
+    "search_results": "${search_ref.output.result}",
+    "answer": "${answer_ref.output.result}"
+  }
+}
+```
+
+**Run without input:**
+```bash
+curl -X POST 'http://localhost:8080/api/workflow/complete_rag_demo' \
+  -H 'Content-Type: application/json' \
+  -d '{}'
 ```
 
 ### 7. MCP (Model Context Protocol) Tool Integration

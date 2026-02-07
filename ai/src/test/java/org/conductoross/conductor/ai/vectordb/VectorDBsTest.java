@@ -39,7 +39,7 @@ class VectorDBsTest {
 
     @Test
     void testStoreEmbeddings_success() {
-        when(mockProvider.get("pgvectordb", mockContext)).thenReturn(mockVectorDB);
+        when(mockProvider.get("postgres-prod", mockContext)).thenReturn(mockVectorDB);
         when(mockVectorDB.updateEmbeddings(
                         eq("index1"),
                         eq("namespace1"),
@@ -52,7 +52,7 @@ class VectorDBsTest {
 
         int result =
                 vectorDBs.storeEmbeddings(
-                        "pgvectordb",
+                        "postgres-prod",
                         mockContext,
                         "index1",
                         "namespace1",
@@ -100,13 +100,13 @@ class VectorDBsTest {
     void testSearchEmbeddings_success() {
         java.util.List<IndexedDoc> expectedResults = java.util.List.of(new IndexedDoc());
 
-        when(mockProvider.get("mongovectordb", mockContext)).thenReturn(mockVectorDB);
+        when(mockProvider.get("mongodb-prod", mockContext)).thenReturn(mockVectorDB);
         when(mockVectorDB.search(eq("index1"), eq("namespace1"), anyList(), eq(10)))
                 .thenReturn(expectedResults);
 
         java.util.List<IndexedDoc> result =
                 vectorDBs.searchEmbeddings(
-                        "mongovectordb",
+                        "mongodb-prod",
                         mockContext,
                         "index1",
                         "namespace1",
@@ -139,7 +139,7 @@ class VectorDBsTest {
 
     @Test
     void testStoreEmbeddings_nullMetadata() {
-        when(mockProvider.get("pgvectordb", mockContext)).thenReturn(mockVectorDB);
+        when(mockProvider.get("postgres-prod", mockContext)).thenReturn(mockVectorDB);
         when(mockVectorDB.updateEmbeddings(
                         anyString(),
                         anyString(),
@@ -152,7 +152,7 @@ class VectorDBsTest {
 
         int result =
                 vectorDBs.storeEmbeddings(
-                        "pgvectordb",
+                        "postgres-prod",
                         mockContext,
                         "index1",
                         "namespace1",

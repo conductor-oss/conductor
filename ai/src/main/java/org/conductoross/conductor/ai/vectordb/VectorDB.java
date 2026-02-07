@@ -19,10 +19,16 @@ import org.conductoross.conductor.ai.models.IndexedDoc;
 
 public abstract class VectorDB {
 
+    protected String name;
     protected String type;
 
-    public VectorDB(String type) {
+    public VectorDB(String name, String type) {
+        this.name = name;
         this.type = type;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public String getType() {

@@ -183,60 +183,68 @@ Add your provider to `README.md` under the supported providers section with conf
 
 ## Adding a Vector Database Integration
 
-### Step 1: Create Provider Class
+### Step 1: Create Config Class
+
+Create a new configuration class in the database package (e.g., `org.conductoross.conductor.ai.vectordb.yourdb`):
 
 ```java
-package org.conductoross.conductor.ai.vectordb.yourdb;
-
-import org.conductoross.conductor.ai.vectordb.VectorDBProvider;
-import org.springframework.ai.vectorstore.VectorStore;
-
-public class YourDBIntegration extends VectorDBProvider {
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class YourDBConfig implements VectorDBConfig<YourVectorDB> {
     
-    private final VectorStore vectorStore;
-    
-    public YourDBIntegration(VectorStore vectorStore) {
-        this.vectorStore = vectorStore;
-    }
+    private String connectionString;
+    // other properties
     
     @Override
-    public String getName() {
-        return "yourdb";
+    public YourVectorDB get() {
+        throw new UnsupportedOperationException("Use get(String name) instead");
     }
-    
-    @Override
-    public VectorStore getVectorStore(String integrationName) {
-        return vectorStore;
+
+    public YourVectorDB get(String name) {
+        return new YourVectorDB(name, this);
     }
 }
 ```
 
-### Step 2: Create Configuration
+### Step 2: Implement VectorDB Class
+
+Extend the `VectorDB` abstract class:
 
 ```java
-@Configuration
-@EnableConfigurationProperties(YourDBProperties.class)
-@ConditionalOnProperty(prefix = "conductor.ai.yourdb", name = "enabled", havingValue = "true")
-public class YourDBConfiguration {
+public class YourVectorDB extends VectorDB {
     
-    @Bean
-    public YourDBIntegration yourDBIntegration(
-            YourDBProperties properties,
-            EmbeddingModel embeddingModel) {
-        // Create and configure vector store
-        VectorStore vectorStore = // ... initialize
-        return new YourDBIntegration(vectorStore);
+    public static final String TYPE = "yourdb";
+    private final YourDBConfig config;
+    
+    public YourVectorDB(String name, YourDBConfig config) {
+        super(name, TYPE);
+        this.config = config;
+    }
+    
+    @Override
+    public int updateEmbeddings(String indexName, String namespace, String doc, String parentDocId, String id, List<Float> embeddings, Map<String, Object> metadata) {
+        // Implement logic to store embeddings
+    }
+    
+    @Override
+    public List<IndexedDoc> search(String indexName, String namespace, List<Float> embeddings, int maxResults) {
+        // Implement logic to search embeddings
     }
 }
 ```
 
-### Step 3: Add Integration Tests
+### Step 3: Register in VectorDBInstanceConfig
+
+Add your database type to the `createVectorDB` method and the `VectorDBInstance` inner class in `org.conductoross.conductor.ai.vectordb.VectorDBInstanceConfig`.
+
+### Step 4: Add Integration Tests
 
 Use Testcontainers for integration testing:
 
 ```java
 @Testcontainers
-class YourDBIntegrationTest {
+class YourVectorDBTest {
     
     @Container
     static GenericContainer<?> yourdb =
