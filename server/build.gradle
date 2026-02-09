@@ -45,7 +45,9 @@ dependencies {
     if (indexingBackend == 'opensearch' || indexingBackend == 'os') {
         implementation project(':conductor-os-persistence')
         implementation project(':conductor-os-persistence-v2')
-        // os-persistence-v3 excluded: depends on opensearch-java 3.3.2 which doesn't exist yet
+        // os-persistence-v3 excluded: requires API migration to opensearch-java 3.x
+        // The DAO layer needs reimplementation for the new client API (breaking changes)
+        // See: os-persistence-v3/build.gradle comments for details
         // implementation project(':conductor-os-persistence-v3')
     } else {
         implementation project(':conductor-es7-persistence')
