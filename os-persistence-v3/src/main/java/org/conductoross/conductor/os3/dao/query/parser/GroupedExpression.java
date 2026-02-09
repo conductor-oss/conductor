@@ -16,7 +16,7 @@ import java.io.InputStream;
 
 import org.conductoross.conductor.os3.dao.query.parser.internal.AbstractNode;
 import org.conductoross.conductor.os3.dao.query.parser.internal.ParserException;
-import org.opensearch.index.query.QueryBuilder;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 
 /**
  * @author Viren
@@ -53,7 +53,7 @@ public class GroupedExpression extends AbstractNode implements FilterProvider {
     }
 
     @Override
-    public QueryBuilder getFilterBuilder() {
-        return expression.getFilterBuilder();
+    public Query getFilter() {
+        return expression.getFilter();
     }
 }

@@ -55,10 +55,7 @@ include 'metrics'
 include 'es7-persistence'
 include 'os-persistence'
 include 'os-persistence-v2'
-// os-persistence-v3 excluded: OpenSearch 3.x uses a completely different API (opensearch-java 3.x)
-// The High-Level REST client used by v2 is deprecated in 3.x
-// v3 requires a complete DAO rewrite - tracked separately
-// include 'os-persistence-v3'
+include 'os-persistence-v3'
 include 'azureblob-storage'
 include 'postgres-external-storage'
 include 'amqp'

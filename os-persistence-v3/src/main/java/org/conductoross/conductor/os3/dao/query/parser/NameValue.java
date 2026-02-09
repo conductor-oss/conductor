@@ -16,8 +16,8 @@ import java.io.InputStream;
 
 import org.conductoross.conductor.os3.dao.query.parser.internal.*;
 import org.conductoross.conductor.os3.dao.query.parser.internal.ComparisonOp.Operators;
-import org.opensearch.index.query.QueryBuilder;
-import org.opensearch.index.query.QueryBuilders;
+import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 
 /**
  * @author Viren
@@ -86,45 +86,124 @@ public class NameValue extends AbstractNode implements FilterProvider {
     }
 
     @Override
-    public QueryBuilder getFilterBuilder() {
+    public Query getFilter() {
         if (op.getOperator().equals(Operators.EQUALS.value())) {
-            return QueryBuilders.queryStringQuery(
-                    name.getName() + ":" + value.getValue().toString());
+            String queryStr = name.getName() + ":" + value.getValue().toString();
+            return Query.of(q -> q.queryString(qs -> qs.query(queryStr)));
         } else if (op.getOperator().equals(Operators.BETWEEN.value())) {
-            return QueryBuilders.rangeQuery(name.getName())
-                    .from(range.getLow())
-                    .to(range.getHigh());
+            String fieldName = name.getName();
+            return Query.of(
+                    q ->
+                            q.range(
+                                    r ->
+                                            r.field(fieldName)
+                                                    .from(JsonData.of(range.getLow()))
+                                                    .to(JsonData.of(range.getHigh()))));
         } else if (op.getOperator().equals(Operators.IN.value())) {
-            return QueryBuilders.termsQuery(name.getName(), valueList.getList());
+            String fieldName = name.getName();
+            return Query.of(
+                    q ->
+                            q.terms(
+                                    t ->
+                                            t.field(fieldName)
+                                                    .terms(
+                                                            tv ->
+                                                                    tv.value(
+                                                                            valueList
+                                                                                    .getList()
+                                                                                    .stream()
+                                                                                    .map(
+                                                                                            v ->
+                                                                                                    org
+                                                                                                            .opensearch
+                                                                                                            .client
+                                                                                                            .opensearch
+                                                                                                            ._types
+                                                                                                            .FieldValue
+                                                                                                            .of(
+                                                                                                                    v
+                                                                                                                            .toString()))
+                                                                                    .collect(
+                                                                                            java
+                                                                                                    .util
+                                                                                                    .stream
+                                                                                                    .Collectors
+                                                                                                    .toList())))));
         } else if (op.getOperator().equals(Operators.NOT_EQUALS.value())) {
-            return QueryBuilders.queryStringQuery(
-                    "NOT " + name.getName() + ":" + value.getValue().toString());
+            String queryStr = "NOT " + name.getName() + ":" + value.getValue().toString();
+            return Query.of(q -> q.queryString(qs -> qs.query(queryStr)));
         } else if (op.getOperator().equals(Operators.GREATER_THAN.value())) {
-            return QueryBuilders.rangeQuery(name.getName())
-                    .from(value.getValue())
-                    .includeLower(false)
-                    .includeUpper(false);
+            String fieldName = name.getName();
+            return Query.of(
+                    q -> q.range(r -> r.field(fieldName).gt(JsonData.of(value.getValue()))));
         } else if (op.getOperator().equals(Operators.IS.value())) {
             if (value.getSysConstant().equals(ConstValue.SystemConsts.NULL)) {
-                return QueryBuilders.boolQuery()
-                        .mustNot(
-                                QueryBuilders.boolQuery()
-                                        .must(QueryBuilders.matchAllQuery())
-                                        .mustNot(QueryBuilders.existsQuery(name.getName())));
+                String fieldName = name.getName();
+                return Query.of(
+                        q ->
+                                q.bool(
+                                        b ->
+                                                b.mustNot(
+                                                        Query.of(
+                                                                q2 ->
+                                                                        q2.bool(
+                                                                                b2 ->
+                                                                                        b2.must(
+                                                                                                        Query
+                                                                                                                .of(
+                                                                                                                        q3 ->
+                                                                                                                                q3
+                                                                                                                                        .matchAll(
+                                                                                                                                                m ->
+                                                                                                                                                        m)))
+                                                                                                .mustNot(
+                                                                                                        Query
+                                                                                                                .of(
+                                                                                                                        q4 ->
+                                                                                                                                q4
+                                                                                                                                        .exists(
+                                                                                                                                                e ->
+                                                                                                                                                        e
+                                                                                                                                                                .field(
+                                                                                                                                                                        fieldName)))))))));
             } else if (value.getSysConstant().equals(ConstValue.SystemConsts.NOT_NULL)) {
-                return QueryBuilders.boolQuery()
-                        .mustNot(
-                                QueryBuilders.boolQuery()
-                                        .must(QueryBuilders.matchAllQuery())
-                                        .must(QueryBuilders.existsQuery(name.getName())));
+                String fieldName = name.getName();
+                return Query.of(
+                        q ->
+                                q.bool(
+                                        b ->
+                                                b.mustNot(
+                                                        Query.of(
+                                                                q2 ->
+                                                                        q2.bool(
+                                                                                b2 ->
+                                                                                        b2.must(
+                                                                                                        Query
+                                                                                                                .of(
+                                                                                                                        q3 ->
+                                                                                                                                q3
+                                                                                                                                        .matchAll(
+                                                                                                                                                m ->
+                                                                                                                                                        m)))
+                                                                                                .must(
+                                                                                                        Query
+                                                                                                                .of(
+                                                                                                                        q4 ->
+                                                                                                                                q4
+                                                                                                                                        .exists(
+                                                                                                                                                e ->
+                                                                                                                                                        e
+                                                                                                                                                                .field(
+                                                                                                                                                                        fieldName)))))))));
             }
         } else if (op.getOperator().equals(Operators.LESS_THAN.value())) {
-            return QueryBuilders.rangeQuery(name.getName())
-                    .to(value.getValue())
-                    .includeLower(false)
-                    .includeUpper(false);
+            String fieldName = name.getName();
+            return Query.of(
+                    q -> q.range(r -> r.field(fieldName).lt(JsonData.of(value.getValue()))));
         } else if (op.getOperator().equals(Operators.STARTS_WITH.value())) {
-            return QueryBuilders.prefixQuery(name.getName(), value.getUnquotedValue());
+            String fieldName = name.getName();
+            String prefix = value.getUnquotedValue();
+            return Query.of(q -> q.prefix(p -> p.field(fieldName).value(prefix)));
         }
 
         throw new IllegalStateException("Incorrect/unsupported operators");

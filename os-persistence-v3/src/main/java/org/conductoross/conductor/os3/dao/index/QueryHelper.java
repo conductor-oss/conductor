@@ -12,20 +12,16 @@
  */
 package org.conductoross.conductor.os3.dao.index;
 
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch._types.query_dsl.QueryStringQuery;
-import org.opensearch.client.json.JsonData;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Helper class for building OpenSearch queries using the opensearch-java 3.x client API.
  *
- * This class provides utility methods to construct queries using the new functional builder pattern
- * introduced in opensearch-java 3.x, replacing the imperative QueryBuilder API from the
+ * <p>This class provides utility methods to construct queries using the new functional builder
+ * pattern introduced in opensearch-java 3.x, replacing the imperative QueryBuilder API from the
  * High-Level REST Client.
  */
 public class QueryHelper {
@@ -38,12 +34,7 @@ public class QueryHelper {
      * @return A Query object configured for match query
      */
     public static Query matchQuery(String field, String value) {
-        return Query.of(q -> q
-            .match(m -> m
-                .field(field)
-                .query(FieldValue.of(value))
-            )
-        );
+        return Query.of(q -> q.match(m -> m.field(field).query(FieldValue.of(value))));
     }
 
     /**
@@ -54,12 +45,7 @@ public class QueryHelper {
      * @return A Query object configured for term query
      */
     public static Query termQuery(String field, String value) {
-        return Query.of(q -> q
-            .term(t -> t
-                .field(field)
-                .value(FieldValue.of(value))
-            )
-        );
+        return Query.of(q -> q.term(t -> t.field(field).value(FieldValue.of(value))));
     }
 
     /**
@@ -72,9 +58,7 @@ public class QueryHelper {
         return new RangeQueryBuilder(field);
     }
 
-    /**
-     * Helper class for building range queries with a fluent API.
-     */
+    /** Helper class for building range queries with a fluent API. */
     public static class RangeQueryBuilder {
         private final String field;
         private JsonData gte;
@@ -107,16 +91,17 @@ public class QueryHelper {
         }
 
         public Query build() {
-            return Query.of(q -> q
-                .range(r -> {
-                    r.field(field);
-                    if (gte != null) r.gte(gte);
-                    if (lte != null) r.lte(lte);
-                    if (gt != null) r.gt(gt);
-                    if (lt != null) r.lt(lt);
-                    return r;
-                })
-            );
+            return Query.of(
+                    q ->
+                            q.range(
+                                    r -> {
+                                        r.field(field);
+                                        if (gte != null) r.gte(gte);
+                                        if (lte != null) r.lte(lte);
+                                        if (gt != null) r.gt(gt);
+                                        if (lt != null) r.lt(lt);
+                                        return r;
+                                    }));
         }
     }
 
@@ -127,11 +112,7 @@ public class QueryHelper {
      * @return A Query object configured for query string search
      */
     public static Query queryStringQuery(String queryString) {
-        return Query.of(q -> q
-            .queryString(qs -> qs
-                .query(queryString)
-            )
-        );
+        return Query.of(q -> q.queryString(qs -> qs.query(queryString)));
     }
 
     /**
@@ -141,9 +122,7 @@ public class QueryHelper {
      * @return A Query object configured for exists query
      */
     public static Query existsQuery(String field) {
-        return Query.of(q -> q
-            .exists(e -> e.field(field))
-        );
+        return Query.of(q -> q.exists(e -> e.field(field)));
     }
 
     /**
@@ -155,9 +134,7 @@ public class QueryHelper {
         return Query.of(q -> q.matchAll(m -> m));
     }
 
-    /**
-     * Helper class for building boolean queries with must/should/filter/mustNot clauses.
-     */
+    /** Helper class for building boolean queries with must/should/filter/mustNot clauses. */
     public static class BoolQueryBuilder {
         private final BoolQuery.Builder builder = new BoolQuery.Builder();
         private int minimumShouldMatch = 0;

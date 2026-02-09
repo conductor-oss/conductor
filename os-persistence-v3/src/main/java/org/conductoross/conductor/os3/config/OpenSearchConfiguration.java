@@ -15,12 +15,11 @@ package org.conductoross.conductor.os3.config;
 import java.net.URL;
 import java.util.List;
 
-import org.apache.hc.core5.http.HttpHost;
-import org.apache.hc.core5.util.Timeout;
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
-import org.apache.hc.client5.http.auth.CredentialsProvider;
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.util.Timeout;
 import org.conductoross.conductor.os3.dao.index.OpenSearchRestDAO;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.RestClientBuilder;
@@ -74,16 +73,18 @@ public class OpenSearchConfiguration {
             builder.setRequestConfigCallback(
                     requestConfigBuilder ->
                             requestConfigBuilder.setConnectionRequestTimeout(
-                                    Timeout.ofMilliseconds(properties.getRestClientConnectionRequestTimeout())));
+                                    Timeout.ofMilliseconds(
+                                            properties.getRestClientConnectionRequestTimeout())));
         }
 
         if (properties.getUsername() != null && properties.getPassword() != null) {
             log.info(
                     "Configure OpenSearch with BASIC authentication. User:{}",
                     properties.getUsername());
-            final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+            final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+            // Set credentials for any auth scope (null host matches any)
             credentialsProvider.setCredentials(
-                    AuthScope.ANY,
+                    new AuthScope(null, -1),
                     new UsernamePasswordCredentials(
                             properties.getUsername(), properties.getPassword().toCharArray()));
             builder.setHttpClientConfigCallback(
@@ -98,9 +99,7 @@ public class OpenSearchConfiguration {
     @Bean
     public OpenSearchTransport openSearchTransport(
             RestClient restClient, ObjectMapper objectMapper) {
-        return new RestClientTransport(
-                restClient,
-                new JacksonJsonpMapper(objectMapper));
+        return new RestClientTransport(restClient, new JacksonJsonpMapper(objectMapper));
     }
 
     @Bean
@@ -111,12 +110,14 @@ public class OpenSearchConfiguration {
     @Primary
     @Bean
     public IndexDAO osIndexDAO(
+            RestClient restClient,
             OpenSearchClient openSearchClient,
             @Qualifier("osRetryTemplate") RetryTemplate retryTemplate,
             OpenSearchProperties properties,
             ObjectMapper objectMapper) {
         String url = properties.getUrl();
-        return new OpenSearchRestDAO(openSearchClient, retryTemplate, properties, objectMapper);
+        return new OpenSearchRestDAO(
+                restClient, openSearchClient, retryTemplate, properties, objectMapper);
     }
 
     @Bean
@@ -130,10 +131,7 @@ public class OpenSearchConfiguration {
 
     private HttpHost[] convertToHttpHosts(List<URL> hosts) {
         return hosts.stream()
-                .map(host -> new HttpHost(
-                        host.getProtocol(),
-                        host.getHost(),
-                        host.getPort()))
+                .map(host -> new HttpHost(host.getProtocol(), host.getHost(), host.getPort()))
                 .toArray(HttpHost[]::new);
     }
 }

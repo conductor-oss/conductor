@@ -17,13 +17,16 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 
-import org.apache.http.HttpHost;
+import org.apache.hc.core5.http.HttpHost;
 import org.junit.After;
 import org.junit.Before;
 import org.opensearch.client.Request;
 import org.opensearch.client.Response;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.RestClientBuilder;
+import org.opensearch.client.json.jackson.JacksonJsonpMapper;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.transport.rest_client.RestClientTransport;
 import org.springframework.retry.support.RetryTemplate;
 
 public abstract class OpenSearchRestDaoBaseTest extends OpenSearchTest {
@@ -39,12 +42,20 @@ public abstract class OpenSearchRestDaoBaseTest extends OpenSearchTest {
 
         properties.setUrl(httpHostAddress);
 
-        RestClientBuilder restClientBuilder = RestClient.builder(new HttpHost(host, port, "http"));
+        RestClientBuilder restClientBuilder = RestClient.builder(new HttpHost("http", host, port));
         restClient = restClientBuilder.build();
+
+        RestClientTransport transport =
+                new RestClientTransport(restClient, new JacksonJsonpMapper(objectMapper));
+        OpenSearchClient openSearchClient = new OpenSearchClient(transport);
 
         indexDAO =
                 new OpenSearchRestDAO(
-                        restClientBuilder, new RetryTemplate(), properties, objectMapper);
+                        restClient,
+                        openSearchClient,
+                        new RetryTemplate(),
+                        properties,
+                        objectMapper);
         indexDAO.setup();
     }
 
