@@ -15,14 +15,19 @@ package org.conductoross.conductor.os3.config;
 import java.net.URL;
 import java.util.List;
 
-import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.util.Timeout;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.auth.CredentialsProvider;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.conductoross.conductor.os3.dao.index.OpenSearchRestDAO;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.RestClientBuilder;
+import org.opensearch.client.json.jackson.JacksonJsonpMapper;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.transport.OpenSearchTransport;
+import org.opensearch.client.transport.rest_client.RestClientTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -69,7 +74,7 @@ public class OpenSearchConfiguration {
             builder.setRequestConfigCallback(
                     requestConfigBuilder ->
                             requestConfigBuilder.setConnectionRequestTimeout(
-                                    properties.getRestClientConnectionRequestTimeout()));
+                                    Timeout.ofMilliseconds(properties.getRestClientConnectionRequestTimeout())));
         }
 
         if (properties.getUsername() != null && properties.getPassword() != null) {
@@ -80,7 +85,7 @@ public class OpenSearchConfiguration {
             credentialsProvider.setCredentials(
                     AuthScope.ANY,
                     new UsernamePasswordCredentials(
-                            properties.getUsername(), properties.getPassword()));
+                            properties.getUsername(), properties.getPassword().toCharArray()));
             builder.setHttpClientConfigCallback(
                     httpClientBuilder ->
                             httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
@@ -90,15 +95,28 @@ public class OpenSearchConfiguration {
         return builder;
     }
 
+    @Bean
+    public OpenSearchTransport openSearchTransport(
+            RestClient restClient, ObjectMapper objectMapper) {
+        return new RestClientTransport(
+                restClient,
+                new JacksonJsonpMapper(objectMapper));
+    }
+
+    @Bean
+    public OpenSearchClient openSearchClient(OpenSearchTransport transport) {
+        return new OpenSearchClient(transport);
+    }
+
     @Primary
     @Bean
     public IndexDAO osIndexDAO(
-            RestClientBuilder restClientBuilder,
+            OpenSearchClient openSearchClient,
             @Qualifier("osRetryTemplate") RetryTemplate retryTemplate,
             OpenSearchProperties properties,
             ObjectMapper objectMapper) {
         String url = properties.getUrl();
-        return new OpenSearchRestDAO(restClientBuilder, retryTemplate, properties, objectMapper);
+        return new OpenSearchRestDAO(openSearchClient, retryTemplate, properties, objectMapper);
     }
 
     @Bean
@@ -112,7 +130,10 @@ public class OpenSearchConfiguration {
 
     private HttpHost[] convertToHttpHosts(List<URL> hosts) {
         return hosts.stream()
-                .map(host -> new HttpHost(host.getHost(), host.getPort(), host.getProtocol()))
+                .map(host -> new HttpHost(
+                        host.getProtocol(),
+                        host.getHost(),
+                        host.getPort()))
                 .toArray(HttpHost[]::new);
     }
 }
