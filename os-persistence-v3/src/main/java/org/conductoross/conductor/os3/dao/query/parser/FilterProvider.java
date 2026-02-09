@@ -12,7 +12,7 @@
  */
 package org.conductoross.conductor.os3.dao.query.parser;
 
-import org.opensearch.index.query.QueryBuilder;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 
 /**
  * @author Viren
@@ -20,7 +20,7 @@ import org.opensearch.index.query.QueryBuilder;
 public interface FilterProvider {
 
     /**
-     * @return FilterBuilder for elasticsearch
+     * @return Query filter for opensearch
      */
-    public QueryBuilder getFilterBuilder();
+    public Query getFilter();
 }

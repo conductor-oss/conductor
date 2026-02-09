@@ -19,8 +19,7 @@ import java.io.InputStream;
 import org.conductoross.conductor.os3.dao.query.parser.internal.AbstractNode;
 import org.conductoross.conductor.os3.dao.query.parser.internal.BooleanOp;
 import org.conductoross.conductor.os3.dao.query.parser.internal.ParserException;
-import org.opensearch.index.query.QueryBuilder;
-import org.opensearch.index.query.QueryBuilders;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 
 /**
  * @author Viren
@@ -82,20 +81,24 @@ public class Expression extends AbstractNode implements FilterProvider {
     }
 
     @Override
-    public QueryBuilder getFilterBuilder() {
-        QueryBuilder lhs = null;
+    public Query getFilter() {
+        Query lhs = null;
         if (nameVal != null) {
-            lhs = nameVal.getFilterBuilder();
+            lhs = nameVal.getFilter();
         } else {
-            lhs = ge.getFilterBuilder();
+            lhs = ge.getFilter();
         }
 
         if (this.isBinaryExpr()) {
-            QueryBuilder rhsFilter = rhs.getFilterBuilder();
+            Query rhsFilter = rhs.getFilter();
             if (this.op.isAnd()) {
-                return QueryBuilders.boolQuery().must(lhs).must(rhsFilter);
+                final Query lhsFinal = lhs;
+                final Query rhsFinal = rhsFilter;
+                return Query.of(q -> q.bool(b -> b.must(lhsFinal).must(rhsFinal)));
             } else {
-                return QueryBuilders.boolQuery().should(lhs).should(rhsFilter);
+                final Query lhsFinal = lhs;
+                final Query rhsFinal = rhsFilter;
+                return Query.of(q -> q.bool(b -> b.should(lhsFinal).should(rhsFinal)));
             }
         } else {
             return lhs;

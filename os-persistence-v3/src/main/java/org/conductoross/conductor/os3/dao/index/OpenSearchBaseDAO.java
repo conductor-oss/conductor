@@ -19,10 +19,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.os3.dao.query.parser.Expression;
 import org.conductoross.conductor.os3.dao.query.parser.internal.ParserException;
-import org.opensearch.index.query.BoolQueryBuilder;
-import org.opensearch.index.query.QueryBuilder;
-import org.opensearch.index.query.QueryBuilders;
-import org.opensearch.index.query.QueryStringQueryBuilder;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.QueryStringQuery;
 
 import com.netflix.conductor.dao.IndexDAO;
 
@@ -72,16 +70,39 @@ abstract class OpenSearchBaseDAO implements IndexDAO {
         return text;
     }
 
-    org.opensearch.index.query.BoolQueryBuilder boolQueryBuilder(
-            String expression, String queryString) throws ParserException {
-        QueryBuilder queryBuilder = QueryBuilders.matchAllQuery();
+    Query boolQuery(String expression, String queryString) throws ParserException {
+        Query queryFilter = Query.of(q -> q.matchAll(m -> m));
         if (StringUtils.isNotEmpty(expression)) {
             Expression exp = Expression.fromString(expression);
-            queryBuilder = exp.getFilterBuilder();
+            queryFilter = exp.getFilter();
         }
-        BoolQueryBuilder filterQuery = QueryBuilders.boolQuery().must(queryBuilder);
-        QueryStringQueryBuilder stringQuery = QueryBuilders.queryStringQuery(queryString);
-        return QueryBuilders.boolQuery().must(stringQuery).must(filterQuery);
+
+        Query finalFilter = queryFilter; // Make effectively final for lambda
+        return Query.of(
+                q ->
+                        q.bool(
+                                b -> {
+                                    if (StringUtils.isNotEmpty(queryString)) {
+                                        b.must(
+                                                Query.of(
+                                                        qs ->
+                                                                qs.queryString(
+                                                                        QueryStringQuery.of(
+                                                                                qsb ->
+                                                                                        qsb.query(
+                                                                                                queryString)))));
+                                    }
+                                    b.must(finalFilter);
+                                    return b;
+                                }));
+    }
+
+    /**
+     * Bridge method for compatibility with existing DAO code. Returns Query instead of
+     * BoolQueryBuilder (opensearch-java 3.x API).
+     */
+    Query boolQueryBuilder(String expression, String queryString) throws ParserException {
+        return boolQuery(expression, queryString);
     }
 
     protected String getIndexName(String documentType) {

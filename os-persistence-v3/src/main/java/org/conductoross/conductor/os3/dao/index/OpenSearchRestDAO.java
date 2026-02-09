@@ -23,37 +23,27 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpStatus;
-import org.apache.http.entity.ContentType;
-import org.apache.http.nio.entity.NByteArrayEntity;
-import org.apache.http.nio.entity.NStringEntity;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.core5.http.io.entity.ByteArrayEntity;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.conductoross.conductor.os3.config.OpenSearchProperties;
 import org.conductoross.conductor.os3.dao.query.parser.internal.ParserException;
-import org.joda.time.DateTime;
-import org.opensearch.action.DocWriteResponse;
-import org.opensearch.action.bulk.BulkRequest;
-import org.opensearch.action.delete.DeleteRequest;
-import org.opensearch.action.delete.DeleteResponse;
-import org.opensearch.action.get.GetRequest;
-import org.opensearch.action.get.GetResponse;
-import org.opensearch.action.index.IndexRequest;
-import org.opensearch.action.search.SearchRequest;
-import org.opensearch.action.search.SearchResponse;
-import org.opensearch.action.update.UpdateRequest;
-import org.opensearch.client.*;
-import org.opensearch.client.core.CountRequest;
-import org.opensearch.client.core.CountResponse;
-import org.opensearch.common.xcontent.XContentType;
-import org.opensearch.index.query.BoolQueryBuilder;
-import org.opensearch.index.query.QueryBuilder;
-import org.opensearch.index.query.QueryBuilders;
-import org.opensearch.search.SearchHit;
-import org.opensearch.search.SearchHits;
-import org.opensearch.search.builder.SearchSourceBuilder;
-import org.opensearch.search.sort.FieldSortBuilder;
-import org.opensearch.search.sort.SortOrder;
+import org.opensearch.client.Request;
+import org.opensearch.client.Response;
+import org.opensearch.client.ResponseException;
+import org.opensearch.client.RestClient;
+import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.*;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
+import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.retry.support.RetryTemplate;
@@ -70,12 +60,9 @@ import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.metrics.Monitors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.type.MapType;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
@@ -118,7 +105,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
     private final String logIndexPrefix;
 
     private final String clusterHealthColor;
-    private final RestHighLevelClient openSearchClient;
+    private final OpenSearchClient openSearchClient;
     private final RestClient openSearchAdminClient;
     private final ExecutorService executorService;
     private final ExecutorService logExecutorService;
@@ -133,14 +120,15 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
     }
 
     public OpenSearchRestDAO(
-            RestClientBuilder restClientBuilder,
+            RestClient restClient,
+            OpenSearchClient openSearchClient,
             RetryTemplate retryTemplate,
             OpenSearchProperties properties,
             ObjectMapper objectMapper) {
 
         this.objectMapper = objectMapper;
-        this.openSearchAdminClient = restClientBuilder.build();
-        this.openSearchClient = new RestHighLevelClient(restClientBuilder);
+        this.openSearchClient = openSearchClient;
+        this.openSearchAdminClient = restClient;
         this.clusterHealthColor = properties.getClusterHealthColor();
         this.bulkRequests = new ConcurrentHashMap<>();
         this.indexBatchSize = properties.getIndexBatchSize();
@@ -262,7 +250,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
                 byte[] templateSource = IOUtils.toByteArray(stream);
 
                 HttpEntity entity =
-                        new NByteArrayEntity(templateSource, ContentType.APPLICATION_JSON);
+                        new ByteArrayEntity(templateSource, ContentType.APPLICATION_JSON);
                 Request request = new Request(HttpMethod.PUT, "/_index_template/" + template);
                 request.setEntity(entity);
                 String test =
@@ -350,7 +338,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
                 root.set("mappings", mappingNodeValue);
                 Request request = new Request(HttpMethod.PUT, resourcePath);
                 request.setEntity(
-                        new NStringEntity(
+                        new StringEntity(
                                 objectMapper.writeValueAsString(root),
                                 ContentType.APPLICATION_JSON));
                 openSearchAdminClient.performRequest(request);
@@ -361,11 +349,16 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
 
                 Response errorResponse = e.getResponse();
                 if (errorResponse.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
-                    JsonNode root =
-                            objectMapper.readTree(EntityUtils.toString(errorResponse.getEntity()));
-                    String errorCode = root.get("error").get("type").asText();
-                    if ("index_already_exists_exception".equals(errorCode)) {
-                        errorCreatingIndex = false;
+                    try {
+                        JsonNode root =
+                                objectMapper.readTree(
+                                        EntityUtils.toString(errorResponse.getEntity()));
+                        String errorCode = root.get("error").get("type").asText();
+                        if ("index_already_exists_exception".equals(errorCode)) {
+                            errorCreatingIndex = false;
+                        }
+                    } catch (org.apache.hc.core5.http.ParseException pe) {
+                        logger.warn("Failed to parse error response", pe);
                     }
                 }
 
@@ -403,7 +396,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
 
                 Request request = new Request(HttpMethod.PUT, resourcePath);
                 request.setEntity(
-                        new NStringEntity(setting.toString(), ContentType.APPLICATION_JSON));
+                        new StringEntity(setting.toString(), ContentType.APPLICATION_JSON));
                 openSearchAdminClient.performRequest(request);
                 logger.info("Added '{}' index", index);
             } catch (ResponseException e) {
@@ -412,11 +405,16 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
 
                 Response errorResponse = e.getResponse();
                 if (errorResponse.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
-                    JsonNode root =
-                            objectMapper.readTree(EntityUtils.toString(errorResponse.getEntity()));
-                    String errorCode = root.get("error").get("type").asText();
-                    if ("index_already_exists_exception".equals(errorCode)) {
-                        errorCreatingIndex = false;
+                    try {
+                        JsonNode root =
+                                objectMapper.readTree(
+                                        EntityUtils.toString(errorResponse.getEntity()));
+                        String errorCode = root.get("error").get("type").asText();
+                        if ("index_already_exists_exception".equals(errorCode)) {
+                            errorCreatingIndex = false;
+                        }
+                    } catch (org.apache.hc.core5.http.ParseException pe) {
+                        logger.warn("Failed to parse error response", pe);
                     }
                 }
 
@@ -448,7 +446,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
 
         if (doesResourceNotExist(resourcePath)) {
             HttpEntity entity =
-                    new NByteArrayEntity(
+                    new ByteArrayEntity(
                             loadTypeMappingSource(mappingFilename).getBytes(),
                             ContentType.APPLICATION_JSON);
             Request request = new Request(HttpMethod.PUT, resourcePath);
@@ -490,13 +488,14 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
         try {
             long startTime = Instant.now().toEpochMilli();
             String workflowId = workflow.getWorkflowId();
-            byte[] docBytes = objectMapper.writeValueAsBytes(workflow);
 
-            IndexRequest request =
-                    new IndexRequest(workflowIndexName)
+            IndexRequest<WorkflowSummary> request =
+                    new IndexRequest.Builder<WorkflowSummary>()
+                            .index(workflowIndexName)
                             .id(workflowId)
-                            .source(docBytes, XContentType.JSON);
-            openSearchClient.index(request, RequestOptions.DEFAULT);
+                            .document(workflow)
+                            .build();
+            openSearchClient.index(request);
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for indexing workflow: {}", endTime - startTime, workflowId);
@@ -547,24 +546,16 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
         }
 
         long startTime = Instant.now().toEpochMilli();
-        BulkRequest bulkRequest = new BulkRequest();
+        List<BulkOperation> operations = new ArrayList<>();
         for (TaskExecLog log : taskExecLogs) {
-
-            byte[] docBytes;
-            try {
-                docBytes = objectMapper.writeValueAsBytes(log);
-            } catch (JsonProcessingException e) {
-                logger.error("Failed to convert task log to JSON for task {}", log.getTaskId());
-                continue;
-            }
-
-            IndexRequest request = new IndexRequest(logIndexName);
-            request.source(docBytes, XContentType.JSON);
-            bulkRequest.add(request);
+            BulkOperation operation =
+                    BulkOperation.of(b -> b.index(idx -> idx.index(logIndexName).document(log)));
+            operations.add(operation);
         }
 
         try {
-            openSearchClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+            BulkRequest bulkRequest = new BulkRequest.Builder().operations(operations).build();
+            openSearchClient.bulk(bulkRequest);
             long endTime = Instant.now().toEpochMilli();
             logger.debug("Time taken {} for indexing taskExecutionLogs", endTime - startTime);
             Monitors.recordESIndexTime(
@@ -586,20 +577,18 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
     @Override
     public List<TaskExecLog> getTaskExecutionLogs(String taskId) {
         try {
-            BoolQueryBuilder query = boolQueryBuilder("taskId='" + taskId + "'", "*");
+            Query query = boolQuery("taskId='" + taskId + "'", "*");
 
-            // Create the searchObjectIdsViaExpression source
-            SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-            searchSourceBuilder.query(query);
-            searchSourceBuilder.sort(new FieldSortBuilder("createdTime").order(SortOrder.ASC));
-            searchSourceBuilder.size(properties.getTaskLogResultLimit());
+            SearchRequest searchRequest =
+                    new SearchRequest.Builder()
+                            .index(logIndexPrefix + "*")
+                            .query(query)
+                            .sort(s -> s.field(f -> f.field("createdTime").order(SortOrder.Asc)))
+                            .size(properties.getTaskLogResultLimit())
+                            .build();
 
-            // Generate the actual request to send to ES.
-            SearchRequest searchRequest = new SearchRequest(logIndexPrefix + "*");
-            searchRequest.source(searchSourceBuilder);
-
-            SearchResponse response =
-                    openSearchClient.search(searchRequest, RequestOptions.DEFAULT);
+            SearchResponse<TaskExecLog> response =
+                    openSearchClient.search(searchRequest, TaskExecLog.class);
 
             return mapTaskExecLogsResponse(response);
         } catch (Exception e) {
@@ -608,13 +597,15 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
         return null;
     }
 
-    private List<TaskExecLog> mapTaskExecLogsResponse(SearchResponse response) throws IOException {
-        SearchHit[] hits = response.getHits().getHits();
-        List<TaskExecLog> logs = new ArrayList<>(hits.length);
-        for (SearchHit hit : hits) {
-            String source = hit.getSourceAsString();
-            TaskExecLog tel = objectMapper.readValue(source, TaskExecLog.class);
-            logs.add(tel);
+    private List<TaskExecLog> mapTaskExecLogsResponse(SearchResponse<TaskExecLog> response)
+            throws IOException {
+        List<Hit<TaskExecLog>> hits = response.hits().hits();
+        List<TaskExecLog> logs = new ArrayList<>(hits.size());
+        for (Hit<TaskExecLog> hit : hits) {
+            TaskExecLog tel = hit.source();
+            if (tel != null) {
+                logs.add(tel);
+            }
         }
         return logs;
     }
@@ -622,19 +613,18 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
     @Override
     public List<Message> getMessages(String queue) {
         try {
-            BoolQueryBuilder query = boolQueryBuilder("queue='" + queue + "'", "*");
+            Query query = boolQuery("queue='" + queue + "'", "*");
 
-            // Create the searchObjectIdsViaExpression source
-            SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-            searchSourceBuilder.query(query);
-            searchSourceBuilder.sort(new FieldSortBuilder("created").order(SortOrder.ASC));
+            SearchRequest searchRequest =
+                    new SearchRequest.Builder()
+                            .index(messageIndexPrefix + "*")
+                            .query(query)
+                            .sort(s -> s.field(f -> f.field("created").order(SortOrder.Asc)))
+                            .build();
 
-            // Generate the actual request to send to ES.
-            SearchRequest searchRequest = new SearchRequest(messageIndexPrefix + "*");
-            searchRequest.source(searchSourceBuilder);
-
-            SearchResponse response =
-                    openSearchClient.search(searchRequest, RequestOptions.DEFAULT);
+            SearchResponse<com.fasterxml.jackson.databind.node.ObjectNode> response =
+                    openSearchClient.search(
+                            searchRequest, com.fasterxml.jackson.databind.node.ObjectNode.class);
             return mapGetMessagesResponse(response);
         } catch (Exception e) {
             logger.error("Failed to get messages for queue: {}", queue, e);
@@ -642,16 +632,21 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
         return null;
     }
 
-    private List<Message> mapGetMessagesResponse(SearchResponse response) throws IOException {
-        SearchHit[] hits = response.getHits().getHits();
-        TypeFactory factory = TypeFactory.defaultInstance();
-        MapType type = factory.constructMapType(HashMap.class, String.class, String.class);
-        List<Message> messages = new ArrayList<>(hits.length);
-        for (SearchHit hit : hits) {
-            String source = hit.getSourceAsString();
-            Map<String, String> mapSource = objectMapper.readValue(source, type);
-            Message msg = new Message(mapSource.get("messageId"), mapSource.get("payload"), null);
-            messages.add(msg);
+    private List<Message> mapGetMessagesResponse(
+            SearchResponse<com.fasterxml.jackson.databind.node.ObjectNode> response)
+            throws IOException {
+        List<Hit<com.fasterxml.jackson.databind.node.ObjectNode>> hits = response.hits().hits();
+        List<Message> messages = new ArrayList<>(hits.size());
+        for (Hit<com.fasterxml.jackson.databind.node.ObjectNode> hit : hits) {
+            com.fasterxml.jackson.databind.node.ObjectNode source = hit.source();
+            if (source != null) {
+                String messageId =
+                        source.get("messageId") != null ? source.get("messageId").asText() : null;
+                String payload =
+                        source.get("payload") != null ? source.get("payload").asText() : null;
+                Message msg = new Message(messageId, payload, null);
+                messages.add(msg);
+            }
         }
         return messages;
     }
@@ -659,19 +654,17 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
     @Override
     public List<EventExecution> getEventExecutions(String event) {
         try {
-            BoolQueryBuilder query = boolQueryBuilder("event='" + event + "'", "*");
+            Query query = boolQuery("event='" + event + "'", "*");
 
-            // Create the searchObjectIdsViaExpression source
-            SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-            searchSourceBuilder.query(query);
-            searchSourceBuilder.sort(new FieldSortBuilder("created").order(SortOrder.ASC));
+            SearchRequest searchRequest =
+                    new SearchRequest.Builder()
+                            .index(eventIndexPrefix + "*")
+                            .query(query)
+                            .sort(s -> s.field(f -> f.field("created").order(SortOrder.Asc)))
+                            .build();
 
-            // Generate the actual request to send to ES.
-            SearchRequest searchRequest = new SearchRequest(eventIndexPrefix + "*");
-            searchRequest.source(searchSourceBuilder);
-
-            SearchResponse response =
-                    openSearchClient.search(searchRequest, RequestOptions.DEFAULT);
+            SearchResponse<EventExecution> response =
+                    openSearchClient.search(searchRequest, EventExecution.class);
 
             return mapEventExecutionsResponse(response);
         } catch (Exception e) {
@@ -680,14 +673,15 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
         return null;
     }
 
-    private List<EventExecution> mapEventExecutionsResponse(SearchResponse response)
+    private List<EventExecution> mapEventExecutionsResponse(SearchResponse<EventExecution> response)
             throws IOException {
-        SearchHit[] hits = response.getHits().getHits();
-        List<EventExecution> executions = new ArrayList<>(hits.length);
-        for (SearchHit hit : hits) {
-            String source = hit.getSourceAsString();
-            EventExecution tel = objectMapper.readValue(source, EventExecution.class);
-            executions.add(tel);
+        List<Hit<EventExecution>> hits = response.hits().hits();
+        List<EventExecution> executions = new ArrayList<>(hits.size());
+        for (Hit<EventExecution> hit : hits) {
+            EventExecution exec = hit.source();
+            if (exec != null) {
+                executions.add(exec);
+            }
         }
         return executions;
     }
@@ -791,9 +785,8 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
             boolean idOnly,
             Class<T> clazz)
             throws ParserException, IOException {
-        QueryBuilder queryBuilder = boolQueryBuilder(structuredQuery, freeTextQuery);
-        return searchObjects(
-                getIndexName(docType), queryBuilder, start, size, sortOptions, idOnly, clazz);
+        Query query = boolQuery(structuredQuery, freeTextQuery);
+        return searchObjects(getIndexName(docType), query, start, size, sortOptions, idOnly, clazz);
     }
 
     @Override
@@ -820,12 +813,13 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
     @Override
     public void removeWorkflow(String workflowId) {
         long startTime = Instant.now().toEpochMilli();
-        DeleteRequest request = new DeleteRequest(workflowIndexName, workflowId);
+        DeleteRequest request =
+                new DeleteRequest.Builder().index(workflowIndexName).id(workflowId).build();
 
         try {
-            DeleteResponse response = openSearchClient.delete(request, RequestOptions.DEFAULT);
+            DeleteResponse response = openSearchClient.delete(request);
 
-            if (response.getResult() == DocWriteResponse.Result.NOT_FOUND) {
+            if (response.result() == org.opensearch.client.opensearch._types.Result.NotFound) {
                 logger.error("Index removal failed - document not found by id: {}", workflowId);
             }
             long endTime = Instant.now().toEpochMilli();
@@ -853,15 +847,20 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
             }
 
             long startTime = Instant.now().toEpochMilli();
-            UpdateRequest request = new UpdateRequest(workflowIndexName, workflowInstanceId);
             Map<String, Object> source =
                     IntStream.range(0, keys.length)
                             .boxed()
                             .collect(Collectors.toMap(i -> keys[i], i -> values[i]));
-            request.doc(source);
+
+            UpdateRequest<Object, Object> request =
+                    new UpdateRequest.Builder<Object, Object>()
+                            .index(workflowIndexName)
+                            .id(workflowInstanceId)
+                            .doc(source)
+                            .build();
 
             logger.debug("Updating workflow {} with {}", workflowInstanceId, source);
-            openSearchClient.update(request, RequestOptions.DEFAULT);
+            openSearchClient.update(request, Object.class);
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for updating workflow: {}",
@@ -894,12 +893,12 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
             return;
         }
 
-        DeleteRequest request = new DeleteRequest(taskIndexName, taskId);
+        DeleteRequest request = new DeleteRequest.Builder().index(taskIndexName).id(taskId).build();
 
         try {
-            DeleteResponse response = openSearchClient.delete(request, RequestOptions.DEFAULT);
+            DeleteResponse response = openSearchClient.delete(request);
 
-            if (response.getResult() != DocWriteResponse.Result.DELETED) {
+            if (response.result() != org.opensearch.client.opensearch._types.Result.Deleted) {
                 logger.error("Index removal failed - task not found by id: {}", workflowId);
                 Monitors.error(className, "removeTask");
                 return;
@@ -933,15 +932,20 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
             }
 
             long startTime = Instant.now().toEpochMilli();
-            UpdateRequest request = new UpdateRequest(taskIndexName, taskId);
             Map<String, Object> source =
                     IntStream.range(0, keys.length)
                             .boxed()
                             .collect(Collectors.toMap(i -> keys[i], i -> values[i]));
-            request.doc(source);
+
+            UpdateRequest<Object, Object> request =
+                    new UpdateRequest.Builder<Object, Object>()
+                            .index(taskIndexName)
+                            .id(taskId)
+                            .doc(source)
+                            .build();
 
             logger.debug("Updating task: {} of workflow: {} with {}", taskId, workflowId, source);
-            openSearchClient.update(request, RequestOptions.DEFAULT);
+            openSearchClient.update(request, Object.class);
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for updating task: {} of workflow: {}",
@@ -973,10 +977,13 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
 
     @Override
     public String get(String workflowInstanceId, String fieldToGet) {
-        GetRequest request = new GetRequest(workflowIndexName, workflowInstanceId);
-        GetResponse response;
+        GetRequest request =
+                new GetRequest.Builder().index(workflowIndexName).id(workflowInstanceId).build();
+        GetResponse<com.fasterxml.jackson.databind.node.ObjectNode> response;
         try {
-            response = openSearchClient.get(request, RequestOptions.DEFAULT);
+            response =
+                    openSearchClient.get(
+                            request, com.fasterxml.jackson.databind.node.ObjectNode.class);
         } catch (IOException e) {
             logger.error(
                     "Unable to get Workflow: {} from openSearch index: {}",
@@ -986,10 +993,10 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
             return null;
         }
 
-        if (response.isExists()) {
-            Map<String, Object> sourceAsMap = response.getSourceAsMap();
-            if (sourceAsMap.get(fieldToGet) != null) {
-                return sourceAsMap.get(fieldToGet).toString();
+        if (response.found()) {
+            com.fasterxml.jackson.databind.node.ObjectNode source = response.source();
+            if (source != null && source.has(fieldToGet)) {
+                return source.get(fieldToGet).asText();
             }
         }
 
@@ -1008,8 +1015,8 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
             String freeTextQuery,
             String docType)
             throws ParserException, IOException {
-        QueryBuilder queryBuilder = boolQueryBuilder(structuredQuery, freeTextQuery);
-        return searchObjectIds(getIndexName(docType), queryBuilder, start, size, sortOptions);
+        Query query = boolQueryBuilder(structuredQuery, freeTextQuery);
+        return searchObjectIds(getIndexName(docType), query, start, size, sortOptions);
     }
 
     private <T> SearchResult<T> searchObjectIdsViaExpression(
@@ -1021,21 +1028,20 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
             String docType,
             Class<T> clazz)
             throws ParserException, IOException {
-        QueryBuilder queryBuilder = boolQueryBuilder(structuredQuery, freeTextQuery);
-        return searchObjects(
-                getIndexName(docType), queryBuilder, start, size, sortOptions, false, clazz);
+        Query query = boolQueryBuilder(structuredQuery, freeTextQuery);
+        return searchObjects(getIndexName(docType), query, start, size, sortOptions, false, clazz);
     }
 
-    private SearchResult<String> searchObjectIds(
-            String indexName, QueryBuilder queryBuilder, int start, int size) throws IOException {
-        return searchObjectIds(indexName, queryBuilder, start, size, null);
+    private SearchResult<String> searchObjectIds(String indexName, Query query, int start, int size)
+            throws IOException {
+        return searchObjectIds(indexName, query, start, size, null);
     }
 
     /**
      * Tries to find object ids for a given query in an index.
      *
      * @param indexName The name of the index.
-     * @param queryBuilder The query to use for searching.
+     * @param query The query to use for searching.
      * @param start The start to use.
      * @param size The total return size.
      * @param sortOptions A list of string options to sort in the form VALUE:ORDER; where ORDER is
@@ -1044,108 +1050,92 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
      * @throws IOException If we cannot communicate with ES.
      */
     private SearchResult<String> searchObjectIds(
-            String indexName,
-            QueryBuilder queryBuilder,
-            int start,
-            int size,
-            List<String> sortOptions)
+            String indexName, Query query, int start, int size, List<String> sortOptions)
             throws IOException {
-        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        searchSourceBuilder.query(queryBuilder);
-        searchSourceBuilder.from(start);
-        searchSourceBuilder.size(size);
+
+        SearchRequest.Builder requestBuilder =
+                new SearchRequest.Builder().index(indexName).query(query).from(start).size(size);
 
         if (sortOptions != null && !sortOptions.isEmpty()) {
-
             for (String sortOption : sortOptions) {
-                SortOrder order = SortOrder.ASC;
+                SortOrder order = SortOrder.Asc;
                 String field = sortOption;
                 int index = sortOption.indexOf(":");
                 if (index > 0) {
                     field = sortOption.substring(0, index);
-                    order = SortOrder.valueOf(sortOption.substring(index + 1));
+                    String orderStr = sortOption.substring(index + 1);
+                    order = "DESC".equalsIgnoreCase(orderStr) ? SortOrder.Desc : SortOrder.Asc;
                 }
-                searchSourceBuilder.sort(new FieldSortBuilder(field).order(order));
+                final String finalField = field;
+                final SortOrder finalOrder = order;
+                requestBuilder.sort(s -> s.field(f -> f.field(finalField).order(finalOrder)));
             }
         }
 
-        // Generate the actual request to send to ES.
-        SearchRequest searchRequest = new SearchRequest(indexName);
-        searchRequest.source(searchSourceBuilder);
+        SearchRequest searchRequest = requestBuilder.build();
+        SearchResponse<com.fasterxml.jackson.databind.node.ObjectNode> response =
+                openSearchClient.search(
+                        searchRequest, com.fasterxml.jackson.databind.node.ObjectNode.class);
 
-        SearchResponse response = openSearchClient.search(searchRequest, RequestOptions.DEFAULT);
-
-        List<String> result = new LinkedList<>();
-        response.getHits().forEach(hit -> result.add(hit.getId()));
-        long count = response.getHits().getTotalHits().value;
+        List<String> result =
+                response.hits().hits().stream().map(Hit::id).collect(Collectors.toList());
+        long count = response.hits().total() != null ? response.hits().total().value() : 0;
         return new SearchResult<>(count, result);
     }
 
     private <T> SearchResult<T> searchObjects(
             String indexName,
-            QueryBuilder queryBuilder,
+            Query query,
             int start,
             int size,
             List<String> sortOptions,
             boolean idOnly,
             Class<T> clazz)
             throws IOException {
-        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        searchSourceBuilder.query(queryBuilder);
-        searchSourceBuilder.from(start);
-        searchSourceBuilder.size(size);
+
+        SearchRequest.Builder requestBuilder =
+                new SearchRequest.Builder().index(indexName).query(query).from(start).size(size);
+
         if (idOnly) {
-            searchSourceBuilder.fetchSource(false);
+            requestBuilder.source(s -> s.fetch(false));
         }
 
         if (sortOptions != null && !sortOptions.isEmpty()) {
-
             for (String sortOption : sortOptions) {
-                SortOrder order = SortOrder.ASC;
+                SortOrder order = SortOrder.Asc;
                 String field = sortOption;
                 int index = sortOption.indexOf(":");
                 if (index > 0) {
                     field = sortOption.substring(0, index);
-                    order = SortOrder.valueOf(sortOption.substring(index + 1));
+                    String orderStr = sortOption.substring(index + 1);
+                    order = "DESC".equalsIgnoreCase(orderStr) ? SortOrder.Desc : SortOrder.Asc;
                 }
-                searchSourceBuilder.sort(new FieldSortBuilder(field).order(order));
+                final String finalField = field;
+                final SortOrder finalOrder = order;
+                requestBuilder.sort(s -> s.field(f -> f.field(finalField).order(finalOrder)));
             }
         }
 
-        // Generate the actual request to send to ES.
-        SearchRequest searchRequest = new SearchRequest(indexName);
-        searchRequest.source(searchSourceBuilder);
-
-        SearchResponse response = openSearchClient.search(searchRequest, RequestOptions.DEFAULT);
+        SearchRequest searchRequest = requestBuilder.build();
+        SearchResponse<T> response = openSearchClient.search(searchRequest, clazz);
         return mapSearchResult(response, idOnly, clazz);
     }
 
     private <T> SearchResult<T> mapSearchResult(
-            SearchResponse response, boolean idOnly, Class<T> clazz) {
-        SearchHits searchHits = response.getHits();
-        long count = searchHits.getTotalHits().value;
+            SearchResponse<T> response, boolean idOnly, Class<T> clazz) {
+        HitsMetadata<T> hitsMetadata = response.hits();
+        long count = hitsMetadata.total() != null ? hitsMetadata.total().value() : 0;
         List<T> result;
         if (idOnly) {
             result =
-                    Arrays.stream(searchHits.getHits())
-                            .map(hit -> clazz.cast(hit.getId()))
+                    hitsMetadata.hits().stream()
+                            .map(hit -> clazz.cast(hit.id()))
                             .collect(Collectors.toList());
         } else {
             result =
-                    Arrays.stream(searchHits.getHits())
-                            .map(
-                                    hit -> {
-                                        try {
-                                            return objectMapper.readValue(
-                                                    hit.getSourceAsString(), clazz);
-                                        } catch (JsonProcessingException e) {
-                                            logger.error(
-                                                    "Failed to de-serialize opensearch from source: {}",
-                                                    hit.getSourceAsString(),
-                                                    e);
-                                        }
-                                        return null;
-                                    })
+                    hitsMetadata.hits().stream()
+                            .map(Hit::source)
+                            .filter(java.util.Objects::nonNull)
                             .collect(Collectors.toList());
         }
         return new SearchResult<>(count, result);
@@ -1153,22 +1143,75 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
 
     @Override
     public List<String> searchArchivableWorkflows(String indexName, long archiveTtlDays) {
-        QueryBuilder q =
-                QueryBuilders.boolQuery()
-                        .must(
-                                QueryBuilders.rangeQuery("endTime")
-                                        .lt(LocalDate.now().minusDays(archiveTtlDays).toString())
-                                        .gte(
-                                                LocalDate.now()
-                                                        .minusDays(archiveTtlDays)
-                                                        .minusDays(1)
-                                                        .toString()))
-                        .should(QueryBuilders.termQuery("status", "COMPLETED"))
-                        .should(QueryBuilders.termQuery("status", "FAILED"))
-                        .should(QueryBuilders.termQuery("status", "TIMED_OUT"))
-                        .should(QueryBuilders.termQuery("status", "TERMINATED"))
-                        .mustNot(QueryBuilders.existsQuery("archived"))
-                        .minimumShouldMatch(1);
+        String ltDate = LocalDate.now().minusDays(archiveTtlDays).toString();
+        String gteDate = LocalDate.now().minusDays(archiveTtlDays).minusDays(1).toString();
+
+        Query q =
+                Query.of(
+                        query ->
+                                query.bool(
+                                        b ->
+                                                b.must(
+                                                                m ->
+                                                                        m.range(
+                                                                                r ->
+                                                                                        r.field(
+                                                                                                        "endTime")
+                                                                                                .lt(
+                                                                                                        JsonData
+                                                                                                                .of(
+                                                                                                                        ltDate))
+                                                                                                .gte(
+                                                                                                        JsonData
+                                                                                                                .of(
+                                                                                                                        gteDate))))
+                                                        .should(
+                                                                s ->
+                                                                        s.term(
+                                                                                t ->
+                                                                                        t.field(
+                                                                                                        "status")
+                                                                                                .value(
+                                                                                                        FieldValue
+                                                                                                                .of(
+                                                                                                                        "COMPLETED"))))
+                                                        .should(
+                                                                s ->
+                                                                        s.term(
+                                                                                t ->
+                                                                                        t.field(
+                                                                                                        "status")
+                                                                                                .value(
+                                                                                                        FieldValue
+                                                                                                                .of(
+                                                                                                                        "FAILED"))))
+                                                        .should(
+                                                                s ->
+                                                                        s.term(
+                                                                                t ->
+                                                                                        t.field(
+                                                                                                        "status")
+                                                                                                .value(
+                                                                                                        FieldValue
+                                                                                                                .of(
+                                                                                                                        "TIMED_OUT"))))
+                                                        .should(
+                                                                s ->
+                                                                        s.term(
+                                                                                t ->
+                                                                                        t.field(
+                                                                                                        "status")
+                                                                                                .value(
+                                                                                                        FieldValue
+                                                                                                                .of(
+                                                                                                                        "TERMINATED"))))
+                                                        .mustNot(
+                                                                mn ->
+                                                                        mn.exists(
+                                                                                e ->
+                                                                                        e.field(
+                                                                                                "archived")))
+                                                        .minimumShouldMatch("1")));
 
         SearchResult<String> workflowIds;
         try {
@@ -1192,26 +1235,59 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
 
     private long getObjectCounts(String structuredQuery, String freeTextQuery, String docType)
             throws ParserException, IOException {
-        QueryBuilder queryBuilder = boolQueryBuilder(structuredQuery, freeTextQuery);
+        Query query = boolQuery(structuredQuery, freeTextQuery);
 
         String indexName = getIndexName(docType);
-        CountRequest countRequest = new CountRequest(new String[] {indexName}, queryBuilder);
-        CountResponse countResponse = openSearchClient.count(countRequest, RequestOptions.DEFAULT);
-        return countResponse.getCount();
+        CountRequest countRequest =
+                new CountRequest.Builder().index(indexName).query(query).build();
+        CountResponse countResponse = openSearchClient.count(countRequest);
+        return countResponse.count();
     }
 
     public List<String> searchRecentRunningWorkflows(
             int lastModifiedHoursAgoFrom, int lastModifiedHoursAgoTo) {
-        DateTime dateTime = new DateTime();
-        QueryBuilder q =
-                QueryBuilders.boolQuery()
-                        .must(
-                                QueryBuilders.rangeQuery("updateTime")
-                                        .gt(dateTime.minusHours(lastModifiedHoursAgoFrom)))
-                        .must(
-                                QueryBuilders.rangeQuery("updateTime")
-                                        .lt(dateTime.minusHours(lastModifiedHoursAgoTo)))
-                        .must(QueryBuilders.termQuery("status", "RUNNING"));
+        Instant now = Instant.now();
+        long fromMillis = now.minusSeconds(lastModifiedHoursAgoFrom * 3600L).toEpochMilli();
+        long toMillis = now.minusSeconds(lastModifiedHoursAgoTo * 3600L).toEpochMilli();
+
+        Query q =
+                Query.of(
+                        query ->
+                                query.bool(
+                                        b ->
+                                                b.must(
+                                                                Query.of(
+                                                                        m ->
+                                                                                m.range(
+                                                                                        r ->
+                                                                                                r.field(
+                                                                                                                "updateTime")
+                                                                                                        .gt(
+                                                                                                                JsonData
+                                                                                                                        .of(
+                                                                                                                                fromMillis)))))
+                                                        .must(
+                                                                Query.of(
+                                                                        m ->
+                                                                                m.range(
+                                                                                        r ->
+                                                                                                r.field(
+                                                                                                                "updateTime")
+                                                                                                        .lt(
+                                                                                                                JsonData
+                                                                                                                        .of(
+                                                                                                                                toMillis)))))
+                                                        .must(
+                                                                Query.of(
+                                                                        m ->
+                                                                                m.term(
+                                                                                        t ->
+                                                                                                t.field(
+                                                                                                                "status")
+                                                                                                        .value(
+                                                                                                                FieldValue
+                                                                                                                        .of(
+                                                                                                                                "RUNNING")))))));
 
         SearchResult<String> workflowIds;
         try {
@@ -1237,40 +1313,36 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
     private void indexObject(
             final String index, final String docType, final String docId, final Object doc) {
 
-        byte[] docBytes;
-        try {
-            docBytes = objectMapper.writeValueAsBytes(doc);
-        } catch (JsonProcessingException e) {
-            logger.error("Failed to convert {} '{}' to byte string", docType, docId);
-            return;
-        }
-        IndexRequest request = new IndexRequest(index);
-        request.id(docId).source(docBytes, XContentType.JSON);
+        BulkOperation operation =
+                BulkOperation.of(
+                        b ->
+                                b.index(
+                                        idx -> {
+                                            idx.index(index).document(JsonData.of(doc));
+                                            if (docId != null) {
+                                                idx.id(docId);
+                                            }
+                                            return idx;
+                                        }));
 
         synchronized (this) {
             if (bulkRequests.get(docType) == null) {
-                bulkRequests.put(
-                        docType, new BulkRequests(System.currentTimeMillis(), new BulkRequest()));
+                bulkRequests.put(docType, new BulkRequests(System.currentTimeMillis()));
             }
 
-            bulkRequests.get(docType).getBulkRequest().add(request);
-            if (bulkRequests.get(docType).getBulkRequest().numberOfActions()
-                    >= this.indexBatchSize) {
+            bulkRequests.get(docType).addOperation(operation);
+            if (bulkRequests.get(docType).numberOfOperations() >= this.indexBatchSize) {
                 indexBulkRequest(docType);
             }
         }
     }
 
     private synchronized void indexBulkRequest(String docType) {
-        if (bulkRequests.get(docType).getBulkRequest() != null
-                && bulkRequests.get(docType).getBulkRequest().numberOfActions() > 0) {
-            synchronized (bulkRequests.get(docType).getBulkRequest()) {
-                indexWithRetry(
-                        bulkRequests.get(docType).getBulkRequest().get(),
-                        "Bulk Indexing " + docType,
-                        docType);
-                bulkRequests.put(
-                        docType, new BulkRequests(System.currentTimeMillis(), new BulkRequest()));
+        BulkRequests requests = bulkRequests.get(docType);
+        if (requests != null && requests.numberOfOperations() > 0) {
+            synchronized (requests.getOperations()) {
+                indexWithRetry(requests.getOperations(), "Bulk Indexing " + docType, docType);
+                bulkRequests.put(docType, new BulkRequests(System.currentTimeMillis()));
             }
         }
     }
@@ -1278,15 +1350,17 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
     /**
      * Performs an index operation with a retry.
      *
-     * @param request The index request that we want to perform.
+     * @param operations The bulk operations to perform.
      * @param operationDescription The type of operation that we are performing.
      */
     private void indexWithRetry(
-            final BulkRequest request, final String operationDescription, String docType) {
+            final List<BulkOperation> operations,
+            final String operationDescription,
+            String docType) {
         try {
             long startTime = Instant.now().toEpochMilli();
-            retryTemplate.execute(
-                    context -> openSearchClient.bulk(request, RequestOptions.DEFAULT));
+            BulkRequest bulkRequest = new BulkRequest.Builder().operations(operations).build();
+            retryTemplate.execute(context -> openSearchClient.bulk(bulkRequest));
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for indexing object of type: {}", endTime - startTime, docType);
@@ -1297,7 +1371,8 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
                     "logQueue", ((ThreadPoolExecutor) logExecutorService).getQueue().size());
         } catch (Exception e) {
             Monitors.error(className, "index");
-            logger.error("Failed to index {} for request type: {}", request, docType, e);
+            logger.error(
+                    "Failed to index {} for request type: {}", operationDescription, docType, e);
         }
     }
 
@@ -1312,16 +1387,13 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
                         entry ->
                                 (System.currentTimeMillis() - entry.getValue().getLastFlushTime())
                                         >= asyncBufferFlushTimeout * 1000L)
-                .filter(
-                        entry ->
-                                entry.getValue().getBulkRequest() != null
-                                        && entry.getValue().getBulkRequest().numberOfActions() > 0)
+                .filter(entry -> entry.getValue().numberOfOperations() > 0)
                 .forEach(
                         entry -> {
                             logger.debug(
                                     "Flushing bulk request buffer for type {}, size: {}",
                                     entry.getKey(),
-                                    entry.getValue().getBulkRequest().numberOfActions());
+                                    entry.getValue().numberOfOperations());
                             indexBulkRequest(entry.getKey());
                         });
     }
@@ -1329,19 +1401,27 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
     private static class BulkRequests {
 
         private final long lastFlushTime;
-        private final BulkRequestWrapper bulkRequest;
+        private final List<BulkOperation> operations;
 
         long getLastFlushTime() {
             return lastFlushTime;
         }
 
-        BulkRequestWrapper getBulkRequest() {
-            return bulkRequest;
+        List<BulkOperation> getOperations() {
+            return operations;
         }
 
-        BulkRequests(long lastFlushTime, BulkRequest bulkRequest) {
+        int numberOfOperations() {
+            return operations.size();
+        }
+
+        void addOperation(BulkOperation op) {
+            operations.add(op);
+        }
+
+        BulkRequests(long lastFlushTime) {
             this.lastFlushTime = lastFlushTime;
-            this.bulkRequest = new BulkRequestWrapper(bulkRequest);
+            this.operations = new ArrayList<>();
         }
     }
 }
