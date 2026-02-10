@@ -64,7 +64,7 @@ import static org.conductoross.conductor.core.execution.ExecutorUtils.computePos
 @Component
 public class WorkflowExecutorOps implements WorkflowExecutor {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowExecutor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowExecutorOps.class);
     private static final int EXPEDITED_PRIORITY = 10;
     private static final String CLASS_NAME = WorkflowExecutor.class.getSimpleName();
     private static final Predicate<TaskModel> UNSUCCESSFUL_TERMINAL_TASK =
@@ -1106,52 +1106,84 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         // and change the workflow/task state accordingly
         adjustStateIfSubWorkflowChanged(workflow);
 
+        final long maxRuntime = properties.getLockLeaseTime().toMillis() - 100;
+        StopWatch decideWatch = new StopWatch();
+        decideWatch.start();
+        boolean stateChanged = false;
+        int decideLoopCount = 0;
+
         try {
-            DeciderService.DeciderOutcome outcome = deciderService.decide(workflow);
-            if (outcome.isComplete) {
-                endExecution(workflow, outcome.terminateTask);
-                return workflow;
-            }
+            boolean continueLoop = true;
+            while (continueLoop) {
+                continueLoop = false;
 
-            List<TaskModel> tasksToBeScheduled = outcome.tasksToBeScheduled;
-            setTaskDomains(tasksToBeScheduled, workflow);
-            List<TaskModel> tasksToBeUpdated = outcome.tasksToBeUpdated;
+                DeciderService.DeciderOutcome outcome = deciderService.decide(workflow);
+                if (outcome.isComplete) {
+                    endExecution(workflow, outcome.terminateTask);
+                    return workflow;
+                }
 
-            tasksToBeScheduled = dedupAndAddTasks(workflow, tasksToBeScheduled);
+                List<TaskModel> tasksToBeScheduled = outcome.tasksToBeScheduled;
+                setTaskDomains(tasksToBeScheduled, workflow);
+                List<TaskModel> tasksToBeUpdated = outcome.tasksToBeUpdated;
 
-            boolean stateChanged = scheduleTask(workflow, tasksToBeScheduled); // start
+                tasksToBeScheduled = dedupAndAddTasks(workflow, tasksToBeScheduled);
 
-            for (TaskModel task : outcome.tasksToBeScheduled) {
-                executionDAOFacade.populateTaskData(task);
-                if (systemTaskRegistry.isSystemTask(task.getTaskType())
-                        && NON_TERMINAL_TASK.test(task)) {
-                    WorkflowSystemTask workflowSystemTask =
-                            systemTaskRegistry.get(task.getTaskType());
-                    if (!workflowSystemTask.isAsync()
-                            && workflowSystemTask.execute(workflow, task, this)) {
-                        tasksToBeUpdated.add(task);
-                        stateChanged = true;
+                boolean iterationStateChanged =
+                        scheduleTask(workflow, tasksToBeScheduled); // start
+
+                for (TaskModel task : outcome.tasksToBeScheduled) {
+                    executionDAOFacade.populateTaskData(task);
+                    if (systemTaskRegistry.isSystemTask(task.getTaskType())
+                            && NON_TERMINAL_TASK.test(task)) {
+                        WorkflowSystemTask workflowSystemTask =
+                                systemTaskRegistry.get(task.getTaskType());
+                        if (!workflowSystemTask.isAsync()
+                                && workflowSystemTask.execute(workflow, task, this)) {
+                            tasksToBeUpdated.add(task);
+                            iterationStateChanged = true;
+                        }
+                    }
+                }
+
+                if (!outcome.tasksToBeUpdated.isEmpty() || !tasksToBeScheduled.isEmpty()) {
+                    executionDAOFacade.updateTasks(tasksToBeUpdated);
+                }
+
+                if (iterationStateChanged) {
+                    stateChanged = true;
+                    decideLoopCount++;
+                    long executionTime = decideWatch.getTime();
+
+                    if (executionTime > maxRuntime) {
+                        LOGGER.warn(
+                                "Workflow {} running longer than maxRuntime: {}ms, breaking the decide loop."
+                                        + "\nTime spent: {}ms, decide loop ran for {} iterations",
+                                workflow.getWorkflowId(),
+                                maxRuntime,
+                                executionTime,
+                                decideLoopCount);
+                        break;
+                    }
+
+                    continueLoop = true;
+                } else {
+                    if (!outcome.tasksToBeUpdated.isEmpty() || !tasksToBeScheduled.isEmpty()) {
+                        executionDAOFacade.updateWorkflow(workflow);
                     }
                 }
             }
 
-            if (!outcome.tasksToBeUpdated.isEmpty() || !tasksToBeScheduled.isEmpty()) {
-                executionDAOFacade.updateTasks(tasksToBeUpdated);
-            }
-
             if (stateChanged) {
-                return decide(workflow);
-            }
-
-            if (!outcome.tasksToBeUpdated.isEmpty() || !tasksToBeScheduled.isEmpty()) {
                 executionDAOFacade.updateWorkflow(workflow);
             }
 
-            Duration timeout = properties.getWorkflowOffsetTimeout();
             if (!workflow.getStatus().isTerminal()) {
+                Duration timeout = properties.getWorkflowOffsetTimeout();
                 Duration updatedOffset = computePostpone(workflow, timeout);
-                if (updatedOffset.getSeconds() != timeout.getSeconds()) {
-                    // we have a new value, setUnack uses time in millis
+                if (stateChanged || updatedOffset.getSeconds() != timeout.getSeconds()) {
+                    // Re-queue to continue processing if we broke out of the loop,
+                    // or update the postpone offset if it changed
                     LOGGER.debug(
                             "Pushing the workflow {} into decider queue by {} millis",
                             workflow.getWorkflowId(),
