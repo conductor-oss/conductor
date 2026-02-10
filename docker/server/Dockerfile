@@ -15,7 +15,7 @@ COPY . /conductor
 WORKDIR /conductor
 
 # Build the server on run
-RUN ./gradlew build -x test -x spotlessCheck -PindexingBackend=${INDEXING_BACKEND}
+RUN ./gradlew build -x test -x spotlessCheck -x shadowJar -x :conductor-os-persistence-v3:build -PindexingBackend=${INDEXING_BACKEND}
 WORKDIR /server/build/libs
 RUN ls -ltr
 
@@ -40,10 +40,15 @@ WORKDIR /conductor/ui
 # Include monaco sources into bundle (instead of using CDN)
 ENV REACT_APP_MONACO_EDITOR_USING_CDN=false
 ENV REACT_APP_ENABLE_ERRORS_INSPECTOR=true
+RUN yarn config set network-timeout 600000 -g
 RUN yarn ${YARN_OPTS} install && cp -r node_modules/monaco-editor public/ && yarn ${YARN_OPTS} build
 RUN ls -ltr
 RUN echo "Done building UI"
 
+RUN echo "Copying UI to server"
+WORKDIR /conductor
+RUN rm -rf server/src/main/resources/static
+RUN cp -R ui/build/ server/src/main/resources/static
 
 # ===========================================================================================================
 # 2. Bin stage

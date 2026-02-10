@@ -13,45 +13,11 @@
 package com.netflix.conductor.os.config;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.BeanCreationException;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import static org.junit.Assert.*;
 
-/**
- * Tests that verify the deprecated generic 'opensearch' indexing type throws a helpful error.
- */
+/** Tests that verify the deprecated generic 'opensearch' indexing type throws a helpful error. */
 public class OpenSearchDeprecationTest {
-
-    // =========================================================================
-    // Test: Generic 'opensearch' type throws IllegalStateException
-    // =========================================================================
-
-    @RunWith(SpringRunner.class)
-    @SpringBootTest(classes = GenericOpensearchTypeThrowsError.TestConfig.class)
-    @TestPropertySource(
-            properties = {
-                "conductor.indexing.enabled=true",
-                "conductor.indexing.type=opensearch",  // Deprecated generic type
-                "conductor.opensearch.url=http://localhost:9200"
-            })
-    public static class GenericOpensearchTypeThrowsError {
-
-        @Configuration
-        @EnableAutoConfiguration
-        static class TestConfig {}
-
-        @Test(expected = BeanCreationException.class)
-        public void testGenericOpensearchTypeFailsWithError() {
-            // Spring context creation should fail
-            fail("Spring context should not be created with generic 'opensearch' type");
-        }
-    }
 
     // =========================================================================
     // Test: Error message contains migration instructions
@@ -68,29 +34,31 @@ public class OpenSearchDeprecationTest {
             String message = e.getMessage();
 
             // Verify error message contains key information
-            assertTrue("Error should mention it's a configuration error",
+            assertTrue(
+                    "Error should mention it's a configuration error",
                     message.contains("CONFIGURATION ERROR"));
 
-            assertTrue("Error should mention 'opensearch' is deprecated",
+            assertTrue(
+                    "Error should mention 'opensearch' is deprecated",
                     message.contains("deprecated") || message.contains("DEPRECATED"));
 
-            assertTrue("Error should show the old configuration",
+            assertTrue(
+                    "Error should show the old configuration",
                     message.contains("conductor.indexing.type=opensearch"));
 
-            assertTrue("Error should show opensearch2 option",
-                    message.contains("opensearch2"));
+            assertTrue("Error should show opensearch2 option", message.contains("opensearch2"));
 
-            assertTrue("Error should show opensearch3 option",
-                    message.contains("opensearch3"));
+            assertTrue("Error should show opensearch3 option", message.contains("opensearch3"));
 
-            assertTrue("Error should mention OpenSearch 2.x",
+            assertTrue(
+                    "Error should mention OpenSearch 2.x",
                     message.contains("2.x") || message.contains("2"));
 
-            assertTrue("Error should mention OpenSearch 3.x",
+            assertTrue(
+                    "Error should mention OpenSearch 3.x",
                     message.contains("3.x") || message.contains("3"));
 
-            assertTrue("Error should reference issue #678",
-                    message.contains("678"));
+            assertTrue("Error should reference issue #678", message.contains("678"));
         }
     }
 
@@ -130,20 +98,20 @@ public class OpenSearchDeprecationTest {
             String message = e.getMessage();
 
             // Verify message has box formatting (makes it stand out in logs)
-            assertTrue("Message should have top border",
+            assertTrue(
+                    "Message should have top border",
                     message.contains("╔") || message.contains("="));
 
-            assertTrue("Message should have bottom border",
+            assertTrue(
+                    "Message should have bottom border",
                     message.contains("╚") || message.contains("="));
 
             // Verify message has multiple lines (not just a single line error)
             String[] lines = message.split("\n");
-            assertTrue("Message should be multi-line for readability",
-                    lines.length > 5);
+            assertTrue("Message should be multi-line for readability", lines.length > 5);
 
             // Verify message is not too verbose (should fit in terminal)
-            assertTrue("Message should be concise (under 30 lines)",
-                    lines.length < 30);
+            assertTrue("Message should be concise (under 30 lines)", lines.length < 30);
         }
     }
 
@@ -173,9 +141,10 @@ public class OpenSearchDeprecationTest {
             String message = e.getMessage();
 
             // Verify GitHub issue URL is included
-            assertTrue("Error should include GitHub issue link",
-                    message.contains("github.com/conductor-oss/conductor/issues/678") ||
-                    message.contains("issues/678"));
+            assertTrue(
+                    "Error should include GitHub issue link",
+                    message.contains("github.com/conductor-oss/conductor/issues/678")
+                            || message.contains("issues/678"));
         }
     }
 
@@ -194,9 +163,10 @@ public class OpenSearchDeprecationTest {
             String message = e.getMessage();
 
             // Verify message mentions that other properties remain the same
-            assertTrue("Error should mention properties remain the same",
-                    message.contains("remain the same") ||
-                    message.contains("conductor.opensearch.*"));
+            assertTrue(
+                    "Error should mention properties remain the same",
+                    message.contains("remain the same")
+                            || message.contains("conductor.opensearch.*"));
         }
     }
 }

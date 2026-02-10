@@ -22,10 +22,10 @@ import org.springframework.test.context.TestPropertySource
 
 import com.netflix.conductor.core.execution.AsyncSystemTaskExecutor
 import com.netflix.conductor.core.execution.WorkflowExecutor
-import com.netflix.conductor.core.reconciliation.WorkflowSweeper
 import com.netflix.conductor.service.ExecutionService
 import com.netflix.conductor.service.MetadataService
 import com.netflix.conductor.test.util.WorkflowTestUtil
+import org.conductoross.conductor.core.execution.WorkflowSweeper
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.utility.DockerImageName
 import spock.lang.Specification

@@ -105,15 +105,23 @@ public class ConductorCoreConfiguration {
     @Bean
     @Qualifier("taskMappersByTaskType")
     public Map<String, TaskMapper> getTaskMappers(List<TaskMapper> taskMappers) {
-        return taskMappers.stream().collect(Collectors.toMap(TaskMapper::getTaskType, identity()));
+        // Return mutable map so annotated task mappers can be added
+        return taskMappers.stream()
+                .collect(
+                        Collectors.toMap(
+                                TaskMapper::getTaskType,
+                                identity(),
+                                (a, b) -> a,
+                                java.util.HashMap::new));
     }
 
     @Bean
     @Qualifier(ASYNC_SYSTEM_TASKS_QUALIFIER)
     public Set<WorkflowSystemTask> asyncSystemTasks(Set<WorkflowSystemTask> allSystemTasks) {
+        // Return mutable set so annotated tasks can be added
         return allSystemTasks.stream()
                 .filter(WorkflowSystemTask::isAsync)
-                .collect(Collectors.toUnmodifiableSet());
+                .collect(Collectors.toCollection(java.util.HashSet::new));
     }
 
     @Bean
