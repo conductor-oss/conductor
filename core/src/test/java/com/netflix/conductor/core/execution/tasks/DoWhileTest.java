@@ -25,6 +25,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.utils.ParametersUtils;
@@ -294,9 +295,18 @@ public class DoWhileTest {
 
     // Helper methods
 
-    private WorkflowModel createWorkflowWithIterations(int iterations, int tasksPerIteration) {
+    private WorkflowModel createWorkflowWithDef() {
         WorkflowModel workflow = new WorkflowModel();
+        WorkflowDef def = new WorkflowDef();
+        def.setName("test-workflow");
+        def.setVersion(1);
+        workflow.setWorkflowDefinition(def);
         workflow.setWorkflowId("test-workflow-" + System.currentTimeMillis());
+        return workflow;
+    }
+
+    private WorkflowModel createWorkflowWithIterations(int iterations, int tasksPerIteration) {
+        WorkflowModel workflow = createWorkflowWithDef();
 
         List<TaskModel> allTasks = new ArrayList<>();
 
@@ -361,5 +371,243 @@ public class DoWhileTest {
                 .filter(t -> "DO_WHILE".equals(t.getTaskType()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("No DO_WHILE task found"));
+    }
+
+    // List iteration tests
+
+    @Test
+    public void testIsListIteration_WithItemsParameter_ReturnsTrue() {
+        TaskModel doWhileTask = createDoWhileTask();
+        doWhileTask.getWorkflowTask().setItems("${workflow.input.myList}");
+
+        assertTrue(
+                "Should identify as list iteration when items parameter is set",
+                doWhile.isListIteration(doWhileTask));
+    }
+
+    @Test
+    public void testIsListIteration_WithoutItemsParameter_ReturnsFalse() {
+        TaskModel doWhileTask = createDoWhileTask();
+        // No items parameter set
+
+        assertFalse(
+                "Should not identify as list iteration when items parameter is not set",
+                doWhile.isListIteration(doWhileTask));
+    }
+
+    @Test
+    public void testIsListIteration_WithEmptyItemsParameter_ReturnsFalse() {
+        TaskModel doWhileTask = createDoWhileTask();
+        doWhileTask.getWorkflowTask().setItems("   ");
+
+        assertFalse(
+                "Should not identify as list iteration when items parameter is empty",
+                doWhile.isListIteration(doWhileTask));
+    }
+
+    @Test
+    public void testEvaluateItemsList_WithValidList_ReturnsCorrectItems() {
+        WorkflowModel workflow = createWorkflowWithDef();
+
+        // Set up workflow input with a list
+        Map<String, Object> workflowInput = new HashMap<>();
+        List<String> itemsList = List.of("item1", "item2", "item3");
+        workflowInput.put("myList", itemsList);
+        workflow.setInput(workflowInput);
+
+        TaskModel doWhileTask = createDoWhileTask();
+        doWhileTask.getWorkflowTask().setItems("${workflow.input.myList}");
+
+        List<Object> result = doWhile.evaluateItemsList(workflow, doWhileTask);
+
+        assertEquals("Should return correct number of items", 3, result.size());
+        assertEquals("Should have correct first item", "item1", result.get(0));
+        assertEquals("Should have correct second item", "item2", result.get(1));
+        assertEquals("Should have correct third item", "item3", result.get(2));
+    }
+
+    @Test
+    public void testEvaluateItemsList_WithEmptyList_ReturnsEmptyList() {
+        WorkflowModel workflow = createWorkflowWithDef();
+
+        Map<String, Object> workflowInput = new HashMap<>();
+        workflowInput.put("myList", new ArrayList<>());
+        workflow.setInput(workflowInput);
+
+        TaskModel doWhileTask = createDoWhileTask();
+        doWhileTask.getWorkflowTask().setItems("${workflow.input.myList}");
+
+        List<Object> result = doWhile.evaluateItemsList(workflow, doWhileTask);
+
+        assertTrue("Should return empty list for empty input", result.isEmpty());
+    }
+
+    @Test
+    public void testEvaluateItemsList_WithNullItems_ReturnsEmptyList() {
+        WorkflowModel workflow = createWorkflowWithDef();
+
+        TaskModel doWhileTask = createDoWhileTask();
+        doWhileTask.getWorkflowTask().setItems(null);
+
+        List<Object> result = doWhile.evaluateItemsList(workflow, doWhileTask);
+
+        assertTrue("Should return empty list for null items parameter", result.isEmpty());
+    }
+
+    @Test
+    public void testInjectLoopVariables_InjectsCorrectValues() {
+        WorkflowModel workflow = createWorkflowWithDef();
+
+        // Set up workflow input with a list
+        Map<String, Object> workflowInput = new HashMap<>();
+        List<String> itemsList = List.of("apple", "banana", "cherry");
+        workflowInput.put("fruits", itemsList);
+        workflow.setInput(workflowInput);
+
+        TaskModel doWhileTask = createDoWhileTask();
+        doWhileTask.getWorkflowTask().setItems("${workflow.input.fruits}");
+        doWhileTask.setIteration(2); // Second iteration (loopIndex = 1)
+
+        doWhile.injectLoopVariables(workflow, doWhileTask);
+
+        // Verify loopIndex is injected (0-based)
+        assertEquals("loopIndex should be 1", 1, doWhileTask.getOutputData().get("loopIndex"));
+
+        // Verify loopItem is injected
+        assertEquals(
+                "loopItem should be 'banana'",
+                "banana",
+                doWhileTask.getOutputData().get("loopItem"));
+    }
+
+    @Test
+    public void testInjectLoopVariables_FirstIteration() {
+        WorkflowModel workflow = createWorkflowWithDef();
+
+        Map<String, Object> workflowInput = new HashMap<>();
+        List<Integer> itemsList = List.of(10, 20, 30);
+        workflowInput.put("numbers", itemsList);
+        workflow.setInput(workflowInput);
+
+        TaskModel doWhileTask = createDoWhileTask();
+        doWhileTask.getWorkflowTask().setItems("${workflow.input.numbers}");
+        doWhileTask.setIteration(1); // First iteration (loopIndex = 0)
+
+        doWhile.injectLoopVariables(workflow, doWhileTask);
+
+        assertEquals("loopIndex should be 0", 0, doWhileTask.getOutputData().get("loopIndex"));
+        assertEquals("loopItem should be 10", 10, doWhileTask.getOutputData().get("loopItem"));
+    }
+
+    @Test
+    public void testInjectLoopVariables_DoesNothingForCounterBased() {
+        WorkflowModel workflow = createWorkflowWithDef();
+
+        TaskModel doWhileTask = createDoWhileTask();
+        // No items parameter set - counter-based iteration
+        doWhileTask.setIteration(3);
+
+        Map<String, Object> outputBefore = new HashMap<>(doWhileTask.getOutputData());
+        doWhile.injectLoopVariables(workflow, doWhileTask);
+        Map<String, Object> outputAfter = new HashMap<>(doWhileTask.getOutputData());
+
+        assertFalse(
+                "Should not inject loopIndex for counter-based loops",
+                outputAfter.containsKey("loopIndex"));
+        assertFalse(
+                "Should not inject loopItem for counter-based loops",
+                outputAfter.containsKey("loopItem"));
+    }
+
+    @Test
+    public void testEvaluateCondition_ListIteration_ContinuesUntilEnd() {
+        WorkflowModel workflow = createWorkflowWithDef();
+
+        Map<String, Object> workflowInput = new HashMap<>();
+        List<String> itemsList = List.of("a", "b", "c");
+        workflowInput.put("items", itemsList);
+        workflow.setInput(workflowInput);
+        workflow.setTasks(new ArrayList<>());
+
+        TaskModel doWhileTask = createDoWhileTask();
+        doWhileTask.getWorkflowTask().setItems("${workflow.input.items}");
+        doWhileTask.getWorkflowTask().setLoopCondition(null); // No additional condition
+
+        // Test iteration 1 (loopIndex=0) - should continue
+        doWhileTask.setIteration(1);
+        assertTrue(
+                "Should continue after first iteration", doWhile.evaluateCondition(workflow, doWhileTask));
+
+        // Test iteration 2 (loopIndex=1) - should continue
+        doWhileTask.setIteration(2);
+        assertTrue(
+                "Should continue after second iteration",
+                doWhile.evaluateCondition(workflow, doWhileTask));
+
+        // Test iteration 3 (loopIndex=2) - should stop (last item)
+        doWhileTask.setIteration(3);
+        assertFalse(
+                "Should stop after last iteration", doWhile.evaluateCondition(workflow, doWhileTask));
+    }
+
+    @Test
+    public void testEvaluateCondition_ListIteration_WithCustomCondition() {
+        WorkflowModel workflow = createWorkflowWithDef();
+
+        Map<String, Object> workflowInput = new HashMap<>();
+        List<Integer> itemsList = List.of(5, 10, 15, 20);
+        workflowInput.put("numbers", itemsList);
+        workflow.setInput(workflowInput);
+        workflow.setTasks(new ArrayList<>());
+
+        TaskModel doWhileTask = createDoWhileTask();
+        doWhileTask.getWorkflowTask().setItems("${workflow.input.numbers}");
+        // Custom condition: continue only if loopItem < 15
+        doWhileTask.getWorkflowTask().setLoopCondition("$.loopItem < 15");
+
+        // Test iteration 1 (loopIndex=0, loopItem=5) - should continue
+        doWhileTask.setIteration(1);
+        assertTrue(
+                "Should continue when loopItem < 15",
+                doWhile.evaluateCondition(workflow, doWhileTask));
+
+        // Test iteration 2 (loopIndex=1, loopItem=10) - should continue
+        doWhileTask.setIteration(2);
+        assertTrue(
+                "Should continue when loopItem < 15",
+                doWhile.evaluateCondition(workflow, doWhileTask));
+
+        // Test iteration 3 (loopIndex=2, loopItem=15) - should stop (condition false)
+        doWhileTask.setIteration(3);
+        assertFalse(
+                "Should stop when loopItem >= 15",
+                doWhile.evaluateCondition(workflow, doWhileTask));
+    }
+
+    @Test
+    public void testEvaluateCondition_CounterBased_BackwardCompatibility() {
+        WorkflowModel workflow = createWorkflowWithDef();
+
+        Map<String, Object> workflowInput = new HashMap<>();
+        workflowInput.put("maxIterations", 3);
+        workflow.setInput(workflowInput);
+        workflow.setTasks(new ArrayList<>());
+
+        TaskModel doWhileTask = createDoWhileTask();
+        // No items parameter - counter-based iteration
+        doWhileTask.getWorkflowTask().setLoopCondition("$.doWhileTask.iteration < 3");
+
+        // Test iteration 1 - should continue
+        doWhileTask.setIteration(1);
+        doWhileTask.addOutput("iteration", 1);
+        assertTrue(
+                "Should continue counter-based loop",
+                doWhile.evaluateCondition(workflow, doWhileTask));
+
+        // Test iteration 3 - should stop
+        doWhileTask.setIteration(3);
+        doWhileTask.addOutput("iteration", 3);
+        assertFalse(
+                "Should stop counter-based loop", doWhile.evaluateCondition(workflow, doWhileTask));
     }
 }

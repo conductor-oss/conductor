@@ -95,6 +95,10 @@ public class DoWhile extends WorkflowSystemTask {
         if (loopOverTasks.isEmpty()) {
             doWhileTaskModel.setIteration(1);
             doWhileTaskModel.addOutput("iteration", doWhileTaskModel.getIteration());
+
+            // For list iteration, inject loopItem and loopIndex
+            injectLoopVariables(workflow, doWhileTaskModel);
+
             return scheduleNextIteration(doWhileTaskModel, workflow, workflowExecutor);
         }
 
@@ -153,6 +157,10 @@ public class DoWhile extends WorkflowSystemTask {
             if (shouldContinue) {
                 doWhileTaskModel.setIteration(doWhileTaskModel.getIteration() + 1);
                 doWhileTaskModel.addOutput("iteration", doWhileTaskModel.getIteration());
+
+                // For list iteration, inject loopItem and loopIndex for next iteration
+                injectLoopVariables(workflow, doWhileTaskModel);
+
                 return scheduleNextIteration(doWhileTaskModel, workflow, workflowExecutor);
             } else {
                 LOGGER.debug(
@@ -323,6 +331,96 @@ public class DoWhile extends WorkflowSystemTask {
         return true;
     }
 
+    /**
+     * Inject loopItem and loopIndex variables into the DO_WHILE task output for list iteration.
+     * Tasks inside the loop can access these via workflow expressions.
+     *
+     * @param workflow The workflow model
+     * @param doWhileTask The DO_WHILE task model
+     */
+    @VisibleForTesting
+    void injectLoopVariables(WorkflowModel workflow, TaskModel doWhileTask) {
+        if (!isListIteration(doWhileTask)) {
+            return;
+        }
+
+        List<Object> itemsList = evaluateItemsList(workflow, doWhileTask);
+        int currentIteration = doWhileTask.getIteration();
+        int loopIndex = currentIteration - 1; // 0-based index
+
+        // Add loopIndex to output
+        doWhileTask.addOutput("loopIndex", loopIndex);
+
+        // Add loopItem to output if within bounds
+        if (loopIndex >= 0 && loopIndex < itemsList.size()) {
+            Object loopItem = itemsList.get(loopIndex);
+            doWhileTask.addOutput("loopItem", loopItem);
+            LOGGER.debug(
+                    "Injected loop variables for task {}: loopIndex={}, loopItem={}",
+                    doWhileTask.getTaskId(),
+                    loopIndex,
+                    loopItem);
+        } else {
+            LOGGER.warn(
+                    "loopIndex {} is out of bounds for items list of size {} in task {}",
+                    loopIndex,
+                    itemsList.size(),
+                    doWhileTask.getTaskId());
+        }
+    }
+
+    /**
+     * Check if this DO_WHILE task is using list iteration mode (has 'items' parameter)
+     *
+     * @param task The DO_WHILE task model
+     * @return true if the task has an 'items' parameter set
+     */
+    @VisibleForTesting
+    boolean isListIteration(TaskModel task) {
+        String items = task.getWorkflowTask().getItems();
+        return items != null && !items.trim().isEmpty();
+    }
+
+    /**
+     * Evaluate the 'items' parameter to get the list of items to iterate over.
+     *
+     * @param workflow The workflow model
+     * @param task The DO_WHILE task model
+     * @return List of items to iterate over, or empty list if items cannot be evaluated
+     */
+    @VisibleForTesting
+    List<Object> evaluateItemsList(WorkflowModel workflow, TaskModel task) {
+        String itemsParam = task.getWorkflowTask().getItems();
+        if (itemsParam == null || itemsParam.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        TaskDef taskDefinition = task.getTaskDefinition().orElse(null);
+
+        // Create a temporary input parameters map with the items parameter
+        Map<String, Object> tempInputParams = new HashMap<>();
+        tempInputParams.put("items", itemsParam);
+
+        // Use ParametersUtils to evaluate the expression
+        Map<String, Object> evaluatedParams =
+                parametersUtils.getTaskInputV2(
+                        tempInputParams, workflow, task.getTaskId(), taskDefinition);
+
+        Object itemsValue = evaluatedParams.get("items");
+
+        // Handle different types of items values
+        if (itemsValue instanceof List) {
+            return (List<Object>) itemsValue;
+        } else if (itemsValue instanceof Collection) {
+            return new ArrayList<>((Collection<?>) itemsValue);
+        } else if (itemsValue != null) {
+            // If it's a single value, wrap it in a list
+            return Collections.singletonList(itemsValue);
+        }
+
+        return Collections.emptyList();
+    }
+
     @VisibleForTesting
     boolean evaluateCondition(WorkflowModel workflow, TaskModel task) {
         TaskDef taskDefinition = task.getTaskDefinition().orElse(null);
@@ -354,6 +452,49 @@ public class DoWhile extends WorkflowSystemTask {
                     loopOverTask.getOutputData());
         }
 
+        // Check if we're in list iteration mode
+        if (isListIteration(task)) {
+            List<Object> itemsList = evaluateItemsList(workflow, task);
+            int currentIteration = task.getIteration();
+
+            // Inject loopIndex and loopItem into condition input
+            // loopIndex is 0-based (currentIteration - 1 because iteration starts at 1)
+            int loopIndex = currentIteration - 1;
+            conditionInput.put("loopIndex", loopIndex);
+
+            // Inject loopItem if we're within bounds
+            if (loopIndex >= 0 && loopIndex < itemsList.size()) {
+                conditionInput.put("loopItem", itemsList.get(loopIndex));
+            }
+
+            // For list iteration, continue if we haven't reached the end of the list
+            // The condition is: loopIndex < itemsList.size() - 1 (there's another item after
+            // current)
+            boolean hasMoreItems = loopIndex < itemsList.size() - 1;
+
+            // If there's a loopCondition, evaluate it AND combine with hasMoreItems
+            // Otherwise, just use hasMoreItems
+            String condition = task.getWorkflowTask().getLoopCondition();
+            if (condition != null && !condition.trim().isEmpty()) {
+                LOGGER.debug(
+                        "List iteration: Evaluating condition: {} with loopIndex={}, loopItem={}",
+                        condition,
+                        loopIndex,
+                        conditionInput.get("loopItem"));
+                boolean conditionResult = ScriptEvaluator.evalBool(condition, conditionInput);
+                // Continue only if BOTH condition is true AND there are more items
+                return conditionResult && hasMoreItems;
+            } else {
+                LOGGER.debug(
+                        "List iteration: loopIndex={}, items.size={}, hasMoreItems={}",
+                        loopIndex,
+                        itemsList.size(),
+                        hasMoreItems);
+                return hasMoreItems;
+            }
+        }
+
+        // Counter-based iteration (backward compatibility)
         String condition = task.getWorkflowTask().getLoopCondition();
         boolean result = false;
         if (condition != null) {
