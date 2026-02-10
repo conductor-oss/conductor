@@ -19,7 +19,6 @@ import java.util.function.Supplier;
 
 import org.conductoross.conductor.os3.utils.TestUtils;
 import org.joda.time.DateTime;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
@@ -36,7 +35,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-@Ignore("Integration tests require Docker/Testcontainers with OpenSearch 3.0 - not available in CI")
 public class TestOpenSearchRestDAO extends OpenSearchRestDaoBaseTest {
 
     private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMWW");
