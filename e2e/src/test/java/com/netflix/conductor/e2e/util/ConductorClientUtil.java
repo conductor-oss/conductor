@@ -37,9 +37,9 @@ public class ConductorClientUtil {
             conductorClient =
                     ConductorClient.builder()
                             .basePath(serverUrl)
-                            .connectTimeout(30000)
-                            .readTimeout(30000)
-                            .writeTimeout(30000)
+                            .connectTimeout(120_000)
+                            .readTimeout(120_000)
+                            .writeTimeout(120_000)
                             .build();
         }
         return conductorClient;
