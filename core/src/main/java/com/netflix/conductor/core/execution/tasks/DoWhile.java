@@ -370,19 +370,37 @@ public class DoWhile extends WorkflowSystemTask {
     }
 
     /**
-     * Check if this DO_WHILE task is using list iteration mode (has 'items' parameter)
+     * Check if this DO_WHILE task is using list iteration mode (has 'items' parameter or '_items'
+     * in inputParameters for Orkes compatibility)
      *
      * @param task The DO_WHILE task model
-     * @return true if the task has an 'items' parameter set
+     * @return true if the task has an 'items' parameter set or '_items' in inputParameters
      */
     @VisibleForTesting
     boolean isListIteration(TaskModel task) {
+        // Check new OSS approach: items field on WorkflowTask
         String items = task.getWorkflowTask().getItems();
-        return items != null && !items.trim().isEmpty();
+        if (items != null && !items.trim().isEmpty()) {
+            return true;
+        }
+
+        // Check Orkes compatibility: _items in inputParameters
+        Map<String, Object> inputParams = task.getWorkflowTask().getInputParameters();
+        if (inputParams != null && inputParams.containsKey("_items")) {
+            Object itemsValue = inputParams.get("_items");
+            return itemsValue != null
+                    && (itemsValue instanceof String && !((String) itemsValue).trim().isEmpty()
+                            || itemsValue instanceof Collection
+                            || itemsValue instanceof Object[]);
+        }
+
+        return false;
     }
 
     /**
-     * Evaluate the 'items' parameter to get the list of items to iterate over.
+     * Evaluate the 'items' parameter to get the list of items to iterate over. Supports both new
+     * OSS approach (items field on WorkflowTask) and Orkes compatibility (_items in
+     * inputParameters).
      *
      * @param workflow The workflow model
      * @param task The DO_WHILE task model
@@ -390,29 +408,45 @@ public class DoWhile extends WorkflowSystemTask {
      */
     @VisibleForTesting
     List<Object> evaluateItemsList(WorkflowModel workflow, TaskModel task) {
+        TaskDef taskDefinition = task.getTaskDefinition().orElse(null);
+        Object itemsValue = null;
+
+        // Priority 1: Check new OSS approach - items field on WorkflowTask
         String itemsParam = task.getWorkflowTask().getItems();
-        if (itemsParam == null || itemsParam.trim().isEmpty()) {
-            return Collections.emptyList();
+        if (itemsParam != null && !itemsParam.trim().isEmpty()) {
+            // Create a temporary input parameters map with the items parameter
+            Map<String, Object> tempInputParams = new HashMap<>();
+            tempInputParams.put("items", itemsParam);
+
+            // Use ParametersUtils to evaluate the expression
+            Map<String, Object> evaluatedParams =
+                    parametersUtils.getTaskInputV2(
+                            tempInputParams, workflow, task.getTaskId(), taskDefinition);
+
+            itemsValue = evaluatedParams.get("items");
         }
 
-        TaskDef taskDefinition = task.getTaskDefinition().orElse(null);
+        // Priority 2: Check Orkes compatibility - _items in inputParameters
+        if (itemsValue == null) {
+            Map<String, Object> evaluatedInputParams =
+                    parametersUtils.getTaskInputV2(
+                            task.getWorkflowTask().getInputParameters(),
+                            workflow,
+                            task.getTaskId(),
+                            taskDefinition);
 
-        // Create a temporary input parameters map with the items parameter
-        Map<String, Object> tempInputParams = new HashMap<>();
-        tempInputParams.put("items", itemsParam);
+            if (evaluatedInputParams.containsKey("_items")) {
+                itemsValue = evaluatedInputParams.get("_items");
+            }
+        }
 
-        // Use ParametersUtils to evaluate the expression
-        Map<String, Object> evaluatedParams =
-                parametersUtils.getTaskInputV2(
-                        tempInputParams, workflow, task.getTaskId(), taskDefinition);
-
-        Object itemsValue = evaluatedParams.get("items");
-
-        // Handle different types of items values
+        // Convert itemsValue to List<Object>
         if (itemsValue instanceof List) {
             return (List<Object>) itemsValue;
         } else if (itemsValue instanceof Collection) {
             return new ArrayList<>((Collection<?>) itemsValue);
+        } else if (itemsValue instanceof Object[]) {
+            return Arrays.asList((Object[]) itemsValue);
         } else if (itemsValue != null) {
             // If it's a single value, wrap it in a list
             return Collections.singletonList(itemsValue);

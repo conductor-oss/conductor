@@ -536,7 +536,8 @@ public class DoWhileTest {
         // Test iteration 1 (loopIndex=0) - should continue
         doWhileTask.setIteration(1);
         assertTrue(
-                "Should continue after first iteration", doWhile.evaluateCondition(workflow, doWhileTask));
+                "Should continue after first iteration",
+                doWhile.evaluateCondition(workflow, doWhileTask));
 
         // Test iteration 2 (loopIndex=1) - should continue
         doWhileTask.setIteration(2);
@@ -547,7 +548,8 @@ public class DoWhileTest {
         // Test iteration 3 (loopIndex=2) - should stop (last item)
         doWhileTask.setIteration(3);
         assertFalse(
-                "Should stop after last iteration", doWhile.evaluateCondition(workflow, doWhileTask));
+                "Should stop after last iteration",
+                doWhile.evaluateCondition(workflow, doWhileTask));
     }
 
     @Test
@@ -609,5 +611,102 @@ public class DoWhileTest {
         doWhileTask.addOutput("iteration", 3);
         assertFalse(
                 "Should stop counter-based loop", doWhile.evaluateCondition(workflow, doWhileTask));
+    }
+
+    // Orkes compatibility tests (_items in inputParameters)
+
+    @Test
+    public void testIsListIteration_WithOrkesItemsParameter_ReturnsTrue() {
+        TaskModel doWhileTask = createDoWhileTask();
+        // Orkes approach: _items in inputParameters
+        Map<String, Object> inputParams = new HashMap<>();
+        inputParams.put("_items", "${workflow.input.myList}");
+        doWhileTask.getWorkflowTask().setInputParameters(inputParams);
+
+        assertTrue(
+                "Should identify as list iteration when _items parameter is set",
+                doWhile.isListIteration(doWhileTask));
+    }
+
+    @Test
+    public void testEvaluateItemsList_WithOrkesItemsParameter_ReturnsCorrectItems() {
+        WorkflowModel workflow = createWorkflowWithDef();
+
+        // Set up workflow input with a list
+        Map<String, Object> workflowInput = new HashMap<>();
+        List<String> itemsList = List.of("orkes1", "orkes2", "orkes3");
+        workflowInput.put("myList", itemsList);
+        workflow.setInput(workflowInput);
+
+        TaskModel doWhileTask = createDoWhileTask();
+        // Orkes approach: _items in inputParameters
+        Map<String, Object> inputParams = new HashMap<>();
+        inputParams.put("_items", "${workflow.input.myList}");
+        doWhileTask.getWorkflowTask().setInputParameters(inputParams);
+
+        List<Object> result = doWhile.evaluateItemsList(workflow, doWhileTask);
+
+        assertEquals("Should return correct number of items", 3, result.size());
+        assertEquals("Should have correct first item", "orkes1", result.get(0));
+        assertEquals("Should have correct second item", "orkes2", result.get(1));
+        assertEquals("Should have correct third item", "orkes3", result.get(2));
+    }
+
+    @Test
+    public void testItemsPriority_OSSFieldOverOrkesParameter() {
+        WorkflowModel workflow = createWorkflowWithDef();
+
+        // Set up workflow input with two different lists
+        Map<String, Object> workflowInput = new HashMap<>();
+        List<String> ossList = List.of("oss1", "oss2");
+        List<String> orkesList = List.of("orkes1", "orkes2", "orkes3");
+        workflowInput.put("ossList", ossList);
+        workflowInput.put("orkesList", orkesList);
+        workflow.setInput(workflowInput);
+
+        TaskModel doWhileTask = createDoWhileTask();
+        // Set both: items field (OSS) and _items in inputParameters (Orkes)
+        doWhileTask.getWorkflowTask().setItems("${workflow.input.ossList}");
+
+        Map<String, Object> inputParams = new HashMap<>();
+        inputParams.put("_items", "${workflow.input.orkesList}");
+        doWhileTask.getWorkflowTask().setInputParameters(inputParams);
+
+        List<Object> result = doWhile.evaluateItemsList(workflow, doWhileTask);
+
+        // Should prefer OSS approach (items field) over Orkes approach (_items parameter)
+        assertEquals("Should use OSS items field (priority)", 2, result.size());
+        assertEquals("Should have OSS item", "oss1", result.get(0));
+        assertEquals("Should have OSS item", "oss2", result.get(1));
+    }
+
+    @Test
+    public void testInjectLoopVariables_WithOrkesItemsParameter() {
+        WorkflowModel workflow = createWorkflowWithDef();
+
+        // Set up workflow input with a list
+        Map<String, Object> workflowInput = new HashMap<>();
+        List<String> itemsList = List.of("orkes-a", "orkes-b", "orkes-c");
+        workflowInput.put("items", itemsList);
+        workflow.setInput(workflowInput);
+
+        TaskModel doWhileTask = createDoWhileTask();
+        // Orkes approach: _items in inputParameters
+        Map<String, Object> inputParams = new HashMap<>();
+        inputParams.put("_items", "${workflow.input.items}");
+        doWhileTask.getWorkflowTask().setInputParameters(inputParams);
+
+        doWhileTask.setIteration(2); // Second iteration (loopIndex = 1)
+
+        doWhile.injectLoopVariables(workflow, doWhileTask);
+
+        // Verify loopIndex is injected (0-based)
+        assertEquals("loopIndex should be 1", 1, doWhileTask.getOutputData().get("loopIndex"));
+
+        // Verify loopItem is injected
+        assertEquals(
+                "loopItem should be 'orkes-b'",
+                "orkes-b",
+                doWhileTask.getOutputData().get("loopItem"));
     }
 }
