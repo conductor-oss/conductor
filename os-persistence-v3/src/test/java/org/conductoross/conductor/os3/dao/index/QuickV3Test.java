@@ -12,9 +12,8 @@
  */
 package org.conductoross.conductor.os3.dao.index;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.common.run.WorkflowSummary;
+import java.time.Instant;
+
 import org.apache.hc.core5.http.HttpHost;
 import org.conductoross.conductor.os3.config.OpenSearchProperties;
 import org.junit.After;
@@ -26,10 +25,13 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.transport.rest_client.RestClientTransport;
 import org.springframework.retry.support.RetryTemplate;
 
-import java.time.Instant;
+import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.run.WorkflowSummary;
 
-import static org.junit.Assert.assertTrue;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class QuickV3Test {
 
@@ -41,7 +43,8 @@ public class QuickV3Test {
     public void setup() throws Exception {
         objectMapper = new ObjectMapper();
         restClient = RestClient.builder(new HttpHost("http", "localhost", 9202)).build();
-        RestClientTransport transport = new RestClientTransport(restClient, new JacksonJsonpMapper(objectMapper));
+        RestClientTransport transport =
+                new RestClientTransport(restClient, new JacksonJsonpMapper(objectMapper));
         OpenSearchClient client = new OpenSearchClient(transport);
 
         OpenSearchProperties props = new OpenSearchProperties();
@@ -77,7 +80,9 @@ public class QuickV3Test {
         Thread.sleep(1500);
 
         // Search for it
-        var result = dao.searchWorkflows("workflowId='" + workflow.getWorkflowId() + "'", "*", 0, 10, null);
+        var result =
+                dao.searchWorkflows(
+                        "workflowId='" + workflow.getWorkflowId() + "'", "*", 0, 10, null);
         System.out.println("✓ Search found " + result.getTotalHits() + " workflows");
 
         assertTrue("Should find the workflow", result.getTotalHits() > 0);
