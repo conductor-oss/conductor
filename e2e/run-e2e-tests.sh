@@ -107,7 +107,7 @@ echo ""
 
 # Run the tests
 cd "$PROJECT_ROOT"
-./gradlew :conductor-e2e:test --info
+./gradlew :conductor-e2e:test -PE2ETests --info
 
 TEST_RESULT=$?
 
