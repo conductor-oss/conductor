@@ -18,6 +18,7 @@ import org.apache.hc.core5.http.HttpHost;
 import org.conductoross.conductor.os3.config.OpenSearchProperties;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
@@ -63,6 +64,7 @@ public class QuickV3Test {
     }
 
     @Test
+    @Ignore("Manual integration test - requires OpenSearch 3.0 running on localhost:9202")
     public void testBasicWorkflowOperations() throws Exception {
         // Create a test workflow
         WorkflowSummary workflow = new WorkflowSummary();
