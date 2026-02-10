@@ -1,0 +1,94 @@
+name: E2E Tests
+
+on:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Gradle wrapper validation
+        uses: gradle/wrapper-validation-action@v3
+
+      - name: Set up Zulu JDK 21
+        uses: actions/setup-java@v3
+        with:
+          distribution: "zulu"
+          java-version: "21"
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
+
+      - name: Build Conductor server jar
+        run: ./gradlew :conductor-server:build -x test -x spotlessCheck --no-daemon
+
+      - name: Prepare Docker build context
+        run: |
+          cp server/build/libs/*boot*.jar e2e/docker/conductor-server.jar
+          cp -r e2e/config e2e/docker/
+
+      - name: Build Conductor Docker image
+        run: docker build -t conductor:server-e2e e2e/docker
+
+      - name: Start E2E infrastructure
+        working-directory: e2e
+        run: docker compose up -d
+
+      - name: Wait for Conductor to be ready
+        run: |
+          echo "Waiting for Conductor proxy to be ready..."
+          max_attempts=60
+          attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            if curl -sf http://localhost:8080/health > /dev/null 2>&1; then
+              echo "Conductor proxy is ready!"
+              exit 0
+            fi
+            echo "  Attempt $attempt/$max_attempts: not ready yet"
+            sleep 5
+            attempt=$((attempt + 1))
+          done
+          echo "Conductor failed to start within the expected time."
+          docker compose -f e2e/docker-compose.yml logs
+          exit 1
+
+      - name: Run E2E tests
+        env:
+          CONDUCTOR_SERVER_URL: http://localhost:8080/api
+          E2E_RETRY_ENABLED: "true"
+        run: ./gradlew :conductor-e2e:test -PE2ETests --no-daemon
+
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v3
+        if: always()
+        with:
+          report_paths: "e2e/build/test-results/test/TEST-*.xml"
+
+      - name: Upload E2E test reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-test-reports
+          path: e2e/build/reports
+
+      - name: Dump Docker logs on failure
+        if: failure()
+        working-directory: e2e
+        run: docker compose logs
+
+      - name: Stop E2E infrastructure
+        if: always()
+        working-directory: e2e
+        run: docker compose down -v
