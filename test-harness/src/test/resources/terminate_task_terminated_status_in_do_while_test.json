@@ -1,0 +1,45 @@
+{
+  "name": "test_terminate_task_terminated_in_do_while",
+  "description": "Test workflow to verify TERMINATE task with terminationStatus=TERMINATED inside DO_WHILE loop correctly terminates workflow with TERMINATED status (issue #750)",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "do_while",
+      "taskReferenceName": "do_while_ref",
+      "inputParameters": {
+        "items": [
+          "a",
+          "b",
+          "c"
+        ]
+      },
+      "type": "DO_WHILE",
+      "loopCondition": "",
+      "loopOver": [
+        {
+          "name": "lambda",
+          "taskReferenceName": "lambda_ref",
+          "inputParameters": {
+            "scriptExpression": "function e() { return {'result': 'processed item: ' + $.do_while_ref.output.loopItem}; } e();"
+          },
+          "type": "LAMBDA"
+        },
+        {
+          "name": "terminate",
+          "taskReferenceName": "terminate_ref",
+          "inputParameters": {
+            "terminationStatus": "TERMINATED",
+            "terminationReason": "Workflow terminated by TERMINATE task in DO_WHILE loop"
+          },
+          "type": "TERMINATE"
+        }
+      ],
+      "evaluatorType": "value-param"
+    }
+  ],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0
+}

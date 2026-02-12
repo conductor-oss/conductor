@@ -512,6 +512,13 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                                 workflow,
                                 new TerminateWorkflowException(
                                         reason, workflow.getStatus(), terminateTask));
+            } else if (WorkflowModel.Status.TERMINATED.name().equals(terminationStatus)) {
+                workflow.setStatus(WorkflowModel.Status.TERMINATED);
+                workflow =
+                        terminate(
+                                workflow,
+                                new TerminateWorkflowException(
+                                        reason, workflow.getStatus(), terminateTask));
             } else {
                 workflow.setReasonForIncompletion(reason);
                 workflow = completeWorkflow(workflow);
