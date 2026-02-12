@@ -20,7 +20,7 @@
           "name": "lambda",
           "taskReferenceName": "lambda_ref",
           "inputParameters": {
-            "scriptExpression": "function e() { return {'result': 'processed item: ' + $.do_while_ref.output.loopItem}; } e();"
+            "scriptExpression": "function e() { return {'result': 'processed item'}; } e();"
           },
           "type": "LAMBDA"
         },
