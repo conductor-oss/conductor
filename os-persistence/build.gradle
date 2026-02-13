@@ -32,7 +32,7 @@ dependencies {
     testImplementation "net.java.dev.jna:jna:5.7.0"
     testImplementation "org.awaitility:awaitility:${revAwaitility}"
     testImplementation "org.opensearch:opensearch-testcontainers:2.1.2"
-    testImplementation "org.testcontainers:testcontainers:1.20.4"
+    testImplementation "org.testcontainers:testcontainers:${revTestContainer}"
     testImplementation project(':conductor-test-util').sourceSets.test.output
     testImplementation 'org.springframework.retry:spring-retry'
 
