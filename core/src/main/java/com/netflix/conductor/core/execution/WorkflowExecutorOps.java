@@ -602,7 +602,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             throw new ConflictException("Cannot terminate a COMPLETED workflow.");
         }
         if (WorkflowModel.Status.TERMINATED.equals(workflow.getStatus())) {
-            // Workflow is already in TERMINATED state; no additional termination action is required.
+            // Workflow is already in TERMINATED state; no additional termination action is
+            // required.
             return;
         }
         workflow.setStatus(WorkflowModel.Status.TERMINATED);
