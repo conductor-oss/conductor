@@ -34,6 +34,7 @@ public class LLMResponse {
     private int completionTokens;
     private List<ToolCall> toolCalls;
     private WorkflowDef workflow;
+    private String jobId;
 
     public boolean hasToolCalls() {
         return toolCalls != null && !toolCalls.isEmpty();

@@ -20,7 +20,6 @@ import java.util.Map;
 
 import org.conductoross.conductor.ai.models.IndexedDoc;
 import org.conductoross.conductor.ai.vectordb.VectorDB;
-import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
@@ -43,16 +42,15 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 
 @Slf4j
-@Component(PineconeDB.TYPE)
 public class PineconeDB extends VectorDB {
 
-    public static final String TYPE = "pineconedb";
+    public static final String TYPE = "pinecone";
     private final Cache<String, Index> indexCache;
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
     private final PineconeConfig config;
 
-    public PineconeDB(PineconeConfig config) {
-        super(TYPE);
+    public PineconeDB(String name, PineconeConfig config) {
+        super(name, TYPE);
         this.config = config;
         this.indexCache =
                 CacheBuilder.newBuilder()

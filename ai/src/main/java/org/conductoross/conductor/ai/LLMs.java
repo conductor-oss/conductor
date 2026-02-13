@@ -23,6 +23,7 @@ import org.conductoross.conductor.ai.models.ChatCompletion;
 import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.models.ImageGenRequest;
 import org.conductoross.conductor.ai.models.LLMResponse;
+import org.conductoross.conductor.ai.models.VideoGenRequest;
 import org.conductoross.conductor.common.JsonSchemaValidator;
 import org.conductoross.conductor.common.utils.StringTemplate;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
@@ -88,6 +89,21 @@ public class LLMs {
     public List<Float> generateEmbeddings(Task task, EmbeddingGenRequest embeddingGenRequest) {
         AIModel llm = this.modelProvider.getModel(embeddingGenRequest);
         return llm.generateEmbeddings(embeddingGenRequest);
+    }
+
+    public LLMResponse generateVideo(Task task, VideoGenRequest videoGenRequest) {
+        AIModel llm = this.modelProvider.getModel(videoGenRequest);
+        String prompt =
+                replacePromptVariables(
+                        videoGenRequest.getPrompt(), videoGenRequest.getPromptVariables());
+        videoGenRequest.setPrompt(prompt);
+        return helper.generateVideo(
+                llm, videoGenRequest, getPayloadStoreLocation(task), tokenUsageLogger);
+    }
+
+    public LLMResponse checkVideoStatus(Task task, VideoGenRequest videoGenRequest) {
+        AIModel llm = this.modelProvider.getModel(videoGenRequest);
+        return helper.checkVideoStatus(llm, videoGenRequest, getPayloadStoreLocation(task));
     }
 
     private String replacePromptVariables(String prompt, Map<String, Object> paramReplacement) {
