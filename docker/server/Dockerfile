@@ -15,7 +15,7 @@ COPY . /conductor
 WORKDIR /conductor
 
 # Build the server on run
-RUN ./gradlew build -x test -x spotlessCheck -PindexingBackend=${INDEXING_BACKEND}
+RUN ./gradlew build -x test -x spotlessCheck -x shadowJar -x :conductor-os-persistence-v3:build -PindexingBackend=${INDEXING_BACKEND}
 WORKDIR /server/build/libs
 RUN ls -ltr
 
