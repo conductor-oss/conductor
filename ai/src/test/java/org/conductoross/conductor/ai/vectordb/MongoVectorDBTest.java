@@ -27,7 +27,6 @@ import org.conductoross.conductor.ai.tasks.worker.VectorDBWorkers;
 import org.conductoross.conductor.ai.vectordb.mongodb.MongoDBConfig;
 import org.conductoross.conductor.ai.vectordb.mongodb.MongoVectorDB;
 import org.conductoross.conductor.common.JsonSchemaValidator;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -58,9 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class MongoVectorDBTest {
 
-    private static MongoDBContainer mongoDBContainer =
-            new MongoDBContainer("mongo:7.0").withSharding();
-
+    private static MongoDBContainer mongoDBContainer;
     private static MongoClient mongoClient;
     private static MongoDatabase database;
     private static VectorDBWorkers aiWorkers;
@@ -68,6 +65,7 @@ public class MongoVectorDBTest {
 
     @BeforeAll
     public static void setup() {
+        mongoDBContainer = new MongoDBContainer("mongo:7.0").withSharding();
         mongoDBContainer.start();
 
         CodecRegistry pojoCodecRegistry =
@@ -105,13 +103,6 @@ public class MongoVectorDBTest {
         VectorDBProvider vectorDBProvider = new VectorDBProvider(List.of(vectorDBConfig));
         VectorDBs vectorDBs = new VectorDBs(vectorDBProvider);
         aiWorkers = new VectorDBWorkers(vectorDBs, llm);
-    }
-
-    @AfterAll
-    public static void tearDown() {
-        if (mongoDBContainer != null) {
-            mongoDBContainer.stop();
-        }
     }
 
     @Test
