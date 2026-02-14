@@ -12,8 +12,7 @@
  */
 package com.netflix.conductor.os.dao.index;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.runner.RunWith;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,6 +51,7 @@ public abstract class OpenSearchTest {
         }
     }
 
+    @ClassRule
     protected static OpensearchContainer<?> container =
             new OpensearchContainer<>(
                     DockerImageName.parse(
@@ -61,14 +61,4 @@ public abstract class OpenSearchTest {
     @Autowired protected ObjectMapper objectMapper;
 
     @Autowired protected OpenSearchProperties properties;
-
-    @BeforeClass
-    public static void startServer() {
-        container.start();
-    }
-
-    @AfterClass
-    public static void stopServer() {
-        container.stop();
-    }
 }

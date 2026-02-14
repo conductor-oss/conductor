@@ -29,6 +29,7 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +60,9 @@ public abstract class AbstractEndToEndTest {
     private static final String DEFAULT_NULL_VALUE = "null";
     protected static final String DEFAULT_EMAIL_ADDRESS = "test@harness.com";
 
+    // Singleton container - managed by @ClassRule, stopped automatically when JVM exits
+    // https://www.testcontainers.org/test_framework_integration/manual_lifecycle_control/#singleton-containers
+    @ClassRule
     private static final ElasticsearchContainer container =
             new ElasticsearchContainer(
                     DockerImageName.parse("elasticsearch")
@@ -66,21 +70,12 @@ public abstract class AbstractEndToEndTest {
 
     private static RestClient restClient;
 
-    // Initialization happens in a static block so the container is initialized
-    // only once for all the sub-class tests in a CI environment
-    // container is stopped when JVM exits
-    // https://www.testcontainers.org/test_framework_integration/manual_lifecycle_control/#singleton-containers
-    static {
-        container.start();
-        String httpHostAddress = container.getHttpHostAddress();
-        System.setProperty("conductor.elasticsearch.url", "http://" + httpHostAddress);
-        System.setProperty("conductor.elasticsearch.url", "http://" + httpHostAddress);
-        log.info("Initialized Elasticsearch {}", container.getContainerId());
-    }
-
     @BeforeClass
     public static void initializeEs() {
+        // Container started automatically by @ClassRule
         String httpHostAddress = container.getHttpHostAddress();
+        System.setProperty("conductor.elasticsearch.url", "http://" + httpHostAddress);
+        log.info("Initialized Elasticsearch {}", container.getContainerId());
         String host = httpHostAddress.split(":")[0];
         int port = Integer.parseInt(httpHostAddress.split(":")[1]);
 

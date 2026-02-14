@@ -14,8 +14,7 @@ package com.netflix.conductor.es6.dao.index;
 
 import java.util.Map;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -47,6 +46,7 @@ abstract class ElasticSearchTest {
         }
     }
 
+    @ClassRule
     protected static final ElasticsearchContainer container =
             new ElasticsearchContainer(
                             DockerImageName.parse(
@@ -58,14 +58,4 @@ abstract class ElasticSearchTest {
     @Autowired protected ObjectMapper objectMapper;
 
     @Autowired protected ElasticSearchProperties properties;
-
-    @BeforeClass
-    public static void startServer() {
-        container.start();
-    }
-
-    @AfterClass
-    public static void stopServer() {
-        container.stop();
-    }
 }
