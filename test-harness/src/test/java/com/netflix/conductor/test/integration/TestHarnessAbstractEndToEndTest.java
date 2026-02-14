@@ -72,7 +72,7 @@ public abstract class TestHarnessAbstractEndToEndTest {
     // Singleton containers - managed by @ClassRule, stopped automatically when JVM exits
     // https://www.testcontainers.org/test_framework_integration/manual_lifecycle_control/#singleton-containers
     @ClassRule
-    private static final ElasticsearchContainer container =
+    public static final ElasticsearchContainer container =
             new ElasticsearchContainer(
                             DockerImageName.parse("elasticsearch")
                                     .withTag("7.17.11")) // this should match the client version
@@ -81,7 +81,7 @@ public abstract class TestHarnessAbstractEndToEndTest {
                     .withEnv("discovery.type", "single-node");
 
     @ClassRule
-    private static GenericContainer redis =
+    public static GenericContainer redis =
             new GenericContainer<>(DockerImageName.parse("redis:6.2-alpine"))
                     .withExposedPorts(6379);
 

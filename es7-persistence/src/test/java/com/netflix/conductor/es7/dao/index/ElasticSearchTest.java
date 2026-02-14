@@ -45,7 +45,7 @@ public abstract class ElasticSearchTest {
     }
 
     @ClassRule
-    protected static final ElasticsearchContainer container =
+    public static final ElasticsearchContainer container =
             new ElasticsearchContainer(
                     DockerImageName.parse("elasticsearch")
                             .withTag("7.17.11")); // this should match the client version

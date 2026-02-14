@@ -52,7 +52,7 @@ public abstract class OpenSearchTest {
     }
 
     @ClassRule
-    protected static OpensearchContainer<?> container =
+    public static OpensearchContainer<?> container =
             new OpensearchContainer<>(
                     DockerImageName.parse(
                             "opensearchproject/opensearch:2.18.0")); // this should match the client

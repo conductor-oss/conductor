@@ -47,7 +47,7 @@ abstract class ElasticSearchTest {
     }
 
     @ClassRule
-    protected static final ElasticsearchContainer container =
+    public static final ElasticsearchContainer container =
             new ElasticsearchContainer(
                             DockerImageName.parse(
                                             "docker.elastic.co/elasticsearch/elasticsearch-oss")
