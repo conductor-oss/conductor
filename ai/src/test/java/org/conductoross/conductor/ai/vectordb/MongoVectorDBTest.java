@@ -27,6 +27,7 @@ import org.conductoross.conductor.ai.tasks.worker.VectorDBWorkers;
 import org.conductoross.conductor.ai.vectordb.mongodb.MongoDBConfig;
 import org.conductoross.conductor.ai.vectordb.mongodb.MongoVectorDB;
 import org.conductoross.conductor.common.JsonSchemaValidator;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -34,8 +35,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.core.env.StandardEnvironment;
 import org.testcontainers.containers.MongoDBContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -57,10 +56,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
         properties = {"conductor.integrations.ai.enabled=true"},
         classes = {TestConfiguration.class})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Testcontainers
 public class MongoVectorDBTest {
 
-    @Container
     private static MongoDBContainer mongoDBContainer =
             new MongoDBContainer("mongo:7.0").withSharding();
 
@@ -71,7 +68,7 @@ public class MongoVectorDBTest {
 
     @BeforeAll
     public static void setup() {
-        // Container is automatically started by @Testcontainers framework
+        mongoDBContainer.start();
 
         CodecRegistry pojoCodecRegistry =
                 CodecRegistries.fromRegistries(
@@ -108,6 +105,13 @@ public class MongoVectorDBTest {
         VectorDBProvider vectorDBProvider = new VectorDBProvider(List.of(vectorDBConfig));
         VectorDBs vectorDBs = new VectorDBs(vectorDBProvider);
         aiWorkers = new VectorDBWorkers(vectorDBs, llm);
+    }
+
+    @AfterAll
+    public static void tearDown() {
+        if (mongoDBContainer != null) {
+            mongoDBContainer.stop();
+        }
     }
 
     @Test
