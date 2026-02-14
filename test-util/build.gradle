@@ -43,6 +43,7 @@ dependencies {
     implementation "org.elasticsearch.client:elasticsearch-rest-client:6.8.23"
     implementation "org.elasticsearch.client:elasticsearch-rest-high-level-client:6.8.23"
 
+    implementation "org.testcontainers:spock:${revTestContainer}"
     implementation "org.testcontainers:elasticsearch:${revTestContainer}"
     implementation "org.testcontainers:mysql:${revTestContainer}"
     implementation "org.testcontainers:postgresql:${revTestContainer}"
