@@ -27,9 +27,12 @@ import com.netflix.conductor.service.MetadataService
 import com.netflix.conductor.test.util.WorkflowTestUtil
 import org.conductoross.conductor.core.execution.WorkflowSweeper
 import org.testcontainers.containers.GenericContainer
+import org.testcontainers.spock.Testcontainers
 import org.testcontainers.utility.DockerImageName
+import spock.lang.Shared
 import spock.lang.Specification
 
+@Testcontainers
 @SpringBootTest(classes = ConductorTestApp.class)
 @TestPropertySource(locations = "classpath:application-integrationtest.properties",properties = [
         "conductor.db.type=redis_standalone",
@@ -39,13 +42,9 @@ import spock.lang.Specification
 ])
 abstract class AbstractSpecification extends Specification {
 
-    private static redis
-
-    static {
-        redis = new GenericContainer<>(DockerImageName.parse("redis:6.2-alpine"))
-                .withExposedPorts(6379)
-        redis.start()
-    }
+    @Shared
+    static GenericContainer redis = new GenericContainer<>(DockerImageName.parse("redis:6.2-alpine"))
+            .withExposedPorts(6379)
 
     @Autowired
     ExecutionService workflowExecutionService

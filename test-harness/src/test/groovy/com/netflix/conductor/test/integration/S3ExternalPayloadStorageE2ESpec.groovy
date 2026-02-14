@@ -54,13 +54,12 @@ class S3ExternalPayloadStorageE2ESpec extends AbstractSpecification {
     ExternalPayloadStorage externalPayloadStorage
 
     def setupSpec() {
-        // Start LocalStack
-        localstack.start()
-        
+        // @Testcontainers annotation handles starting LocalStack automatically
+
         // Configure the test configuration with LocalStack endpoint
         LocalStackS3Configuration.setLocalStackEndpoint(
             localstack.getEndpointOverride(LocalStackContainer.Service.S3).toString())
-        
+
         // Create S3 client pointing to LocalStack for verification purposes
         testS3Client = S3Client.builder()
                 .endpointOverride(localstack.getEndpointOverride(LocalStackContainer.Service.S3))
