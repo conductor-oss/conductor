@@ -29,7 +29,6 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,10 +68,7 @@ public abstract class TestHarnessAbstractEndToEndTest {
     private static final String DEFAULT_NULL_VALUE = "null";
     protected static final String DEFAULT_EMAIL_ADDRESS = "test@harness.com";
 
-    // Singleton containers - managed by @ClassRule, stopped automatically when JVM exits
-    // https://www.testcontainers.org/test_framework_integration/manual_lifecycle_control/#singleton-containers
-    @ClassRule
-    public static final ElasticsearchContainer container =
+    private static final ElasticsearchContainer container =
             new ElasticsearchContainer(
                             DockerImageName.parse("elasticsearch")
                                     .withTag("7.17.11")) // this should match the client version
@@ -80,16 +76,22 @@ public abstract class TestHarnessAbstractEndToEndTest {
                     .withEnv("xpack.security.enabled", "false")
                     .withEnv("discovery.type", "single-node");
 
-    @ClassRule
-    public static GenericContainer redis =
+    private static GenericContainer redis =
             new GenericContainer<>(DockerImageName.parse("redis:6.2-alpine"))
                     .withExposedPorts(6379);
-
     private static RestClient restClient;
+
+    // Initialization happens in a static block so the container is initialized
+    // only once for all the sub-class tests in a CI environment
+    // container is stopped when JVM exits
+    // https://www.testcontainers.org/test_framework_integration/manual_lifecycle_control/#singleton-containers
+    static {
+    }
 
     @BeforeClass
     public static void initializeEs() {
-        // Containers started automatically by @ClassRule
+        container.start();
+        redis.start();
         String httpHostAddress = container.getHttpHostAddress();
         System.setProperty("conductor.elasticsearch.url", "http://" + httpHostAddress);
         System.setProperty(
@@ -124,7 +126,8 @@ public abstract class TestHarnessAbstractEndToEndTest {
         if (restClient != null) {
             restClient.close();
         }
-        // Containers stopped automatically by @ClassRule when JVM exits
+        redis.stop();
+        container.stop();
     }
 
     @Test

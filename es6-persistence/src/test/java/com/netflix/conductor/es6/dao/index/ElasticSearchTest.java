@@ -14,7 +14,8 @@ package com.netflix.conductor.es6.dao.index;
 
 import java.util.Map;
 
-import org.junit.ClassRule;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -35,7 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @RunWith(SpringRunner.class)
 @TestPropertySource(
         properties = {"conductor.indexing.enabled=true", "conductor.elasticsearch.version=6"})
-public abstract class ElasticSearchTest {
+abstract class ElasticSearchTest {
 
     @Configuration
     static class TestConfiguration {
@@ -46,8 +47,7 @@ public abstract class ElasticSearchTest {
         }
     }
 
-    @ClassRule
-    public static final ElasticsearchContainer container =
+    protected static final ElasticsearchContainer container =
             new ElasticsearchContainer(
                             DockerImageName.parse(
                                             "docker.elastic.co/elasticsearch/elasticsearch-oss")
@@ -58,4 +58,14 @@ public abstract class ElasticSearchTest {
     @Autowired protected ObjectMapper objectMapper;
 
     @Autowired protected ElasticSearchProperties properties;
+
+    @BeforeClass
+    public static void startServer() {
+        container.start();
+    }
+
+    @AfterClass
+    public static void stopServer() {
+        container.stop();
+    }
 }

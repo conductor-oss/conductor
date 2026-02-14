@@ -1,0 +1,16 @@
+{
+  "name": "parse_and_report",
+  "description": "Parse PR status and report results",
+  "retryCount": 3,
+  "timeoutSeconds": 60,
+  "inputKeys": [],
+  "outputKeys": ["status", "message", "details"],
+  "timeoutPolicy": "TIME_OUT_WF",
+  "retryLogic": "FIXED",
+  "retryDelaySeconds": 10,
+  "responseTimeoutSeconds": 50,
+  "concurrentExecLimit": 1,
+  "rateLimitPerFrequency": 0,
+  "rateLimitFrequencyInSeconds": 1,
+  "ownerEmail": "conductor@localhost"
+}

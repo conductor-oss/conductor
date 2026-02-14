@@ -12,7 +12,8 @@
  */
 package com.netflix.conductor.os.dao.index;
 
-import org.junit.ClassRule;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,8 +52,7 @@ public abstract class OpenSearchTest {
         }
     }
 
-    @ClassRule
-    public static OpensearchContainer<?> container =
+    protected static OpensearchContainer<?> container =
             new OpensearchContainer<>(
                     DockerImageName.parse(
                             "opensearchproject/opensearch:2.18.0")); // this should match the client
@@ -61,4 +61,14 @@ public abstract class OpenSearchTest {
     @Autowired protected ObjectMapper objectMapper;
 
     @Autowired protected OpenSearchProperties properties;
+
+    @BeforeClass
+    public static void startServer() {
+        container.start();
+    }
+
+    @AfterClass
+    public static void stopServer() {
+        container.stop();
+    }
 }

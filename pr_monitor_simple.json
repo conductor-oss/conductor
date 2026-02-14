@@ -1,0 +1,48 @@
+{
+  "name": "pr_build_monitor",
+  "description": "Monitor PR #749 build status",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "parse_and_report",
+      "taskReferenceName": "check_pr_ref",
+      "inputParameters": {},
+      "type": "SIMPLE"
+    },
+    {
+      "name": "wait_before_retry",
+      "taskReferenceName": "wait_ref",
+      "inputParameters": {
+        "duration": "60s"
+      },
+      "type": "WAIT"
+    },
+    {
+      "name": "decide_if_retry",
+      "taskReferenceName": "decide_ref",
+      "inputParameters": {
+        "status": "${check_pr_ref.output.status}"
+      },
+      "type": "SWITCH",
+      "expression": "status",
+      "evaluatorType": "value-param",
+      "decisionCases": {
+        "pending": [
+          {
+            "name": "parse_and_report",
+            "taskReferenceName": "check_pr_retry",
+            "inputParameters": {},
+            "type": "SIMPLE"
+          }
+        ],
+        "failed": [],
+        "completed": []
+      },
+      "defaultCase": []
+    }
+  ],
+  "schemaVersion": 2,
+  "restartable": true,
+  "ownerEmail": "conductor@localhost",
+  "timeoutSeconds": 3600
+}

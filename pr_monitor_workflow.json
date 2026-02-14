@@ -1,0 +1,89 @@
+{
+  "name": "pr_build_monitor",
+  "description": "Monitor PR #749 build status and report to Claude Code",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "check_pr_status",
+      "taskReferenceName": "check_pr_status_ref",
+      "inputParameters": {
+        "http_request": {
+          "uri": "https://api.github.com/repos/conductor-oss/conductor/pulls/749/statuses",
+          "method": "GET",
+          "headers": {
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "Conductor-PR-Monitor"
+          }
+        }
+      },
+      "type": "HTTP"
+    },
+    {
+      "name": "check_pr_checks",
+      "taskReferenceName": "check_pr_checks_ref",
+      "inputParameters": {
+        "http_request": {
+          "uri": "https://api.github.com/repos/conductor-oss/conductor/pulls/749/checks",
+          "method": "GET",
+          "headers": {
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "Conductor-PR-Monitor"
+          }
+        }
+      },
+      "type": "HTTP"
+    },
+    {
+      "name": "parse_and_report",
+      "taskReferenceName": "parse_and_report_ref",
+      "inputParameters": {
+        "statuses": "${check_pr_status_ref.output.response.body}",
+        "checks": "${check_pr_checks_ref.output.response.body}"
+      },
+      "type": "SIMPLE"
+    },
+    {
+      "name": "wait_if_pending",
+      "taskReferenceName": "wait_if_pending_ref",
+      "inputParameters": {
+        "duration": "30s"
+      },
+      "type": "WAIT"
+    },
+    {
+      "name": "decide_retry",
+      "taskReferenceName": "decide_retry_ref",
+      "inputParameters": {
+        "case_value_param": "${parse_and_report_ref.output.status}"
+      },
+      "type": "DECISION",
+      "caseValueParam": "case_value_param",
+      "decisionCases": {
+        "pending": [
+          {
+            "name": "check_pr_status",
+            "taskReferenceName": "check_pr_status_retry",
+            "inputParameters": {
+              "http_request": {
+                "uri": "https://api.github.com/repos/conductor-oss/conductor/pulls/749/statuses",
+                "method": "GET",
+                "headers": {
+                  "Accept": "application/vnd.github+json",
+                  "User-Agent": "Conductor-PR-Monitor"
+                }
+              }
+            },
+            "type": "HTTP"
+          }
+        ]
+      },
+      "defaultCase": []
+    }
+  ],
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "ownerEmail": "conductor@localhost",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0
+}

@@ -12,7 +12,8 @@
  */
 package com.netflix.conductor.es7.dao.index;
 
-import org.junit.ClassRule;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -44,8 +45,7 @@ public abstract class ElasticSearchTest {
         }
     }
 
-    @ClassRule
-    public static final ElasticsearchContainer container =
+    protected static final ElasticsearchContainer container =
             new ElasticsearchContainer(
                     DockerImageName.parse("elasticsearch")
                             .withTag("7.17.11")); // this should match the client version
@@ -53,4 +53,14 @@ public abstract class ElasticSearchTest {
     @Autowired protected ObjectMapper objectMapper;
 
     @Autowired protected ElasticSearchProperties properties;
+
+    @BeforeClass
+    public static void startServer() {
+        container.start();
+    }
+
+    @AfterClass
+    public static void stopServer() {
+        container.stop();
+    }
 }
