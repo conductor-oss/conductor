@@ -50,6 +50,7 @@ dependencies {
     api "org.springframework.boot:spring-boot-starter-jdbc"
 
 
+    testImplementation "org.testcontainers:junit-jupiter:${revTestContainer}"
     testImplementation "org.testcontainers:mongodb:${revTestContainer}"
     testImplementation "org.testcontainers:postgresql:${revTestContainer}"
     testImplementation "org.postgresql:postgresql:${revPostgres}"
