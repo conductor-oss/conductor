@@ -34,6 +34,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.core.env.StandardEnvironment;
 import org.testcontainers.containers.MongoDBContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -55,9 +57,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
         properties = {"conductor.integrations.ai.enabled=true"},
         classes = {TestConfiguration.class})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Testcontainers
 public class MongoVectorDBTest {
 
-    private static MongoDBContainer mongoDBContainer;
+    @Container
+    private static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:7.0").withSharding();
     private static MongoClient mongoClient;
     private static MongoDatabase database;
     private static VectorDBWorkers aiWorkers;
@@ -65,8 +69,7 @@ public class MongoVectorDBTest {
 
     @BeforeAll
     public static void setup() {
-        mongoDBContainer = new MongoDBContainer("mongo:7.0").withSharding();
-        mongoDBContainer.start();
+        // Container is automatically started by @Testcontainers framework
 
         CodecRegistry pojoCodecRegistry =
                 CodecRegistries.fromRegistries(
