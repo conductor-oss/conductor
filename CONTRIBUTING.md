@@ -78,7 +78,7 @@ class MyIntegrationSpec extends Specification {
 }
 ```
 
-**For JUnit 4 tests:**
+**For JUnit 4 tests (without Spring Boot):**
 ```java
 import org.junit.ClassRule;
 
@@ -89,6 +89,26 @@ public class MyIntegrationTest {
             .withExposedPorts(6379);
 
     // Container automatically starts before tests and stops after
+}
+```
+
+**Note:** JUnit 4 `@ClassRule` is incompatible with Spring Boot integration tests (`@RunWith(SpringRunner.class)`). For Spring Boot tests, use manual lifecycle management:
+
+```java
+@RunWith(SpringRunner.class)
+public class MySpringBootTest {
+    protected static final ElasticsearchContainer container =
+        new ElasticsearchContainer(DockerImageName.parse("elasticsearch").withTag("7.17.11"));
+
+    @BeforeClass
+    public static void startServer() {
+        container.start();
+    }
+
+    @AfterClass
+    public static void stopServer() {
+        container.stop();
+    }
 }
 ```
 
