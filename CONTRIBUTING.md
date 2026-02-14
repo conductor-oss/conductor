@@ -54,6 +54,119 @@ Once we have decided on a direction, it's time to summarize the idea by creating
 ## Code Style
 We use [spotless](https://github.com/diffplug/spotless) to enforce consistent code style for the project, so make sure to run `gradlew spotlessApply` to fix any violations after code changes.
 
+## Testing Best Practices
+
+### Testcontainers Lifecycle Management
+
+When writing integration tests that use [Testcontainers](https://www.testcontainers.org/), always use the framework's built-in lifecycle management instead of manually starting/stopping containers.
+
+#### ✅ Correct: Use Framework Annotations
+
+**For Spock/Groovy tests:**
+```groovy
+import org.testcontainers.spock.Testcontainers
+import spock.lang.Shared
+
+@Testcontainers
+class MyIntegrationSpec extends Specification {
+    @Shared
+    static GenericContainer redis = new GenericContainer<>(DockerImageName.parse("redis:6.2-alpine"))
+            .withExposedPorts(6379)
+
+    // Container automatically starts before tests and stops after
+    // No manual .start() or .stop() needed!
+}
+```
+
+**For JUnit 4 tests (without Spring Boot):**
+```java
+import org.junit.ClassRule;
+
+public class MyIntegrationTest {
+    @ClassRule
+    public static final GenericContainer redis =
+        new GenericContainer<>(DockerImageName.parse("redis:6.2-alpine"))
+            .withExposedPorts(6379);
+
+    // Container automatically starts before tests and stops after
+}
+```
+
+**Note:** JUnit 4 `@ClassRule` is incompatible with Spring Boot integration tests (`@RunWith(SpringRunner.class)`). For Spring Boot tests, use manual lifecycle management:
+
+```java
+@RunWith(SpringRunner.class)
+public class MySpringBootTest {
+    protected static final ElasticsearchContainer container =
+        new ElasticsearchContainer(DockerImageName.parse("elasticsearch").withTag("7.17.11"));
+
+    @BeforeClass
+    public static void startServer() {
+        container.start();
+    }
+
+    @AfterClass
+    public static void stopServer() {
+        container.stop();
+    }
+}
+```
+
+**For JUnit 5 tests:**
+```java
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+@Testcontainers
+public class MyIntegrationTest {
+    @Container
+    static final GenericContainer redis =
+        new GenericContainer<>(DockerImageName.parse("redis:6.2-alpine"))
+            .withExposedPorts(6379);
+}
+```
+
+#### ❌ Incorrect: Manual Lifecycle Management
+
+**Don't do this:**
+```groovy
+// ❌ BAD: Static initializer blocks
+static {
+    container = new GenericContainer<>(...)
+    container.start()  // Race conditions, no error handling
+}
+
+// ❌ BAD: Manual start/stop in setup methods
+def setupSpec() {
+    container.start()  // Bypasses framework lifecycle
+}
+
+def cleanupSpec() {
+    container.stop()  // May not run if tests fail
+}
+
+// ❌ BAD: Manual start/stop in @BeforeClass/@AfterClass
+@BeforeClass
+public static void setup() {
+    container.start();  // Bypasses framework lifecycle
+}
+```
+
+#### Why This Matters
+
+Using framework annotations provides:
+
+- **Automatic lifecycle management** - Containers start/stop at the right time
+- **Built-in error handling** - Retry logic for transient Docker issues
+- **Guaranteed cleanup** - Containers stop even if tests fail
+- **Parallel test safety** - No race conditions from manual initialization
+- **Better debugging** - Clear error messages when containers fail to start
+
+For more information, see:
+- [Testcontainers Spock Integration](https://www.testcontainers.org/test_framework_integration/spock/)
+- [Testcontainers JUnit 4 Integration](https://www.testcontainers.org/test_framework_integration/junit_4/)
+- [Testcontainers JUnit 5 Integration](https://www.testcontainers.org/test_framework_integration/junit_5/)
+
 ## License
 All files are released with the [Apache 2.0 license](LICENSE).
 
