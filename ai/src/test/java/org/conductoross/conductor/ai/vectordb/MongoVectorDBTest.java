@@ -61,7 +61,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class MongoVectorDBTest {
 
     @Container
-    private static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:7.0").withSharding();
+    private static MongoDBContainer mongoDBContainer =
+            new MongoDBContainer("mongo:7.0").withSharding();
+
     private static MongoClient mongoClient;
     private static MongoDatabase database;
     private static VectorDBWorkers aiWorkers;
