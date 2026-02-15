@@ -51,6 +51,12 @@ jobs:
           done
           echo "Docker is fully ready!"
           docker version
+          echo "Docker socket permissions:"
+          ls -la /var/run/docker.sock
+          echo "Current user: $(whoami)"
+          echo "User groups: $(groups)"
+          echo "Testing docker without sudo:"
+          docker ps
       - name: Build with Gradle
         if: github.ref != 'refs/heads/main'
         env:
