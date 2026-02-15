@@ -37,11 +37,13 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: ${{ runner.os }}-gradle-
-      - name: Verify Docker is ready
+      - name: Verify Docker is ready for Testcontainers
         run: |
           echo "Waiting for Docker daemon to be ready..."
-          timeout 60 bash -c 'until docker info >/dev/null 2>&1; do echo "Docker not ready, waiting..."; sleep 2; done'
-          echo "Docker is ready!"
+          timeout 60 bash -c 'until docker info >/dev/null 2>&1; do echo "Docker daemon not responding, waiting..."; sleep 2; done'
+          echo "Docker daemon responding, testing container operations..."
+          timeout 60 bash -c 'until docker run --rm hello-world >/dev/null 2>&1; do echo "Docker not ready for containers, waiting..."; sleep 2; done'
+          echo "Docker is fully ready!"
           docker version
       - name: Build with Gradle
         if: github.ref != 'refs/heads/main'
