@@ -19,6 +19,7 @@ import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.context.TestPropertySource
 import org.testcontainers.containers.GenericContainer
+import org.testcontainers.spock.Testcontainers
 import org.testcontainers.utility.DockerImageName
 
 import com.netflix.conductor.ConductorTestApp
@@ -30,9 +31,11 @@ import com.netflix.conductor.service.ExecutionService
 import com.netflix.conductor.service.MetadataService
 import com.netflix.conductor.test.util.WorkflowTestUtil
 
+import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+@Testcontainers
 @SpringBootTest(classes = ConductorTestApp.class)
 @TestPropertySource(locations = "classpath:application-integrationtest.properties",properties = [
         "conductor.db.type=redis_standalone",
@@ -42,13 +45,9 @@ import spock.util.concurrent.PollingConditions
 ])
 abstract class AbstractSpecification extends Specification {
 
-    private static redis
-
-    static {
-        redis = new GenericContainer<>(DockerImageName.parse("redis:6.2-alpine"))
-                .withExposedPorts(6379)
-        redis.start()
-    }
+    @Shared
+    static GenericContainer redis = new GenericContainer<>(DockerImageName.parse("redis:6.2-alpine"))
+            .withExposedPorts(6379)
 
     @Autowired
     ExecutionService workflowExecutionService

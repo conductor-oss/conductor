@@ -65,8 +65,7 @@ class SQSEventQueueE2ESpec extends AbstractSpecification {
     ConductorQueueStatusPublisher workflowStatusListener
 
     def setupSpec() {
-        // Start LocalStack
-        localstack.start()
+        // @Testcontainers annotation handles starting LocalStack automatically
 
         // Configure the test configuration with LocalStack endpoint
         LocalStackSQSConfiguration.setLocalStackEndpoint(
