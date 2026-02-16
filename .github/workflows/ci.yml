@@ -24,13 +24,13 @@ jobs:
           distribution: "zulu"
           java-version: "21"
       - name: Cache SonarCloud packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
       - name: Cache Gradle packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.gradle/caches
@@ -42,16 +42,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          DOCKER_HOST: unix:///var/run/docker.sock
         run: |
-          ./gradlew build --scan --no-daemon
+          ./gradlew build --scan
       - name: Build and Publish snapshot
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        env:
-          DOCKER_HOST: unix:///var/run/docker.sock
         run: |
           echo "Running build for commit ${{ github.sha }}"
-          ./gradlew build --no-daemon
+          ./gradlew build
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v3
         if: always()
