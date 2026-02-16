@@ -26,6 +26,14 @@ import org.conductoross.conductor.ai.models.ChatCompletion;
 import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.models.LLMResponse;
 import org.conductoross.conductor.ai.models.Media;
+import org.conductoross.conductor.ai.models.VideoGenRequest;
+import org.conductoross.conductor.ai.providers.openai.api.OpenAIVideoApi;
+import org.conductoross.conductor.ai.video.Video;
+import org.conductoross.conductor.ai.video.VideoGeneration;
+import org.conductoross.conductor.ai.video.VideoModel;
+import org.conductoross.conductor.ai.video.VideoOptions;
+import org.conductoross.conductor.ai.video.VideoPrompt;
+import org.conductoross.conductor.ai.video.VideoResponse;
 import org.springframework.ai.audio.tts.Speech;
 import org.springframework.ai.audio.tts.TextToSpeechPrompt;
 import org.springframework.ai.chat.model.ChatModel;
@@ -61,6 +69,7 @@ public class OpenAI implements AIModel {
     private final OpenAiSdkImageModel imageModel;
     private final OpenAiAudioApi audioApi;
     private final OpenAiAudioSpeechModel speechModel;
+    private final OpenAIVideoModel videoModel;
 
     public OpenAI(OpenAIConfiguration config) {
         this.config = config;
@@ -70,6 +79,7 @@ public class OpenAI implements AIModel {
         this.imageModel = createImageModel();
         this.audioApi = createAudioApi();
         this.speechModel = new OpenAiAudioSpeechModel(this.audioApi);
+        this.videoModel = createVideoModel();
     }
 
     @Override
@@ -180,14 +190,76 @@ public class OpenAI implements AIModel {
     }
 
     public OpenAiAudioSpeechOptions getSpeechOptions(AudioGenRequest request) {
-        return OpenAiAudioSpeechOptions.builder()
-                .responseFormat(
+        OpenAiAudioApi.SpeechRequest.AudioResponseFormat responseFormat =
+                OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3;
+        try {
+            if (request.getResponseFormat() != null) {
+                responseFormat =
                         OpenAiAudioApi.SpeechRequest.AudioResponseFormat.valueOf(
-                                request.getResponseFormat().toUpperCase()))
+                                request.getResponseFormat().toUpperCase());
+            }
+        } catch (IllegalArgumentException ignored) {
+        }
+        return OpenAiAudioSpeechOptions.builder()
+                .responseFormat(responseFormat)
                 .speed(request.getSpeed())
                 .model(request.getModel())
                 .voice(request.getVoice())
                 .build();
+    }
+
+    @Override
+    public VideoModel getVideoModel() {
+        return this.videoModel;
+    }
+
+    @Override
+    public LLMResponse generateVideo(VideoGenRequest request) {
+        VideoOptions options = getVideoOptions(request);
+        VideoPrompt videoPrompt = new VideoPrompt(request.getPrompt(), options);
+        VideoResponse response = videoModel.call(videoPrompt);
+
+        return LLMResponse.builder()
+                .jobId(response.getMetadata().getJobId())
+                .finishReason(response.getMetadata().getStatus())
+                .build();
+    }
+
+    @Override
+    public LLMResponse checkVideoStatus(VideoGenRequest request) {
+        VideoResponse response = videoModel.checkStatus(request.getJobId());
+        String status = response.getMetadata().getStatus();
+
+        LLMResponse.LLMResponseBuilder builder = LLMResponse.builder().finishReason(status);
+
+        if ("COMPLETED".equals(status)) {
+            List<Media> mediaList = new ArrayList<>();
+            for (VideoGeneration gen : response.getResults()) {
+                Video video = gen.getOutput();
+                // Use the mime type from the Video if set, default to video/mp4
+                String mimeType =
+                        video.getMimeType() != null ? video.getMimeType() : "video/mp4";
+
+                // Prefer direct byte data to avoid redundant base64 decode
+                if (video.getData() != null) {
+                    mediaList.add(
+                            Media.builder()
+                                    .data(video.getData())
+                                    .mimeType(mimeType)
+                                    .build());
+                } else if (video.getB64Json() != null) {
+                    // Fallback to base64 decoding if data field not populated
+                    mediaList.add(
+                            Media.builder()
+                                    .data(java.util.Base64.getDecoder().decode(video.getB64Json()))
+                                    .mimeType(mimeType)
+                                    .build());
+                }
+            }
+            builder.media(mediaList);
+        }
+
+        return builder.build();
     }
 
     // Initialization helpers
@@ -244,6 +316,16 @@ public class OpenAI implements AIModel {
                 .baseUrl(baseURL)
                 .headers(headers)
                 .build();
+    }
+
+    private OpenAIVideoModel createVideoModel() {
+        // OpenAIVideoApi manages its own /v1/ path, so strip /v1 from base URL
+        String baseUrl = config.getBaseURL();
+        if (baseUrl != null && baseUrl.endsWith("/v1")) {
+            baseUrl = baseUrl.substring(0, baseUrl.length() - 3);
+        }
+        OpenAIVideoApi videoApi = new OpenAIVideoApi(config.getApiKey(), baseUrl);
+        return new OpenAIVideoModel(videoApi);
     }
 
     // Private methods

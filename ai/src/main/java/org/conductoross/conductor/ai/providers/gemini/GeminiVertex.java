@@ -13,6 +13,7 @@
 package org.conductoross.conductor.ai.providers.gemini;
 
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -23,6 +24,13 @@ import org.conductoross.conductor.ai.models.ChatCompletion;
 import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.models.LLMResponse;
 import org.conductoross.conductor.ai.models.Media;
+import org.conductoross.conductor.ai.models.VideoGenRequest;
+import org.conductoross.conductor.ai.video.Video;
+import org.conductoross.conductor.ai.video.VideoGeneration;
+import org.conductoross.conductor.ai.video.VideoModel;
+import org.conductoross.conductor.ai.video.VideoOptions;
+import org.conductoross.conductor.ai.video.VideoPrompt;
+import org.conductoross.conductor.ai.video.VideoResponse;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.image.ImageModel;
@@ -156,24 +164,96 @@ public class GeminiVertex implements AIModel {
 
     @Override
     public ImageModel getImageModel() {
-        return new GeminiGenAI(
-                Client.builder()
-                        .vertexAI(true)
-                        .credentials(config.getGoogleCredentials())
-                        .location(config.getLocation())
-                        .project(config.getProjectId())
-                        .build());
+        return new GeminiGenAI(createGenAIClient());
+    }
+
+    @Override
+    public VideoModel getVideoModel() {
+        return new GeminiVideoModel(createGenAIClient());
+    }
+
+    @Override
+    public LLMResponse generateVideo(VideoGenRequest request) {
+        VideoOptions options = getVideoOptions(request);
+        VideoPrompt videoPrompt = new VideoPrompt(request.getPrompt(), options);
+        GeminiVideoModel videoModel = new GeminiVideoModel(createGenAIClient());
+        VideoResponse response = videoModel.call(videoPrompt);
+
+        return LLMResponse.builder()
+                .result(response.getMetadata().getJobId())
+                .finishReason(response.getMetadata().getStatus())
+                .build();
+    }
+
+    @Override
+    public LLMResponse checkVideoStatus(VideoGenRequest request) {
+        GeminiVideoModel videoModel = new GeminiVideoModel(createGenAIClient());
+        VideoResponse response = videoModel.checkStatus(request.getJobId());
+        String status = response.getMetadata().getStatus();
+
+        LLMResponse.LLMResponseBuilder builder = LLMResponse.builder().finishReason(status);
+
+        if ("COMPLETED".equals(status)) {
+            List<Media> mediaList = new ArrayList<>();
+            for (VideoGeneration gen : response.getResults()) {
+                Video video = gen.getOutput();
+                // Use the mime type from the Video if set, default to video/mp4
+                String mimeType = video.getMimeType() != null ? video.getMimeType() : "video/mp4";
+
+                // Prefer direct byte data to avoid redundant operations
+                if (video.getData() != null) {
+                    mediaList.add(
+                            Media.builder()
+                                    .data(video.getData())
+                                    .mimeType(mimeType)
+                                    .build());
+                } else if (video.getB64Json() != null) {
+                    // Fallback to base64 decoding if data field not populated
+                    mediaList.add(
+                            Media.builder()
+                                    .data(Base64.getDecoder().decode(video.getB64Json()))
+                                    .mimeType(mimeType)
+                                    .build());
+                } else if (video.getUrl() != null) {
+                    // Last resort: Download from URL (e.g., GCS URI) to get bytes
+                    byte[] bytes = downloadFromUrl(video.getUrl());
+                    mediaList.add(Media.builder().data(bytes).mimeType(mimeType).build());
+                }
+            }
+            builder.media(mediaList);
+        }
+
+        return builder.build();
+    }
+
+    /** Creates a shared Google GenAI Client instance configured for Vertex AI. */
+    private Client createGenAIClient() {
+        return Client.builder()
+                .vertexAI(true)
+                .credentials(config.getGoogleCredentials())
+                .location(config.getLocation())
+                .project(config.getProjectId())
+                .build();
+    }
+
+    private byte[] downloadFromUrl(String url) {
+        okhttp3.OkHttpClient client = new okhttp3.OkHttpClient();
+        okhttp3.Request request = new okhttp3.Request.Builder().url(url).get().build();
+        try (okhttp3.Response response = client.newCall(request).execute()) {
+            if (response.body() == null) {
+                throw new RuntimeException("Empty response downloading from " + url);
+            }
+            return response.body().bytes();
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to download from " + url, e);
+        }
     }
 
     @Override
     public LLMResponse generateAudio(AudioGenRequest request) {
-        var client =
-                Client.builder()
-                        .vertexAI(true)
-                        .credentials(config.getGoogleCredentials())
-                        .location(config.getLocation())
-                        .project(config.getProjectId())
-                        .build();
+        var client = createGenAIClient();
         GenerateContentConfig config =
                 GenerateContentConfig.builder()
                         .speechConfig(
