@@ -29,3 +29,9 @@ dependencies {
     testImplementation project(':conductor-test-util').sourceSets.test.output
     testImplementation "redis.clients:jedis:${revJedis}"
 }
+
+// Exclude KafkaPublishTaskSpec from CI builds due to GitHub Actions Docker environment incompatibility
+// See: https://github.com/conductor-oss/conductor/issues/771
+test {
+    exclude '**/KafkaPublishTaskSpec.class'
+}
