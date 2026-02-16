@@ -25,3 +25,9 @@ dependencies {
     testImplementation "org.bouncycastle:bcprov-jdk15on:1.70"
     testImplementation "org.bouncycastle:bcpkix-jdk15on:1.70"
 }
+
+// Exclude HttpTaskTest from CI builds due to GitHub Actions Docker environment incompatibility
+// See: https://github.com/conductor-oss/conductor/issues/771
+test {
+    exclude '**/HttpTaskTest.class'
+}
