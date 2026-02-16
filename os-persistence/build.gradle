@@ -50,10 +50,3 @@ shadowJar {
     }
 }
 jar.dependsOn shadowJar
-
-// Exclude OpenSearch tests from CI builds due to GitHub Actions Docker environment incompatibility
-// See: https://github.com/conductor-oss/conductor/issues/771
-test {
-    exclude '**/TestOpenSearchRestDAO.class'
-    exclude '**/TestOpenSearchRestDAOBatch.class'
-}
