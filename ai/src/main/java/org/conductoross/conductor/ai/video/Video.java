@@ -18,13 +18,17 @@ import java.util.Objects;
  * Represents a generated video.
  *
  * <p>Mirrors Spring AI's {@code Image} class with a URL and base64-encoded data representation.
- * Exactly one of {@code url} or {@code b64Json} is typically populated depending on how the
- * provider returns the video.
+ * Exactly one of {@code url}, {@code b64Json}, or {@code data} is typically populated depending
+ * on how the provider returns the video.
+ *
+ * <p>The {@code data} field is preferred over {@code b64Json} for memory efficiency, as it avoids
+ * the 33% memory overhead of base64 encoding.
  */
 public class Video {
 
     private String url;
     private String b64Json;
+    private byte[] data;
     private String mimeType;
 
     public Video(String url, String b64Json) {
@@ -32,9 +36,19 @@ public class Video {
     }
 
     public Video(String url, String b64Json, String mimeType) {
+        this(url, b64Json, null, mimeType);
+    }
+
+    public Video(String url, String b64Json, byte[] data, String mimeType) {
         this.url = url;
         this.b64Json = b64Json;
+        this.data = data;
         this.mimeType = mimeType;
+    }
+
+    /** Constructor for direct byte data (memory-efficient). */
+    public static Video fromBytes(byte[] data, String mimeType) {
+        return new Video(null, null, data, mimeType);
     }
 
     /** URL where the video can be accessed (e.g., GCS URI, HTTP URL). */
@@ -55,6 +69,15 @@ public class Video {
         this.b64Json = b64Json;
     }
 
+    /** Raw video bytes (memory-efficient alternative to base64). */
+    public byte[] getData() {
+        return data;
+    }
+
+    public void setData(byte[] data) {
+        this.data = data;
+    }
+
     /** MIME type of the content (e.g., "video/mp4", "image/webp"). */
     public String getMimeType() {
         return mimeType;
@@ -70,20 +93,24 @@ public class Video {
         if (!(o instanceof Video video)) return false;
         return Objects.equals(url, video.url)
                 && Objects.equals(b64Json, video.b64Json)
+                && java.util.Arrays.equals(data, video.data)
                 && Objects.equals(mimeType, video.mimeType);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(url, b64Json, mimeType);
+        int result = Objects.hash(url, b64Json, mimeType);
+        result = 31 * result + java.util.Arrays.hashCode(data);
+        return result;
     }
 
     @Override
     public String toString() {
-        return "Video{url='%s', mimeType='%s', b64Json=%s}"
+        return "Video{url='%s', mimeType='%s', b64Json=%s, data=%s}"
                 .formatted(
                         url,
                         mimeType,
-                        b64Json != null ? "[" + b64Json.length() + " chars]" : "null");
+                        b64Json != null ? "[" + b64Json.length() + " chars]" : "null",
+                        data != null ? "[" + data.length + " bytes]" : "null");
     }
 }

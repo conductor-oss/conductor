@@ -236,10 +236,19 @@ public class OpenAI implements AIModel {
             List<Media> mediaList = new ArrayList<>();
             for (VideoGeneration gen : response.getResults()) {
                 Video video = gen.getOutput();
-                if (video.getB64Json() != null) {
-                    // Use the mime type from the Video if set, default to video/mp4
-                    String mimeType =
-                            video.getMimeType() != null ? video.getMimeType() : "video/mp4";
+                // Use the mime type from the Video if set, default to video/mp4
+                String mimeType =
+                        video.getMimeType() != null ? video.getMimeType() : "video/mp4";
+
+                // Prefer direct byte data to avoid redundant base64 decode
+                if (video.getData() != null) {
+                    mediaList.add(
+                            Media.builder()
+                                    .data(video.getData())
+                                    .mimeType(mimeType)
+                                    .build());
+                } else if (video.getB64Json() != null) {
+                    // Fallback to base64 decoding if data field not populated
                     mediaList.add(
                             Media.builder()
                                     .data(java.util.Base64.getDecoder().decode(video.getB64Json()))

@@ -199,14 +199,23 @@ public class GeminiVertex implements AIModel {
                 Video video = gen.getOutput();
                 // Use the mime type from the Video if set, default to video/mp4
                 String mimeType = video.getMimeType() != null ? video.getMimeType() : "video/mp4";
-                if (video.getB64Json() != null) {
+
+                // Prefer direct byte data to avoid redundant operations
+                if (video.getData() != null) {
+                    mediaList.add(
+                            Media.builder()
+                                    .data(video.getData())
+                                    .mimeType(mimeType)
+                                    .build());
+                } else if (video.getB64Json() != null) {
+                    // Fallback to base64 decoding if data field not populated
                     mediaList.add(
                             Media.builder()
                                     .data(Base64.getDecoder().decode(video.getB64Json()))
                                     .mimeType(mimeType)
                                     .build());
                 } else if (video.getUrl() != null) {
-                    // Download from URL (e.g., GCS URI) to get bytes
+                    // Last resort: Download from URL (e.g., GCS URI) to get bytes
                     byte[] bytes = downloadFromUrl(video.getUrl());
                     mediaList.add(Media.builder().data(bytes).mimeType(mimeType).build());
                 }
