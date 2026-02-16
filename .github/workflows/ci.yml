@@ -44,14 +44,14 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           DOCKER_HOST: unix:///var/run/docker.sock
         run: |
-          ./gradlew build --scan --no-daemon -x test
+          ./gradlew build --scan --no-daemon
       - name: Build and Publish snapshot
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:
           DOCKER_HOST: unix:///var/run/docker.sock
         run: |
           echo "Running build for commit ${{ github.sha }}"
-          ./gradlew build --no-daemon -x test
+          ./gradlew build --no-daemon
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v3
         if: always()
