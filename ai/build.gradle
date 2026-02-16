@@ -56,9 +56,3 @@ dependencies {
     testImplementation "org.apache.commons:commons-compress:${revCommonsCompress}"
 
 }
-
-// Exclude MongoVectorDBTest - known failing test on main branch
-// See: https://github.com/conductor-oss/conductor/actions/runs/22015249731
-test {
-    exclude '**/MongoVectorDBTest.class'
-}
