@@ -1,18 +1,30 @@
+/*
+ * Copyright 2026 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package org.conductoross.conductor.ai.video;
-
-import org.conductoross.conductor.ai.models.Media;
-import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Random;
 
+import org.conductoross.conductor.ai.models.Media;
+import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests that verify video provider flows use direct byte references
- * instead of creating copies through Base64 encoding/decoding.
+ * Tests that verify video provider flows use direct byte references instead of creating copies
+ * through Base64 encoding/decoding.
  */
 public class VideoProviderMemoryTest {
 
@@ -35,18 +47,12 @@ public class VideoProviderMemoryTest {
         byte[] accessedBytes = video.getData();
 
         // Step 3: Store in Media
-        Media media = Media.builder()
-            .data(accessedBytes)
-            .mimeType("video/mp4")
-            .build();
+        Media media = Media.builder().data(accessedBytes).mimeType("video/mp4").build();
 
         // Verify: All references should be the same (zero copy)
-        assertSame(downloadedBytes, video.getData(),
-            "Video should reference original bytes");
-        assertSame(downloadedBytes, accessedBytes,
-            "Accessed bytes should be same reference");
-        assertSame(downloadedBytes, media.getData(),
-            "Media should reference original bytes");
+        assertSame(downloadedBytes, video.getData(), "Video should reference original bytes");
+        assertSame(downloadedBytes, accessedBytes, "Accessed bytes should be same reference");
+        assertSame(downloadedBytes, media.getData(), "Media should reference original bytes");
     }
 
     @Test
@@ -60,8 +66,7 @@ public class VideoProviderMemoryTest {
         // Old way: decode from base64 (creates copy)
         byte[] decodedBytes = Base64.getDecoder().decode(video.getB64Json());
 
-        assertNotSame(downloadedBytes, decodedBytes,
-            "Decoding creates a new array (inefficient)");
+        assertNotSame(downloadedBytes, decodedBytes, "Decoding creates a new array (inefficient)");
     }
 
     @Test
@@ -81,16 +86,15 @@ public class VideoProviderMemoryTest {
             String mimeType = v.getMimeType() != null ? v.getMimeType() : "video/mp4";
 
             if (v.getData() != null) {
-                mediaList.add(Media.builder()
-                    .data(v.getData())
-                    .mimeType(mimeType)
-                    .build());
+                mediaList.add(Media.builder().data(v.getData()).mimeType(mimeType).build());
             }
         }
 
         assertEquals(1, mediaList.size());
-        assertSame(mockDownload, mediaList.get(0).getData(),
-            "OpenAI flow should preserve original byte reference");
+        assertSame(
+                mockDownload,
+                mediaList.get(0).getData(),
+                "OpenAI flow should preserve original byte reference");
     }
 
     @Test
@@ -111,21 +115,21 @@ public class VideoProviderMemoryTest {
 
             // Three-tier fallback logic
             if (v.getData() != null) {
-                mediaList.add(Media.builder()
-                    .data(v.getData())
-                    .mimeType(mimeType)
-                    .build());
+                mediaList.add(Media.builder().data(v.getData()).mimeType(mimeType).build());
             } else if (v.getB64Json() != null) {
-                mediaList.add(Media.builder()
-                    .data(Base64.getDecoder().decode(v.getB64Json()))
-                    .mimeType(mimeType)
-                    .build());
+                mediaList.add(
+                        Media.builder()
+                                .data(Base64.getDecoder().decode(v.getB64Json()))
+                                .mimeType(mimeType)
+                                .build());
             }
         }
 
         assertEquals(1, mediaList.size());
-        assertSame(mockSdkBytes, mediaList.get(0).getData(),
-            "Gemini flow should use TIER 1 (direct bytes)");
+        assertSame(
+                mockSdkBytes,
+                mediaList.get(0).getData(),
+                "Gemini flow should use TIER 1 (direct bytes)");
     }
 
     @Test
@@ -147,16 +151,19 @@ public class VideoProviderMemoryTest {
             if (v.getData() != null) {
                 mediaList.add(Media.builder().data(v.getData()).mimeType(mimeType).build());
             } else if (v.getB64Json() != null) {
-                mediaList.add(Media.builder()
-                    .data(Base64.getDecoder().decode(v.getB64Json()))
-                    .mimeType(mimeType)
-                    .build());
+                mediaList.add(
+                        Media.builder()
+                                .data(Base64.getDecoder().decode(v.getB64Json()))
+                                .mimeType(mimeType)
+                                .build());
             }
         }
 
         assertEquals(1, mediaList.size());
-        assertArrayEquals(originalBytes, mediaList.get(0).getData(),
-            "Fallback to base64 should work correctly");
+        assertArrayEquals(
+                originalBytes,
+                mediaList.get(0).getData(),
+                "Fallback to base64 should work correctly");
     }
 
     @Test
@@ -168,10 +175,8 @@ public class VideoProviderMemoryTest {
         Video video = Video.fromBytes(videoBytes, "video/mp4");
         Video thumbnail = Video.fromBytes(thumbnailBytes, "image/webp");
 
-        List<VideoGeneration> generations = List.of(
-            new VideoGeneration(video),
-            new VideoGeneration(thumbnail)
-        );
+        List<VideoGeneration> generations =
+                List.of(new VideoGeneration(video), new VideoGeneration(thumbnail));
 
         VideoResponse response = new VideoResponse(generations);
 
@@ -179,10 +184,7 @@ public class VideoProviderMemoryTest {
         for (VideoGeneration gen : response.getResults()) {
             Video v = gen.getOutput();
             if (v.getData() != null) {
-                mediaList.add(Media.builder()
-                    .data(v.getData())
-                    .mimeType(v.getMimeType())
-                    .build());
+                mediaList.add(Media.builder().data(v.getData()).mimeType(v.getMimeType()).build());
             }
         }
 

@@ -202,11 +202,7 @@ public class GeminiVertex implements AIModel {
 
                 // Prefer direct byte data to avoid redundant operations
                 if (video.getData() != null) {
-                    mediaList.add(
-                            Media.builder()
-                                    .data(video.getData())
-                                    .mimeType(mimeType)
-                                    .build());
+                    mediaList.add(Media.builder().data(video.getData()).mimeType(mimeType).build());
                 } else if (video.getB64Json() != null) {
                     // Fallback to base64 decoding if data field not populated
                     mediaList.add(

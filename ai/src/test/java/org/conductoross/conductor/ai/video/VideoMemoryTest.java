@@ -1,14 +1,27 @@
+/*
+ * Copyright 2026 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package org.conductoross.conductor.ai.video;
 
-import org.junit.jupiter.api.Test;
 import java.util.Base64;
 import java.util.Random;
+
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests to verify that Video class uses direct byte storage efficiently
- * without creating unnecessary copies through Base64 encoding/decoding.
+ * Tests to verify that Video class uses direct byte storage efficiently without creating
+ * unnecessary copies through Base64 encoding/decoding.
  */
 public class VideoMemoryTest {
 
@@ -26,12 +39,12 @@ public class VideoMemoryTest {
 
         Video video = Video.fromBytes(videoBytes, "video/mp4");
 
-        assertSame(videoBytes, video.getData(),
-            "fromBytes() should store the same array reference, not create a copy");
-        assertNull(video.getB64Json(),
-            "fromBytes() should not populate b64Json field");
-        assertNull(video.getUrl(),
-            "fromBytes() should not populate url field");
+        assertSame(
+                videoBytes,
+                video.getData(),
+                "fromBytes() should store the same array reference, not create a copy");
+        assertNull(video.getB64Json(), "fromBytes() should not populate b64Json field");
+        assertNull(video.getUrl(), "fromBytes() should not populate url field");
         assertEquals("video/mp4", video.getMimeType());
     }
 
@@ -43,10 +56,11 @@ public class VideoMemoryTest {
         byte[] retrieved1 = video.getData();
         byte[] retrieved2 = video.getData();
 
-        assertSame(videoBytes, retrieved1,
-            "getData() should return the same array reference");
-        assertSame(retrieved1, retrieved2,
-            "Multiple getData() calls should return the same reference");
+        assertSame(videoBytes, retrieved1, "getData() should return the same array reference");
+        assertSame(
+                retrieved1,
+                retrieved2,
+                "Multiple getData() calls should return the same reference");
     }
 
     @Test
@@ -56,8 +70,7 @@ public class VideoMemoryTest {
 
         Video video = new Video(null, base64, "video/mp4");
 
-        assertNull(video.getData(),
-            "Constructor with base64 should not populate data field");
+        assertNull(video.getData(), "Constructor with base64 should not populate data field");
         assertNotNull(video.getB64Json());
     }
 
@@ -75,10 +88,13 @@ public class VideoMemoryTest {
         long base64MemoryBytes = (long) base64.length() * 2;
         long directMemoryBytes = videoBytes.length;
 
-        assertTrue(base64MemoryBytes > directMemoryBytes * 1.3,
-            "Base64 encoding should consume at least 33% more memory");
-        assertSame(videoBytes, optimizedVideo.getData(),
-            "Optimized approach should use same array reference");
+        assertTrue(
+                base64MemoryBytes > directMemoryBytes * 1.3,
+                "Base64 encoding should consume at least 33% more memory");
+        assertSame(
+                videoBytes,
+                optimizedVideo.getData(),
+                "Optimized approach should use same array reference");
     }
 
     @Test
@@ -88,10 +104,9 @@ public class VideoMemoryTest {
 
         byte[] decodedBytes = Base64.getDecoder().decode(base64);
 
-        assertNotSame(originalBytes, decodedBytes,
-            "Base64 decode creates a new array (wasteful copy)");
-        assertArrayEquals(originalBytes, decodedBytes,
-            "Content should be the same");
+        assertNotSame(
+                originalBytes, decodedBytes, "Base64 decode creates a new array (wasteful copy)");
+        assertArrayEquals(originalBytes, decodedBytes, "Content should be the same");
     }
 
     @Test

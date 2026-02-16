@@ -18,8 +18,8 @@ import java.util.Objects;
  * Represents a generated video.
  *
  * <p>Mirrors Spring AI's {@code Image} class with a URL and base64-encoded data representation.
- * Exactly one of {@code url}, {@code b64Json}, or {@code data} is typically populated depending
- * on how the provider returns the video.
+ * Exactly one of {@code url}, {@code b64Json}, or {@code data} is typically populated depending on
+ * how the provider returns the video.
  *
  * <p>The {@code data} field is preferred over {@code b64Json} for memory efficiency, as it avoids
  * the 33% memory overhead of base64 encoding.

@@ -154,16 +154,21 @@ public class GeminiVideoModel implements AsyncVideoModel {
                                             byte[] bytes = video.videoBytes().orElse(null);
                                             String url = video.uri().orElse(null);
 
-                                            // Use direct byte storage to avoid base64 encoding overhead
-                                            // Prefer bytes over URL to avoid potential re-downloading
+                                            // Use direct byte storage to avoid base64 encoding
+                                            // overhead
+                                            // Prefer bytes over URL to avoid potential
+                                            // re-downloading
                                             org.conductoross.conductor.ai.video.Video videoObj;
                                             if (bytes != null) {
-                                                videoObj = org.conductoross.conductor.ai.video.Video
-                                                        .fromBytes(bytes, "video/mp4");
+                                                videoObj =
+                                                        org.conductoross.conductor.ai.video.Video
+                                                                .fromBytes(bytes, "video/mp4");
                                             } else {
                                                 // Fallback to URL if bytes not available
-                                                videoObj = new org.conductoross.conductor.ai.video.Video(
-                                                        url, null, null, "video/mp4");
+                                                videoObj =
+                                                        new org.conductoross.conductor.ai.video
+                                                                .Video(
+                                                                url, null, null, "video/mp4");
                                             }
 
                                             generations.add(new VideoGeneration(videoObj));
