@@ -265,17 +265,30 @@ public class StatusChangePublisherTest {
         StatusChangePublisher publisher =
                 new StatusChangePublisher(restClientManager, executionDAOFacade, null);
 
-        // Try all workflow status methods
+        // These should NOT be published (not in the default list)
         publisher.onWorkflowStarted(workflow);
-        publisher.onWorkflowCompleted(workflow);
-        publisher.onWorkflowTerminated(workflow);
         publisher.onWorkflowPaused(workflow);
         publisher.onWorkflowResumed(workflow);
 
         TimeUnit.MILLISECONDS.sleep(100);
 
-        // Verify that no notifications were posted when list is null
+        // Verify no notifications for non-default statuses
         verify(restClientManager, never()).postNotification(any(), anyString(), anyString(), any());
+
+        // These SHOULD be published (backward-compatible defaults)
+        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+        publisher.onWorkflowCompleted(workflow);
+
+        workflow.setStatus(WorkflowModel.Status.TERMINATED);
+        publisher.onWorkflowTerminated(workflow);
+
+        // Verify COMPLETED and TERMINATED are published by default
+        verify(restClientManager, timeout(1000).atLeast(2))
+                .postNotification(
+                        eq(RestClientManager.NotificationType.WORKFLOW),
+                        anyString(),
+                        eq(workflow.getWorkflowId()),
+                        any());
     }
 
     @Test
@@ -284,15 +297,28 @@ public class StatusChangePublisherTest {
                 new StatusChangePublisher(
                         restClientManager, executionDAOFacade, Collections.emptyList());
 
-        // Try all workflow status methods
+        // This should NOT be published (not in the default list)
         publisher.onWorkflowStarted(workflow);
-        publisher.onWorkflowCompleted(workflow);
-        publisher.onWorkflowTerminated(workflow);
 
         TimeUnit.MILLISECONDS.sleep(100);
 
-        // Verify that no notifications were posted when list is empty
+        // Verify no notifications for non-default statuses
         verify(restClientManager, never()).postNotification(any(), anyString(), anyString(), any());
+
+        // These SHOULD be published (backward-compatible defaults)
+        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+        publisher.onWorkflowCompleted(workflow);
+
+        workflow.setStatus(WorkflowModel.Status.TERMINATED);
+        publisher.onWorkflowTerminated(workflow);
+
+        // Verify COMPLETED and TERMINATED are published by default
+        verify(restClientManager, timeout(1000).atLeast(2))
+                .postNotification(
+                        eq(RestClientManager.NotificationType.WORKFLOW),
+                        anyString(),
+                        eq(workflow.getWorkflowId()),
+                        any());
     }
 
     @Test

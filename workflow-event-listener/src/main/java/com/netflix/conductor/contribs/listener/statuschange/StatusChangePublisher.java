@@ -13,6 +13,7 @@
 package com.netflix.conductor.contribs.listener.statuschange;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -96,7 +97,11 @@ public class StatusChangePublisher implements WorkflowStatusListener {
             List<String> subscribedWorkflowStatuses) {
         this.rcm = rcm;
         this.executionDAOFacade = executionDAOFacade;
-        this.subscribedWorkflowStatusList = subscribedWorkflowStatuses;
+        // Preserve backward compatibility - default to COMPLETED and TERMINATED
+        this.subscribedWorkflowStatusList =
+                (subscribedWorkflowStatuses != null && !subscribedWorkflowStatuses.isEmpty())
+                        ? subscribedWorkflowStatuses
+                        : Arrays.asList("COMPLETED", "TERMINATED");
         ConsumerThread consumerThread = new ConsumerThread();
         consumerThread.start();
     }
