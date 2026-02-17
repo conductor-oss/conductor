@@ -592,7 +592,9 @@ public class ExecutionDAOFacade {
                 // rather than throwing, to allow the rest of the workflow removal to proceed.
                 LOGGER.warn(
                         "Skipping archival of task: {} of workflow: {} with non-terminal status: {}",
-                        task.getTaskId(), workflow.getWorkflowId(), task.getStatus());
+                        task.getTaskId(),
+                        workflow.getWorkflowId(),
+                        task.getStatus());
             }
         } else {
             // Not archiving, remove task from index
