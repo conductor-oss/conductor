@@ -45,8 +45,6 @@ dependencies {
     def indexingBackend = project.findProperty('indexingBackend') ?: 'elasticsearch'
     if (indexingBackend == 'opensearch' || indexingBackend == 'os') {
         implementation project(':conductor-os-persistence')
-    if (indexingBackend == 'opensearch' || indexingBackend == 'os') {
-        implementation project(':conductor-os-persistence')
         implementation project(':conductor-os-persistence-v2')
         // os-persistence-v3 excluded: requires API migration to opensearch-java 3.x
         // The DAO layer needs reimplementation for the new client API (breaking changes)
