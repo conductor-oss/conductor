@@ -225,8 +225,8 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
                                                 (now - task.getWaitTimeout()));
                                         Monitors.recordQueueMessageRepushFromRepairService(
                                                 task.getTaskDefName());
-                                        String queueName = QueueUtils.getQueueName(task);
-                                        if (!queueDAO.containsMessage(queueName, task.getTaskId())) {
+                                        if (!queueDAO.containsMessage(
+                                                queueName, task.getTaskId())) {
                                             queueDAO.push(
                                                     queueName,
                                                     task.getTaskId(),
