@@ -587,10 +587,12 @@ public class ExecutionDAOFacade {
                         new String[] {ARCHIVED_FIELD},
                         new Object[] {true});
             } else {
-                throw new IllegalArgumentException(
-                        String.format(
-                                "Cannot archive task: %s of workflow: %s with status: %s",
-                                task.getTaskId(), workflow.getWorkflowId(), task.getStatus()));
+                // Non-terminal tasks should have been canceled before archival is triggered.
+                // If a task is still in a non-terminal state (e.g. SCHEDULED), skip its archival
+                // rather than throwing, to allow the rest of the workflow removal to proceed.
+                LOGGER.warn(
+                        "Skipping archival of task: {} of workflow: {} with non-terminal status: {}",
+                        task.getTaskId(), workflow.getWorkflowId(), task.getStatus());
             }
         } else {
             // Not archiving, remove task from index
