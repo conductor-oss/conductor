@@ -1,20 +1,7 @@
-plugins {
-    id 'com.github.johnrengelman.shadow' version '7.0.0'
-    id 'java'
-}
-
-configurations {
-    // Prevent shaded dependencies from being published, while keeping them available to tests
-    shadow.extendsFrom compileOnly
-    testRuntime.extendsFrom compileOnly
-}
+// Deprecation stub for generic 'opensearch' indexing type
+// This module only provides a helpful error message directing users to opensearch2 or opensearch3
 
 dependencies {
-
-    implementation project(':conductor-common')
-    implementation project(':conductor-core')
-    implementation project(':conductor-common-persistence')
-
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.retry:spring-retry'
 
@@ -35,18 +22,4 @@ dependencies {
     testImplementation "org.testcontainers:testcontainers:${revTestContainer}"
     testImplementation project(':conductor-test-util').sourceSets.test.output
     testImplementation 'org.springframework.retry:spring-retry'
-
 }
-
-// Drop the classifier and delete jar task actions to replace the regular jar artifact with the shadow artifact
-shadowJar {
-    configurations = [project.configurations.shadow]
-    archiveClassifier = null
-
-    // Service files are not included by default.
-    mergeServiceFiles {
-        include 'META-INF/services/*'
-        include 'META-INF/maven/*'
-    }
-}
-jar.dependsOn shadowJar

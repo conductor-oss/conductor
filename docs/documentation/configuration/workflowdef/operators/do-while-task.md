@@ -11,8 +11,9 @@ Use these parameters in top level of the Do While task configuration.
 
 | Parameter          | Type                | Description                                       | Required / Optional  |
 | ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
-| loopCondition | String      | The condition that is evaluated after each iteration. This is a JavaScript expression, evaluated using the Nashorn engine. | Required. |
+| loopCondition | String      | The condition that is evaluated after each iteration. This is a JavaScript expression, evaluated using the Nashorn engine. When using `items` for list iteration, this is optional. | Required (for counter-based iteration). <br/>Optional (for list iteration). |
 | loopOver      | List[Task] | The list of task configurations that will be executed as long as the condition is true.                                                                                                                                               | Required. |
+| items         | String      | A workflow expression that evaluates to a list/array to iterate over (e.g., `${workflow.input.myList}`). When specified, the loop automatically iterates through each item without requiring a `loopCondition`. Loop tasks can access the current item via `${do_while_ref.output.loopItem}` and the zero-based index via `${do_while_ref.output.loopIndex}`. | Optional. |
 
 ## Input parameters
 
@@ -26,6 +27,7 @@ Use these parameters in the `inputParameters` section of the Do While task confi
 
 Here is the task configuration for a Do While task.
 
+**Counter-based iteration:**
 ```json
 {
   "name": "do_while",
@@ -46,6 +48,27 @@ Here is the task configuration for a Do While task.
 }
 ```
 
+**List iteration:**
+```json
+{
+  "name": "do_while",
+  "taskReferenceName": "do_while_ref",
+  "type": "DO_WHILE",
+  "items": "${workflow.input.myList}",
+  "loopOver": [
+    {
+      "name": "process_task",
+      "taskReferenceName": "process_ref",
+      "type": "SIMPLE",
+      "inputParameters": {
+        "item": "${do_while_ref.output.loopItem}",
+        "index": "${do_while_ref.output.loopIndex}"
+      }
+    }
+  ]
+}
+```
+
 ## Output
 
 The Do While task will return the following parameters.
@@ -53,6 +76,8 @@ The Do While task will return the following parameters.
 | Name             | Type         | Description                                                   |
 | ---------------- | ------------ | ------------------------------------------------------------- |
 | iteration | Integer          | The number of iterations. <br/><br/> If the Do While task is in progress, `iteration` will show the current iteration number. When completed, `iteration` will show the final number of iterations.                          |
+| loopItem | Any | **(List iteration only)** The current item from the `items` list for this iteration. Available when using the `items` parameter. |
+| loopIndex | Integer | **(List iteration only)** The zero-based index of the current item (0, 1, 2, ...). Available when using the `items` parameter. |
 
 In addition, a map will be created for each iteration, keyed by its iteration number (e.g., 1, 2, 3), and will contain the task outputs for all of the `loopOver` tasks.
 
@@ -116,7 +141,73 @@ In this example, even though the loop runs 1000 iterations, only the last 5 iter
 
 Here are some examples for using the Do While task.
 
-### Using a basic script
+### List iteration (simplified approach)
+
+When you have a list of items to iterate over, use the `items` parameter for a simpler approach that doesn't require manual counter management.
+
+```json
+{
+  "name": "process_items",
+  "taskReferenceName": "process_items_ref",
+  "type": "DO_WHILE",
+  "items": "${workflow.input.itemList}",
+  "loopOver": [
+    {
+      "name": "http",
+      "taskReferenceName": "http_ref",
+      "inputParameters": {
+        "http_request": {
+          "uri": "https://api.example.com/process",
+          "method": "POST",
+          "body": {
+            "item": "${process_items_ref.output.loopItem}",
+            "index": "${process_items_ref.output.loopIndex}"
+          }
+        }
+      },
+      "type": "HTTP"
+    }
+  ]
+}
+```
+
+In this example:
+- The loop automatically iterates through each item in `workflow.input.itemList`
+- `loopItem` contains the current item (e.g., first iteration gets `itemList[0]`)
+- `loopIndex` contains the zero-based index (0, 1, 2, ...)
+- No `loopCondition` needed—the loop stops when all items are processed
+- If the input list is empty (`[]`), the Do While task completes immediately without executing loop tasks
+
+**Optional condition with list iteration:**
+
+You can combine `items` with a `loopCondition` to add early termination logic:
+
+```json
+{
+  "name": "process_until_error",
+  "taskReferenceName": "process_ref",
+  "type": "DO_WHILE",
+  "items": "${workflow.input.tasks}",
+  "loopCondition": "$.http_ref['response']['status'] == 'success'",
+  "loopOver": [
+    {
+      "name": "http",
+      "taskReferenceName": "http_ref",
+      "type": "HTTP",
+      "inputParameters": {
+        "http_request": {
+          "uri": "${process_ref.output.loopItem.url}",
+          "method": "GET"
+        }
+      }
+    }
+  ]
+}
+```
+
+This loop will stop either when all items are processed OR when the HTTP response status is not 'success'.
+
+### Using a basic script (counter-based iteration)
 
 In this example task configuration, the Do While task evaluates two criteria:
 
@@ -246,6 +337,24 @@ To evaluate the current iteration, the parameter `$.get_all_stars_loop_ref['iter
 }
 ```
 
+
+## Orkes Conductor compatibility
+
+For compatibility with workflows migrated from Orkes Conductor, the `_items` parameter in `inputParameters` is also supported:
+
+```json
+{
+  "name": "do_while",
+  "taskReferenceName": "do_while_ref",
+  "type": "DO_WHILE",
+  "inputParameters": {
+    "_items": "${workflow.input.myList}"
+  },
+  "loopOver": [...]
+}
+```
+
+This behaves identically to using the `items` parameter. The `items` parameter is the recommended approach for new workflows.
 
 ## Limitations
 

@@ -1,0 +1,15 @@
+{
+  "name": "mcp_list_tools_workflow",
+  "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "list_mcp_tools",
+      "taskReferenceName": "list_tools",
+      "type": "LIST_MCP_TOOLS",
+      "inputParameters": {
+        "mcpServer": "http://localhost:3001/mcp"
+      }
+    }
+  ]
+}

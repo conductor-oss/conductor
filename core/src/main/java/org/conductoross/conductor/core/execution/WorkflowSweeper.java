@@ -29,6 +29,7 @@ import org.springframework.stereotype.Component;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
@@ -212,7 +213,8 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
                 workflow.getTasks()
                         .forEach(
                                 task -> {
-                                    if (isTaskRepairable.test(task)) {
+                                    String queueName = QueueUtils.getQueueName(task);
+                                    if (!queueDAO.containsMessage(queueName, task.getTaskId())) {
                                         log.warn(
                                                 "Going to repair the task {} / {}, with status {}, workflow = {}, timeout = {}, now-wait = {}",
                                                 task.getTaskId(),
@@ -224,8 +226,7 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
                                         Monitors.recordQueueMessageRepushFromRepairService(
                                                 task.getTaskDefName());
                                         String queueName = QueueUtils.getQueueName(task);
-                                        if (!queueDAO.containsMessage(
-                                                queueName, task.getTaskId())) {
+                                        if (!queueDAO.containsMessage(queueName, task.getTaskId())) {
                                             queueDAO.push(
                                                     queueName,
                                                     task.getTaskId(),
@@ -286,6 +287,9 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
             if (workflow != null && StringUtils.isNotBlank(workflow.getParentWorkflowId())) {
                 ensureWorkflowExistsInDecider(workflow.getParentWorkflowId());
             }
+        } catch (NotFoundException nfe) {
+            log.error("Error running sweep for {}, error = {}", workflowId, nfe.getMessage(), nfe);
+            queueDAO.remove(DECIDER_QUEUE, workflowId);
         } catch (Throwable e) {
             log.error("Error running sweep for {}, error = {}", workflowId, e.getMessage(), e);
         } finally {
