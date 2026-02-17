@@ -13,16 +13,12 @@
 package org.conductoross.conductor.ai.vectordb.pinecone;
 
 import org.conductoross.conductor.ai.vectordb.VectorDBConfig;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@ConfigurationProperties(prefix = "conductor.vectordb.pinecone")
 @Data
-@Component
 @NoArgsConstructor
 @AllArgsConstructor
 public class PineconeConfig implements VectorDBConfig<PineconeDB> {
@@ -31,6 +27,10 @@ public class PineconeConfig implements VectorDBConfig<PineconeDB> {
 
     @Override
     public PineconeDB get() {
-        return new PineconeDB(this);
+        throw new UnsupportedOperationException("Use get(String name) instead");
+    }
+
+    public PineconeDB get(String name) {
+        return new PineconeDB(name, this);
     }
 }
