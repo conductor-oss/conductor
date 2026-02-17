@@ -483,9 +483,7 @@ public class TestWorkflowExecutor {
         workflowExecutor.terminateWorkflow("workflowId", "reason");
         assertEquals(WorkflowModel.Status.TERMINATED, workflow.getStatus());
         assertEquals(1, updateWorkflowCalledCounter.get());
-        // DECIDER_QUEUE removal happens twice: once in the early cancelNonTerminalTasks call
-        // (before TERMINATED notification for archival safety) and once in the final call.
-        assertEquals(2, removeQueueEntryCalledCounter.get());
+        assertEquals(1, removeQueueEntryCalledCounter.get());
 
         verify(workflowStatusListener, times(1))
                 .onWorkflowTerminatedIfEnabled(any(WorkflowModel.class));
