@@ -37,6 +37,8 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: ${{ runner.os }}-gradle-
+      - name: Force Docker API Version
+        run: echo 'api.version=1.44' > ~/.docker-java.properties
       - name: Build with Gradle
         if: github.ref != 'refs/heads/main'
         env:
