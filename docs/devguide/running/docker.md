@@ -84,7 +84,8 @@ A selection of `docker-compose-*.yaml` and `config-*.properties` files are provi
 | [docker-compose-postgres.yaml](https://github.com/conductor-oss/conductor/blob/main/docker/docker-compose-postgres.yaml)   | <ul><li>Postgres</li><li>Conductor server (includes UI)</li></ul>  |
 | [docker-compose-postgres-es7.yaml](https://github.com/conductor-oss/conductor/blob/main/docker/docker-compose-postgres-es7.yaml)       | <ul><li>Postgres</li><li>Elasticsearch v7</li><li>Conductor server (includes UI)</li></ul>   |
 | [docker-compose-mysql.yaml](https://github.com/conductor-oss/conductor/blob/main/docker/docker-compose-mysql.yaml)       | <ul><li>MySQL</li><li>Redis</li><li>Elasticsearch v7</li><li>Conductor server (includes UI)</li></ul>   |
-| [docker-compose-redis-os.yaml](https://github.com/conductor-oss/conductor/blob/main/docker/docker-compose-redis-os.yaml)    | <ul><li>Redis</li><li>Opensearch</li><li>Conductor server (includes UI)</li></ul>   |
+| [docker-compose-redis-os2.yaml](https://github.com/conductor-oss/conductor/blob/main/docker/docker-compose-redis-os2.yaml)    | <ul><li>Redis</li><li>OpenSearch 2.x</li><li>Conductor server (includes UI)</li></ul>   |
+| [docker-compose-redis-os3.yaml](https://github.com/conductor-oss/conductor/blob/main/docker/docker-compose-redis-os3.yaml)    | <ul><li>Redis</li><li>OpenSearch 3.x</li><li>Conductor server (includes UI)</li></ul>   |
   
 ### Running Conductor with alternative persistence stores
 
@@ -116,12 +117,35 @@ By default, Conductor comes packaged with Elasticsearch for the UI's indexing ba
 1. Set `conductor.indexing.enabled=true` in `config-*.properties` files.
 2. Uncomment or add in the configuration code related to Elasticsearch. For example: `conductor.elasticsearch.url=http://es:9200`.
 
-### Configuring Opensearch
+### Configuring OpenSearch
 
-**To use Opensearch**:
+Conductor supports OpenSearch 2.x and 3.x via versioned modules. Use the compose file that
+matches your OpenSearch version:
 
-1. Comment out the Elasticsearch import in [`server/build.gradle`](https://github.com/conductor-oss/conductor/blob/main/server/build.gradle#L44-L46).
-2. Uncomment the Opensearch import in [`server/build.gradle`](https://github.com/conductor-oss/conductor/blob/main/server/build.gradle#L44-L46).
+**OpenSearch 2.x:**
+
+```shell
+conductor $ docker compose -f docker/docker-compose-redis-os2.yaml up
+```
+
+**OpenSearch 3.x:**
+
+```shell
+conductor $ docker compose -f docker/docker-compose-redis-os3.yaml up
+```
+
+To configure OpenSearch in an existing setup, set the following in your `config-*.properties`:
+
+```properties
+conductor.indexing.enabled=true
+conductor.indexing.type=opensearch2   # or opensearch3
+conductor.opensearch.url=http://os:9200
+conductor.opensearch.indexPrefix=conductor
+conductor.opensearch.indexReplicasCount=0
+conductor.opensearch.clusterHealthColor=green
+```
+
+For the full property reference, see the [OpenSearch configuration guide](../documentation/advanced/opensearch.md).
 
 
 
