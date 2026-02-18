@@ -34,6 +34,7 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.TestDeciderService;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
@@ -161,6 +162,46 @@ public class ExecutionDAOFacadeTest {
     }
 
     @Test
+    public void testRemoveWorkflowContinuesOnIndexNotFound() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("workflowId");
+        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+
+        TaskModel task = new TaskModel();
+        task.setTaskId("taskId");
+        workflow.setTasks(Collections.singletonList(task));
+
+        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
+        doThrow(new NotFoundException("missing workflow"))
+                .when(indexDAO)
+                .asyncRemoveWorkflow(anyString());
+
+        executionDAOFacade.removeWorkflow("workflowId", false);
+
+        verify(executionDAO, times(1)).removeWorkflow(anyString());
+    }
+
+    @Test
+    public void testRemoveWorkflowContinuesOnTaskIndexNotFound() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("workflowId");
+        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+
+        TaskModel task = new TaskModel();
+        task.setTaskId("taskId");
+        workflow.setTasks(Collections.singletonList(task));
+
+        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
+        doThrow(new NotFoundException("missing task"))
+                .when(indexDAO)
+                .asyncRemoveTask(anyString(), anyString());
+
+        executionDAOFacade.removeWorkflow("workflowId", false);
+
+        verify(executionDAO, times(1)).removeWorkflow(anyString());
+    }
+
+    @Test
     public void testArchiveWorkflow() throws Exception {
         InputStream stream = TestDeciderService.class.getResourceAsStream("/completed.json");
         WorkflowModel workflow = objectMapper.readValue(stream, WorkflowModel.class);
@@ -173,6 +214,84 @@ public class ExecutionDAOFacadeTest {
         verify(indexDAO, times(15)).updateTask(anyString(), anyString(), any(), any());
         verify(indexDAO, never()).removeWorkflow(anyString());
         verify(indexDAO, never()).removeTask(anyString(), anyString());
+    }
+
+    @Test
+    public void testArchiveWorkflowSkipsRemovalOnIndexFailure() throws Exception {
+        InputStream stream = TestDeciderService.class.getResourceAsStream("/completed.json");
+        WorkflowModel workflow = objectMapper.readValue(stream, WorkflowModel.class);
+
+        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
+        doThrow(new RuntimeException("index failure"))
+                .when(indexDAO)
+                .updateWorkflow(anyString(), any(), any());
+
+        assertThrows(
+                RuntimeException.class,
+                () -> executionDAOFacade.removeWorkflow("workflowId", true));
+
+        verify(executionDAO, never()).removeWorkflow(anyString());
+    }
+
+    @Test
+    public void testArchiveWorkflowSkipsRemovalOnTaskArchiveFailure() {
+        WorkflowModel workflow = new WorkflowModel();
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("workflowName");
+        workflowDef.setVersion(1);
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setWorkflowId("workflowId");
+        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+
+        TaskModel task = new TaskModel();
+        task.setTaskId("taskId");
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        workflow.setTasks(Collections.singletonList(task));
+
+        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> executionDAOFacade.removeWorkflow("workflowId", true));
+
+        verify(indexDAO, times(1)).updateWorkflow(anyString(), any(), any());
+        verify(executionDAO, never()).removeWorkflow(anyString());
+    }
+
+    @Test
+    public void testArchiveWorkflowWithScheduledTasksDoesNotThrow() {
+        // Regression test for: archival fails with IllegalArgumentException when a workflow is
+        // terminated while tasks are still in SCHEDULED state (before cancelNonTerminalTasks runs).
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("testWorkflow");
+        workflowDef.setVersion(1);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("workflowId");
+        workflow.setStatus(WorkflowModel.Status.TERMINATED);
+        workflow.setWorkflowDefinition(workflowDef);
+
+        TaskModel scheduledTask = new TaskModel();
+        scheduledTask.setTaskId("scheduledTaskId");
+        scheduledTask.setStatus(TaskModel.Status.SCHEDULED);
+
+        TaskModel completedTask = new TaskModel();
+        completedTask.setTaskId("completedTaskId");
+        completedTask.setStatus(TaskModel.Status.COMPLETED);
+
+        workflow.setTasks(List.of(scheduledTask, completedTask));
+
+        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
+
+        // Should NOT throw IllegalArgumentException for SCHEDULED task
+        executionDAOFacade.removeWorkflow("workflowId", true);
+
+        verify(executionDAO, times(1)).removeWorkflow(anyString());
+        // COMPLETED task should be archived
+        verify(indexDAO, times(1)).updateTask(anyString(), eq("completedTaskId"), any(), any());
+        // SCHEDULED task should be skipped (not archived, not removed)
+        verify(indexDAO, never()).updateTask(anyString(), eq("scheduledTaskId"), any(), any());
+        verify(indexDAO, never()).asyncRemoveTask(anyString(), anyString());
     }
 
     @Test
@@ -248,6 +367,28 @@ public class ExecutionDAOFacadeTest {
         verify(indexDAO, times(1)).asyncRemoveWorkflow(anyString());
         verify(indexDAO, never()).asyncRemoveTask(anyString(), anyString());
         verify(indexDAO, never()).updateTask(anyString(), anyString(), any(), any());
+    }
+
+    @Test
+    public void testRemoveWorkflowSkipsRemovalOnIndexFailure() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("workflowId");
+        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+
+        TaskModel task = new TaskModel();
+        task.setTaskId("taskId");
+        workflow.setTasks(Collections.singletonList(task));
+
+        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
+        doThrow(new RuntimeException("index failure"))
+                .when(indexDAO)
+                .asyncRemoveWorkflow(anyString());
+
+        assertThrows(
+                RuntimeException.class,
+                () -> executionDAOFacade.removeWorkflow("workflowId", false));
+
+        verify(executionDAO, never()).removeWorkflow(anyString());
     }
 
     @Test

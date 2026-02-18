@@ -22,6 +22,7 @@ The AI module is organized into several key packages:
 org.conductoross.conductor.ai/
 ├── providers/           # LLM provider implementations (OpenAI, Anthropic, etc.)
 ├── vectordb/           # Vector database integrations (Pinecone, MongoDB, etc.)
+├── video/              # Video generation abstractions (VideoModel, AsyncVideoModel, etc.)
 ├── tasks/              # Worker task definitions
 │   ├── mapper/         # Input/output parameter mappers
 │   └── worker/         # Worker implementations
@@ -32,6 +33,8 @@ org.conductoross.conductor.ai/
 
 Key interfaces:
 - **`AIModel`**: Base interface for LLM providers
+- **`VideoModel`**: Functional interface for synchronous video generation (mirrors Spring AI's `ImageModel`)
+- **`AsyncVideoModel`**: Extends `VideoModel` with async polling via `checkStatus(String jobId)`
 - **`VectorDBProvider`**: Base interface for vector databases
 - **`@WorkerTask`**: Annotation for defining worker tasks
 
@@ -175,7 +178,89 @@ class YourProviderConfigurationTest {
 }
 ```
 
-### Step 6: Update Documentation
+### Step 6: Add Video Generation Support (Optional)
+
+If your provider supports video generation, implement video model support using the `video/` package abstractions. Video generation is async by nature (submit a job, poll for results), so most providers will implement `AsyncVideoModel`.
+
+#### 6a. Create a Video Model Class
+
+```java
+package org.conductoross.conductor.ai.providers.yourprovider;
+
+import org.conductoross.conductor.ai.video.*;
+
+public class YourVideoModel implements AsyncVideoModel {
+
+    private final String apiKey;
+
+    public YourVideoModel(String apiKey) {
+        this.apiKey = apiKey;
+    }
+
+    @Override
+    public VideoResponse call(VideoPrompt prompt) {
+        // Submit video generation job to provider API
+        // Return a VideoResponse with jobId in metadata
+        VideoResponseMetadata metadata = new VideoResponseMetadata();
+        metadata.put("jobId", submittedJobId);
+        metadata.put("status", "PENDING");
+        return new VideoResponse(List.of(), metadata);
+    }
+
+    @Override
+    public VideoResponse checkStatus(String jobId) {
+        // Poll provider API for job status
+        // When complete, download video bytes and return Video objects
+        // Set mimeType on each Video (e.g., "video/mp4", "image/webp" for thumbnails)
+        Video video = new Video(videoUrl, null, "video/mp4");
+        VideoGeneration generation = new VideoGeneration(video);
+
+        VideoResponseMetadata metadata = new VideoResponseMetadata();
+        metadata.put("jobId", jobId);
+        metadata.put("status", "COMPLETED");
+        return new VideoResponse(List.of(generation), metadata);
+    }
+}
+```
+
+#### 6b. Wire Video Model into Your Provider
+
+Override the video-related methods in your `AIModel` implementation:
+
+```java
+@Override
+public VideoModel getVideoModel() {
+    if (videoModel == null) {
+        videoModel = new YourVideoModel(apiKey);
+    }
+    return videoModel;
+}
+
+@Override
+public LLMResponse generateVideo(VideoGenRequest request) {
+    VideoOptions options = getVideoOptions(request);
+    VideoPrompt prompt = new VideoPrompt(
+        List.of(new VideoMessage(request.getPrompt())), options);
+    VideoResponse response = getVideoModel().call(prompt);
+    // Convert to LLMResponse with jobId
+}
+
+@Override
+public LLMResponse checkVideoStatus(VideoGenRequest request) {
+    AsyncVideoModel asyncModel = (AsyncVideoModel) getVideoModel();
+    VideoResponse response = asyncModel.checkStatus(request.getJobId());
+    // Convert to LLMResponse with media list
+}
+```
+
+The `video/` package mirrors Spring AI's `Image*` abstraction pattern:
+- `VideoPrompt` -> `ImagePrompt` (request wrapper)
+- `VideoResponse` -> `ImageResponse` (response wrapper)
+- `VideoGeneration` -> `ImageGeneration` (individual result)
+- `Video` -> `Image` (the actual media, with url, b64Json, and mimeType fields)
+- `VideoOptions` -> `ImageOptions` (generation parameters)
+
+### Step 7: Update Documentation
 
 Add your provider to `README.md` under the supported providers section with configuration examples.
 
@@ -183,60 +268,68 @@ Add your provider to `README.md` under the supported providers section with conf
 
 ## Adding a Vector Database Integration
 
-### Step 1: Create Provider Class
+### Step 1: Create Config Class
+
+Create a new configuration class in the database package (e.g., `org.conductoross.conductor.ai.vectordb.yourdb`):
 
 ```java
-package org.conductoross.conductor.ai.vectordb.yourdb;
-
-import org.conductoross.conductor.ai.vectordb.VectorDBProvider;
-import org.springframework.ai.vectorstore.VectorStore;
-
-public class YourDBIntegration extends VectorDBProvider {
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class YourDBConfig implements VectorDBConfig<YourVectorDB> {
     
-    private final VectorStore vectorStore;
-    
-    public YourDBIntegration(VectorStore vectorStore) {
-        this.vectorStore = vectorStore;
-    }
+    private String connectionString;
+    // other properties
     
     @Override
-    public String getName() {
-        return "yourdb";
+    public YourVectorDB get() {
+        throw new UnsupportedOperationException("Use get(String name) instead");
     }
-    
-    @Override
-    public VectorStore getVectorStore(String integrationName) {
-        return vectorStore;
+
+    public YourVectorDB get(String name) {
+        return new YourVectorDB(name, this);
     }
 }
 ```
 
-### Step 2: Create Configuration
+### Step 2: Implement VectorDB Class
+
+Extend the `VectorDB` abstract class:
 
 ```java
-@Configuration
-@EnableConfigurationProperties(YourDBProperties.class)
-@ConditionalOnProperty(prefix = "conductor.ai.yourdb", name = "enabled", havingValue = "true")
-public class YourDBConfiguration {
+public class YourVectorDB extends VectorDB {
     
-    @Bean
-    public YourDBIntegration yourDBIntegration(
-            YourDBProperties properties,
-            EmbeddingModel embeddingModel) {
-        // Create and configure vector store
-        VectorStore vectorStore = // ... initialize
-        return new YourDBIntegration(vectorStore);
+    public static final String TYPE = "yourdb";
+    private final YourDBConfig config;
+    
+    public YourVectorDB(String name, YourDBConfig config) {
+        super(name, TYPE);
+        this.config = config;
+    }
+    
+    @Override
+    public int updateEmbeddings(String indexName, String namespace, String doc, String parentDocId, String id, List<Float> embeddings, Map<String, Object> metadata) {
+        // Implement logic to store embeddings
+    }
+    
+    @Override
+    public List<IndexedDoc> search(String indexName, String namespace, List<Float> embeddings, int maxResults) {
+        // Implement logic to search embeddings
     }
 }
 ```
 
-### Step 3: Add Integration Tests
+### Step 3: Register in VectorDBInstanceConfig
+
+Add your database type to the `createVectorDB` method and the `VectorDBInstance` inner class in `org.conductoross.conductor.ai.vectordb.VectorDBInstanceConfig`.
+
+### Step 4: Add Integration Tests
 
 Use Testcontainers for integration testing:
 
 ```java
 @Testcontainers
-class YourDBIntegrationTest {
+class YourVectorDBTest {
     
     @Container
     static GenericContainer<?> yourdb =

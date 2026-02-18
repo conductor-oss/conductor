@@ -12,6 +12,10 @@
  */
 package org.conductoross.conductor.ai.vectordb;
 
-public interface VectorDBConfig<T> {
+/**
+ * Marker interface for vector database configuration. Implementations provide configuration for
+ * specific vector database types.
+ */
+public interface VectorDBConfig<T extends VectorDB> {
     T get();
 }

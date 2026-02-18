@@ -85,10 +85,6 @@ public class MongoVectorDBTest {
         database = mongoClient.getDatabase(DATABASE_NAME);
 
         ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
-        MongoDBConfig config = new MongoDBConfig();
-        config.setDatabase(DATABASE_NAME);
-        config.setConnectionString(mongoDBContainer.getConnectionString());
-
         AIModelProvider provider = new AIModelProvider(List.of(), new StandardEnvironment());
         LLMs llm = new LLMs(null, new JsonSchemaValidator(objectMapper), provider);
 
@@ -96,11 +92,19 @@ public class MongoVectorDBTest {
         mongoConfig.setDatabase(DATABASE_NAME);
         mongoConfig.setConnectionString(mongoDBContainer.getConnectionString());
 
-        // Create VectorDB instance and wrap it in VectorDBConfig
-        MongoVectorDB mongoVectorDB = new MongoVectorDB(mongoConfig);
-        VectorDBConfig<VectorDB> vectorDBConfig = () -> mongoVectorDB;
+        // Create VectorDB instance
+        MongoVectorDB mongoVectorDB = new MongoVectorDB("mongodb-test", mongoConfig);
 
-        VectorDBProvider vectorDBProvider = new VectorDBProvider(List.of(vectorDBConfig));
+        // Create instance config with the vectorDB
+        VectorDBInstanceConfig instanceConfig = new VectorDBInstanceConfig();
+        VectorDBInstanceConfig.VectorDBInstance instance =
+                new VectorDBInstanceConfig.VectorDBInstance();
+        instance.setName("mongodb-test");
+        instance.setType("mongodb");
+        instance.setMongodb(mongoConfig);
+        instanceConfig.setInstances(List.of(instance));
+
+        VectorDBProvider vectorDBProvider = new VectorDBProvider(instanceConfig);
         VectorDBs vectorDBs = new VectorDBs(vectorDBProvider);
         aiWorkers = new VectorDBWorkers(vectorDBs, llm);
     }
@@ -140,7 +144,7 @@ public class MongoVectorDBTest {
 
     private StoreEmbeddingsInput getMockStoreEmbeddingsInput(List<Float> embeddings) {
         StoreEmbeddingsInput storeEmbeddingsInput = new StoreEmbeddingsInput();
-        storeEmbeddingsInput.setVectorDB("mongovectordb");
+        storeEmbeddingsInput.setVectorDB("mongodb-test");
         storeEmbeddingsInput.setId("testId");
         storeEmbeddingsInput.setIndex("testindex");
         storeEmbeddingsInput.setMetadata(Map.of("key1", "val1"));
