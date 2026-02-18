@@ -277,7 +277,6 @@ public class ExecutionServiceTest {
         assertEquals(Collections.singletonList(taskWorkflow1), searchResult.getResults());
     }
 
-
     @Test
     public void testGetLastPollTaskAcksOnlyOnce() {
         // Setup: create a TaskModel that poll() will process
@@ -327,8 +326,7 @@ public class ExecutionServiceTest {
         String queueName = taskType;
 
         // Mock: queueDAO.pop returns empty list (no tasks available)
-        when(queueDAO.pop(eq(queueName), eq(1), anyInt()))
-                .thenReturn(Collections.emptyList());
+        when(queueDAO.pop(eq(queueName), eq(1), anyInt())).thenReturn(Collections.emptyList());
 
         // Act
         Task result = executionService.getLastPollTask(taskType, workerId, domain);
