@@ -25,6 +25,10 @@ import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.models.ImageGenRequest;
 import org.conductoross.conductor.ai.models.LLMResponse;
 import org.conductoross.conductor.ai.models.ToolSpec;
+import org.conductoross.conductor.ai.models.VideoGenRequest;
+import org.conductoross.conductor.ai.video.VideoModel;
+import org.conductoross.conductor.ai.video.VideoOptions;
+import org.conductoross.conductor.ai.video.VideoOptionsBuilder;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.image.ImageModel;
@@ -107,6 +111,62 @@ public interface AIModel {
      * @return Model to generate images
      */
     ImageModel getImageModel();
+
+    /**
+     * @param input Video gen request
+     * @return Options
+     */
+    default VideoOptions getVideoOptions(VideoGenRequest input) {
+        return VideoOptionsBuilder.builder()
+                .model(input.getModel())
+                .duration(input.getDuration())
+                .width(input.getWidth())
+                .height(input.getHeight())
+                .fps(input.getFps())
+                .outputFormat(input.getOutputFormat())
+                .n(input.getN())
+                .style(input.getStyle())
+                .motion(input.getMotion())
+                .seed(input.getSeed())
+                .guidanceScale(input.getGuidanceScale())
+                .aspectRatio(input.getAspectRatio())
+                .generateThumbnail(input.getGenerateThumbnail())
+                .thumbnailTimestamp(input.getThumbnailTimestamp())
+                .inputImage(input.getInputImage())
+                .negativePrompt(input.getNegativePrompt())
+                .personGeneration(input.getPersonGeneration())
+                .resolution(input.getResolution())
+                .generateAudio(input.getGenerateAudio())
+                .size(input.getSize())
+                .build();
+    }
+
+    /**
+     * @return Model to generate videos
+     */
+    default VideoModel getVideoModel() {
+        return null; // Default: video generation not supported
+    }
+
+    /**
+     * Generate video (async job submission)
+     *
+     * @param request Video generation request
+     * @return Response with job ID
+     */
+    default LLMResponse generateVideo(VideoGenRequest request) {
+        throw new UnsupportedOperationException("Video generation not supported by this provider");
+    }
+
+    /**
+     * Check video generation job status (polling)
+     *
+     * @param request Video generation request with jobId
+     * @return Response with current status or completed video
+     */
+    default LLMResponse checkVideoStatus(VideoGenRequest request) {
+        throw new UnsupportedOperationException("Video generation not supported by this provider");
+    }
 
     default LLMResponse generateAudio(AudioGenRequest request) {
         throw new UnsupportedOperationException();
