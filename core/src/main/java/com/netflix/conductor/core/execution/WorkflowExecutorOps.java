@@ -662,6 +662,18 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
             String workflowId = workflow.getWorkflowId();
             workflow.setReasonForIncompletion(reason);
+            // Cancel non-terminal tasks before updating workflow state and notifying the status
+            // listener. The TERMINATED notification may trigger an archiving listener (e.g.
+            // ArchivingWorkflowStatusListener) that immediately removes the workflow from the
+            // primary data store. Archival requires tasks to be in a terminal state, so we must
+            // cancel SCHEDULED/IN_PROGRESS tasks first.
+            List<String> cancelErrors = cancelNonTerminalTasks(workflow);
+            if (!cancelErrors.isEmpty()) {
+                throw new NonTransientException(
+                        String.format(
+                                "Error canceling system tasks: %s",
+                                String.join(",", cancelErrors)));
+            }
             executionDAOFacade.updateWorkflow(workflow);
             notifyWorkflowStatusListener(workflow, WorkflowEventType.TERMINATED);
             Monitors.recordWorkflowTermination(
@@ -729,13 +741,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             executionDAOFacade.removeFromPendingWorkflow(
                     workflow.getWorkflowName(), workflow.getWorkflowId());
 
-            List<String> erroredTasks = cancelNonTerminalTasks(workflow);
-            if (!erroredTasks.isEmpty()) {
-                throw new NonTransientException(
-                        String.format(
-                                "Error canceling system tasks: %s",
-                                String.join(",", erroredTasks)));
-            }
             return workflow;
         } finally {
             executionLockService.releaseLock(workflow.getWorkflowId());
