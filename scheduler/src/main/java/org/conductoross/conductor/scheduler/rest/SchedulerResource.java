@@ -17,6 +17,7 @@ import java.util.List;
 import org.conductoross.conductor.scheduler.model.WorkflowSchedule;
 import org.conductoross.conductor.scheduler.model.WorkflowScheduleExecution;
 import org.conductoross.conductor.scheduler.service.SchedulerService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,6 +42,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
  * WorkflowSchedule#DEFAULT_ORG_ID} ("default") inside {@link SchedulerService}.
  */
 @RestController
+@ConditionalOnBean(SchedulerService.class)
 @RequestMapping("/api/scheduler")
 @Tag(name = "Scheduler", description = "Workflow scheduling API")
 public class SchedulerResource {
