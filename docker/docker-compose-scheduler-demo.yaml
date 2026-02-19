@@ -8,7 +8,7 @@ version: '2.3'
 # Usage:
 #   docker compose -f docker/docker-compose-scheduler-demo.yaml up
 #
-# Conductor UI:  http://localhost:5000
+# Conductor UI:  http://localhost:5001
 # Conductor API: http://localhost:8080
 # Swagger:       http://localhost:8080/swagger-ui/index.html
 
@@ -26,7 +26,7 @@ services:
       - internal
     ports:
       - "8080:8080"
-      - "5000:5000"
+      - "5001:5000"
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
       interval: 10s

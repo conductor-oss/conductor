@@ -301,11 +301,15 @@ public class SchedulerServiceStressTest {
         when(dao.getAllSchedules(anyString())).thenReturn(List.of(schedule));
         when(workflowService.startWorkflow(any())).thenReturn("wf-1", "wf-2", "wf-3");
 
-        // Simulate three poll cycles: each time nextRunTime is still in the past
+        // Each poll cycle calls getNextRunTimeInEpoch twice: once in isDue() and once in
+        // handleSchedule() to capture the scheduled time. Provide 2 returns per cycle.
         when(dao.getNextRunTimeInEpoch(anyString(), eq("catchup-sched")))
-                .thenReturn(slot1) // cycle 1: slot1 is due
-                .thenReturn(slot2) // cycle 2: slot2 is due
-                .thenReturn(slot3); // cycle 3: slot3 is due
+                .thenReturn(slot1) // cycle 1: isDue check
+                .thenReturn(slot1) // cycle 1: handleSchedule scheduledTime
+                .thenReturn(slot2) // cycle 2: isDue check
+                .thenReturn(slot2) // cycle 2: handleSchedule scheduledTime
+                .thenReturn(slot3) // cycle 3: isDue check
+                .thenReturn(slot3); // cycle 3: handleSchedule scheduledTime
 
         // Three poll cycles
         service.pollAndExecuteSchedules();

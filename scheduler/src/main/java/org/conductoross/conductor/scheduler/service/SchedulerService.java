@@ -281,14 +281,24 @@ public class SchedulerService {
         String executionId = UUID.randomUUID().toString();
         String orgId = WorkflowSchedule.DEFAULT_ORG_ID;
 
-        // Compute next-next run time before triggering, so we don't double-fire
-        Long nextRun = computeNextRunTime(schedule, now);
+        // Fetch the slot we are firing for before advancing the pointer.
+        long scheduledTime = schedulerDAO.getNextRunTimeInEpoch(orgId, schedule.getName());
+
+        // In catchup mode, advance to the next slot after the one we just fired for
+        // (i.e. step through missed slots one per poll cycle). In normal mode, jump
+        // to the next future slot so we don't re-fire stale times.
+        Long nextRun;
+        if (schedule.isRunCatchupScheduleInstances() && scheduledTime > 0) {
+            nextRun = computeNextRunTime(schedule, scheduledTime);
+        } else {
+            nextRun = computeNextRunTime(schedule, now);
+        }
 
         // Record POLLED state
         WorkflowScheduleExecution execution = new WorkflowScheduleExecution();
         execution.setExecutionId(executionId);
         execution.setScheduleName(schedule.getName());
-        execution.setScheduledTime(schedulerDAO.getNextRunTimeInEpoch(orgId, schedule.getName()));
+        execution.setScheduledTime(scheduledTime);
         execution.setExecutionTime(now);
         execution.setState(WorkflowScheduleExecution.ExecutionState.POLLED);
         execution.setZoneId(schedule.getZoneId());

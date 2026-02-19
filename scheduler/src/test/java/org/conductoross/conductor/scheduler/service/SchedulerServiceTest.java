@@ -191,10 +191,13 @@ public class SchedulerServiceTest {
     public void testComputeNextRunTime_respectsEndTime() {
         WorkflowSchedule schedule = buildSchedule("end", "0 0 9 * * *");
         schedule.setZoneId("UTC");
-        // End time in the past
+        // End time 1 second in the past. Using now as afterEpochMillis guarantees the
+        // next cron occurrence (9am, at least seconds away) is always after endTime,
+        // so the method must return null. Using (now - 1 hour) was flaky because a past
+        // 9am landing between (now - 1 hour) and endTime would not trigger the null path.
         schedule.setScheduleEndTime(System.currentTimeMillis() - 1000);
 
-        Long next = service.computeNextRunTime(schedule, System.currentTimeMillis() - 3600_000);
+        Long next = service.computeNextRunTime(schedule, System.currentTimeMillis());
         assertNull(next); // no future runs within bounds
     }
 
