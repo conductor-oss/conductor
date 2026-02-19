@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.scheduler.dao;
+package org.conductoross.conductor.scheduler.dao;
 
 import java.sql.Connection;
 import java.util.List;
@@ -18,6 +18,10 @@ import java.util.UUID;
 
 import javax.sql.DataSource;
 
+import org.conductoross.conductor.scheduler.config.TestObjectMapperConfiguration;
+import org.conductoross.conductor.scheduler.config.WorkflowSchedulerConfiguration;
+import org.conductoross.conductor.scheduler.model.WorkflowSchedule;
+import org.conductoross.conductor.scheduler.model.WorkflowScheduleExecution;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,10 +33,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
-import com.netflix.conductor.scheduler.config.TestObjectMapperConfiguration;
-import com.netflix.conductor.scheduler.config.WorkflowSchedulerConfiguration;
-import com.netflix.conductor.scheduler.model.WorkflowSchedule;
-import com.netflix.conductor.scheduler.model.WorkflowScheduleExecution;
 
 import static org.junit.Assert.*;
 

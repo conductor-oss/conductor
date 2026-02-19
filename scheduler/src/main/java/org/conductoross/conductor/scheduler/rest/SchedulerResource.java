@@ -10,10 +10,13 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.scheduler.rest;
+package org.conductoross.conductor.scheduler.rest;
 
 import java.util.List;
 
+import org.conductoross.conductor.scheduler.model.WorkflowSchedule;
+import org.conductoross.conductor.scheduler.model.WorkflowScheduleExecution;
+import org.conductoross.conductor.scheduler.service.SchedulerService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,10 +28,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.netflix.conductor.scheduler.model.WorkflowSchedule;
-import com.netflix.conductor.scheduler.model.WorkflowScheduleExecution;
-import com.netflix.conductor.scheduler.service.SchedulerService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

@@ -10,10 +10,14 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.scheduler.config;
+package org.conductoross.conductor.scheduler.config;
 
 import javax.sql.DataSource;
 
+import org.conductoross.conductor.scheduler.dao.PostgresSchedulerDAO;
+import org.conductoross.conductor.scheduler.dao.SchedulerDAO;
+import org.conductoross.conductor.scheduler.rest.SchedulerResource;
+import org.conductoross.conductor.scheduler.service.SchedulerService;
 import org.flywaydb.core.Flyway;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -22,10 +26,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.DependsOn;
 
-import com.netflix.conductor.scheduler.dao.PostgresSchedulerDAO;
-import com.netflix.conductor.scheduler.dao.SchedulerDAO;
-import com.netflix.conductor.scheduler.rest.SchedulerResource;
-import com.netflix.conductor.scheduler.service.SchedulerService;
 import com.netflix.conductor.service.WorkflowService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
