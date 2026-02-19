@@ -1,0 +1,87 @@
+version: '2.3'
+
+# Conductor Scheduler Demo
+#
+# Starts Conductor with PostgreSQL persistence and the workflow scheduler enabled.
+# A seed container registers a sample workflow and a 1-minute schedule automatically.
+#
+# Usage:
+#   docker compose -f docker/docker-compose-scheduler-demo.yaml up
+#
+# Conductor UI:  http://localhost:5000
+# Conductor API: http://localhost:8080
+# Swagger:       http://localhost:8080/swagger-ui/index.html
+
+services:
+
+  conductor-server:
+    environment:
+      - CONFIG_PROP=config-scheduler-demo.properties
+    image: conductor:server
+    container_name: conductor-server
+    build:
+      context: ../
+      dockerfile: docker/server/Dockerfile
+    networks:
+      - internal
+    ports:
+      - "8080:8080"
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    depends_on:
+      conductor-postgres:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"
+
+  conductor-postgres:
+    image: postgres:15-alpine
+    container_name: conductor-postgres
+    environment:
+      - POSTGRES_USER=conductor
+      - POSTGRES_PASSWORD=conductor
+      - POSTGRES_DB=conductor
+    volumes:
+      - pgdata-scheduler-demo:/var/lib/postgresql/data
+    networks:
+      - internal
+    ports:
+      - "6432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U conductor"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"
+
+  # Seeds the demo workflow and schedule once Conductor is healthy
+  conductor-seed:
+    image: curlimages/curl:latest
+    container_name: conductor-seed
+    networks:
+      - internal
+    depends_on:
+      conductor-server:
+        condition: service_healthy
+    volumes:
+      - ../scheduler/examples:/examples:ro
+    entrypoint: ["/bin/sh", "/examples/seed.sh"]
+    restart: "no"
+
+volumes:
+  pgdata-scheduler-demo:
+    driver: local
+
+networks:
+  internal:

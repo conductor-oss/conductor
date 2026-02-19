@@ -1,0 +1,36 @@
+{
+  "name": "daily_report_workflow",
+  "description": "Generates and sends a daily summary report. Used as a scheduler demo.",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "fetch_report_data",
+      "taskReferenceName": "fetch_report_data_ref",
+      "type": "HTTP",
+      "inputParameters": {
+        "uri": "https://jsonplaceholder.typicode.com/todos?userId=1",
+        "method": "GET"
+      }
+    },
+    {
+      "name": "format_report",
+      "taskReferenceName": "format_report_ref",
+      "type": "INLINE",
+      "inputParameters": {
+        "evaluatorType": "graaljs",
+        "expression": "function() { var data = $.fetch_report_data_ref.output.response.body; return { itemCount: data.length, generatedAt: new Date().toISOString(), summary: 'Daily report for ' + new Date().toDateString() }; }()",
+        "fetch_report_data_ref": "${fetch_report_data_ref.output}"
+      }
+    }
+  ],
+  "outputParameters": {
+    "reportSummary": "${format_report_ref.output.result.summary}",
+    "itemCount": "${format_report_ref.output.result.itemCount}",
+    "generatedAt": "${format_report_ref.output.result.generatedAt}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "ownerEmail": "demo@example.com",
+  "timeoutPolicy": "TIME_OUT_WF",
+  "timeoutSeconds": 120
+}
