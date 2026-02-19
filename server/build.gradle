@@ -65,6 +65,9 @@ dependencies {
     //Metrics
     implementation project(':conductor-metrics')
 
+    //Scheduler
+    implementation project(':conductor-scheduler')
+
     //Event Listener
     implementation project(':conductor-workflow-event-listener')
 
