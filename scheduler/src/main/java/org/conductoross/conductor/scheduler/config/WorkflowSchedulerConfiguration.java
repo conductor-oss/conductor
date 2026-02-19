@@ -53,6 +53,7 @@ public class WorkflowSchedulerConfiguration {
                 .table("flyway_schema_history_scheduler")
                 .outOfOrder(true)
                 .baselineOnMigrate(true)
+                .baselineVersion("0")
                 .load();
     }
 

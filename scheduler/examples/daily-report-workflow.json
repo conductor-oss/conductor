@@ -1,6 +1,6 @@
 {
   "name": "daily_report_workflow",
-  "description": "Generates and sends a daily summary report. Used as a scheduler demo.",
+  "description": "Fetches a sample dataset on a schedule. Used as a scheduler demo.",
   "version": 1,
   "tasks": [
     {
@@ -8,25 +8,18 @@
       "taskReferenceName": "fetch_report_data_ref",
       "type": "HTTP",
       "inputParameters": {
-        "uri": "https://jsonplaceholder.typicode.com/todos?userId=1",
-        "method": "GET"
-      }
-    },
-    {
-      "name": "format_report",
-      "taskReferenceName": "format_report_ref",
-      "type": "INLINE",
-      "inputParameters": {
-        "evaluatorType": "graaljs",
-        "expression": "function() { var data = $.fetch_report_data_ref.output.response.body; return { itemCount: data.length, generatedAt: new Date().toISOString(), summary: 'Daily report for ' + new Date().toDateString() }; }()",
-        "fetch_report_data_ref": "${fetch_report_data_ref.output}"
+        "http_request": {
+          "uri": "https://jsonplaceholder.typicode.com/todos?userId=1",
+          "method": "GET",
+          "connectionTimeOut": 3000,
+          "readTimeOut": 3000
+        }
       }
     }
   ],
   "outputParameters": {
-    "reportSummary": "${format_report_ref.output.result.summary}",
-    "itemCount": "${format_report_ref.output.result.itemCount}",
-    "generatedAt": "${format_report_ref.output.result.generatedAt}"
+    "statusCode": "${fetch_report_data_ref.output.response.statusCode}",
+    "itemCount": "${fetch_report_data_ref.output.response.body.length()}"
   },
   "schemaVersion": 2,
   "restartable": true,
