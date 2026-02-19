@@ -17,5 +17,18 @@
 // Conductor's default is ES6, but SB brings in ES7
 ext['elasticsearch.version'] = revElasticSearch7
 
+// When building with ES8 persistence, override Spring Boot's managed Elasticsearch versions.
+// Spring Boot 3.3.x manages `org.elasticsearch.client:elasticsearch-rest-client` via
+// `elasticsearch.version` and `co.elastic.clients:elasticsearch-java` via
+// `elasticsearch-client.version`.
+def indexingBackend = findProperty('indexingBackend') ?: 'elasticsearch'
+if (indexingBackend == 'elasticsearch8' || indexingBackend == 'es8') {
+    ext['elasticsearch.version'] = revElasticSearch8
+    ext['elasticsearch-client.version'] = revElasticSearch8
+}
+
 // SB brings groovy 3.0.x which is not compatible with Spock
 ext['groovy.version'] = revGroovy
+
+// Keep Testcontainers aligned across modules instead of Spring Boot BOM defaults.
+ext['testcontainers.version'] = revTestContainer
