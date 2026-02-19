@@ -175,8 +175,15 @@ public class SchedulerService {
         schedule.setPausedReason(null);
         schedule.setUpdatedTime(System.currentTimeMillis());
 
-        // Recalculate next run from now, skipping missed runs unless catchup is enabled
-        Long nextRun = computeNextRunTime(schedule, System.currentTimeMillis());
+        Long nextRun;
+        if (schedule.isRunCatchupScheduleInstances()) {
+            // Leave the stale nextRunTime intact — the poll loop will fire once per cycle
+            // for each missed slot until it catches up to the current time.
+            nextRun = schedulerDAO.getNextRunTimeInEpoch(WorkflowSchedule.DEFAULT_ORG_ID, name);
+        } else {
+            // Skip all missed slots and jump to the next future execution time.
+            nextRun = computeNextRunTime(schedule, System.currentTimeMillis());
+        }
         schedule.setNextRunTime(nextRun);
         schedulerDAO.updateSchedule(schedule);
     }
@@ -362,9 +369,11 @@ public class SchedulerService {
     private void pruneExecutionHistory(String orgId, String scheduleName) {
         int threshold = properties.getArchivalMaxRecordThreshold();
         int keep = properties.getArchivalMaxRecords();
+        // Fetch one more than the threshold to cheaply detect when pruning is needed.
         List<WorkflowScheduleExecution> recent =
                 schedulerDAO.getExecutionRecords(orgId, scheduleName, threshold + 1);
-        if (recent.size() > keep) {
+        if (recent.size() > threshold) {
+            // Records are returned newest-first; remove everything beyond the keep limit.
             for (WorkflowScheduleExecution old : recent.subList(keep, recent.size())) {
                 schedulerDAO.removeExecutionRecord(orgId, old.getExecutionId());
             }
