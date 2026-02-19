@@ -33,16 +33,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * Spring auto-configuration for the Conductor scheduler module.
  *
- * <p>Activated when {@code conductor.scheduler.enabled=true} (the default) AND a {@link DataSource}
- * bean is present. The DataSource guard prevents this configuration from activating in test
- * contexts that use in-memory or non-Postgres persistence, where no DataSource is registered.
+ * <p>Activated only when {@code conductor.scheduler.enabled=true} is explicitly set. The scheduler
+ * requires a PostgreSQL {@link DataSource} and runs Flyway migrations, so it must not auto-activate
+ * in environments that use in-memory or non-Postgres persistence.
  */
 @AutoConfiguration
-@ConditionalOnBean(DataSource.class)
 @ConditionalOnProperty(
         name = "conductor.scheduler.enabled",
         havingValue = "true",
-        matchIfMissing = true)
+        matchIfMissing = false)
 @EnableConfigurationProperties(SchedulerProperties.class)
 public class WorkflowSchedulerConfiguration {
 
