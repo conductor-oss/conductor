@@ -304,9 +304,15 @@ public class SchedulerService {
         execution.setZoneId(schedule.getZoneId());
         schedulerDAO.saveExecutionRecord(execution);
 
-        // Advance the next-run pointer immediately to prevent duplicate fires
+        // Advance the next-run pointer immediately to prevent duplicate fires.
+        // If nextRun is null (no future slot within the schedule's end window), push the
+        // pointer past the end time so isDue() won't re-fire the last slot while waiting
+        // for now to overtake scheduleEndTime.
         if (nextRun != null) {
             schedulerDAO.setNextRunTimeInEpoch(orgId, schedule.getName(), nextRun);
+        } else if (schedule.getScheduleEndTime() != null) {
+            schedulerDAO.setNextRunTimeInEpoch(
+                    orgId, schedule.getName(), schedule.getScheduleEndTime() + 1);
         }
 
         // Trigger the workflow

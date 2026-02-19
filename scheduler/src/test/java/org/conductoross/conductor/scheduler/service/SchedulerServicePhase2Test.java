@@ -276,6 +276,49 @@ public class SchedulerServicePhase2Test {
         verify(workflowService, never()).startWorkflow(any());
     }
 
+    /**
+     * Regression: when computeNextRunTime returns null (no slot within endTime), the next-run
+     * pointer must still be advanced past endTime. Without this fix the last slot fires repeatedly
+     * until now overtakes scheduleEndTime.
+     *
+     * <p>Setup: endTime is 30s in the future; cron fires every hour so the next occurrence is well
+     * beyond endTime → computeNextRunTime returns null. Uses a stateful mock so
+     * setNextRunTimeInEpoch updates the value returned by getNextRunTimeInEpoch, mirroring real DAO
+     * behaviour.
+     */
+    @Test
+    public void testHandleSchedule_lastSlotBeforeEndTime_doesNotFireRepeatedly() {
+        long now = System.currentTimeMillis();
+        long pastSlot = now - 10_000; // a slot 10s ago (within bounds)
+        long endTime = now + 30_000; // endTime 30s from now; next hourly slot is far beyond it
+
+        // Hourly cron: next occurrence after now is always > endTime = now+30s
+        WorkflowSchedule schedule = buildSchedule("bounded-end", "0 0 * * * *", "UTC");
+        schedule.setScheduleEndTime(endTime);
+
+        when(dao.getAllSchedules(anyString())).thenReturn(List.of(schedule));
+
+        // Stateful mock: tracks the live pointer value as setNextRunTimeInEpoch updates it
+        long[] pointer = {pastSlot};
+        doAnswer(inv -> pointer[0]).when(dao).getNextRunTimeInEpoch(anyString(), eq("bounded-end"));
+        doAnswer(
+                        inv -> {
+                            pointer[0] = inv.getArgument(2);
+                            return null;
+                        })
+                .when(dao)
+                .setNextRunTimeInEpoch(anyString(), eq("bounded-end"), anyLong());
+
+        when(workflowService.startWorkflow(any())).thenReturn("wf-id");
+        when(dao.getExecutionRecords(anyString(), anyString(), anyInt())).thenReturn(List.of());
+
+        service.pollAndExecuteSchedules(); // fires once; pointer advances to endTime+1
+        service.pollAndExecuteSchedules(); // pointer > now → isDue=false; must NOT fire again
+
+        verify(workflowService, times(1)).startWorkflow(any());
+        assertTrue("Pointer must be set past endTime", pointer[0] > endTime);
+    }
+
     // =========================================================================
     // Category 6 — Archival / pruning
     // =========================================================================
