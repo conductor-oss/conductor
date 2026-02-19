@@ -29,8 +29,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
-import com.netflix.conductor.scheduler.config.SchedulerConfiguration;
 import com.netflix.conductor.scheduler.config.TestObjectMapperConfiguration;
+import com.netflix.conductor.scheduler.config.WorkflowSchedulerConfiguration;
 import com.netflix.conductor.scheduler.model.WorkflowSchedule;
 import com.netflix.conductor.scheduler.model.WorkflowScheduleExecution;
 
@@ -46,7 +46,7 @@ import static org.junit.Assert.*;
         classes = {
             TestObjectMapperConfiguration.class,
             DataSourceAutoConfiguration.class,
-            SchedulerConfiguration.class,
+            WorkflowSchedulerConfiguration.class,
             FlywayAutoConfiguration.class
         })
 @RunWith(SpringRunner.class)

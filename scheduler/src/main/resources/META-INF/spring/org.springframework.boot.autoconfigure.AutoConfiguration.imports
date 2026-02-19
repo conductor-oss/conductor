@@ -1,1 +1,1 @@
-com.netflix.conductor.scheduler.config.SchedulerConfiguration
+com.netflix.conductor.scheduler.config.WorkflowSchedulerConfiguration

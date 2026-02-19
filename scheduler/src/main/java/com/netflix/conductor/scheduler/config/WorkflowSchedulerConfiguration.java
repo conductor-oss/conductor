@@ -43,7 +43,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
         havingValue = "true",
         matchIfMissing = true)
 @EnableConfigurationProperties(SchedulerProperties.class)
-public class SchedulerConfiguration {
+public class WorkflowSchedulerConfiguration {
 
     @Bean(initMethod = "migrate")
     public Flyway flywayForScheduler(DataSource dataSource) {
