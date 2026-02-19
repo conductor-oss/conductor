@@ -14,6 +14,8 @@ package org.conductoross.conductor.scheduler.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.conductoross.conductor.scheduler.config.SchedulerProperties;
 import org.conductoross.conductor.scheduler.dao.SchedulerDAO;
@@ -487,6 +489,100 @@ public class SchedulerServicePhase2Test {
         assertEquals("customValue", fired.getInput().get("customKey"));
         assertTrue(fired.getInput().containsKey("scheduledTime"));
         assertTrue(fired.getInput().containsKey("executionTime"));
+    }
+
+    // =========================================================================
+    // Jitter
+    // =========================================================================
+
+    /**
+     * When jitter is enabled, dispatch is asynchronous but the workflow must still be started. Uses
+     * CountDownLatch for reliable synchronization instead of a fixed sleep.
+     */
+    @Test
+    public void testJitter_enabled_workflowEventuallyFires() throws InterruptedException {
+        SchedulerProperties jitterProps = new SchedulerProperties();
+        jitterProps.setEnabled(false); // prevent background polling
+        jitterProps.setJitterMaxMs(50);
+        jitterProps.setPollBatchSize(4);
+        jitterProps.setArchivalMaxRecords(3);
+        jitterProps.setArchivalMaxRecordThreshold(5);
+        SchedulerService jitterService = new SchedulerService(dao, workflowService, jitterProps);
+        jitterService.initExecutors(); // create executors only — no background poll thread
+
+        long slot = System.currentTimeMillis() - 5_000;
+        WorkflowSchedule schedule = buildSchedule("jitter-sched", "0 * * * * *", "UTC");
+        CountDownLatch latch = new CountDownLatch(1);
+
+        when(dao.getAllSchedules(anyString())).thenReturn(List.of(schedule));
+        when(dao.getNextRunTimeInEpoch(anyString(), eq("jitter-sched"))).thenReturn(slot);
+        when(workflowService.startWorkflow(any()))
+                .thenAnswer(
+                        inv -> {
+                            latch.countDown();
+                            return "wf-jitter";
+                        });
+        when(dao.getExecutionRecords(anyString(), anyString(), anyInt())).thenReturn(List.of());
+
+        jitterService.pollAndExecuteSchedules();
+
+        assertTrue(
+                "startWorkflow must be called within 2s despite jitter delay",
+                latch.await(2, TimeUnit.SECONDS));
+        jitterService.stop();
+    }
+
+    /**
+     * When jitter is disabled (jitterMaxMs=0), dispatch is synchronous — startWorkflow is called
+     * before pollAndExecuteSchedules returns.
+     */
+    @Test
+    public void testJitter_disabled_dispatchIsSynchronous() {
+        // jitterMaxMs defaults to 0 in setUp
+        long slot = System.currentTimeMillis() - 5_000;
+        WorkflowSchedule schedule = buildSchedule("no-jitter", "0 * * * * *", "UTC");
+
+        when(dao.getAllSchedules(anyString())).thenReturn(List.of(schedule));
+        when(dao.getNextRunTimeInEpoch(anyString(), eq("no-jitter"))).thenReturn(slot);
+        when(workflowService.startWorkflow(any())).thenReturn("wf-no-jitter");
+        when(dao.getExecutionRecords(anyString(), anyString(), anyInt())).thenReturn(List.of());
+
+        service.pollAndExecuteSchedules();
+
+        // Synchronous — no sleep needed
+        verify(workflowService, times(1)).startWorkflow(any());
+    }
+
+    /**
+     * With jitter enabled, the next-run pointer must be advanced synchronously (before dispatch) so
+     * that a second poll cycle cannot double-fire the same slot while the jittered task is still
+     * pending.
+     */
+    @Test
+    public void testJitter_pointerAdvancedBeforeDispatch() {
+        SchedulerProperties jitterProps = new SchedulerProperties();
+        jitterProps.setEnabled(false);
+        jitterProps.setJitterMaxMs(100);
+        jitterProps.setPollBatchSize(4);
+        jitterProps.setArchivalMaxRecords(3);
+        jitterProps.setArchivalMaxRecordThreshold(5);
+        SchedulerService jitterService = new SchedulerService(dao, workflowService, jitterProps);
+        jitterService.initExecutors();
+
+        long slot = System.currentTimeMillis() - 5_000;
+        WorkflowSchedule schedule = buildSchedule("jitter-ptr", "0 * * * * *", "UTC");
+
+        when(dao.getAllSchedules(anyString())).thenReturn(List.of(schedule));
+        when(dao.getNextRunTimeInEpoch(anyString(), eq("jitter-ptr"))).thenReturn(slot);
+        when(workflowService.startWorkflow(any())).thenReturn("wf-ptr");
+        when(dao.getExecutionRecords(anyString(), anyString(), anyInt())).thenReturn(List.of());
+
+        jitterService.pollAndExecuteSchedules();
+
+        // Pointer must be advanced immediately (synchronously) before the jitter delay fires
+        verify(dao, times(1)).setNextRunTimeInEpoch(anyString(), eq("jitter-ptr"), anyLong());
+
+        jitterService.stop();
     }
 
     // =========================================================================

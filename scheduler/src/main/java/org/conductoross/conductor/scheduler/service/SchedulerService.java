@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.conductoross.conductor.scheduler.config.SchedulerProperties;
@@ -65,6 +66,7 @@ public class SchedulerService {
     private final SchedulerProperties properties;
 
     private ScheduledExecutorService pollingExecutor;
+    private ScheduledExecutorService jitterExecutor;
 
     public SchedulerService(
             SchedulerDAO schedulerDAO,
@@ -85,26 +87,48 @@ public class SchedulerService {
             log.info("Scheduler is disabled via conductor.scheduler.enabled=false");
             return;
         }
-        pollingExecutor = Executors.newScheduledThreadPool(properties.getPollingThreadCount());
+        initExecutors();
         pollingExecutor.scheduleWithFixedDelay(
                 this::pollAndExecuteSchedules,
                 0,
                 properties.getPollingInterval(),
                 TimeUnit.MILLISECONDS);
-        log.info("Scheduler started with polling interval {}ms", properties.getPollingInterval());
+        if (properties.getJitterMaxMs() > 0) {
+            log.info(
+                    "Scheduler started with polling interval {}ms, jitter max {}ms",
+                    properties.getPollingInterval(),
+                    properties.getJitterMaxMs());
+        } else {
+            log.info(
+                    "Scheduler started with polling interval {}ms",
+                    properties.getPollingInterval());
+        }
+    }
+
+    /** Package-visible for tests: creates executors without starting the polling loop. */
+    void initExecutors() {
+        pollingExecutor = Executors.newScheduledThreadPool(properties.getPollingThreadCount());
+        if (properties.getJitterMaxMs() > 0) {
+            jitterExecutor = Executors.newScheduledThreadPool(properties.getPollBatchSize());
+        }
     }
 
     @PreDestroy
     public void stop() {
-        if (pollingExecutor != null) {
-            pollingExecutor.shutdown();
+        shutdownExecutor(pollingExecutor);
+        shutdownExecutor(jitterExecutor);
+    }
+
+    private void shutdownExecutor(ScheduledExecutorService executor) {
+        if (executor != null) {
+            executor.shutdown();
             try {
-                if (!pollingExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
-                    pollingExecutor.shutdownNow();
+                if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                    executor.shutdownNow();
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                pollingExecutor.shutdownNow();
+                executor.shutdownNow();
             }
         }
     }
@@ -315,7 +339,25 @@ public class SchedulerService {
                     orgId, schedule.getName(), schedule.getScheduleEndTime() + 1);
         }
 
-        // Trigger the workflow
+        // Trigger the workflow — optionally with a random jitter delay to spread concurrent
+        // dispatch across a small time window and reduce DB/thread-pool contention.
+        if (properties.getJitterMaxMs() > 0) {
+            long jitterMs =
+                    ThreadLocalRandom.current().nextLong(0, properties.getJitterMaxMs() + 1);
+            jitterExecutor.schedule(
+                    () -> dispatchWorkflow(schedule, execution, scheduledTime, orgId),
+                    jitterMs,
+                    TimeUnit.MILLISECONDS);
+        } else {
+            dispatchWorkflow(schedule, execution, scheduledTime, orgId);
+        }
+    }
+
+    private void dispatchWorkflow(
+            WorkflowSchedule schedule,
+            WorkflowScheduleExecution execution,
+            long scheduledTime,
+            String orgId) {
         try {
             StartWorkflowRequest req = schedule.getStartWorkflowRequest();
 
@@ -327,11 +369,13 @@ public class SchedulerService {
                 input.putAll(req.getInput());
             }
             input.put("scheduledTime", scheduledTime);
-            input.put("executionTime", now);
+            long dispatchTime = System.currentTimeMillis();
+            input.put("executionTime", dispatchTime);
             req.setInput(input);
 
             String workflowId = workflowService.startWorkflow(req);
 
+            execution.setExecutionTime(dispatchTime);
             execution.setState(WorkflowScheduleExecution.ExecutionState.EXECUTED);
             execution.setWorkflowId(workflowId);
             log.debug("Schedule '{}' triggered workflow {}", schedule.getName(), workflowId);

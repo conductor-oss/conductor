@@ -50,6 +50,17 @@ public class SchedulerProperties {
      */
     private int archivalMaxRecordThreshold = 10;
 
+    /**
+     * Maximum jitter added to workflow dispatch within a poll cycle, in milliseconds. When greater
+     * than zero, each due schedule is dispatched after a random delay in {@code [0, jitterMaxMs]}.
+     * This spreads concurrent workflow starts across a small time window, reducing peak contention
+     * on the DB connection pool and workflow execution thread pool during thundering-herd events.
+     *
+     * <p>Dispatch is asynchronous when jitter is enabled — the poll thread is never blocked by the
+     * sleep. Set to {@code 0} (default) to disable jitter and dispatch synchronously.
+     */
+    private int jitterMaxMs = 0;
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -104,5 +115,13 @@ public class SchedulerProperties {
 
     public void setArchivalMaxRecordThreshold(int archivalMaxRecordThreshold) {
         this.archivalMaxRecordThreshold = archivalMaxRecordThreshold;
+    }
+
+    public int getJitterMaxMs() {
+        return jitterMaxMs;
+    }
+
+    public void setJitterMaxMs(int jitterMaxMs) {
+        this.jitterMaxMs = jitterMaxMs;
     }
 }

@@ -85,35 +85,60 @@ These run against a single Conductor server + Postgres (`docker/docker-compose-s
 
 ---
 
-## Single-Instance Concurrency Tests (Planned)
+## Single-Instance Concurrency Tests (Complete)
 
 These run on the same single-instance Docker stack but probe scheduler behavior under concurrent API access.
 
-### 📋 9. Simultaneous schedule registration (concurrent writes)
+### ✅ 9. Simultaneous schedule registration (concurrent writes)
+**Files:** `scripts/test-09-concurrent-write.sh`
 **What it tests:** Two clients (`styx.local` + `spartacus.local`) both call `POST /api/scheduler/schedules` with the same schedule name at the exact same millisecond. Verifies the DB `ON CONFLICT DO UPDATE` UPSERT holds under concurrent writers — no duplicate rows, no constraint violations.
 **Setup:** Synchronized bash script using `sleep until <epoch second>` on both machines; both fire curl against `192.168.65.221:8080`.
-**Expected:** One schedule registered, no 500 errors on either side.
+**Result:** Both got HTTP 201, no errors. Spartacus fired first (createTime T+0ms); styx won UPSERT (createTime T+672ms). Final state consistent — one schedule, no constraint violations.
+**Finding:** Concurrent UPSERT is safe. Last writer wins on metadata but `nextRunTime` pointer is consistent. PASS.
 
 ---
 
-### 📋 10. Simultaneous schedule resume → duplicate fire?
+### ✅ 10. Simultaneous schedule resume → duplicate fire?
+**Files:** `scripts/test-10-concurrent-resume.sh`
 **What it tests:** A schedule is paused with `nextRunTime` already in the past. Two clients simultaneously call `PUT /api/scheduler/schedules/{name}/resume`. Does the schedule fire twice (one per resume), or does the DB pointer advancement prevent it?
 **Setup:** Pause schedule, wait for next slot to pass, then both machines call resume at the same second.
-**Expected:** Fires exactly once. The pointer update in `setNextRunTimeInEpoch` should act as a natural compare-and-update — but worth verifying since the OSS DAO uses an UPSERT, not a CAS.
+**Result:** Both got HTTP 204. Zero new executions fired. No duplicate fire.
+**Finding:** With `runCatchupScheduleInstances=false`, `resumeSchedule()` advances `nextRunTime` to the next **future** slot — the stale slot is never fired immediately. Concurrent resume is safe and idempotent. Not a bug — by design. PASS.
 
 ---
 
-### 📋 11. X jobs at the same moment (thundering herd)
-**What it tests:** Register N schedules (e.g., 50) all with the same cron expression. When the cron fires, the poll batch of 50 all become due simultaneously. Do all 50 workflows start? Are any skipped or duplicated? What does the server's thread pool look like under this load?
-**Setup:** Script to register 50 schedules with `0 * * * * *`, wait for the next minute, then check that exactly 50 executions appear in history.
-**Variables to explore:** `poll-batch-size`, `polling-thread-count`, DB connection pool size.
+### ✅ 11. X jobs at the same moment (thundering herd)
+**Files:** `scripts/test-11-thundering-herd.sh`
+**What it tests:** Register 50 schedules all with the same cron expression. When the cron fires, all 50 become due simultaneously. Do all 50 workflows start? Are any skipped or duplicated?
+**Setup:** Script registers 50 `herd-N` schedules with `0 * * * * *`, waits for the next minute tick, then polls execution history.
+**Result:** All 50 schedules fired exactly once. 0 missed, 0 duplicates. PASS.
+**Config required:** `poll-batch-size=50` (default is 5 — would require 10 poll cycles at 1s each). `polling-interval=1000` (demo default is 10000ms — 10 cycles at 10s = 100s, far exceeding a 60s minute window).
+**Key finding:** With default `poll-batch-size=5` and `polling-interval=10000ms`, only 10 of 50 schedules fire per minute (2 poll cycles × 5 = 10). Production deployments expecting >5 schedules/minute must increase `poll-batch-size`.
+**Bugs fixed during testing:** (a) `seq -w` zero-padding created invalid JSON `"herdIndex": 00`; (b) script treated HTTP 201 (create) as error; (c) stale overdue demo schedules consumed batch slots from previous test runs.
 
 ---
 
-### 📋 12. Multi-client simultaneous workflow submission (load)
-**What it tests:** Both machines blast `POST /api/workflow` directly (bypassing the scheduler) at the same instant — simulating what happens at the top of a minute when many scheduled workflows all try to start at once. Measures server response time, error rate, and whether any requests are dropped.
-**Setup:** Python script using `threading` to fire N concurrent requests, coordinated across both machines.
-**Expected outcome:** Document the saturation point — at what concurrency does Conductor start returning 429/503?
+### ✅ 12. Multi-client simultaneous workflow submission (load)
+**Files:** `scripts/test-12-load-blast.py`
+**What it tests:** Blast `POST /api/workflow` directly (bypassing the scheduler) at the same instant — simulating what happens at the top of a minute when many scheduled workflows all try to start at once. Measures server response time, error rate, and requests dropped.
+**Setup:** Python script using `threading` to fire N concurrent requests. Single-machine (styx) baseline; can be run simultaneously from spartacus for true multi-client blast.
+**Result (styx localhost baseline):**
+| Concurrency | Wall time | Success | Errors | p95 latency |
+|-------------|-----------|---------|--------|-------------|
+| 25          | 113ms     | 25/25   | 0      | 110ms       |
+| 100         | 266ms     | 100/100 | 0      | 252ms       |
+| 200         | 304ms     | 200/200 | 0      | 251ms       |
+| 500         | 616ms     | 500/500 | 0      | 427ms       |
+| 1000        | 1191ms    | 1000/1000 | 0    | 827ms       |
+**Finding:** No saturation point found up to 1000 concurrent requests on localhost. Latency scales roughly linearly. No 429/503 errors observed. Local Docker on Apple Silicon Mac — real saturation point will be lower under network latency + multi-host load. PASS (baseline).
+
+**True multi-client results (styx + spartacus simultaneously):**
+| Concurrency (each) | Total | styx p95 | spartacus p95 | Errors |
+|--------------------|-------|-----------|---------------|--------|
+| 25 + 25            | 50    | 111ms     | 1148ms        | 0      |
+| 100 + 100          | 200   | 318ms     | 319ms         | 0      |
+
+**Observation:** At 25+25, spartacus p95 spiked to ~1s (TCP slow-start / first-connection overhead from remote host). At 100+100 the latencies equalized (~320ms both sides). 0 errors across all runs. No saturation found. PASS.
 
 ---
 
