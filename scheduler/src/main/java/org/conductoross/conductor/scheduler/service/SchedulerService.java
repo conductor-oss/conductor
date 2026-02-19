@@ -57,6 +57,9 @@ public class SchedulerService {
 
     private static final Logger log = LoggerFactory.getLogger(SchedulerService.class);
 
+    /** Execution records stuck in POLLED state longer than this are considered stale. */
+    private static final long STALE_POLLED_THRESHOLD_MS = 5 * 60 * 1000L;
+
     private final SchedulerDAO schedulerDAO;
     private final WorkflowService workflowService;
     private final SchedulerProperties properties;
@@ -381,15 +384,25 @@ public class SchedulerService {
     }
 
     private void cleanupStalePollRecords() {
-        // Records stuck in POLLED state for > 5 minutes are considered stale.
-        // In practice this would be rare (server crash mid-execution).
-        List<String> staleIds =
-                schedulerDAO.getPendingExecutionRecordIds(WorkflowSchedule.DEFAULT_ORG_ID);
-        if (!staleIds.isEmpty()) {
-            log.warn(
-                    "Found {} stale POLLED execution records - they will remain until "
-                            + "the next poll cycle resolves them",
-                    staleIds.size());
+        String orgId = WorkflowSchedule.DEFAULT_ORG_ID;
+        List<String> pendingIds = schedulerDAO.getPendingExecutionRecordIds(orgId);
+        if (pendingIds.isEmpty()) {
+            return;
+        }
+        long staleThreshold = System.currentTimeMillis() - STALE_POLLED_THRESHOLD_MS;
+        for (String id : pendingIds) {
+            WorkflowScheduleExecution record = schedulerDAO.readExecutionRecord(orgId, id);
+            if (record != null
+                    && record.getExecutionTime() != null
+                    && record.getExecutionTime() < staleThreshold) {
+                log.warn(
+                        "Transitioning stale POLLED execution {} for schedule '{}' to FAILED",
+                        id,
+                        record.getScheduleName());
+                record.setState(WorkflowScheduleExecution.ExecutionState.FAILED);
+                record.setReason("Stale POLLED record — server may have crashed mid-execution");
+                schedulerDAO.saveExecutionRecord(record);
+            }
         }
     }
 
@@ -431,6 +444,20 @@ public class SchedulerService {
         }
         if (schedule.getStartWorkflowRequest() == null) {
             throw new IllegalArgumentException("startWorkflowRequest is required");
+        }
+        String zoneId = schedule.getZoneId();
+        if (zoneId != null && !zoneId.isBlank()) {
+            try {
+                ZoneId.of(zoneId);
+            } catch (Exception e) {
+                throw new IllegalArgumentException(
+                        "Invalid zoneId '" + zoneId + "': " + e.getMessage());
+            }
+        }
+        if (schedule.getScheduleStartTime() != null
+                && schedule.getScheduleEndTime() != null
+                && schedule.getScheduleEndTime() <= schedule.getScheduleStartTime()) {
+            throw new IllegalArgumentException("scheduleEndTime must be after scheduleStartTime");
         }
     }
 }
