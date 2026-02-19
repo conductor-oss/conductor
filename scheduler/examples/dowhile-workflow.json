@@ -1,0 +1,51 @@
+{
+  "name": "dowhile_demo_workflow",
+  "description": "Scheduled workflow that uses DO_WHILE to poll timeapi.io 3 times, once per iteration. Demonstrates a scheduled workflow with internal looping — useful for retry patterns, polling until ready, or bounded sampling.",
+  "version": 2,
+  "tasks": [
+    {
+      "name": "poll_loop",
+      "taskReferenceName": "poll_loop",
+      "type": "DO_WHILE",
+      "loopCondition": "if ($.iteration < 3) { true; } else { false; }",
+      "inputParameters": {
+        "iteration": "${poll_loop.output.iteration}"
+      },
+      "loopOver": [
+        {
+          "name": "fetch_current_time",
+          "taskReferenceName": "fetch_current_time",
+          "type": "HTTP",
+          "inputParameters": {
+            "http_request": {
+              "uri": "https://timeapi.io/api/time/current/zone?timeZone=UTC",
+              "method": "GET",
+              "connectionTimeOut": 5000,
+              "readTimeOut": 5000
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "summarize",
+      "taskReferenceName": "summarize",
+      "type": "INLINE",
+      "inputParameters": {
+        "lastTime": "${poll_loop.output.3.fetch_current_time.response.body.dateTime}",
+        "totalIterations": "${poll_loop.output.iteration}",
+        "evaluatorType": "javascript",
+        "expression": "({ sampledAt: $.lastTime, iterations: $.totalIterations })"
+      }
+    }
+  ],
+  "outputParameters": {
+    "sampledAt": "${summarize.output.result.sampledAt}",
+    "iterations": "${summarize.output.result.iterations}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "ownerEmail": "demo@example.com",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 120
+}

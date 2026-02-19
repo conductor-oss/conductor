@@ -318,6 +318,18 @@ public class SchedulerService {
         // Trigger the workflow
         try {
             StartWorkflowRequest req = schedule.getStartWorkflowRequest();
+
+            // Inject scheduler context into the workflow input so workflows can use the scheduled
+            // time for date-range calculations, idempotency keys, audit trails, etc.
+            // These keys match Orkes Conductor's scheduler for convergence compatibility.
+            java.util.Map<String, Object> input = new java.util.HashMap<>();
+            if (req.getInput() != null) {
+                input.putAll(req.getInput());
+            }
+            input.put("scheduledTime", scheduledTime);
+            input.put("executionTime", now);
+            req.setInput(input);
+
             String workflowId = workflowService.startWorkflow(req);
 
             execution.setState(WorkflowScheduleExecution.ExecutionState.EXECUTED);

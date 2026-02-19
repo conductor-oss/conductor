@@ -434,6 +434,62 @@ public class SchedulerServicePhase2Test {
     }
 
     // =========================================================================
+    // scheduledTime / executionTime injection
+    // =========================================================================
+
+    /**
+     * Every triggered workflow must receive scheduledTime and executionTime in its input, injected
+     * by the scheduler (matching Orkes Conductor behaviour for convergence).
+     */
+    @Test
+    public void testHandleSchedule_injectsScheduledTimeAndExecutionTimeIntoInput() {
+        long slot = System.currentTimeMillis() - 5_000;
+        long now = System.currentTimeMillis();
+        WorkflowSchedule schedule = buildSchedule("inject-test", "0 * * * * *", "UTC");
+
+        when(dao.getAllSchedules(anyString())).thenReturn(List.of(schedule));
+        when(dao.getNextRunTimeInEpoch(anyString(), eq("inject-test"))).thenReturn(slot);
+
+        ArgumentCaptor<StartWorkflowRequest> captor =
+                ArgumentCaptor.forClass(StartWorkflowRequest.class);
+        when(workflowService.startWorkflow(captor.capture())).thenReturn("wf-inject");
+
+        service.pollAndExecuteSchedules();
+
+        StartWorkflowRequest fired = captor.getValue();
+        assertNotNull("input must not be null", fired.getInput());
+        assertTrue("scheduledTime must be present", fired.getInput().containsKey("scheduledTime"));
+        assertTrue("executionTime must be present", fired.getInput().containsKey("executionTime"));
+        assertEquals(
+                "scheduledTime must equal the polled slot",
+                slot,
+                ((Number) fired.getInput().get("scheduledTime")).longValue());
+    }
+
+    /** Existing input keys configured on the schedule must be preserved alongside injected keys. */
+    @Test
+    public void testHandleSchedule_preservesExistingInputKeys() {
+        long slot = System.currentTimeMillis() - 5_000;
+        WorkflowSchedule schedule = buildSchedule("preserve-input", "0 * * * * *", "UTC");
+        schedule.getStartWorkflowRequest()
+                .setInput(new java.util.HashMap<>(java.util.Map.of("customKey", "customValue")));
+
+        when(dao.getAllSchedules(anyString())).thenReturn(List.of(schedule));
+        when(dao.getNextRunTimeInEpoch(anyString(), eq("preserve-input"))).thenReturn(slot);
+
+        ArgumentCaptor<StartWorkflowRequest> captor =
+                ArgumentCaptor.forClass(StartWorkflowRequest.class);
+        when(workflowService.startWorkflow(captor.capture())).thenReturn("wf-preserve");
+
+        service.pollAndExecuteSchedules();
+
+        StartWorkflowRequest fired = captor.getValue();
+        assertEquals("customValue", fired.getInput().get("customKey"));
+        assertTrue(fired.getInput().containsKey("scheduledTime"));
+        assertTrue(fired.getInput().containsKey("executionTime"));
+    }
+
+    // =========================================================================
     // Helpers
     // =========================================================================
 
