@@ -134,12 +134,14 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
                                         sweeperProperties.getSweepBatchSize(),
                                         sweeperProperties.getQueuePopTimeout());
                         log.trace("Found {} workflows to sweep", workflowIds.size());
-                        workflowIds.stream()
-                                .parallel()
-                                .forEach(
-                                        workflowId ->
-                                                Monitors.getTimer("workflowSweeper")
-                                                        .record(() -> sweep(workflowId)));
+                        if (workflowIds.isEmpty()) {
+                            sleepWhenIdle();
+                        } else {
+                            workflowIds.forEach(
+                                    workflowId ->
+                                            Monitors.getTimer("workflowSweeper")
+                                                    .record(() -> sweep(workflowId)));
+                        }
                     }
                 } catch (Throwable e) {
                     log.warn("Error while running sweeper {}", e.getMessage(), e);
@@ -176,7 +178,19 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
                             .toString();
             workflow = workflowExecutor.decide(workflowId);
             if (workflow == null) {
-                log.warn("Workflow {} not found after decide", workflowId);
+                // couldn't get a lock
+                // Let's try again... with the lockTime timeout / 2
+                long backoffMillis = Math.max(1, properties.getLockLeaseTime().toMillis() / 2);
+                long backoffSeconds = Math.max(1, Duration.ofMillis(backoffMillis).toSeconds());
+                long maxPostponeSeconds = properties.getMaxPostponeDurationSeconds().getSeconds();
+                if (maxPostponeSeconds > 0 && backoffSeconds > maxPostponeSeconds) {
+                    backoffSeconds = maxPostponeSeconds;
+                }
+                log.info(
+                        "can't get a lock on {}, will try after {} seconds",
+                        workflowId,
+                        backoffSeconds);
+                queueDAO.push(DECIDER_QUEUE, workflowId, 0, backoffSeconds);
                 return;
             }
             if (workflow.getStatus().isTerminal()) {
@@ -244,6 +258,45 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
         } finally {
             executionLockService.releaseLock(workflowId);
         }
+        if (task.getTaskType().equals(TaskType.TASK_TYPE_SUB_WORKFLOW)
+                && task.getStatus() == TaskModel.Status.IN_PROGRESS) {
+            WorkflowModel subWorkflow = executionDAO.getWorkflow(task.getSubWorkflowId(), false);
+            if (subWorkflow == null) {
+                log.warn(
+                        "Sub workflow {} not found for task {} in workflow {}",
+                        task.getSubWorkflowId(),
+                        task.getTaskId(),
+                        task.getWorkflowInstanceId());
+                return;
+            }
+            if (subWorkflow.getStatus().isTerminal()) {
+                log.info(
+                        "Repairing sub workflow task {} for sub workflow {} in workflow {}",
+                        task.getTaskId(),
+                        task.getSubWorkflowId(),
+                        task.getWorkflowInstanceId());
+                repairSubWorkflowTask(task, subWorkflow);
+            }
+        }
+    }
+
+    private void repairSubWorkflowTask(TaskModel task, WorkflowModel subWorkflow) {
+        switch (subWorkflow.getStatus()) {
+            case COMPLETED:
+                task.setStatus(TaskModel.Status.COMPLETED);
+                break;
+            case FAILED:
+                task.setStatus(TaskModel.Status.FAILED);
+                break;
+            case TERMINATED:
+                task.setStatus(TaskModel.Status.CANCELED);
+                break;
+            case TIMED_OUT:
+                task.setStatus(TaskModel.Status.TIMED_OUT);
+                break;
+        }
+        task.addOutput(subWorkflow.getOutput());
+        executionDAO.updateTask(task);
     }
 
     private void forceSetLastTaskAsNotExecuted(WorkflowModel workflow) {
@@ -274,6 +327,15 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
         if (!queueDAO.containsMessage(queueName, workflowId)) {
             queueDAO.push(queueName, workflowId, worflowOffsetTimeout.getSeconds());
             Monitors.recordQueueMessageRepushFromRepairService(queueName);
+        }
+    }
+
+    private void sleepWhenIdle() {
+        long sleepMillis = Math.max(10, sweeperProperties.getQueuePopTimeout());
+        try {
+            Thread.sleep(sleepMillis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
