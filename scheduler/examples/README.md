@@ -176,3 +176,65 @@ Once the stack is healthy, run the steps above — or just watch the scheduler f
 ```bash
 watch -n5 'curl -s "http://localhost:8080/api/scheduler/schedules/every-minute-demo-schedule/executions?limit=5" | jq "[.[] | {state, workflowId}]"'
 ```
+
+---
+
+## Example Scenarios
+
+Eight verified scenarios, each with a workflow definition and a schedule definition.
+All were tested live against the Docker demo stack.
+
+### 1. Basic (`every-minute-schedule.json`)
+Fires every minute, fetches current UTC time via HTTP. Good first test after setup.
+
+### 2. Catchup mode (`catchup-schedule.json`)
+Sets `runCatchupScheduleInstances: true`. If the scheduler is offline for N minutes, it fires
+once per missed slot on restart — stepping slot-by-slot rather than jumping to now.
+
+### 3. Bounded schedule (`bounded-schedule-template.json`)
+Uses `scheduleStartTime` / `scheduleEndTime` (epoch ms) to confine execution to a window.
+Populate the `__START_MS__` / `__END_MS__` placeholders with `sed` before registering:
+```bash
+NOW=$(python3 -c "import time; print(int(time.time()*1000))")
+END=$((NOW + 300000))  # 5 minutes
+sed "s/__START_MS__/$NOW/; s/__END_MS__/$END/" bounded-schedule-template.json | \
+  curl -X POST http://localhost:8080/api/scheduler/schedules -H "Content-Type: application/json" -d @-
+```
+
+### 4. Multi-step FORK/JOIN (`multistep-schedule.json`)
+Two parallel HTTP calls (UTC time + America/New_York time), joined into one output map.
+
+> **Gotcha:** Use literal `/` in timezone query params — not `%2F`. Conductor's HTTP task
+> passes percent-encoded slashes literally, which the remote API rejects as an invalid timezone.
+
+### 5. Failure scenario (`retry-schedule.json`)
+Workflow always fails (404 on a non-existent endpoint). Confirms the scheduler fires every
+minute regardless of prior outcome — each minute produces a new `EXECUTED` entry in scheduler
+history even as the workflow records `FAILED`.
+
+### 6. Concurrent execution (`concurrent-schedule.json`)
+90-second WAIT task fired every 60 seconds. OSS Conductor has no built-in concurrent-execution
+guard, so instances stack up. Demonstrates the behavior users need to design around.
+
+> **Gotcha:** WAIT task duration must be `"90s"` / `"2m"` / `"1h"` — not ISO-8601 `PT90S`.
+> Conductor's `DateTimeUtils.parseDuration` uses its own regex, not the Java Duration parser.
+
+### 7. Input parameterization (`input-param-schedule.json`)
+Every triggered workflow automatically receives `scheduledTime` and `executionTime` (epoch ms)
+injected by the scheduler. Static keys from `startWorkflowRequest.input` are preserved.
+An INLINE JavaScript task computes a 24-hour report window from `scheduledTime`.
+
+Sample output from a live run:
+```
+scheduledAt:       2026-02-19T23:22:00.000Z   ← exact cron slot
+triggeredAt:       2026-02-19T23:22:00.837Z   ← actual dispatch (~837ms poll overhead)
+reportWindowStart: 2026-02-18T23:22:00.000Z
+reportWindowEnd:   2026-02-19T23:22:00.000Z
+```
+
+### 8. DO_WHILE variant (`dowhile-schedule.json`)
+Internally loops 3 times via DO_WHILE, fetching current time on each iteration.
+
+> **Gotcha:** DO_WHILE output is keyed by iteration number as a string (`"1"`, `"2"`, `"3"`),
+> not by task reference name. Reference the last iteration's output via:
+> `${poll_loop.output.3.fetch_current_time.response.body.dateTime}`
