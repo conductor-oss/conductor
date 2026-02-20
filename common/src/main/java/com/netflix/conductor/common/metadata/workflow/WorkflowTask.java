@@ -137,6 +137,9 @@ public class WorkflowTask {
     @ProtoField(id = 25)
     private List<WorkflowTask> loopOver = new LinkedList<>();
 
+    @ProtoField(id = 33)
+    private String items;
+
     @ProtoField(id = 26)
     private Integer retryCount;
 
@@ -461,6 +464,21 @@ public class WorkflowTask {
      */
     public void setLoopOver(List<WorkflowTask> loopOver) {
         this.loopOver = loopOver;
+    }
+
+    /**
+     * @return the items parameter for list iteration in DO_WHILE tasks. Can be a workflow
+     *     expression like "${workflow.input.myList}" or a direct reference.
+     */
+    public String getItems() {
+        return items;
+    }
+
+    /**
+     * @param items the items parameter to set for list iteration in DO_WHILE tasks
+     */
+    public void setItems(String items) {
+        this.items = items;
     }
 
     /**

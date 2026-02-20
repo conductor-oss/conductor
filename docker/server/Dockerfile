@@ -4,7 +4,7 @@
 # ===========================================================================================================
 # 0. Builder stage 1
 # ===========================================================================================================
-FROM azul/zulu-openjdk-debian:17 AS builder
+FROM azul/zulu-openjdk-debian:21 AS builder
 
 ARG INDEXING_BACKEND=elasticsearch
 
@@ -15,7 +15,7 @@ COPY . /conductor
 WORKDIR /conductor
 
 # Build the server on run
-RUN ./gradlew build -x test -x spotlessCheck -PindexingBackend=${INDEXING_BACKEND}
+RUN ./gradlew build -x test -x spotlessCheck -x shadowJar -x :conductor-os-persistence-v3:build -PindexingBackend=${INDEXING_BACKEND}
 WORKDIR /server/build/libs
 RUN ls -ltr
 
@@ -26,13 +26,13 @@ RUN ls -ltr
 # ===========================================================================================================
 # 1. Builder stage 2
 # ===========================================================================================================
-FROM alpine:3.20 AS ui-builder
+FROM node:lts AS ui-builder
 ARG YARN_OPTS
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
 # Install dependencies
-RUN apk add --update nodejs npm yarn
+RUN corepack enable && corepack prepare yarn@stable --activate
 
 COPY . /conductor
 WORKDIR /conductor/ui
@@ -40,21 +40,27 @@ WORKDIR /conductor/ui
 # Include monaco sources into bundle (instead of using CDN)
 ENV REACT_APP_MONACO_EDITOR_USING_CDN=false
 ENV REACT_APP_ENABLE_ERRORS_INSPECTOR=true
+RUN yarn config set network-timeout 600000 -g
 RUN yarn ${YARN_OPTS} install && cp -r node_modules/monaco-editor public/ && yarn ${YARN_OPTS} build
 RUN ls -ltr
 RUN echo "Done building UI"
 
+RUN echo "Copying UI to server"
+WORKDIR /conductor
+RUN rm -rf server/src/main/resources/static
+RUN cp -R ui/build/ server/src/main/resources/static
 
 # ===========================================================================================================
 # 2. Bin stage
 # ===========================================================================================================
-FROM alpine:3.19
+FROM debian:stable-slim
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
-RUN apk add openjdk17
-RUN apk add nginx
-RUN apk add curl
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openjdk-21-jre-headless nginx curl ca-certificates \
+    && rm -f /etc/nginx/sites-enabled/default \
+    && rm -rf /var/lib/apt/lists/*
 
 # Make app folders
 RUN mkdir -p /app/config /app/logs /app/libs
@@ -68,7 +74,7 @@ COPY --from=builder /conductor/server/build/libs/*boot*.jar /app/libs/conductor-
 WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
 COPY --from=ui-builder /conductor/ui/build .
-COPY --from=ui-builder /conductor/docker/server/nginx/nginx.conf /etc/nginx/http.d/default.conf
+COPY --from=ui-builder /conductor/docker/server/nginx/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy the files for the server into the app folders
 RUN chmod +x /app/startup.sh

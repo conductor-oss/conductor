@@ -7,8 +7,8 @@ Currently, Conductor has support for the following languages:
 
 | Language   | Client SDK |
 |------------|------------|
-| Java       |      https://github.com/conductor-oss/conductor-java-sdk      |
-| Python     |                                                               |
-| Golang     |                                                               |
-| Typescript |                                                               |
-| .NET       |                                                               |
+| Java       | https://github.com/conductor-oss/java-sdk |
+| Python     | https://github.com/conductor-oss/python-sdk |
+| Golang     | https://github.com/conductor-oss/go-sdk |
+| Typescript | https://github.com/conductor-oss/typescript-sdk |
+| .NET       | https://github.com/conductor-oss/csharp-sdk |

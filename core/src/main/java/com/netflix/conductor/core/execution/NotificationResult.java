@@ -82,7 +82,7 @@ public class NotificationResult {
         run.setTasks(new ArrayList<>());
         workflow.getTasks().forEach(task -> run.getTasks().add(task.toTask()));
         run.setPriority(workflow.getPriority());
-        run.setUpdateTime(workflow.getUpdatedTime());
+        run.setUpdateTime(workflow.getUpdatedTime() == null ? 0 : workflow.getUpdatedTime());
         run.setStatus(Workflow.WorkflowStatus.valueOf(workflow.getStatus().name()));
         run.setVariables(workflow.getVariables());
 

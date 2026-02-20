@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 /**
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Component;
  * com.netflix.conductor.common.metadata.tasks.TaskType} to {@link WorkflowSystemTask} instances.
  */
 @Component
+@DependsOn("workerTaskAnnotationScanner")
 public class SystemTaskRegistry {
 
     public static final String ASYNC_SYSTEM_TASKS_QUALIFIER = "asyncSystemTasks";

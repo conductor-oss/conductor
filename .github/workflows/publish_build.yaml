@@ -26,7 +26,7 @@ jobs:
           distribution: 'zulu'
           java-version: '21'
       - name: Cache Gradle packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.gradle/caches
@@ -34,19 +34,63 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
+      - name: Set version
+        id: version
+        run: |
+          # Use inputs.version for workflow_dispatch, or ref_name for release events
+          VERSION="${{ github.event.inputs.version || github.ref_name }}"
+          # Strip the 'v' prefix if present
+          PUBLISH_VERSION="${VERSION#v}"
+          echo "version=$PUBLISH_VERSION" >> $GITHUB_OUTPUT
+          echo "RELEASE_VERSION=$PUBLISH_VERSION" >> $GITHUB_ENV
+          echo "Publishing version: $PUBLISH_VERSION"
       - name: Create Standalone server
         run: |
-          export VERSION="${{ github.event.inputs.version }}"
-          export PUBLISH_VERSION=`echo ${VERSION:1}`
-          echo Publishing version $PUBLISH_VERSION
           cd server-lite
-          ./build_ui.sh
-          ../gradlew clean build -x test -Pversion=$PUBLISH_VERSION
-      - name: Upload JAR to GitHub Release
+          # ./build_ui.sh
+          ../gradlew clean build -x test -Pversion=${{ steps.version.outputs.version }}
+      - name: Prepare JAR for distribution
+        run: |
+          # Find the standalone JAR and copy with standardized names
+          JAR_FILE=$(find server-lite/build/libs -name "*standalone.jar" | head -1)
+          cp "$JAR_FILE" "server-lite/build/libs/conductor-lite-${{ steps.version.outputs.version }}.jar"
+          # Create "latest" version for stable download link - only for Release
+          if [[ "${{ github.event_name }}" == "release" && "${{ github.event.release.prerelease }}" == "false" ]]; then
+             cp "$JAR_FILE" "server-lite/build/libs/conductor-server-lite-latest.jar"
+          fi
+
+      - name: Upload JARs to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: server-lite/build/libs/*standalone.jar
+          tag_name: ${{ github.event.inputs.version || github.ref_name }}
+          files: |
+            server-lite/build/libs/conductor-lite-*.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Login to Docker Hub Container Registry
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Set up Docker Build
+        uses: docker/setup-buildx-action@v1
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push Server
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: docker/server/Dockerfile
+          platforms: linux/arm64,linux/amd64
+          push: true
+          tags: |
+            conductoross/conductor:${{ env.RELEASE_VERSION }}
+            ${{ (github.event_name == 'release' && !github.event.release.prerelease) && 'conductoross/conductor:latest' || '' }}
+            

@@ -601,6 +601,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         if (WorkflowModel.Status.COMPLETED.equals(workflow.getStatus())) {
             throw new ConflictException("Cannot terminate a COMPLETED workflow.");
         }
+        if (WorkflowModel.Status.TERMINATED.equals(workflow.getStatus())) {
+            // Workflow is already in TERMINATED state; no additional termination action is
+            // required.
+            return;
+        }
         workflow.setStatus(WorkflowModel.Status.TERMINATED);
         terminateWorkflow(workflow, reason, null);
     }
@@ -657,6 +662,18 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
             String workflowId = workflow.getWorkflowId();
             workflow.setReasonForIncompletion(reason);
+            // Cancel non-terminal tasks before updating workflow state and notifying the status
+            // listener. The TERMINATED notification may trigger an archiving listener (e.g.
+            // ArchivingWorkflowStatusListener) that immediately removes the workflow from the
+            // primary data store. Archival requires tasks to be in a terminal state, so we must
+            // cancel SCHEDULED/IN_PROGRESS tasks first.
+            List<String> cancelErrors = cancelNonTerminalTasks(workflow);
+            if (!cancelErrors.isEmpty()) {
+                throw new NonTransientException(
+                        String.format(
+                                "Error canceling system tasks: %s",
+                                String.join(",", cancelErrors)));
+            }
             executionDAOFacade.updateWorkflow(workflow);
             notifyWorkflowStatusListener(workflow, WorkflowEventType.TERMINATED);
             Monitors.recordWorkflowTermination(
@@ -724,13 +741,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             executionDAOFacade.removeFromPendingWorkflow(
                     workflow.getWorkflowName(), workflow.getWorkflowId());
 
-            List<String> erroredTasks = cancelNonTerminalTasks(workflow);
-            if (!erroredTasks.isEmpty()) {
-                throw new NonTransientException(
-                        String.format(
-                                "Error canceling system tasks: %s",
-                                String.join(",", erroredTasks)));
-            }
             return workflow;
         } finally {
             executionLockService.releaseLock(workflow.getWorkflowId());
