@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
+import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest.TaskRateLimitOverride;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 
 public class StartWorkflowInput {
@@ -34,6 +35,9 @@ public class StartWorkflowInput {
     private String workflowId;
     private String triggeringWorkflowId;
 
+    /** Optional per‐task dynamic rate-limit overrides (copied verbatim from the request). */
+    private Map<String, TaskRateLimitOverride> taskRateLimitOverrides;
+
     public StartWorkflowInput() {}
 
     public StartWorkflowInput(StartWorkflowRequest startWorkflowRequest) {
@@ -46,6 +50,7 @@ public class StartWorkflowInput {
         this.externalInputPayloadStoragePath =
                 startWorkflowRequest.getExternalInputPayloadStoragePath();
         this.taskToDomain = startWorkflowRequest.getTaskToDomain();
+        this.taskRateLimitOverrides = startWorkflowRequest.getTaskRateLimitOverrides();
     }
 
     public String getName() {
@@ -152,6 +157,16 @@ public class StartWorkflowInput {
         this.triggeringWorkflowId = triggeringWorkflowId;
     }
 
+    /* -------- Dynamic rate-limit overrides -------- */
+    public Map<String, TaskRateLimitOverride> getTaskRateLimitOverrides() {
+        return taskRateLimitOverrides;
+    }
+
+    public void setTaskRateLimitOverrides(
+            Map<String, TaskRateLimitOverride> taskRateLimitOverrides) {
+        this.taskRateLimitOverrides = taskRateLimitOverrides;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -169,6 +184,7 @@ public class StartWorkflowInput {
                 && Objects.equals(parentWorkflowTaskId, that.parentWorkflowTaskId)
                 && Objects.equals(event, that.event)
                 && Objects.equals(taskToDomain, that.taskToDomain)
+                && Objects.equals(taskRateLimitOverrides, that.taskRateLimitOverrides)
                 && Objects.equals(triggeringWorkflowId, that.triggeringWorkflowId)
                 && Objects.equals(workflowId, that.workflowId);
     }
@@ -187,6 +203,7 @@ public class StartWorkflowInput {
                 parentWorkflowTaskId,
                 event,
                 taskToDomain,
+                taskRateLimitOverrides,
                 triggeringWorkflowId,
                 workflowId);
     }

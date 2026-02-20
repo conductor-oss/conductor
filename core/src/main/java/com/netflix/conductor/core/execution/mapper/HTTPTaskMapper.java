@@ -87,13 +87,16 @@ public class HTTPTaskMapper implements TaskMapper {
         httpTask.setStatus(TaskModel.Status.SCHEDULED);
         httpTask.setRetryCount(retryCount);
         httpTask.setCallbackAfterSeconds(workflowTask.getStartDelay());
+
+        /* -------- apply isolation/namespace from TaskDef (if any) -------- */
         if (Objects.nonNull(taskDefinition)) {
-            httpTask.setRateLimitPerFrequency(taskDefinition.getRateLimitPerFrequency());
-            httpTask.setRateLimitFrequencyInSeconds(
-                    taskDefinition.getRateLimitFrequencyInSeconds());
             httpTask.setIsolationGroupId(taskDefinition.getIsolationGroupId());
             httpTask.setExecutionNameSpace(taskDefinition.getExecutionNameSpace());
         }
+
+        // Delegate dynamic/static rate limit resolution to shared utility
+        TaskMapperUtils.applyRateLimits(workflowModel, workflowTask, taskDefinition, httpTask);
+
         return List.of(httpTask);
     }
 }

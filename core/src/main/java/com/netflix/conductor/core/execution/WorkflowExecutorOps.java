@@ -1954,6 +1954,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         workflow.setUpdatedTime(null);
         workflow.setEvent(input.getEvent());
         workflow.setTaskToDomain(input.getTaskToDomain());
+        // copy dynamic task-level rate-limit overrides (may be empty, preserves backward
+        // compatibility)
+        workflow.setTaskRateLimitOverrides(input.getTaskRateLimitOverrides());
         workflow.setVariables(workflowDefinition.getVariables());
 
         if (workflowInput != null && !workflowInput.isEmpty()) {
