@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -48,6 +49,7 @@ public class JetStreamObservableQueue implements ObservableQueue {
     private final Lock mu = new ReentrantLock();
     private final String queueType;
     private final String subject;
+    private final String streamName;
     private final String queueUri;
     private final JetStreamProperties properties;
     private final Scheduler scheduler;
@@ -78,7 +80,7 @@ public class JetStreamObservableQueue implements ObservableQueue {
             this.subject = getQueuePrefix(conductorProperties, properties) + queueUri;
             queueGroup = null;
         }
-
+        this.streamName = streamNameFromSubject(this.subject);
         this.queueType = queueType;
         this.properties = properties;
         this.scheduler = scheduler;
@@ -95,6 +97,14 @@ public class JetStreamObservableQueue implements ObservableQueue {
         return StringUtils.isBlank(properties.getListenerQueuePrefix())
                 ? conductorProperties.getAppId() + "_jsm_notify_" + stack
                 : properties.getListenerQueuePrefix();
+    }
+
+    private static String streamNameFromSubject(String subject) {
+        return subject
+                .replace(".", "_")
+                .replace("*", "ANY")
+                .replace(">", "ALL")
+                .toUpperCase(Locale.ROOT);
     }
 
     @Override
@@ -247,7 +257,8 @@ public class JetStreamObservableQueue implements ObservableQueue {
     private void createStream(JetStreamManagement jsm) {
         StreamConfiguration streamConfig =
                 StreamConfiguration.builder()
-                        .name(subject)
+                        .name(streamName)
+                        .subjects(subject)
                         .replicas(properties.getReplicas())
                         .retentionPolicy(RetentionPolicy.Limits)
                         .maxBytes(properties.getStreamMaxBytes())
@@ -293,7 +304,7 @@ public class JetStreamObservableQueue implements ObservableQueue {
                         .build();
 
         try {
-            jsm.addOrUpdateConsumer(subject, consumerConfig);
+            jsm.addOrUpdateConsumer(streamName, consumerConfig);
             return consumerConfig;
         } catch (IOException | JetStreamApiException e) {
             throw new NatsException("Failed to add/update consumer", e);
@@ -305,7 +316,7 @@ public class JetStreamObservableQueue implements ObservableQueue {
             JetStream js = nc.jetStream();
 
             PushSubscribeOptions pso =
-                    PushSubscribeOptions.builder().configuration(consumerConfig).stream(subject)
+                    PushSubscribeOptions.builder().configuration(consumerConfig).stream(streamName)
                             .bind(true)
                             .build();
 
