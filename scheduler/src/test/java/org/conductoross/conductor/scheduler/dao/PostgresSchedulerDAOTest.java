@@ -57,8 +57,6 @@ public class PostgresSchedulerDAOTest {
 
     @Autowired private DataSource dataSource;
 
-    private static final String ORG_ID = WorkflowSchedule.DEFAULT_ORG_ID;
-
     @Before
     public void cleanDb() throws Exception {
         try (Connection conn = dataSource.getConnection()) {
@@ -77,19 +75,18 @@ public class PostgresSchedulerDAOTest {
         WorkflowSchedule schedule = buildSchedule("test-schedule", "my-workflow");
         schedulerDAO.updateSchedule(schedule);
 
-        WorkflowSchedule found = schedulerDAO.findScheduleByName(ORG_ID, "test-schedule");
+        WorkflowSchedule found = schedulerDAO.findScheduleByName("test-schedule");
 
         assertNotNull(found);
         assertEquals("test-schedule", found.getName());
         assertEquals("my-workflow", found.getStartWorkflowRequest().getName());
         assertEquals("0 0 9 * * MON-FRI", found.getCronExpression());
         assertEquals("UTC", found.getZoneId());
-        assertEquals(ORG_ID, found.getOrgId());
     }
 
     @Test
     public void testFindScheduleByName_notFound_returnsNull() {
-        WorkflowSchedule found = schedulerDAO.findScheduleByName(ORG_ID, "no-such-schedule");
+        WorkflowSchedule found = schedulerDAO.findScheduleByName("no-such-schedule");
         assertNull(found);
     }
 
@@ -102,7 +99,7 @@ public class PostgresSchedulerDAOTest {
         schedule.setCronExpression("0 0 10 * * *");
         schedulerDAO.updateSchedule(schedule);
 
-        WorkflowSchedule found = schedulerDAO.findScheduleByName(ORG_ID, "upsert-schedule");
+        WorkflowSchedule found = schedulerDAO.findScheduleByName("upsert-schedule");
         assertEquals("0 0 10 * * *", found.getCronExpression());
     }
 
@@ -112,7 +109,7 @@ public class PostgresSchedulerDAOTest {
         schedulerDAO.updateSchedule(buildSchedule("sched-b", "wf-b"));
         schedulerDAO.updateSchedule(buildSchedule("sched-c", "wf-c"));
 
-        List<WorkflowSchedule> all = schedulerDAO.getAllSchedules(ORG_ID);
+        List<WorkflowSchedule> all = schedulerDAO.getAllSchedules();
         assertEquals(3, all.size());
     }
 
@@ -122,7 +119,7 @@ public class PostgresSchedulerDAOTest {
         schedulerDAO.updateSchedule(buildSchedule("s2", "target-wf"));
         schedulerDAO.updateSchedule(buildSchedule("s3", "other-wf"));
 
-        List<WorkflowSchedule> results = schedulerDAO.findAllSchedules(ORG_ID, "target-wf");
+        List<WorkflowSchedule> results = schedulerDAO.findAllSchedules("target-wf");
         assertEquals(2, results.size());
         assertTrue(
                 results.stream()
@@ -136,11 +133,11 @@ public class PostgresSchedulerDAOTest {
         WorkflowScheduleExecution exec = buildExecution("to-delete");
         schedulerDAO.saveExecutionRecord(exec);
 
-        schedulerDAO.deleteWorkflowSchedule(ORG_ID, "to-delete");
+        schedulerDAO.deleteWorkflowSchedule("to-delete");
 
-        assertNull(schedulerDAO.findScheduleByName(ORG_ID, "to-delete"));
+        assertNull(schedulerDAO.findScheduleByName("to-delete"));
         // Execution should be cascade-deleted too
-        assertNull(schedulerDAO.readExecutionRecord(ORG_ID, exec.getExecutionId()));
+        assertNull(schedulerDAO.readExecutionRecord(exec.getExecutionId()));
     }
 
     // -------------------------------------------------------------------------
@@ -153,13 +150,11 @@ public class PostgresSchedulerDAOTest {
         WorkflowScheduleExecution exec = buildExecution("exec-test");
         schedulerDAO.saveExecutionRecord(exec);
 
-        WorkflowScheduleExecution found =
-                schedulerDAO.readExecutionRecord(ORG_ID, exec.getExecutionId());
+        WorkflowScheduleExecution found = schedulerDAO.readExecutionRecord(exec.getExecutionId());
         assertNotNull(found);
         assertEquals(exec.getExecutionId(), found.getExecutionId());
         assertEquals("exec-test", found.getScheduleName());
         assertEquals(WorkflowScheduleExecution.ExecutionState.POLLED, found.getState());
-        assertEquals(ORG_ID, found.getOrgId());
     }
 
     @Test
@@ -172,8 +167,7 @@ public class PostgresSchedulerDAOTest {
         exec.setWorkflowId("conductor-wf-123");
         schedulerDAO.saveExecutionRecord(exec);
 
-        WorkflowScheduleExecution found =
-                schedulerDAO.readExecutionRecord(ORG_ID, exec.getExecutionId());
+        WorkflowScheduleExecution found = schedulerDAO.readExecutionRecord(exec.getExecutionId());
         assertEquals(WorkflowScheduleExecution.ExecutionState.EXECUTED, found.getState());
         assertEquals("conductor-wf-123", found.getWorkflowId());
     }
@@ -184,9 +178,9 @@ public class PostgresSchedulerDAOTest {
         WorkflowScheduleExecution exec = buildExecution("remove-exec");
         schedulerDAO.saveExecutionRecord(exec);
 
-        schedulerDAO.removeExecutionRecord(ORG_ID, exec.getExecutionId());
+        schedulerDAO.removeExecutionRecord(exec.getExecutionId());
 
-        assertNull(schedulerDAO.readExecutionRecord(ORG_ID, exec.getExecutionId()));
+        assertNull(schedulerDAO.readExecutionRecord(exec.getExecutionId()));
     }
 
     @Test
@@ -202,7 +196,7 @@ public class PostgresSchedulerDAOTest {
         schedulerDAO.saveExecutionRecord(polled2);
         schedulerDAO.saveExecutionRecord(executed);
 
-        List<String> pendingIds = schedulerDAO.getPendingExecutionRecordIds(ORG_ID);
+        List<String> pendingIds = schedulerDAO.getPendingExecutionRecordIds();
         assertEquals(2, pendingIds.size());
         assertTrue(pendingIds.contains(polled1.getExecutionId()));
         assertTrue(pendingIds.contains(polled2.getExecutionId()));
@@ -220,7 +214,7 @@ public class PostgresSchedulerDAOTest {
         }
 
         List<WorkflowScheduleExecution> records =
-                schedulerDAO.getExecutionRecords(ORG_ID, "history-test", 3);
+                schedulerDAO.getExecutionRecords("history-test", 3);
         assertEquals(3, records.size());
         // Most recent first
         assertTrue(records.get(0).getExecutionTime() >= records.get(1).getExecutionTime());
@@ -236,9 +230,9 @@ public class PostgresSchedulerDAOTest {
         schedulerDAO.updateSchedule(buildSchedule("next-run-test", "wf"));
 
         long epochMillis = System.currentTimeMillis() + 60_000;
-        schedulerDAO.setNextRunTimeInEpoch(ORG_ID, "next-run-test", epochMillis);
+        schedulerDAO.setNextRunTimeInEpoch("next-run-test", epochMillis);
 
-        long retrieved = schedulerDAO.getNextRunTimeInEpoch(ORG_ID, "next-run-test");
+        long retrieved = schedulerDAO.getNextRunTimeInEpoch("next-run-test");
         assertEquals(epochMillis, retrieved);
     }
 
@@ -246,7 +240,7 @@ public class PostgresSchedulerDAOTest {
     public void testGetNextRunTime_notSet_returnsMinusOne() {
         schedulerDAO.updateSchedule(buildSchedule("no-next-run", "wf"));
 
-        long result = schedulerDAO.getNextRunTimeInEpoch(ORG_ID, "no-next-run");
+        long result = schedulerDAO.getNextRunTimeInEpoch("no-next-run");
         assertEquals(-1L, result);
     }
 

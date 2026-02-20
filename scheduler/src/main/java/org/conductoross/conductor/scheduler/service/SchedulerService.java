@@ -50,9 +50,6 @@ import jakarta.annotation.PreDestroy;
  *   <li>Enforcing pause/resume, schedule bounds, and catchup mode
  *   <li>Pruning old execution history records
  * </ul>
- *
- * <p>All orgId parameters use {@link WorkflowSchedule#DEFAULT_ORG_ID} in OSS. The method signatures
- * intentionally mirror Orkes Conductor's scheduler for convergence.
  */
 public class SchedulerService {
 
@@ -137,13 +134,9 @@ public class SchedulerService {
     // CRUD
     // -------------------------------------------------------------------------
 
-    /**
-     * Creates or updates a schedule. Sets {@code orgId} to the OSS default and calculates the
-     * initial next-run time.
-     */
+    /** Creates or updates a schedule. Calculates the initial next-run time. */
     public WorkflowSchedule saveSchedule(WorkflowSchedule schedule) {
         validate(schedule);
-        schedule.setOrgId(WorkflowSchedule.DEFAULT_ORG_ID);
 
         long now = System.currentTimeMillis();
         if (schedule.getCreateTime() == null) {
@@ -160,8 +153,7 @@ public class SchedulerService {
     }
 
     public WorkflowSchedule getSchedule(String name) {
-        WorkflowSchedule schedule =
-                schedulerDAO.findScheduleByName(WorkflowSchedule.DEFAULT_ORG_ID, name);
+        WorkflowSchedule schedule = schedulerDAO.findScheduleByName(name);
         if (schedule == null) {
             throw new NotFoundException("Schedule not found: " + name);
         }
@@ -169,16 +161,16 @@ public class SchedulerService {
     }
 
     public List<WorkflowSchedule> getAllSchedules() {
-        return schedulerDAO.getAllSchedules(WorkflowSchedule.DEFAULT_ORG_ID);
+        return schedulerDAO.getAllSchedules();
     }
 
     public List<WorkflowSchedule> getSchedulesForWorkflow(String workflowName) {
-        return schedulerDAO.findAllSchedules(WorkflowSchedule.DEFAULT_ORG_ID, workflowName);
+        return schedulerDAO.findAllSchedules(workflowName);
     }
 
     public void deleteSchedule(String name) {
         getSchedule(name); // throws NotFoundException if absent
-        schedulerDAO.deleteWorkflowSchedule(WorkflowSchedule.DEFAULT_ORG_ID, name);
+        schedulerDAO.deleteWorkflowSchedule(name);
     }
 
     public void pauseSchedule(String name) {
@@ -206,7 +198,7 @@ public class SchedulerService {
         if (schedule.isRunCatchupScheduleInstances()) {
             // Leave the stale nextRunTime intact — the poll loop will fire once per cycle
             // for each missed slot until it catches up to the current time.
-            nextRun = schedulerDAO.getNextRunTimeInEpoch(WorkflowSchedule.DEFAULT_ORG_ID, name);
+            nextRun = schedulerDAO.getNextRunTimeInEpoch(name);
         } else {
             // Skip all missed slots and jump to the next future execution time.
             nextRun = computeNextRunTime(schedule, System.currentTimeMillis());
@@ -220,7 +212,7 @@ public class SchedulerService {
     // -------------------------------------------------------------------------
 
     public List<WorkflowScheduleExecution> getExecutionHistory(String name, int limit) {
-        return schedulerDAO.getExecutionRecords(WorkflowSchedule.DEFAULT_ORG_ID, name, limit);
+        return schedulerDAO.getExecutionRecords(name, limit);
     }
 
     // -------------------------------------------------------------------------
@@ -260,8 +252,7 @@ public class SchedulerService {
     void pollAndExecuteSchedules() {
         try {
             long now = System.currentTimeMillis();
-            List<WorkflowSchedule> allSchedules =
-                    schedulerDAO.getAllSchedules(WorkflowSchedule.DEFAULT_ORG_ID);
+            List<WorkflowSchedule> allSchedules = schedulerDAO.getAllSchedules();
 
             int processed = 0;
             for (WorkflowSchedule schedule : allSchedules) {
@@ -295,18 +286,15 @@ public class SchedulerService {
         if (schedule.getScheduleEndTime() != null && now > schedule.getScheduleEndTime()) {
             return false;
         }
-        Long nextRun =
-                schedulerDAO.getNextRunTimeInEpoch(
-                        WorkflowSchedule.DEFAULT_ORG_ID, schedule.getName());
+        Long nextRun = schedulerDAO.getNextRunTimeInEpoch(schedule.getName());
         return nextRun >= 0 && now >= nextRun;
     }
 
     private void handleSchedule(WorkflowSchedule schedule, long now) {
         String executionId = UUID.randomUUID().toString();
-        String orgId = WorkflowSchedule.DEFAULT_ORG_ID;
 
         // Fetch the slot we are firing for before advancing the pointer.
-        long scheduledTime = schedulerDAO.getNextRunTimeInEpoch(orgId, schedule.getName());
+        long scheduledTime = schedulerDAO.getNextRunTimeInEpoch(schedule.getName());
 
         // In catchup mode, advance to the next slot after the one we just fired for
         // (i.e. step through missed slots one per poll cycle). In normal mode, jump
@@ -333,10 +321,10 @@ public class SchedulerService {
         // pointer past the end time so isDue() won't re-fire the last slot while waiting
         // for now to overtake scheduleEndTime.
         if (nextRun != null) {
-            schedulerDAO.setNextRunTimeInEpoch(orgId, schedule.getName(), nextRun);
+            schedulerDAO.setNextRunTimeInEpoch(schedule.getName(), nextRun);
         } else if (schedule.getScheduleEndTime() != null) {
             schedulerDAO.setNextRunTimeInEpoch(
-                    orgId, schedule.getName(), schedule.getScheduleEndTime() + 1);
+                    schedule.getName(), schedule.getScheduleEndTime() + 1);
         }
 
         // Trigger the workflow — optionally with a random jitter delay to spread concurrent
@@ -345,19 +333,16 @@ public class SchedulerService {
             long jitterMs =
                     ThreadLocalRandom.current().nextLong(0, properties.getJitterMaxMs() + 1);
             jitterExecutor.schedule(
-                    () -> dispatchWorkflow(schedule, execution, scheduledTime, orgId),
+                    () -> dispatchWorkflow(schedule, execution, scheduledTime),
                     jitterMs,
                     TimeUnit.MILLISECONDS);
         } else {
-            dispatchWorkflow(schedule, execution, scheduledTime, orgId);
+            dispatchWorkflow(schedule, execution, scheduledTime);
         }
     }
 
     private void dispatchWorkflow(
-            WorkflowSchedule schedule,
-            WorkflowScheduleExecution execution,
-            long scheduledTime,
-            String orgId) {
+            WorkflowSchedule schedule, WorkflowScheduleExecution execution, long scheduledTime) {
         try {
             StartWorkflowRequest req = schedule.getStartWorkflowRequest();
 
@@ -388,7 +373,7 @@ public class SchedulerService {
                     e.getMessage());
         } finally {
             schedulerDAO.saveExecutionRecord(execution);
-            pruneExecutionHistory(orgId, schedule.getName());
+            pruneExecutionHistory(schedule.getName());
         }
     }
 
@@ -441,29 +426,28 @@ public class SchedulerService {
         return nextMillis;
     }
 
-    private void pruneExecutionHistory(String orgId, String scheduleName) {
+    private void pruneExecutionHistory(String scheduleName) {
         int threshold = properties.getArchivalMaxRecordThreshold();
         int keep = properties.getArchivalMaxRecords();
         // Fetch one more than the threshold to cheaply detect when pruning is needed.
         List<WorkflowScheduleExecution> recent =
-                schedulerDAO.getExecutionRecords(orgId, scheduleName, threshold + 1);
+                schedulerDAO.getExecutionRecords(scheduleName, threshold + 1);
         if (recent.size() > threshold) {
             // Records are returned newest-first; remove everything beyond the keep limit.
             for (WorkflowScheduleExecution old : recent.subList(keep, recent.size())) {
-                schedulerDAO.removeExecutionRecord(orgId, old.getExecutionId());
+                schedulerDAO.removeExecutionRecord(old.getExecutionId());
             }
         }
     }
 
     private void cleanupStalePollRecords() {
-        String orgId = WorkflowSchedule.DEFAULT_ORG_ID;
-        List<String> pendingIds = schedulerDAO.getPendingExecutionRecordIds(orgId);
+        List<String> pendingIds = schedulerDAO.getPendingExecutionRecordIds();
         if (pendingIds.isEmpty()) {
             return;
         }
         long staleThreshold = System.currentTimeMillis() - STALE_POLLED_THRESHOLD_MS;
         for (String id : pendingIds) {
-            WorkflowScheduleExecution record = schedulerDAO.readExecutionRecord(orgId, id);
+            WorkflowScheduleExecution record = schedulerDAO.readExecutionRecord(id);
             if (record != null
                     && record.getExecutionTime() != null
                     && record.getExecutionTime() < staleThreshold) {

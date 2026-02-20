@@ -32,8 +32,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * PostgreSQL implementation of {@link SchedulerDAO}.
  *
  * <p>Uses Spring {@link JdbcTemplate} and Flyway-managed migrations ({@code
- * db/migration_scheduler}). All queries include the {@code org_id} column so the schema is
- * compatible with Orkes Conductor; OSS always passes {@link WorkflowSchedule#DEFAULT_ORG_ID}.
+ * db/migration_scheduler}). OSS uses a simplified single-tenant schema without org_id. Orkes
+ * Conductor injects multi-tenancy within their DAO implementation layer.
  */
 public class PostgresSchedulerDAO implements SchedulerDAO {
 
@@ -55,16 +55,15 @@ public class PostgresSchedulerDAO implements SchedulerDAO {
     public void updateSchedule(WorkflowSchedule schedule) {
         String sql =
                 """
-                INSERT INTO workflow_schedule (org_id, schedule_name, workflow_name, json_data, next_run_time)
-                VALUES (?, ?, ?, ?, ?)
-                ON CONFLICT (org_id, schedule_name)
+                INSERT INTO workflow_schedule (schedule_name, workflow_name, json_data, next_run_time)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT (schedule_name)
                 DO UPDATE SET workflow_name = EXCLUDED.workflow_name,
                               json_data     = EXCLUDED.json_data,
                               next_run_time = EXCLUDED.next_run_time
                 """;
         jdbc.update(
                 sql,
-                schedule.getOrgId(),
                 schedule.getName(),
                 schedule.getStartWorkflowRequest() != null
                         ? schedule.getStartWorkflowRequest().getName()
@@ -74,36 +73,28 @@ public class PostgresSchedulerDAO implements SchedulerDAO {
     }
 
     @Override
-    public WorkflowSchedule findScheduleByName(String orgId, String name) {
-        String sql =
-                "SELECT json_data FROM workflow_schedule WHERE org_id = ? AND schedule_name = ?";
-        List<WorkflowSchedule> results = jdbc.query(sql, scheduleRowMapper(), orgId, name);
+    public WorkflowSchedule findScheduleByName(String name) {
+        String sql = "SELECT json_data FROM workflow_schedule WHERE schedule_name = ?";
+        List<WorkflowSchedule> results = jdbc.query(sql, scheduleRowMapper(), name);
         return results.isEmpty() ? null : results.get(0);
     }
 
     @Override
-    public List<WorkflowSchedule> getAllSchedules(String orgId) {
-        String sql = "SELECT json_data FROM workflow_schedule WHERE org_id = ?";
-        return jdbc.query(sql, scheduleRowMapper(), orgId);
+    public List<WorkflowSchedule> getAllSchedules() {
+        String sql = "SELECT json_data FROM workflow_schedule";
+        return jdbc.query(sql, scheduleRowMapper());
     }
 
     @Override
-    public List<WorkflowSchedule> findAllSchedules(String orgId, String workflowName) {
-        String sql =
-                "SELECT json_data FROM workflow_schedule WHERE org_id = ? AND workflow_name = ?";
-        return jdbc.query(sql, scheduleRowMapper(), orgId, workflowName);
+    public List<WorkflowSchedule> findAllSchedules(String workflowName) {
+        String sql = "SELECT json_data FROM workflow_schedule WHERE workflow_name = ?";
+        return jdbc.query(sql, scheduleRowMapper(), workflowName);
     }
 
     @Override
-    public void deleteWorkflowSchedule(String orgId, String name) {
-        jdbc.update(
-                "DELETE FROM workflow_schedule WHERE org_id = ? AND schedule_name = ?",
-                orgId,
-                name);
-        jdbc.update(
-                "DELETE FROM workflow_schedule_execution WHERE org_id = ? AND schedule_name = ?",
-                orgId,
-                name);
+    public void deleteWorkflowSchedule(String name) {
+        jdbc.update("DELETE FROM workflow_schedule WHERE schedule_name = ?", name);
+        jdbc.update("DELETE FROM workflow_schedule_execution WHERE schedule_name = ?", name);
     }
 
     // -------------------------------------------------------------------------
@@ -115,9 +106,9 @@ public class PostgresSchedulerDAO implements SchedulerDAO {
         String sql =
                 """
                 INSERT INTO workflow_schedule_execution
-                    (org_id, execution_id, schedule_name, workflow_id, scheduled_time, execution_time, state, reason, zone_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT (org_id, execution_id)
+                    (execution_id, schedule_name, workflow_id, scheduled_time, execution_time, state, reason, zone_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT (execution_id)
                 DO UPDATE SET workflow_id     = EXCLUDED.workflow_id,
                               execution_time  = EXCLUDED.execution_time,
                               state           = EXCLUDED.state,
@@ -125,7 +116,6 @@ public class PostgresSchedulerDAO implements SchedulerDAO {
                 """;
         jdbc.update(
                 sql,
-                execution.getOrgId(),
                 execution.getExecutionId(),
                 execution.getScheduleName(),
                 execution.getWorkflowId(),
@@ -137,47 +127,42 @@ public class PostgresSchedulerDAO implements SchedulerDAO {
     }
 
     @Override
-    public WorkflowScheduleExecution readExecutionRecord(String orgId, String executionId) {
+    public WorkflowScheduleExecution readExecutionRecord(String executionId) {
         String sql =
                 """
-                SELECT org_id, execution_id, schedule_name, workflow_id,
+                SELECT execution_id, schedule_name, workflow_id,
                        scheduled_time, execution_time, state, reason, zone_id
                 FROM workflow_schedule_execution
-                WHERE org_id = ? AND execution_id = ?
+                WHERE execution_id = ?
                 """;
         List<WorkflowScheduleExecution> results =
-                jdbc.query(sql, executionRowMapper(), orgId, executionId);
+                jdbc.query(sql, executionRowMapper(), executionId);
         return results.isEmpty() ? null : results.get(0);
     }
 
     @Override
-    public void removeExecutionRecord(String orgId, String executionId) {
-        jdbc.update(
-                "DELETE FROM workflow_schedule_execution WHERE org_id = ? AND execution_id = ?",
-                orgId,
-                executionId);
+    public void removeExecutionRecord(String executionId) {
+        jdbc.update("DELETE FROM workflow_schedule_execution WHERE execution_id = ?", executionId);
     }
 
     @Override
-    public List<String> getPendingExecutionRecordIds(String orgId) {
-        String sql =
-                "SELECT execution_id FROM workflow_schedule_execution WHERE org_id = ? AND state = 'POLLED'";
-        return jdbc.queryForList(sql, String.class, orgId);
+    public List<String> getPendingExecutionRecordIds() {
+        String sql = "SELECT execution_id FROM workflow_schedule_execution WHERE state = 'POLLED'";
+        return jdbc.queryForList(sql, String.class);
     }
 
     @Override
-    public List<WorkflowScheduleExecution> getExecutionRecords(
-            String orgId, String scheduleName, int limit) {
+    public List<WorkflowScheduleExecution> getExecutionRecords(String scheduleName, int limit) {
         String sql =
                 """
-                SELECT org_id, execution_id, schedule_name, workflow_id,
+                SELECT execution_id, schedule_name, workflow_id,
                        scheduled_time, execution_time, state, reason, zone_id
                 FROM workflow_schedule_execution
-                WHERE org_id = ? AND schedule_name = ?
+                WHERE schedule_name = ?
                 ORDER BY execution_time DESC
                 LIMIT ?
                 """;
-        return jdbc.query(sql, executionRowMapper(), orgId, scheduleName, limit);
+        return jdbc.query(sql, executionRowMapper(), scheduleName, limit);
     }
 
     // -------------------------------------------------------------------------
@@ -185,10 +170,9 @@ public class PostgresSchedulerDAO implements SchedulerDAO {
     // -------------------------------------------------------------------------
 
     @Override
-    public long getNextRunTimeInEpoch(String orgId, String scheduleName) {
-        String sql =
-                "SELECT next_run_time FROM workflow_schedule WHERE org_id = ? AND schedule_name = ?";
-        List<Long> results = jdbc.queryForList(sql, Long.class, orgId, scheduleName);
+    public long getNextRunTimeInEpoch(String scheduleName) {
+        String sql = "SELECT next_run_time FROM workflow_schedule WHERE schedule_name = ?";
+        List<Long> results = jdbc.queryForList(sql, Long.class, scheduleName);
         if (results.isEmpty() || results.get(0) == null) {
             return -1L;
         }
@@ -196,11 +180,10 @@ public class PostgresSchedulerDAO implements SchedulerDAO {
     }
 
     @Override
-    public void setNextRunTimeInEpoch(String orgId, String scheduleName, long epochMillis) {
+    public void setNextRunTimeInEpoch(String scheduleName, long epochMillis) {
         jdbc.update(
-                "UPDATE workflow_schedule SET next_run_time = ? WHERE org_id = ? AND schedule_name = ?",
+                "UPDATE workflow_schedule SET next_run_time = ? WHERE schedule_name = ?",
                 epochMillis,
-                orgId,
                 scheduleName);
     }
 
@@ -222,7 +205,6 @@ public class PostgresSchedulerDAO implements SchedulerDAO {
     private RowMapper<WorkflowScheduleExecution> executionRowMapper() {
         return (rs, rowNum) -> {
             WorkflowScheduleExecution exec = new WorkflowScheduleExecution();
-            exec.setOrgId(rs.getString("org_id"));
             exec.setExecutionId(rs.getString("execution_id"));
             exec.setScheduleName(rs.getString("schedule_name"));
             exec.setWorkflowId(rs.getString("workflow_id"));

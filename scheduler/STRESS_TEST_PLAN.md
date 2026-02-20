@@ -45,7 +45,7 @@ Long nextRun = computeNextRunTime(schedule, System.currentTimeMillis());
 Long nextRun;
 if (schedule.isRunCatchupScheduleInstances()) {
     // Leave the stale nextRunTime in place — poll loop fires for each missed slot
-    nextRun = schedulerDAO.getNextRunTimeInEpoch(DEFAULT_ORG_ID, name);
+    nextRun = schedulerDAO.getNextRunTimeInEpoch(name);
 } else {
     // Skip to the next future slot
     nextRun = computeNextRunTime(schedule, System.currentTimeMillis());
@@ -88,7 +88,7 @@ if (schedule.isRunCatchupScheduleInstances()) {
 **Bug found in `pruneExecutionHistory`:**
 ```java
 // Current (buggy): fetches threshold+1 but compares against keep
-List<...> recent = dao.getExecutionRecords(orgId, name, threshold + 1);
+List<...> recent = dao.getExecutionRecords(name, threshold + 1);
 if (recent.size() > keep) { ... }   // never true when keep >> threshold
 
 // Correct: trigger on threshold, prune down to keep

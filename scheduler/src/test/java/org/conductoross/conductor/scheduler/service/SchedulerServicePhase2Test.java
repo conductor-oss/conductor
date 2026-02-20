@@ -80,11 +80,11 @@ public class SchedulerServicePhase2Test {
         WorkflowSchedule schedule = buildSchedule("fail-sched", "0 * * * * *", "UTC");
         long pastSlot = System.currentTimeMillis() - 60_000;
 
-        when(dao.getAllSchedules(anyString())).thenReturn(List.of(schedule));
-        when(dao.getNextRunTimeInEpoch(anyString(), eq("fail-sched"))).thenReturn(pastSlot);
+        when(dao.getAllSchedules()).thenReturn(List.of(schedule));
+        when(dao.getNextRunTimeInEpoch(eq("fail-sched"))).thenReturn(pastSlot);
         when(workflowService.startWorkflow(any()))
                 .thenThrow(new NotFoundException("Workflow not found"));
-        when(dao.getExecutionRecords(anyString(), anyString(), anyInt())).thenReturn(List.of());
+        when(dao.getExecutionRecords(anyString(), anyInt())).thenReturn(List.of());
 
         // Snapshot states at call time since the execution object is mutated between calls
         List<WorkflowScheduleExecution.ExecutionState> capturedStates = new ArrayList<>();
@@ -116,11 +116,11 @@ public class SchedulerServicePhase2Test {
         WorkflowSchedule schedule = buildSchedule("runtime-fail", "0 * * * * *", "UTC");
         long pastSlot = System.currentTimeMillis() - 60_000;
 
-        when(dao.getAllSchedules(anyString())).thenReturn(List.of(schedule));
-        when(dao.getNextRunTimeInEpoch(anyString(), eq("runtime-fail"))).thenReturn(pastSlot);
+        when(dao.getAllSchedules()).thenReturn(List.of(schedule));
+        when(dao.getNextRunTimeInEpoch(eq("runtime-fail"))).thenReturn(pastSlot);
         when(workflowService.startWorkflow(any()))
                 .thenThrow(new RuntimeException("Unexpected DB timeout"));
-        when(dao.getExecutionRecords(anyString(), anyString(), anyInt())).thenReturn(List.of());
+        when(dao.getExecutionRecords(anyString(), anyInt())).thenReturn(List.of());
 
         List<WorkflowScheduleExecution.ExecutionState> capturedStates = new ArrayList<>();
         doAnswer(
@@ -146,9 +146,8 @@ public class SchedulerServicePhase2Test {
      */
     @Test
     public void testPollAndExecute_daoGetAllSchedulesThrows_doesNotCrash() {
-        when(dao.getAllSchedules(anyString()))
-                .thenThrow(new RuntimeException("DB connection lost"));
-        when(dao.getPendingExecutionRecordIds(anyString())).thenReturn(List.of());
+        when(dao.getAllSchedules()).thenThrow(new RuntimeException("DB connection lost"));
+        when(dao.getPendingExecutionRecordIds()).thenReturn(List.of());
 
         // Must not throw
         service.pollAndExecuteSchedules();
@@ -162,7 +161,7 @@ public class SchedulerServicePhase2Test {
      */
     @Test
     public void testCleanupStalePollRecords_oldRecord_transitionsToFailed() {
-        when(dao.getAllSchedules(anyString())).thenReturn(List.of());
+        when(dao.getAllSchedules()).thenReturn(List.of());
 
         long tenMinAgo = System.currentTimeMillis() - 10 * 60 * 1000;
         WorkflowScheduleExecution staleRecord = new WorkflowScheduleExecution();
@@ -171,8 +170,8 @@ public class SchedulerServicePhase2Test {
         staleRecord.setState(WorkflowScheduleExecution.ExecutionState.POLLED);
         staleRecord.setExecutionTime(tenMinAgo);
 
-        when(dao.getPendingExecutionRecordIds(anyString())).thenReturn(List.of("exec-stale"));
-        when(dao.readExecutionRecord(anyString(), eq("exec-stale"))).thenReturn(staleRecord);
+        when(dao.getPendingExecutionRecordIds()).thenReturn(List.of("exec-stale"));
+        when(dao.readExecutionRecord(eq("exec-stale"))).thenReturn(staleRecord);
 
         service.pollAndExecuteSchedules();
 
@@ -192,7 +191,7 @@ public class SchedulerServicePhase2Test {
      */
     @Test
     public void testCleanupStalePollRecords_freshRecord_notTransitioned() {
-        when(dao.getAllSchedules(anyString())).thenReturn(List.of());
+        when(dao.getAllSchedules()).thenReturn(List.of());
 
         long thirtySecondsAgo = System.currentTimeMillis() - 30 * 1000;
         WorkflowScheduleExecution freshRecord = new WorkflowScheduleExecution();
@@ -201,8 +200,8 @@ public class SchedulerServicePhase2Test {
         freshRecord.setState(WorkflowScheduleExecution.ExecutionState.POLLED);
         freshRecord.setExecutionTime(thirtySecondsAgo);
 
-        when(dao.getPendingExecutionRecordIds(anyString())).thenReturn(List.of("exec-fresh"));
-        when(dao.readExecutionRecord(anyString(), eq("exec-fresh"))).thenReturn(freshRecord);
+        when(dao.getPendingExecutionRecordIds()).thenReturn(List.of("exec-fresh"));
+        when(dao.readExecutionRecord(eq("exec-fresh"))).thenReturn(freshRecord);
 
         service.pollAndExecuteSchedules();
 
@@ -227,12 +226,12 @@ public class SchedulerServicePhase2Test {
             schedules.add(buildSchedule("multi-" + i, "0 * * * * *", "UTC"));
         }
 
-        when(dao.getAllSchedules(anyString())).thenReturn(schedules);
+        when(dao.getAllSchedules()).thenReturn(schedules);
         for (int i = 0; i < 5; i++) {
-            when(dao.getNextRunTimeInEpoch(anyString(), eq("multi-" + i))).thenReturn(pastSlot);
+            when(dao.getNextRunTimeInEpoch(eq("multi-" + i))).thenReturn(pastSlot);
         }
         when(workflowService.startWorkflow(any())).thenReturn("wf-id");
-        when(dao.getExecutionRecords(anyString(), anyString(), anyInt())).thenReturn(List.of());
+        when(dao.getExecutionRecords(anyString(), anyInt())).thenReturn(List.of());
 
         service.pollAndExecuteSchedules();
 
@@ -252,12 +251,12 @@ public class SchedulerServicePhase2Test {
             schedules.add(buildSchedule("batch-" + i, "0 * * * * *", "UTC"));
         }
 
-        when(dao.getAllSchedules(anyString())).thenReturn(schedules);
+        when(dao.getAllSchedules()).thenReturn(schedules);
         for (int i = 0; i < 5; i++) {
-            when(dao.getNextRunTimeInEpoch(anyString(), eq("batch-" + i))).thenReturn(pastSlot);
+            when(dao.getNextRunTimeInEpoch(eq("batch-" + i))).thenReturn(pastSlot);
         }
         when(workflowService.startWorkflow(any())).thenReturn("wf-id");
-        when(dao.getExecutionRecords(anyString(), anyString(), anyInt())).thenReturn(List.of());
+        when(dao.getExecutionRecords(anyString(), anyInt())).thenReturn(List.of());
 
         service.pollAndExecuteSchedules();
 
@@ -270,8 +269,8 @@ public class SchedulerServicePhase2Test {
         WorkflowSchedule schedule = buildSchedule("paused-sched", "0 * * * * *", "UTC");
         schedule.setPaused(true);
 
-        when(dao.getAllSchedules(anyString())).thenReturn(List.of(schedule));
-        when(dao.getPendingExecutionRecordIds(anyString())).thenReturn(List.of());
+        when(dao.getAllSchedules()).thenReturn(List.of(schedule));
+        when(dao.getPendingExecutionRecordIds()).thenReturn(List.of());
 
         service.pollAndExecuteSchedules();
 
@@ -298,21 +297,21 @@ public class SchedulerServicePhase2Test {
         WorkflowSchedule schedule = buildSchedule("bounded-end", "0 0 * * * *", "UTC");
         schedule.setScheduleEndTime(endTime);
 
-        when(dao.getAllSchedules(anyString())).thenReturn(List.of(schedule));
+        when(dao.getAllSchedules()).thenReturn(List.of(schedule));
 
         // Stateful mock: tracks the live pointer value as setNextRunTimeInEpoch updates it
         long[] pointer = {pastSlot};
-        doAnswer(inv -> pointer[0]).when(dao).getNextRunTimeInEpoch(anyString(), eq("bounded-end"));
+        doAnswer(inv -> pointer[0]).when(dao).getNextRunTimeInEpoch(eq("bounded-end"));
         doAnswer(
                         inv -> {
                             pointer[0] = inv.getArgument(2);
                             return null;
                         })
                 .when(dao)
-                .setNextRunTimeInEpoch(anyString(), eq("bounded-end"), anyLong());
+                .setNextRunTimeInEpoch(eq("bounded-end"), anyLong());
 
         when(workflowService.startWorkflow(any())).thenReturn("wf-id");
-        when(dao.getExecutionRecords(anyString(), anyString(), anyInt())).thenReturn(List.of());
+        when(dao.getExecutionRecords(anyString(), anyInt())).thenReturn(List.of());
 
         service.pollAndExecuteSchedules(); // fires once; pointer advances to endTime+1
         service.pollAndExecuteSchedules(); // pointer > now → isDue=false; must NOT fire again
@@ -333,15 +332,14 @@ public class SchedulerServicePhase2Test {
         WorkflowSchedule schedule = buildSchedule("prune-below", "0 * * * * *", "UTC");
         long pastSlot = System.currentTimeMillis() - 60_000;
 
-        when(dao.getAllSchedules(anyString())).thenReturn(List.of(schedule));
-        when(dao.getNextRunTimeInEpoch(anyString(), eq("prune-below"))).thenReturn(pastSlot);
+        when(dao.getAllSchedules()).thenReturn(List.of(schedule));
+        when(dao.getNextRunTimeInEpoch(eq("prune-below"))).thenReturn(pastSlot);
         when(workflowService.startWorkflow(any())).thenReturn("wf-id");
-        when(dao.getExecutionRecords(anyString(), anyString(), anyInt()))
-                .thenReturn(buildExecutionList(4));
+        when(dao.getExecutionRecords(anyString(), anyInt())).thenReturn(buildExecutionList(4));
 
         service.pollAndExecuteSchedules();
 
-        verify(dao, never()).removeExecutionRecord(anyString(), anyString());
+        verify(dao, never()).removeExecutionRecord(anyString());
     }
 
     /**
@@ -353,19 +351,18 @@ public class SchedulerServicePhase2Test {
         WorkflowSchedule schedule = buildSchedule("prune-over", "0 * * * * *", "UTC");
         long pastSlot = System.currentTimeMillis() - 60_000;
 
-        when(dao.getAllSchedules(anyString())).thenReturn(List.of(schedule));
-        when(dao.getNextRunTimeInEpoch(anyString(), eq("prune-over"))).thenReturn(pastSlot);
+        when(dao.getAllSchedules()).thenReturn(List.of(schedule));
+        when(dao.getNextRunTimeInEpoch(eq("prune-over"))).thenReturn(pastSlot);
         when(workflowService.startWorkflow(any())).thenReturn("wf-id");
-        when(dao.getExecutionRecords(anyString(), anyString(), anyInt()))
-                .thenReturn(buildExecutionList(6));
+        when(dao.getExecutionRecords(anyString(), anyInt())).thenReturn(buildExecutionList(6));
 
         service.pollAndExecuteSchedules();
 
         // 6 records - keep 3 = 3 removed (exec-3, exec-4, exec-5 are the oldest)
-        verify(dao, times(3)).removeExecutionRecord(anyString(), anyString());
-        verify(dao).removeExecutionRecord(anyString(), eq("exec-3"));
-        verify(dao).removeExecutionRecord(anyString(), eq("exec-4"));
-        verify(dao).removeExecutionRecord(anyString(), eq("exec-5"));
+        verify(dao, times(3)).removeExecutionRecord(anyString());
+        verify(dao).removeExecutionRecord(eq("exec-3"));
+        verify(dao).removeExecutionRecord(eq("exec-4"));
+        verify(dao).removeExecutionRecord(eq("exec-5"));
     }
 
     /**
@@ -377,15 +374,14 @@ public class SchedulerServicePhase2Test {
         WorkflowSchedule schedule = buildSchedule("prune-exact", "0 * * * * *", "UTC");
         long pastSlot = System.currentTimeMillis() - 60_000;
 
-        when(dao.getAllSchedules(anyString())).thenReturn(List.of(schedule));
-        when(dao.getNextRunTimeInEpoch(anyString(), eq("prune-exact"))).thenReturn(pastSlot);
+        when(dao.getAllSchedules()).thenReturn(List.of(schedule));
+        when(dao.getNextRunTimeInEpoch(eq("prune-exact"))).thenReturn(pastSlot);
         when(workflowService.startWorkflow(any())).thenReturn("wf-id");
-        when(dao.getExecutionRecords(anyString(), anyString(), anyInt()))
-                .thenReturn(buildExecutionList(5));
+        when(dao.getExecutionRecords(anyString(), anyInt())).thenReturn(buildExecutionList(5));
 
         service.pollAndExecuteSchedules();
 
-        verify(dao, never()).removeExecutionRecord(anyString(), anyString());
+        verify(dao, never()).removeExecutionRecord(anyString());
     }
 
     // =========================================================================
@@ -449,8 +445,8 @@ public class SchedulerServicePhase2Test {
         long now = System.currentTimeMillis();
         WorkflowSchedule schedule = buildSchedule("inject-test", "0 * * * * *", "UTC");
 
-        when(dao.getAllSchedules(anyString())).thenReturn(List.of(schedule));
-        when(dao.getNextRunTimeInEpoch(anyString(), eq("inject-test"))).thenReturn(slot);
+        when(dao.getAllSchedules()).thenReturn(List.of(schedule));
+        when(dao.getNextRunTimeInEpoch(eq("inject-test"))).thenReturn(slot);
 
         ArgumentCaptor<StartWorkflowRequest> captor =
                 ArgumentCaptor.forClass(StartWorkflowRequest.class);
@@ -476,8 +472,8 @@ public class SchedulerServicePhase2Test {
         schedule.getStartWorkflowRequest()
                 .setInput(new java.util.HashMap<>(java.util.Map.of("customKey", "customValue")));
 
-        when(dao.getAllSchedules(anyString())).thenReturn(List.of(schedule));
-        when(dao.getNextRunTimeInEpoch(anyString(), eq("preserve-input"))).thenReturn(slot);
+        when(dao.getAllSchedules()).thenReturn(List.of(schedule));
+        when(dao.getNextRunTimeInEpoch(eq("preserve-input"))).thenReturn(slot);
 
         ArgumentCaptor<StartWorkflowRequest> captor =
                 ArgumentCaptor.forClass(StartWorkflowRequest.class);
@@ -514,15 +510,15 @@ public class SchedulerServicePhase2Test {
         WorkflowSchedule schedule = buildSchedule("jitter-sched", "0 * * * * *", "UTC");
         CountDownLatch latch = new CountDownLatch(1);
 
-        when(dao.getAllSchedules(anyString())).thenReturn(List.of(schedule));
-        when(dao.getNextRunTimeInEpoch(anyString(), eq("jitter-sched"))).thenReturn(slot);
+        when(dao.getAllSchedules()).thenReturn(List.of(schedule));
+        when(dao.getNextRunTimeInEpoch(eq("jitter-sched"))).thenReturn(slot);
         when(workflowService.startWorkflow(any()))
                 .thenAnswer(
                         inv -> {
                             latch.countDown();
                             return "wf-jitter";
                         });
-        when(dao.getExecutionRecords(anyString(), anyString(), anyInt())).thenReturn(List.of());
+        when(dao.getExecutionRecords(anyString(), anyInt())).thenReturn(List.of());
 
         jitterService.pollAndExecuteSchedules();
 
@@ -542,10 +538,10 @@ public class SchedulerServicePhase2Test {
         long slot = System.currentTimeMillis() - 5_000;
         WorkflowSchedule schedule = buildSchedule("no-jitter", "0 * * * * *", "UTC");
 
-        when(dao.getAllSchedules(anyString())).thenReturn(List.of(schedule));
-        when(dao.getNextRunTimeInEpoch(anyString(), eq("no-jitter"))).thenReturn(slot);
+        when(dao.getAllSchedules()).thenReturn(List.of(schedule));
+        when(dao.getNextRunTimeInEpoch(eq("no-jitter"))).thenReturn(slot);
         when(workflowService.startWorkflow(any())).thenReturn("wf-no-jitter");
-        when(dao.getExecutionRecords(anyString(), anyString(), anyInt())).thenReturn(List.of());
+        when(dao.getExecutionRecords(anyString(), anyInt())).thenReturn(List.of());
 
         service.pollAndExecuteSchedules();
 
@@ -572,15 +568,15 @@ public class SchedulerServicePhase2Test {
         long slot = System.currentTimeMillis() - 5_000;
         WorkflowSchedule schedule = buildSchedule("jitter-ptr", "0 * * * * *", "UTC");
 
-        when(dao.getAllSchedules(anyString())).thenReturn(List.of(schedule));
-        when(dao.getNextRunTimeInEpoch(anyString(), eq("jitter-ptr"))).thenReturn(slot);
+        when(dao.getAllSchedules()).thenReturn(List.of(schedule));
+        when(dao.getNextRunTimeInEpoch(eq("jitter-ptr"))).thenReturn(slot);
         when(workflowService.startWorkflow(any())).thenReturn("wf-ptr");
-        when(dao.getExecutionRecords(anyString(), anyString(), anyInt())).thenReturn(List.of());
+        when(dao.getExecutionRecords(anyString(), anyInt())).thenReturn(List.of());
 
         jitterService.pollAndExecuteSchedules();
 
         // Pointer must be advanced immediately (synchronously) before the jitter delay fires
-        verify(dao, times(1)).setNextRunTimeInEpoch(anyString(), eq("jitter-ptr"), anyLong());
+        verify(dao, times(1)).setNextRunTimeInEpoch(eq("jitter-ptr"), anyLong());
 
         jitterService.stop();
     }
@@ -599,7 +595,6 @@ public class SchedulerServicePhase2Test {
         s.setCronExpression(cron);
         s.setZoneId(zone);
         s.setStartWorkflowRequest(req);
-        s.setOrgId(WorkflowSchedule.DEFAULT_ORG_ID);
         return s;
     }
 

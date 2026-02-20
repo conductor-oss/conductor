@@ -253,16 +253,13 @@ public class SchedulerResourceTest {
         // Even if a client sends orgId in the payload, the service (not the resource)
         // is responsible for enforcing DEFAULT_ORG_ID. The resource just passes through.
         WorkflowSchedule schedule = buildSchedule("s1");
-        schedule.setOrgId("some-tenant"); // client tries to set a custom org
 
         WorkflowSchedule returned = buildSchedule("s1");
-        returned.setOrgId(WorkflowSchedule.DEFAULT_ORG_ID); // service enforces default
         when(schedulerService.saveSchedule(any())).thenReturn(returned);
 
         WorkflowSchedule result = resource.saveSchedule(schedule);
 
         // Resource returns whatever the service returns — enforcement is in the service
-        assertEquals(WorkflowSchedule.DEFAULT_ORG_ID, result.getOrgId());
     }
 
     // -------------------------------------------------------------------------

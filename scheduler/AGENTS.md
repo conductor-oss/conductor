@@ -8,7 +8,7 @@ project-wide conventions; this file adds scheduler-specific detail.
 `conductor-scheduler` is a self-contained Gradle module that adds cron-based workflow scheduling
 to Conductor OSS. It is **convergence-compatible** with Orkes Conductor's enterprise scheduler:
 the DAO interface, data model, and REST API paths are intentionally identical so Orkes can adopt
-the OSS implementation with minimal changes (orgId injection only).
+the OSS implementation and inject multi-tenancy within their DAO implementation layer.
 
 The scheduler is enabled via `conductor.scheduler.enabled=true` and requires PostgreSQL. It is
 inactive (no-op) when disabled or when no `WorkflowService` bean is present.
@@ -89,12 +89,6 @@ does not jump to the current time.
 When `computeNextRunTime()` returns null (no future slot within `scheduleEndTime`), the pointer
 must be set to `scheduleEndTime + 1`. Without this, the last slot before `endTime` re-fires
 on every poll cycle until `now > endTime`.
-
-### 5. orgId is always "default" in OSS
-
-`WorkflowSchedule.DEFAULT_ORG_ID = "default"` is passed to every DAO call. The field exists
-for Orkes convergence (Orkes passes real tenant IDs). Do not remove it or add an API surface
-that exposes it to users.
 
 ## Known Gotchas (from Live Testing)
 

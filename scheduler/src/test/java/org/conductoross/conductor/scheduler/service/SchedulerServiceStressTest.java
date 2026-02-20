@@ -154,8 +154,8 @@ public class SchedulerServiceStressTest {
         WorkflowSchedule schedule = buildSchedule("slow-poll", "0 * * * * *", "UTC");
         schedule.setRunCatchupScheduleInstances(false);
 
-        when(dao.getAllSchedules(anyString())).thenReturn(List.of(schedule));
-        when(dao.getNextRunTimeInEpoch(anyString(), eq("slow-poll"))).thenReturn(tenMinAgo);
+        when(dao.getAllSchedules()).thenReturn(List.of(schedule));
+        when(dao.getNextRunTimeInEpoch(eq("slow-poll"))).thenReturn(tenMinAgo);
         when(workflowService.startWorkflow(any())).thenReturn("wf-id-1");
 
         service.pollAndExecuteSchedules();
@@ -165,7 +165,7 @@ public class SchedulerServiceStressTest {
 
         // Capture the new nextRunTime and assert it is in the future
         ArgumentCaptor<Long> nextRunCaptor = ArgumentCaptor.forClass(Long.class);
-        verify(dao).setNextRunTimeInEpoch(anyString(), eq("slow-poll"), nextRunCaptor.capture());
+        verify(dao).setNextRunTimeInEpoch(eq("slow-poll"), nextRunCaptor.capture());
         long advancedTo = nextRunCaptor.getValue();
         assertTrue(
                 "nextRunTime should advance past now, not stay 10 min in the past",
@@ -206,8 +206,8 @@ public class SchedulerServiceStressTest {
         WorkflowSchedule schedule = buildSchedule("just-expired", "0 * * * * *", "UTC");
         schedule.setScheduleEndTime(now - 1000);
 
-        when(dao.getAllSchedules(anyString())).thenReturn(List.of(schedule));
-        when(dao.getNextRunTimeInEpoch(anyString(), eq("just-expired"))).thenReturn(now - 500);
+        when(dao.getAllSchedules()).thenReturn(List.of(schedule));
+        when(dao.getNextRunTimeInEpoch(eq("just-expired"))).thenReturn(now - 500);
 
         service.pollAndExecuteSchedules();
 
@@ -221,7 +221,7 @@ public class SchedulerServiceStressTest {
         WorkflowSchedule schedule = buildSchedule("future-start", "0 * * * * *", "UTC");
         schedule.setScheduleStartTime(futureStart);
 
-        when(dao.getNextRunTimeInEpoch(anyString(), anyString())).thenReturn(-1L);
+        when(dao.getNextRunTimeInEpoch(anyString())).thenReturn(-1L);
 
         service.saveSchedule(schedule);
 
@@ -243,8 +243,8 @@ public class SchedulerServiceStressTest {
         schedule.setPaused(true);
         schedule.setRunCatchupScheduleInstances(false);
 
-        when(dao.findScheduleByName(anyString(), eq("no-catchup"))).thenReturn(schedule);
-        when(dao.getNextRunTimeInEpoch(anyString(), eq("no-catchup"))).thenReturn(staleNextRun);
+        when(dao.findScheduleByName(eq("no-catchup"))).thenReturn(schedule);
+        when(dao.getNextRunTimeInEpoch(eq("no-catchup"))).thenReturn(staleNextRun);
 
         service.resumeSchedule("no-catchup");
 
@@ -269,8 +269,8 @@ public class SchedulerServiceStressTest {
         schedule.setPaused(true);
         schedule.setRunCatchupScheduleInstances(true);
 
-        when(dao.findScheduleByName(anyString(), eq("with-catchup"))).thenReturn(schedule);
-        when(dao.getNextRunTimeInEpoch(anyString(), eq("with-catchup"))).thenReturn(staleNextRun);
+        when(dao.findScheduleByName(eq("with-catchup"))).thenReturn(schedule);
+        when(dao.getNextRunTimeInEpoch(eq("with-catchup"))).thenReturn(staleNextRun);
 
         service.resumeSchedule("with-catchup");
 
@@ -298,12 +298,12 @@ public class SchedulerServiceStressTest {
         WorkflowSchedule schedule = buildSchedule("catchup-sched", "0 * * * * *", "UTC");
         schedule.setRunCatchupScheduleInstances(true);
 
-        when(dao.getAllSchedules(anyString())).thenReturn(List.of(schedule));
+        when(dao.getAllSchedules()).thenReturn(List.of(schedule));
         when(workflowService.startWorkflow(any())).thenReturn("wf-1", "wf-2", "wf-3");
 
         // Each poll cycle calls getNextRunTimeInEpoch twice: once in isDue() and once in
         // handleSchedule() to capture the scheduled time. Provide 2 returns per cycle.
-        when(dao.getNextRunTimeInEpoch(anyString(), eq("catchup-sched")))
+        when(dao.getNextRunTimeInEpoch(eq("catchup-sched")))
                 .thenReturn(slot1) // cycle 1: isDue check
                 .thenReturn(slot1) // cycle 1: handleSchedule scheduledTime
                 .thenReturn(slot2) // cycle 2: isDue check
@@ -317,7 +317,7 @@ public class SchedulerServiceStressTest {
         service.pollAndExecuteSchedules();
 
         verify(workflowService, times(3)).startWorkflow(any());
-        verify(dao, times(3)).setNextRunTimeInEpoch(anyString(), eq("catchup-sched"), anyLong());
+        verify(dao, times(3)).setNextRunTimeInEpoch(eq("catchup-sched"), anyLong());
     }
 
     @Test
@@ -327,12 +327,12 @@ public class SchedulerServiceStressTest {
         WorkflowSchedule schedule = buildSchedule("no-catchup-poll", "0 * * * * *", "UTC");
         schedule.setRunCatchupScheduleInstances(false);
 
-        when(dao.getAllSchedules(anyString())).thenReturn(List.of(schedule));
+        when(dao.getAllSchedules()).thenReturn(List.of(schedule));
         when(workflowService.startWorkflow(any())).thenReturn("wf-1");
 
         // After first poll, nextRunTime advances to the future — schedule is no longer due
         long futureSlot = System.currentTimeMillis() + 60 * 1000;
-        when(dao.getNextRunTimeInEpoch(anyString(), eq("no-catchup-poll")))
+        when(dao.getNextRunTimeInEpoch(eq("no-catchup-poll")))
                 .thenReturn(staleSlot) // first poll: due
                 .thenReturn(futureSlot); // second poll: not due yet
 
@@ -356,7 +356,6 @@ public class SchedulerServiceStressTest {
         s.setCronExpression(cron);
         s.setZoneId(zone);
         s.setStartWorkflowRequest(req);
-        s.setOrgId(WorkflowSchedule.DEFAULT_ORG_ID);
         return s;
     }
 

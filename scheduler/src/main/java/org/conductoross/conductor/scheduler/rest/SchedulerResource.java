@@ -38,8 +38,8 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 /**
  * REST API for workflow scheduling.
  *
- * <p>{@code orgId} is never exposed to callers — it is always set to {@link
- * WorkflowSchedule#DEFAULT_ORG_ID} ("default") inside {@link SchedulerService}.
+ * <p>OSS Conductor uses a single-tenant schema. Orkes Conductor injects multi-tenancy (orgId)
+ * within their DAO implementation layer.
  */
 @RestController
 @ConditionalOnBean(SchedulerService.class)

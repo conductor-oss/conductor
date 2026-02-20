@@ -14,19 +14,8 @@ package org.conductoross.conductor.scheduler.model;
 
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 
-/**
- * Represents a scheduled workflow execution.
- *
- * <p>The {@code orgId} field is retained for convergence with Orkes Conductor's data model. In OSS,
- * {@code orgId} is always set to {@link #DEFAULT_ORG_ID} ("default"). Orkes Conductor can extend
- * this model by injecting the actual org from request context.
- */
+/** Represents a scheduled workflow execution. */
 public class WorkflowSchedule {
-
-    public static final String DEFAULT_ORG_ID = "default";
-
-    /** Always "default" in OSS; used by Orkes for multi-tenancy. */
-    private String orgId = DEFAULT_ORG_ID;
 
     /** Unique name for this schedule. */
     private String name;
@@ -75,14 +64,6 @@ public class WorkflowSchedule {
 
     /** Cached epoch millis of the next planned execution. Updated after each trigger. */
     private Long nextRunTime;
-
-    public String getOrgId() {
-        return orgId;
-    }
-
-    public void setOrgId(String orgId) {
-        this.orgId = orgId;
-    }
 
     public String getName() {
         return name;

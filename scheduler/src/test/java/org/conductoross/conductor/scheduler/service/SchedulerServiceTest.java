@@ -56,11 +56,10 @@ public class SchedulerServiceTest {
     @Test
     public void testSaveSchedule_setsOrgIdAndTimestamps() {
         WorkflowSchedule schedule = buildSchedule("s1", "*/5 * * * * *");
-        when(schedulerDAO.findScheduleByName(anyString(), eq("s1"))).thenReturn(null);
+        when(schedulerDAO.findScheduleByName(eq("s1"))).thenReturn(null);
 
         WorkflowSchedule saved = service.saveSchedule(schedule);
 
-        assertEquals(WorkflowSchedule.DEFAULT_ORG_ID, saved.getOrgId());
         assertNotNull(saved.getCreateTime());
         assertNotNull(saved.getUpdatedTime());
         assertNotNull(saved.getNextRunTime());
@@ -94,8 +93,7 @@ public class SchedulerServiceTest {
     @Test
     public void testGetSchedule_found() {
         WorkflowSchedule schedule = buildSchedule("s1", "0 0 9 * * *");
-        when(schedulerDAO.findScheduleByName(WorkflowSchedule.DEFAULT_ORG_ID, "s1"))
-                .thenReturn(schedule);
+        when(schedulerDAO.findScheduleByName("s1")).thenReturn(schedule);
 
         WorkflowSchedule found = service.getSchedule("s1");
         assertEquals("s1", found.getName());
@@ -103,7 +101,7 @@ public class SchedulerServiceTest {
 
     @Test(expected = NotFoundException.class)
     public void testGetSchedule_notFound_throws() {
-        when(schedulerDAO.findScheduleByName(anyString(), eq("ghost"))).thenReturn(null);
+        when(schedulerDAO.findScheduleByName(eq("ghost"))).thenReturn(null);
         service.getSchedule("ghost");
     }
 
@@ -114,8 +112,7 @@ public class SchedulerServiceTest {
     @Test
     public void testPauseSchedule() {
         WorkflowSchedule schedule = buildSchedule("p1", "0 0 * * * *");
-        when(schedulerDAO.findScheduleByName(WorkflowSchedule.DEFAULT_ORG_ID, "p1"))
-                .thenReturn(schedule);
+        when(schedulerDAO.findScheduleByName("p1")).thenReturn(schedule);
 
         service.pauseSchedule("p1", "maintenance");
 
@@ -129,8 +126,7 @@ public class SchedulerServiceTest {
         WorkflowSchedule schedule = buildSchedule("r1", "0 0 * * * *");
         schedule.setPaused(true);
         schedule.setPausedReason("testing");
-        when(schedulerDAO.findScheduleByName(WorkflowSchedule.DEFAULT_ORG_ID, "r1"))
-                .thenReturn(schedule);
+        when(schedulerDAO.findScheduleByName("r1")).thenReturn(schedule);
 
         service.resumeSchedule("r1");
 
@@ -146,17 +142,16 @@ public class SchedulerServiceTest {
     @Test
     public void testDeleteSchedule() {
         WorkflowSchedule schedule = buildSchedule("del", "0 0 * * * *");
-        when(schedulerDAO.findScheduleByName(WorkflowSchedule.DEFAULT_ORG_ID, "del"))
-                .thenReturn(schedule);
+        when(schedulerDAO.findScheduleByName("del")).thenReturn(schedule);
 
         service.deleteSchedule("del");
 
-        verify(schedulerDAO).deleteWorkflowSchedule(WorkflowSchedule.DEFAULT_ORG_ID, "del");
+        verify(schedulerDAO).deleteWorkflowSchedule("del");
     }
 
     @Test(expected = NotFoundException.class)
     public void testDeleteSchedule_notFound_throws() {
-        when(schedulerDAO.findScheduleByName(anyString(), anyString())).thenReturn(null);
+        when(schedulerDAO.findScheduleByName(anyString())).thenReturn(null);
         service.deleteSchedule("ghost");
     }
 
@@ -230,8 +225,7 @@ public class SchedulerServiceTest {
     public void testGetNextExecutionTimes() {
         WorkflowSchedule schedule = buildSchedule("next", "0 */5 * * * *"); // every 5 min
         schedule.setZoneId("UTC");
-        when(schedulerDAO.findScheduleByName(WorkflowSchedule.DEFAULT_ORG_ID, "next"))
-                .thenReturn(schedule);
+        when(schedulerDAO.findScheduleByName("next")).thenReturn(schedule);
 
         List<Long> times = service.getNextExecutionTimes("next", 3);
 
@@ -252,10 +246,8 @@ public class SchedulerServiceTest {
     public void testPollAndExecute_skips_paused() {
         WorkflowSchedule paused = buildSchedule("paused", "0 0 * * * *");
         paused.setPaused(true);
-        when(schedulerDAO.getAllSchedules(WorkflowSchedule.DEFAULT_ORG_ID))
-                .thenReturn(List.of(paused));
-        when(schedulerDAO.getPendingExecutionRecordIds(anyString()))
-                .thenReturn(Collections.emptyList());
+        when(schedulerDAO.getAllSchedules()).thenReturn(List.of(paused));
+        when(schedulerDAO.getPendingExecutionRecordIds()).thenReturn(Collections.emptyList());
 
         service.pollAndExecuteSchedules();
 
@@ -268,15 +260,12 @@ public class SchedulerServiceTest {
         long now = System.currentTimeMillis();
         long pastRun = now - 2000; // was due 2 seconds ago
 
-        when(schedulerDAO.getAllSchedules(WorkflowSchedule.DEFAULT_ORG_ID))
-                .thenReturn(List.of(schedule));
-        when(schedulerDAO.getNextRunTimeInEpoch(WorkflowSchedule.DEFAULT_ORG_ID, "due"))
-                .thenReturn(pastRun); // it's due
+        when(schedulerDAO.getAllSchedules()).thenReturn(List.of(schedule));
+        when(schedulerDAO.getNextRunTimeInEpoch("due")).thenReturn(pastRun); // it's due
         when(workflowService.startWorkflow(any())).thenReturn("wf-id-123");
-        when(schedulerDAO.getExecutionRecords(anyString(), anyString(), anyInt()))
+        when(schedulerDAO.getExecutionRecords(anyString(), anyInt()))
                 .thenReturn(Collections.emptyList());
-        when(schedulerDAO.getPendingExecutionRecordIds(anyString()))
-                .thenReturn(Collections.emptyList());
+        when(schedulerDAO.getPendingExecutionRecordIds()).thenReturn(Collections.emptyList());
 
         service.pollAndExecuteSchedules();
 
@@ -290,16 +279,13 @@ public class SchedulerServiceTest {
         WorkflowSchedule schedule = buildSchedule("fail", "* * * * * *");
         long now = System.currentTimeMillis();
 
-        when(schedulerDAO.getAllSchedules(WorkflowSchedule.DEFAULT_ORG_ID))
-                .thenReturn(List.of(schedule));
-        when(schedulerDAO.getNextRunTimeInEpoch(WorkflowSchedule.DEFAULT_ORG_ID, "fail"))
-                .thenReturn(now - 1000);
+        when(schedulerDAO.getAllSchedules()).thenReturn(List.of(schedule));
+        when(schedulerDAO.getNextRunTimeInEpoch("fail")).thenReturn(now - 1000);
         when(workflowService.startWorkflow(any()))
                 .thenThrow(new RuntimeException("workflow definition not found"));
-        when(schedulerDAO.getExecutionRecords(anyString(), anyString(), anyInt()))
+        when(schedulerDAO.getExecutionRecords(anyString(), anyInt()))
                 .thenReturn(Collections.emptyList());
-        when(schedulerDAO.getPendingExecutionRecordIds(anyString()))
-                .thenReturn(Collections.emptyList());
+        when(schedulerDAO.getPendingExecutionRecordIds()).thenReturn(Collections.emptyList());
 
         service.pollAndExecuteSchedules();
 
@@ -322,12 +308,10 @@ public class SchedulerServiceTest {
         WorkflowSchedule schedule = buildSchedule("future", "* * * * * *");
         schedule.setScheduleStartTime(System.currentTimeMillis() + 3_600_000); // 1 hour from now
 
-        when(schedulerDAO.getAllSchedules(WorkflowSchedule.DEFAULT_ORG_ID))
-                .thenReturn(List.of(schedule));
-        when(schedulerDAO.getNextRunTimeInEpoch(anyString(), anyString()))
+        when(schedulerDAO.getAllSchedules()).thenReturn(List.of(schedule));
+        when(schedulerDAO.getNextRunTimeInEpoch(anyString()))
                 .thenReturn(System.currentTimeMillis() - 1000);
-        when(schedulerDAO.getPendingExecutionRecordIds(anyString()))
-                .thenReturn(Collections.emptyList());
+        when(schedulerDAO.getPendingExecutionRecordIds()).thenReturn(Collections.emptyList());
 
         service.pollAndExecuteSchedules();
 
@@ -339,12 +323,10 @@ public class SchedulerServiceTest {
         WorkflowSchedule schedule = buildSchedule("expired", "* * * * * *");
         schedule.setScheduleEndTime(System.currentTimeMillis() - 1000); // expired 1 second ago
 
-        when(schedulerDAO.getAllSchedules(WorkflowSchedule.DEFAULT_ORG_ID))
-                .thenReturn(List.of(schedule));
-        when(schedulerDAO.getNextRunTimeInEpoch(anyString(), anyString()))
+        when(schedulerDAO.getAllSchedules()).thenReturn(List.of(schedule));
+        when(schedulerDAO.getNextRunTimeInEpoch(anyString()))
                 .thenReturn(System.currentTimeMillis() - 2000);
-        when(schedulerDAO.getPendingExecutionRecordIds(anyString()))
-                .thenReturn(Collections.emptyList());
+        when(schedulerDAO.getPendingExecutionRecordIds()).thenReturn(Collections.emptyList());
 
         service.pollAndExecuteSchedules();
 

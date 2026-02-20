@@ -20,10 +20,8 @@ import org.conductoross.conductor.scheduler.model.WorkflowScheduleExecution;
 /**
  * Data access interface for workflow schedules and their execution history.
  *
- * <p>Method signatures intentionally match Orkes Conductor's {@code SchedulerDAO} interface (with
- * the {@code orgId} parameter) to enable future convergence where Orkes can adopt this
- * implementation directly. In OSS, callers always pass {@link WorkflowSchedule#DEFAULT_ORG_ID}
- * ("default") for {@code orgId}.
+ * <p>This interface is shared between OSS and Orkes Conductor. Orkes injects multi-tenancy (orgId)
+ * within the DAO implementation layer; OSS uses a single-tenant schema with no orgId.
  */
 public interface SchedulerDAO {
 
@@ -31,42 +29,32 @@ public interface SchedulerDAO {
     // Schedule CRUD
     // -------------------------------------------------------------------------
 
-    /**
-     * Persists or updates a schedule. The schedule's {@code orgId} is taken from the model object
-     * itself (set to "default" in OSS).
-     */
+    /** Persists or updates a schedule. */
     void updateSchedule(WorkflowSchedule schedule);
 
     /**
-     * Returns the schedule with the given name in the given org, or {@code null} if not found.
+     * Returns the schedule with the given name, or {@code null} if not found.
      *
-     * @param orgId always "default" in OSS
      * @param name schedule name
      */
-    WorkflowSchedule findScheduleByName(String orgId, String name);
+    WorkflowSchedule findScheduleByName(String name);
 
-    /**
-     * Returns all schedules belonging to the given org.
-     *
-     * @param orgId always "default" in OSS
-     */
-    List<WorkflowSchedule> getAllSchedules(String orgId);
+    /** Returns all schedules. */
+    List<WorkflowSchedule> getAllSchedules();
 
     /**
      * Returns all schedules that trigger a particular workflow.
      *
-     * @param orgId always "default" in OSS
      * @param workflowName the workflow definition name to filter by
      */
-    List<WorkflowSchedule> findAllSchedules(String orgId, String workflowName);
+    List<WorkflowSchedule> findAllSchedules(String workflowName);
 
     /**
      * Permanently removes a schedule.
      *
-     * @param orgId always "default" in OSS
      * @param name schedule name
      */
-    void deleteWorkflowSchedule(String orgId, String name);
+    void deleteWorkflowSchedule(String name);
 
     // -------------------------------------------------------------------------
     // Execution tracking
@@ -78,36 +66,30 @@ public interface SchedulerDAO {
     /**
      * Returns the execution record with the given ID.
      *
-     * @param orgId always "default" in OSS
      * @param executionId UUID assigned when the record was created
      */
-    WorkflowScheduleExecution readExecutionRecord(String orgId, String executionId);
+    WorkflowScheduleExecution readExecutionRecord(String executionId);
 
     /**
      * Deletes an execution record (used during cleanup).
      *
-     * @param orgId always "default" in OSS
      * @param executionId UUID of the record to remove
      */
-    void removeExecutionRecord(String orgId, String executionId);
+    void removeExecutionRecord(String executionId);
 
     /**
-     * Returns the IDs of all execution records currently in the POLLED state for the given org.
-     * Used by the scheduler to detect and clean up stale entries.
-     *
-     * @param orgId always "default" in OSS
+     * Returns the IDs of all execution records currently in the POLLED state. Used by the scheduler
+     * to detect and clean up stale entries.
      */
-    List<String> getPendingExecutionRecordIds(String orgId);
+    List<String> getPendingExecutionRecordIds();
 
     /**
      * Returns recent execution records for a given schedule, ordered by execution time descending.
      *
-     * @param orgId always "default" in OSS
      * @param scheduleName schedule to query
      * @param limit maximum number of records to return
      */
-    List<WorkflowScheduleExecution> getExecutionRecords(
-            String orgId, String scheduleName, int limit);
+    List<WorkflowScheduleExecution> getExecutionRecords(String scheduleName, int limit);
 
     // -------------------------------------------------------------------------
     // Next-run time management
@@ -116,18 +98,16 @@ public interface SchedulerDAO {
     /**
      * Returns the cached next-run epoch millis for the given schedule.
      *
-     * @param orgId always "default" in OSS
      * @param scheduleName schedule name
      * @return epoch millis, or {@code -1} if not set
      */
-    long getNextRunTimeInEpoch(String orgId, String scheduleName);
+    long getNextRunTimeInEpoch(String scheduleName);
 
     /**
      * Caches the next-run epoch millis for the given schedule.
      *
-     * @param orgId always "default" in OSS
      * @param scheduleName schedule name
      * @param epochMillis epoch millis of the next planned execution
      */
-    void setNextRunTimeInEpoch(String orgId, String scheduleName, long epochMillis);
+    void setNextRunTimeInEpoch(String scheduleName, long epochMillis);
 }

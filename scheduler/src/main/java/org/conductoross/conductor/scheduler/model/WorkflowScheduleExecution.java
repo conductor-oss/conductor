@@ -12,12 +12,7 @@
  */
 package org.conductoross.conductor.scheduler.model;
 
-/**
- * Records a single scheduled execution attempt.
- *
- * <p>The {@code orgId} field is retained for convergence with Orkes Conductor. In OSS it is always
- * {@link WorkflowSchedule#DEFAULT_ORG_ID}.
- */
+/** Records a single scheduled execution attempt. */
 public class WorkflowScheduleExecution {
 
     public enum ExecutionState {
@@ -28,9 +23,6 @@ public class WorkflowScheduleExecution {
         /** Workflow start failed; see {@code reason} for details. */
         FAILED
     }
-
-    /** Always "default" in OSS. */
-    private String orgId = WorkflowSchedule.DEFAULT_ORG_ID;
 
     /** Unique ID for this execution record. */
     private String executionId;
@@ -55,14 +47,6 @@ public class WorkflowScheduleExecution {
 
     /** Timezone that was in effect when this execution fired. */
     private String zoneId;
-
-    public String getOrgId() {
-        return orgId;
-    }
-
-    public void setOrgId(String orgId) {
-        this.orgId = orgId;
-    }
 
     public String getExecutionId() {
         return executionId;
