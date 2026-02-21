@@ -304,7 +304,8 @@ public class SchedulerServicePhase2Test {
         doAnswer(inv -> pointer[0]).when(dao).getNextRunTimeInEpoch(eq("bounded-end"));
         doAnswer(
                         inv -> {
-                            pointer[0] = inv.getArgument(1); // arg 1 is epochMillis after orgId removal
+                            pointer[0] =
+                                    inv.getArgument(1); // arg 1 is epochMillis after orgId removal
                             return null;
                         })
                 .when(dao)

@@ -420,6 +420,32 @@ public class SchedulerService {
     }
 
     /**
+     * Applies the scheduleStartTime constraint by recomputing the next occurrence from the start
+     * time if the computed next slot falls before the schedule's start window.
+     *
+     * @param cron the parsed cron expression
+     * @param zone the schedule's timezone
+     * @param schedule the schedule being evaluated
+     * @param nextMillis the initially computed next run time
+     * @return adjusted next run time respecting start boundary, or null if no valid slot exists
+     */
+    private Long applyStartTimeConstraint(
+            CronExpression cron, ZoneId zone, WorkflowSchedule schedule, long nextMillis) {
+        if (schedule.getScheduleStartTime() != null
+                && nextMillis < schedule.getScheduleStartTime()) {
+            ZonedDateTime startFrom =
+                    ZonedDateTime.ofInstant(
+                            java.time.Instant.ofEpochMilli(schedule.getScheduleStartTime()), zone);
+            ZonedDateTime adjusted = cron.next(startFrom);
+            if (adjusted == null) {
+                return null;
+            }
+            return adjusted.toInstant().toEpochMilli();
+        }
+        return nextMillis;
+    }
+
+    /**
      * Computes the next run epoch millis for a schedule starting from {@code afterEpochMillis}.
      * Handles catchup mode: if catchup is disabled, skips to the first future run. Returns {@code
      * null} if no future run exists within the schedule's end time.
@@ -447,18 +473,12 @@ public class SchedulerService {
 
         long nextMillis = next.toInstant().toEpochMilli();
 
-        // Respect scheduleStartTime
-        if (schedule.getScheduleStartTime() != null
-                && nextMillis < schedule.getScheduleStartTime()) {
-            ZonedDateTime startFrom =
-                    ZonedDateTime.ofInstant(
-                            java.time.Instant.ofEpochMilli(schedule.getScheduleStartTime()), zone);
-            next = cron.next(startFrom);
-            if (next == null) {
-                return null;
-            }
-            nextMillis = next.toInstant().toEpochMilli();
+        // Apply schedule time boundaries
+        Long adjustedMillis = applyStartTimeConstraint(cron, zone, schedule, nextMillis);
+        if (adjustedMillis == null) {
+            return null;
         }
+        nextMillis = adjustedMillis;
 
         // Respect scheduleEndTime
         if (schedule.getScheduleEndTime() != null && nextMillis > schedule.getScheduleEndTime()) {
