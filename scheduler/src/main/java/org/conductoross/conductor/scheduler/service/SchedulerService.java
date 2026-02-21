@@ -58,6 +58,12 @@ public class SchedulerService {
     /** Execution records stuck in POLLED state longer than this are considered stale. */
     private static final long STALE_POLLED_THRESHOLD_MS = 5 * 60 * 1000L;
 
+    /**
+     * When a bounded schedule reaches its end time with no future slots, advance the pointer past
+     * the end time by this offset to prevent repeated firing.
+     */
+    private static final long POINTER_OFFSET_PAST_END = 1L;
+
     private final SchedulerDAO schedulerDAO;
     private final WorkflowService workflowService;
     private final SchedulerProperties properties;
@@ -312,15 +318,7 @@ public class SchedulerService {
         schedulerDAO.saveExecutionRecord(execution);
 
         // Advance the next-run pointer immediately to prevent duplicate fires.
-        // If nextRun is null (no future slot within the schedule's end window), push the
-        // pointer past the end time so isDue() won't re-fire the last slot while waiting
-        // for now to overtake scheduleEndTime.
-        if (nextRun != null) {
-            schedulerDAO.setNextRunTimeInEpoch(schedule.getName(), nextRun);
-        } else if (schedule.getScheduleEndTime() != null) {
-            schedulerDAO.setNextRunTimeInEpoch(
-                    schedule.getName(), schedule.getScheduleEndTime() + 1);
-        }
+        advanceSchedulePointer(schedule, nextRun);
 
         // Trigger the workflow — optionally with a random jitter delay to spread concurrent
         // dispatch across a small time window and reduce DB/thread-pool contention.
@@ -359,6 +357,23 @@ public class SchedulerService {
         } finally {
             schedulerDAO.saveExecutionRecord(execution);
             pruneExecutionHistory(schedule.getName());
+        }
+    }
+
+    /**
+     * Advances the next-run pointer to prevent duplicate fires. If nextRun is null (no future slot
+     * within the schedule's end window), pushes the pointer past the end time so isDue() won't
+     * re-fire the last slot.
+     *
+     * @param schedule the schedule to update
+     * @param nextRun the computed next run time, or null if no future slot exists
+     */
+    private void advanceSchedulePointer(WorkflowSchedule schedule, Long nextRun) {
+        if (nextRun != null) {
+            schedulerDAO.setNextRunTimeInEpoch(schedule.getName(), nextRun);
+        } else if (schedule.getScheduleEndTime() != null) {
+            schedulerDAO.setNextRunTimeInEpoch(
+                    schedule.getName(), schedule.getScheduleEndTime() + POINTER_OFFSET_PAST_END);
         }
     }
 
