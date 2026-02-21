@@ -1,0 +1,14 @@
+{
+  "name": "input-param-demo-schedule",
+  "cronExpression": "0 * * * * *",
+  "zoneId": "UTC",
+  "runCatchupScheduleInstances": false,
+  "startWorkflowRequest": {
+    "name": "input_param_demo_workflow",
+    "version": 1,
+    "input": {
+      "reportOwner": "platform-team",
+      "alertThreshold": 100
+    }
+  }
+}
