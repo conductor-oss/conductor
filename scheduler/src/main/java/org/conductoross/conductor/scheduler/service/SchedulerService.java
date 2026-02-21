@@ -565,25 +565,38 @@ public class SchedulerService {
     }
 
     private void validate(WorkflowSchedule schedule) {
-        if (schedule.getName() == null || schedule.getName().isBlank()) {
+        validateName(schedule.getName());
+        validateCronExpression(schedule.getCronExpression());
+        validateWorkflowRequest(schedule.getStartWorkflowRequest());
+        validateZoneId(schedule.getZoneId());
+        validateTimeBounds(schedule.getScheduleStartTime(), schedule.getScheduleEndTime());
+    }
+
+    private void validateName(String name) {
+        if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Schedule name is required");
         }
-        if (schedule.getCronExpression() == null || schedule.getCronExpression().isBlank()) {
+    }
+
+    private void validateCronExpression(String cronExpression) {
+        if (cronExpression == null || cronExpression.isBlank()) {
             throw new IllegalArgumentException("Cron expression is required");
         }
         try {
-            CronExpression.parse(schedule.getCronExpression());
+            CronExpression.parse(cronExpression);
         } catch (Exception e) {
             throw new IllegalArgumentException(
-                    "Invalid cron expression '"
-                            + schedule.getCronExpression()
-                            + "': "
-                            + e.getMessage());
+                    "Invalid cron expression '" + cronExpression + "': " + e.getMessage());
         }
-        if (schedule.getStartWorkflowRequest() == null) {
+    }
+
+    private void validateWorkflowRequest(StartWorkflowRequest request) {
+        if (request == null) {
             throw new IllegalArgumentException("startWorkflowRequest is required");
         }
-        String zoneId = schedule.getZoneId();
+    }
+
+    private void validateZoneId(String zoneId) {
         if (zoneId != null && !zoneId.isBlank()) {
             try {
                 ZoneId.of(zoneId);
@@ -592,9 +605,10 @@ public class SchedulerService {
                         "Invalid zoneId '" + zoneId + "': " + e.getMessage());
             }
         }
-        if (schedule.getScheduleStartTime() != null
-                && schedule.getScheduleEndTime() != null
-                && schedule.getScheduleEndTime() <= schedule.getScheduleStartTime()) {
+    }
+
+    private void validateTimeBounds(Long startTime, Long endTime) {
+        if (startTime != null && endTime != null && endTime <= startTime) {
             throw new IllegalArgumentException("scheduleEndTime must be after scheduleStartTime");
         }
     }
