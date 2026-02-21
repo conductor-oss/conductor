@@ -307,13 +307,8 @@ public class SchedulerService {
         }
 
         // Record POLLED state
-        WorkflowScheduleExecution execution = new WorkflowScheduleExecution();
-        execution.setExecutionId(executionId);
-        execution.setScheduleName(schedule.getName());
-        execution.setScheduledTime(scheduledTime);
-        execution.setExecutionTime(now);
-        execution.setState(WorkflowScheduleExecution.ExecutionState.POLLED);
-        execution.setZoneId(schedule.getZoneId());
+        WorkflowScheduleExecution execution =
+                createExecutionRecord(executionId, schedule, scheduledTime, now);
         schedulerDAO.saveExecutionRecord(execution);
 
         // Advance the next-run pointer immediately to prevent duplicate fires.
@@ -365,6 +360,27 @@ public class SchedulerService {
             schedulerDAO.saveExecutionRecord(execution);
             pruneExecutionHistory(schedule.getName());
         }
+    }
+
+    /**
+     * Creates an execution record in POLLED state with the given parameters.
+     *
+     * @param executionId unique ID for this execution attempt
+     * @param schedule the schedule being fired
+     * @param scheduledTime the exact cron slot epoch millis
+     * @param executionTime the current time when polling occurred
+     * @return initialized execution record in POLLED state
+     */
+    private WorkflowScheduleExecution createExecutionRecord(
+            String executionId, WorkflowSchedule schedule, long scheduledTime, long executionTime) {
+        WorkflowScheduleExecution execution = new WorkflowScheduleExecution();
+        execution.setExecutionId(executionId);
+        execution.setScheduleName(schedule.getName());
+        execution.setScheduledTime(scheduledTime);
+        execution.setExecutionTime(executionTime);
+        execution.setState(WorkflowScheduleExecution.ExecutionState.POLLED);
+        execution.setZoneId(schedule.getZoneId());
+        return execution;
     }
 
     /**
