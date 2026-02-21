@@ -346,17 +346,7 @@ public class SchedulerService {
         try {
             StartWorkflowRequest req = schedule.getStartWorkflowRequest();
 
-            // Inject scheduler context into the workflow input so workflows can use the scheduled
-            // time for date-range calculations, idempotency keys, audit trails, etc.
-            // These keys match Orkes Conductor's scheduler for convergence compatibility.
-            java.util.Map<String, Object> input = new java.util.HashMap<>();
-            if (req.getInput() != null) {
-                input.putAll(req.getInput());
-            }
-            input.put("scheduledTime", scheduledTime);
-            long dispatchTime = System.currentTimeMillis();
-            input.put("executionTime", dispatchTime);
-            req.setInput(input);
+            long dispatchTime = injectSchedulerContext(req, scheduledTime);
 
             String workflowId = workflowService.startWorkflow(req);
 
@@ -375,6 +365,27 @@ public class SchedulerService {
             schedulerDAO.saveExecutionRecord(execution);
             pruneExecutionHistory(schedule.getName());
         }
+    }
+
+    /**
+     * Injects scheduler context into the workflow input so workflows can use the scheduled time for
+     * date-range calculations, idempotency keys, audit trails, etc. Preserves any existing input
+     * keys. These keys match Orkes Conductor's scheduler for convergence compatibility.
+     *
+     * @param req the workflow request to modify
+     * @param scheduledTime the exact cron slot epoch millis
+     * @return the actual dispatch time (now)
+     */
+    private long injectSchedulerContext(StartWorkflowRequest req, long scheduledTime) {
+        java.util.Map<String, Object> input = new java.util.HashMap<>();
+        if (req.getInput() != null) {
+            input.putAll(req.getInput());
+        }
+        input.put("scheduledTime", scheduledTime);
+        long dispatchTime = System.currentTimeMillis();
+        input.put("executionTime", dispatchTime);
+        req.setInput(input);
+        return dispatchTime;
     }
 
     /**
