@@ -510,18 +510,38 @@ public class SchedulerService {
         long staleThreshold = System.currentTimeMillis() - STALE_POLLED_THRESHOLD_MS;
         for (String id : pendingIds) {
             WorkflowScheduleExecution record = schedulerDAO.readExecutionRecord(id);
-            if (record != null
-                    && record.getExecutionTime() != null
-                    && record.getExecutionTime() < staleThreshold) {
-                log.warn(
-                        "Transitioning stale POLLED execution {} for schedule '{}' to FAILED",
-                        id,
-                        record.getScheduleName());
-                record.setState(WorkflowScheduleExecution.ExecutionState.FAILED);
-                record.setReason("Stale POLLED record — server may have crashed mid-execution");
-                schedulerDAO.saveExecutionRecord(record);
+            if (isRecordStale(record, staleThreshold)) {
+                transitionStaleRecordToFailed(record);
             }
         }
+    }
+
+    /**
+     * Checks if an execution record is stale (stuck in POLLED state past the threshold).
+     *
+     * @param record the execution record to check
+     * @param staleThreshold epoch millis threshold for staleness
+     * @return true if the record should be marked as failed
+     */
+    private boolean isRecordStale(WorkflowScheduleExecution record, long staleThreshold) {
+        return record != null
+                && record.getExecutionTime() != null
+                && record.getExecutionTime() < staleThreshold;
+    }
+
+    /**
+     * Transitions a stale POLLED record to FAILED state and persists it.
+     *
+     * @param record the stale execution record
+     */
+    private void transitionStaleRecordToFailed(WorkflowScheduleExecution record) {
+        log.warn(
+                "Transitioning stale POLLED execution {} for schedule '{}' to FAILED",
+                record.getExecutionId(),
+                record.getScheduleName());
+        record.setState(WorkflowScheduleExecution.ExecutionState.FAILED);
+        record.setReason("Stale POLLED record — server may have crashed mid-execution");
+        schedulerDAO.saveExecutionRecord(record);
     }
 
     private ZoneId resolveZone(WorkflowSchedule schedule) {
