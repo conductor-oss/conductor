@@ -1,0 +1,96 @@
+{
+  "name": "complete_rag_demo",
+  "description": "Index documents, search, and generate RAG answer",
+  "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "index_doc_1",
+      "taskReferenceName": "index_doc_1_ref",
+      "type": "LLM_INDEX_TEXT",
+      "inputParameters": {
+        "vectorDB": "postgres-prod",
+        "index": "demo_index",
+        "namespace": "demo_docs",
+        "docId": "intro-001",
+        "text": "Conductor is a distributed workflow orchestration engine that runs in the cloud. It allows developers to build complex stateful applications by orchestrating microservices.",
+        "embeddingModelProvider": "openai",
+        "embeddingModel": "text-embedding-3-small",
+        "dimensions": 1536,
+        "metadata": { "category": "introduction" }
+      }
+    },
+    {
+      "name": "index_doc_2",
+      "taskReferenceName": "index_doc_2_ref",
+      "type": "LLM_INDEX_TEXT",
+      "inputParameters": {
+        "vectorDB": "postgres-prod",
+        "index": "demo_index",
+        "namespace": "demo_docs",
+        "docId": "features-002",
+        "text": "Conductor supports multiple vector databases including PostgreSQL (pgvector), MongoDB Atlas, and Pinecone. It also integrates with LLM providers like OpenAI, Anthropic, and Azure OpenAI.",
+        "embeddingModelProvider": "openai",
+        "embeddingModel": "text-embedding-3-small",
+        "dimensions": 1536,
+        "metadata": { "category": "features" }
+      }
+    },
+    {
+      "name": "index_doc_3",
+      "taskReferenceName": "index_doc_3_ref",
+      "type": "LLM_INDEX_TEXT",
+      "inputParameters": {
+        "vectorDB": "postgres-prod",
+        "index": "demo_index",
+        "namespace": "demo_docs",
+        "docId": "config-003",
+        "text": "You can configure multiple named instances of the same vector database type for different environments like production, development, and staging.",
+        "embeddingModelProvider": "openai",
+        "embeddingModel": "text-embedding-3-small",
+        "dimensions": 1536,
+        "metadata": { "category": "configuration" }
+      }
+    },
+    {
+      "name": "search_index",
+      "taskReferenceName": "search_ref",
+      "type": "LLM_SEARCH_INDEX",
+      "inputParameters": {
+        "vectorDB": "postgres-prod",
+        "index": "demo_index",
+        "namespace": "demo_docs",
+        "query": "What vector databases does Conductor support?",
+        "embeddingModelProvider": "openai",
+        "embeddingModel": "text-embedding-3-small",
+        "dimensions": 1536,
+        "maxResults": 3
+      }
+    },
+    {
+      "name": "generate_rag_answer",
+      "taskReferenceName": "answer_ref",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "gpt-4o-mini",
+        "messages": [
+          {
+            "role": "system",
+            "message": "You are a technical expert. Answer the question using only the provided context."
+          },
+          {
+            "role": "user",
+            "message": "Context:\n${search_ref.output.result}\n\nQuestion: What vector databases does Conductor support?"
+          }
+        ],
+        "temperature": 0.2
+      }
+    }
+  ],
+  "outputParameters": {
+    "indexed_docs": ["${index_doc_1_ref.output}", "${index_doc_2_ref.output}", "${index_doc_3_ref.output}"],
+    "search_results": "${search_ref.output.result}",
+    "answer": "${answer_ref.output.result}"
+  }
+}

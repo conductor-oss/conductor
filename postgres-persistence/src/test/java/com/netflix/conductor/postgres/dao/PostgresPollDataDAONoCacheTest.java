@@ -29,6 +29,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.annotation.DirtiesContext.ClassMode;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -63,6 +65,7 @@ import static org.junit.Assert.*;
             "spring.flyway.clean-disabled=false"
         })
 @SpringBootTest
+@DirtiesContext(classMode = ClassMode.AFTER_EACH_TEST_METHOD)
 public class PostgresPollDataDAONoCacheTest {
 
     @Autowired private PollDataDAO pollDataDAO;
@@ -93,6 +96,20 @@ public class PostgresPollDataDAONoCacheTest {
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
+        }
+
+        // Verify the table is actually empty after truncation
+        // This helps catch isolation issues in CI environments
+        try {
+            List<Map<String, Object>> remainingRecords = queryDb("SELECT * FROM poll_data");
+            if (!remainingRecords.isEmpty()) {
+                throw new IllegalStateException(
+                        "poll_data table still has "
+                                + remainingRecords.size()
+                                + " records after truncation");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to verify poll_data table is empty", e);
         }
     }
 

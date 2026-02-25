@@ -60,6 +60,7 @@ nav:
       - documentation/advanced/externalpayloadstorage.md
       - documentation/advanced/redis.md
       - documentation/advanced/postgresql.md
+      - documentation/advanced/opensearch.md
     - FAQ: devguide/faq.md
   - Reference: 
     - API Specification:

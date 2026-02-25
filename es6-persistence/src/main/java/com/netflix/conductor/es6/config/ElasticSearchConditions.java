@@ -38,5 +38,9 @@ public class ElasticSearchConditions {
                 havingValue = "6",
                 matchIfMissing = true)
         static class enabledES6 {}
+
+        @SuppressWarnings("unused")
+        @ConditionalOnProperty(name = "conductor.indexing.type", havingValue = "elasticsearch")
+        static class elasticsearchIndexingType {}
     }
 }

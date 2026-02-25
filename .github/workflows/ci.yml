@@ -24,19 +24,21 @@ jobs:
           distribution: "zulu"
           java-version: "21"
       - name: Cache SonarCloud packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
       - name: Cache Gradle packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: ${{ runner.os }}-gradle-
+      - name: Force Docker API Version
+        run: echo 'api.version=1.44' > ~/.docker-java.properties
       - name: Build with Gradle
         if: github.ref != 'refs/heads/main'
         env:
@@ -50,7 +52,7 @@ jobs:
           echo "Running build for commit ${{ github.sha }}"
           ./gradlew build
       - name: Publish Test Report
-        uses: mikepenz/action-junit-report@v3
+        uses: mikepenz/action-junit-report@v6
         if: always()
         with:
           report_paths: "**/build/test-results/test/TEST-*.xml"

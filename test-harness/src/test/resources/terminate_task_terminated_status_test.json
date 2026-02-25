@@ -1,0 +1,39 @@
+{
+  "name": "test_terminate_task_terminated",
+  "description": "Test workflow to verify TERMINATE task with terminationStatus=TERMINATED correctly terminates workflow with TERMINATED status (issue #750)",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "lambda",
+      "taskReferenceName": "lambda0",
+      "inputParameters": {
+        "input": "${workflow.input}",
+        "scriptExpression": "function e() { return {testvalue: true}; } e();"
+      },
+      "type": "LAMBDA"
+    },
+    {
+      "name": "terminate",
+      "taskReferenceName": "terminate0",
+      "inputParameters": {
+        "terminationStatus": "TERMINATED",
+        "terminationReason": "Early exit with TERMINATED status",
+        "workflowOutput": "${lambda0.output}"
+      },
+      "type": "TERMINATE"
+    },
+    {
+      "name": "lambda",
+      "taskReferenceName": "lambda1",
+      "inputParameters": {
+        "scriptExpression": "function e() { return {should_not_execute: true}; } e();"
+      },
+      "type": "LAMBDA"
+    }
+  ],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0
+}
