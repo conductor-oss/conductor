@@ -233,9 +233,9 @@ public class WorkflowResource {
         }
 
         int totalHits = workflowFilteredTasks.size();
-        int lastIndex = start + count;
-        int toIndex = lastIndex > totalHits - 1 ? totalHits : lastIndex;
-        List<Task> requestedSubList = workflowFilteredTasks.subList(start, toIndex);
+        int fromIndex = Math.min(start, totalHits);
+        int toIndex = Math.min(start + count, totalHits);
+        List<Task> requestedSubList = workflowFilteredTasks.subList(fromIndex, toIndex);
         return new SearchResult<>(totalHits, requestedSubList);
     }
 
