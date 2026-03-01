@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.model.SignalResponse;
@@ -35,6 +36,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
@@ -205,6 +207,36 @@ public class WorkflowResource {
             @RequestParam(value = "includeTasks", defaultValue = "false", required = false)
                     boolean includeTasks) {
         return workflowService.getWorkflows(name, correlationId, includeClosed, includeTasks);
+    }
+
+    @GetMapping("/{workflowId}/tasks")
+    @Operation(summary = "Gets the workflow tasks by workflow (execution) id")
+    public SearchResult<Task> getExecutionStatusTaskList(
+            @PathVariable("workflowId") String workflowId,
+            final @RequestParam(value = "start", defaultValue = "0", required = false) Integer
+                            start,
+            final @RequestParam(value = "count", defaultValue = "15", required = false) Integer
+                            count,
+            final @RequestParam(value = "status", required = false) List<String> status) {
+        Workflow workflow = workflowService.getExecutionStatus(workflowId, true);
+
+        List<Task> workflowFilteredTasks = workflow.getTasks();
+        if (status != null && !status.isEmpty()) {
+            workflowFilteredTasks =
+                    workflow.getTasks().stream()
+                            .filter(
+                                    t ->
+                                            status.stream()
+                                                    .map(String::toUpperCase)
+                                                    .anyMatch(s -> t.getStatus().name().equals(s)))
+                            .collect(Collectors.toList());
+        }
+
+        int totalHits = workflowFilteredTasks.size();
+        int lastIndex = start + count;
+        int toIndex = lastIndex > totalHits - 1 ? totalHits : lastIndex;
+        List<Task> requestedSubList = workflowFilteredTasks.subList(start, toIndex);
+        return new SearchResult<>(totalHits, requestedSubList);
     }
 
     @PostMapping(value = "/{name}/correlated")
