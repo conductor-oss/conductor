@@ -1702,6 +1702,9 @@ public abstract class AbstractProtoMapper {
         for (WorkflowTask elem : from.getLoopOver()) {
             to.addLoopOver( toProto(elem) );
         }
+        if (from.getItems() != null) {
+            to.setItems( from.getItems() );
+        }
         if (from.getRetryCount() != null) {
             to.setRetryCount( from.getRetryCount() );
         }
@@ -1760,6 +1763,7 @@ public abstract class AbstractProtoMapper {
         to.setAsyncComplete( from.getAsyncComplete() );
         to.setLoopCondition( from.getLoopCondition() );
         to.setLoopOver( from.getLoopOverList().stream().map(this::fromProto).collect(Collectors.toCollection(ArrayList::new)) );
+        to.setItems( from.getItems() );
         to.setRetryCount( from.getRetryCount() );
         to.setEvaluatorType( from.getEvaluatorType() );
         to.setExpression( from.getExpression() );
