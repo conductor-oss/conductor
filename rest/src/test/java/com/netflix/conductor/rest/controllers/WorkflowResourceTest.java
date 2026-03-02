@@ -17,7 +17,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.conductoross.conductor.model.OutputOnlyRun;
 import org.conductoross.conductor.model.SignalResponse;
 import org.conductoross.conductor.model.TaskRun;
 import org.conductoross.conductor.model.WorkflowRun;
