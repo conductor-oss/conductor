@@ -76,13 +76,9 @@ public class NotificationResult {
     private OutputOnlyRun getOutputOnlyRun(
             WorkflowModel workflow, String requestId, WorkflowSignalReturnStrategy returnStrategy) {
         OutputOnlyRun run = new OutputOnlyRun();
-        run.setTargetWorkflowId(this.targetWorkflow.getWorkflowId());
         run.setTargetWorkflowStatus(this.targetWorkflow.getStatus().toString());
-        run.setResponseType(returnStrategy);
-        run.setRequestId(requestId);
         run.setWorkflowId(workflow.getWorkflowId());
         run.setCorrelationId(workflow.getCorrelationId());
-        run.setInput(workflow.getInput());
         run.setOutput(workflow.getOutput());
         return run;
     }
