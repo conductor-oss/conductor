@@ -150,6 +150,14 @@ jobs:
         run: |
           mkdir -p docker/server/libs
           cp server/build/libs/*boot*.jar docker/server/libs/conductor-server.jar
-      - name: Build Docker image (no push)
-        run: |
-          docker build -f docker/server/Dockerfile -t conductor:ci-test .
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build Docker image - multi-arch (no push)
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: docker/server/Dockerfile
+          platforms: linux/arm64,linux/amd64
+          push: false
