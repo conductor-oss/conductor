@@ -59,4 +59,34 @@ public class JoinTaskMapperTest {
         assertNotNull(mappedTasks);
         assertEquals(TASK_TYPE_JOIN, mappedTasks.get(0).getTaskType());
     }
+
+    @Test
+    public void getMappedTasksWithJoinMode() {
+
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setType(TaskType.JOIN.name());
+        workflowTask.setJoinOn(Arrays.asList("task1", "task2"));
+        workflowTask.setJoinMode("SYNC");
+
+        String taskId = new IDGenerator().generate();
+
+        WorkflowDef wd = new WorkflowDef();
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(wd);
+
+        TaskMapperContext taskMapperContext =
+                TaskMapperContext.newBuilder()
+                        .withWorkflowModel(workflow)
+                        .withTaskDefinition(new TaskDef())
+                        .withWorkflowTask(workflowTask)
+                        .withRetryCount(0)
+                        .withTaskId(taskId)
+                        .build();
+
+        List<TaskModel> mappedTasks = new JoinTaskMapper().getMappedTasks(taskMapperContext);
+
+        assertNotNull(mappedTasks);
+        assertEquals(TASK_TYPE_JOIN, mappedTasks.get(0).getTaskType());
+        assertEquals("SYNC", mappedTasks.get(0).getInputData().get("joinMode"));
+    }
 }
