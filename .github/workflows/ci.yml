@@ -8,9 +8,6 @@ on:
     paths-ignore:
       - "conductor-clients/**"
 
-permissions:
-  contents: read
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -112,55 +109,3 @@ jobs:
         with:
           name: cypress-videos
           path: ui/cypress/videos
-
-  build-docker:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-      - name: Set up Zulu JDK 21
-        uses: actions/setup-java@v5
-        with:
-          distribution: 'zulu'
-          java-version: '21'
-      - name: Cache Gradle packages
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-      - name: Build Server JAR
-        run: |
-          ./gradlew :conductor-server:build -x test -x spotlessCheck -x shadowJar -x :conductor-os-persistence-v3:build
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
-      - name: Build UI
-        run: |
-          cd ui
-          corepack enable && corepack prepare yarn@stable --activate
-          export REACT_APP_MONACO_EDITOR_USING_CDN=false
-          export REACT_APP_ENABLE_ERRORS_INSPECTOR=true
-          yarn config set network-timeout 600000 -g
-          yarn install && cp -r node_modules/monaco-editor public/ && yarn build
-      - name: Stage artifacts for Docker build
-        run: |
-          mkdir -p docker/server/libs
-          cp server/build/libs/*boot*.jar docker/server/libs/conductor-server.jar
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Build Docker image - multi-arch (no push)
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          file: docker/server/Dockerfile
-          platforms: linux/arm64,linux/amd64
-          push: false
