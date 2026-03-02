@@ -27,6 +27,7 @@ dependencies {
     implementation project(':conductor-nats-streaming')
     implementation project(':conductor-awssqs-event-queue')
     implementation project(':conductor-kafka-event-queue')
+    implementation project(':conductor-azure-event-queue')
 
     //External Payload Storage
     implementation project(':conductor-azureblob-storage')
@@ -86,6 +87,10 @@ dependencies {
 
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
 
+    implementation platform('com.azure:azure-sdk-bom:1.2.22')
+    implementation 'com.azure:azure-storage-queue'
+    implementation 'com.azure:azure-identity'
+    implementation 'com.azure:azure-core'
 
     runtimeOnly "org.glassfish.jaxb:jaxb-runtime:${revJAXB}"
 
