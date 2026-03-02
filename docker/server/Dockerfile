@@ -1,62 +1,60 @@
 #
-# conductor:server - Build Conductor Server
+# conductor:server - Conductor Server + UI
 #
+# Two modes:
+#   Default:        Builds JAR and UI from source (docker-compose, local dev)
+#   PREBUILT=true:  Skips builds, uses pre-built artifacts (CI multi-arch)
+#
+
 # ===========================================================================================================
-# 0. Builder stage 1
+# 0. Builder stage
 # ===========================================================================================================
 FROM azul/zulu-openjdk-debian:21 AS builder
 
+ARG PREBUILT=false
 ARG INDEXING_BACKEND=elasticsearch
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
-# Copy the project directly onto the image
 COPY . /conductor
 WORKDIR /conductor
 
-# Build the server
-# Override JVM heap and disable daemon to keep memory usage within Docker build limits
-ENV GRADLE_OPTS="-Xmx512m"
-RUN ./gradlew build -x test -x spotlessCheck -x shadowJar -x :conductor-os-persistence-v3:build \
-    -PindexingBackend=${INDEXING_BACKEND} \
-    -Dorg.gradle.jvmargs=-Xmx2g \
-    --no-daemon --no-parallel
-WORKDIR /server/build/libs
-RUN ls -ltr
+RUN if [ "$PREBUILT" = "true" ]; then \
+      rm -rf server/build/libs && mkdir -p server/build/libs && \
+      cp docker/server/libs/conductor-server.jar server/build/libs/conductor-server-boot.jar && \
+      echo "Using pre-built server JAR"; \
+    else \
+      ./gradlew build -x test -x spotlessCheck -x shadowJar -x :conductor-os-persistence-v3:build \
+        -PindexingBackend=${INDEXING_BACKEND} \
+        -Dorg.gradle.jvmargs=-Xmx2g \
+        --no-daemon --no-parallel; \
+    fi
 
-
-#
-# conductor:server - Build Conductor UI
-#
 # ===========================================================================================================
-# 1. Builder stage 2
+# 1. UI builder stage
 # ===========================================================================================================
 FROM node:lts AS ui-builder
+
+ARG PREBUILT=false
 ARG YARN_OPTS
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
-# Install dependencies
-RUN corepack enable && corepack prepare yarn@stable --activate
-
 COPY . /conductor
 WORKDIR /conductor/ui
 
-# Include monaco sources into bundle (instead of using CDN)
-ENV REACT_APP_MONACO_EDITOR_USING_CDN=false
-ENV REACT_APP_ENABLE_ERRORS_INSPECTOR=true
-RUN yarn config set network-timeout 600000 -g
-RUN yarn ${YARN_OPTS} install && cp -r node_modules/monaco-editor public/ && yarn ${YARN_OPTS} build
-RUN ls -ltr
-RUN echo "Done building UI"
-
-RUN echo "Copying UI to server"
-WORKDIR /conductor
-RUN rm -rf server/src/main/resources/static
-RUN cp -R ui/build/ server/src/main/resources/static
+RUN if [ "$PREBUILT" = "false" ]; then \
+      corepack enable && corepack prepare yarn@stable --activate && \
+      export REACT_APP_MONACO_EDITOR_USING_CDN=false && \
+      export REACT_APP_ENABLE_ERRORS_INSPECTOR=true && \
+      yarn config set network-timeout 600000 -g && \
+      yarn ${YARN_OPTS} install && cp -r node_modules/monaco-editor public/ && yarn ${YARN_OPTS} build; \
+    else \
+      echo "Using pre-built UI assets"; \
+    fi
 
 # ===========================================================================================================
-# 2. Bin stage
+# 2. Final stage
 # ===========================================================================================================
 FROM debian:stable-slim
 
