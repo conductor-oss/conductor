@@ -20,7 +20,7 @@ dependencies {
     implementation ("io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}") {
         exclude group: 'com.netflix.conductor', module: 'conductor-core'
     }
-    implementation('com.thoughtworks.xstream:xstream:1.4.20')
+    implementation('com.thoughtworks.xstream:xstream:1.4.21')
     implementation "org.apache.commons:commons-lang3:"
     implementation "com.google.guava:guava:${revGuava}"
 

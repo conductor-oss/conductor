@@ -14,8 +14,13 @@ LABEL maintainer="Orkes OSS <oss@orkes.io>"
 COPY . /conductor
 WORKDIR /conductor
 
-# Build the server on run
-RUN ./gradlew build -x test -x spotlessCheck -x shadowJar -x :conductor-os-persistence-v3:build -PindexingBackend=${INDEXING_BACKEND}
+# Build the server
+# Override JVM heap and disable daemon to keep memory usage within Docker build limits
+ENV GRADLE_OPTS="-Xmx512m"
+RUN ./gradlew build -x test -x spotlessCheck -x shadowJar -x :conductor-os-persistence-v3:build \
+    -PindexingBackend=${INDEXING_BACKEND} \
+    -Dorg.gradle.jvmargs=-Xmx2g \
+    --no-daemon --no-parallel
 WORKDIR /server/build/libs
 RUN ls -ltr
 

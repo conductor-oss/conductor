@@ -1,5 +1,5 @@
 plugins {
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.gradleup.shadow' version '8.3.6'
     id 'java'
 }
 
@@ -52,5 +52,4 @@ shadowJar {
         include 'META-INF/maven/*'
     }
 }
-// Note: shadowJar is optional for shading dependencies, but not required for basic functionality
-// Use regular jar for now to avoid Shadow plugin issues with Java 21
+// Note: shadowJar is used to shade opensearch-java 2.x to avoid conflicts with v3
