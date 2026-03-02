@@ -60,60 +60,63 @@ public class LLMs {
         AIModel llm = this.modelProvider.getModel(chatCompletion);
         String prompt =
                 replacePromptVariables(
-                        chatCompletion.getInstructions(), chatCompletion.getPromptVariables());
+                        task,
+                        chatCompletion.getInstructions(),
+                        chatCompletion.getPromptVariables());
         chatCompletion.setInstructions(prompt);
         return helper.chatComplete(
-                llm, chatCompletion, getPayloadStoreLocation(task), tokenUsageLogger);
+                task, llm, chatCompletion, getPayloadStoreLocation(task), tokenUsageLogger);
     }
 
     public LLMResponse generateImage(Task task, ImageGenRequest imageGenRequest) {
         AIModel llm = this.modelProvider.getModel(imageGenRequest);
         String prompt =
                 replacePromptVariables(
-                        imageGenRequest.getPrompt(), imageGenRequest.getPromptVariables());
+                        task, imageGenRequest.getPrompt(), imageGenRequest.getPromptVariables());
         imageGenRequest.setPrompt(prompt);
         return helper.generateImage(
-                llm, imageGenRequest, getPayloadStoreLocation(task), tokenUsageLogger);
+                task, llm, imageGenRequest, getPayloadStoreLocation(task), tokenUsageLogger);
     }
 
     public LLMResponse generateAudio(Task task, AudioGenRequest audioGenRequest) {
         AIModel llm = this.modelProvider.getModel(audioGenRequest);
         String prompt =
                 replacePromptVariables(
-                        audioGenRequest.getPrompt(), audioGenRequest.getPromptVariables());
+                        task, audioGenRequest.getPrompt(), audioGenRequest.getPromptVariables());
         audioGenRequest.setPrompt(prompt);
         return helper.generateAudio(
-                llm, audioGenRequest, getPayloadStoreLocation(task), tokenUsageLogger);
+                task, llm, audioGenRequest, getPayloadStoreLocation(task), tokenUsageLogger);
     }
 
     public List<Float> generateEmbeddings(Task task, EmbeddingGenRequest embeddingGenRequest) {
         AIModel llm = this.modelProvider.getModel(embeddingGenRequest);
-        return llm.generateEmbeddings(embeddingGenRequest);
+        return helper.generateEmbeddings(task, llm, embeddingGenRequest, tokenUsageLogger);
     }
 
     public LLMResponse generateVideo(Task task, VideoGenRequest videoGenRequest) {
         AIModel llm = this.modelProvider.getModel(videoGenRequest);
         String prompt =
                 replacePromptVariables(
-                        videoGenRequest.getPrompt(), videoGenRequest.getPromptVariables());
+                        task, videoGenRequest.getPrompt(), videoGenRequest.getPromptVariables());
         videoGenRequest.setPrompt(prompt);
         return helper.generateVideo(
-                llm, videoGenRequest, getPayloadStoreLocation(task), tokenUsageLogger);
+                task, llm, videoGenRequest, getPayloadStoreLocation(task), tokenUsageLogger);
     }
 
     public LLMResponse checkVideoStatus(Task task, VideoGenRequest videoGenRequest) {
         AIModel llm = this.modelProvider.getModel(videoGenRequest);
-        return helper.checkVideoStatus(llm, videoGenRequest, getPayloadStoreLocation(task));
+        return helper.checkVideoStatus(task, llm, videoGenRequest, getPayloadStoreLocation(task));
     }
 
-    private String replacePromptVariables(String prompt, Map<String, Object> paramReplacement) {
+    public String replacePromptVariables(
+            Task task, String prompt, Map<String, Object> paramReplacement) {
         if (paramReplacement != null) {
             prompt = StringTemplate.fString(prompt, paramReplacement);
         }
         return prompt;
     }
 
-    private String getPayloadStoreLocation(Task task) {
+    public String getPayloadStoreLocation(Task task) {
         return payloadStoreLocation
                 + "/"
                 + task.getWorkflowInstanceId()

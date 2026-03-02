@@ -102,10 +102,10 @@ public class OpenAIVideoModel implements AsyncVideoModel {
 
             if ("completed".equals(status.status())) {
                 // Download the video MP4 as bytes
+                // Use direct byte storage to avoid base64 encoding overhead (~33% memory savings)
                 byte[] videoBytes = api.downloadVideo(jobId);
-                String videoB64 = Base64.getEncoder().encodeToString(videoBytes);
 
-                Video video = new Video(null, videoB64, "video/mp4");
+                Video video = Video.fromBytes(videoBytes, "video/mp4");
                 VideoGeneration generation = new VideoGeneration(video);
 
                 List<VideoGeneration> generations = new ArrayList<>();
@@ -114,8 +114,7 @@ public class OpenAIVideoModel implements AsyncVideoModel {
                 // Optionally download thumbnail (OpenAI returns webp thumbnails)
                 try {
                     byte[] thumbnailBytes = api.downloadThumbnail(jobId);
-                    String thumbnailB64 = Base64.getEncoder().encodeToString(thumbnailBytes);
-                    Video thumbnail = new Video(null, thumbnailB64, "image/webp");
+                    Video thumbnail = Video.fromBytes(thumbnailBytes, "image/webp");
                     generations.add(new VideoGeneration(thumbnail));
                 } catch (Exception e) {
                     log.debug(
