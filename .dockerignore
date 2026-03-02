@@ -1,8 +1,9 @@
 # General
+.git
+.gradle
 
-# Backend 
-server/build/libs
+# Exclude all Gradle build output to avoid stale/duplicate generated sources
+**/build
 
 # UI
 **/node_modules
-ui/build
