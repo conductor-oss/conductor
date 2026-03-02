@@ -8,6 +8,9 @@ on:
     paths-ignore:
       - "conductor-clients/**"
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
