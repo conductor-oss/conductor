@@ -111,6 +111,8 @@ jobs:
           file: docker/server/Dockerfile
           platforms: linux/arm64,linux/amd64
           push: true
+          build-args: |
+            PREBUILT=true
           tags: |
             conductoross/conductor:${{ env.RELEASE_VERSION }}
             ${{ (github.event_name == 'release' && !github.event.release.prerelease) && 'conductoross/conductor:latest' || '' }}
