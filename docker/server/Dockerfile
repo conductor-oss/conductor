@@ -4,7 +4,9 @@
 # ===========================================================================================================
 # 0. Builder stage 1
 # ===========================================================================================================
-FROM azul/zulu-openjdk-debian:21 AS builder
+# Use BUILDPLATFORM so the Gradle build always runs natively (not under QEMU).
+# Java JARs are platform-independent bytecode, no need to cross-compile.
+FROM --platform=$BUILDPLATFORM azul/zulu-openjdk-debian:21 AS builder
 
 ARG INDEXING_BACKEND=elasticsearch
 
@@ -15,12 +17,9 @@ COPY . /conductor
 WORKDIR /conductor
 
 # Build the server
-# Override JVM heap and disable daemon to keep memory usage within Docker build limits
-ENV GRADLE_OPTS="-Xmx512m"
 RUN ./gradlew build -x test -x spotlessCheck -x shadowJar -x :conductor-os-persistence-v3:build \
     -PindexingBackend=${INDEXING_BACKEND} \
-    -Dorg.gradle.jvmargs=-Xmx2g \
-    --no-daemon --no-parallel
+    --no-daemon
 WORKDIR /server/build/libs
 RUN ls -ltr
 
@@ -31,7 +30,8 @@ RUN ls -ltr
 # ===========================================================================================================
 # 1. Builder stage 2
 # ===========================================================================================================
-FROM node:lts AS ui-builder
+# UI build output (HTML/JS/CSS) is also platform-independent.
+FROM --platform=$BUILDPLATFORM node:lts AS ui-builder
 ARG YARN_OPTS
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
