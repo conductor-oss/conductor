@@ -938,22 +938,22 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     private void notifyTaskStatusListener(TaskModel task) {
         switch (task.getStatus()) {
             case COMPLETED:
-                taskStatusListener.onTaskCompleted(task);
+                taskStatusListener.onTaskCompletedIfEnabled(task);
                 break;
             case CANCELED:
-                taskStatusListener.onTaskCanceled(task);
+                taskStatusListener.onTaskCanceledIfEnabled(task);
                 break;
             case FAILED:
-                taskStatusListener.onTaskFailed(task);
+                taskStatusListener.onTaskFailedIfEnabled(task);
                 break;
             case FAILED_WITH_TERMINAL_ERROR:
-                taskStatusListener.onTaskFailedWithTerminalError(task);
+                taskStatusListener.onTaskFailedWithTerminalErrorIfEnabled(task);
                 break;
             case TIMED_OUT:
-                taskStatusListener.onTaskTimedOut(task);
+                taskStatusListener.onTaskTimedOutIfEnabled(task);
                 break;
             case IN_PROGRESS:
-                taskStatusListener.onTaskInProgress(task);
+                taskStatusListener.onTaskInProgressIfEnabled(task);
                 break;
             case SCHEDULED:
                 // no-op, already done in addTaskToQueue
@@ -1663,7 +1663,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             addTaskToQueue(task);
             // notify TaskStatusListener
             try {
-                taskStatusListener.onTaskScheduled(task);
+                taskStatusListener.onTaskScheduledIfEnabled(task);
             } catch (Exception e) {
                 String errorMsg =
                         String.format(
