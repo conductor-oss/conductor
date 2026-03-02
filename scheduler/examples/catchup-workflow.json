@@ -1,0 +1,28 @@
+{
+  "name": "catchup_demo_workflow",
+  "description": "Simple workflow used by the catchup-mode demo schedule. Logs the current timestamp so you can see each missed slot fire.",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "log_execution_time",
+      "taskReferenceName": "log_execution_time",
+      "type": "HTTP",
+      "inputParameters": {
+        "http_request": {
+          "uri": "https://timeapi.io/api/time/current/zone?timeZone=UTC",
+          "method": "GET",
+          "connectionTimeOut": 3000,
+          "readTimeOut": 3000
+        }
+      }
+    }
+  ],
+  "outputParameters": {
+    "currentUtcTime": "${log_execution_time.output.response.body.dateTime}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "ownerEmail": "demo@example.com",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 60
+}
