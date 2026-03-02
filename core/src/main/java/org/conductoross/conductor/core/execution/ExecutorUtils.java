@@ -15,6 +15,7 @@ package org.conductoross.conductor.core.execution;
 import java.time.Duration;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -26,67 +27,81 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_WAI
 public class ExecutorUtils {
 
     public static Duration computePostpone(
-            WorkflowModel workflowModel, Duration workflowOffsetTimeout) {
+            WorkflowModel workflowModel,
+            Duration workflowOffsetTimeout,
+            Duration maxPostponeDuration) {
         long currentTimeMillis = System.currentTimeMillis();
         long workflowOffsetTimeoutSeconds = workflowOffsetTimeout.getSeconds();
+        long maxPostponeSeconds = maxPostponeDuration.getSeconds();
 
-        long postponeDurationSeconds = 0;
+        Long postponeDurationSeconds = null;
         for (TaskModel taskModel : workflowModel.getTasks()) {
-            TaskDef taskDef = taskModel.getTaskDefinition().orElse(null);
+            Long candidateSeconds = null;
             if (taskModel.getStatus() == TaskModel.Status.IN_PROGRESS) {
                 if (taskModel.getTaskType().equals(TASK_TYPE_WAIT)) {
-                    if (taskModel.getWaitTimeout() != 0) {
+                    if (taskModel.getWaitTimeout() == 0) {
+                        candidateSeconds = workflowOffsetTimeoutSeconds;
+                    } else {
                         long deltaInSeconds =
                                 (taskModel.getWaitTimeout() - currentTimeMillis) / 1000;
-                        postponeDurationSeconds = (deltaInSeconds > 0) ? deltaInSeconds : 0;
+                        candidateSeconds = (deltaInSeconds > 0) ? deltaInSeconds : 0;
                     }
+                } else if (taskModel.getTaskType().equals(TaskType.TASK_TYPE_HUMAN)) {
+                    candidateSeconds = workflowOffsetTimeoutSeconds;
                 } else {
-                    // Could taskModel.getResponseTimeoutSeconds() be set and no taskDef?...
-                    // not sure but keeping it this way just in case.
+                    TaskDef taskDef = taskModel.getTaskDefinition().orElse(null);
                     long responseTimeoutSeconds =
                             taskDef != null
                                     ? taskDef.getResponseTimeoutSeconds()
                                     : taskModel.getResponseTimeoutSeconds();
                     if (responseTimeoutSeconds != 0) {
-                        long deltaInSeconds = (currentTimeMillis - taskModel.getStartTime()) / 1000;
-                        if (deltaInSeconds > 0 && (responseTimeoutSeconds - deltaInSeconds) >= 0) {
-                            postponeDurationSeconds = responseTimeoutSeconds - deltaInSeconds + 1;
-                        }
+                        long elapsedSeconds =
+                                Math.max(0, (currentTimeMillis - taskModel.getStartTime()) / 1000);
+                        long remainingSeconds = responseTimeoutSeconds - elapsedSeconds + 1;
+                        candidateSeconds = Math.max(0, remainingSeconds);
+                    } else {
+                        candidateSeconds = workflowOffsetTimeoutSeconds;
                     }
                 }
-                break;
             } else if (taskModel.getStatus() == TaskModel.Status.SCHEDULED) {
-                if (taskDef != null) {
-                    postponeDurationSeconds = getMinTimeout(taskDef);
-                }
-
-                if (postponeDurationSeconds <= 0) {
-                    if (workflowModel.getWorkflowDefinition().getTimeoutSeconds() > 0) {
-                        postponeDurationSeconds =
-                                workflowModel.getWorkflowDefinition().getTimeoutSeconds() + 1;
+                TaskDef taskDef = taskModel.getTaskDefinition().orElse(null);
+                if (taskDef != null
+                        && taskDef.getPollTimeoutSeconds() != null
+                        && taskDef.getPollTimeoutSeconds() != 0) {
+                    candidateSeconds = taskDef.getPollTimeoutSeconds().longValue() + 1;
+                } else {
+                    long workflowTimeoutSeconds =
+                            workflowModel.getWorkflowDefinition() != null
+                                    ? workflowModel.getWorkflowDefinition().getTimeoutSeconds()
+                                    : 0;
+                    if (workflowTimeoutSeconds != 0) {
+                        candidateSeconds = workflowTimeoutSeconds + 1;
+                    } else {
+                        candidateSeconds = workflowOffsetTimeoutSeconds;
                     }
                 }
-                break;
+            }
+
+            if (candidateSeconds == null) {
+                continue;
+            }
+            if (candidateSeconds < 0) {
+                candidateSeconds = 0L;
+            }
+            if (maxPostponeSeconds > 0 && candidateSeconds > maxPostponeSeconds) {
+                candidateSeconds = maxPostponeSeconds;
+            }
+            if (postponeDurationSeconds == null || candidateSeconds < postponeDurationSeconds) {
+                postponeDurationSeconds = candidateSeconds;
             }
         }
+
+        long unackSeconds = (postponeDurationSeconds != null) ? postponeDurationSeconds : 0;
         log.trace(
                 "postponeDurationSeconds calculated is {} and workflowOffsetTimeoutSeconds is {} for workflow {}",
-                postponeDurationSeconds,
+                unackSeconds,
                 workflowOffsetTimeoutSeconds,
                 workflowModel.getWorkflowId());
-
-        if (postponeDurationSeconds > 0) {
-            return Duration.ofSeconds(
-                    Math.min(postponeDurationSeconds, workflowOffsetTimeoutSeconds));
-        }
-        return Duration.ofSeconds(workflowOffsetTimeoutSeconds);
-    }
-
-    private static long getMinTimeout(TaskDef taskDef) {
-        long pollTimeoutSeconds =
-                taskDef.getPollTimeoutSeconds() != null ? taskDef.getPollTimeoutSeconds() : 0;
-        return Math.min(
-                taskDef.getTimeoutSeconds(),
-                Math.min(taskDef.getResponseTimeoutSeconds(), pollTimeoutSeconds));
+        return Duration.ofSeconds(Math.max(0, unackSeconds));
     }
 }

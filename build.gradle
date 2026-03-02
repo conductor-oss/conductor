@@ -61,8 +61,8 @@ allprojects {
             exclude group: 'org.slf4j', module: 'slf4j-log4j12'
 
             resolutionStrategy.eachDependency { details ->
-                if (details.requested.group.startsWith('com.fasterxml.jackson.') ) {
-                    details.useVersion "2.18.0"
+                if (details.requested.group.startsWith('com.fasterxml.jackson.')) {
+                    details.useVersion "2.17.0"
                 }
                 // Force commons-lang3 to 3.18.0+ for compatibility with commons-compress used by Testcontainers
                 if (details.requested.group == 'org.apache.commons' && details.requested.name == 'commons-lang3') {
@@ -116,6 +116,8 @@ allprojects {
 
     test {
         useJUnitPlatform()
+        // Prefer provider auto-detection and ignore user-level forced client strategy pins.
+        systemProperty 'dockerconfig.source', 'autoIgnoringUserProperties'
         testLogging {
             events = ["SKIPPED", "FAILED"]
             exceptionFormat = "full"

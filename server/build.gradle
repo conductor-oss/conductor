@@ -50,10 +50,13 @@ dependencies {
         // The DAO layer needs reimplementation for the new client API (breaking changes)
         // See: os-persistence-v3/build.gradle comments for details
         // implementation project(':conductor-os-persistence-v3')
+    } else if (indexingBackend == 'elasticsearch8' || indexingBackend == 'es8') {
+        implementation project(':conductor-es8-persistence')
+    } else if (indexingBackend == 'elasticsearch7' || indexingBackend == 'es7' || indexingBackend == 'elasticsearch') {
+        implementation project(':conductor-es7-persistence')
     } else {
         implementation project(':conductor-es7-persistence')
     }
-
     implementation project(':conductor-redis-lock')
     implementation project(':conductor-redis-concurrency-limit')
 
