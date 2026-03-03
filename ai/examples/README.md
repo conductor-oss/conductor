@@ -74,6 +74,8 @@ The server will be available at `http://localhost:3001/mcp`.
 | `12-video-gemini-veo.json` | Generate video with Google Veo-3 (async) | Google Vertex AI |
 | `13-image-to-video-pipeline.json` | Image + video generation pipeline | OpenAI |
 | `14-stabilityai-image.json` | Image generation with Stability AI (SD3.5) | Stability AI |
+| `15-pdf-generation.json` | Generate PDF from markdown content | None (built-in) |
+| `16-llm-to-pdf-pipeline.json` | LLM generates report → convert to PDF | OpenAI |
 
 ---
 
@@ -314,6 +316,36 @@ curl -X POST 'http://localhost:8080/api/workflow/image_gen_stabilityai' \
   -d '{}'
 ```
 
+### 15. PDF Generation (Markdown to PDF)
+
+```bash
+# No external API keys required -- uses built-in PDFBox renderer
+
+# Register
+curl -X POST 'http://localhost:8080/api/metadata/workflow' \
+  -H 'Content-Type: application/json' \
+  -d @15-pdf-generation.json
+
+# Execute
+curl -X POST 'http://localhost:8080/api/workflow/pdf_generation_workflow' \
+  -H 'Content-Type: application/json' \
+  -d '{}'
+```
+
+### 16. LLM-to-PDF Pipeline (Report Generation)
+
+```bash
+# Register
+curl -X POST 'http://localhost:8080/api/metadata/workflow' \
+  -H 'Content-Type: application/json' \
+  -d @16-llm-to-pdf-pipeline.json
+
+# Execute with a topic and audience
+curl -X POST 'http://localhost:8080/api/workflow/llm_to_pdf_pipeline' \
+  -H 'Content-Type: application/json' \
+  -d '{"topic": "Cloud Migration Best Practices", "audience": "CTO and engineering leadership"}'
+```
+
 ---
 
 ## Register All Workflows at Once
@@ -377,4 +409,4 @@ CREATE EXTENSION IF NOT EXISTS vector;
 
 ## License
 
-Copyright 2025 Conductor Authors. Licensed under the Apache License 2.0.
+Copyright 2026 Conductor Authors. Licensed under the Apache License 2.0.

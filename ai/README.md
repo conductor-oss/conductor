@@ -1,6 +1,6 @@
 # Conductor AI Module
 
-The Conductor AI module provides built-in integration with 12 popular LLM providers and vector databases, enabling AI-powered workflows through simple task definitions -- including chat, embeddings, image generation, audio synthesis, video generation, and tool calling.
+The Conductor AI module provides built-in integration with 12 popular LLM providers and vector databases, enabling AI-powered workflows through simple task definitions -- including chat, embeddings, image generation, audio synthesis, video generation, document generation, and tool calling.
 
 ## Table of Contents
 - [Supported Providers](#supported-providers)
@@ -59,6 +59,7 @@ The Conductor AI module provides built-in integration with 12 popular LLM provid
 | **Search Embeddings** | `LLM_SEARCH_EMBEDDINGS` | Search using embedding vectors |
 | **Get Embeddings** | `LLM_GET_EMBEDDINGS` | Retrieve stored embeddings |
 | **List MCP Tools** | `LIST_MCP_TOOLS` | List tools from MCP server |
+| **Generate PDF** | `GENERATE_PDF` | Convert markdown to PDF document |
 | **Call MCP Tool** | `CALL_MCP_TOOL` | Call a tool on MCP server |
 
 ---
@@ -315,6 +316,56 @@ Retrieve stored embeddings by document ID.
 | Field | Type | Description |
 |-------|------|-------------|
 | `result` | Array\<Number\> | Stored embedding vector |
+
+---
+
+### GENERATE_PDF
+
+Convert markdown text to a PDF document. Supports full GitHub Flavored Markdown including headings, tables, code blocks, lists, task lists, blockquotes, images, links, and inline formatting. No external API keys required -- uses built-in Apache PDFBox rendering.
+
+**Inputs:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|:--------:|---------|-------------|
+| `markdown` | String | ✅ | - | Markdown text to convert to PDF |
+| `pageSize` | String | ❌ | `A4` | Page size: `A4`, `LETTER`, `LEGAL`, `A3`, `A5` |
+| `marginTop` | Number | ❌ | `72` | Top margin in points (72pt = 1 inch) |
+| `marginRight` | Number | ❌ | `72` | Right margin in points |
+| `marginBottom` | Number | ❌ | `72` | Bottom margin in points |
+| `marginLeft` | Number | ❌ | `72` | Left margin in points |
+| `theme` | String | ❌ | `default` | Style preset: `default` or `compact` |
+| `baseFontSize` | Number | ❌ | `11` | Base font size in points |
+| `outputLocation` | String | ❌ | auto | Output URI (e.g., `file:///tmp/report.pdf`). Defaults to payload store. |
+| `pdfMetadata` | Object | ❌ | - | PDF metadata: `title`, `author`, `subject`, `keywords` |
+| `imageBaseUrl` | String | ❌ | - | Base URL for resolving relative image paths |
+
+**Outputs:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `result.location` | String | URI of the generated PDF file |
+| `result.sizeBytes` | Integer | Size of the generated PDF in bytes |
+| `media` | Array | Media items with `location` and `mimeType` (`application/pdf`) |
+| `finishReason` | String | `COMPLETED` on success |
+
+**Supported Markdown Features:**
+
+| Feature | Syntax |
+|---------|--------|
+| Headings | `# H1` through `###### H6` |
+| Bold / Italic | `**bold**`, `*italic*`, `***both***` |
+| Tables | GFM pipe tables with header row |
+| Code blocks | Fenced (` ``` `) and indented code blocks |
+| Bullet lists | `- item` or `* item` (nested supported) |
+| Ordered lists | `1. item` (nested supported) |
+| Task lists | `- [x] done`, `- [ ] todo` |
+| Blockquotes | `> quoted text` |
+| Links | `[text](url)` (rendered as clickable PDF links) |
+| Images | `![alt](url)` (HTTP/HTTPS, file://, data: URIs, relative paths) |
+| Horizontal rules | `---` |
+| Strikethrough | `~~strikethrough~~` |
+| Inline code | `` `code` `` |
+| Footnotes | `[^1]` references |
 
 ---
 
@@ -1339,7 +1390,123 @@ A workflow that generates an image and a video in sequence:
 }
 ```
 
-### 11. LLM Tool Calling with MCP Tools
+### 11. PDF Generation (Markdown to PDF)
+
+Generate a PDF document from markdown content with layout options and metadata:
+
+```json
+{
+  "name": "pdf_generation_workflow",
+  "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "generate_pdf",
+      "taskReferenceName": "pdf",
+      "type": "GENERATE_PDF",
+      "inputParameters": {
+        "markdown": "# Sales Report\n\n## Summary\n\nTotal revenue: **$5.4M**\n\n| Region | Revenue | Growth |\n|--------|---------|--------|\n| North America | $2.4M | +12% |\n| Europe | $1.8M | +8% |\n\n## Recommendations\n\n1. Expand APAC sales team\n2. Launch enterprise tier in EU\n\n> *Our best quarter yet.*",
+        "pageSize": "LETTER",
+        "theme": "default",
+        "pdfMetadata": {
+          "title": "Sales Report - Q4 2025",
+          "author": "Conductor Workflow"
+        }
+      }
+    }
+  ]
+}
+```
+
+**Output:**
+```json
+{
+  "result": {
+    "location": "file:///tmp/conductor/wf-123/task-456/abc.pdf",
+    "sizeBytes": 12345
+  },
+  "media": [
+    {
+      "location": "file:///tmp/conductor/wf-123/task-456/abc.pdf",
+      "mimeType": "application/pdf"
+    }
+  ],
+  "finishReason": "COMPLETED"
+}
+```
+
+### 12. LLM-to-PDF Pipeline (Report Generation)
+
+A multi-step workflow that uses an LLM to generate a markdown report and then converts it to PDF:
+
+```json
+{
+  "name": "llm_to_pdf_pipeline",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["topic", "audience"],
+  "tasks": [
+    {
+      "name": "generate_report_markdown",
+      "taskReferenceName": "llm_report",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "gpt-4o-mini",
+        "messages": [
+          {
+            "role": "system",
+            "message": "You are a professional report writer. Generate well-structured markdown reports."
+          },
+          {
+            "role": "user",
+            "message": "Write a report about: ${workflow.input.topic}\nAudience: ${workflow.input.audience}"
+          }
+        ],
+        "temperature": 0.7,
+        "maxTokens": 2000
+      }
+    },
+    {
+      "name": "convert_to_pdf",
+      "taskReferenceName": "pdf_output",
+      "type": "GENERATE_PDF",
+      "inputParameters": {
+        "markdown": "${llm_report.output.result}",
+        "pageSize": "A4",
+        "pdfMetadata": {
+          "title": "${workflow.input.topic}",
+          "author": "Conductor AI Pipeline"
+        }
+      }
+    }
+  ],
+  "outputParameters": {
+    "reportMarkdown": "${llm_report.output.result}",
+    "pdfLocation": "${pdf_output.output.result.location}",
+    "pdfSizeBytes": "${pdf_output.output.result.sizeBytes}"
+  }
+}
+```
+
+**Workflow Input:**
+```json
+{
+  "topic": "Cloud Migration Best Practices",
+  "audience": "CTO and engineering leadership"
+}
+```
+
+**Workflow Output:**
+```json
+{
+  "reportMarkdown": "# Cloud Migration Best Practices\n\n## Executive Summary\n...",
+  "pdfLocation": "file:///tmp/conductor/wf-789/task-012/report.pdf",
+  "pdfSizeBytes": 28456
+}
+```
+
+### 13. LLM Tool Calling with MCP Tools
 
 Use `LLM_CHAT_COMPLETE` with the `tools` parameter to let the LLM autonomously decide when to call MCP tools. When the LLM needs to use a tool, it returns `finishReason: "TOOL_CALLS"` with the tool invocations.
 
@@ -1457,4 +1624,4 @@ env -u OPENAI_API_KEY -u ANTHROPIC_API_KEY ./gradlew :conductor-ai:test
 
 ## License
 
-Copyright 2025 Conductor Authors. Licensed under the Apache License 2.0.
+Copyright 2026 Conductor Authors. Licensed under the Apache License 2.0.
