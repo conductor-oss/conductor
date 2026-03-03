@@ -63,6 +63,7 @@ import org.springframework.util.MimeType;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.SchemaDef;
+import com.netflix.conductor.common.metadata.tasks.Task;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -98,6 +99,7 @@ public class LLMHelper {
     private final List<DocumentLoader> documentLoaders;
 
     public LLMResponse chatComplete(
+            Task task,
             AIModel llm,
             ChatCompletion chatCompletion,
             String payloadStoreLocation,
@@ -116,6 +118,7 @@ public class LLMHelper {
 
         TokenUsageLog usage =
                 TokenUsageLog.builder()
+                        .taskId(task.getTaskId())
                         .api(chatCompletion.getModel())
                         .integrationName(chatCompletion.getLlmProvider())
                         .completionTokens(response.getCompletionTokens())
@@ -128,6 +131,7 @@ public class LLMHelper {
     }
 
     public LLMResponse generateImage(
+            Task task,
             AIModel llm,
             ImageGenRequest imageGenRequest,
             String payloadStoreLocation,
@@ -144,6 +148,7 @@ public class LLMHelper {
 
         TokenUsageLog usage =
                 TokenUsageLog.builder()
+                        .taskId(task.getTaskId())
                         .api(imageGenRequest.getModel())
                         .integrationName(imageGenRequest.getLlmProvider())
                         .completionTokens(response.getCompletionTokens())
@@ -155,6 +160,7 @@ public class LLMHelper {
     }
 
     public List<Float> generateEmbeddings(
+            Task task,
             AIModel llm,
             EmbeddingGenRequest embeddingGenRequest,
             Consumer<TokenUsageLog> tokenUsageLogger) {
@@ -162,6 +168,7 @@ public class LLMHelper {
     }
 
     public LLMResponse generateAudio(
+            Task task,
             AIModel llm,
             AudioGenRequest request,
             String payloadStoreLocation,
@@ -170,6 +177,7 @@ public class LLMHelper {
         storeMedia(payloadStoreLocation, response.getMedia());
         TokenUsageLog usage =
                 TokenUsageLog.builder()
+                        .taskId(task.getTaskId())
                         .api(request.getModel())
                         .integrationName(request.getLlmProvider())
                         .completionTokens(response.getCompletionTokens())
@@ -181,6 +189,7 @@ public class LLMHelper {
     }
 
     public LLMResponse generateVideo(
+            Task task,
             AIModel llm,
             VideoGenRequest videoGenRequest,
             String payloadStoreLocation,
@@ -190,7 +199,7 @@ public class LLMHelper {
     }
 
     public LLMResponse checkVideoStatus(
-            AIModel llm, VideoGenRequest videoGenRequest, String payloadStoreLocation) {
+            Task task, AIModel llm, VideoGenRequest videoGenRequest, String payloadStoreLocation) {
 
         LLMResponse response = llm.checkVideoStatus(videoGenRequest);
 
@@ -217,6 +226,11 @@ public class LLMHelper {
     @SneakyThrows
     @SuppressWarnings({"raw", "unchecked"})
     private void extractResponse(LLMResponse llmResponse, ChatCompletion input) {
+        if (llmResponse.getResult() == null || llmResponse.getResult().toString().isEmpty()) {
+            // empty response
+            log.debug("empty response: finishReason: {}", llmResponse.getFinishReason());
+            return;
+        }
         Object result = llmResponse.getResult();
         switch (result) {
             case null -> llmResponse.setResult(Map.of());
@@ -283,6 +297,11 @@ public class LLMHelper {
 
         } catch (JsonProcessingException e) {
             if (chatCompletion.isJsonOutput()) {
+                log.error(
+                        "error converting to json, response: {}, error: {}",
+                        responseText,
+                        e.getMessage(),
+                        e);
                 Map<String, Object> outputErrors =
                         Map.of("error", e.getMessage(), "response", responseText);
                 throw new RuntimeException(objectMapper.writeValueAsString(outputErrors));
@@ -335,7 +354,7 @@ public class LLMHelper {
         Prompt prompt = new Prompt(messages, chatOptions);
         ChatResponse chatResponse = chatClient.prompt(prompt).call().chatResponse();
         if (chatResponse == null) {
-            throw new RuntimeException("No response generated ");
+            throw new RuntimeException("No response generated");
         }
         if (chatResponse.getResults().isEmpty()) {
             String result = objectMapper.writeValueAsString(chatResponse);
@@ -546,14 +565,23 @@ public class LLMHelper {
                             .build();
             case tool -> {
                 List<ToolCall> toolCalls = chatMessage.getToolCalls();
+                if (toolCalls == null) {
+                    log.warn("chat message role: {}, but toolCalls is null", chatMessage.getRole());
+                    toolCalls = new ArrayList<>();
+                }
                 try {
                     List<ToolResponseMessage.ToolResponse> responses = new ArrayList<>();
+                    if (toolCalls.isEmpty()) {
+                        log.info("toolCalls is empty for {}", chatMessage);
+                    }
                     for (ToolCall toolCall : toolCalls) {
                         Map<String, Object> inputJson = toolCall.getInputParameters();
                         var name = extractMethodFromInputParameters(inputJson);
                         String outputJSON = objectMapper.writeValueAsString(toolCall.getOutput());
 
                         log.trace("outputJSON for {} is {}", toolCall.getName(), outputJSON);
+                        log.info("tool: {}", toolCall);
+                        log.info("tool.getTaskReferenceName: {}", toolCall.getTaskReferenceName());
                         responses.add(
                                 new ToolResponseMessage.ToolResponse(
                                         toolCall.getTaskReferenceName(),
@@ -630,11 +658,14 @@ public class LLMHelper {
                         .filter(documentLoader -> documentLoader.supports(content))
                         .findFirst()
                         .map(loader -> loader.download(content));
+        final String mimeTypeResolved =
+                Optional.ofNullable(mimeType)
+                        .orElse(MimeExtensionResolver.getMimeTypeFromUrl(content, ""));
         return data.map(
                         bytes ->
                                 Media.builder()
                                         .data(bytes)
-                                        .mimeType(MimeType.valueOf(mimeType))
+                                        .mimeType(MimeType.valueOf(mimeTypeResolved))
                                         .build())
                 .orElse(null);
     }

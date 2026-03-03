@@ -93,6 +93,6 @@ public class FileSystemDocumentLoader implements DocumentLoader {
 
     @Override
     public boolean supports(String location) {
-        return true;
+        return location.startsWith("file://");
     }
 }

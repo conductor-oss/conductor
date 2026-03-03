@@ -127,6 +127,14 @@ public class VectorDBWorkers implements AnnotatedSystemTaskWorker {
         }
     }
 
+    // Legacy
+    @Deprecated
+    @WorkerTask("LLM_GET_EMBEDDINGS")
+    public @OutputParam("result") List<IndexedDoc> searchUsingEmbeddingsDeprecated(
+            VectorDBInput embeddingsInput) {
+        return searchUsingEmbeddings(embeddingsInput);
+    }
+
     @WorkerTask(value = "LLM_SEARCH_INDEX")
     public List<IndexedDoc> searchIndex(VectorDBInput input) {
         try {
