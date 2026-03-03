@@ -33,7 +33,12 @@ class PdfImageResolverTest {
         httpLoader = mock(DocumentLoader.class);
         when(httpLoader.supports("http://example.com/image.png")).thenReturn(true);
         when(httpLoader.supports("https://example.com/image.jpg")).thenReturn(true);
-        when(httpLoader.supports(argThat(s -> s != null && (s.startsWith("http://") || s.startsWith("https://")))))
+        when(httpLoader.supports(
+                        argThat(
+                                s ->
+                                        s != null
+                                                && (s.startsWith("http://")
+                                                        || s.startsWith("https://")))))
                 .thenReturn(true);
 
         fileLoader = mock(DocumentLoader.class);

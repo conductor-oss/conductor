@@ -42,7 +42,8 @@ class DocumentWorkersTest {
     void setUp() {
         mockConverter = mock(MarkdownToPdfConverter.class);
         mockLoader = mock(DocumentLoader.class);
-        when(mockLoader.supports(argThat(s -> s != null && s.startsWith("file://")))).thenReturn(true);
+        when(mockLoader.supports(argThat(s -> s != null && s.startsWith("file://"))))
+                .thenReturn(true);
         when(mockLoader.upload(anyMap(), eq("application/pdf"), any(byte[].class), anyString()))
                 .thenAnswer(
                         invocation -> {
@@ -79,9 +80,7 @@ class DocumentWorkersTest {
         withMockedTaskContext(
                 () -> {
                     MarkdownToPdfRequest request =
-                            MarkdownToPdfRequest.builder()
-                                    .markdown("# Test\n\nHello")
-                                    .build();
+                            MarkdownToPdfRequest.builder().markdown("# Test\n\nHello").build();
 
                     LLMResponse response = workers.generatePdf(request);
 
@@ -164,9 +163,7 @@ class DocumentWorkersTest {
         withMockedTaskContext(
                 () -> {
                     MarkdownToPdfRequest request =
-                            MarkdownToPdfRequest.builder()
-                                    .markdown("# Default Location")
-                                    .build();
+                            MarkdownToPdfRequest.builder().markdown("# Default Location").build();
 
                     LLMResponse response = workers.generatePdf(request);
 

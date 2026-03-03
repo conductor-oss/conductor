@@ -62,8 +62,7 @@ public class DocumentWorkers implements AnnotatedSystemTaskWorker {
     @WorkerTask("GENERATE_PDF")
     public LLMResponse generatePdf(MarkdownToPdfRequest input) {
         if (isBlank(input.getMarkdown())) {
-            throw new NonRetryableException(
-                    "markdown input is required for GENERATE_PDF task");
+            throw new NonRetryableException("markdown input is required for GENERATE_PDF task");
         }
 
         Task task = TaskContext.get().getTask();
@@ -89,10 +88,7 @@ public class DocumentWorkers implements AnnotatedSystemTaskWorker {
         String storedLocation = storeDocument(outputLocation, pdfBytes);
 
         return LLMResponse.builder()
-                .result(
-                        Map.of(
-                                "location", storedLocation,
-                                "sizeBytes", pdfBytes.length))
+                .result(Map.of("location", storedLocation, "sizeBytes", pdfBytes.length))
                 .media(
                         List.of(
                                 Media.builder()
@@ -111,7 +107,6 @@ public class DocumentWorkers implements AnnotatedSystemTaskWorker {
                 .orElseThrow(
                         () ->
                                 new NonRetryableException(
-                                        "No DocumentLoader supports output location: "
-                                                + location));
+                                        "No DocumentLoader supports output location: " + location));
     }
 }

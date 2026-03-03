@@ -12,17 +12,16 @@
  */
 package org.conductoross.conductor.ai.pdf;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.pdmodel.interactive.action.PDActionURI;
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationLink;
-import org.apache.pdfbox.pdmodel.common.PDRectangle;
 
 import com.vladsch.flexmark.ast.*;
 import com.vladsch.flexmark.ext.footnotes.Footnote;
@@ -31,7 +30,6 @@ import com.vladsch.flexmark.ext.gfm.tasklist.TaskListItem;
 import com.vladsch.flexmark.ext.tables.*;
 import com.vladsch.flexmark.util.ast.Document;
 import com.vladsch.flexmark.util.ast.Node;
-
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -288,7 +286,8 @@ public class PdfDocumentRenderer {
             cs.setFont(ctx.getMonoFont(), fontSize);
             cs.newLineAtOffset(codeX, ctx.getCursorY() - fontSize);
             // Truncate lines that are too wide
-            String displayLine = truncateToFit(line, ctx.getMonoFont(), fontSize, bgWidth - padding * 2);
+            String displayLine =
+                    truncateToFit(line, ctx.getMonoFont(), fontSize, bgWidth - padding * 2);
             cs.showText(sanitizeText(displayLine, ctx.getMonoFont()));
             cs.endText();
             ctx.advanceCursor(lineHeight);
@@ -356,7 +355,8 @@ public class PdfDocumentRenderer {
                     PDImageXObject.createFromByteArray(ctx.getDocument(), imageBytes, src);
 
             float maxWidth = ctx.getContentWidth();
-            float maxHeight = ctx.getPageHeight() - ctx.getMarginTop() - ctx.getMarginBottom() - 40f;
+            float maxHeight =
+                    ctx.getPageHeight() - ctx.getMarginTop() - ctx.getMarginBottom() - 40f;
 
             // Scale to fit within content width and available height
             float imgWidth = pdImage.getWidth();
@@ -528,7 +528,12 @@ public class PdfDocumentRenderer {
         boolean strikethrough;
         String linkUrl;
 
-        TextRun(String text, boolean bold, boolean italic, boolean code, boolean strikethrough,
+        TextRun(
+                String text,
+                boolean bold,
+                boolean italic,
+                boolean code,
+                boolean strikethrough,
                 String linkUrl) {
             this.text = text;
             this.bold = bold;
@@ -574,14 +579,17 @@ public class PdfDocumentRenderer {
                 collectInlineRuns(child, runs, bold, italic, code, true, linkUrl);
             } else if (child instanceof Link link) {
                 collectInlineRuns(
-                        child, runs, bold, italic, code, strikethrough,
-                        link.getUrl().toString());
+                        child, runs, bold, italic, code, strikethrough, link.getUrl().toString());
             } else if (child instanceof Image image) {
                 // Inline image - add placeholder text
                 runs.add(
                         new TextRun(
                                 "[" + image.getText() + "]",
-                                bold, italic, code, strikethrough, linkUrl));
+                                bold,
+                                italic,
+                                code,
+                                strikethrough,
+                                linkUrl));
             } else if (child instanceof Footnote) {
                 runs.add(new TextRun("[*]", bold, italic, code, strikethrough, linkUrl));
             } else if (child instanceof HtmlInline) {
@@ -651,7 +659,10 @@ public class PdfDocumentRenderer {
                 // Draw code background
                 if (run.code) {
                     cs.setNonStrokingColor(0.94f, 0.94f, 0.94f);
-                    cs.addRect(x - 1f, ctx.getCursorY() - runFontSize - 1f, wordWidth + 2f,
+                    cs.addRect(
+                            x - 1f,
+                            ctx.getCursorY() - runFontSize - 1f,
+                            wordWidth + 2f,
                             runFontSize + 3f);
                     cs.fill();
                     cs.setNonStrokingColor(0f, 0f, 0f);
@@ -681,7 +692,10 @@ public class PdfDocumentRenderer {
                 if (run.linkUrl != null) {
                     cs.setNonStrokingColor(0f, 0f, 0f);
                     addLinkAnnotation(
-                            x, ctx.getCursorY() - fontSize - 2f, wordWidth, fontSize + 4f,
+                            x,
+                            ctx.getCursorY() - fontSize - 2f,
+                            wordWidth,
+                            fontSize + 4f,
                             run.linkUrl);
                 }
 
@@ -713,7 +727,8 @@ public class PdfDocumentRenderer {
         cs.beginText();
         cs.setFont(ctx.getRegularFont(), fontSize);
         cs.newLineAtOffset(ctx.getLeftX(), ctx.getCursorY() - fontSize);
-        String displayText = truncateToFit(text, ctx.getRegularFont(), fontSize, ctx.getContentWidth());
+        String displayText =
+                truncateToFit(text, ctx.getRegularFont(), fontSize, ctx.getContentWidth());
         cs.showText(sanitizeText(displayText, ctx.getRegularFont()));
         cs.endText();
 
@@ -727,7 +742,9 @@ public class PdfDocumentRenderer {
 
             // Binary search for truncation point
             int end = text.length();
-            while (end > 0 && ctx.getTextWidth(text.substring(0, end) + "...", font, fontSize) > maxWidth) {
+            while (end > 0
+                    && ctx.getTextWidth(text.substring(0, end) + "...", font, fontSize)
+                            > maxWidth) {
                 end = end - Math.max(1, end / 4);
             }
             return end > 0 ? text.substring(0, end) + "..." : "...";

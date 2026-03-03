@@ -60,9 +60,7 @@ public class PdfImageResolver {
             String resolvedSrc = src;
             if (!isAbsoluteUri(src) && imageBaseUrl != null && !imageBaseUrl.isBlank()) {
                 resolvedSrc =
-                        imageBaseUrl.endsWith("/")
-                                ? imageBaseUrl + src
-                                : imageBaseUrl + "/" + src;
+                        imageBaseUrl.endsWith("/") ? imageBaseUrl + src : imageBaseUrl + "/" + src;
             }
 
             // Download via DocumentLoader
@@ -86,9 +84,7 @@ public class PdfImageResolver {
     }
 
     private boolean isAbsoluteUri(String src) {
-        return src.startsWith("http://")
-                || src.startsWith("https://")
-                || src.startsWith("file://");
+        return src.startsWith("http://") || src.startsWith("https://") || src.startsWith("file://");
     }
 
     private byte[] downloadImage(String location) {
@@ -102,8 +98,7 @@ public class PdfImageResolver {
                         })
                 .orElseGet(
                         () -> {
-                            log.warn(
-                                    "No DocumentLoader supports image location: {}", location);
+                            log.warn("No DocumentLoader supports image location: {}", location);
                             return null;
                         });
     }

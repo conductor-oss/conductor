@@ -68,8 +68,7 @@ class PdfRenderContextTest {
     @Test
     void testCompactModeReducesLineSpacing() throws IOException {
         PdfRenderContext compactCtx =
-                new PdfRenderContext(
-                        document, PDRectangle.A4, 72f, 72f, 72f, 72f, 11f, true);
+                new PdfRenderContext(document, PDRectangle.A4, 72f, 72f, 72f, 72f, 11f, true);
         assertEquals(1.3f, compactCtx.getLineSpacing(), 0.01f);
         assertTrue(compactCtx.isCompact());
     }
@@ -150,8 +149,7 @@ class PdfRenderContextTest {
     @Test
     void testLineHeightCompactSpacing() throws IOException {
         PdfRenderContext compactCtx =
-                new PdfRenderContext(
-                        document, PDRectangle.A4, 72f, 72f, 72f, 72f, 11f, true);
+                new PdfRenderContext(document, PDRectangle.A4, 72f, 72f, 72f, 72f, 11f, true);
         assertEquals(11f * 1.3f, compactCtx.getLineHeight(11f), 0.01f);
     }
 
@@ -252,8 +250,7 @@ class PdfRenderContextTest {
     @Test
     void testLetterPageSize() throws IOException {
         PdfRenderContext letterCtx =
-                new PdfRenderContext(
-                        document, PDRectangle.LETTER, 72f, 72f, 72f, 72f, 11f, false);
+                new PdfRenderContext(document, PDRectangle.LETTER, 72f, 72f, 72f, 72f, 11f, false);
         assertEquals(PDRectangle.LETTER.getWidth(), letterCtx.getPageWidth(), 0.01f);
         assertEquals(PDRectangle.LETTER.getHeight(), letterCtx.getPageHeight(), 0.01f);
     }
@@ -261,8 +258,7 @@ class PdfRenderContextTest {
     @Test
     void testCustomMargins() throws IOException {
         PdfRenderContext customCtx =
-                new PdfRenderContext(
-                        document, PDRectangle.A4, 36f, 50f, 36f, 50f, 12f, false);
+                new PdfRenderContext(document, PDRectangle.A4, 36f, 50f, 36f, 50f, 12f, false);
         float expectedWidth = PDRectangle.A4.getWidth() - 50f - 50f;
         assertEquals(expectedWidth, customCtx.getContentWidth(), 0.01f);
         assertEquals(50f, customCtx.getLeftX(), 0.01f);

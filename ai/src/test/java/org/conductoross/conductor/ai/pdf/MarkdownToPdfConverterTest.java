@@ -16,11 +16,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.conductoross.conductor.ai.document.DocumentLoader;
-import org.conductoross.conductor.ai.models.MarkdownToPdfRequest;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
+import org.conductoross.conductor.ai.document.DocumentLoader;
+import org.conductoross.conductor.ai.models.MarkdownToPdfRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -551,12 +551,74 @@ class MarkdownToPdfConverterTest {
             // Create a tiny 1x1 PNG
             // This is a minimal valid 1x1 red PNG (67 bytes)
             byte[] pngBytes = {
-                (byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
-                0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08,
-                0x02, 0x00, 0x00, 0x00, (byte) 0x90, 0x77, 0x53, (byte) 0xDE, 0x00, 0x00, 0x00,
-                0x0C, 0x49, 0x44, 0x41, 0x54, 0x08, (byte) 0xD7, 0x63, (byte) 0xF8, (byte) 0xCF,
-                (byte) 0xC0, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01, (byte) 0xE2, 0x21, (byte) 0xBC,
-                0x33, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, (byte) 0xAE, 0x42, 0x60,
+                (byte) 0x89,
+                0x50,
+                0x4E,
+                0x47,
+                0x0D,
+                0x0A,
+                0x1A,
+                0x0A,
+                0x00,
+                0x00,
+                0x00,
+                0x0D,
+                0x49,
+                0x48,
+                0x44,
+                0x52,
+                0x00,
+                0x00,
+                0x00,
+                0x01,
+                0x00,
+                0x00,
+                0x00,
+                0x01,
+                0x08,
+                0x02,
+                0x00,
+                0x00,
+                0x00,
+                (byte) 0x90,
+                0x77,
+                0x53,
+                (byte) 0xDE,
+                0x00,
+                0x00,
+                0x00,
+                0x0C,
+                0x49,
+                0x44,
+                0x41,
+                0x54,
+                0x08,
+                (byte) 0xD7,
+                0x63,
+                (byte) 0xF8,
+                (byte) 0xCF,
+                (byte) 0xC0,
+                0x00,
+                0x00,
+                0x00,
+                0x02,
+                0x00,
+                0x01,
+                (byte) 0xE2,
+                0x21,
+                (byte) 0xBC,
+                0x33,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x49,
+                0x45,
+                0x4E,
+                0x44,
+                (byte) 0xAE,
+                0x42,
+                0x60,
                 (byte) 0x82
             };
             String base64 = java.util.Base64.getEncoder().encodeToString(pngBytes);
@@ -706,7 +768,8 @@ class MarkdownToPdfConverterTest {
             StringBuilder md = new StringBuilder("# Long Document\n\n");
             for (int i = 1; i <= 100; i++) {
                 md.append("## Section ").append(i).append("\n\n");
-                md.append("This is paragraph ").append(i)
+                md.append("This is paragraph ")
+                        .append(i)
                         .append(". It contains enough text to take up some space on the page. ")
                         .append("We need to verify that page breaks happen correctly ")
                         .append("and content flows from one page to the next.\n\n");
@@ -953,15 +1016,9 @@ class MarkdownToPdfConverterTest {
                 md.append("Paragraph ").append(i).append(". Some content here.\n\n");
             }
             MarkdownToPdfRequest defaultReq =
-                    MarkdownToPdfRequest.builder()
-                            .markdown(md.toString())
-                            .theme("default")
-                            .build();
+                    MarkdownToPdfRequest.builder().markdown(md.toString()).theme("default").build();
             MarkdownToPdfRequest compactReq =
-                    MarkdownToPdfRequest.builder()
-                            .markdown(md.toString())
-                            .theme("compact")
-                            .build();
+                    MarkdownToPdfRequest.builder().markdown(md.toString()).theme("compact").build();
 
             byte[] defaultPdf = converter.convert(defaultReq);
             byte[] compactPdf = converter.convert(compactReq);
@@ -1129,8 +1186,7 @@ class MarkdownToPdfConverterTest {
 
         @Test
         void testNullMarkdownThrowsException() {
-            MarkdownToPdfRequest request =
-                    MarkdownToPdfRequest.builder().markdown(null).build();
+            MarkdownToPdfRequest request = MarkdownToPdfRequest.builder().markdown(null).build();
             assertThrows(Exception.class, () -> converter.convert(request));
         }
     }
