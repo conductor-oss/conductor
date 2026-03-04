@@ -48,7 +48,7 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB
 public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
 
     private static final Set<String> toolTaskTypes =
-            Set.of(TASK_TYPE_HTTP, TASK_TYPE_SIMPLE, "MCP");
+            Set.of(TASK_TYPE_HTTP, TASK_TYPE_SIMPLE, "MCP", "CALL_MCP_TOOL");
 
     public ChatCompleteTaskMapper() {
         super(ChatCompletion.NAME);
@@ -101,8 +101,7 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
     }
 
     private void getHistory(
-            WorkflowModel workflow, TaskModel chatCompleteTask, ChatCompletion chatCompletion)
-            throws Exception {
+            WorkflowModel workflow, TaskModel chatCompleteTask, ChatCompletion chatCompletion) {
         Map<String, List<TaskModel>> refNameToTask = new HashMap<>();
         for (TaskModel task : workflow.getTasks()) {
             refNameToTask

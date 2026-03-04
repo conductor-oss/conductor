@@ -18,7 +18,7 @@ import java.util.Map;
 import org.conductoross.conductor.ai.document.DocumentLoader;
 import org.conductoross.conductor.ai.models.LLMResponse;
 import org.conductoross.conductor.ai.models.MarkdownToPdfRequest;
-import org.conductoross.conductor.ai.tasks.worker.DocumentWorkers;
+import org.conductoross.conductor.ai.tasks.worker.DocumentGenWorkers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -32,9 +32,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-class DocumentWorkersTest {
+class DocumentGenWorkersTest {
 
-    private DocumentWorkers workers;
+    private DocumentGenWorkers workers;
     private MarkdownToPdfConverter mockConverter;
     private DocumentLoader mockLoader;
 
@@ -55,7 +55,7 @@ class DocumentWorkersTest {
         when(env.getProperty(eq("conductor.file-storage.parentDir"), anyString()))
                 .thenReturn("/tmp/test-payload/");
 
-        workers = new DocumentWorkers(mockConverter, List.of(mockLoader), env);
+        workers = new DocumentGenWorkers(mockConverter, List.of(mockLoader), env);
     }
 
     private void withMockedTaskContext(Runnable action) {

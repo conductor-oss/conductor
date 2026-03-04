@@ -40,13 +40,13 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 @Slf4j
 @Component
 @Conditional(AIIntegrationEnabledCondition.class)
-public class DocumentWorkers implements AnnotatedSystemTaskWorker {
+public class DocumentGenWorkers implements AnnotatedSystemTaskWorker {
 
     private final MarkdownToPdfConverter pdfConverter;
     private final List<DocumentLoader> documentLoaders;
     private final String payloadStoreLocation;
 
-    public DocumentWorkers(
+    public DocumentGenWorkers(
             MarkdownToPdfConverter pdfConverter,
             List<DocumentLoader> documentLoaders,
             Environment env) {
@@ -74,8 +74,7 @@ public class DocumentWorkers implements AnnotatedSystemTaskWorker {
         String outputLocation = input.getOutputLocation();
         if (isBlank(outputLocation)) {
             outputLocation =
-                    "file://"
-                            + payloadStoreLocation
+                    payloadStoreLocation
                             + task.getWorkflowInstanceId()
                             + "/"
                             + task.getTaskId()
