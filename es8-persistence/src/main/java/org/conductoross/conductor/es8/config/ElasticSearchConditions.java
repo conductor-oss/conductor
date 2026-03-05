@@ -15,6 +15,16 @@ package org.conductoross.conductor.es8.config;
 import org.springframework.boot.autoconfigure.condition.AllNestedConditions;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
+/**
+ * Conditional configuration for enabling Elasticsearch 8.x as the indexing backend.
+ *
+ * <p>Elasticsearch 8.x is enabled when:
+ *
+ * <ul>
+ *   <li>{@code conductor.indexing.enabled=true} (defaults to true if not specified)
+ *   <li>{@code conductor.indexing.type=elasticsearch8}
+ * </ul>
+ */
 public class ElasticSearchConditions {
 
     private ElasticSearchConditions() {}
@@ -34,8 +44,8 @@ public class ElasticSearchConditions {
 
         @SuppressWarnings("unused")
         @ConditionalOnProperty(
-                name = "conductor.elasticsearch.version",
-                havingValue = "8",
+                name = "conductor.indexing.type",
+                havingValue = "elasticsearch8",
                 matchIfMissing = false)
         static class enabledES8 {}
     }

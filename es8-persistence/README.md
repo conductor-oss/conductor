@@ -29,10 +29,10 @@ When building the server, select the ES8 persistence module to avoid Lucene conf
 
 ### 2) Runtime configuration
 
-Set the Elasticsearch major version to 8 in your configuration:
+Select the Elasticsearch 8 backend in your configuration:
 
 ```properties
-conductor.elasticsearch.version=8
+conductor.indexing.type=elasticsearch8
 ```
 
 All other `conductor.elasticsearch.*` properties are shared with the ES7 module.

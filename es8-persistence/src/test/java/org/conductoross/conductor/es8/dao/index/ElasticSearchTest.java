@@ -35,7 +35,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
         classes = {TestObjectMapperConfiguration.class, ElasticSearchTest.TestConfiguration.class})
 @RunWith(SpringRunner.class)
 @TestPropertySource(
-        properties = {"conductor.indexing.enabled=true", "conductor.elasticsearch.version=8"})
+        properties = {"conductor.indexing.enabled=true", "conductor.indexing.type=elasticsearch8"})
 public abstract class ElasticSearchTest {
 
     @Configuration
