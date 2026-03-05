@@ -25,7 +25,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'
       - name: Cache SonarCloud packages
         uses: actions/cache@v4
         with:
