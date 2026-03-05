@@ -56,7 +56,7 @@ public class PostgresVectorDBTest {
         config.setUser("user");
         config.setPassword("pass");
         config.setDimensions(3);
-        vectorDB = new PostgresVectorDB(config);
+        vectorDB = new PostgresVectorDB("test-postgres", config);
     }
 
     @Test

@@ -14,6 +14,7 @@ package org.conductoross.conductor.ai.tasks.worker;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.conductoross.conductor.ai.LLMs;
 import org.conductoross.conductor.ai.models.AudioGenRequest;
@@ -23,6 +24,7 @@ import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.models.ImageGenRequest;
 import org.conductoross.conductor.ai.models.LLMResponse;
 import org.conductoross.conductor.ai.models.TextCompletion;
+import org.conductoross.conductor.ai.models.VideoGenRequest;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.conductoross.conductor.core.execution.tasks.AnnotatedSystemTaskWorker;
 import org.springframework.context.annotation.Conditional;
@@ -30,6 +32,7 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 import com.netflix.conductor.sdk.workflow.executor.task.TaskContext;
 import com.netflix.conductor.sdk.workflow.task.OutputParam;
@@ -62,6 +65,35 @@ public class LLMWorkers implements AnnotatedSystemTaskWorker {
     @WorkerTask(value = "GENERATE_AUDIO")
     public LLMResponse generateAudio(AudioGenRequest input) {
         return llm.generateAudio(TaskContext.get().getTask(), input);
+    }
+
+    @WorkerTask(value = "GENERATE_VIDEO")
+    @SuppressWarnings("all")
+    public TaskResult generateVideo(VideoGenRequest input) {
+        Task task = TaskContext.get().getTask();
+        String jobId = (String) task.getOutputData().get("jobId");
+        if (jobId == null) {
+            // start generation
+            LLMResponse response = llm.generateVideo(task, input);
+            TaskResult result = new TaskResult(task);
+            result.setCallbackAfterSeconds(5L);
+            result.setStatus(TaskResult.Status.IN_PROGRESS);
+            result.getOutputData().putAll(objectMapper.convertValue(response, Map.class));
+            result.getOutputData().put("jobId", response.getJobId());
+            return result;
+        }
+        input.setJobId(jobId);
+        LLMResponse response = llm.checkVideoStatus(task, input);
+        TaskResult result = new TaskResult(task);
+        result.setCallbackAfterSeconds(5L);
+        result.getOutputData().putAll(objectMapper.convertValue(response, Map.class));
+        if ("COMPLETED".equals(response.getFinishReason())) {
+            result.setStatus(TaskResult.Status.COMPLETED);
+        } else if ("FAILED".equals(response.getFinishReason())) {
+            result.setStatus(TaskResult.Status.FAILED);
+        }
+
+        return result;
     }
 
     @WorkerTask(value = "LLM_TEXT_COMPLETE")

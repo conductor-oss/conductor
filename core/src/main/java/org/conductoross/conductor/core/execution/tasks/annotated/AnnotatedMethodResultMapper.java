@@ -17,15 +17,18 @@ import java.util.List;
 import java.util.Map;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.sdk.workflow.task.OutputParam;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Utility class for mapping method return values to TaskModel status and output data
  * for @WorkerTask annotated methods.
  */
+@Slf4j
 public class AnnotatedMethodResultMapper {
 
     private final ObjectMapper objectMapper;
@@ -42,6 +45,12 @@ public class AnnotatedMethodResultMapper {
      * @param method The method that was invoked
      */
     public void applyResult(Object invocationResult, TaskModel task, Method method) {
+        log.debug(
+                "annotated task {} invocationResult {} with status {}",
+                task.getTaskType(),
+                invocationResult,
+                task.getStatus());
+
         if (invocationResult == null) {
             task.setStatus(TaskModel.Status.COMPLETED);
             return;
@@ -55,6 +64,17 @@ public class AnnotatedMethodResultMapper {
             task.getOutputData().put(name, invocationResult);
             task.setStatus(TaskModel.Status.COMPLETED);
 
+        } else if (invocationResult instanceof TaskResult) {
+            TaskResult result = objectMapper.convertValue(invocationResult, TaskResult.class);
+            task.getOutputData().putAll(result.getOutputData());
+            switch (result.getStatus()) {
+                case FAILED -> task.setStatus(TaskModel.Status.FAILED);
+                case COMPLETED -> task.setStatus(TaskModel.Status.COMPLETED);
+                case FAILED_WITH_TERMINAL_ERROR ->
+                        task.setStatus(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
+                case IN_PROGRESS -> task.setStatus(TaskModel.Status.IN_PROGRESS);
+            }
+            task.setCallbackAfterSeconds(result.getCallbackAfterSeconds());
         } else if (invocationResult instanceof Map) {
             // Return Map becomes output data
             @SuppressWarnings("unchecked")

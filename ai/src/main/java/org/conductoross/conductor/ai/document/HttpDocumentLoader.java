@@ -73,19 +73,24 @@ public class HttpDocumentLoader implements DocumentLoader {
     }
 
     @Override
-    public void upload(
+    public String upload(
             Map<String, String> headers, String contentType, byte[] data, String fileURI) {
         try {
             if (fileURI == null) {
-                return;
+                return null;
             }
             Input input = new Input();
             input.getHeaders().putAll(headers);
             input.setMethod("POST");
             input.setUri(fileURI);
             input.setBody(data);
-            HttpResponse response = retryOperation(o -> httpCall(o), 3, input);
-
+            HttpResponse response = retryOperation(this::httpCall, 3, input);
+            if (response.isError()) {
+                throw new RuntimeException(
+                        "error uploading file %s - %s"
+                                .formatted(response.statusCode, response.reasonPhrase));
+            }
+            return fileURI;
         } catch (Throwable t) {
             log.error(t.getMessage(), t);
             throw new RuntimeException(t);
@@ -313,5 +318,14 @@ public class HttpDocumentLoader implements DocumentLoader {
         public org.springframework.http.HttpHeaders headers;
         public int statusCode;
         public String reasonPhrase;
+
+        /**
+         * Checks if the HTTP response indicates an error.
+         *
+         * @return true if status code is not in the 2xx range (200-299), false otherwise
+         */
+        public boolean isError() {
+            return statusCode < 200 || statusCode >= 300;
+        }
     }
 }

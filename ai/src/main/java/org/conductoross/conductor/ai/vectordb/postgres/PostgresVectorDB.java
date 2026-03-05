@@ -27,7 +27,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.models.IndexedDoc;
 import org.conductoross.conductor.ai.vectordb.VectorDB;
 import org.conductoross.conductor.common.utils.TextUtils;
-import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.Cache;
@@ -41,10 +40,9 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Component(PostgresVectorDB.TYPE)
 public class PostgresVectorDB extends VectorDB {
 
-    public static final String TYPE = "pgvectordb";
+    public static final String TYPE = "postgres";
 
     private final Cache<String, DataSource> pgvectorClients;
     private final ObjectMapper objectMapper;
@@ -52,8 +50,8 @@ public class PostgresVectorDB extends VectorDB {
     private static final String VALID_NAME_REGEX = "[a-zA-Z0-9_-]+";
     private static final Pattern pattern = Pattern.compile(VALID_NAME_REGEX);
 
-    public PostgresVectorDB(PostgresConfig config) {
-        super(TYPE);
+    public PostgresVectorDB(String name, PostgresConfig config) {
+        super(name, TYPE);
         this.config = config;
         this.objectMapper = new ObjectMapper();
         this.pgvectorClients =

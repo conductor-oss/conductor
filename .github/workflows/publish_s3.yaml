@@ -21,10 +21,10 @@ jobs:
     runs-on: ubuntu-latest
     name: Build and Publish Server JAR to S3
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Set up Zulu JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'zulu'
           java-version: '21'

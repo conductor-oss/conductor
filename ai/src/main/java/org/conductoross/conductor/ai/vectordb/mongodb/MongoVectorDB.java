@@ -26,7 +26,6 @@ import org.bson.codecs.pojo.PojoCodecProvider;
 import org.bson.conversions.Bson;
 import org.conductoross.conductor.ai.models.IndexedDoc;
 import org.conductoross.conductor.ai.vectordb.VectorDB;
-import org.springframework.stereotype.Component;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -43,10 +42,9 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Component(MongoVectorDB.TYPE)
 public class MongoVectorDB extends VectorDB {
 
-    public static final String TYPE = "mongovectordb";
+    public static final String TYPE = "mongodb";
     private final Cache<String, MongoClient> mongoClients;
     private final Cache<String, MongoDatabase> mongoDatabases;
     private final MongoDBConfig config;
@@ -54,8 +52,8 @@ public class MongoVectorDB extends VectorDB {
     private static final String VALID_NAME_REGEX = "[a-zA-Z0-9_-]+";
     private static final Pattern pattern = Pattern.compile(VALID_NAME_REGEX);
 
-    public MongoVectorDB(MongoDBConfig config) {
-        super(TYPE);
+    public MongoVectorDB(String name, MongoDBConfig config) {
+        super(name, TYPE);
         this.config = config;
         this.mongoClients =
                 CacheBuilder.newBuilder()

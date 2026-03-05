@@ -13,16 +13,12 @@
 package org.conductoross.conductor.ai.vectordb.postgres;
 
 import org.conductoross.conductor.ai.vectordb.VectorDBConfig;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@ConfigurationProperties(prefix = "conductor.vectordb.postgres")
 @Data
-@Component
 @NoArgsConstructor
 @AllArgsConstructor
 public class PostgresConfig implements VectorDBConfig<PostgresVectorDB> {
@@ -47,6 +43,10 @@ public class PostgresConfig implements VectorDBConfig<PostgresVectorDB> {
 
     @Override
     public PostgresVectorDB get() {
-        return new PostgresVectorDB(this);
+        throw new UnsupportedOperationException("Use get(String name) instead");
+    }
+
+    public PostgresVectorDB get(String name) {
+        return new PostgresVectorDB(name, this);
     }
 }
