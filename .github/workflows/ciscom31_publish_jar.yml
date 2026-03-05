@@ -1,0 +1,80 @@
+name: CiscoM31PublishJar
+
+on:
+  push:
+  workflow_dispatch:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        id: extract_branch
+
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Gradle wrapper validation
+        uses: gradle/wrapper-validation-action@v1
+      - name: Set up Zulu JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
+      - name: Build with Gradle
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          echo "############################################################################################################################################"
+          echo "Building Conductor"
+          ./gradlew build --scan
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        if: always()
+        with:
+          comment_on_pr: false
+          files: './**/**/test-results/**/*.xml'
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: '**/build/reports'
+      - name: Store Buildscan URL
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-scan
+          path: 'buildscan.log'
+      - name: Create build tag
+        run: |
+          echo "############################################################################################################################################"
+          export TAG=cisco-build.${{ github.run_number }}+${{ github.sha }}
+          echo "TAG=$TAG" >> $GITHUB_OUTPUT
+          echo "Creating release: $TAG"
+        id: tag
+      - name: Upload conductor-server JAR
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "server/build/libs/conductor-server-boot.jar"
+          commit: ${{ github.sha }}
+          tag: ${{ steps.tag.outputs.TAG }}
+          token: ${{ github.token }}

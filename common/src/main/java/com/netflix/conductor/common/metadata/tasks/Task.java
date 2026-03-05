@@ -212,6 +212,12 @@ public class Task {
     @ProtoField(id = 45)
     private String parentTaskId;
 
+    @ProtoField(id = 46)
+    private int publishCount;
+
+    @ProtoField(id = 47)
+    private long lastPublishTime;
+
     public Task() {}
 
     /**
@@ -832,6 +838,22 @@ public class Task {
         this.executionMetadata = executionMetadata;
     }
 
+    public int getPublishCount() {
+        return publishCount;
+    }
+
+    public void setPublishCount(int publishCount) {
+        this.publishCount = publishCount;
+    }
+
+    public long getLastPublishTime() {
+        return lastPublishTime;
+    }
+
+    public void setLastPublishTime(long lastPublishTime) {
+        this.lastPublishTime = lastPublishTime;
+    }
+
     public Task copy() {
         Task copy = new Task();
         copy.setCallbackAfterSeconds(callbackAfterSeconds);
@@ -867,6 +889,8 @@ public class Task {
         copy.setParentTaskId(parentTaskId);
         copy.setFirstStartTime(firstStartTime);
         copy.setExecutionMetadata(executionMetadata);
+        copy.setPublishCount(publishCount);
+        copy.setLastPublishTime(lastPublishTime);
         return copy;
     }
 
@@ -992,6 +1016,12 @@ public class Task {
                 + ", firstStartTime='"
                 + firstStartTime
                 + '\''
+                + ", publishCount='"
+                + publishCount
+                + '\''
+                + ", lastPublishTime='"
+                + lastPublishTime
+                + '\''
                 + '}';
     }
 
@@ -1047,7 +1077,9 @@ public class Task {
                 && Objects.equals(getIsolationGroupId(), task.getIsolationGroupId())
                 && Objects.equals(getExecutionNameSpace(), task.getExecutionNameSpace())
                 && Objects.equals(getParentTaskId(), task.getParentTaskId())
-                && Objects.equals(getFirstStartTime(), task.getFirstStartTime());
+                && Objects.equals(getFirstStartTime(), task.getFirstStartTime())
+                && Objects.equals(getPublishCount(), task.getPublishCount())
+                && Objects.equals(getLastPublishTime(), task.getLastPublishTime());
     }
 
     @Override
@@ -1091,6 +1123,8 @@ public class Task {
                 getIsolationGroupId(),
                 getExecutionNameSpace(),
                 getParentTaskId(),
-                getFirstStartTime());
+                getFirstStartTime(),
+                getPublishCount(),
+                getLastPublishTime());
     }
 }

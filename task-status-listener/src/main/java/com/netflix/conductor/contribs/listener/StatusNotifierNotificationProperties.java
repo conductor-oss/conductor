@@ -30,6 +30,10 @@ public class StatusNotifierNotificationProperties {
 
     private String endpointWorkflow;
 
+    private String headerDomainGroup;
+
+    private String headerAccountCookie;
+
     private String headerPrefer = "";
 
     private String headerPreferValue = "";
@@ -70,6 +74,22 @@ public class StatusNotifierNotificationProperties {
 
     public void setEndpointWorkflow(String endpointWorkflow) {
         this.endpointWorkflow = endpointWorkflow;
+    }
+
+    public String getHeaderDomainGroup() {
+        return headerDomainGroup;
+    }
+
+    public void setHeaderDomainGroup(String headerDomainGroup) {
+        this.headerDomainGroup = headerDomainGroup;
+    }
+
+    public String getHeaderAccountCookie() {
+        return headerAccountCookie;
+    }
+
+    public void setHeaderAccountCookie(String headerAccountCookie) {
+        this.headerAccountCookie = headerAccountCookie;
     }
 
     public String getHeaderPrefer() {

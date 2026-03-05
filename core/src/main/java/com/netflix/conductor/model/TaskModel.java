@@ -12,10 +12,13 @@
  */
 package com.netflix.conductor.model;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -31,6 +34,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 public class TaskModel {
+    private static final Logger logger = LoggerFactory.getLogger(TaskModel.class);
 
     public enum Status {
         IN_PROGRESS(false, true, true),
@@ -172,6 +176,10 @@ public class TaskModel {
     private String parentTaskId;
 
     private @Valid Map<String, List<StateChangeEvent>> onStateChange;
+
+    private int publishCount;
+
+    private long lastPublishTime;
 
     @JsonIgnore private Map<String, Object> inputPayload = new HashMap<>();
 
@@ -420,6 +428,22 @@ public class TaskModel {
         this.workerId = workerId;
     }
 
+    public int getPublishCount() {
+        return publishCount;
+    }
+
+    public void setPublishCount(int publishCount) {
+        this.publishCount = publishCount;
+    }
+
+    public long getLastPublishTime() {
+        return lastPublishTime;
+    }
+
+    public void setLastPublishTime(long lastPublishTime) {
+        this.lastPublishTime = lastPublishTime;
+    }
+
     @JsonIgnore
     public Map<String, Object> getOutputData() {
         if (!outputPayload.isEmpty() && !outputData.isEmpty()) {
@@ -638,6 +662,21 @@ public class TaskModel {
         return copy;
     }
 
+    /**
+     * Create a copy with inputs and outputs being deep copies of the original data. Used to create
+     * a snapshot of a model for concurrent scenarios as TaskPublisher firing off notifications in a
+     * separate thread.
+     *
+     * @return A copy of this model object with deep copies of input and output.
+     */
+    public TaskModel copyWithDeepInputOutput() {
+        TaskModel copy = new TaskModel();
+        BeanUtils.copyProperties(this, copy);
+        copy.inputData = deepCopyInputOutput(this.inputData);
+        copy.outputData = deepCopyInputOutput(this.outputData);
+        return copy;
+    }
+
     public void externalizeInput(String path) {
         this.inputPayload = this.inputData;
         this.inputData = new HashMap<>();
@@ -784,5 +823,24 @@ public class TaskModel {
 
     public void removeOutput(String key) {
         this.outputData.remove(key);
+    }
+
+    private static Map<String, Object> deepCopyInputOutput(Map<String, Object> map) {
+        if (map == null) {
+            return null;
+        }
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                ObjectOutputStream oos = new ObjectOutputStream(bos)) {
+
+            oos.writeObject(map);
+
+            try (ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
+                    ObjectInputStream ois = new ObjectInputStream(bis)) {
+                return (Map<String, Object>) ois.readObject();
+            }
+        } catch (IOException | ClassNotFoundException e) {
+            logger.error("Exception while creating a deep copy of input or output");
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -78,6 +78,9 @@ public interface WorkflowBulkService {
                     List<String> workflowIds,
             boolean archiveWorkflow);
 
+    BulkResponse removeCorrelatedWorkflows(
+            String correlationId, boolean archiveWorkflow, boolean removeFromIndex);
+
     BulkResponse<String> terminateRemove(
             @NotEmpty(message = "WorkflowIds list cannot be null.")
                     @Size(

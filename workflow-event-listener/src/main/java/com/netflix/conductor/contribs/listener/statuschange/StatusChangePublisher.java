@@ -65,6 +65,18 @@ public class StatusChangePublisher implements WorkflowStatusListener {
                     statusChangeNotification = new StatusChangeNotification(workflow.toWorkflow());
                     String jsonWorkflow = statusChangeNotification.toJsonString();
                     LOGGER.info("Publishing StatusChangeNotification: {}", jsonWorkflow);
+                    if (statusChangeNotification.getAccountMoId().equals("")) {
+                        LOGGER.info(
+                                "Skip workflow '{}' notification. Account Id is empty.",
+                                statusChangeNotification.getWorkflowId());
+                        continue;
+                    }
+                    if (statusChangeNotification.getDomainGroupMoId().equals("")) {
+                        LOGGER.info(
+                                "Skip workflow '{}' notification. Domain group is empty.",
+                                statusChangeNotification.getWorkflowId());
+                        continue;
+                    }
                     publishStatusChangeNotification(statusChangeNotification);
                     LOGGER.debug(
                             "Workflow {} publish is successful.",
@@ -143,6 +155,8 @@ public class StatusChangePublisher implements WorkflowStatusListener {
         rcm.postNotification(
                 RestClientManager.NotificationType.WORKFLOW,
                 jsonWorkflow,
+                statusChangeNotification.getDomainGroupMoId(),
+                statusChangeNotification.getAccountMoId(),
                 statusChangeNotification.getWorkflowId(),
                 statusChangeNotification.getStatusNotifier());
     }

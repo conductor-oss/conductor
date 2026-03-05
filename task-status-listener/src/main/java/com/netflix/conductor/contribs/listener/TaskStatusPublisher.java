@@ -72,6 +72,18 @@ public class TaskStatusPublisher implements TaskStatusListener {
                                 taskNotification.getTaskId());
                         continue;
                     }
+                    if (taskNotification.getAccountMoId().equals("")) {
+                        LOGGER.info(
+                                "Skip task '{}' notification. Account Id is empty.",
+                                taskNotification.getTaskId());
+                        continue;
+                    }
+                    if (taskNotification.getDomainGroupMoId().equals("")) {
+                        LOGGER.info(
+                                "Skip task '{}' notification. Domain group is empty.",
+                                taskNotification.getTaskId());
+                        continue;
+                    }
                     publishTaskNotification(taskNotification);
                     LOGGER.debug("Task {} publish is successful.", taskNotification.getTaskId());
                     Thread.sleep(5);
@@ -100,6 +112,12 @@ public class TaskStatusPublisher implements TaskStatusListener {
         this.rcm = rcm;
         this.executionDAOFacade = executionDAOFacade;
         this.subscribedTaskStatusList = subscribedTaskStatuses;
+        if (this.subscribedTaskStatusList.isEmpty()) {
+            LOGGER.error(
+                    "SubscribedTaskStatusList is empty, none of the notification will be sent.");
+        } else {
+            LOGGER.info("SubscribedTaskStatusList {}", this.subscribedTaskStatusList);
+        }
         validateSubscribedTaskStatuses(subscribedTaskStatuses);
         ConsumerThread consumerThread = new ConsumerThread();
         consumerThread.start();
@@ -131,7 +149,12 @@ public class TaskStatusPublisher implements TaskStatusListener {
     @Override
     public void onTaskScheduled(TaskModel task) {
         if (subscribedTaskStatusList.contains(TaskModel.Status.SCHEDULED.name())) {
-            enqueueTask(task);
+            // A task in a non-terminal state may modify inputs as it progresses, so if our
+            // publishing thread attempts to serialize input/output to json it may run into
+            // a ConcurrentModificationException unless we create deep copies.
+            // Besides, it's generally wrong to push out something while it is modified
+            // concurrently.
+            enqueueTask(task.copyWithDeepInputOutput());
         }
     }
 
@@ -173,7 +196,12 @@ public class TaskStatusPublisher implements TaskStatusListener {
     @Override
     public void onTaskInProgress(TaskModel task) {
         if (subscribedTaskStatusList.contains(TaskModel.Status.IN_PROGRESS.name())) {
-            enqueueTask(task);
+            // A task in a non-terminal state may modify inputs as it progresses, so if our
+            // publishing thread attempts to serialize input/output to json it may run into
+            // a ConcurrentModificationException unless we create deep copies.
+            // Besides, it's generally wrong to push out something while it is modified
+            // concurrently.
+            enqueueTask(task.copyWithDeepInputOutput());
         }
     }
 
@@ -196,6 +224,8 @@ public class TaskStatusPublisher implements TaskStatusListener {
         rcm.postNotification(
                 RestClientManager.NotificationType.TASK,
                 jsonTask,
+                taskNotification.getDomainGroupMoId(),
+                taskNotification.getAccountMoId(),
                 taskNotification.getTaskId(),
                 null);
     }

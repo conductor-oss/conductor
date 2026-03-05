@@ -55,7 +55,8 @@ import com.netflix.conductor.service.MetadataService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @ContextConfiguration(

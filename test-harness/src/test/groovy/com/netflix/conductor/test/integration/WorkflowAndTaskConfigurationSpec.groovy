@@ -13,10 +13,8 @@
 package com.netflix.conductor.test.integration
 
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestPropertySource
 
-import com.netflix.conductor.ConductorTestApp
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.metadata.tasks.TaskResult

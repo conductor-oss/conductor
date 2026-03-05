@@ -12,11 +12,7 @@
  */
 package com.netflix.conductor.service;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,10 +37,7 @@ import static com.netflix.conductor.TestUtils.getConstraintViolationMessages;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @SuppressWarnings("SpringJavaAutowiredMembersInspection")
 @RunWith(SpringRunner.class)

@@ -96,7 +96,7 @@ public class TaskTest {
         final Task task = new Task();
         // In order to avoid forgetting putting inside the copy method the newly added fields check
         // the number of declared fields.
-        final int expectedTaskFieldsNumber = 43;
+        final int expectedTaskFieldsNumber = 45;
         final int declaredFieldsNumber = task.getClass().getDeclaredFields().length;
 
         final ExecutionMetadata executionMetadata = new ExecutionMetadata();
@@ -148,6 +148,8 @@ public class TaskTest {
         task.setSubWorkflowId("");
         task.setSubworkflowChanged(false);
         task.setExecutionMetadata(executionMetadata);
+        task.setPublishCount(2);
+        task.setLastPublishTime(System.currentTimeMillis());
 
         final Task copy = task.deepCopy();
         assertEquals(task, copy);

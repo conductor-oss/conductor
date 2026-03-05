@@ -813,6 +813,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             return task;
         }
 
+        if (taskResult.getStatus() == TaskResult.Status.IN_PROGRESS && task.getStartTime() == 0) {
+            task.setStartTime(System.currentTimeMillis());
+        }
+
         // for system tasks, setting to SCHEDULED would mean restarting the task which
         // is
         // undesirable
@@ -1183,7 +1187,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             return workflow;
 
         } catch (TerminateWorkflowException twe) {
-            LOGGER.info("Execution terminated of workflow: {}", workflow, twe);
+            LOGGER.info(
+                    "Execution terminated of workflow: {} error {}",
+                    workflow,
+                    twe.getMessage(),
+                    twe);
             terminate(workflow, twe);
             return workflow;
         } catch (RuntimeException e) {

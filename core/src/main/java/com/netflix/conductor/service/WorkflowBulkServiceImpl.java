@@ -13,6 +13,7 @@
 package com.netflix.conductor.service;
 
 import java.util.List;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import com.netflix.conductor.annotations.Audit;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.model.BulkResponse;
+import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -32,11 +34,15 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowBulkService.class);
     private final WorkflowExecutor workflowExecutor;
     private final WorkflowService workflowService;
+    private final ExecutionDAOFacade executionDAOFacade;
 
     public WorkflowBulkServiceImpl(
-            WorkflowExecutor workflowExecutor, WorkflowService workflowService) {
+            WorkflowExecutor workflowExecutor,
+            WorkflowService workflowService,
+            ExecutionDAOFacade executionDAOFacade) {
         this.workflowExecutor = workflowExecutor;
         this.workflowService = workflowService;
+        this.executionDAOFacade = executionDAOFacade;
     }
 
     /**
@@ -192,6 +198,38 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
                 bulkResponse.appendFailedResponse(workflowId, e.getMessage());
             }
         }
+        return bulkResponse;
+    }
+
+    public BulkResponse removeCorrelatedWorkflows(
+            String correlationId, boolean archiveWorkflow, boolean isPollProcessing) {
+        BulkResponse bulkResponse = new BulkResponse();
+        long startTime = System.currentTimeMillis();
+        Set<String> result = executionDAOFacade.getWorkflowIdSetByCorrelationId(correlationId);
+        long corrDuration = System.currentTimeMillis() - startTime;
+        LOGGER.info(
+                "workflow ids from correlation id {} {} duration {} archiveWorkflow {} isPollProcessing {}",
+                correlationId,
+                result,
+                corrDuration,
+                archiveWorkflow,
+                isPollProcessing);
+        result.stream()
+                .parallel()
+                .forEach(
+                        workflowId -> {
+                            try {
+                                executionDAOFacade.removeWorkflow(workflowId, archiveWorkflow);
+                                bulkResponse.appendSuccessResponse(workflowId);
+                            } catch (Exception e) {
+                                LOGGER.error(
+                                        "bulk terminate exception, workflowId {}, message: {} ",
+                                        workflowId,
+                                        e.getMessage(),
+                                        e);
+                                bulkResponse.appendFailedResponse(workflowId, e.getMessage());
+                            }
+                        });
         return bulkResponse;
     }
 

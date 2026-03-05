@@ -65,4 +65,6 @@ message Task {
     int64 first_start_time = 43;
     ExecutionMetadata execution_metadata = 44;
     string parent_task_id = 45;
+    int32 publish_count = 46;
+    int64 last_publish_time = 47;
 }

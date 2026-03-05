@@ -16,7 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.run.TaskSummary;
+import com.netflix.conductor.common.run.TaskLog;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -26,7 +26,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 
 @JsonFilter("SecretRemovalFilter")
-public class TaskNotification extends TaskSummary {
+public class TaskNotification extends TaskLog {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskStatusPublisher.class);
 
