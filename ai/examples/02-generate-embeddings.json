@@ -1,0 +1,17 @@
+{
+  "name": "embedding_workflow",
+  "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "generate_embeddings",
+      "taskReferenceName": "embeddings",
+      "type": "LLM_GENERATE_EMBEDDINGS",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "text-embedding-3-small",
+        "text": "Conductor is an orchestration platform"
+      }
+    }
+  ]
+}

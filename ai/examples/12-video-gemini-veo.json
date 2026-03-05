@@ -1,0 +1,25 @@
+{
+  "name": "video_gen_gemini_veo",
+  "description": "Generates a video using Google Gemini Veo. Supports negative prompts, person generation controls, and optional audio generation.",
+  "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "generate_video",
+      "taskReferenceName": "veo_video",
+      "type": "GENERATE_VIDEO",
+      "inputParameters": {
+        "llmProvider": "vertex_ai",
+        "model": "veo-3",
+        "prompt": "A time-lapse of a blooming flower in a sunlit garden, soft bokeh background",
+        "duration": 8,
+        "aspectRatio": "16:9",
+        "resolution": "720p",
+        "personGeneration": "dont_allow",
+        "generateAudio": true,
+        "negativePrompt": "blurry, low quality, text overlay",
+        "n": 1
+      }
+    }
+  ]
+}

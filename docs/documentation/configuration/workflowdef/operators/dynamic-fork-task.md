@@ -233,6 +233,8 @@ Refer to the [Join](join-task.md) task for more details on the Join aspect of th
 
 In this example workflow, a Dynamic Fork task is used to run Worker tasks (`SIMPLE`) that will resize uploaded images and store the resized images into a specified `location`.
 
+When using `forkTaskInputs` with `forkTaskType` (or `forkTaskWorkflow`), the `dynamicForkTasksParam` and `dynamicForkTasksInputParamName` fields are not required.
+
 ```json
 {
   "name": "image_multiple_convert_resize_fork",
@@ -260,9 +262,7 @@ In this example workflow, a Dynamic Fork task is used to run Worker tasks (`SIMP
            }
        ]
       },
-      "type": "FORK_JOIN_DYNAMIC",
-      "dynamicForkTasksParam": "dynamicTasks",
-      "dynamicForkTasksInputParamName": "dynamicTasksInput"
+      "type": "FORK_JOIN_DYNAMIC"
     },
     {
       "name": "image_multiple_convert_resize_join",
@@ -313,9 +313,7 @@ In this example workflow, the Dynamic Fork task runs HTTP tasks in parallel. The
           }
         ]
       },
-      "type": "FORK_JOIN_DYNAMIC",
-      "dynamicForkTasksParam": "dynamicTasks",
-      "dynamicForkTasksInputParamName": "dynamicTasksInput"
+      "type": "FORK_JOIN_DYNAMIC"
     },
     {
       "name": "dynamic_workflow_array_http_join",
@@ -323,6 +321,57 @@ In this example workflow, the Dynamic Fork task runs HTTP tasks in parallel. The
       "inputParameters": {},
       "type": "JOIN",
       "joinOn": []
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "ownerEmail": "example@email.com"
+}
+```
+
+Refer to the [Join](join-task.md) task for more details on the Join aspect of the Fork.
+
+
+### Running the same task — Simplified configuration
+
+When using `forkTaskInputs`, you can use a simplified configuration without `dynamicForkTasksParam` and `dynamicForkTasksInputParamName`. This approach uses `forkTaskName` to specify the task type directly.
+
+```json
+{
+  "name": "dynamic_fork_simple",
+  "description": "Dynamic fork with simplified configuration",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "dynamic_fork_http",
+      "taskReferenceName": "dynamic_fork_http_ref",
+      "inputParameters": {
+        "forkTaskName": "HTTP",
+        "forkTaskInputs": [
+          {
+            "uri": "https://orkes-api-tester.orkesconductor.com/api",
+            "method": "GET",
+            "accept": "application/json",
+            "contentType": "application/json",
+            "encode": true
+          },
+          {
+            "uri": "https://orkes-api-tester.orkesconductor.com/api",
+            "method": "GET",
+            "accept": "application/json",
+            "contentType": "application/json",
+            "encode": true
+          }
+        ]
+      },
+      "type": "FORK_JOIN_DYNAMIC"
+    },
+    {
+      "name": "dynamic_fork_http_join",
+      "taskReferenceName": "dynamic_fork_http_join_ref",
+      "inputParameters": {},
+      "type": "JOIN"
     }
   ],
   "inputParameters": [],
@@ -366,9 +415,7 @@ In this example workflow, the dynamic fork runs Sub Workflow tasks in parallel. 
           }
         ]
       },
-      "type": "FORK_JOIN_DYNAMIC",
-      "dynamicForkTasksParam": "dynamicTasks",
-      "dynamicForkTasksInputParamName": "dynamicTasksInput"
+      "type": "FORK_JOIN_DYNAMIC"
     },
     {
       "name": "dynamic_workflow_array_http_subworkflow",

@@ -540,7 +540,8 @@ public class ForkJoinDynamicTaskMapperTest {
         mapperInput.put("forkTaskInputs", Arrays.asList(forkInput1, forkInput2));
 
         Pair<List<WorkflowTask>, Map<String, Map<String, Object>>> result =
-                mapper.getDynamicTasksSimple(workflowTask, mapperInput);
+                mapper.getDynamicTasksSimple(
+                        workflowTask, mapperInput, workflowTask.getTaskReferenceName(), false);
 
         assertNotNull(result);
         result.getLeft()
@@ -554,5 +555,291 @@ public class ForkJoinDynamicTaskMapperTest {
                 "value1", result.getRight().get(firstTask.getTaskReferenceName()).get("param1"));
         assertEquals(
                 "value2", result.getRight().get(secondTask.getTaskReferenceName()).get("param1"));
+    }
+
+    @Test
+    public void testDynamicForkJoinTaskDuplicateTaskRefName() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("DYNAMIC_FORK_JOIN_WF");
+        def.setDescription(def.getName());
+        def.setVersion(1);
+        def.setInputParameters(Arrays.asList("param1", "param2"));
+
+        WorkflowModel workflowModel = new WorkflowModel();
+        workflowModel.setWorkflowDefinition(def);
+
+        WorkflowTask dynamicForkJoinToSchedule = new WorkflowTask();
+        dynamicForkJoinToSchedule.setType(TaskType.FORK_JOIN_DYNAMIC.name());
+        dynamicForkJoinToSchedule.setTaskReferenceName("dynamicfanouttask");
+        dynamicForkJoinToSchedule.setDynamicForkTasksParam("dynamicTasks");
+        dynamicForkJoinToSchedule.setDynamicForkTasksInputParamName("dynamicTasksInput");
+        dynamicForkJoinToSchedule
+                .getInputParameters()
+                .put("dynamicTasks", "dt1.output.dynamicTasks");
+        dynamicForkJoinToSchedule
+                .getInputParameters()
+                .put("dynamicTasksInput", "dt1.output.dynamicTasksInput");
+
+        WorkflowTask join = new WorkflowTask();
+        join.setType(TaskType.JOIN.name());
+        join.setTaskReferenceName("dynamictask_join");
+
+        def.getTasks().add(dynamicForkJoinToSchedule);
+        def.getTasks().add(join);
+
+        Map<String, Object> input1 = new HashMap<>();
+        input1.put("k1", "v1");
+        WorkflowTask wt2 = new WorkflowTask();
+        wt2.setName("junit_task_2");
+        wt2.setTaskReferenceName("xdt1");
+
+        Map<String, Object> input2 = new HashMap<>();
+        input2.put("k2", "v2");
+
+        WorkflowTask wt3 = new WorkflowTask();
+        wt3.setName("junit_task_3");
+        wt3.setTaskReferenceName("xdt2");
+
+        HashMap<String, Object> dynamicTasksInput = new HashMap<>();
+        dynamicTasksInput.put("xdt1", input1);
+        dynamicTasksInput.put("xdt2", input2);
+        dynamicTasksInput.put("dynamicTasks", Arrays.asList(wt2, wt3));
+        dynamicTasksInput.put("dynamicTasksInput", dynamicTasksInput);
+
+        // dynamic
+        when(parametersUtils.getTaskInput(anyMap(), any(WorkflowModel.class), any(), any()))
+                .thenReturn(dynamicTasksInput);
+        when(objectMapper.convertValue(any(), any(TypeReference.class)))
+                .thenReturn(Arrays.asList(wt2, wt3));
+
+        TaskModel simpleTask1 = new TaskModel();
+        simpleTask1.setReferenceTaskName("xdt1");
+
+        // Empty list, this is a bad state, workflow should terminate
+        when(deciderService.getTasksToBeScheduled(workflowModel, wt2, 0))
+                .thenReturn(new ArrayList<>());
+
+        String taskId = idGenerator.generate();
+        TaskMapperContext taskMapperContext =
+                TaskMapperContext.newBuilder()
+                        .withWorkflowModel(workflowModel)
+                        .withWorkflowTask(dynamicForkJoinToSchedule)
+                        .withRetryCount(0)
+                        .withTaskId(taskId)
+                        .withTaskInput(dynamicTasksInput)
+                        .withDeciderService(deciderService)
+                        .build();
+
+        expectedException.expect(TerminateWorkflowException.class);
+        expectedException.expectMessage("No dynamic tasks could be created");
+        forkJoinDynamicTaskMapper.getMappedTasks(taskMapperContext);
+    }
+
+    @Test
+    public void testNestedDynamicForkTaskReferenceNaming() {
+        // Test that task reference names include parent task name when hasMoreThanOneFork=true
+        ObjectMapper realObjectMapper = new ObjectMapperProvider().getObjectMapper();
+        ForkJoinDynamicTaskMapper mapper =
+                new ForkJoinDynamicTaskMapper(
+                        idGenerator,
+                        parametersUtils,
+                        realObjectMapper,
+                        metadataDAO,
+                        systemTaskRegistry);
+
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setTaskReferenceName("parent_fork");
+
+        Map<String, Object> forkInput1 = new HashMap<>();
+        forkInput1.put("param1", "value1");
+        Map<String, Object> forkInput2 = new HashMap<>();
+        forkInput2.put("param2", "value2");
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("forkTaskName", "my_task");
+        input.put("forkTaskInputs", Arrays.asList(forkInput1, forkInput2));
+
+        // Call getDynamicTasksSimple with hasMoreThanOneFork=true
+        Pair<List<WorkflowTask>, Map<String, Map<String, Object>>> result =
+                mapper.getDynamicTasksSimple(workflowTask, input, "parent_fork", true);
+
+        assertNotNull(result);
+        List<WorkflowTask> tasks = result.getLeft();
+        assertEquals(2, tasks.size());
+
+        // Verify that task reference names include parent task name
+        assertEquals("_parent_fork_my_task_0", tasks.get(0).getTaskReferenceName());
+        assertEquals("_parent_fork_my_task_1", tasks.get(1).getTaskReferenceName());
+    }
+
+    @Test
+    public void testSimpleDynamicForkTaskReferenceNaming() {
+        // Test that task reference names are simple when hasMoreThanOneFork=false
+        ObjectMapper realObjectMapper = new ObjectMapperProvider().getObjectMapper();
+        ForkJoinDynamicTaskMapper mapper =
+                new ForkJoinDynamicTaskMapper(
+                        idGenerator,
+                        parametersUtils,
+                        realObjectMapper,
+                        metadataDAO,
+                        systemTaskRegistry);
+
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setTaskReferenceName("simple_fork");
+
+        Map<String, Object> forkInput1 = new HashMap<>();
+        forkInput1.put("param1", "value1");
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("forkTaskName", "my_task");
+        input.put("forkTaskInputs", Collections.singletonList(forkInput1));
+
+        // Call getDynamicTasksSimple with hasMoreThanOneFork=false
+        Pair<List<WorkflowTask>, Map<String, Map<String, Object>>> result =
+                mapper.getDynamicTasksSimple(workflowTask, input, "simple_fork", false);
+
+        assertNotNull(result);
+        List<WorkflowTask> tasks = result.getLeft();
+        assertEquals(1, tasks.size());
+
+        // Verify that task reference name is simple (without parent name)
+        assertEquals("_my_task_0", tasks.get(0).getTaskReferenceName());
+    }
+
+    @Test
+    public void testJoinInputPreservation() {
+        // Test that existing join input parameters are preserved
+        WorkflowDef def = new WorkflowDef();
+        def.setName("DYNAMIC_FORK_JOIN_WF");
+        def.setVersion(1);
+
+        WorkflowModel workflowModel = new WorkflowModel();
+        workflowModel.setWorkflowDefinition(def);
+
+        WorkflowTask dynamicForkJoinToSchedule = new WorkflowTask();
+        dynamicForkJoinToSchedule.setType(TaskType.FORK_JOIN_DYNAMIC.name());
+        dynamicForkJoinToSchedule.setTaskReferenceName("dynamicfork");
+        dynamicForkJoinToSchedule.setDynamicForkTasksParam("dynamicTasks");
+        dynamicForkJoinToSchedule.setDynamicForkTasksInputParamName("dynamicTasksInput");
+
+        WorkflowTask join = new WorkflowTask();
+        join.setType(TaskType.JOIN.name());
+        join.setTaskReferenceName("dynamictask_join");
+        // Add existing input parameters to join task
+        join.getInputParameters().put("existingParam1", "value1");
+        join.getInputParameters().put("existingParam2", "value2");
+
+        def.getTasks().add(dynamicForkJoinToSchedule);
+        def.getTasks().add(join);
+
+        Map<String, Object> input1 = new HashMap<>();
+        input1.put("k1", "v1");
+        WorkflowTask wt1 = new WorkflowTask();
+        wt1.setName("junit_task_1");
+        wt1.setTaskReferenceName("task1");
+
+        HashMap<String, Object> dynamicTasksInput = new HashMap<>();
+        dynamicTasksInput.put("task1", input1);
+        dynamicTasksInput.put("dynamicTasks", Collections.singletonList(wt1));
+        dynamicTasksInput.put("dynamicTasksInput", dynamicTasksInput);
+
+        when(parametersUtils.getTaskInput(anyMap(), any(WorkflowModel.class), any(), any()))
+                .thenReturn(dynamicTasksInput);
+        when(objectMapper.convertValue(any(), any(TypeReference.class)))
+                .thenReturn(Collections.singletonList(wt1));
+
+        TaskModel simpleTask1 = new TaskModel();
+        simpleTask1.setReferenceTaskName("task1");
+
+        when(deciderService.getTasksToBeScheduled(workflowModel, wt1, 0))
+                .thenReturn(Collections.singletonList(simpleTask1));
+
+        String taskId = idGenerator.generate();
+        TaskMapperContext taskMapperContext =
+                TaskMapperContext.newBuilder()
+                        .withWorkflowModel(workflowModel)
+                        .withWorkflowTask(dynamicForkJoinToSchedule)
+                        .withRetryCount(0)
+                        .withTaskInput(Map.of())
+                        .withTaskId(taskId)
+                        .withDeciderService(deciderService)
+                        .build();
+
+        List<TaskModel> mappedTasks = forkJoinDynamicTaskMapper.getMappedTasks(taskMapperContext);
+
+        assertEquals(3, mappedTasks.size());
+        TaskModel joinTask = mappedTasks.get(2);
+        assertEquals(TASK_TYPE_JOIN, joinTask.getTaskType());
+
+        // Verify that existing join input parameters are preserved
+        assertEquals("value1", joinTask.getInputData().get("existingParam1"));
+        assertEquals("value2", joinTask.getInputData().get("existingParam2"));
+        assertNotNull(joinTask.getInputData().get("joinOn"));
+    }
+
+    @Test
+    public void testForkTaskExecutedFlag() {
+        // Test that the fork task has the executed flag set to true
+        WorkflowDef def = new WorkflowDef();
+        def.setName("DYNAMIC_FORK_JOIN_WF");
+        def.setVersion(1);
+
+        WorkflowModel workflowModel = new WorkflowModel();
+        workflowModel.setWorkflowDefinition(def);
+
+        WorkflowTask dynamicForkJoinToSchedule = new WorkflowTask();
+        dynamicForkJoinToSchedule.setType(TaskType.FORK_JOIN_DYNAMIC.name());
+        dynamicForkJoinToSchedule.setTaskReferenceName("dynamicfork");
+        dynamicForkJoinToSchedule.setDynamicForkTasksParam("dynamicTasks");
+        dynamicForkJoinToSchedule.setDynamicForkTasksInputParamName("dynamicTasksInput");
+
+        WorkflowTask join = new WorkflowTask();
+        join.setType(TaskType.JOIN.name());
+        join.setTaskReferenceName("dynamictask_join");
+
+        def.getTasks().add(dynamicForkJoinToSchedule);
+        def.getTasks().add(join);
+
+        Map<String, Object> input1 = new HashMap<>();
+        input1.put("k1", "v1");
+        WorkflowTask wt1 = new WorkflowTask();
+        wt1.setName("junit_task_1");
+        wt1.setTaskReferenceName("task1");
+
+        HashMap<String, Object> dynamicTasksInput = new HashMap<>();
+        dynamicTasksInput.put("task1", input1);
+        dynamicTasksInput.put("dynamicTasks", Collections.singletonList(wt1));
+        dynamicTasksInput.put("dynamicTasksInput", dynamicTasksInput);
+
+        when(parametersUtils.getTaskInput(anyMap(), any(WorkflowModel.class), any(), any()))
+                .thenReturn(dynamicTasksInput);
+        when(objectMapper.convertValue(any(), any(TypeReference.class)))
+                .thenReturn(Collections.singletonList(wt1));
+
+        TaskModel simpleTask1 = new TaskModel();
+        simpleTask1.setReferenceTaskName("task1");
+
+        when(deciderService.getTasksToBeScheduled(workflowModel, wt1, 0))
+                .thenReturn(Collections.singletonList(simpleTask1));
+
+        String taskId = idGenerator.generate();
+        TaskMapperContext taskMapperContext =
+                TaskMapperContext.newBuilder()
+                        .withWorkflowModel(workflowModel)
+                        .withWorkflowTask(dynamicForkJoinToSchedule)
+                        .withRetryCount(0)
+                        .withTaskInput(Map.of())
+                        .withTaskId(taskId)
+                        .withDeciderService(deciderService)
+                        .build();
+
+        List<TaskModel> mappedTasks = forkJoinDynamicTaskMapper.getMappedTasks(taskMapperContext);
+
+        assertEquals(3, mappedTasks.size());
+        TaskModel forkTask = mappedTasks.get(0);
+        assertEquals(TASK_TYPE_FORK, forkTask.getTaskType());
+
+        // Verify that the fork task has the executed flag set to true
+        assertEquals("Fork task should be marked as executed", true, forkTask.isExecuted());
     }
 }

@@ -19,7 +19,7 @@ import com.netflix.conductor.client.grpc.MetadataClient;
 import com.netflix.conductor.client.grpc.TaskClient;
 import com.netflix.conductor.client.grpc.WorkflowClient;
 
-public class GrpcEndToEndTest extends AbstractGrpcEndToEndTest {
+public class GrpcEndToEndTest extends TestHarnessAbstractGrpcEndToEndTest {
 
     @Before
     public void init() {
