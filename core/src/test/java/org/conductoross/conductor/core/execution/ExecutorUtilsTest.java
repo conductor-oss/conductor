@@ -43,7 +43,9 @@ public class ExecutorUtilsTest {
         WorkflowModel workflow =
                 workflowWithTask(TaskType.TASK_TYPE_HUMAN, TaskModel.Status.IN_PROGRESS);
         Duration result = ExecutorUtils.computePostpone(workflow, WORKFLOW_OFFSET);
-        assertEquals(WORKFLOW_OFFSET.getSeconds(), result.getSeconds(),
+        assertEquals(
+                WORKFLOW_OFFSET.getSeconds(),
+                result.getSeconds(),
                 "HUMAN task should postpone by workflowOffsetTimeout");
     }
 
@@ -53,7 +55,9 @@ public class ExecutorUtilsTest {
                 workflowWithTask(TaskType.TASK_TYPE_WAIT, TaskModel.Status.IN_PROGRESS);
         // waitTimeout defaults to 0 — no deadline
         Duration result = ExecutorUtils.computePostpone(workflow, WORKFLOW_OFFSET);
-        assertEquals(WORKFLOW_OFFSET.getSeconds(), result.getSeconds(),
+        assertEquals(
+                WORKFLOW_OFFSET.getSeconds(),
+                result.getSeconds(),
                 "WAIT task with no timeout should postpone by workflowOffsetTimeout");
     }
 
@@ -67,7 +71,9 @@ public class ExecutorUtilsTest {
 
         Duration result = ExecutorUtils.computePostpone(workflow, WORKFLOW_OFFSET);
         // Should be at most 30s (capped to workflowOffsetTimeout) and greater than 0
-        assertEquals(WORKFLOW_OFFSET.getSeconds(), result.getSeconds(),
+        assertEquals(
+                WORKFLOW_OFFSET.getSeconds(),
+                result.getSeconds(),
                 "WAIT task with future timeout > workflowOffset should be capped to workflowOffset");
     }
 
@@ -82,16 +88,19 @@ public class ExecutorUtilsTest {
         Duration result = ExecutorUtils.computePostpone(workflow, WORKFLOW_OFFSET);
         // postponeDurationSeconds == 0 (elapsed), so falls back to workflowOffsetTimeout.
         // The decider itself handles the timeout transition, not the sweep timer.
-        assertEquals(WORKFLOW_OFFSET.getSeconds(), result.getSeconds(),
+        assertEquals(
+                WORKFLOW_OFFSET.getSeconds(),
+                result.getSeconds(),
                 "WAIT task with elapsed timeout should fall back to workflowOffsetTimeout");
     }
 
     @Test
     public void testNonHumanTaskWithNoResponseTimeoutPostponesToWorkflowOffset() {
-        WorkflowModel workflow =
-                workflowWithTask("SIMPLE", TaskModel.Status.IN_PROGRESS);
+        WorkflowModel workflow = workflowWithTask("SIMPLE", TaskModel.Status.IN_PROGRESS);
         Duration result = ExecutorUtils.computePostpone(workflow, WORKFLOW_OFFSET);
-        assertEquals(WORKFLOW_OFFSET.getSeconds(), result.getSeconds(),
+        assertEquals(
+                WORKFLOW_OFFSET.getSeconds(),
+                result.getSeconds(),
                 "Task with no response timeout should fall back to workflowOffsetTimeout");
     }
 }
