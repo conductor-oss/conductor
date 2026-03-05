@@ -1,5 +1,3 @@
-version: '2.3'
-
 services:
   conductor-server:
     environment:
@@ -50,7 +48,8 @@ services:
       test: [ "CMD", "redis-cli","ping" ]
 
   conductor-elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.2
+    # Keep ES image aligned with elasticsearch-java client version (8.19.11).
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.11
     environment:
       - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
       - xpack.security.enabled=false

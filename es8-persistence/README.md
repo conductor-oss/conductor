@@ -35,6 +35,12 @@ Select the Elasticsearch 8 backend in your configuration:
 conductor.indexing.type=elasticsearch8
 ```
 
+### Elasticsearch version compatibility
+
+The ES8 module uses `elasticsearch-java` client version `8.19.11`.
+For local Docker-based setups, use Elasticsearch `8.19.x` (the provided compose file pins
+`8.19.11`).
+
 All other `conductor.elasticsearch.*` properties are shared with the ES7 module.
 
 ### Configuration

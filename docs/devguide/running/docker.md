@@ -103,7 +103,7 @@ conductor $ docker compose -f docker/docker-compose-postgres.yaml up
 
 By default, Conductor comes packaged with Elasticsearch for the UI's indexing backend. While Elasticsearch is optional, disabling it will disable the search functionality in the UI.
 
-For Elasticsearch 8.x, use `docker-compose-es8.yaml` (or set `INDEXING_BACKEND=elasticsearch8` when building) and set `conductor.indexing.type=elasticsearch8` in your config.
+For Elasticsearch 8.x, use `docker-compose-es8.yaml` (or set `INDEXING_BACKEND=elasticsearch8` when building) and set `conductor.indexing.type=elasticsearch8` in your config. The ES8 compose file pins Elasticsearch `8.19.11` (8.19.x line) to match the ES8 client.
 
 #### Disabling Elasticsearch
 
