@@ -60,16 +60,33 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build with Gradle
+      - name: Build Server JAR
         run: |
           export VERSION="${{github.ref_name}}"
           export PUBLISH_VERSION=`echo ${VERSION:1}`
           echo "RELEASE_VERSION=$PUBLISH_VERSION" >> $GITHUB_ENV
           echo Publishing version $PUBLISH_VERSION
-          ./gradlew build -x test
+          ./gradlew :conductor-server:build -x test -x spotlessCheck -x shadowJar -x :conductor-os-persistence-v3:build \
+            -Pversion=$PUBLISH_VERSION
 
-      - name: Set up Docker Build
-        uses: docker/setup-buildx-action@v1
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Build UI
+        run: |
+          cd ui
+          corepack enable && corepack prepare yarn@stable --activate
+          export REACT_APP_MONACO_EDITOR_USING_CDN=false
+          export REACT_APP_ENABLE_ERRORS_INSPECTOR=true
+          yarn config set network-timeout 600000 -g
+          yarn install && cp -r node_modules/monaco-editor public/ && yarn build
+
+      - name: Stage artifacts for Docker build
+        run: |
+          mkdir -p docker/server/libs
+          cp server/build/libs/*boot*.jar docker/server/libs/conductor-server.jar
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -84,6 +101,8 @@ jobs:
           file: docker/server/Dockerfile
           platforms: linux/arm64,linux/amd64
           push: true
+          build-args: |
+            PREBUILT=true
           tags: |
             conductoross/conductor:${{ env.RELEASE_VERSION }}
             ${{ (github.event_name == 'release' && !github.event.release.prerelease) && 'conductoross/conductor:latest' || '' }}

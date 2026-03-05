@@ -30,4 +30,5 @@ public class TokenUsageLog {
     private int promptTokens;
     private int completionTokens;
     private int totalTokens;
+    private String taskId;
 }
