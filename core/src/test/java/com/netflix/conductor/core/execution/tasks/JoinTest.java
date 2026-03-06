@@ -12,12 +12,11 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 import org.junit.Test;
 
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.model.TaskModel;
 
@@ -28,20 +27,24 @@ import static org.mockito.Mockito.when;
 
 public class JoinTest {
 
+    private static TaskModel taskWithJoinMode(WorkflowTask.JoinMode mode) {
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setJoinMode(mode);
+        TaskModel task = new TaskModel();
+        task.setWorkflowTask(workflowTask);
+        return task;
+    }
+
     @Test
     public void testSynchronousJoinModeEvaluationOffset() {
         ConductorProperties properties = mock(ConductorProperties.class);
         when(properties.getSystemTaskPostponeThreshold()).thenReturn(200);
 
         Join join = new Join(properties);
-
-        TaskModel task = new TaskModel();
-        Map<String, Object> inputData = new HashMap<>();
-        inputData.put("joinMode", "SYNC");
-        task.setInputData(inputData);
-        task.setPollCount(100);
+        TaskModel task = taskWithJoinMode(WorkflowTask.JoinMode.SYNC);
 
         // Synchronous mode should always return 0 offset
+        task.setPollCount(100);
         Optional<Long> offset = join.getEvaluationOffset(task, 10000L);
         assertTrue(offset.isPresent());
         assertEquals(0L, offset.get().longValue());
@@ -59,11 +62,7 @@ public class JoinTest {
         when(properties.getSystemTaskPostponeThreshold()).thenReturn(200);
 
         Join join = new Join(properties);
-
-        TaskModel task = new TaskModel();
-        Map<String, Object> inputData = new HashMap<>();
-        inputData.put("joinMode", "ASYNC");
-        task.setInputData(inputData);
+        TaskModel task = taskWithJoinMode(WorkflowTask.JoinMode.ASYNC);
 
         // Low poll count should return 0
         task.setPollCount(100);
@@ -85,10 +84,9 @@ public class JoinTest {
 
         Join join = new Join(properties);
 
+        // No joinMode on workflowTask — should default to async behavior
         TaskModel task = new TaskModel();
-        Map<String, Object> inputData = new HashMap<>();
-        // No joinMode specified - should default to async behavior
-        task.setInputData(inputData);
+        task.setWorkflowTask(new WorkflowTask());
 
         // Low poll count should return 0
         task.setPollCount(100);
@@ -104,22 +102,19 @@ public class JoinTest {
     }
 
     @Test
-    public void testJoinModeCaseInsensitive() {
+    public void testNullWorkflowTaskDefaultsToAsync() {
         ConductorProperties properties = mock(ConductorProperties.class);
         when(properties.getSystemTaskPostponeThreshold()).thenReturn(200);
 
         Join join = new Join(properties);
 
+        // No workflowTask at all — should default to async behavior
         TaskModel task = new TaskModel();
-        Map<String, Object> inputData = new HashMap<>();
-        inputData.put("joinMode", "sync"); // lowercase
-        task.setInputData(inputData);
-        task.setPollCount(500);
 
-        // Should still be treated as SYNC mode
+        task.setPollCount(250);
         Optional<Long> offset = join.getEvaluationOffset(task, 10000L);
         assertTrue(offset.isPresent());
-        assertEquals(0L, offset.get().longValue());
+        assertTrue(offset.get() > 0L);
     }
 
     @Test

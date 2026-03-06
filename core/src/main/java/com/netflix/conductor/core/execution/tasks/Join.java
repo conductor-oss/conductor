@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.annotations.VisibleForTesting;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
@@ -125,9 +126,11 @@ public class Join extends WorkflowSystemTask {
 
     @Override
     public Optional<Long> getEvaluationOffset(TaskModel taskModel, long maxOffset) {
-        // Check if joinMode is set to SYNC
-        String joinMode = (String) taskModel.getInputData().get("joinMode");
-        if ("SYNC".equalsIgnoreCase(joinMode)) {
+        // Check if joinMode is set to SYNC — read directly from the workflow task definition
+        // rather than from input data so the value is never duplicated into the task's payload.
+        WorkflowTask workflowTask = taskModel.getWorkflowTask();
+        if (workflowTask != null
+                && WorkflowTask.JoinMode.SYNC == workflowTask.getJoinMode()) {
             // Synchronous mode: evaluate immediately every time (no backoff)
             return Optional.of(0L);
         }

@@ -165,8 +165,14 @@ public class WorkflowTask {
     @ProtoField(id = 32)
     private boolean permissive;
 
+    /** Controls whether a JOIN task is evaluated synchronously (no backoff) or asynchronously. */
+    public enum JoinMode {
+        SYNC,
+        ASYNC
+    }
+
     @ProtoField(id = 33)
-    private String joinMode;
+    private JoinMode joinMode;
 
     /**
      * @return the name
@@ -607,14 +613,14 @@ public class WorkflowTask {
     /**
      * @return the join mode (SYNC or ASYNC)
      */
-    public String getJoinMode() {
+    public JoinMode getJoinMode() {
         return joinMode;
     }
 
     /**
-     * @param joinMode the join mode to set (SYNC or ASYNC)
+     * @param joinMode the join mode to set
      */
-    public void setJoinMode(String joinMode) {
+    public void setJoinMode(JoinMode joinMode) {
         this.joinMode = joinMode;
     }
 
