@@ -43,7 +43,8 @@ class DoWhileSpec extends AbstractSpecification {
                 'do_while_five_loop_over_integration_test.json',
                 'do_while_system_tasks.json',
                 'do_while_with_decision_task.json',
-                'do_while_set_variable_fix.json')
+                'do_while_set_variable_fix.json',
+                'do_while_high_iteration_test.json')
     }
 
     def "Test workflow with 2 iterations of five tasks"() {
@@ -1225,6 +1226,40 @@ class DoWhileSpec extends AbstractSpecification {
         }
     }
 
+
+    /**
+     * Regression test for GitHub issue #799 / PR #822.
+     *
+     * Before the fix, WorkflowExecutorOps.decide() called itself recursively each time a
+     * synchronous system task (e.g. LAMBDA inside a DO_WHILE) changed workflow state.
+     * At high iteration counts (~400+) this produced a StackOverflowError.
+     *
+     * The fix replaces the recursive call with an iterative loop. This test verifies that
+     * a DO_WHILE with 500 synchronous LAMBDA iterations completes without error.
+     */
+    def "Test DO_WHILE with 500 LAMBDA iterations completes without StackOverflowError"() {
+        given: "A DO_WHILE workflow set to run 500 LAMBDA iterations"
+        def workflowInput = new HashMap()
+        workflowInput['loop'] = 500
+
+        when: "The workflow is started"
+        def workflowInstanceId = startWorkflow("do_while_high_iteration_test", 1, "overflow-regression", workflowInput, null)
+
+        then: "The workflow completes successfully with all 500 LAMBDA tasks plus the DO_WHILE task"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.COMPLETED
+            tasks.size() == 501  // 1 DO_WHILE + 500 LAMBDA
+            tasks[0].taskType == 'DO_WHILE'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[0].iteration == 500
+            tasks[1].taskType == 'LAMBDA'
+            tasks[1].status == Task.Status.COMPLETED
+            tasks[1].iteration == 1
+            tasks[500].taskType == 'LAMBDA'
+            tasks[500].status == Task.Status.COMPLETED
+            tasks[500].iteration == 500
+        }
+    }
 
     void verifyTaskIteration(Task task, int iteration) {
         assert task.getReferenceTaskName().endsWith(TaskUtils.getLoopOverTaskRefNameSuffix(task.getIteration()))

@@ -1132,7 +1132,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         decideWatch.start();
 
         try {
-            while (true) {
+            boolean continueLoop = true;
+            while (continueLoop) {
+                continueLoop = false;
+
                 DeciderService.DeciderOutcome outcome = deciderService.decide(workflow);
                 if (outcome.isComplete) {
                     endExecution(workflow, outcome.terminateTask);
@@ -1167,6 +1170,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
                 if (stateChanged) {
                     if (decideWatch.getTime() < maxRuntime) {
+                        continueLoop = true;
                         continue;
                     }
                     // Lock lease is about to expire. Persist current state and re-queue so
@@ -1200,9 +1204,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                                 updatedOffset.getSeconds() * 1000);
                     }
                 }
-
-                return workflow;
             }
+
+            return workflow;
 
         } catch (TerminateWorkflowException twe) {
             LOGGER.info("Execution terminated of workflow: {}", workflow, twe);
