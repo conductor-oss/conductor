@@ -259,6 +259,42 @@ public class ExecutionDAOFacadeTest {
     }
 
     @Test
+    public void testArchiveWorkflowWithScheduledTasksDoesNotThrow() {
+        // Regression test for: archival fails with IllegalArgumentException when a workflow is
+        // terminated while tasks are still in SCHEDULED state (before cancelNonTerminalTasks runs).
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("testWorkflow");
+        workflowDef.setVersion(1);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("workflowId");
+        workflow.setStatus(WorkflowModel.Status.TERMINATED);
+        workflow.setWorkflowDefinition(workflowDef);
+
+        TaskModel scheduledTask = new TaskModel();
+        scheduledTask.setTaskId("scheduledTaskId");
+        scheduledTask.setStatus(TaskModel.Status.SCHEDULED);
+
+        TaskModel completedTask = new TaskModel();
+        completedTask.setTaskId("completedTaskId");
+        completedTask.setStatus(TaskModel.Status.COMPLETED);
+
+        workflow.setTasks(List.of(scheduledTask, completedTask));
+
+        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
+
+        // Should NOT throw IllegalArgumentException for SCHEDULED task
+        executionDAOFacade.removeWorkflow("workflowId", true);
+
+        verify(executionDAO, times(1)).removeWorkflow(anyString());
+        // COMPLETED task should be archived
+        verify(indexDAO, times(1)).updateTask(anyString(), eq("completedTaskId"), any(), any());
+        // SCHEDULED task should be skipped (not archived, not removed)
+        verify(indexDAO, never()).updateTask(anyString(), eq("scheduledTaskId"), any(), any());
+        verify(indexDAO, never()).asyncRemoveTask(anyString(), anyString());
+    }
+
+    @Test
     public void testUpdateWorkflowSkipsTaskIndexingWhenDisabled() {
         WorkflowModel workflow = new WorkflowModel();
         WorkflowDef workflowDef = new WorkflowDef();
