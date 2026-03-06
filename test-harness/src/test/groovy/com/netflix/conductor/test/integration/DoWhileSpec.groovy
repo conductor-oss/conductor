@@ -1228,7 +1228,7 @@ class DoWhileSpec extends AbstractSpecification {
 
 
     /**
-     * Regression test for GitHub issue #799 / PR #822.
+     * Regression test for GitHub issue #799 / PR #822 — overflow only.
      *
      * Before the fix, WorkflowExecutorOps.decide() called itself recursively each time a
      * synchronous system task (e.g. LAMBDA inside a DO_WHILE) changed workflow state.
@@ -1258,6 +1258,43 @@ class DoWhileSpec extends AbstractSpecification {
             tasks[500].taskType == 'LAMBDA'
             tasks[500].status == Task.Status.COMPLETED
             tasks[500].iteration == 500
+        }
+    }
+
+    /**
+     * Regression test for GitHub issue #799 / PR #822 — overflow AND wrong loop count.
+     *
+     * The Do_While_Workflow_Iteration_Fix workflow uses ${loopTask['iteration']} in the LAMBDA
+     * script to compute a 0-based index (iteration - 1). At high iteration counts the old
+     * recursive decide() would either overflow OR produce a wrong iteration counter because the
+     * recursive call re-entered the loop mid-execution.
+     *
+     * This test verifies both that the workflow completes and that every LAMBDA task reports the
+     * correct iteration-based output value.
+     */
+    def "Test DO_WHILE iteration counter is correct at 500 iterations (issue #799)"() {
+        given: "A DO_WHILE workflow that reads the loop iteration counter in each LAMBDA task"
+        def workflowInput = new HashMap()
+        workflowInput['loop'] = 500
+
+        when: "The workflow is started"
+        def workflowInstanceId = startWorkflow("Do_While_Workflow_Iteration_Fix", 1, "iteration-count-regression", workflowInput, null)
+
+        then: "The workflow completes and the last LAMBDA task reports the correct (0-based) index"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.COMPLETED
+            tasks.size() == 501  // 1 DO_WHILE + 500 LAMBDA (form_uri)
+            tasks[0].taskType == 'DO_WHILE'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[0].iteration == 500
+            // First iteration: loopTask.iteration == 1, so result == 0
+            tasks[1].taskType == 'LAMBDA'
+            tasks[1].status == Task.Status.COMPLETED
+            tasks[1].outputData.get("result") == 0
+            // Last iteration: loopTask.iteration == 500, so result == 499
+            tasks[500].taskType == 'LAMBDA'
+            tasks[500].status == Task.Status.COMPLETED
+            tasks[500].outputData.get("result") == 499
         }
     }
 
