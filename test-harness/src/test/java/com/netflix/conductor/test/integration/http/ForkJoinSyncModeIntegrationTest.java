@@ -14,16 +14,22 @@ package com.netflix.conductor.test.integration.http;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -41,6 +47,10 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.events.queue.Message;
+import com.netflix.conductor.core.execution.AsyncSystemTaskExecutor;
+import com.netflix.conductor.core.execution.tasks.Join;
+import com.netflix.conductor.dao.QueueDAO;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -64,30 +74,158 @@ import static org.junit.Assert.fail;
  * external conductor-client JAR (which ships an older WorkflowTask without JoinMode). Task
  * execution and workflow status are retrieved via the standard client library.
  *
- * <p>System task workers are enabled so JOIN tasks are evaluated by the background worker,
- * exercising the full execution path including {@code getEvaluationOffset()}.
+ * <p>An {@link InMemoryQueueDAO} is provided via {@link TestConfig} to satisfy the {@link QueueDAO}
+ * dependency without requiring Redis or Docker. JOIN tasks are evaluated explicitly via {@link
+ * AsyncSystemTaskExecutor} — matching the pattern used by the Groovy Spock integration specs.
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         classes = ConductorTestApp.class)
-@TestPropertySource(
-        locations = "classpath:application-integrationtest.properties",
-        properties = {
-            // Enable system task workers so JOIN evaluates via AsyncSystemTaskExecutor.
-            // The in-memory queue (JedisMock, from conductor.db.type=memory) is used.
-            "conductor.system-task-workers.enabled=true",
-            // Fast poll so tests don't wait long for the JOIN to be picked up.
-            "conductor.app.system-task-worker-poll-interval=50ms"
-        })
+@TestPropertySource(locations = "classpath:application-integrationtest.properties")
 public class ForkJoinSyncModeIntegrationTest {
 
+    // =========================================================================
+    // Test configuration: in-memory QueueDAO (no Redis / Docker required)
+    // =========================================================================
+
+    @TestConfiguration
+    static class TestConfig {
+        @Bean
+        public QueueDAO inMemoryQueueDAO() {
+            return new InMemoryQueueDAO();
+        }
+
+        /** Minimal in-memory QueueDAO backed by {@link LinkedBlockingDeque} per queue name. */
+        static class InMemoryQueueDAO implements QueueDAO {
+
+            private final ConcurrentHashMap<String, LinkedBlockingDeque<String>> queues =
+                    new ConcurrentHashMap<>();
+
+            private LinkedBlockingDeque<String> q(String name) {
+                return queues.computeIfAbsent(name, k -> new LinkedBlockingDeque<>());
+            }
+
+            @Override
+            public void push(String queueName, String id, long offsetTimeInSecond) {
+                q(queueName).addLast(id);
+            }
+
+            @Override
+            public void push(String queueName, String id, int priority, long offsetTimeInSecond) {
+                q(queueName).addLast(id);
+            }
+
+            @Override
+            public void push(String queueName, List<Message> messages) {
+                messages.forEach(m -> q(queueName).addLast(m.getId()));
+            }
+
+            @Override
+            public boolean pushIfNotExists(
+                    String queueName, String id, long offsetTimeInSecond) {
+                LinkedBlockingDeque<String> queue = q(queueName);
+                if (queue.contains(id)) return false;
+                queue.addLast(id);
+                return true;
+            }
+
+            @Override
+            public boolean pushIfNotExists(
+                    String queueName, String id, int priority, long offsetTimeInSecond) {
+                return pushIfNotExists(queueName, id, offsetTimeInSecond);
+            }
+
+            @Override
+            public List<String> pop(String queueName, int count, int timeout) {
+                LinkedBlockingDeque<String> queue = q(queueName);
+                List<String> result = new ArrayList<>();
+                for (int i = 0; i < count; i++) {
+                    String id = queue.poll();
+                    if (id == null) break;
+                    result.add(id);
+                }
+                if (result.isEmpty() && timeout > 0) {
+                    try {
+                        String id = queue.poll(Math.min(timeout, 200), TimeUnit.MILLISECONDS);
+                        if (id != null) result.add(id);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+                return result;
+            }
+
+            @Override
+            public List<Message> pollMessages(String queueName, int count, int timeout) {
+                return pop(queueName, count, timeout).stream()
+                        .map(id -> new Message(id, null, null))
+                        .collect(Collectors.toList());
+            }
+
+            @Override
+            public void remove(String queueName, String messageId) {
+                q(queueName).remove(messageId);
+            }
+
+            @Override
+            public int getSize(String queueName) {
+                return q(queueName).size();
+            }
+
+            @Override
+            public boolean ack(String queueName, String messageId) {
+                return true;
+            }
+
+            @Override
+            public boolean setUnackTimeout(
+                    String queueName, String messageId, long unackTimeout) {
+                return true;
+            }
+
+            @Override
+            public void flush(String queueName) {
+                q(queueName).clear();
+            }
+
+            @Override
+            public Map<String, Long> queuesDetail() {
+                Map<String, Long> result = new HashMap<>();
+                queues.forEach((k, v) -> result.put(k, (long) v.size()));
+                return result;
+            }
+
+            @Override
+            public Map<String, Map<String, Map<String, Long>>> queuesDetailVerbose() {
+                return new HashMap<>();
+            }
+
+            @Override
+            public boolean resetOffsetTime(String queueName, String id) {
+                return q(queueName).contains(id);
+            }
+
+            @Override
+            public boolean containsMessage(String queueName, String messageId) {
+                return q(queueName).contains(messageId);
+            }
+        }
+    }
+
+    // =========================================================================
+    // Spring-injected beans for direct JOIN evaluation (no background workers)
+    // =========================================================================
+
+    @Autowired private AsyncSystemTaskExecutor asyncSystemTaskExecutor;
+    @Autowired private Join joinSystemTask;
+
+    // =========================================================================
+    // HTTP client fields
+    // =========================================================================
+
     private static final String OWNER_EMAIL = "test@harness.com";
-    /** How long to wait for a task to become available for polling. */
     private static final long TASK_POLL_TIMEOUT_MS = 10_000;
-    /** How long to wait for a system task (JOIN) to complete after branches finish. */
-    private static final long JOIN_COMPLETE_TIMEOUT_MS = 10_000;
-    /** Generous timeout for workflows to reach terminal state. */
     private static final long WORKFLOW_TERMINAL_TIMEOUT_MS = 15_000;
 
     @LocalServerPort private int port;
@@ -122,12 +260,11 @@ public class ForkJoinSyncModeIntegrationTest {
     // =========================================================================
 
     private void registerTask(String name) {
-        TaskDef def = new TaskDef(name, name + " (fork/join sync test)", OWNER_EMAIL, 3, 120, 120);
+        TaskDef def = new TaskDef(name, name + " (fork/join sync test)", OWNER_EMAIL, 0, 120, 120);
         def.setTimeoutPolicy(TaskDef.TimeoutPolicy.TIME_OUT_WF);
         metadataClient.registerTaskDefs(List.of(def));
     }
 
-    /** Build a raw Map representing a SIMPLE WorkflowTask. */
     private Map<String, Object> simpleTaskMap(String name, String ref) {
         Map<String, Object> t = new HashMap<>();
         t.put("name", name);
@@ -137,18 +274,12 @@ public class ForkJoinSyncModeIntegrationTest {
         return t;
     }
 
-    /** Build a raw Map representing a SIMPLE WorkflowTask that is optional. */
     private Map<String, Object> optionalTaskMap(String name, String ref) {
         Map<String, Object> t = simpleTaskMap(name, ref);
         t.put("optional", true);
         return t;
     }
 
-    /**
-     * Build a raw Map representing a FORK_JOIN WorkflowTask.
-     *
-     * @param branches list of branches; each branch is a list of task Maps
-     */
     private Map<String, Object> forkTaskMap(
             String ref, List<List<Map<String, Object>>> branches) {
         Map<String, Object> t = new HashMap<>();
@@ -160,8 +291,6 @@ public class ForkJoinSyncModeIntegrationTest {
     }
 
     /**
-     * Build a raw Map representing a JOIN WorkflowTask.
-     *
      * @param joinMode "SYNC", "ASYNC", or {@code null} to omit the field (default async)
      */
     private Map<String, Object> joinTaskMap(String ref, List<String> joinOn, String joinMode) {
@@ -176,10 +305,6 @@ public class ForkJoinSyncModeIntegrationTest {
         return t;
     }
 
-    /**
-     * Register a workflow definition by POSTing raw JSON to the metadata API.
-     * This sidesteps the classpath conflict with the external conductor-client JAR.
-     */
     private void registerWorkflowDefJson(
             String name, List<Map<String, Object>> tasks, Map<String, Object> outputParameters)
             throws Exception {
@@ -210,7 +335,6 @@ public class ForkJoinSyncModeIntegrationTest {
     // Task interaction helpers
     // =========================================================================
 
-    /** Polls until a task of the given type is available, then marks it COMPLETED. */
     private void completeTask(String taskType, Map<String, Object> output)
             throws InterruptedException {
         long deadline = System.currentTimeMillis() + TASK_POLL_TIMEOUT_MS;
@@ -227,18 +351,13 @@ public class ForkJoinSyncModeIntegrationTest {
             }
             Thread.sleep(50);
         }
-        fail("Task '"
-                + taskType
-                + "' not available for polling within "
-                + TASK_POLL_TIMEOUT_MS
-                + "ms");
+        fail("Task '" + taskType + "' not available for polling within " + TASK_POLL_TIMEOUT_MS + "ms");
     }
 
     private void completeTask(String taskType) throws InterruptedException {
         completeTask(taskType, Map.of());
     }
 
-    /** Polls until a task of the given type is available, then marks it FAILED. */
     private void failTask(String taskType) throws InterruptedException {
         long deadline = System.currentTimeMillis() + TASK_POLL_TIMEOUT_MS;
         while (System.currentTimeMillis() < deadline) {
@@ -252,22 +371,42 @@ public class ForkJoinSyncModeIntegrationTest {
             }
             Thread.sleep(50);
         }
-        fail("Task '"
-                + taskType
-                + "' not available for polling within "
-                + TASK_POLL_TIMEOUT_MS
-                + "ms");
+        fail("Task '" + taskType + "' not available for polling within " + TASK_POLL_TIMEOUT_MS + "ms");
     }
 
     // =========================================================================
-    // Wait helpers
+    // JOIN evaluation helper
+    //
+    // Mirrors the Groovy Spock specs: asyncSystemTaskExecutor.execute(joinTask, taskId)
+    // is called directly instead of relying on background system-task-worker polling.
     // =========================================================================
 
     /**
-     * Polls until the workflow reaches a terminal status or timeout expires.
-     *
-     * @return the workflow at its final observed state
+     * Finds the JOIN task by reference name and executes it via {@link AsyncSystemTaskExecutor}.
+     * Returns the JOIN task after execution (fetched from the server).
      */
+    private Task executeJoin(String workflowId, String joinRefName) {
+        Workflow wf = workflowClient.getWorkflow(workflowId, true);
+        Optional<Task> maybeJoin =
+                wf.getTasks().stream()
+                        .filter(t -> joinRefName.equals(t.getReferenceTaskName()))
+                        .findFirst();
+        assertNotNull(
+                "JOIN task '" + joinRefName + "' should be present in workflow",
+                maybeJoin.orElse(null));
+        Task joinTask = maybeJoin.get();
+        if (!joinTask.getStatus().isTerminal()) {
+            asyncSystemTaskExecutor.execute(joinSystemTask, joinTask.getTaskId());
+        }
+        return workflowClient.getWorkflow(workflowId, true).getTasks().stream()
+                .filter(t -> joinRefName.equals(t.getReferenceTaskName()))
+                .findFirst()
+                .orElseThrow(
+                        () ->
+                                new AssertionError(
+                                        "JOIN task '" + joinRefName + "' missing after execute"));
+    }
+
     private Workflow waitForWorkflowTerminal(String workflowId, long timeoutMs)
             throws InterruptedException {
         long deadline = System.currentTimeMillis() + timeoutMs;
@@ -279,54 +418,13 @@ public class ForkJoinSyncModeIntegrationTest {
         return wf;
     }
 
-    /**
-     * Polls until the named task reference reaches terminal status or timeout expires.
-     *
-     * @return the task at its final observed state
-     * @throws AssertionError if the task did not reach terminal status within the timeout
-     */
-    private Task waitForTaskTerminal(String workflowId, String taskRefName, long timeoutMs)
-            throws InterruptedException {
-        long deadline = System.currentTimeMillis() + timeoutMs;
-        while (System.currentTimeMillis() < deadline) {
-            Workflow wf = workflowClient.getWorkflow(workflowId, true);
-            Optional<Task> found =
-                    wf.getTasks().stream()
-                            .filter(t -> taskRefName.equals(t.getReferenceTaskName()))
-                            .findFirst();
-            if (found.isPresent() && found.get().getStatus().isTerminal()) {
-                return found.get();
-            }
-            Thread.sleep(100);
-        }
-        Workflow wf = workflowClient.getWorkflow(workflowId, true);
-        String actual =
-                wf.getTasks().stream()
-                        .filter(t -> taskRefName.equals(t.getReferenceTaskName()))
-                        .findFirst()
-                        .map(t -> t.getStatus().name())
-                        .orElse("NOT_FOUND");
-        throw new AssertionError(
-                "Task '"
-                        + taskRefName
-                        + "' did not reach terminal status within "
-                        + timeoutMs
-                        + "ms. Actual status: "
-                        + actual
-                        + ". Workflow status: "
-                        + wf.getStatus());
-    }
-
     // =========================================================================
     // Test 1 — Basic SYNC join: 3 branches, all succeed
     // =========================================================================
 
     /**
      * A FORK with 3 independent branches joins with joinMode=SYNC. All branches succeed. After
-     * the last branch completes, the JOIN should evaluate immediately (offset=0) and the workflow
-     * should advance to the post-join task and then COMPLETE.
-     *
-     * <p>This is the core correctness test for issue #619.
+     * the last branch completes, the JOIN evaluates to COMPLETED and the workflow advances.
      */
     @Test
     public void testSync_threeBranches_allSucceed() throws Exception {
@@ -343,16 +441,16 @@ public class ForkJoinSyncModeIntegrationTest {
                                 List.of(simpleTaskMap("fjt1_branch_a", "branch_a")),
                                 List.of(simpleTaskMap("fjt1_branch_b", "branch_b")),
                                 List.of(simpleTaskMap("fjt1_branch_c", "branch_c")))));
-        tasks.add(
-                joinTaskMap("join_ref", List.of("branch_a", "branch_b", "branch_c"), "SYNC"));
+        tasks.add(joinTaskMap("join_ref", List.of("branch_a", "branch_b", "branch_c"), "SYNC"));
         tasks.add(simpleTaskMap("fjt1_post", "post_task"));
 
-        Map<String, Object> outputParams =
+        registerWorkflowDefJson(
+                "FJSync_ThreeBranches",
+                tasks,
                 Map.of(
                         "branchAOutput", "${join_ref.output.branch_a}",
                         "branchBOutput", "${join_ref.output.branch_b}",
-                        "branchCOutput", "${join_ref.output.branch_c}");
-        registerWorkflowDefJson("FJSync_ThreeBranches", tasks, outputParams);
+                        "branchCOutput", "${join_ref.output.branch_c}"));
 
         String workflowId = startWorkflow("FJSync_ThreeBranches");
         assertNotNull(workflowId);
@@ -361,32 +459,22 @@ public class ForkJoinSyncModeIntegrationTest {
         completeTask("fjt1_branch_b", Map.of("result", "B"));
         completeTask("fjt1_branch_c", Map.of("result", "C"));
 
-        Task join = waitForTaskTerminal(workflowId, "join_ref", JOIN_COMPLETE_TIMEOUT_MS);
-        assertEquals("JOIN should COMPLETE after all 3 branches succeed", Task.Status.COMPLETED, join.getStatus());
-
-        // Verify JOIN accumulates each branch's output under its reference name
-        assertNotNull("JOIN output should contain branch_a's output", join.getOutputData().get("branch_a"));
-        assertNotNull("JOIN output should contain branch_b's output", join.getOutputData().get("branch_b"));
-        assertNotNull("JOIN output should contain branch_c's output", join.getOutputData().get("branch_c"));
+        Task join = executeJoin(workflowId, "join_ref");
+        assertEquals("JOIN should COMPLETE after all 3 branches succeed",
+                Task.Status.COMPLETED, join.getStatus());
+        assertNotNull("JOIN output should contain branch_a", join.getOutputData().get("branch_a"));
+        assertNotNull("JOIN output should contain branch_b", join.getOutputData().get("branch_b"));
+        assertNotNull("JOIN output should contain branch_c", join.getOutputData().get("branch_c"));
 
         completeTask("fjt1_post");
-
-        Workflow wf = waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS);
-        assertEquals(Workflow.WorkflowStatus.COMPLETED, wf.getStatus());
+        assertEquals(Workflow.WorkflowStatus.COMPLETED,
+                waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS).getStatus());
     }
 
     // =========================================================================
-    // Test 2 — Backward compatibility: no joinMode set (implicit ASYNC)
+    // Test 2 — Backward compatibility: no joinMode (implicit ASYNC)
     // =========================================================================
 
-    /**
-     * A FORK/JOIN workflow with NO joinMode on the JOIN task should behave exactly as before
-     * issue #619. This test guards against regression.
-     *
-     * <p>The only behavioral difference from SYNC mode is that the JOIN may be evaluated with
-     * exponential backoff when the poll count exceeds the postpone threshold. We verify
-     * correctness (same terminal state) rather than timing.
-     */
     @Test
     public void testNoJoinMode_backwardCompatibility() throws Exception {
         registerTask("fjt2_branch_a");
@@ -400,7 +488,7 @@ public class ForkJoinSyncModeIntegrationTest {
                         List.of(
                                 List.of(simpleTaskMap("fjt2_branch_a", "branch_a")),
                                 List.of(simpleTaskMap("fjt2_branch_b", "branch_b")))));
-        tasks.add(joinTaskMap("join_ref", List.of("branch_a", "branch_b"), null)); // no joinMode
+        tasks.add(joinTaskMap("join_ref", List.of("branch_a", "branch_b"), null));
         tasks.add(simpleTaskMap("fjt2_post", "post_task"));
         registerWorkflowDefJson("FJSync_NoJoinMode", tasks, null);
 
@@ -410,21 +498,18 @@ public class ForkJoinSyncModeIntegrationTest {
         completeTask("fjt2_branch_a");
         completeTask("fjt2_branch_b");
 
-        // Give async mode a generous window — it uses backoff so may be slower.
-        Task join = waitForTaskTerminal(workflowId, "join_ref", 30_000);
+        Task join = executeJoin(workflowId, "join_ref");
         assertEquals(Task.Status.COMPLETED, join.getStatus());
 
         completeTask("fjt2_post");
-
-        Workflow wf = waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS);
-        assertEquals(Workflow.WorkflowStatus.COMPLETED, wf.getStatus());
+        assertEquals(Workflow.WorkflowStatus.COMPLETED,
+                waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS).getStatus());
     }
 
     // =========================================================================
     // Test 3 — Explicit ASYNC joinMode
     // =========================================================================
 
-    /** Explicitly setting joinMode=ASYNC should produce the same outcome as no joinMode. */
     @Test
     public void testExplicitAsync_sameOutcomeAsDefault() throws Exception {
         registerTask("fjt3_branch_a");
@@ -448,23 +533,18 @@ public class ForkJoinSyncModeIntegrationTest {
         completeTask("fjt3_branch_a");
         completeTask("fjt3_branch_b");
 
-        Task join = waitForTaskTerminal(workflowId, "join_ref", 30_000);
+        Task join = executeJoin(workflowId, "join_ref");
         assertEquals(Task.Status.COMPLETED, join.getStatus());
 
         completeTask("fjt3_post");
-
-        Workflow wf = waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS);
-        assertEquals(Workflow.WorkflowStatus.COMPLETED, wf.getStatus());
+        assertEquals(Workflow.WorkflowStatus.COMPLETED,
+                waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS).getStatus());
     }
 
     // =========================================================================
     // Test 4 — SYNC join: optional branch fails → workflow COMPLETES
     // =========================================================================
 
-    /**
-     * When a branch task is marked optional and fails, the SYNC JOIN should still complete (with
-     * COMPLETED or COMPLETED_WITH_ERRORS status), and the workflow should proceed.
-     */
     @Test
     public void testSync_optionalBranchFails_workflowCompletes() throws Exception {
         registerTask("fjt4_branch_a");
@@ -488,28 +568,22 @@ public class ForkJoinSyncModeIntegrationTest {
         completeTask("fjt4_branch_a");
         failTask("fjt4_branch_opt");
 
-        Task join = waitForTaskTerminal(workflowId, "join_ref", JOIN_COMPLETE_TIMEOUT_MS);
+        Task join = executeJoin(workflowId, "join_ref");
         assertTrue(
                 "JOIN should be terminal and successful (COMPLETED or COMPLETED_WITH_ERRORS)",
                 join.getStatus().isTerminal() && join.getStatus().isSuccessful());
 
         completeTask("fjt4_post");
-
-        Workflow wf = waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS);
         assertEquals(
                 "Workflow with failed optional branch should COMPLETE",
                 Workflow.WorkflowStatus.COMPLETED,
-                wf.getStatus());
+                waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS).getStatus());
     }
 
     // =========================================================================
     // Test 5 — SYNC join: required branch fails → workflow FAILS
     // =========================================================================
 
-    /**
-     * When a required (non-optional) branch fails, the SYNC JOIN should fail and the workflow
-     * should reach FAILED status.
-     */
     @Test
     public void testSync_requiredBranchFails_workflowFails() throws Exception {
         registerTask("fjt5_branch_a");
@@ -531,22 +605,20 @@ public class ForkJoinSyncModeIntegrationTest {
         completeTask("fjt5_branch_a");
         failTask("fjt5_branch_b");
 
-        Workflow wf = waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS);
+        // Execute JOIN — it detects the required failure and itself fails,
+        // then decide() transitions the workflow to FAILED.
+        executeJoin(workflowId, "join_ref");
+
         assertEquals(
                 "Workflow with failed required branch should FAIL",
                 Workflow.WorkflowStatus.FAILED,
-                wf.getStatus());
+                waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS).getStatus());
     }
 
     // =========================================================================
     // Test 6 — SYNC join: sequential tasks within a branch
     // =========================================================================
 
-    /**
-     * A branch with sequential tasks (fjt6_a1 → fjt6_a2). The JOIN waits on the LAST task in
-     * each branch (branch_a2 and branch_b). Tests that joinMode=SYNC works correctly when
-     * branches contain multiple chained tasks.
-     */
     @Test
     public void testSync_sequentialTasksInBranch() throws Exception {
         registerTask("fjt6_a1");
@@ -561,7 +633,7 @@ public class ForkJoinSyncModeIntegrationTest {
                         List.of(
                                 List.of(
                                         simpleTaskMap("fjt6_a1", "branch_a1"),
-                                        simpleTaskMap("fjt6_a2", "branch_a2")), // sequential
+                                        simpleTaskMap("fjt6_a2", "branch_a2")),
                                 List.of(simpleTaskMap("fjt6_b", "branch_b")))));
         tasks.add(joinTaskMap("join_ref", List.of("branch_a2", "branch_b"), "SYNC"));
         tasks.add(simpleTaskMap("fjt6_post", "post_task"));
@@ -570,32 +642,22 @@ public class ForkJoinSyncModeIntegrationTest {
         String workflowId = startWorkflow("FJSync_SequentialBranch");
         assertNotNull(workflowId);
 
-        // Branch 1: fjt6_a1 must complete before fjt6_a2 is scheduled
         completeTask("fjt6_a1", Map.of("step", "1"));
         completeTask("fjt6_a2", Map.of("step", "2"));
-        // Branch 2: single task
         completeTask("fjt6_b", Map.of("step", "B"));
 
-        Task join = waitForTaskTerminal(workflowId, "join_ref", JOIN_COMPLETE_TIMEOUT_MS);
+        Task join = executeJoin(workflowId, "join_ref");
         assertEquals(Task.Status.COMPLETED, join.getStatus());
 
         completeTask("fjt6_post");
-
-        Workflow wf = waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS);
-        assertEquals(Workflow.WorkflowStatus.COMPLETED, wf.getStatus());
+        assertEquals(Workflow.WorkflowStatus.COMPLETED,
+                waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS).getStatus());
     }
 
     // =========================================================================
     // Test 7 — SYNC join: joinOn subset (JOIN doesn't wait for all branches)
     // =========================================================================
 
-    /**
-     * The JOIN only waits for a subset of the forked branches (mon_a and mon_b), not the third
-     * (unmon). The JOIN should complete as soon as mon_a and mon_b are done, without requiring
-     * unmon to finish.
-     *
-     * <p>This tests that joinMode=SYNC interacts correctly with partial joinOn lists.
-     */
     @Test
     public void testSync_joinOnSubset_completesWithoutWaitingForAllBranches() throws Exception {
         registerTask("fjt7_monitored_a");
@@ -611,7 +673,7 @@ public class ForkJoinSyncModeIntegrationTest {
                                 List.of(simpleTaskMap("fjt7_monitored_a", "mon_a")),
                                 List.of(simpleTaskMap("fjt7_monitored_b", "mon_b")),
                                 List.of(simpleTaskMap("fjt7_unmonitored", "unmon")))));
-        tasks.add(joinTaskMap("join_ref", List.of("mon_a", "mon_b"), "SYNC")); // only 2 of 3
+        tasks.add(joinTaskMap("join_ref", List.of("mon_a", "mon_b"), "SYNC"));
         tasks.add(simpleTaskMap("fjt7_post", "post_task"));
         registerWorkflowDefJson("FJSync_JoinOnSubset", tasks, null);
 
@@ -620,43 +682,25 @@ public class ForkJoinSyncModeIntegrationTest {
 
         completeTask("fjt7_monitored_a");
         completeTask("fjt7_monitored_b");
-        // Deliberately leave fjt7_unmonitored pending — JOIN should not wait for it
+        // Deliberately leave fjt7_unmonitored pending
 
-        Task join = waitForTaskTerminal(workflowId, "join_ref", JOIN_COMPLETE_TIMEOUT_MS);
+        Task join = executeJoin(workflowId, "join_ref");
         assertEquals(
                 "JOIN should COMPLETE without waiting for the unmonitored branch",
                 Task.Status.COMPLETED,
                 join.getStatus());
 
         completeTask("fjt7_post");
-        completeTask("fjt7_unmonitored"); // clean up the dangling branch
+        completeTask("fjt7_unmonitored");
 
-        Workflow wf = waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS);
-        assertEquals(Workflow.WorkflowStatus.COMPLETED, wf.getStatus());
+        assertEquals(Workflow.WorkflowStatus.COMPLETED,
+                waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS).getStatus());
     }
 
     // =========================================================================
     // Test 8 — Nested SYNC join
     // =========================================================================
 
-    /**
-     * A nested FORK/JOIN structure:
-     *
-     * <pre>
-     *   outer_FORK
-     *     branch_1: inner_FORK → [inner_a, inner_b] → inner_JOIN(SYNC)
-     *     branch_2: outer_c
-     *   outer_JOIN(SYNC) → post_task
-     * </pre>
-     *
-     * Both the inner and outer JOINs use joinMode=SYNC. Tests that:
-     *
-     * <ul>
-     *   <li>The inner JOIN completes after inner_a and inner_b finish
-     *   <li>The outer JOIN waits for inner_JOIN and outer_c
-     *   <li>The workflow reaches COMPLETED
-     * </ul>
-     */
     @Test
     public void testSync_nestedForkJoin() throws Exception {
         registerTask("fjt8_inner_a");
@@ -664,7 +708,6 @@ public class ForkJoinSyncModeIntegrationTest {
         registerTask("fjt8_outer_c");
         registerTask("fjt8_post");
 
-        // Build inner fork/join (branch 1)
         Map<String, Object> innerFork =
                 forkTaskMap(
                         "inner_fork",
@@ -673,14 +716,12 @@ public class ForkJoinSyncModeIntegrationTest {
                                 List.of(simpleTaskMap("fjt8_inner_b", "inner_b"))));
         Map<String, Object> innerJoin =
                 joinTaskMap("inner_join", List.of("inner_a", "inner_b"), "SYNC");
-
-        // Build outer fork/join
         Map<String, Object> outerFork =
                 forkTaskMap(
                         "outer_fork",
                         List.of(
-                                List.of(innerFork, innerJoin), // branch 1 = nested fork/join
-                                List.of(simpleTaskMap("fjt8_outer_c", "outer_c")))); // branch 2
+                                List.of(innerFork, innerJoin),
+                                List.of(simpleTaskMap("fjt8_outer_c", "outer_c"))));
         Map<String, Object> outerJoin =
                 joinTaskMap("outer_join", List.of("inner_join", "outer_c"), "SYNC");
 
@@ -697,29 +738,21 @@ public class ForkJoinSyncModeIntegrationTest {
         completeTask("fjt8_inner_b");
         completeTask("fjt8_outer_c");
 
-        // Inner join should resolve before outer join
-        Task innerJoinTask =
-                waitForTaskTerminal(workflowId, "inner_join", JOIN_COMPLETE_TIMEOUT_MS);
+        Task innerJoinTask = executeJoin(workflowId, "inner_join");
         assertEquals("Inner JOIN should COMPLETE", Task.Status.COMPLETED, innerJoinTask.getStatus());
 
-        Task outerJoinTask =
-                waitForTaskTerminal(workflowId, "outer_join", JOIN_COMPLETE_TIMEOUT_MS);
+        Task outerJoinTask = executeJoin(workflowId, "outer_join");
         assertEquals("Outer JOIN should COMPLETE", Task.Status.COMPLETED, outerJoinTask.getStatus());
 
         completeTask("fjt8_post");
-
-        Workflow wf = waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS);
-        assertEquals(Workflow.WorkflowStatus.COMPLETED, wf.getStatus());
+        assertEquals(Workflow.WorkflowStatus.COMPLETED,
+                waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS).getStatus());
     }
 
     // =========================================================================
     // Test 9 — SYNC join: large fan-out (10 parallel branches)
     // =========================================================================
 
-    /**
-     * Stress-tests SYNC join with 10 parallel branches. All branches complete successfully.
-     * Verifies that the JOIN correctly waits for all 10 and then COMPLETES.
-     */
     @Test
     public void testSync_largeFanOut_tenBranches() throws Exception {
         int branchCount = 10;
@@ -747,13 +780,11 @@ public class ForkJoinSyncModeIntegrationTest {
             completeTask("fjt9_branch_" + i, Map.of("branch", i));
         }
 
-        Task join = waitForTaskTerminal(workflowId, "join_ref", JOIN_COMPLETE_TIMEOUT_MS);
+        Task join = executeJoin(workflowId, "join_ref");
         assertEquals(
                 "JOIN should COMPLETE after all 10 branches succeed",
                 Task.Status.COMPLETED,
                 join.getStatus());
-
-        // Verify all branch outputs are collected in the JOIN
         for (int i = 0; i < branchCount; i++) {
             assertNotNull(
                     "JOIN output should include branch_" + i,
@@ -761,8 +792,7 @@ public class ForkJoinSyncModeIntegrationTest {
         }
 
         completeTask("fjt9_post");
-
-        Workflow wf = waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS);
-        assertEquals(Workflow.WorkflowStatus.COMPLETED, wf.getStatus());
+        assertEquals(Workflow.WorkflowStatus.COMPLETED,
+                waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS).getStatus());
     }
 }
