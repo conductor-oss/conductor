@@ -90,6 +90,7 @@ public class JoinTaskMapperTest {
         assertEquals(TASK_TYPE_JOIN, mappedTasks.get(0).getTaskType());
         // joinMode is read directly from workflowTask, not injected into input data
         assertNull(mappedTasks.get(0).getInputData().get("joinMode"));
-        assertEquals(WorkflowTask.JoinMode.SYNC, mappedTasks.get(0).getWorkflowTask().getJoinMode());
+        assertEquals(
+                WorkflowTask.JoinMode.SYNC, mappedTasks.get(0).getWorkflowTask().getJoinMode());
     }
 }

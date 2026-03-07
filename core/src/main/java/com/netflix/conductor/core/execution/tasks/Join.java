@@ -129,8 +129,7 @@ public class Join extends WorkflowSystemTask {
         // Check if joinMode is set to SYNC — read directly from the workflow task definition
         // rather than from input data so the value is never duplicated into the task's payload.
         WorkflowTask workflowTask = taskModel.getWorkflowTask();
-        if (workflowTask != null
-                && WorkflowTask.JoinMode.SYNC == workflowTask.getJoinMode()) {
+        if (workflowTask != null && WorkflowTask.JoinMode.SYNC == workflowTask.getJoinMode()) {
             // Synchronous mode: evaluate immediately every time (no backoff)
             return Optional.of(0L);
         }
