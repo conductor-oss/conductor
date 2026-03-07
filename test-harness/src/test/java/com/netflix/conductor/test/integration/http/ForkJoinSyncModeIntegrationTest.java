@@ -431,8 +431,8 @@ public class ForkJoinSyncModeIntegrationTest {
     // =========================================================================
 
     /**
-     * A FORK with 3 independent branches joins with joinMode=SYNC. All branches succeed. After
-     * the last branch completes, the JOIN evaluates to COMPLETED and the workflow advances.
+     * A FORK with 3 independent branches joins with joinMode=SYNC. All branches succeed. After the
+     * last branch completes, the JOIN evaluates to COMPLETED and the workflow advances.
      */
     @Test
     public void testSync_threeBranches_allSucceed() throws Exception {
@@ -468,14 +468,17 @@ public class ForkJoinSyncModeIntegrationTest {
         completeTask("fjt1_branch_c", Map.of("result", "C"));
 
         Task join = executeJoin(workflowId, "join_ref");
-        assertEquals("JOIN should COMPLETE after all 3 branches succeed",
-                Task.Status.COMPLETED, join.getStatus());
+        assertEquals(
+                "JOIN should COMPLETE after all 3 branches succeed",
+                Task.Status.COMPLETED,
+                join.getStatus());
         assertNotNull("JOIN output should contain branch_a", join.getOutputData().get("branch_a"));
         assertNotNull("JOIN output should contain branch_b", join.getOutputData().get("branch_b"));
         assertNotNull("JOIN output should contain branch_c", join.getOutputData().get("branch_c"));
 
         completeTask("fjt1_post");
-        assertEquals(Workflow.WorkflowStatus.COMPLETED,
+        assertEquals(
+                Workflow.WorkflowStatus.COMPLETED,
                 waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS).getStatus());
     }
 
@@ -510,7 +513,8 @@ public class ForkJoinSyncModeIntegrationTest {
         assertEquals(Task.Status.COMPLETED, join.getStatus());
 
         completeTask("fjt2_post");
-        assertEquals(Workflow.WorkflowStatus.COMPLETED,
+        assertEquals(
+                Workflow.WorkflowStatus.COMPLETED,
                 waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS).getStatus());
     }
 
@@ -545,7 +549,8 @@ public class ForkJoinSyncModeIntegrationTest {
         assertEquals(Task.Status.COMPLETED, join.getStatus());
 
         completeTask("fjt3_post");
-        assertEquals(Workflow.WorkflowStatus.COMPLETED,
+        assertEquals(
+                Workflow.WorkflowStatus.COMPLETED,
                 waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS).getStatus());
     }
 
@@ -658,7 +663,8 @@ public class ForkJoinSyncModeIntegrationTest {
         assertEquals(Task.Status.COMPLETED, join.getStatus());
 
         completeTask("fjt6_post");
-        assertEquals(Workflow.WorkflowStatus.COMPLETED,
+        assertEquals(
+                Workflow.WorkflowStatus.COMPLETED,
                 waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS).getStatus());
     }
 
@@ -701,7 +707,8 @@ public class ForkJoinSyncModeIntegrationTest {
         completeTask("fjt7_post");
         completeTask("fjt7_unmonitored");
 
-        assertEquals(Workflow.WorkflowStatus.COMPLETED,
+        assertEquals(
+                Workflow.WorkflowStatus.COMPLETED,
                 waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS).getStatus());
     }
 
@@ -747,13 +754,16 @@ public class ForkJoinSyncModeIntegrationTest {
         completeTask("fjt8_outer_c");
 
         Task innerJoinTask = executeJoin(workflowId, "inner_join");
-        assertEquals("Inner JOIN should COMPLETE", Task.Status.COMPLETED, innerJoinTask.getStatus());
+        assertEquals(
+                "Inner JOIN should COMPLETE", Task.Status.COMPLETED, innerJoinTask.getStatus());
 
         Task outerJoinTask = executeJoin(workflowId, "outer_join");
-        assertEquals("Outer JOIN should COMPLETE", Task.Status.COMPLETED, outerJoinTask.getStatus());
+        assertEquals(
+                "Outer JOIN should COMPLETE", Task.Status.COMPLETED, outerJoinTask.getStatus());
 
         completeTask("fjt8_post");
-        assertEquals(Workflow.WorkflowStatus.COMPLETED,
+        assertEquals(
+                Workflow.WorkflowStatus.COMPLETED,
                 waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS).getStatus());
     }
 
@@ -800,7 +810,8 @@ public class ForkJoinSyncModeIntegrationTest {
         }
 
         completeTask("fjt9_post");
-        assertEquals(Workflow.WorkflowStatus.COMPLETED,
+        assertEquals(
+                Workflow.WorkflowStatus.COMPLETED,
                 waitForWorkflowTerminal(workflowId, WORKFLOW_TERMINAL_TIMEOUT_MS).getStatus());
     }
 }
