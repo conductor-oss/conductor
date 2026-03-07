@@ -20,6 +20,7 @@ import com.netflix.conductor.model.WorkflowModel;
 
 import lombok.extern.slf4j.Slf4j;
 
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_HUMAN;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_WAIT;
 
 @Slf4j
@@ -39,7 +40,15 @@ public class ExecutorUtils {
                         long deltaInSeconds =
                                 (taskModel.getWaitTimeout() - currentTimeMillis) / 1000;
                         postponeDurationSeconds = (deltaInSeconds > 0) ? deltaInSeconds : 0;
+                    } else {
+                        // WAIT with no timeout: defer by the workflow offset.
+                        postponeDurationSeconds = workflowOffsetTimeoutSeconds;
                     }
+                } else if (taskModel.getTaskType().equals(TASK_TYPE_HUMAN)) {
+                    // HUMAN tasks are long-lived with no predictable completion time.
+                    // Defer the sweep by the workflow offset; the workflow will be re-queued
+                    // immediately when the HUMAN task is updated externally.
+                    postponeDurationSeconds = workflowOffsetTimeoutSeconds;
                 } else {
                     // Could taskModel.getResponseTimeoutSeconds() be set and no taskDef?...
                     // not sure but keeping it this way just in case.
