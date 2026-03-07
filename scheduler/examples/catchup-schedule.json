@@ -1,0 +1,12 @@
+{
+  "name": "catchup-demo-schedule",
+  "cronExpression": "0 * * * * *",
+  "zoneId": "UTC",
+  "runCatchupScheduleInstances": true,
+  "paused": false,
+  "startWorkflowRequest": {
+    "name": "catchup_demo_workflow",
+    "version": 1,
+    "input": {}
+  }
+}

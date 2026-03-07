@@ -1,0 +1,29 @@
+{
+  "name": "input_param_demo_workflow",
+  "description": "Demonstrates that the scheduler injects scheduledTime and executionTime into every workflow's input automatically. Uses an INLINE task to compute a 24-hour reporting window ending at the scheduled time, suitable for nightly report generation patterns.",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "compute_report_window",
+      "taskReferenceName": "compute_report_window",
+      "type": "INLINE",
+      "inputParameters": {
+        "scheduledTime": "${workflow.input.scheduledTime}",
+        "executionTime": "${workflow.input.executionTime}",
+        "evaluatorType": "javascript",
+        "expression": "function toISO(ms) { return new Date(ms).toISOString(); } ({ reportWindowStart: toISO($.scheduledTime - 86400000), reportWindowEnd: toISO($.scheduledTime), scheduledAt: toISO($.scheduledTime), triggeredAt: toISO($.executionTime) })"
+      }
+    }
+  ],
+  "outputParameters": {
+    "reportWindowStart": "${compute_report_window.output.result.reportWindowStart}",
+    "reportWindowEnd": "${compute_report_window.output.result.reportWindowEnd}",
+    "scheduledAt": "${compute_report_window.output.result.scheduledAt}",
+    "triggeredAt": "${compute_report_window.output.result.triggeredAt}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "ownerEmail": "demo@example.com",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 30
+}
