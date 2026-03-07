@@ -68,6 +68,12 @@ allprojects {
                 if (details.requested.group == 'org.apache.commons' && details.requested.name == 'commons-lang3') {
                     details.useVersion "3.18.0"
                 }
+                // Security: CVE-2025-12183 - out-of-bounds memory operations
+                // Note: using eachDependency instead of constraints to avoid capability conflict
+                // with at.yawk.lz4:lz4-java which declares the same org.lz4:lz4-java capability
+                if (details.requested.group == 'org.lz4' && details.requested.name == 'lz4-java') {
+                    details.useVersion '1.8.1'
+                }
             }
         }
     }
@@ -117,9 +123,6 @@ allprojects {
             }
             implementation('commons-beanutils:commons-beanutils:1.11.0') {
                 because 'CVE-2025-48734: PropertyUtilsBean enum suppression'
-            }
-            implementation('org.lz4:lz4-java:1.8.1') {
-                because 'CVE-2025-12183: out-of-bounds memory operations'
             }
             implementation('com.microsoft.sqlserver:mssql-jdbc:12.8.2.jre11') {
                 because 'CVE-2025-59250: improper input validation'
