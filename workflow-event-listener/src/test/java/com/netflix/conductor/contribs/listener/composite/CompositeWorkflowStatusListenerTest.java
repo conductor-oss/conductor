@@ -150,4 +150,34 @@ public class CompositeWorkflowStatusListenerTest {
         verify(listener1, times(1)).onWorkflowCompleted(workflow);
         verifyNoInteractions(listener2, listener3);
     }
+
+    @Test
+    public void testCompositeWithMultipleListenerTypes() {
+        // Test that composite can handle multiple different listener implementations
+        WorkflowStatusListener mockKafkaListener = Mockito.mock(WorkflowStatusListener.class);
+        WorkflowStatusListener mockQueueListener = Mockito.mock(WorkflowStatusListener.class);
+        WorkflowStatusListener mockWebhookListener = Mockito.mock(WorkflowStatusListener.class);
+
+        compositeListener =
+                new CompositeWorkflowStatusListener(
+                        Arrays.asList(mockKafkaListener, mockQueueListener, mockWebhookListener));
+
+        // Trigger various events
+        compositeListener.onWorkflowStarted(workflow);
+        compositeListener.onWorkflowCompleted(workflow);
+        compositeListener.onWorkflowTerminated(workflow);
+
+        // Verify all listeners received all events
+        verify(mockKafkaListener, times(1)).onWorkflowStarted(workflow);
+        verify(mockKafkaListener, times(1)).onWorkflowCompleted(workflow);
+        verify(mockKafkaListener, times(1)).onWorkflowTerminated(workflow);
+
+        verify(mockQueueListener, times(1)).onWorkflowStarted(workflow);
+        verify(mockQueueListener, times(1)).onWorkflowCompleted(workflow);
+        verify(mockQueueListener, times(1)).onWorkflowTerminated(workflow);
+
+        verify(mockWebhookListener, times(1)).onWorkflowStarted(workflow);
+        verify(mockWebhookListener, times(1)).onWorkflowCompleted(workflow);
+        verify(mockWebhookListener, times(1)).onWorkflowTerminated(workflow);
+    }
 }

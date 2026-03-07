@@ -152,7 +152,12 @@ public class CompositeWorkflowStatusListenerConfiguration {
                                 rcm -> {
                                     LOGGER.debug(
                                             "Creating workflow status change publisher (webhook)");
-                                    return new StatusChangePublisher(rcm, executionDAOFacade);
+                                    return new StatusChangePublisher(
+                                            rcm,
+                                            executionDAOFacade,
+                                            notifierProperties
+                                                    .get()
+                                                    .getSubscribedWorkflowStatuses());
                                 })
                         .orElseThrow(
                                 () ->
@@ -161,24 +166,30 @@ public class CompositeWorkflowStatusListenerConfiguration {
                                                         + "Please configure conductor.status-notifier.notification.* properties"));
 
             case "archive":
-                if (!archiveProperties.isPresent()) {
-                    throw new IllegalStateException(
-                            "Archive listener requested but archive properties not configured. "
-                                    + "Please configure conductor.workflow-status-listener.archival.* properties");
-                }
+                return archiveProperties
+                        .map(
+                                props -> {
+                                    LOGGER.debug(
+                                            "Creating archiving workflow listener (TTL: {})",
+                                            props.getTtlDuration());
 
-                ArchivingWorkflowListenerProperties props = archiveProperties.get();
-                LOGGER.debug(
-                        "Creating archiving workflow listener (TTL: {})", props.getTtlDuration());
-
-                if (props.getTtlDuration().getSeconds() > 0) {
-                    return new ArchivingWithTTLWorkflowStatusListener(executionDAOFacade, props);
-                } else if (props.getWorkflowArchivalType()
-                        == ArchivingWorkflowListenerProperties.ArchivalType.S3) {
-                    return new ArchivingWorkflowToS3(executionDAOFacade, props);
-                } else {
-                    return new ArchivingWorkflowStatusListener(executionDAOFacade);
-                }
+                                    if (props.getTtlDuration().getSeconds() > 0) {
+                                        return new ArchivingWithTTLWorkflowStatusListener(
+                                                executionDAOFacade, props);
+                                    } else if (props.getWorkflowArchivalType()
+                                            == ArchivingWorkflowListenerProperties.ArchivalType
+                                                    .S3) {
+                                        return new ArchivingWorkflowToS3(executionDAOFacade, props);
+                                    } else {
+                                        return new ArchivingWorkflowStatusListener(
+                                                executionDAOFacade);
+                                    }
+                                })
+                        .orElseThrow(
+                                () ->
+                                        new IllegalStateException(
+                                                "Archive listener requested but archive properties not configured. "
+                                                        + "Please configure conductor.workflow-status-listener.archival.* properties"));
 
             default:
                 LOGGER.warn(
