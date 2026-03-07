@@ -179,8 +179,7 @@ public class ForkJoinSyncModeIntegrationTest {
             }
 
             @Override
-            public boolean setUnackTimeout(
-                    String queueName, String messageId, long unackTimeout) {
+            public boolean setUnackTimeout(String queueName, String messageId, long unackTimeout) {
                 return true;
             }
 
@@ -280,8 +279,7 @@ public class ForkJoinSyncModeIntegrationTest {
         return t;
     }
 
-    private Map<String, Object> forkTaskMap(
-            String ref, List<List<Map<String, Object>>> branches) {
+    private Map<String, Object> forkTaskMap(String ref, List<List<Map<String, Object>>> branches) {
         Map<String, Object> t = new HashMap<>();
         t.put("name", "fork");
         t.put("taskReferenceName", ref);
@@ -351,7 +349,12 @@ public class ForkJoinSyncModeIntegrationTest {
             }
             Thread.sleep(50);
         }
-        fail("Task '" + taskType + "' not available for polling within " + TASK_POLL_TIMEOUT_MS + "ms");
+        fail(
+                "Task '"
+                        + taskType
+                        + "' not available for polling within "
+                        + TASK_POLL_TIMEOUT_MS
+                        + "ms");
     }
 
     private void completeTask(String taskType) throws InterruptedException {
@@ -371,7 +374,12 @@ public class ForkJoinSyncModeIntegrationTest {
             }
             Thread.sleep(50);
         }
-        fail("Task '" + taskType + "' not available for polling within " + TASK_POLL_TIMEOUT_MS + "ms");
+        fail(
+                "Task '"
+                        + taskType
+                        + "' not available for polling within "
+                        + TASK_POLL_TIMEOUT_MS
+                        + "ms");
     }
 
     // =========================================================================
