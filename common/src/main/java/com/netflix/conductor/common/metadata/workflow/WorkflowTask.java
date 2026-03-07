@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import com.netflix.conductor.annotations.protogen.ProtoEnum;
 import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -166,12 +167,13 @@ public class WorkflowTask {
     private boolean permissive;
 
     /** Controls whether a JOIN task is evaluated synchronously (no backoff) or asynchronously. */
+    @ProtoEnum
     public enum JoinMode {
         SYNC,
         ASYNC
     }
 
-    @ProtoField(id = 33)
+    @ProtoField(id = 34)
     private JoinMode joinMode;
 
     /**
