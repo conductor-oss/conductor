@@ -68,11 +68,19 @@ allprojects {
                 if (details.requested.group == 'org.apache.commons' && details.requested.name == 'commons-lang3') {
                     details.useVersion "3.18.0"
                 }
-                // Security: CVE-2025-12183 - out-of-bounds memory operations
-                // Note: using eachDependency instead of constraints to avoid capability conflict
-                // with at.yawk.lz4:lz4-java which declares the same org.lz4:lz4-java capability
+                // Security: CVE-2025-12183 - force lz4-java to patched version
                 if (details.requested.group == 'org.lz4' && details.requested.name == 'lz4-java') {
                     details.useVersion '1.8.1'
+                }
+            }
+            // Security: at.yawk.lz4:lz4-java declares Gradle capability org.lz4:lz4-java in its
+            // module metadata. When lz4-java is upgraded to 1.8.1 (CVE-2025-12183), both modules
+            // claim the same capability and Gradle can't resolve the conflict automatically.
+            // Tell Gradle to always prefer the canonical org.lz4 artifact.
+            resolutionStrategy.capabilitiesResolution.withCapability('org.lz4:lz4-java') { resolution ->
+                def preferred = resolution.candidates.find { it.id.group == 'org.lz4' }
+                if (preferred) {
+                    resolution.select(preferred)
                 }
             }
         }
