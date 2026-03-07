@@ -37,7 +37,6 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.ConductorTestApp;
 import com.netflix.conductor.client.http.MetadataClient;
 import com.netflix.conductor.client.http.TaskClient;
@@ -51,6 +50,8 @@ import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.execution.AsyncSystemTaskExecutor;
 import com.netflix.conductor.core.execution.tasks.Join;
 import com.netflix.conductor.dao.QueueDAO;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -122,8 +123,7 @@ public class ForkJoinSyncModeIntegrationTest {
             }
 
             @Override
-            public boolean pushIfNotExists(
-                    String queueName, String id, long offsetTimeInSecond) {
+            public boolean pushIfNotExists(String queueName, String id, long offsetTimeInSecond) {
                 LinkedBlockingDeque<String> queue = q(queueName);
                 if (queue.contains(id)) return false;
                 queue.addLast(id);
