@@ -1,0 +1,46 @@
+dependencies {
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+    compileOnly 'org.springframework.boot:spring-boot-starter-web'
+
+    compileOnly "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
+
+    implementation "com.fasterxml.jackson.core:jackson-databind"
+    implementation "com.fasterxml.jackson.core:jackson-core"
+
+    implementation "org.apache.commons:commons-lang3"
+    implementation "org.postgresql:postgresql:${revPostgres}"
+    implementation "org.springframework.boot:spring-boot-starter-jdbc"
+    implementation "org.flywaydb:flyway-core:${revFlyway}"
+    implementation "org.flywaydb:flyway-database-postgresql:${revFlyway}"
+
+    // MySQL support
+    compileOnly "mysql:mysql-connector-java:8.0.33"
+    compileOnly "org.flywaydb:flyway-mysql:${revFlyway}"
+
+    // Redis support
+    compileOnly project(':conductor-redis-persistence')
+    compileOnly "redis.clients:jedis:${revJedis}"
+
+    testImplementation 'org.springframework.boot:spring-boot-starter'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation "org.testcontainers:postgresql:${revTestContainer}"
+
+    // MySQL integration tests
+    testImplementation "mysql:mysql-connector-java:8.0.33"
+    testImplementation "org.flywaydb:flyway-mysql:${revFlyway}"
+    testImplementation "org.testcontainers:mysql:${revTestContainer}"
+
+    // Redis unit tests (in-memory mock, no Docker required)
+    testImplementation project(':conductor-redis-persistence')
+    testImplementation "redis.clients:jedis:${revJedis}"
+    testImplementation "org.rarefiedredis.redis:redis-java:${revRarefiedRedis}"
+}
+
+test {
+    maxParallelForks = 1
+    // Docker Desktop on macOS requires API v1.44+; docker-java defaults to v1.41
+    environment 'DOCKER_API_VERSION', '1.44'
+}
