@@ -33,6 +33,9 @@ dependencies {
     api("io.modelcontextprotocol.sdk:mcp:${revMCP}")
     api "com.squareup.okhttp3:okhttp:4.12.0"
 
+    // Markdown parsing for PDF generation
+    implementation "com.vladsch.flexmark:flexmark-all:${revFlexmark}"
+
     //Document reader and parsers
     // Source: https://mvnrepository.com/artifact/org.springframework.ai/spring-ai-pdf-document-reader
     api "org.springframework.ai:spring-ai-pdf-document-reader:${revSpringAI}"

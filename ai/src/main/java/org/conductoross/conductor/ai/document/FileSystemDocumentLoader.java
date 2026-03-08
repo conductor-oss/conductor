@@ -29,8 +29,8 @@ import lombok.extern.slf4j.Slf4j;
 
 @Component
 @ConditionalOnProperty(
-        value = "conductor.worker.document-loader.file-based.enabled",
-        havingValue = "true",
+        value = "conductor.worker.document-loader.type",
+        havingValue = "file",
         matchIfMissing = true)
 @Slf4j
 public class FileSystemDocumentLoader implements DocumentLoader {
@@ -55,6 +55,7 @@ public class FileSystemDocumentLoader implements DocumentLoader {
             }
             Path path = Path.of(fileURI.replace("file://", ""));
             var result = path.toFile().getParentFile().mkdirs();
+            log.info("writing to {}", path);
             Files.write(path, data);
             return "file://" + path.toAbsolutePath().toString();
         } catch (IOException e) {
@@ -93,6 +94,7 @@ public class FileSystemDocumentLoader implements DocumentLoader {
 
     @Override
     public boolean supports(String location) {
-        return location.startsWith("file://");
+        // either starts with fileURI or does not contain URI scheme
+        return location.startsWith("file://") || !location.contains("://");
     }
 }

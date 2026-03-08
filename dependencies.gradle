@@ -75,4 +75,5 @@ ext {
     revMCP = '0.13.0'
     revCommonsCompress = '1.26.1'
     pinecone = '3.0.0'
+    revFlexmark = '0.64.8'
 }
