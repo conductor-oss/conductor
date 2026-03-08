@@ -204,6 +204,7 @@ public class TestWorkflowExecutor {
         when(properties.getActiveWorkerLastPollTimeout()).thenReturn(Duration.ofSeconds(100));
         when(properties.getTaskExecutionPostponeDuration()).thenReturn(Duration.ofSeconds(60));
         when(properties.getWorkflowOffsetTimeout()).thenReturn(Duration.ofSeconds(30));
+        when(properties.getLockLeaseTime()).thenReturn(Duration.ofSeconds(30));
 
         workflowExecutor =
                 new WorkflowExecutorOps(
