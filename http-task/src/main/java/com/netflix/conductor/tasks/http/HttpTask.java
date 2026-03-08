@@ -268,7 +268,8 @@ public class HttpTask extends WorkflowSystemTask {
         private Map<String, Object> headers = new HashMap<>();
         private String uri;
         private Object body;
-        private List<String> accept = new ArrayList<>(Collections.singletonList(MediaType.APPLICATION_JSON_VALUE));
+        private List<String> accept =
+                new ArrayList<>(Collections.singletonList(MediaType.APPLICATION_JSON_VALUE));
         private String contentType = MediaType.APPLICATION_JSON_VALUE;
         private Integer connectionTimeOut = 3000;
         private Integer readTimeOut = 3000;
@@ -364,7 +365,7 @@ public class HttpTask extends WorkflowSystemTask {
          */
         @JsonSetter("accept")
         public void setAccept(Object accept) {
-            if(accept == null) {
+            if (accept == null) {
                 return;
             }
             if (accept instanceof String) {
