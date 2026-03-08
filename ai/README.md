@@ -20,7 +20,7 @@ The Conductor AI module provides built-in integration with 12 popular LLM provid
 |----------|:----:|:----------:|:---------:|:---------:|:---------:|--------|
 | **OpenAI** | ✅ | ✅ | ✅ | ✅ | ✅ | GPT-4o, GPT-4o-mini, DALL-E-3, Sora-2, text-embedding-3-small/large |
 | **Anthropic** | ✅ | ❌ | ❌ | ❌ | ❌ | Claude 3.5 Sonnet, Claude 3 Opus/Sonnet/Haiku, Claude 4 Sonnet |
-| **Google Vertex AI** | ✅ | ✅ | ✅ | ❌ | ✅ | Gemini 1.5/2.0, Veo 2/3, Imagen, text-embedding-004 |
+| **Google Gemini** | ✅ | ✅ | ✅ | ❌ | ✅ | Gemini 1.5/2.0, Veo 2/3, Imagen, text-embedding-004 |
 | **Azure OpenAI** | ✅ | ✅ | ✅ | ❌ | ❌ | GPT-4o, GPT-4, GPT-3.5-turbo, text-embedding-ada-002, DALL-E-3 |
 | **AWS Bedrock** | ✅ | ✅ | ❌ | ❌ | ❌ | Claude 3.x, Titan, Llama 3.x, amazon.titan-embed-text-v2:0 |
 | **Mistral AI** | ✅ | ✅ | ❌ | ❌ | ❌ | Mistral Small/Medium/Large, Mixtral 8x7B, mistral-embed |
@@ -193,7 +193,7 @@ Generate videos from text or image prompts. This is an **async task** -- it subm
 
 | Parameter | Type | Required | Description |
 |-----------|------|:--------:|-------------|
-| `llmProvider` | String | Yes | Provider name (`openai` or `vertex_ai`) |
+| `llmProvider` | String | Yes | Provider name (`openai`, `vertex_ai`, or `google_gemini`) |
 | `model` | String | Yes | Video model (e.g., `sora-2`, `veo-3`) |
 | `prompt` | String | Yes | Text description of the video to generate |
 | `duration` | Integer | No | Duration in seconds (OpenAI: 4, 8, or 12; default: 5) |
@@ -224,7 +224,7 @@ Generate videos from text or image prompts. This is an **async task** -- it subm
 **Provider-Specific Notes:**
 
 - **OpenAI Sora**: Supports `sora-2` and `sora-2-pro` models. Valid durations are 4, 8, or 12 seconds. Valid sizes: `1280x720`, `720x1280`, `1792x1024`, `1024x1792`. Returns video + webp thumbnail.
-- **Google Vertex AI Veo**: Supports `veo-2.0-generate-001`, `veo-3.0`, `veo-3.1`. Requires Vertex AI credentials (Application Default Credentials). Veo 3+ supports audio generation.
+- **Google Gemini Veo**: Supports `veo-2.0-generate-001`, `veo-3.0`, `veo-3.1`. Use `llmProvider` as `google_gemini` or `vertex_ai`. When using API key, no GCP credentials needed. Veo 3+ supports audio generation.
 
 ---
 
@@ -462,9 +462,15 @@ conductor.ai.anthropic.beta-version=prompt-caching-2024-07-31
 | `beta-version` | ❌ | - | Beta features (e.g., prompt caching) |
 | `completions-path` | ❌ | - | Custom completions endpoint path |
 
-#### Google Vertex AI (Gemini)
+#### Google Gemini / Vertex AI
+
+Use `llmProvider` as either `google_gemini` or `vertex_ai` (both resolve to the same provider).
 
 ```properties
+# Option 1: API key (simplest — works for image/video/audio gen)
+conductor.ai.gemini.api-key=${GEMINI_API_KEY}
+
+# Option 2: Vertex AI credentials (required for chat completions and embeddings)
 conductor.ai.gemini.project-id=${GOOGLE_CLOUD_PROJECT}
 conductor.ai.gemini.location=us-central1
 conductor.ai.gemini.publisher=google
@@ -472,12 +478,13 @@ conductor.ai.gemini.publisher=google
 
 | Property | Required | Default | Description |
 |----------|:--------:|---------|-------------|
-| `project-id` | ✅ | - | GCP project ID |
-| `location` | ✅ | - | GCP region (e.g., us-central1) |
+| `api-key` | ❌ | - | Gemini API key from [Google AI Studio](https://aistudio.google.com/) |
+| `project-id` | ❌ | - | GCP project ID (required for chat/embeddings via Vertex AI) |
+| `location` | ❌ | - | GCP region (e.g., us-central1) |
 | `base-url` | ❌ | `{location}-aiplatform.googleapis.com:443` | API endpoint |
 | `publisher` | ❌ | - | Model publisher |
 
-> **Note**: Vertex AI uses Application Default Credentials (ADC) or service account credentials from the environment.
+> **Note**: When `api-key` is set, image/video/audio generation uses the Google AI API directly. Chat completions and embeddings require Vertex AI credentials (`project-id` + Application Default Credentials or service account). Both can be configured simultaneously.
 
 #### Azure OpenAI
 
@@ -623,9 +630,10 @@ The AI module reads from standard environment variables automatically. Set the e
 | AWS Bedrock | `AWS_ACCESS_KEY_ID` | AWS access key |
 | AWS Bedrock | `AWS_SECRET_ACCESS_KEY` | AWS secret key |
 | AWS Bedrock | `AWS_REGION` | AWS region (default: `us-east-1`) |
-| Google Vertex AI | `GOOGLE_CLOUD_PROJECT` | GCP project ID |
-| Google Vertex AI | `GOOGLE_CLOUD_LOCATION` | GCP region (default: `us-central1`) |
-| Google Vertex AI | `GOOGLE_APPLICATION_CREDENTIALS` | Path to service account JSON file |
+| Google Gemini | `GEMINI_API_KEY` | Gemini API key from [Google AI Studio](https://aistudio.google.com/) |
+| Google Gemini | `GOOGLE_CLOUD_PROJECT` | GCP project ID (for Vertex AI chat/embeddings) |
+| Google Gemini | `GOOGLE_CLOUD_LOCATION` | GCP region (default: `us-central1`) |
+| Google Gemini | `GOOGLE_APPLICATION_CREDENTIALS` | Path to service account JSON file |
 | Ollama | `OLLAMA_HOST` | Ollama server URL (default: `http://localhost:11434`) |
 
 ### Usage
@@ -694,9 +702,18 @@ Run with:
 docker-compose up -d
 ```
 
-### Google Vertex AI with Docker
+### Google Gemini with Docker
 
-Google Vertex AI requires a service account credentials file:
+**Using API key (simplest):**
+
+```bash
+docker run -d \
+  -p 8080:8080 \
+  -e GEMINI_API_KEY=your-api-key \
+  conductor:server
+```
+
+**Using Vertex AI credentials (for chat/embeddings):**
 
 ```bash
 docker run -d \

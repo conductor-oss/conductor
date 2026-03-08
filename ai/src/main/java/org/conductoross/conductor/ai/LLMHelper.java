@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -372,6 +373,9 @@ public class LLMHelper {
                 for (AssistantMessage.ToolCall toolCall : toolCalls) {
                     String name = toolCall.name();
                     String id = toolCall.id();
+                    if (id == null || id.isBlank()) {
+                        id = UUID.randomUUID().toString();
+                    }
                     String argsAsString = toolCall.arguments();
                     Map<String, Object> args = Map.of();
                     try {

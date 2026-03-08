@@ -33,6 +33,7 @@ public class GeminiVertexConfiguration implements ModelConfiguration<GeminiVerte
     private String location;
     private String baseURL;
     private String publisher;
+    private String apiKey;
     GoogleCredentials googleCredentials;
     PredictionServiceClient predictionServiceClient;
 
