@@ -12,11 +12,12 @@
  */
 package org.conductoross.conductor.ai.providers.cohere;
 
+import java.time.Duration;
+
 import org.conductoross.conductor.ai.ModelConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,13 +25,18 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 @Component
 @ConfigurationProperties(prefix = "conductor.ai.cohere")
-@AllArgsConstructor
 @NoArgsConstructor
 @Slf4j
 public class CohereAIConfiguration implements ModelConfiguration<CohereAI> {
 
     private String apiKey;
     private String baseURL = "https://api.cohere.ai";
+    private Duration timeout = Duration.ofSeconds(600);
+
+    public CohereAIConfiguration(String apiKey, String baseURL) {
+        this.apiKey = apiKey;
+        this.baseURL = baseURL;
+    }
 
     @Override
     public CohereAI get() {

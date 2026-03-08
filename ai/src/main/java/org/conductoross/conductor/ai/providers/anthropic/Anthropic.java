@@ -27,6 +27,8 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.RestClient;
 
 public class Anthropic implements AIModel {
 
@@ -49,8 +51,14 @@ public class Anthropic implements AIModel {
 
     @Override
     public ChatModel getChatModel() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setReadTimeout(config.getTimeout());
+
         var builder =
-                AnthropicApi.builder().baseUrl(config.getBaseURL()).apiKey(config.getApiKey());
+                AnthropicApi.builder()
+                        .baseUrl(config.getBaseURL())
+                        .apiKey(config.getApiKey())
+                        .restClientBuilder(RestClient.builder().requestFactory(factory));
 
         if (StringUtils.isNotBlank(config.getVersion())) {
             builder.anthropicVersion(config.getVersion());

@@ -59,9 +59,10 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
             throws TerminateWorkflowException {
         TaskModel taskModel = super.getMappedTask(taskMapperContext);
         WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
-        ChatCompletion chatCompletion =
-                objectMapper.convertValue(taskModel.getInputData(), ChatCompletion.class);
+
         try {
+            ChatCompletion chatCompletion =
+                    objectMapper.convertValue(taskModel.getInputData(), ChatCompletion.class);
             List<ChatMessage> history = chatCompletion.getMessages();
             if (chatCompletion.getUserInput() != null && chatCompletion.getMessages().isEmpty()) {
                 history.add(new ChatMessage(ChatMessage.Role.user, chatCompletion.getUserInput()));
@@ -73,6 +74,7 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
             if (e instanceof TerminateWorkflowException) {
                 throw (TerminateWorkflowException) e;
             } else {
+                log.error("input: {}", taskModel.getInputData());
                 log.error(e.getMessage(), e);
                 throw new TerminateWorkflowException(
                         String.format(
@@ -84,7 +86,9 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
 
     protected void updateTaskModel(ChatCompletion chatCompletion, TaskModel simpleTask) {
         Map<String, Object> paramReplacement = chatCompletion.getPromptVariables();
-
+        if (paramReplacement == null) {
+            paramReplacement = new HashMap<>();
+        }
         List<ChatMessage> messages = chatCompletion.getMessages();
         if (messages == null) {
             messages = new ArrayList<>();
