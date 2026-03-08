@@ -42,7 +42,7 @@ class DocumentGenWorkersTest {
     void setUp() {
         mockConverter = mock(MarkdownToPdfConverter.class);
         mockLoader = mock(DocumentLoader.class);
-        when(mockLoader.supports(argThat(s -> s != null && s.startsWith("file://"))))
+        when(mockLoader.supports(argThat(s -> s != null && !s.startsWith("s3://"))))
                 .thenReturn(true);
         when(mockLoader.upload(anyMap(), eq("application/pdf"), any(byte[].class), anyString()))
                 .thenAnswer(
@@ -170,7 +170,7 @@ class DocumentGenWorkersTest {
                     @SuppressWarnings("unchecked")
                     Map<String, Object> result = (Map<String, Object>) response.getResult();
                     String location = (String) result.get("location");
-                    assertTrue(location.startsWith("file:///tmp/test-payload/"));
+                    assertTrue(location.startsWith("/tmp/test-payload/"));
                     assertTrue(location.contains("wf-123"));
                     assertTrue(location.contains("task-456"));
                     assertTrue(location.endsWith(".pdf"));

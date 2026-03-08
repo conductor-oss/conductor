@@ -13,6 +13,7 @@
 package com.netflix.conductor.tasks.http;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -267,7 +268,7 @@ public class HttpTask extends WorkflowSystemTask {
         private Map<String, Object> headers = new HashMap<>();
         private String uri;
         private Object body;
-        private List<String> accept = Collections.singletonList(MediaType.APPLICATION_JSON_VALUE);
+        private List<String> accept = new ArrayList<>(Collections.singletonList(MediaType.APPLICATION_JSON_VALUE));
         private String contentType = MediaType.APPLICATION_JSON_VALUE;
         private Integer connectionTimeOut = 3000;
         private Integer readTimeOut = 3000;
@@ -363,6 +364,9 @@ public class HttpTask extends WorkflowSystemTask {
          */
         @JsonSetter("accept")
         public void setAccept(Object accept) {
+            if(accept == null) {
+                return;
+            }
             if (accept instanceof String) {
                 this.accept = Collections.singletonList((String) accept);
             } else if (accept instanceof List) {

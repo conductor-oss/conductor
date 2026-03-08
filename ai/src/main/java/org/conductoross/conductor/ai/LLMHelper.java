@@ -669,6 +669,7 @@ public class LLMHelper {
                         .orElse(null);
         if (documentLoader == null) {
             log.debug("no document loaders found, media will not be stored");
+            return;
         }
         media.stream()
                 .filter(m1 -> m1.getData() != null)
