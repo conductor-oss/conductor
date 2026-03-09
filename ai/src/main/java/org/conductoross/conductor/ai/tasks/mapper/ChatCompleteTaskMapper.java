@@ -246,7 +246,6 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
                         }
                     }
                     var msg = new ChatMessage(role, String.valueOf(resultObj));
-                    log.info("msg: {}", msg);
                     if (response.getMedia() != null) {
                         msg.setMedia(response.getMedia().stream().map(Media::getLocation).toList());
                     }
