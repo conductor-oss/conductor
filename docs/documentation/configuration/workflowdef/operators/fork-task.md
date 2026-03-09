@@ -3,47 +3,62 @@
 "type" : "FORK_JOIN"
 ```
 
-A `FORK_JOIN` operation lets you run a specified list of tasks or sub workflows in parallel. A `FORK_JOIN` task is
-followed by a `JOIN` operation that waits on the forked tasks or sub workflows to finish and collects their outputs.
+Also known as a static fork, a Fork task (`FORK_JOIN`) is used to run task sequences in parallel, including [Sub Workflow](sub-workflow-task.md) tasks.
 
-This is also known as a **Static Fork** to distinguish it from the [DYNAMIC_FORK](dynamic-fork-task.md).
+The Fork task must be followed by a [Join](join-task.md) that waits on the forked tasks to finish before moving to the next task. This Join task collects the outputs from each forked tasks.
 
-## Use Cases
+## Task parameters
+  
+Use these parameters in top level of the Fork task configuration.
 
-`FORK_JOIN` tasks are typically used when a list of tasks can be run in parallel. E.g In a notification workflow, there
-could be multiple ways of sending notifications, i,e e-mail, SMS, HTTP etc. These notifications are not dependent on
-each other, and so they can be run in parallel. In such cases, you can create 3 sub-lists of forked tasks for each of
-these operations.
+| Parameter          | Type                | Description                                       | Required / Optional  |
+| ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
+| forkTasks         | List[List[Task]] | A list of tasks lists to be invoked in parallel (`[[...], [...]]`). <br/><br/> Each item in the outer list represents a fork that will be invoked in parallel, while each inner list contains the task configurations for a particular fork. The tasks defined within each sublist can be sequential or even more nested forks. | Required. |
 
-## Configuration
+The [Join](join-task.md) task must run after the forked tasks. Configure the Join task as well to complete the fork-join operations.
 
-A `FORK_JOIN` task has a `forkTasks` attribute at the top level of the task configuration that is an array of arrays (`[[...], [...]]`);
+## JSON configuration
 
-| Attribute         | Description                                                                                                                                   |
-|-------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
-| forkTasks         | A list of lists of tasks. Each of the outer list will be invoked in parallel. The inner list can be a graph of other tasks and sub-workflows |
+This is the task configuration for a Fork task.
 
-Each element of `forkTasks` is itself a list of tasks. These sub-lists are invoked in parallel. The tasks defined within each sublist
-can be sequential or even more nested forks.
-
-A FORK_JOIN is typically followed by a [JOIN](join-task.md) operation. 
-
-The behavior of a `FORK_JOIN` task is not affected by `inputParameters`.
+```json
+{
+  "name": "fork",
+  "taskReferenceName": "fork_ref",
+  "inputParameters": {},
+  "type": "FORK_JOIN",
+  "forkTasks": [
+    [ // fork branch
+      {
+        // task configuration
+      },
+      {
+        // task configuration
+      }
+    ],
+    [ // another fork branch 
+      {
+        // task configuration
+      },
+      {
+        // task configuration
+      }
+    ]
+  ]
+}
+```
 
 ## Output
-`FORK_JOIN` has no output. 
 
-The `FORK_JOIN` task is used in conjunction with the [JOIN](join-task.md) task, which aggregates the output from the parallelized workflows.
+The Fork task has no output. It is used in conjunction with the [JOIN](join-task.md) task, which aggregates the outputs from the parallelized forks.
 
-## Example
+## Examples
 
-Imagine a workflow that sends 3 notifications: email, SMS and HTTP. Since none of these steps are dependant on the others, they can be run in parallel with a fork.
-
-The diagram will appear as:
+In this example workflow, three notifications are sent: email, SMS, and HTTP. Since none of these tasks depend on each other, they can be run in parallel with a Fork task. The workflow diagram looks like this:
 
 ![fork diagram](fork-task-diagram.png)
 
-Here's the JSON definition for the workflow:
+Here's the JSON configuration for the Fork task, along with its corresponding Join task:
 
 ```json
 [
@@ -101,23 +116,5 @@ Here's the JSON definition for the workflow:
   }
 ]
 ```
-!!! note Note
-    There are three parallel 'tines' to this fork, but only two of the outputs are required for the JOIN to continue, owing to the definition of `joinOn`. The diagram *does* draw an arrow from ```http_notification_ref``` to the ```notification_join```, but it is not required for the workflow to continue. 
 
-Here is how the output of notification_join will look like. The output is a map, where the keys are the names of task
-references that were being `joinOn`. The corresponding values are the outputs of those tasks.
-
-```
-{
-  "email_notification_ref": {
-    "email_sent_at": "2021-11-06T07:37:17+0000",
-    "email_sent_to": "test@example.com"
-  },
-  "sms_notification_ref": {
-    "smm_sent_at": "2021-11-06T07:37:17+0129",
-    "sms_sen": "+1-425-555-0189"
-  }
-}
-```
-
-See [JOIN](join-task.md) for more details on the JOIN aspect of the FORK.
+Refer to the [Join](join-task.md) task for more details on the Join aspect of the Fork.

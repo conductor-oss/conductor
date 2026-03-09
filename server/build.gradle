@@ -19,6 +19,7 @@ dependencies {
     implementation project(':conductor-core')
     implementation project(':conductor-rest')
     implementation project(':conductor-grpc-server')
+    implementation project(':conductor-ai')
 
     //Event Systems
     implementation project(':conductor-amqp')
@@ -40,10 +41,18 @@ dependencies {
     implementation project(':conductor-mysql-persistence')
     implementation project(':conductor-sqlite-persistence')
 
-    //Indexing (note: Elasticsearch 6 is deprecated)
-    implementation project(':conductor-es7-persistence')
-    // To use Opensearch, comment out above Elasticsearch, uncomment below Opensearch, and rebuild conductor
-    // implementation project(':conductor-os-persistence')
+    // Indexing backend selection (build-time) to avoid Lucene conflicts between ES and OS
+    def indexingBackend = project.findProperty('indexingBackend') ?: 'elasticsearch'
+    if (indexingBackend == 'opensearch' || indexingBackend == 'os') {
+        implementation project(':conductor-os-persistence')
+        implementation project(':conductor-os-persistence-v2')
+        // os-persistence-v3 excluded: requires API migration to opensearch-java 3.x
+        // The DAO layer needs reimplementation for the new client API (breaking changes)
+        // See: os-persistence-v3/build.gradle comments for details
+        // implementation project(':conductor-os-persistence-v3')
+    } else {
+        implementation project(':conductor-es7-persistence')
+    }
 
     implementation project(':conductor-redis-lock')
     implementation project(':conductor-redis-concurrency-limit')

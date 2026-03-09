@@ -56,6 +56,76 @@ public class AMQPSettingsTest {
     }
 
     @Test
+    public void testAMQPSettings_queue_fromuri_without_exchange_prefix() {
+        String exchangestring =
+                "myExchangeName?bindQueueName=myQueueName&exchangeType=topic&routingKey=test&deliveryMode=2";
+        AMQPSettings settings = new AMQPSettings(properties);
+        settings.fromURI(exchangestring);
+        assertEquals("topic", settings.getExchangeType());
+        assertEquals("test", settings.getRoutingKey());
+        assertEquals("myExchangeName", settings.getQueueOrExchangeName());
+        assertEquals("myQueueName", settings.getExchangeBoundQueueName());
+        assertEquals(AMQPSettings.Type.QUEUE, settings.getType());
+    }
+
+    @Test
+    public void testAMQPSettings_queue_fromuri_without_exchange_prefix_and_bind_queue() {
+        String exchangestring = "myExchangeName?exchangeType=topic&routingKey=test&deliveryMode=2";
+        AMQPSettings settings = new AMQPSettings(properties);
+        settings.fromURI(exchangestring);
+        assertEquals("topic", settings.getExchangeType());
+        assertEquals("test", settings.getRoutingKey());
+        assertEquals("myExchangeName", settings.getQueueOrExchangeName());
+        assertEquals("bound_to_myExchangeName", settings.getExchangeBoundQueueName());
+        assertEquals(AMQPSettings.Type.QUEUE, settings.getType());
+    }
+
+    @Test
+    public void testAMQPSettings_exchange() {
+        String exchangestring = "myExchangeName?exchangeType=topic&routingKey=test&deliveryMode=2";
+        AMQPSettings settings = new AMQPSettings(properties, "amqp_exchange");
+        settings.fromURI(exchangestring);
+        assertEquals("topic", settings.getExchangeType());
+        assertEquals("test", settings.getRoutingKey());
+        assertEquals("myExchangeName", settings.getQueueOrExchangeName());
+        assertEquals("bound_to_myExchangeName", settings.getExchangeBoundQueueName());
+        assertEquals(AMQPSettings.Type.EXCHANGE, settings.getType());
+    }
+
+    @Test
+    public void testAMQPSettings_queue() {
+        String queuestring = "myQueue";
+        AMQPSettings settings = new AMQPSettings(properties, "amqp_queue");
+        settings.fromURI(queuestring);
+        assertEquals("topic", settings.getExchangeType());
+        assertEquals("myQueue", settings.getQueueOrExchangeName());
+        assertEquals("bound_to_myQueue", settings.getExchangeBoundQueueName());
+        assertEquals(AMQPSettings.Type.QUEUE, settings.getType());
+    }
+
+    @Test
+    public void testAMQPSettings_queue_fromUri() {
+        String queuestring = "amqp_queue:myQueue";
+        AMQPSettings settings = new AMQPSettings(properties);
+        settings.fromURI(queuestring);
+        assertEquals("topic", settings.getExchangeType());
+        assertEquals("myQueue", settings.getQueueOrExchangeName());
+        assertEquals("bound_to_myQueue", settings.getExchangeBoundQueueName());
+        assertEquals(AMQPSettings.Type.QUEUE, settings.getType());
+    }
+
+    @Test
+    public void testAMQPSettings_exchange_fromUri() {
+        String queuestring = "amqp_exchange:myExchange";
+        AMQPSettings settings = new AMQPSettings(properties);
+        settings.fromURI(queuestring);
+        assertEquals("topic", settings.getExchangeType());
+        assertEquals("myExchange", settings.getQueueOrExchangeName());
+        assertEquals("bound_to_myExchange", settings.getExchangeBoundQueueName());
+        assertEquals(AMQPSettings.Type.EXCHANGE, settings.getType());
+    }
+
+    @Test
     public void testAMQPSettings_exchange_fromuri_defaultconfig() {
         String exchangestring =
                 "amqp_exchange:myExchangeName?exchangeType=topic&routingKey=test&deliveryMode=2";

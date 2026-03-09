@@ -1,52 +1,52 @@
 # Wait Task
-The WAIT task is a no-op task that will remain `IN_PROGRESS` until after a certain duration or timestamp, at which point it will be marked as `COMPLETED`.
-
 ```json
 "type" : "WAIT"
 ```
 
-## Configuration
-The `WAIT` task is configured using **either** `duration` **or** `until` in `inputParameters`.
+The Wait task (`WAIT`) is used to pause the workflow until a certain duration or timestamp. It is a a no-op task that will remain IN_PROGRESS until the configured time has passed, at which point it will be marked as COMPLETED.
 
-### inputParameters
-| name     | type   | description             |
-| -------- | ------ | ----------------------- |
-| duration | String | Duration to wait for    |
-| until    | String | Timestamp to wait until |
 
-### Wait For time duration
+## Task parameters
 
-Format duration as ```XhYmZs```, using the `duration` key.
+Use these parameters inside `inputParameters` in the Wait task configuration. You can configure the Wait task using either `duration` or `until` in `inputParameters`.
+
+| Parameter          | Type                | Description                                       | Required / Optional  |
+| ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
+| inputParameters.duration | String | The wait duration in the format `x days y hours z minutes aa seconds`. The accepted units in this field are: <ul><li>**days**, or **d** for days</li> <li>**hours**, **hrs**, or **h** for hours</li> <li>**minutes**, **mins**, or **m** for minutes</li> <li>**seconds**, **secs**, or **s** for seconds</li></ul>   | Required for duration wait type. |
+| inputParameters.until    | String | The datetime and timezone to wait until, in one of the following formats: <ul><li>yyyy-MM-dd HH:mm z</li> <li>yyyy-MM-dd HH:mm</li> <li>yyyy-MM-dd</li></ul> <br/> For example, 2024-04-30 15:20 GMT+04:00. | Required for until wait type. |
+
+## JSON configuration
+
+Here is the task configuration for a Wait task.
+
+### Using `duration`
 
 ```json
 {
-	"type": "WAIT",
+	"name": "wait",
+    "taskReferenceName": "wait_ref",
 	"inputParameters": {
 		"duration": "10m20s"
-	}
+	},
+	"type": "WAIT"
 }
 ```
 
-### Wait until specific date/time
-
-Specify the timestamp using one of the formats, using the `until` key.
-
-1. ```yyyy-MM-dd HH:mm```
-2. ```yyyy-MM-dd HH:mm z```
-3. ```yyyy-MM-dd```
+### Using `until`
 
 ```json
 {
-	"type": "WAIT",
+	"name": "wait",
+    "taskReferenceName": "wait_ref",
 	"inputParameters": {
 		"until": "2022-12-31 11:59"
-	}
+	},
+	"type": "WAIT"
 }
 ```
-## External Triggers
 
-The task endpoint `POST {{ api_prefix }}/tasks` can be used to update the status of a task to COMPLETED prior to the configured timeout. This is
-same technique as prescribed for the [HUMAN](human-task.md#completing) task.
+## Overriding the Wait task
 
-For cases where no timeout is necessary it is recommended that you use the [HUMAN](human-task.md) task directly.
+In edge cases, the Task Update API (`POST api/tasks`) can be used to set the status of the Wait task to COMPLETED prior to the configured wait duration or timestamp.
 
+However, if the workflow does not require a specific wait duration or timestamp, it is recommended to directly use the [Human](human-task.md) task instead, which waits for an external trigger.

@@ -4,63 +4,79 @@
 "type" : "HTTP"
 ```
 
-The `HTTP` task is useful when you have a requirements such as:
+The HTTP task (`HTTP`) is useful for make calls to remote services exposed over HTTP/HTTPS. It supports various HTTP methods, headers, body content, and other configurations needed for interacting with APIs or remote services.
 
-1. Making calls to another service that exposes an API via HTTP
-2. Fetch any resource or data present on an endpoint
-
-The `HTTP` task is moved to `COMPLETED` status once the remote service responds successfully.
+The data returned in the HTTP call can be referenced in subsequent tasks as inputs, enabling you to chain multiple tasks or HTTP calls to create complex flows without writing any additional code.
 
 
-## Use Cases
+## Task parameters
 
-If we have a scenario where we need to make an HTTP call into another service, we can make use of HTTP tasks. You can
-use the data returned from the HTTP call in your subsequent tasks as inputs. Using HTTP tasks you can avoid having to
-write the code that talks to these services and instead let Conductor manage it directly. This can reduce the code you
-have to maintain and allows for a lot of flexibility.
+Use these parameters inside `inputParameters` in the HTTP task configuration.
 
-## Configuration
+| Parameter          | Type                | Description                                       | Required / Optional  |
+| ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
+| inputParameters.http_request | HttpRequest | JSON object containing the URI, method, and more. | Required. |
+| inputParameters.http_request.uri | String        | The URI for the HTTP service. You can construct the URI using dynamic references, as shown in the [GET example](#get-method) below.                                  | Required. |
+| inputParameters.http_request.method            | String           | The HTTP method. Supported methods: <ul><li>GET</li> <li>PUT</li> <li>POST</li> <li>PATCH</li><li>DELETE</li> <li>OPTIONS</li> <li>HEAD</li> <li>TRACE</li></ul>                                       | Required. |
+| inputParameters.http_request.accept            | String           | The accept header required by the server. The default value is `application/json`. Supported values include: <ul><li>application/json</li> <li>application/xml</li> <li>application/pdf</li> <li>application/octet-stream</li> <li>application/x-www-form-urlencoded</li> <li>text/plain</li> <li>text/html</li> <li>text/xml</li> <li>image/jpeg</li> <li>image/png</li> <li>image/gif</li></ul>                                     | Optional. |
+| inputParameters.http_request.contentType       | String           | The content type for the server. The default value is `application/json`. Supported values include: <ul><li>application/json</li> <li>text/plain</li> <li>text/html</li> </ul>                                                              | Optional. |
+| inputParameters.http_request.headers           | Map[String, Any] | A map of additional HTTP headers to be sent along with the request. <br/><br/> **Tip:** If the remote address that you are connecting to is a secure location, add the Authorization header with `Bearer <access_token>` to `headers`.                | Optional. |
+| inputParameters.http_request.body              | Map[String, Any]            | The request body.                                          | Required for POST, PUT, or PATCH methods.
+| inputParameters.http_request.asyncComplete     | Boolean          | Whether the task is completed asynchronously. The default value is false. <ul><li>**false**—Task status is set to COMPLETED upon successful execution.</li> <li>**true**—Task status is kept as IN_PROGRESS until an external event (via Conductor or SQS or EventHandler) marks it as complete.</li></ul> <br/> **Tip:** If the remote service sends an asynchronous event to signal the completion of the request, consider setting `asyncComplete` to `true`. | Optional. |
+| inputParameters.http_request.connectionTimeOut | Integer          | The connection timeout in milliseconds. The default is 100. <br/><br/> Set to 0 for no timeout.                       | Optional. |
+| inputParameters.http_request.readTimeOut       | Integer          | Read timeout in milliseconds. The default is 150. <br/><br/> Set to 0 for no timeout.                       | Optional. |
 
-HTTP task is configured using the following key inside the `inputParameters`  of a task with type `HTTP`.
 
-### inputParameters
-| name         | type        | description                              |
-| ------------ | ----------- | ---------------------------------------- |
-| http_request | HttpRequest | JSON object (see [below](#http_request)) |
+## Configuration JSON
+Here is the task configuration for an HTTP task.
 
-### http_request
-
-| Name              | Type             | Description                                                                                                                                                                |
-| ----------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| uri               | String           | URI for the service. Can be a partial when using vipAddress or includes the server address.                                                                                |
-| method            | String           | HTTP method. GET, PUT, POST, DELETE, OPTIONS, HEAD                                                                                                                         |
-| accept            | String           | Accept header. Default:  ```application/json```                                                                                                                            |
-| contentType       | String           | Content Type - supported types are ```text/plain```, ```text/html```, and ```application/json``` (Default)                                                                 |
-| headers           | Map[String, Any] | A map of additional http headers to be sent along with the request.                                                                                                        |
-| body              | Map[]            | Request body                                                                                                                                                               |
-| asyncComplete     | Boolean          | ```false``` to mark status COMPLETED upon execution ; ```true``` to keep it IN_PROGRESS, wait for an external event (via Conductor or SQS or EventHandler) to complete it. |
-| connectionTimeOut | Integer          | Connection Time Out in milliseconds. If set to 0, equivalent to infinity. Default: 100.                                                                                    |
-| readTimeOut       | Integer          | Read Time Out in milliseconds. If set to 0, equivalent to infinity. Default: 150.                                                                                          |
-
-!!!tip Asynchronous Requests
-    In the case that remote service sends an asynchronous event to signal the completion of the request, consider setting the `asyncComplete` flag on the HTTP task to `true`. In this case, you will need
-    to transition the HTTP task to COMPLETED manually.
-    
-!!!tip Authorization Header
-    If the remote address that you are connecting to is a secure location, add the Authorization header with `Bearer <access_token>` to headers.
+```json
+{
+  "name": "http",
+  "taskReferenceName": "http_ref",
+  "type": "HTTP",
+  "inputParameters": {
+    "http_request": {
+      "uri": "https://orkes-api-tester.orkesconductor.com/api",
+      "method": "POST",
+      "accept": "application/json",
+      "contentType": "application/json",
+      "encode": true,
+      "headers": {
+        "header-1": "${workflow.input.header-1}"
+      },
+      "body": {
+        "key": "value"
+      }
+    }
+  }
+}
+```
 
 ## Output
 
-| name         | type             | description                                                                 |
-| ------------ | ---------------- | --------------------------------------------------------------------------- |
-| response     | Map              | JSON body containing the response if one is present                         |
-| headers      | Map[String, Any] | Response Headers                                                            |
-| statusCode   | Integer          | [Http Status Code](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes) |
-| reasonPhrase | String           | Http Status Code's reason phrase                                            |
+The HTTP task will return the following parameters.
+
+| Name   | Type | Description                                                                                               |
+| ------ | ---- | --------------------------------------------------------------------------------------------------------- |
+| response     | Map[String, Any]              | The JSON body containing the request response, if available.                         |
+| response.headers      | Map[String, Any] | The response headers.                                                            |
+| response.statusCode   | Integer          | The [HTTP status code](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes) indicating the request outcome. |
+| response.reasonPhrase | String           | The reason phrase associated with the HTTP status code.                                            |
+| response.body | Map[String, Any] | The response body containing the data returned by the endpoint.
+
+## Execution
+
+The HTTP task is moved to COMPLETED status once the remote service responds successfully.
+
+If your HTTP tasks are not getting picked up, you might have too many HTTP tasks in the task queue. Consider using Isolation Groups to prioritize certain HTTP tasks over others. 
 
 ## Examples
+
+Here are some examples for using the HTTP task.
+
+
 ### GET Method
-We can use variables in our URI as show in the example below. 
 
 ```json
 {
@@ -77,7 +93,6 @@ We can use variables in our URI as show in the example below.
 ```
 
 ### POST Method
-Here we are using variables for our POST body which happens to be data from a previous task. This is an example of how you can **chain** HTTP calls to make complex flows happen without writing any additional code.
 
 ```json
 {
@@ -132,10 +147,4 @@ Here we are using variables for our POST body which happens to be data from a pr
   "type": "HTTP"
 }
 ```
-
-## Isolation Groups
-Why are my HTTP tasks not getting picked up?
-
-We might have too many HTTP tasks in the queue. There is a concept called Isolation Groups that you can rely on
-for prioritizing certain HTTP tasks over others. 
    

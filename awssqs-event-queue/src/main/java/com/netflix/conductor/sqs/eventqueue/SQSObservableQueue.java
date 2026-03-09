@@ -28,6 +28,7 @@ import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.metrics.Monitors;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import rx.Observable;
@@ -417,7 +418,10 @@ public class SQSObservableQueue implements ObservableQueue {
     }
 
     private static class SqsPolicy {
+        @JsonProperty("Version")
         private String version;
+
+        @JsonProperty("Statement")
         private List<SqsStatement> statement;
 
         public String getVersion() {
@@ -438,9 +442,16 @@ public class SQSObservableQueue implements ObservableQueue {
     }
 
     private static class SqsStatement {
+        @JsonProperty("Effect")
         private String effect;
+
+        @JsonProperty("Principal")
         private SqsPrincipal principal;
+
+        @JsonProperty("Action")
         private String action;
+
+        @JsonProperty("Resource")
         private String resource;
 
         public String getEffect() {
@@ -477,6 +488,7 @@ public class SQSObservableQueue implements ObservableQueue {
     }
 
     private static class SqsPrincipal {
+        @JsonProperty("AWS")
         private List<String> aws;
 
         public List<String> getAws() {

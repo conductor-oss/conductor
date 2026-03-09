@@ -22,21 +22,13 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.core.io.FileSystemResource;
-
-import com.netflix.conductor.rest.config.RestConfiguration;
 
 // Prevents from the datasource beans to be loaded, AS they are needed only for specific databases.
 // In case that SQL database is selected this class will be imported back in the appropriate
 // database persistence module.
 @SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
-@ComponentScan(
-        basePackages = {"com.netflix.conductor", "io.orkes.conductor", "org.conductoross"},
-        excludeFilters =
-                @ComponentScan.Filter(
-                        type = FilterType.ASSIGNABLE_TYPE,
-                        classes = {RestConfiguration.class}))
+@ComponentScan(basePackages = {"com.netflix.conductor", "io.orkes.conductor", "org.conductoross"})
 public class Conductor {
 
     private static final Logger log = LoggerFactory.getLogger(Conductor.class);
@@ -48,8 +40,8 @@ public class Conductor {
     }
 
     /**
-     * Reads properties from the location specified in <code>CONDUCTOR_CONFIG_FILE</code> and sets
-     * them as system properties so they override the default properties.
+     * Reads properties from the location specified in <code>CONDUCTOR_LITE_CONFIG_FILE</code> and
+     * sets them as system properties so they override the default properties.
      *
      * <p>Spring Boot property hierarchy is documented here,
      * https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-external-config
@@ -57,9 +49,9 @@ public class Conductor {
      * @throws IOException if file can't be read.
      */
     private static void loadExternalConfig() throws IOException {
-        String configFile = System.getProperty("CONDUCTOR_CONFIG_FILE2");
+        String configFile = System.getProperty("CONDUCTOR_LITE_CONFIG_FILE");
         if (StringUtils.isBlank(configFile)) {
-            configFile = System.getenv("CONDUCTOR_CONFIG_FILE2");
+            configFile = System.getenv("CONDUCTOR_LITE_CONFIG_FILE");
         }
         if (StringUtils.isNotBlank(configFile)) {
             log.info("Loading {}", configFile);

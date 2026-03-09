@@ -26,6 +26,7 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.grpc.SearchPb;
 import com.netflix.conductor.grpc.TaskServicePb;
+import com.netflix.conductor.proto.ExecutionMetadataPb;
 import com.netflix.conductor.proto.TaskPb;
 import com.netflix.conductor.proto.TaskSummaryPb;
 import com.netflix.conductor.service.ExecutionService;
@@ -231,7 +232,11 @@ public class TaskServiceImplTest {
 
         assertEquals(1, taskSearchResult.getTotalHits());
         assertEquals(
-                TaskPb.Task.newBuilder().setCallbackFromWorker(true).build(),
+                TaskPb.Task.newBuilder()
+                        .setCallbackFromWorker(true)
+                        .setExecutionMetadata(
+                                ExecutionMetadataPb.ExecutionMetadata.newBuilder().build())
+                        .build(),
                 taskSearchResult.getResultsList().get(0));
     }
 }

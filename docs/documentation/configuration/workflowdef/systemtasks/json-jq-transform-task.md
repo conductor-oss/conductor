@@ -1,52 +1,71 @@
 # JSON JQ Transform Task
-
 ```json
 "type" : "JSON_JQ_TRANSFORM"
 ```
 
-`JSON_JQ_TRANSFORM` is a System task that allows processing of JSON data that is supplied to the task, by using the
-popular JQ processing tool’s query expression language.
+The JSON JQ Transform task (`JSON_JQ_TRANSFORM`) processes JSON data using jq. It is useful for transforming data from one task's output into the input of another task.
 
-## Use Cases
+## Task parameters
 
-JSON is a popular format of choice for data-interchange. It is widely used in web and server applications, document
-storage, API I/O etc. It’s also used within Conductor to define workflow and task definitions and passing data and state
-between tasks and workflows. This makes a tool like JQ a natural fit for processing task related data. Some common
-usages within Conductor includes, working with HTTP task, JOIN tasks or standalone tasks that try to transform data from
-the output of one task to the input of another.
+Use these parameters inside `inputParameters` in the JSON JQ Transform task configuration.
 
-## Configuration
+
 `queryExpression` is appended to the `inputParameters` of `JSON_JQ_TRANSFORM`, along side any other input values needed for the evaluation.
 
-### inputParameters
-| name            | description         |
-|-----------------|---------------------|
-| queryExpression | JQ query expression |
+| Parameter          | Type                | Description                                       | Required / Optional  |
+| ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
+| inputParameters.queryExpression | String | The jq filter, which is the expression used to transform the JSON data. <br/><br/> Refer to the [JQ Manual](https://stedolan.github.io/jq/manual/v1.5/) for more information on constructing filters. | Required. |
+| inputParameters | Map[String, Any] | Contains the inputs for the jq transformation. | Required. |
 
-### About JQ
-Check out the [JQ Manual](https://stedolan.github.io/jq/manual/v1.5/).
+## JSON configuration
+
+
+Here is the task configuration for a JSON JQ Transform task.
+
+```json
+{
+  "name": "json_transform",
+  "taskReferenceName": "json_transform_ref",
+  "type": "JSON_JQ_TRANSFORM",
+  "inputParameters": {
+    "persons": [
+      {
+        "name": "some",
+        "last": "name",
+        "email": "mail@mail.com",
+        "id": 1
+      },
+      {
+        "name": "some2",
+        "last": "name2",
+        "email": "mail2@mail.com",
+        "id": 2
+      }
+    ],
+    "queryExpression": ".persons | map({user:{email,id}})"
+  }
+}
+```
 
 ## Output
 
-| Attribute  | Description                                                               |
-|------------|---------------------------------------------------------------------------|
-| result     | The first results returned by the JQ expression                           |
-| resultList | A List of results returned by the JQ expression                           |
-| error      | An optional error message, indicating that the JQ query failed processing |
+The JSON JQ Transform task will return the following parameters.
 
-## Example
-### Example 1
-Here is an example of a _`JSON_JQ_TRANSFORM`_ task. The `inputParameters` attribute is expected to have a value object
-that has the following
+| Name             | Type         | Description                                                   |
+| ---------------- | ------------ | ------------------------------------------------------------- |
+| result     | List[Map[String, Any]] | The first element of the `resultList` returned by the jq filter.                           |
+| resultList | List[List[Map[String, Any]]] | A list of results returned by the jq filter.                           |
+| error      | String | An optional error message if the jq filter failed. |
 
-1. A list of key value pair objects denoted key1/value1, key2/value2 in the example below. Note the key1/value1 are
-   arbitrary names used in this example.
 
-2. A key with the name `queryExpression`, whose value is a JQ expression. The expression will operate on the value of
-   the `inputParameters` attribute. In the example below, the `inputParameters` has 2 inner objects named by attributes
-   `key1` and `key2`, each of which has an object that is named `value1` and `value2`. They have an associated array of
-   strings as values, `"a", "b"` and `"c", "d"`. The expression `key3: (.key1.value1 + .key2.value2)` concat's the 2
-   string arrays into a single array against an attribute named `key3`
+
+## Examples
+
+Here are some examples for using the JSON JQ Transform task.
+
+### Simple example
+
+In this example, the jq filter expression `key3: (.key1.value1 + .key2.value2)` will concatenate the two provided string arrays in `key1` and `key2` into a single array named `key3`.
 
 ```json
 {
@@ -71,10 +90,7 @@ that has the following
 }
 ```
 
-The execution of this example task above will provide the following output. The `resultList` attribute stores the full
-list of the `queryExpression` result. The `result` attribute stores the first element of the resultList. An
-optional `error`
-attribute along with a string message will be returned if there was an error processing the query expression.
+The above JSON JQ Transform task will provide the following output. In this case, both `resultList` and `result` are the same.
 
 ```json
 {
@@ -99,12 +115,11 @@ attribute along with a string message will be returned if there was an error pro
 }
 ```
 
-### Example 2
-A HTTP Task makes an API call to GitHub to request a list of "stargazers" (users who have starred a repository).  The API response (for just one user) looks like:
+### Simplifying data
 
-Snippet of `${hundred_stargazers_ref.output}`
+In this example, the JSON JQ Transform task is used to simplify and extract data from an extremely dense API response. The HTTP task retrieves a list of stargazers (users who have starred a repository) from GitHub, and the response for just one user looks like this:
 
-``` JSON 
+``` json 
   
 "body":[
   {
@@ -133,9 +148,9 @@ Snippet of `${hundred_stargazers_ref.output}`
 ]
 ```
 
-We only need the ```starred_at``` and ```login``` parameters for users who starred the repository AFTER a given date (provided as an input to the workflow `${workflow.input.cutoff_date}`).  We'll use the JQ Transform to simplify the output:
+Since the only data required are the `starred_at` and `login` parameters for users who starred the repository after a given date (provided as a workflow input `${workflow.input.cutoff_date}`), we can use the JSON JQ Transform task to simplify the output:
 
-```JSON
+```json
 {
   "name": "jq_cleanup_stars",
   "taskReferenceName": "jq_cleanup_stars_ref",
@@ -156,9 +171,9 @@ We only need the ```starred_at``` and ```login``` parameters for users who starr
 }
 ```
 
-The JSON is stored in `starlist`.  The `queryExpression` reads in the JSON, selects only entries where the `starred_at` value meets the date criteria, and generates output JSON of the form:
+In the above task configuration, the API response JSON is stored in the `starlist` parameter.  The `queryExpression` reads the JSON, selects only entries where the `starred_at` value meets the date criteria, and generates output JSON in the following format:
 
-```JSON
+```json
 {
   "occurred_at": "date from JSON",
   "member":{
@@ -167,9 +182,4 @@ The JSON is stored in `starlist`.  The `queryExpression` reads in the JSON, sele
 }
 ```
 
-The entire expression is wrapped in `[]` to indicate that the response should be an array.
-
-
-
-
-
+The `queryExpression` is wrapped in `[]` to indicate that the response should be an array.

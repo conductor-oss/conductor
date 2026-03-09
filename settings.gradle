@@ -11,24 +11,9 @@
  *  specific language governing permissions and limitations under the License.
  */
 
-plugins {
-    id "com.gradle.enterprise" version "3.11.1"
-}
-
-gradleEnterprise {
-    buildScan {
-        termsOfServiceUrl = "https://gradle.com/terms-of-service"
-        termsOfServiceAgree = "yes"
-        publishAlways()
-
-        buildScanPublished { scan ->
-            file("buildscan.log") << "${new Date()} - ${scan.buildScanUri}\n"
-        }
-    }
-}
-
 rootProject.name = 'conductor'
 
+include 'ai'
 include 'annotations'
 include 'annotations-processor'
 
@@ -69,6 +54,8 @@ include 'sqlite-persistence'
 include 'metrics'
 include 'es7-persistence'
 include 'os-persistence'
+include 'os-persistence-v2'
+include 'os-persistence-v3'
 include 'azureblob-storage'
 include 'postgres-external-storage'
 include 'amqp'

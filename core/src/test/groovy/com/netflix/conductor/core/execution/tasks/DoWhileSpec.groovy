@@ -15,6 +15,7 @@ package com.netflix.conductor.core.execution.tasks
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask
 import com.netflix.conductor.common.utils.TaskUtils
+import com.netflix.conductor.core.dal.ExecutionDAOFacade
 import com.netflix.conductor.core.exception.TerminateWorkflowException
 import com.netflix.conductor.core.execution.WorkflowExecutor
 import com.netflix.conductor.core.utils.ParametersUtils
@@ -34,6 +35,7 @@ class DoWhileSpec extends Specification {
     DoWhile doWhile
 
     WorkflowExecutor workflowExecutor
+    ExecutionDAOFacade executionDAOFacade
     ObjectMapper objectMapper
     ParametersUtils parametersUtils
     TaskModel doWhileTaskModel
@@ -44,12 +46,13 @@ class DoWhileSpec extends Specification {
     def setup() {
         objectMapper = new ObjectMapper();
         workflowExecutor = Mock(WorkflowExecutor.class)
+        executionDAOFacade = Mock(ExecutionDAOFacade.class)
         parametersUtils = new ParametersUtils(objectMapper)
 
         task1 = new WorkflowTask(name: 'task1', taskReferenceName: 'task1')
         task2 = new WorkflowTask(name: 'task2', taskReferenceName: 'task2')
 
-        doWhile = new DoWhile(parametersUtils)
+        doWhile = new DoWhile(parametersUtils, executionDAOFacade)
     }
 
     def "first iteration"() {

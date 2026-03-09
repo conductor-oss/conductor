@@ -197,6 +197,7 @@ public class TestDeciderOutcomes {
                         mockTaskStatusListener,
                         mockExecutionDAOFacade,
                         taskMappers,
+                        new HashMap<>(),
                         Duration.ofMinutes(60));
     }
 

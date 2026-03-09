@@ -1,19 +1,23 @@
 # Operators
 
-Operators are built-in primitives in Conductor that allow you to define the control flow in the workflow.
-Operators are similar to programming constructs such as for loops, decisions, etc.
-Conductor has support for most of the programing primitives allowing you to define the most advanced workflows.
+Operators are built-in primitives in Conductor that allow you to define the workflow's control flow. They are similar to programming constructs such as _for loops_, _if-else selections_, and so on. Conductor supports most programming primitives, so that you can create various advanced workflows.
 
-Conductor supports the following programming language constructs: 
+Here are the operators available in Conductor OSS: 
 
-| Language Construct         | Conductor Operator                        |
+| Operator                        | Description         |
 | -------------------------- | ----------------------------------------- |
-| Do-While or For Loops      | [Do While Task](do-while-task.md)         |
-| Function Pointer           | [Dynamic Task](dynamic-task.md)           |
-| Dynamic Parallel execution | [Dynamic Fork Task](dynamic-fork-task.md) |
-| Static Parallel execution  | [Fork Task](fork-task.md)                 |
-| Map                        | [Join Task](join-task.md)                 |
-| Subroutine / Fork Process  | [Sub Workflow Task](sub-workflow-task.md) |
-| Switch/if..then...else     | [Switch Task](switch-task.md)             |
-| Exit                       | [Terminate Task](terminate-task.md)       |
-| Global Variables           | [Variable Task](set-variable-task.md)     |
+| [Do While](do-while-task.md)         | Do-while loops / For loops      | 
+| [Dynamic](dynamic-task.md)           | Function pointer           | 
+| [Dynamic Fork](dynamic-fork-task.md) | Dynamic parallel execution |
+| [Fork](fork-task.md)                 | Static parallel execution  | 
+| [Join](join-task.md)                 | Map                        |
+| [Set Variable](set-variable-task.md)     | Workflow variable declaration           |
+| [Start Workflow](start-workflow-task.md) | Entry point   | 
+| [Sub Workflow](sub-workflow-task.md) | Subroutine  | 
+| [Switch](switch-task.md)             | Switch / If..then...else selection     | 
+| [Terminate](terminate-task.md)       | Exit                       |
+
+The following operators are deprecated:
+
+- Decision
+- Exclusive Join

@@ -1,0 +1,119 @@
+{
+  "name": "do_while_timeline_ui_demo",
+  "description": "Demonstrates Timeline UI fix for DO_WHILE with SWITCH and FORK_JOIN_DYNAMIC (Issue #534)",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "do_while_with_switch",
+      "taskReferenceName": "do_while_switch_ref",
+      "inputParameters": {
+        "loop_limit": 2
+      },
+      "type": "DO_WHILE",
+      "loopCondition": "(function () {if ($.do_while_switch_ref['iteration'] < $.loop_limit) {return true;} return false;})();",
+      "loopOver": [
+        {
+          "name": "switch_task",
+          "taskReferenceName": "switch_ref",
+          "inputParameters": {
+            "decision_case": "default"
+          },
+          "type": "SWITCH",
+          "evaluatorType": "value-param",
+          "expression": "decision_case",
+          "decisionCases": {
+            "specific": [
+              {
+                "name": "specific_case",
+                "taskReferenceName": "specific_case_ref",
+                "inputParameters": {
+                  "evaluatorType": "javascript",
+                  "expression": "({result: 'specific case executed'})"
+                },
+                "type": "INLINE"
+              }
+            ]
+          },
+          "defaultCase": [
+            {
+              "name": "default_case",
+              "taskReferenceName": "default_case_ref",
+              "inputParameters": {
+                "evaluatorType": "javascript",
+                "expression": "({result: 'default case executed', iteration: $.do_while_switch_ref['iteration']})"
+              },
+              "type": "INLINE"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "do_while_with_fork_join_dynamic",
+      "taskReferenceName": "do_while_fork_ref",
+      "inputParameters": {
+        "loop_limit": 2
+      },
+      "type": "DO_WHILE",
+      "loopCondition": "(function () {if ($.do_while_fork_ref['iteration'] < $.loop_limit) {return true;} return false;})();",
+      "loopOver": [
+        {
+          "name": "prepare_fork",
+          "taskReferenceName": "prepare_fork_ref",
+          "inputParameters": {
+            "queryExpression": "[{id: 1, value: 'task1'}, {id: 2, value: 'task2'}]"
+          },
+          "type": "JSON_JQ_TRANSFORM"
+        },
+        {
+          "name": "dynamic_fork",
+          "taskReferenceName": "dynamic_fork_ref",
+          "inputParameters": {
+            "forkTaskName": "inline_fork_task",
+            "forkTaskType": "INLINE",
+            "forkTaskInputs": "${prepare_fork_ref.output.result}",
+            "dynamicTasks": [
+              {
+                "name": "inline_fork_task",
+                "taskReferenceName": "fork_task_1",
+                "type": "INLINE",
+                "inputParameters": {
+                  "evaluatorType": "javascript",
+                  "expression": "({processed: true, id: 1})"
+                }
+              },
+              {
+                "name": "inline_fork_task",
+                "taskReferenceName": "fork_task_2",
+                "type": "INLINE",
+                "inputParameters": {
+                  "evaluatorType": "javascript",
+                  "expression": "({processed: true, id: 2})"
+                }
+              }
+            ]
+          },
+          "type": "FORK_JOIN_DYNAMIC",
+          "dynamicForkTasksParam": "dynamicTasks",
+          "dynamicForkTasksInputParamName": "forkTaskInputs"
+        },
+        {
+          "name": "join",
+          "taskReferenceName": "join_ref",
+          "type": "JOIN"
+        }
+      ]
+    },
+    {
+      "name": "final_summary",
+      "taskReferenceName": "final_summary_ref",
+      "inputParameters": {
+        "evaluatorType": "javascript",
+        "expression": "({message: 'Timeline UI should render correctly for both DO_WHILE scenarios', switch_iterations: $.do_while_switch_ref['iteration'], fork_iterations: $.do_while_fork_ref['iteration']})"
+      },
+      "type": "INLINE"
+    }
+  ],
+  "schemaVersion": 2,
+  "ownerEmail": "test@conductor.io"
+}

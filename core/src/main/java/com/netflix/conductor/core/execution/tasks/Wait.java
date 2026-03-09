@@ -12,6 +12,9 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
+import java.time.Duration;
+import java.util.Optional;
+
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.core.execution.WorkflowExecutor;
@@ -54,6 +57,20 @@ public class Wait extends WorkflowSystemTask {
         }
 
         return false;
+    }
+
+    @Override
+    public Optional<Long> getEvaluationOffset(TaskModel taskModel, long maxOffset) {
+        if (taskModel.getWaitTimeout() > 0) {
+            long seconds =
+                    Duration.ofMillis(taskModel.getWaitTimeout() - System.currentTimeMillis())
+                            .getSeconds();
+            if (seconds == 0) {
+                seconds = 1;
+            }
+            return Optional.of(seconds);
+        }
+        return Optional.empty();
     }
 
     public boolean isAsync() {

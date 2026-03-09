@@ -1,58 +1,69 @@
 #
-# conductor:server - Build Conductor Server
+# conductor:server - Conductor Server + UI
 #
+# Two modes:
+#   Default:        Builds JAR and UI from source (docker-compose, local dev)
+#   PREBUILT=true:  Skips builds, uses pre-built artifacts (CI multi-arch)
+#
+
 # ===========================================================================================================
-# 0. Builder stage 1
+# 0. Builder stage
 # ===========================================================================================================
-FROM openjdk:17-bullseye AS builder
+FROM azul/zulu-openjdk-debian:21 AS builder
+
+ARG PREBUILT=false
+ARG INDEXING_BACKEND=elasticsearch
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
-# Copy the project directly onto the image
 COPY . /conductor
 WORKDIR /conductor
 
-# Build the server on run
-RUN ./gradlew build -x test
-WORKDIR /server/build/libs
-RUN ls -ltr
+RUN if [ "$PREBUILT" = "true" ]; then \
+      rm -rf server/build/libs && mkdir -p server/build/libs && \
+      cp docker/server/libs/conductor-server.jar server/build/libs/conductor-server-boot.jar && \
+      echo "Using pre-built server JAR"; \
+    else \
+      ./gradlew build -x test -x spotlessCheck -x shadowJar -x :conductor-os-persistence-v3:build \
+        -PindexingBackend=${INDEXING_BACKEND} \
+        -Dorg.gradle.jvmargs=-Xmx2g \
+        --no-daemon --no-parallel; \
+    fi
 
+# ===========================================================================================================
+# 1. UI builder stage
+# ===========================================================================================================
+FROM node:lts AS ui-builder
 
-#
-# conductor:server - Build Conductor UI
-#
-# ===========================================================================================================
-# 1. Builder stage 2
-# ===========================================================================================================
-FROM alpine:3.20 AS ui-builder
+ARG PREBUILT=false
 ARG YARN_OPTS
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
-# Install dependencies
-RUN apk add --update nodejs npm yarn
-
 COPY . /conductor
 WORKDIR /conductor/ui
 
-# Include monaco sources into bundle (instead of using CDN)
-ENV REACT_APP_MONACO_EDITOR_USING_CDN=false
-ENV REACT_APP_ENABLE_ERRORS_INSPECTOR=true
-RUN yarn ${YARN_OPTS} install && cp -r node_modules/monaco-editor public/ && yarn ${YARN_OPTS} build
-RUN ls -ltr
-RUN echo "Done building UI"
-
+RUN if [ "$PREBUILT" = "false" ]; then \
+      corepack enable && corepack prepare yarn@stable --activate && \
+      export REACT_APP_MONACO_EDITOR_USING_CDN=false && \
+      export REACT_APP_ENABLE_ERRORS_INSPECTOR=true && \
+      yarn config set network-timeout 600000 -g && \
+      yarn ${YARN_OPTS} install && cp -r node_modules/monaco-editor public/ && yarn ${YARN_OPTS} build; \
+    else \
+      echo "Using pre-built UI assets"; \
+    fi
 
 # ===========================================================================================================
-# 2. Bin stage
+# 2. Final stage
 # ===========================================================================================================
-FROM alpine:3.19
+FROM debian:stable-slim
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
-RUN apk add openjdk17
-RUN apk add nginx
-RUN apk add curl
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openjdk-21-jre-headless nginx curl ca-certificates \
+    && rm -f /etc/nginx/sites-enabled/default \
+    && rm -rf /var/lib/apt/lists/*
 
 # Make app folders
 RUN mkdir -p /app/config /app/logs /app/libs
@@ -66,7 +77,7 @@ COPY --from=builder /conductor/server/build/libs/*boot*.jar /app/libs/conductor-
 WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
 COPY --from=ui-builder /conductor/ui/build .
-COPY --from=ui-builder /conductor/docker/server/nginx/nginx.conf /etc/nginx/http.d/default.conf
+COPY --from=ui-builder /conductor/docker/server/nginx/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy the files for the server into the app folders
 RUN chmod +x /app/startup.sh
