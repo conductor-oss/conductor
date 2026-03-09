@@ -1,0 +1,51 @@
+{
+  "name": "do_while_high_iteration_test",
+  "description": "DO_WHILE with only synchronous LAMBDA tasks at high iteration count. Used to regression-test the iterative decide() loop introduced in fix #799 (StackOverflowError at high DO_WHILE iterations).",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "loopTask",
+      "taskReferenceName": "loopTask",
+      "inputParameters": {
+        "value": "${workflow.input.loop}"
+      },
+      "type": "DO_WHILE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopCondition": "if ($.loopTask['iteration'] < $.value ) { true; } else { false; }",
+      "loopOver": [
+        {
+          "name": "LAMBDA_TASK",
+          "taskReferenceName": "lambda_task",
+          "inputParameters": {
+            "scriptExpression": "return {};"
+          },
+          "type": "LAMBDA",
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": []
+        }
+      ]
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}

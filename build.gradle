@@ -8,7 +8,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:3.3.5'
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:3.3.11'
         classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.+'
     }
 }
@@ -68,6 +68,20 @@ allprojects {
                 if (details.requested.group == 'org.apache.commons' && details.requested.name == 'commons-lang3') {
                     details.useVersion "3.18.0"
                 }
+                // Security: CVE-2025-12183 - force lz4-java to patched version
+                if (details.requested.group == 'org.lz4' && details.requested.name == 'lz4-java') {
+                    details.useVersion '1.8.1'
+                }
+            }
+            // Security: at.yawk.lz4:lz4-java declares Gradle capability org.lz4:lz4-java in its
+            // module metadata. When lz4-java is upgraded to 1.8.1 (CVE-2025-12183), both modules
+            // claim the same capability and Gradle can't resolve the conflict automatically.
+            // Tell Gradle to always prefer the canonical org.lz4 artifact.
+            resolutionStrategy.capabilitiesResolution.withCapability('org.lz4:lz4-java') { resolution ->
+                def preferred = resolution.candidates.find { it.id.group == 'org.lz4' }
+                if (preferred) {
+                    resolution.select(preferred)
+                }
             }
         }
     }
@@ -78,7 +92,7 @@ allprojects {
 
     dependencyManagement {
         imports {
-            // dependency versions for the BOM can be found at https://docs.spring.io/spring-boot/docs/3.1.4/reference/htmlsingle/#appendix.dependency-versions
+            // dependency versions for the BOM can be found at https://docs.spring.io/spring-boot/docs/3.3.11/reference/htmlsingle/#appendix.dependency-versions
             mavenBom(SpringBootPlugin.BOM_COORDINATES)
         }
     }
@@ -109,6 +123,19 @@ allprojects {
             }
         }
         implementation('org.apache.tomcat.embed:tomcat-embed-core')
+
+        // Security: force minimum versions for vulnerable transitive dependencies
+        constraints {
+            implementation('org.apache.tika:tika-core:3.2.2') {
+                because 'CVE-2025-66516: tika-parser-pdf-module vulnerability'
+            }
+            implementation('commons-beanutils:commons-beanutils:1.11.0') {
+                because 'CVE-2025-48734: PropertyUtilsBean enum suppression'
+            }
+            implementation('com.microsoft.sqlserver:mssql-jdbc:12.8.2.jre11') {
+                because 'CVE-2025-59250: improper input validation'
+            }
+        }
     }
     // processes additional configuration metadata json file as described here
     // https://docs.spring.io/spring-boot/docs/2.3.1.RELEASE/reference/html/appendix-configuration-metadata.html#configuration-metadata-additional-metadata
