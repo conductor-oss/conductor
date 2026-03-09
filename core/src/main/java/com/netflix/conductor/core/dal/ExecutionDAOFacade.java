@@ -586,22 +586,15 @@ public class ExecutionDAOFacade {
                         task.getTaskId(),
                         new String[] {ARCHIVED_FIELD},
                         new Object[] {true});
-            } else if (task.getStatus() == TaskModel.Status.SCHEDULED) {
-                // SCHEDULED tasks may not have been canceled yet (e.g. if cancelNonTerminalTasks
-                // failed for this task). Skip archival to allow the rest of the workflow removal
-                // to proceed rather than blocking on a task that was never started.
-                LOGGER.warn(
-                        "Skipping archival of task: {} of workflow: {} with SCHEDULED status",
-                        task.getTaskId(),
-                        workflow.getWorkflowId());
             } else {
-                throw new IllegalArgumentException(
-                        "Cannot archive task: "
-                                + task.getTaskId()
-                                + " of workflow: "
-                                + workflow.getWorkflowId()
-                                + " with non-terminal status: "
-                                + task.getStatus());
+                // Skip archival for non-terminal tasks to prevent blocking workflow archival/removal.
+                // This aligns with the behavior for SCHEDULED tasks and avoids leaving workflows
+                // in Redis due to a single stale task state.
+                LOGGER.warn(
+                        "Skipping archival of task: {} of workflow: {} with non-terminal status: {}",
+                        task.getTaskId(),
+                        workflow.getWorkflowId(),
+                        task.getStatus());
             }
         } else {
             // Not archiving, remove task from index
