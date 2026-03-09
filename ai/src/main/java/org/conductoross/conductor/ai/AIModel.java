@@ -61,6 +61,13 @@ public interface AIModel {
     String getModelProvider();
 
     /**
+     * @return alternative provider names that resolve to this same provider
+     */
+    default List<String> getProviderAliases() {
+        return List.of();
+    }
+
+    /**
      * Embedding generation
      *
      * @param embeddingGenRequest request

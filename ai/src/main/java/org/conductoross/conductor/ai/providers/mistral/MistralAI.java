@@ -31,6 +31,7 @@ import org.springframework.ai.mistralai.MistralAiChatOptions;
 import org.springframework.ai.mistralai.MistralAiEmbeddingModel;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
 import lombok.extern.slf4j.Slf4j;
@@ -113,13 +114,19 @@ public class MistralAI implements AIModel {
     private MistralAiApi createMistralAiApi() {
         String apiKey = config.getApiKey();
         String baseURL = config.getBaseURL();
+
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setReadTimeout(config.getTimeout());
+
         // Needs accept-encoding headers
         // https://github.com/spring-projects/spring-ai/issues/372
         return MistralAiApi.builder()
                 .baseUrl(baseURL)
                 .apiKey(apiKey)
                 .restClientBuilder(
-                        RestClient.builder().defaultHeader("Accept-Encoding", "gzip, deflate"))
+                        RestClient.builder()
+                                .requestFactory(factory)
+                                .defaultHeader("Accept-Encoding", "gzip, deflate"))
                 .build();
     }
 
