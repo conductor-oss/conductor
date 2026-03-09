@@ -40,11 +40,6 @@ public class DoWhile extends WorkflowSystemTask {
 
     private String TASK_DO_WHILE_MAX_ALLOWED_ITERATION = "task.dowhile.max.allowed.iteration";
     private int TASK_DO_WHILE_MAX_ALLOWED_ITERATION_DEFAULT_VALUE = 100;
-
-    private int MAX_ALLOWED_ITERATION = TASK_DO_WHILE_MAX_ALLOWED_ITERATION_DEFAULT_VALUE;
-
-    private final ParametersUtils parametersUtils;
-
     private int MAX_ALLOWED_ITERATION = TASK_DO_WHILE_MAX_ALLOWED_ITERATION_DEFAULT_VALUE;
 
     private final ParametersUtils parametersUtils;
