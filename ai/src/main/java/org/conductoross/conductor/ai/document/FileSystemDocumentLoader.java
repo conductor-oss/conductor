@@ -35,8 +35,15 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class FileSystemDocumentLoader implements DocumentLoader {
 
+    private final DocumentAccessPolicy accessPolicy;
+
+    public FileSystemDocumentLoader(DocumentAccessPolicy accessPolicy) {
+        this.accessPolicy = accessPolicy;
+    }
+
     @Override
     public byte[] download(String location) {
+        accessPolicy.validateAccess(location);
         try {
 
             return Files.readAllBytes(Path.of(location.replace("file://", "")));
@@ -53,6 +60,7 @@ public class FileSystemDocumentLoader implements DocumentLoader {
             if (data == null) {
                 return null;
             }
+            accessPolicy.validateAccess(fileURI);
             Path path = Path.of(fileURI.replace("file://", ""));
             var result = path.toFile().getParentFile().mkdirs();
             log.info("writing to {}", path);
@@ -74,6 +82,7 @@ public class FileSystemDocumentLoader implements DocumentLoader {
             if (data == null) {
                 return null;
             }
+            accessPolicy.validateAccess(fileURI);
             Path path = Path.of(fileURI.replace("file://", ""));
             path.toFile().getParentFile().mkdirs();
             Files.copy(data, path, StandardCopyOption.REPLACE_EXISTING);
@@ -85,6 +94,7 @@ public class FileSystemDocumentLoader implements DocumentLoader {
 
     @Override
     public List<String> listFiles(String location) {
+        accessPolicy.validateAccess(location);
         try (Stream<Path> paths = Files.list(Path.of(new URI(location)))) {
             return paths.map(path -> path.toUri().toString()).toList();
         } catch (Exception e) {
