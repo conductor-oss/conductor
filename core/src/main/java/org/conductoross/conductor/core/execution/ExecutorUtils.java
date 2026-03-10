@@ -96,7 +96,10 @@ public class ExecutorUtils {
             }
         }
 
-        long unackSeconds = (postponeDurationSeconds != null) ? postponeDurationSeconds : 0;
+        long unackSeconds =
+                (postponeDurationSeconds != null)
+                        ? postponeDurationSeconds
+                        : workflowOffsetTimeoutSeconds;
         log.trace(
                 "postponeDurationSeconds calculated is {} and workflowOffsetTimeoutSeconds is {} for workflow {}",
                 unackSeconds,

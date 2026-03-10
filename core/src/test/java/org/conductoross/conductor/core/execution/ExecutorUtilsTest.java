@@ -90,7 +90,7 @@ public class ExecutorUtilsTest {
     }
 
     @Test
-    public void computePostponeDefaultsToZeroWhenNoEligibleTasks() {
+    public void computePostponeDefaultsToWorkflowOffsetWhenNoEligibleTasks() {
         TaskModel completed = newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.COMPLETED);
         WorkflowModel workflow = newWorkflow(Arrays.asList(completed), 0);
 
@@ -98,7 +98,7 @@ public class ExecutorUtilsTest {
                 ExecutorUtils.computePostpone(
                         workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
 
-        assertEquals(0, result.getSeconds());
+        assertEquals(30, result.getSeconds());
     }
 
     @Test

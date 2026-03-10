@@ -213,29 +213,30 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
                 workflow.getTasks()
                         .forEach(
                                 task -> {
-                                    String queueName = QueueUtils.getQueueName(task);
-                                    if (!queueDAO.containsMessage(queueName, task.getTaskId())) {
-                                        log.warn(
-                                                "Going to repair the task {} / {}, with status {}, workflow = {}, timeout = {}, now-wait = {}",
-                                                task.getTaskId(),
-                                                task.getReferenceTaskName(),
-                                                task.getStatus(),
-                                                workflowId,
-                                                task.getWaitTimeout(),
-                                                (now - task.getWaitTimeout()));
-                                        Monitors.recordQueueMessageRepushFromRepairService(
-                                                task.getTaskDefName());
+                                    if (isTaskRepairable.test(task)) {
+                                        String queueName = QueueUtils.getQueueName(task);
                                         if (!queueDAO.containsMessage(
                                                 queueName, task.getTaskId())) {
-                                            queueDAO.push(
-                                                    queueName,
+                                            log.warn(
+                                                    "Going to repair the task {} / {}, with status {}, workflow = {}, timeout = {}, now-wait = {}",
                                                     task.getTaskId(),
-                                                    task.getCallbackAfterSeconds());
+                                                    task.getReferenceTaskName(),
+                                                    task.getStatus(),
+                                                    workflowId,
+                                                    task.getWaitTimeout(),
+                                                    (now - task.getWaitTimeout()));
+                                            Monitors.recordQueueMessageRepushFromRepairService(
+                                                    task.getTaskDefName());
+                                            if (!queueDAO.containsMessage(
+                                                    queueName, task.getTaskId())) {
+                                                queueDAO.push(
+                                                        queueName,
+                                                        task.getTaskId(),
+                                                        task.getCallbackAfterSeconds());
+                                            }
                                         }
-                                        return;
-                                    }
-
-                                    if (TaskType.TASK_TYPE_SUB_WORKFLOW.equals(task.getTaskType())
+                                    } else if (TaskType.TASK_TYPE_SUB_WORKFLOW.equals(
+                                                    task.getTaskType())
                                             && task.getStatus() == TaskModel.Status.IN_PROGRESS) {
                                         WorkflowModel subWorkflow =
                                                 executionDAO.getWorkflow(
