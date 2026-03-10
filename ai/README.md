@@ -1,6 +1,6 @@
 # Conductor AI Module
 
-The Conductor AI module provides built-in integration with 12 popular LLM providers and vector databases, enabling AI-powered workflows through simple task definitions -- including chat, embeddings, image generation, audio synthesis, video generation, and tool calling.
+The Conductor AI module provides built-in integration with 12 popular LLM providers and vector databases, enabling AI-powered workflows through simple task definitions -- including chat, embeddings, image generation, audio synthesis, video generation, document generation, and tool calling.
 
 ## Table of Contents
 - [Supported Providers](#supported-providers)
@@ -20,7 +20,7 @@ The Conductor AI module provides built-in integration with 12 popular LLM provid
 |----------|:----:|:----------:|:---------:|:---------:|:---------:|--------|
 | **OpenAI** | ✅ | ✅ | ✅ | ✅ | ✅ | GPT-4o, GPT-4o-mini, DALL-E-3, Sora-2, text-embedding-3-small/large |
 | **Anthropic** | ✅ | ❌ | ❌ | ❌ | ❌ | Claude 3.5 Sonnet, Claude 3 Opus/Sonnet/Haiku, Claude 4 Sonnet |
-| **Google Vertex AI** | ✅ | ✅ | ✅ | ❌ | ✅ | Gemini 1.5/2.0, Veo 2/3, Imagen, text-embedding-004 |
+| **Google Gemini** | ✅ | ✅ | ✅ | ❌ | ✅ | Gemini 1.5/2.0, Veo 2/3, Imagen, text-embedding-004 |
 | **Azure OpenAI** | ✅ | ✅ | ✅ | ❌ | ❌ | GPT-4o, GPT-4, GPT-3.5-turbo, text-embedding-ada-002, DALL-E-3 |
 | **AWS Bedrock** | ✅ | ✅ | ❌ | ❌ | ❌ | Claude 3.x, Titan, Llama 3.x, amazon.titan-embed-text-v2:0 |
 | **Mistral AI** | ✅ | ✅ | ❌ | ❌ | ❌ | Mistral Small/Medium/Large, Mixtral 8x7B, mistral-embed |
@@ -59,6 +59,7 @@ The Conductor AI module provides built-in integration with 12 popular LLM provid
 | **Search Embeddings** | `LLM_SEARCH_EMBEDDINGS` | Search using embedding vectors |
 | **Get Embeddings** | `LLM_GET_EMBEDDINGS` | Retrieve stored embeddings |
 | **List MCP Tools** | `LIST_MCP_TOOLS` | List tools from MCP server |
+| **Generate PDF** | `GENERATE_PDF` | Convert markdown to PDF document |
 | **Call MCP Tool** | `CALL_MCP_TOOL` | Call a tool on MCP server |
 
 ---
@@ -192,7 +193,7 @@ Generate videos from text or image prompts. This is an **async task** -- it subm
 
 | Parameter | Type | Required | Description |
 |-----------|------|:--------:|-------------|
-| `llmProvider` | String | Yes | Provider name (`openai` or `vertex_ai`) |
+| `llmProvider` | String | Yes | Provider name (`openai`, `vertex_ai`, or `google_gemini`) |
 | `model` | String | Yes | Video model (e.g., `sora-2`, `veo-3`) |
 | `prompt` | String | Yes | Text description of the video to generate |
 | `duration` | Integer | No | Duration in seconds (OpenAI: 4, 8, or 12; default: 5) |
@@ -223,7 +224,7 @@ Generate videos from text or image prompts. This is an **async task** -- it subm
 **Provider-Specific Notes:**
 
 - **OpenAI Sora**: Supports `sora-2` and `sora-2-pro` models. Valid durations are 4, 8, or 12 seconds. Valid sizes: `1280x720`, `720x1280`, `1792x1024`, `1024x1792`. Returns video + webp thumbnail.
-- **Google Vertex AI Veo**: Supports `veo-2.0-generate-001`, `veo-3.0`, `veo-3.1`. Requires Vertex AI credentials (Application Default Credentials). Veo 3+ supports audio generation.
+- **Google Gemini Veo**: Supports `veo-2.0-generate-001`, `veo-3.0`, `veo-3.1`. Use `llmProvider` as `google_gemini` or `vertex_ai`. When using API key, no GCP credentials needed. Veo 3+ supports audio generation.
 
 ---
 
@@ -315,6 +316,56 @@ Retrieve stored embeddings by document ID.
 | Field | Type | Description |
 |-------|------|-------------|
 | `result` | Array\<Number\> | Stored embedding vector |
+
+---
+
+### GENERATE_PDF
+
+Convert markdown text to a PDF document. Supports full GitHub Flavored Markdown including headings, tables, code blocks, lists, task lists, blockquotes, images, links, and inline formatting. No external API keys required -- uses built-in Apache PDFBox rendering.
+
+**Inputs:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|:--------:|---------|-------------|
+| `markdown` | String | ✅ | - | Markdown text to convert to PDF |
+| `pageSize` | String | ❌ | `A4` | Page size: `A4`, `LETTER`, `LEGAL`, `A3`, `A5` |
+| `marginTop` | Number | ❌ | `72` | Top margin in points (72pt = 1 inch) |
+| `marginRight` | Number | ❌ | `72` | Right margin in points |
+| `marginBottom` | Number | ❌ | `72` | Bottom margin in points |
+| `marginLeft` | Number | ❌ | `72` | Left margin in points |
+| `theme` | String | ❌ | `default` | Style preset: `default` or `compact` |
+| `baseFontSize` | Number | ❌ | `11` | Base font size in points |
+| `outputLocation` | String | ❌ | auto | Output URI (e.g., `file:///tmp/report.pdf`). Defaults to payload store. |
+| `pdfMetadata` | Object | ❌ | - | PDF metadata: `title`, `author`, `subject`, `keywords` |
+| `imageBaseUrl` | String | ❌ | - | Base URL for resolving relative image paths |
+
+**Outputs:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `result.location` | String | URI of the generated PDF file |
+| `result.sizeBytes` | Integer | Size of the generated PDF in bytes |
+| `media` | Array | Media items with `location` and `mimeType` (`application/pdf`) |
+| `finishReason` | String | `COMPLETED` on success |
+
+**Supported Markdown Features:**
+
+| Feature | Syntax |
+|---------|--------|
+| Headings | `# H1` through `###### H6` |
+| Bold / Italic | `**bold**`, `*italic*`, `***both***` |
+| Tables | GFM pipe tables with header row |
+| Code blocks | Fenced (` ``` `) and indented code blocks |
+| Bullet lists | `- item` or `* item` (nested supported) |
+| Ordered lists | `1. item` (nested supported) |
+| Task lists | `- [x] done`, `- [ ] todo` |
+| Blockquotes | `> quoted text` |
+| Links | `[text](url)` (rendered as clickable PDF links) |
+| Images | `![alt](url)` (HTTP/HTTPS, file://, data: URIs, relative paths) |
+| Horizontal rules | `---` |
+| Strikethrough | `~~strikethrough~~` |
+| Inline code | `` `code` `` |
+| Footnotes | `[^1]` references |
 
 ---
 
@@ -411,9 +462,15 @@ conductor.ai.anthropic.beta-version=prompt-caching-2024-07-31
 | `beta-version` | ❌ | - | Beta features (e.g., prompt caching) |
 | `completions-path` | ❌ | - | Custom completions endpoint path |
 
-#### Google Vertex AI (Gemini)
+#### Google Gemini / Vertex AI
+
+Use `llmProvider` as either `google_gemini` or `vertex_ai` (both resolve to the same provider).
 
 ```properties
+# Option 1: API key (simplest — works for image/video/audio gen)
+conductor.ai.gemini.api-key=${GEMINI_API_KEY}
+
+# Option 2: Vertex AI credentials (required for chat completions and embeddings)
 conductor.ai.gemini.project-id=${GOOGLE_CLOUD_PROJECT}
 conductor.ai.gemini.location=us-central1
 conductor.ai.gemini.publisher=google
@@ -421,12 +478,13 @@ conductor.ai.gemini.publisher=google
 
 | Property | Required | Default | Description |
 |----------|:--------:|---------|-------------|
-| `project-id` | ✅ | - | GCP project ID |
-| `location` | ✅ | - | GCP region (e.g., us-central1) |
+| `api-key` | ❌ | - | Gemini API key from [Google AI Studio](https://aistudio.google.com/) |
+| `project-id` | ❌ | - | GCP project ID (required for chat/embeddings via Vertex AI) |
+| `location` | ❌ | - | GCP region (e.g., us-central1) |
 | `base-url` | ❌ | `{location}-aiplatform.googleapis.com:443` | API endpoint |
 | `publisher` | ❌ | - | Model publisher |
 
-> **Note**: Vertex AI uses Application Default Credentials (ADC) or service account credentials from the environment.
+> **Note**: When `api-key` is set, image/video/audio generation uses the Google AI API directly. Chat completions and embeddings require Vertex AI credentials (`project-id` + Application Default Credentials or service account). Both can be configured simultaneously.
 
 #### Azure OpenAI
 
@@ -572,9 +630,10 @@ The AI module reads from standard environment variables automatically. Set the e
 | AWS Bedrock | `AWS_ACCESS_KEY_ID` | AWS access key |
 | AWS Bedrock | `AWS_SECRET_ACCESS_KEY` | AWS secret key |
 | AWS Bedrock | `AWS_REGION` | AWS region (default: `us-east-1`) |
-| Google Vertex AI | `GOOGLE_CLOUD_PROJECT` | GCP project ID |
-| Google Vertex AI | `GOOGLE_CLOUD_LOCATION` | GCP region (default: `us-central1`) |
-| Google Vertex AI | `GOOGLE_APPLICATION_CREDENTIALS` | Path to service account JSON file |
+| Google Gemini | `GEMINI_API_KEY` | Gemini API key from [Google AI Studio](https://aistudio.google.com/) |
+| Google Gemini | `GOOGLE_CLOUD_PROJECT` | GCP project ID (for Vertex AI chat/embeddings) |
+| Google Gemini | `GOOGLE_CLOUD_LOCATION` | GCP region (default: `us-central1`) |
+| Google Gemini | `GOOGLE_APPLICATION_CREDENTIALS` | Path to service account JSON file |
 | Ollama | `OLLAMA_HOST` | Ollama server URL (default: `http://localhost:11434`) |
 
 ### Usage
@@ -643,9 +702,18 @@ Run with:
 docker-compose up -d
 ```
 
-### Google Vertex AI with Docker
+### Google Gemini with Docker
 
-Google Vertex AI requires a service account credentials file:
+**Using API key (simplest):**
+
+```bash
+docker run -d \
+  -p 8080:8080 \
+  -e GEMINI_API_KEY=your-api-key \
+  conductor:server
+```
+
+**Using Vertex AI credentials (for chat/embeddings):**
 
 ```bash
 docker run -d \
@@ -1339,7 +1407,123 @@ A workflow that generates an image and a video in sequence:
 }
 ```
 
-### 11. LLM Tool Calling with MCP Tools
+### 11. PDF Generation (Markdown to PDF)
+
+Generate a PDF document from markdown content with layout options and metadata:
+
+```json
+{
+  "name": "pdf_generation_workflow",
+  "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "generate_pdf",
+      "taskReferenceName": "pdf",
+      "type": "GENERATE_PDF",
+      "inputParameters": {
+        "markdown": "# Sales Report\n\n## Summary\n\nTotal revenue: **$5.4M**\n\n| Region | Revenue | Growth |\n|--------|---------|--------|\n| North America | $2.4M | +12% |\n| Europe | $1.8M | +8% |\n\n## Recommendations\n\n1. Expand APAC sales team\n2. Launch enterprise tier in EU\n\n> *Our best quarter yet.*",
+        "pageSize": "LETTER",
+        "theme": "default",
+        "pdfMetadata": {
+          "title": "Sales Report - Q4 2025",
+          "author": "Conductor Workflow"
+        }
+      }
+    }
+  ]
+}
+```
+
+**Output:**
+```json
+{
+  "result": {
+    "location": "file:///tmp/conductor/wf-123/task-456/abc.pdf",
+    "sizeBytes": 12345
+  },
+  "media": [
+    {
+      "location": "file:///tmp/conductor/wf-123/task-456/abc.pdf",
+      "mimeType": "application/pdf"
+    }
+  ],
+  "finishReason": "COMPLETED"
+}
+```
+
+### 12. LLM-to-PDF Pipeline (Report Generation)
+
+A multi-step workflow that uses an LLM to generate a markdown report and then converts it to PDF:
+
+```json
+{
+  "name": "llm_to_pdf_pipeline",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["topic", "audience"],
+  "tasks": [
+    {
+      "name": "generate_report_markdown",
+      "taskReferenceName": "llm_report",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "gpt-4o-mini",
+        "messages": [
+          {
+            "role": "system",
+            "message": "You are a professional report writer. Generate well-structured markdown reports."
+          },
+          {
+            "role": "user",
+            "message": "Write a report about: ${workflow.input.topic}\nAudience: ${workflow.input.audience}"
+          }
+        ],
+        "temperature": 0.7,
+        "maxTokens": 2000
+      }
+    },
+    {
+      "name": "convert_to_pdf",
+      "taskReferenceName": "pdf_output",
+      "type": "GENERATE_PDF",
+      "inputParameters": {
+        "markdown": "${llm_report.output.result}",
+        "pageSize": "A4",
+        "pdfMetadata": {
+          "title": "${workflow.input.topic}",
+          "author": "Conductor AI Pipeline"
+        }
+      }
+    }
+  ],
+  "outputParameters": {
+    "reportMarkdown": "${llm_report.output.result}",
+    "pdfLocation": "${pdf_output.output.result.location}",
+    "pdfSizeBytes": "${pdf_output.output.result.sizeBytes}"
+  }
+}
+```
+
+**Workflow Input:**
+```json
+{
+  "topic": "Cloud Migration Best Practices",
+  "audience": "CTO and engineering leadership"
+}
+```
+
+**Workflow Output:**
+```json
+{
+  "reportMarkdown": "# Cloud Migration Best Practices\n\n## Executive Summary\n...",
+  "pdfLocation": "file:///tmp/conductor/wf-789/task-012/report.pdf",
+  "pdfSizeBytes": 28456
+}
+```
+
+### 13. LLM Tool Calling with MCP Tools
 
 Use `LLM_CHAT_COMPLETE` with the `tools` parameter to let the LLM autonomously decide when to call MCP tools. When the LLM needs to use a tool, it returns `finishReason: "TOOL_CALLS"` with the tool invocations.
 
@@ -1457,4 +1641,4 @@ env -u OPENAI_API_KEY -u ANTHROPIC_API_KEY ./gradlew :conductor-ai:test
 
 ## License
 
-Copyright 2025 Conductor Authors. Licensed under the Apache License 2.0.
+Copyright 2026 Conductor Authors. Licensed under the Apache License 2.0.

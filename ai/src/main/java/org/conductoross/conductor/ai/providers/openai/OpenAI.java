@@ -279,6 +279,7 @@ public class OpenAI implements AIModel {
                         .organizationId(config.getOrganizationId())
                         .apiKey(config.getApiKey())
                         .baseUrl(config.getBaseURL())
+                        .timeout(config.getTimeout())
                         .customHeaders(Map.of())
                         .build();
         return new OpenAiSdkChatModel(opts);

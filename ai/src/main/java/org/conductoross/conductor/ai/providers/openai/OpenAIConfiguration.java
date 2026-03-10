@@ -12,11 +12,12 @@
  */
 package org.conductoross.conductor.ai.providers.openai;
 
+import java.time.Duration;
+
 import org.conductoross.conductor.ai.ModelConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -24,7 +25,6 @@ import lombok.NoArgsConstructor;
 @Component
 @ConfigurationProperties(prefix = "conductor.ai.openai")
 @NoArgsConstructor
-@AllArgsConstructor
 public class OpenAIConfiguration implements ModelConfiguration<OpenAI> {
 
     private String apiKey;
@@ -32,6 +32,14 @@ public class OpenAIConfiguration implements ModelConfiguration<OpenAI> {
     private String baseURL;
 
     private String organizationId;
+
+    private Duration timeout = Duration.ofSeconds(600);
+
+    public OpenAIConfiguration(String apiKey, String baseURL, String organizationId) {
+        this.apiKey = apiKey;
+        this.baseURL = baseURL;
+        this.organizationId = organizationId;
+    }
 
     public String getBaseURL() {
         return baseURL == null || baseURL.isBlank() ? "https://api.openai.com/v1" : baseURL;
