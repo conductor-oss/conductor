@@ -24,7 +24,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -55,12 +54,10 @@ public class SimpleTaskMapper implements TaskMapper {
      *
      * @param taskMapperContext: A wrapper class containing the {@link WorkflowTask}, {@link
      *     WorkflowDef}, {@link WorkflowModel} and a string representation of the TaskId
-     * @throws TerminateWorkflowException In case if the task definition does not exist
      * @return a List with just one simple task
      */
     @Override
-    public List<TaskModel> getMappedTasks(TaskMapperContext taskMapperContext)
-            throws TerminateWorkflowException {
+    public List<TaskModel> getMappedTasks(TaskMapperContext taskMapperContext) {
 
         LOGGER.debug("TaskMapperContext {} in SimpleTaskMapper", taskMapperContext);
 
@@ -71,13 +68,12 @@ public class SimpleTaskMapper implements TaskMapper {
 
         TaskDef taskDefinition =
                 Optional.ofNullable(workflowTask.getTaskDefinition())
-                        .orElseThrow(
+                        .orElseGet(
                                 () -> {
-                                    String reason =
-                                            String.format(
-                                                    "Invalid task. Task %s does not have a definition",
-                                                    workflowTask.getName());
-                                    return new TerminateWorkflowException(reason);
+                                    LOGGER.warn(
+                                            "Task {} does not have a definition, using defaults",
+                                            workflowTask.getName());
+                                    return new TaskDef();
                                 });
 
         Map<String, Object> input =
