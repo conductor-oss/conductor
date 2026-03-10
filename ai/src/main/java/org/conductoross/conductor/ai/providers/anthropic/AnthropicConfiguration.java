@@ -12,18 +12,18 @@
  */
 package org.conductoross.conductor.ai.providers.anthropic;
 
+import java.time.Duration;
+
 import org.conductoross.conductor.ai.ModelConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @Component
 @ConfigurationProperties(prefix = "conductor.ai.anthropic")
-@AllArgsConstructor
 @NoArgsConstructor
 public class AnthropicConfiguration implements ModelConfiguration<Anthropic> {
 
@@ -36,6 +36,21 @@ public class AnthropicConfiguration implements ModelConfiguration<Anthropic> {
     private String betaVersion;
 
     private String completionsPath;
+
+    private Duration timeout = Duration.ofSeconds(600);
+
+    public AnthropicConfiguration(
+            String apiKey,
+            String baseURL,
+            String version,
+            String betaVersion,
+            String completionsPath) {
+        this.apiKey = apiKey;
+        this.baseURL = baseURL;
+        this.version = version;
+        this.betaVersion = betaVersion;
+        this.completionsPath = completionsPath;
+    }
 
     public String getBaseURL() {
         return baseURL == null ? "https://api.anthropic.com" : baseURL;

@@ -26,6 +26,8 @@ import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.RestClient;
 
 public class Grok implements AIModel {
 
@@ -72,11 +74,15 @@ public class Grok implements AIModel {
 
     @Override
     public ChatModel getChatModel() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setReadTimeout(config.getTimeout());
+
         OpenAiApi grokApi =
                 OpenAiApi.builder()
                         .baseUrl(config.getBaseURL())
                         .apiKey(config.getApiKey())
                         .completionsPath("/v1/chat/completions")
+                        .restClientBuilder(RestClient.builder().requestFactory(factory))
                         .build();
         return OpenAiChatModel.builder().openAiApi(grokApi).build();
     }

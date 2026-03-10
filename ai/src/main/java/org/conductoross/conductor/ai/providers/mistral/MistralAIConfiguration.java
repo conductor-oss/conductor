@@ -12,24 +12,31 @@
  */
 package org.conductoross.conductor.ai.providers.mistral;
 
+import java.time.Duration;
+
 import org.conductoross.conductor.ai.ModelConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @Component
 @ConfigurationProperties(prefix = "conductor.ai.mistral")
-@AllArgsConstructor
 @NoArgsConstructor
 public class MistralAIConfiguration implements ModelConfiguration<MistralAI> {
 
     private String apiKey;
 
     private String baseURL;
+
+    private Duration timeout = Duration.ofSeconds(600);
+
+    public MistralAIConfiguration(String apiKey, String baseURL) {
+        this.apiKey = apiKey;
+        this.baseURL = baseURL;
+    }
 
     public String getBaseURL() {
         return baseURL == null ? "https://api.mistral.ai" : baseURL;

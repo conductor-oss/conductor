@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -38,7 +39,6 @@ import org.conductoross.conductor.ai.models.ToolSpec;
 import org.conductoross.conductor.ai.models.VideoGenRequest;
 import org.conductoross.conductor.common.JsonSchemaValidator;
 import org.conductoross.conductor.common.utils.StringTemplate;
-import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -57,8 +57,6 @@ import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
 import org.springframework.util.MimeType;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
@@ -84,10 +82,8 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SIM
 import static org.conductoross.conductor.ai.MimeExtensionResolver.getExtension;
 import static org.conductoross.conductor.ai.MimeExtensionResolver.getMimeTypeFromUrl;
 
-@Component
 @Slf4j
 @RequiredArgsConstructor
-@Conditional(AIIntegrationEnabledCondition.class)
 public class LLMHelper {
     private static final TypeReference<Map<String, Object>> MAP_OF_STRING_TO_OBJ =
             new TypeReference<>() {};
@@ -377,6 +373,9 @@ public class LLMHelper {
                 for (AssistantMessage.ToolCall toolCall : toolCalls) {
                     String name = toolCall.name();
                     String id = toolCall.id();
+                    if (id == null || id.isBlank()) {
+                        id = UUID.randomUUID().toString();
+                    }
                     String argsAsString = toolCall.arguments();
                     Map<String, Object> args = Map.of();
                     try {
@@ -395,12 +394,6 @@ public class LLMHelper {
                                     .filter(toolSpec -> toolSpec.getName().equals(name))
                                     .findFirst();
 
-                    String integrationName =
-                            (String)
-                                    matched.map(ToolSpec::getConfigParams)
-                                            .orElse(Collections.emptyMap())
-                                            .get("integrationName");
-                    args.put("integrationName", integrationName);
                     String type = matched.map(ToolSpec::getType).orElse(TASK_TYPE_SIMPLE);
                     tools.add(
                             ToolCall.builder()
@@ -672,32 +665,32 @@ public class LLMHelper {
 
     private void storeMedia(
             String location, List<org.conductoross.conductor.ai.models.Media> media) {
-        Optional<DocumentLoader> docLoader =
+
+        DocumentLoader documentLoader =
                 documentLoaders.stream()
-                        .filter(documentLoader -> documentLoader.supports(location))
-                        .findFirst();
-        docLoader.ifPresent(
-                loader -> {
-                    media.stream()
-                            .filter(m1 -> m1.getData() != null)
-                            .forEach(
-                                    m -> {
-                                        // Each media item gets a unique path with file extension
-                                        // to prevent overwriting when multiple items exist
-                                        // (e.g., video + thumbnail)
-                                        String ext = getExtension(m.getMimeType());
-                                        String uniqueLocation =
-                                                location + "_" + java.util.UUID.randomUUID() + ext;
-                                        String uploadLocation =
-                                                loader.upload(
-                                                        Map.of(),
-                                                        m.getMimeType(),
-                                                        m.getData(),
-                                                        uniqueLocation);
-                                        m.setLocation(uploadLocation);
-                                        m.setData(null);
-                                    });
-                });
+                        .filter(loader -> loader.supports(location))
+                        .findFirst()
+                        .orElse(null);
+        if (documentLoader == null) {
+            log.debug("no document loaders found, media will not be stored");
+            return;
+        }
+        media.stream()
+                .filter(m1 -> m1.getData() != null)
+                .forEach(
+                        m -> {
+                            // Each media item gets a unique path with file extension
+                            // to prevent overwriting when multiple items exist
+                            // (e.g., video + thumbnail)
+                            String ext = getExtension(m.getMimeType());
+                            String uniqueLocation =
+                                    location + "_" + java.util.UUID.randomUUID() + ext;
+                            String uploadLocation =
+                                    documentLoader.upload(
+                                            Map.of(), m.getMimeType(), m.getData(), uniqueLocation);
+                            m.setLocation(uploadLocation);
+                            m.setData(null);
+                        });
     }
 
     /**

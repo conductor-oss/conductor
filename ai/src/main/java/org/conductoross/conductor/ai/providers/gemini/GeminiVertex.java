@@ -60,6 +60,8 @@ public class GeminiVertex implements AIModel {
 
     public static final String NAME = "vertex_ai";
 
+    public static final String ALIAS = "google_gemini";
+
     private final GeminiVertexConfiguration config;
 
     public GeminiVertex(GeminiVertexConfiguration config) {
@@ -69,6 +71,11 @@ public class GeminiVertex implements AIModel {
     @Override
     public String getModelProvider() {
         return NAME;
+    }
+
+    @Override
+    public List<String> getProviderAliases() {
+        return List.of(ALIAS);
     }
 
     @Override
@@ -222,8 +229,11 @@ public class GeminiVertex implements AIModel {
         return builder.build();
     }
 
-    /** Creates a shared Google GenAI Client instance configured for Vertex AI. */
+    /** Creates a Google GenAI Client, using API key when available, otherwise Vertex AI. */
     private Client createGenAIClient() {
+        if (config.getApiKey() != null && !config.getApiKey().isBlank()) {
+            return Client.builder().apiKey(config.getApiKey()).build();
+        }
         return Client.builder()
                 .vertexAI(true)
                 .credentials(config.getGoogleCredentials())
