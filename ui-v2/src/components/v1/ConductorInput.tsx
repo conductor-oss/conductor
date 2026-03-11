@@ -216,7 +216,7 @@ const CustomEndAdornment = ({
   </InputAdornment>
 );
 
-type ConductorInputProps = TextFieldProps & {
+type ConductorInputProps = Omit<TextFieldProps, "ref"> & {
   onTextInputChange?: (value: string) => void;
   isSecret?: boolean;
   showClearButton?: boolean;

@@ -11,7 +11,7 @@ import tabs from "./material/components/tabs";
 
 import { PaletteMode } from "@mui/material";
 
-import { createTheme } from "@mui/material/styles";
+import { ThemeOptions, createTheme } from "@mui/material/styles";
 import { getPaletteForMode } from "./material/getPaletteForMode";
 import buttonsGroup from "./material/components/buttonsGroup";
 
@@ -36,7 +36,7 @@ export const getOverridesForMode = (mode: PaletteMode) => {
     },
   };
 
-  return overrides;
+  return overrides as ThemeOptions;
 };
 
 export const getTheme = (mode: PaletteMode = "light") => {

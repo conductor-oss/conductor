@@ -241,9 +241,6 @@ importers:
       '@eslint-react/eslint-plugin':
         specifier: ^1.53.0
         version: 1.53.1(eslint@9.32.0)(ts-api-utils@2.4.0(typescript@5.9.3))(typescript@5.9.3)
-      '@eslint/js':
-        specifier: ^9.32.0
-        version: 9.32.0
       '@io-orkes/conductor-javascript':
         specifier: ^2.1.4
         version: 2.4.1
@@ -337,9 +334,6 @@ importers:
       eslint-plugin-unused-imports:
         specifier: ^3.0.0
         version: 3.2.0(eslint@9.32.0)
-      globals:
-        specifier: ^16.0.0
-        version: 16.5.0
       jsdom:
         specifier: ^26.1.0
         version: 26.1.0
@@ -3465,10 +3459,6 @@ packages:
 
   globals@14.0.0:
     resolution: {integrity: sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==}
-    engines: {node: '>=18'}
-
-  globals@16.5.0:
-    resolution: {integrity: sha512-c/c15i26VrJ4IRt5Z89DnIzCGDn9EcebibhAOjw5ibqEHsE1wLUgkPn9RDmNcUKyU87GeaL633nyJ+pplFR2ZQ==}
     engines: {node: '>=18'}
 
   globalthis@1.0.4:
@@ -9226,8 +9216,6 @@ snapshots:
       path-is-absolute: 1.0.1
 
   globals@14.0.0: {}
-
-  globals@16.5.0: {}
 
   globalthis@1.0.4:
     dependencies:

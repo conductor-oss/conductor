@@ -4,7 +4,8 @@ import {
   LocalizationProvider,
 } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { RefAttributes, forwardRef } from "react";
+import React, { RefAttributes, forwardRef } from "react";
+import { TextFieldProps } from "@mui/material";
 
 import ConductorInput, {
   ConductorInputProps,
@@ -42,7 +43,7 @@ const ConductorDateTimePicker = forwardRef<
           className="conductor-datetime-picker"
           slots={{
             openPickerIcon: DatetimeIcon,
-            textField: ConductorInput,
+            textField: ConductorInput as React.ComponentType<TextFieldProps>,
           }}
           slotProps={{
             textField: { ...inputProps, disabled },

@@ -87,7 +87,10 @@ export const useDraggableNode = ({
   width,
   height,
   nodeId,
-}: DragDropNodeProps) => {
+}: DragDropNodeProps): {
+  draggableResult: ReturnType<typeof useDraggable>;
+  dragIsDisabled: boolean;
+} => {
   const panIsEnabled = useIsPanEnabled();
   const { canDrag } = useFlowContext();
   const dragIsDisabled = useMemo(() => {

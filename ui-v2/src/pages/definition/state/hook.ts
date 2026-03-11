@@ -55,13 +55,17 @@ export const useWorkflowDefinition = (currentUser: User) => {
 
   const { authService } = useContext(AuthContext);
 
-  // Create a dummy actor for when authService is not available
+  // No-op actor used as a fallback when authService is not available (OSS mode).
   const dummyActor = useMemo(
-    () =>
-      ({
-        subscribe: () => ({ unsubscribe: () => {} }),
-        getSnapshot: () => ({ children: {} }),
-      }) as ActorRef<any>,
+    (): ActorRef<any> => ({
+      id: "noop",
+      send: () => {},
+      subscribe: () => ({ unsubscribe: () => {} }),
+      getSnapshot: () => ({ children: {} }),
+      [Symbol.observable]() {
+        return { subscribe: () => ({ unsubscribe: () => {} }) };
+      },
+    }),
     [],
   );
 

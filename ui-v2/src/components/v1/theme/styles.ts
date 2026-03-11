@@ -19,7 +19,7 @@ export const inputLabelStyle = ({
   isFocused,
   error,
   isInputEmpty,
-}: ConductorInputStyleProps) => ({
+}: ConductorInputStyleProps): SxProps<Theme> => ({
   ...baseLabelStyle,
   color: getColor({ theme, isFocused, error, isLabel: true, isInputEmpty }),
   fontWeight: isFocused ? 500 : 200,
@@ -34,7 +34,7 @@ export const formHelperStyle = ({
   isFocused,
   error,
   isInputEmpty,
-}: ConductorInputStyleProps) => ({
+}: ConductorInputStyleProps): SxProps<Theme> => ({
   fontSize: `${labelScale}em`,
   color: getColor({ theme, isFocused, error, isLabel: true, isInputEmpty }),
   pl: "8px",

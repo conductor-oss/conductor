@@ -1,8 +1,9 @@
-import { Box, SxProps } from "@mui/material";
+import { Box, SxProps, TextFieldProps } from "@mui/material";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import ConductorInput from "components/v1/ConductorInput";
+import React from "react";
 
 export interface ConductorTimePickerProps {
   id?: string;
@@ -37,7 +38,9 @@ export const ConductorTimePicker = ({
           value={time}
           onChange={(newValue) => handleTimeChange(newValue)}
           views={["hours", "minutes", "seconds"]}
-          slots={{ textField: ConductorInput }}
+          slots={{
+            textField: ConductorInput as React.ComponentType<TextFieldProps>,
+          }}
           sx={{
             ...sx,
             "& .MuiInputAdornment-root": {

@@ -4,6 +4,7 @@
  * authState in AuthContext to enable auth without the enterprise package.
  */
 import { SupportedProviders } from "../state/types";
+import { User } from "types/User";
 
 export interface AuthState {
   user: unknown;
@@ -12,7 +13,7 @@ export interface AuthState {
   trialExpiryDate: number | Date | undefined;
   isAnnouncementBannerDismissed: boolean;
   provider: SupportedProviders;
-  conductorUser: { id: string } | undefined;
+  conductorUser: User | undefined;
   oidcConfig: unknown;
   authService: unknown;
   fetchingUserInformation: boolean;

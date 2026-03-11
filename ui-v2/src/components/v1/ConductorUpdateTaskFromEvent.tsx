@@ -3,7 +3,7 @@ import ConductorInput, {
   ConductorInputProps,
 } from "components/v1/ConductorInput";
 import _omit from "lodash/omit";
-import { FunctionComponent, useMemo } from "react";
+import { ComponentType, useMemo } from "react";
 
 type EventTaskReferenceInput = { taskId: string };
 type WorkflowTaskReferenceInput = { workflowId: string; taskRefName: string };
@@ -14,7 +14,7 @@ export type EventJson = Partial<
 interface FormWithRadioGroupProps {
   value: EventJson;
   onChange: (value: EventJson) => void;
-  inputComponent?: FunctionComponent<ConductorInputProps>;
+  inputComponent?: ComponentType<ConductorInputProps>;
 }
 
 const omitTaskId = (value: EventJson) => _omit(value, "taskId");

@@ -11,6 +11,7 @@ import buttonsGroup from "./material/components/buttonsGroup";
 import formControls from "./material/components/formControls";
 
 import { PaletteMode } from "@mui/material";
+import { ThemeOptions } from "@mui/material/styles";
 
 import { createTheme } from "@mui/material/styles";
 import { getPaletteForMode } from "theme/material/getPaletteForMode";
@@ -48,7 +49,7 @@ export const getOverridesForMode = (mode: PaletteMode) => {
     },
   };
 
-  return overrides;
+  return overrides as ThemeOptions;
 };
 
 export const getTheme = (mode: PaletteMode = "light") => {

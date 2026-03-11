@@ -1,4 +1,5 @@
 import { Palette, PaletteMode, PaletteOptions } from "@mui/material";
+import { ThemeOptions } from "@mui/material/styles";
 import { colors } from "theme/tokens/variables";
 import { FEATURES, featureFlags } from "utils/flags";
 
@@ -210,7 +211,7 @@ export const darkModePalette: Partial<Palette> = {
   },
 };
 
-export const getPaletteForMode = (mode: PaletteMode) => {
+export const getPaletteForMode = (mode: PaletteMode): ThemeOptions => {
   return {
     palette: {
       mode,
