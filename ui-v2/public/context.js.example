@@ -1,0 +1,35 @@
+window.conductor = {
+  "ENABLE_METRICS_DASHBOARD" : false,
+  "MULTITENANCY_TYPE" : "none",
+  "TASK_INDEXING" : "true",
+  "CREATOR_ENABLE_REAFLOW_DIAGRAM" : "true",
+  "SHOW_EVENT_MONITOR" : "false",
+  "ENABLE_NEW_INPUTS" : "true",
+  "SKU_ENABLED" : "false",
+  "WEBHOOKS" : "false",
+  "SERVICE_REGISTRY" : "true",
+  "SCHEDULER" : "true",
+  "TASK_VISIBILITY" : "READ",
+  "SECRETS" : "false",
+  "INTEGRATIONS" : "true",
+  "CREATOR_ENABLE_CREATOR" : "false",
+  "DIAGRAM_DOTTED_BACKGROUND" : "true",
+  "ENABLE_NEW_SIDEBAR" : "true",
+  "ACCESS_MANAGEMENT" : true,
+  "SENDGRID_TASK" : "false",
+  "COPY_TOKEN" : "true",
+  "METRICS_ORIGIN_URL" : "false",
+  "CUSTOM_LOGO_URL" : "",
+  "RBAC" : "true",
+  "PLAYGROUND" : "false",
+  "ENABLE_DRAG_DROP_TASK" : "true",
+  "HUMAN_TASK" : true,
+  "DEFAULT_ROLES" : "USER"
+};
+
+window.authConfig = {
+  type: "auth0",
+  domain: "orkes-test.us.auth0.com",
+  clientId: "wPylSt0D6cJviO3IRFWYHFeyTSldMTWR",
+  isTestEnvironment: true,
+};
