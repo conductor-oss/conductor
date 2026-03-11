@@ -12,13 +12,13 @@
  */
 package org.conductoross.conductor.ai.providers.grok;
 
+import java.time.Duration;
 import java.util.Objects;
 
 import org.conductoross.conductor.ai.ModelConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -26,10 +26,15 @@ import lombok.NoArgsConstructor;
 @ConfigurationProperties(prefix = "conductor.ai.grok")
 @Component
 @NoArgsConstructor
-@AllArgsConstructor
 public class GrokAIConfiguration implements ModelConfiguration<Grok> {
     private String apiKey;
     private String baseURL;
+    private Duration timeout = Duration.ofSeconds(600);
+
+    public GrokAIConfiguration(String apiKey, String baseURL) {
+        this.apiKey = apiKey;
+        this.baseURL = baseURL;
+    }
 
     public String getBaseURL() {
         return Objects.isNull(baseURL) ? "https://api.x.ai" : baseURL;

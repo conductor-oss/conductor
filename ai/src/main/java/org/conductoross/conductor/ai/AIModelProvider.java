@@ -50,6 +50,9 @@ public class AIModelProvider {
                         payloadStoreLocation,
                         result);
                 providerToLLM.put(llm.getModelProvider(), llm);
+                for (String alias : llm.getProviderAliases()) {
+                    providerToLLM.put(alias, llm);
+                }
             } catch (Throwable t) {
                 log.error("cannot init {} model, reason: {}", modelConfiguration, t.getMessage());
             }

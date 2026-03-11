@@ -34,7 +34,6 @@ Conductor is an open-source orchestration engine built at Netflix to help develo
   * [Key Features](#key-features)
   * [Use Cases](#use-cases)
 * [Getting Started with Conductor](#getting-started-with-conductor)
-    * [All Options](#all-options)
 * [Conductor SDKs](#conductor-sdks)
 * [Documentation](#documentation)
 * [Community / I Need Help](#community--i-need-help)
@@ -71,35 +70,19 @@ Conductor OSS is the continuation of [Netflix Conductor Repository](https://gith
 * **Microservices orchestration** Orchestrate very complex microservices flows both _synchronously_ and _asynchronously_. 
 * **Durable code execution**, tasks in the workflow are durable with at-least once delivery semantics offered by the queues
 * **Agentic workflows** Conductor workflows can be fully dynamic, LLMs can plan and design workflows that can be executed by Conductor server at runtime.  No compile, deploy cycle required.
-* **Agentic RAG** Easy to build RAG pipelines with LLM and Vector DB integrations 
-
+* **Agentic RAG** Easy to build RAG pipelines with LLM and Vector DB integrations
 - - - 
+
 # Getting Started with Conductor
 
-**One-liner for macOS / Linux**
-```bash
-curl -sSL https://raw.githubusercontent.com/conductor-oss/conductor/main/conductor_server.sh | sh
+**Install Conductor CLI and start server**
+```shell
+# Installs conductor cli
+npm install -g @conductor-oss/conductor-cli
+
+conductor server start
+# see conductor server --help for all the available commands
 ```
-
-**One-liner for Windows PowerShell:**
-```powershell
-irm https://raw.githubusercontent.com/conductor-oss/conductor/main/conductor_server.ps1 | iex
-```
-
-### All Options
-
-| Operating System | Interactive | Custom Port & Version |
-|------------------|-------------|-----------------------|
-| macOS / Linux | `./conductor_server.sh` | `./conductor_server.sh 9090 3.22.0` |
-| Windows (CMD) | `conductor_server.bat` | `conductor_server.bat 9090 3.22.0` |
-| Windows (PowerShell) | `.\conductor_server.ps1` | `.\conductor_server.ps1 -Port 9090 -Version 3.22.0` |
-
-Each script will:
-1. Download the Conductor server JAR (if not already present)
-2. Prompt for parameters if running interactively and not provided
-3. Start the server with `java -jar`
-
-Set `CONDUCTOR_HOME` to specify where the JAR is stored (defaults to current directory).
 
 **Or run with Docker:**
 
