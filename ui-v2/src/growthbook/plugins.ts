@@ -148,14 +148,14 @@ function getCookie(name: string): string {
   return parts.length === 2 ? parts[1].split(";")[0] : "";
 }
 
-// Use the browsers crypto.randomUUID if set to generate a UUID
-function genUUID(crypto?: Crypto) {
-  if (crypto && crypto.randomUUID) return crypto.randomUUID();
+function genUUID(crypto: Crypto): string {
+  if (!crypto || (!crypto.randomUUID && !crypto.getRandomValues)) {
+    throw new Error("Web Crypto API is not supported in this browser.");
+  }
+  if (crypto.randomUUID) return crypto.randomUUID();
+  // Fallback for browsers that have getRandomValues but not randomUUID (pre-2021)
   return ("" + 1e7 + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) => {
-    const n =
-      crypto && crypto.getRandomValues
-        ? crypto.getRandomValues(new Uint8Array(1))[0]
-        : Math.floor(Math.random() * 256);
+    const n = crypto.getRandomValues(new Uint8Array(1))[0];
     return (
       (c as unknown as number) ^
       (n & (15 >> ((c as unknown as number) / 4)))

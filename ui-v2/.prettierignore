@@ -7,3 +7,4 @@ tests-examples
 playwright
 public/context.js
 /dist/
+pnpm-lock.yaml
