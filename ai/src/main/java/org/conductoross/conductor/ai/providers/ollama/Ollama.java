@@ -29,6 +29,7 @@ import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
 import com.google.common.primitives.Floats;
@@ -95,15 +96,19 @@ public class Ollama implements AIModel {
 
     @Override
     public ChatModel getChatModel() {
-        OllamaApi.Builder builder = OllamaApi.builder();
-        builder.baseUrl(config.getBaseURL());
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setReadTimeout(config.getTimeout());
+
+        RestClient.Builder restClientBuilder = RestClient.builder().requestFactory(factory);
         if (StringUtils.isNotBlank(config.getAuthHeaderName())) {
-            RestClient.Builder restClientBuilder =
-                    RestClient.builder()
-                            .defaultHeader(config.getAuthHeaderName(), config.getAuthHeader());
-            builder.restClientBuilder(restClientBuilder);
+            restClientBuilder.defaultHeader(config.getAuthHeaderName(), config.getAuthHeader());
         }
-        OllamaApi api = builder.build();
+
+        OllamaApi api =
+                OllamaApi.builder()
+                        .baseUrl(config.getBaseURL())
+                        .restClientBuilder(restClientBuilder)
+                        .build();
         return OllamaChatModel.builder().ollamaApi(api).build();
     }
 

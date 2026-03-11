@@ -18,6 +18,9 @@ storybook-static
 # Turbo
 .turbo
 
+# Vite
+.vite
+
 # IDE / OS
 .DS_Store
 
