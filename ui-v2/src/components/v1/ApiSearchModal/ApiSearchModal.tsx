@@ -19,7 +19,7 @@ import MuiButton from "components/MuiButton";
 import MuiTypography from "components/MuiTypography";
 import { SnackbarMessage } from "components/SnackbarMessage";
 import { Suspense, SyntheticEvent, useState } from "react";
-import { defaultEditorOptions } from "shared/editor";
+import { defaultEditorOptions, type EditorOptions } from "shared/editor";
 import { greyText } from "theme/tokens/colors";
 import {
   ApiSearchModalProps,
@@ -27,7 +27,7 @@ import {
 } from "../../../shared/CodeModal/types";
 import { modalStyles } from "../Modal/commonStyles";
 
-const editorOption = {
+const editorOption: EditorOptions = {
   ...defaultEditorOptions,
   tabSize: 2,
   minimap: { enabled: false },

@@ -1,7 +1,9 @@
-export const smallEditorDefaultOptions = {
+import { editor, type EditorOptions } from "shared/editor";
+
+export const smallEditorDefaultOptions: EditorOptions = {
   tabSize: 2,
   minimap: { enabled: false },
-  lightbulb: { enabled: false },
+  lightbulb: { enabled: editor.ShowLightbulbIconMode.Off },
   quickSuggestions: true,
   lineNumbers: "off",
   glyphMargin: false,

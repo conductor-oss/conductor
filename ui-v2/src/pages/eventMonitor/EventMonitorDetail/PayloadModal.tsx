@@ -10,8 +10,8 @@ import { Editor } from "@monaco-editor/react";
 import MuiButton from "components/MuiButton";
 import { modalStyles } from "components/v1/Modal/commonStyles";
 import { Close, Code as CodeIcon } from "@mui/icons-material";
-import { defaultEditorOptions } from "shared/editor";
-const editorOption = {
+import { defaultEditorOptions, type EditorOptions } from "shared/editor";
+const editorOption: EditorOptions = {
   ...defaultEditorOptions,
   tabSize: 2,
   minimap: { enabled: false },

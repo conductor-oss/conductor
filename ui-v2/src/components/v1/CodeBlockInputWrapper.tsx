@@ -26,7 +26,11 @@ import {
   useRef,
   useState,
 } from "react";
-import { defaultEditorOptions } from "shared/editor";
+import {
+  editor,
+  defaultEditorOptions,
+  type EditorOptions,
+} from "shared/editor";
 import { ColorModeContext } from "theme/material/ColorModeContext";
 import { colors, fontSizes } from "theme/tokens/variables";
 import { logger } from "utils/logger";
@@ -62,11 +66,11 @@ const MaybeLabel = ({
   />
 );
 
-const smallEditorOptions = {
+const smallEditorOptions: EditorOptions = {
   ...defaultEditorOptions,
   tabSize: 2,
   minimap: { enabled: false },
-  lightbulb: { enabled: true },
+  lightbulb: { enabled: editor.ShowLightbulbIconMode.On },
   quickSuggestions: true,
   lineNumbers: "on",
   glyphMargin: false,

@@ -1,7 +1,7 @@
 import { FunctionComponent, useRef } from "react";
 import { Box } from "@mui/material";
 import { ActorRef } from "xstate";
-import { OnMount } from "@monaco-editor/react";
+import { DiffOnMount, MonacoDiffEditor } from "@monaco-editor/react";
 import { useActor, useSelector } from "@xstate/react";
 import { SaveWorkflowEvents, SaveWorkflowMachineEventTypes } from "./state";
 import { DiffEditor } from "components/DiffEditor/DiffEditor";
@@ -17,7 +17,7 @@ interface ConfirmSaveDiffEditorProps {
 export const ConfirmSaveDiffEditor: FunctionComponent<
   ConfirmSaveDiffEditorProps
 > = ({ saveChangesActor, editorTheme, editorState }) => {
-  const diffMonacoObjects = useRef(null);
+  const diffMonacoObjects = useRef<MonacoDiffEditor | null>(null);
   const [, send] = useActor(saveChangesActor);
 
   const handleEditChanges = (changes: string) =>
@@ -35,7 +35,7 @@ export const ConfirmSaveDiffEditor: FunctionComponent<
     JSON.stringify(state.context.currentWf, null, 2),
   );
 
-  const diffEditorDidMount: OnMount = (editor) => {
+  const diffEditorDidMount: DiffOnMount = (editor) => {
     diffMonacoObjects.current = editor;
     const modifiedEditor = editor.getModifiedEditor();
     modifiedEditor.onDidChangeModelContent((_: any) => {

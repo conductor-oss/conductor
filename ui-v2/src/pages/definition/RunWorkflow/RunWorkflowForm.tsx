@@ -1,7 +1,4 @@
 import { Box, Grid } from "@mui/material";
-import { FunctionComponent } from "react";
-import { ActorRef } from "xstate";
-
 import { Button } from "components";
 import Paper from "components/Paper";
 import { SnackbarMessage } from "components/SnackbarMessage";
@@ -9,8 +6,10 @@ import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
 import ConductorInput from "components/v1/ConductorInput";
 import ResetIcon from "components/v1/icons/ResetIcon";
 import IdempotencyForm from "pages/runWorkflow/IdempotencyForm";
+import { editor, type EditorOptions } from "shared/editor";
 import { SMALL_EDITOR_DEFAULT_OPTIONS } from "utils/constants";
 import { useLocalStorage } from "utils/localstorage";
+import { ActorRef } from "xstate";
 import { WorkflowDefinitionEvents } from "../state";
 import { RunWorkflowHistoryTable } from "./RunWorkflowHistoryTable";
 import {
@@ -24,10 +23,10 @@ interface RunWorkFlowFormProps {
   workflowDefinitionActor: ActorRef<WorkflowDefinitionEvents>;
 }
 
-const additionalEditorOptions = {
+const additionalEditorOptions: EditorOptions = {
   scrollBeyondLastLine: false,
   wrappingStrategy: "advanced",
-  lightbulb: { enabled: true },
+  lightbulb: { enabled: editor.ShowLightbulbIconMode.On },
   quickSuggestions: true,
   lineNumbers: "on",
   wordWrap: "on",
@@ -39,12 +38,9 @@ const additionalEditorOptions = {
   hideCursorInOverviewRuler: false,
   overviewRulerBorder: false,
   automaticLayout: true, // Important
-  padding: "20px",
 };
 
-export const RunWorkFlowForm: FunctionComponent<RunWorkFlowFormProps> = ({
-  runTabActor,
-}) => {
+export const RunWorkFlowForm = ({ runTabActor }: RunWorkFlowFormProps) => {
   const [
     {
       currentWf,

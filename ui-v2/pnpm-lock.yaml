@@ -337,6 +337,9 @@ importers:
       jsdom:
         specifier: ^26.1.0
         version: 26.1.0
+      monaco-editor:
+        specifier: ^0.55.1
+        version: 0.55.1
       prettier:
         specifier: ^3.6.2
         version: 3.8.1

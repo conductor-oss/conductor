@@ -24,10 +24,12 @@ export const DEFAULT_WF_ATTRIBUTES = [
   "workflow.taskToDomain",
 ] as const;
 
-export const SMALL_EDITOR_DEFAULT_OPTIONS = {
+import { editor, type EditorOptions } from "shared/editor";
+
+export const SMALL_EDITOR_DEFAULT_OPTIONS: EditorOptions = {
   tabSize: 2,
   minimap: { enabled: false },
-  lightbulb: { enabled: false },
+  lightbulb: { enabled: editor.ShowLightbulbIconMode.Off },
   quickSuggestions: true,
   lineNumbers: "off",
   glyphMargin: false,

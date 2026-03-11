@@ -45,7 +45,7 @@ type DoWhileCodeBlockProps = {
 } & Partial<Omit<EditorProps, "onChange">>;
 
 const additionalEditorOptions = {
-  lineNumbers: "on",
+  lineNumbers: "on" as const,
   lineDecorationsWidth: 10,
 };
 

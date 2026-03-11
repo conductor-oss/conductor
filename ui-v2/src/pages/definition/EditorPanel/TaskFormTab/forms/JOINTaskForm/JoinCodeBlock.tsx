@@ -43,7 +43,7 @@ type JoinCodeBlockProps = {
 const MIN_HEIGHT = 120;
 
 const additionalEditorOptions = {
-  lineNumbers: "on",
+  lineNumbers: "on" as const,
   lineDecorationsWidth: 10,
 };
 

@@ -12,7 +12,7 @@ import Button from "components/MuiButton";
 import SaveIcon from "components/v1/icons/SaveIcon";
 import XCloseIcon from "components/v1/icons/XCloseIcon";
 import { CSSProperties, Suspense, useContext, useRef, useState } from "react";
-import { defaultEditorOptions } from "shared/editor";
+import { defaultEditorOptions, type EditorOptions } from "shared/editor";
 import { ColorModeContext } from "theme/material/ColorModeContext";
 import { colors } from "theme/tokens/variables";
 import { tryToJson } from "utils/utils";
@@ -40,7 +40,7 @@ export interface ReactJSONProps {
   handleUpdate?: (value: string) => void;
 }
 
-const editorOptions = {
+const editorOptions: EditorOptions = {
   ...defaultEditorOptions,
   tabSize: 2,
   readOnly: true,

@@ -10,7 +10,7 @@ import CopyIcon from "components/v1/icons/CopyIcon";
 import { path as _path } from "lodash/fp";
 import { useMemo, useState } from "react";
 import { getAccessToken } from "shared/auth/tokenManagerJotai";
-import { defaultEditorOptions } from "shared/editor";
+import { defaultEditorOptions, type EditorOptions } from "shared/editor";
 import { updateField } from "utils/fieldHelpers";
 import { ConductorCacheOutput } from "../ConductorCacheOutputForm";
 import { Optional } from "../OptionalFieldForm";
@@ -39,7 +39,7 @@ const SAMPLE_CODE_TABS = [
   "TypeScript",
   // "Clojure",
 ];
-const editorOption = {
+const editorOption: EditorOptions = {
   ...defaultEditorOptions,
   tabSize: 2,
   minimap: { enabled: false },
