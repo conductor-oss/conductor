@@ -48,9 +48,7 @@ public abstract class ElasticSearchTest {
     }
 
     protected static final ElasticsearchContainer container =
-            new ElasticsearchContainer(
-                            DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
-                                    .withTag("8.19.11"))
+            new ElasticsearchContainer(DockerImageName.parse("elasticsearch").withTag("8.19.11"))
                     .withEnv("xpack.security.enabled", "false")
                     .withEnv("discovery.type", "single-node")
                     .withEnv("ES_JAVA_OPTS", "-Xms512m -Xmx512m");
