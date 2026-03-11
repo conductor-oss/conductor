@@ -42,20 +42,20 @@ This file sets feature flags (`window.conductor`) and auth config (`window.authC
 
 ## Available scripts
 
-| Script | Description |
-|--------|-------------|
-| `pnpm dev` | Start dev server with HMR |
-| `pnpm build` | Build standalone app to `dist/` |
-| `pnpm build:lib` | Build npm library to `dist/` |
-| `pnpm build:all` | Build both app and library |
-| `pnpm lint` | Run ESLint |
-| `pnpm lint:fix` | Run ESLint with auto-fix |
-| `pnpm prettier:check` | Check formatting |
-| `pnpm prettier:write` | Auto-format all files |
-| `pnpm typecheck` | Type-check without emitting |
-| `pnpm test` | Run unit tests |
-| `pnpm test:watch` | Run tests in watch mode |
-| `pnpm test:coverage` | Run tests with coverage report |
+| Script                | Description                     |
+| --------------------- | ------------------------------- |
+| `pnpm dev`            | Start dev server with HMR       |
+| `pnpm build`          | Build standalone app to `dist/` |
+| `pnpm build:lib`      | Build npm library to `dist/`    |
+| `pnpm build:all`      | Build both app and library      |
+| `pnpm lint`           | Run ESLint                      |
+| `pnpm lint:fix`       | Run ESLint with auto-fix        |
+| `pnpm prettier:check` | Check formatting                |
+| `pnpm prettier:write` | Auto-format all files           |
+| `pnpm typecheck`      | Type-check without emitting     |
+| `pnpm test`           | Run unit tests                  |
+| `pnpm test:watch`     | Run tests in watch mode         |
+| `pnpm test:coverage`  | Run tests with coverage report  |
 
 ## Using as an npm library
 
@@ -68,8 +68,8 @@ npm install conductor-ui
 Import styles in your app entry point:
 
 ```tsx
-import "conductor-ui/styles.css";  // component styles
-import "conductor-ui/global.css";  // global body/font styles (optional)
+import "conductor-ui/styles.css"; // component styles
+import "conductor-ui/global.css"; // global body/font styles (optional)
 ```
 
 ### Extending with plugins
@@ -109,15 +109,15 @@ function Root() {
 
 ### Plugin extension points
 
-| Extension | Method | Description |
-|-----------|--------|-------------|
-| Routes | `registerRoutes(routes)` | Add authenticated routes |
-| Public routes | `registerPublicRoutes(routes)` | Add unauthenticated routes |
-| Sidebar items | `registerSidebarItem(reg)` | Inject items into the sidebar |
-| Task forms | `registerTaskForm(reg)` | Custom forms for task types in the workflow editor |
-| Task menu items | `registerTaskMenuItem(reg)` | Add task types to the "Add Task" menu |
-| Auth provider | `registerAuthProvider(reg)` | Replace the auth implementation |
-| Search provider | `registerSearchProvider(reg)` | Add results to global search |
+| Extension       | Method                         | Description                                        |
+| --------------- | ------------------------------ | -------------------------------------------------- |
+| Routes          | `registerRoutes(routes)`       | Add authenticated routes                           |
+| Public routes   | `registerPublicRoutes(routes)` | Add unauthenticated routes                         |
+| Sidebar items   | `registerSidebarItem(reg)`     | Inject items into the sidebar                      |
+| Task forms      | `registerTaskForm(reg)`        | Custom forms for task types in the workflow editor |
+| Task menu items | `registerTaskMenuItem(reg)`    | Add task types to the "Add Task" menu              |
+| Auth provider   | `registerAuthProvider(reg)`    | Replace the auth implementation                    |
+| Search provider | `registerSearchProvider(reg)`  | Add results to global search                       |
 
 ### Sidebar item positioning
 
