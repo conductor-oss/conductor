@@ -123,6 +123,13 @@ export default defineConfig(({ mode }) => {
       environment: "jsdom",
       setupFiles: "./src/setupTests.ts",
       include: ["src/**/*.test.{js,ts,jsx,tsx}"],
+      server: {
+        deps: {
+          // Force Vitest to process Monaco's ESM through its own pipeline
+          // rather than trying to load browser-only bundles in jsdom.
+          inline: ["monaco-editor"],
+        },
+      },
     },
   };
 });
