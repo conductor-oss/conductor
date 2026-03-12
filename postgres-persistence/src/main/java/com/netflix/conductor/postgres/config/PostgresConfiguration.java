@@ -76,6 +76,8 @@ public class PostgresConfiguration {
                 .dataSource(dataSource)
                 .outOfOrder(true)
                 .baselineOnMigrate(true)
+                .repairOnMigrate(properties.isFlywayRepairOnMigrate())
+                .validateOnMigrate(properties.isFlywayValidateOnMigrate())
                 .load();
     }
 
