@@ -1,0 +1,66 @@
+{
+  "name": "ForkJoinSyncModeTest",
+  "description": "Issue #619: FORK_JOIN with joinMode=SYNC — 3 parallel branches, all succeed. The JOIN evaluates immediately (offset=0) once all branches are terminal.",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "fork",
+      "taskReferenceName": "forkTask",
+      "type": "FORK_JOIN",
+      "forkTasks": [
+        [
+          {
+            "name": "integration_task_1",
+            "taskReferenceName": "branch_a",
+            "type": "SIMPLE",
+            "inputParameters": { "p1": "${workflow.input.param1}" }
+          }
+        ],
+        [
+          {
+            "name": "integration_task_2",
+            "taskReferenceName": "branch_b",
+            "type": "SIMPLE",
+            "inputParameters": { "p1": "${workflow.input.param1}" }
+          }
+        ],
+        [
+          {
+            "name": "integration_task_3",
+            "taskReferenceName": "branch_c",
+            "type": "SIMPLE",
+            "inputParameters": { "p1": "${workflow.input.param1}" }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "joinTask",
+      "taskReferenceName": "joinTask",
+      "type": "JOIN",
+      "joinMode": "SYNC",
+      "joinOn": ["branch_a", "branch_b", "branch_c"]
+    },
+    {
+      "name": "integration_task_4",
+      "taskReferenceName": "postJoinTask",
+      "type": "SIMPLE",
+      "inputParameters": {
+        "branchAResult": "${joinTask.output.branch_a}",
+        "branchBResult": "${joinTask.output.branch_b}",
+        "branchCResult": "${joinTask.output.branch_c}"
+      }
+    }
+  ],
+  "inputParameters": ["param1"],
+  "outputParameters": {
+    "branchAOutput": "${joinTask.output.branch_a}",
+    "branchBOutput": "${joinTask.output.branch_b}",
+    "branchCOutput": "${joinTask.output.branch_c}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}
