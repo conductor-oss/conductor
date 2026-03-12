@@ -1,6 +1,6 @@
 {
   "name": "conductor-ui",
-  "version": "2.0.0",
+  "version": "0.0.0",
   "description": "Open Source Conductor UI - Core components, pages, and plugin infrastructure",
   "type": "module",
   "main": "./dist/conductor-ui.js",
