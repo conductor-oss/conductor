@@ -1,0 +1,49 @@
+{
+  "name": "ForkJoinSyncOptionalFailTest",
+  "description": "Issue #619: FORK_JOIN with joinMode=SYNC — one branch is optional and expected to fail. The JOIN should COMPLETE (with errors) and the workflow should proceed.",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "fork",
+      "taskReferenceName": "forkTask",
+      "type": "FORK_JOIN",
+      "forkTasks": [
+        [
+          {
+            "name": "integration_task_1",
+            "taskReferenceName": "branch_required",
+            "type": "SIMPLE",
+            "inputParameters": {}
+          }
+        ],
+        [
+          {
+            "name": "integration_task_2",
+            "taskReferenceName": "branch_optional",
+            "type": "SIMPLE",
+            "optional": true,
+            "inputParameters": {}
+          }
+        ]
+      ]
+    },
+    {
+      "name": "joinTask",
+      "taskReferenceName": "joinTask",
+      "type": "JOIN",
+      "joinMode": "SYNC",
+      "joinOn": ["branch_required", "branch_optional"]
+    },
+    {
+      "name": "integration_task_3",
+      "taskReferenceName": "postJoinTask",
+      "type": "SIMPLE",
+      "inputParameters": {}
+    }
+  ],
+  "schemaVersion": 2,
+  "restartable": true,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}
