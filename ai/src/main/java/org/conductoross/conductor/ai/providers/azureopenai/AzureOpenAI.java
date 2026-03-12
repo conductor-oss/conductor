@@ -32,6 +32,7 @@ import org.springframework.ai.image.ImageModel;
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
+import com.azure.core.util.HttpClientOptions;
 import com.google.common.primitives.Floats;
 
 public class AzureOpenAI implements AIModel {
@@ -101,9 +102,15 @@ public class AzureOpenAI implements AIModel {
     }
 
     private OpenAIClientBuilder getOpenAIClientBuilder() {
+        HttpClientOptions clientOptions =
+                new HttpClientOptions()
+                        .setReadTimeout(config.getTimeout())
+                        .setResponseTimeout(config.getTimeout());
+
         return new OpenAIClientBuilder()
                 .endpoint(config.getBaseURL())
-                .credential(new AzureKeyCredential(config.getApiKey()));
+                .credential(new AzureKeyCredential(config.getApiKey()))
+                .clientOptions(clientOptions);
     }
 
     private boolean isReasoningModel(String modelName) {
