@@ -22,9 +22,8 @@ import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.model.WorkflowModel;
 
 /**
- * Composite workflow status listener that delegates to multiple listeners in parallel. Listeners
- * are executed concurrently using parallel streams to avoid blocking. Failures in one listener do
- * not affect others.
+ * Composite workflow status listener that delegates to multiple listeners sequentially. Failures in
+ * one listener do not affect others.
  */
 public class CompositeWorkflowStatusListener implements WorkflowStatusListener {
 
@@ -103,7 +102,7 @@ public class CompositeWorkflowStatusListener implements WorkflowStatusListener {
     }
 
     /**
-     * Delegates workflow event to all listeners in parallel with error isolation.
+     * Delegates workflow event to all listeners sequentially with error isolation.
      *
      * @param workflow the workflow model
      * @param methodName the name of the method being invoked (for logging)
@@ -111,14 +110,12 @@ public class CompositeWorkflowStatusListener implements WorkflowStatusListener {
      */
     private void delegateToListeners(
             WorkflowModel workflow, String methodName, Consumer<WorkflowStatusListener> action) {
-        listeners.stream()
-                .parallel()
-                .forEach(
-                        listener ->
-                                safeInvoke(
-                                        () -> action.accept(listener),
-                                        methodName,
-                                        workflow.getWorkflowId()));
+        listeners.forEach(
+                listener ->
+                        safeInvoke(
+                                () -> action.accept(listener),
+                                methodName,
+                                workflow.getWorkflowId()));
     }
 
     private void safeInvoke(Runnable action, String methodName, String workflowId) {

@@ -59,17 +59,11 @@ public class CompositeWorkflowStatusListenerConfiguration {
             LoggerFactory.getLogger(CompositeWorkflowStatusListenerConfiguration.class);
 
     @Bean
-    public RestClientManager getRestClientManager(StatusNotifierNotificationProperties config) {
-        return new RestClientManager(config);
-    }
-
-    @Bean
     public WorkflowStatusListener compositeWorkflowStatusListener(
             CompositeWorkflowStatusListenerProperties properties,
             ObjectMapper objectMapper,
             QueueDAO queueDAO,
             ExecutionDAOFacade executionDAOFacade,
-            Optional<RestClientManager> restClientManager,
             Optional<KafkaWorkflowStatusPublisherProperties> kafkaProperties,
             Optional<ConductorQueueStatusPublisherProperties> queueProperties,
             Optional<StatusNotifierNotificationProperties> notifierProperties,
@@ -87,15 +81,12 @@ public class CompositeWorkflowStatusListenerConfiguration {
                             objectMapper,
                             queueDAO,
                             executionDAOFacade,
-                            restClientManager,
                             kafkaProperties,
                             queueProperties,
                             notifierProperties,
                             archiveProperties);
-            if (listener != null) {
-                listeners.add(listener);
-                LOGGER.info("Successfully added workflow listener: {}", type);
-            }
+            listeners.add(listener);
+            LOGGER.info("Successfully added workflow listener: {}", type);
         }
 
         if (listeners.isEmpty()) {
@@ -113,7 +104,6 @@ public class CompositeWorkflowStatusListenerConfiguration {
             ObjectMapper objectMapper,
             QueueDAO queueDAO,
             ExecutionDAOFacade executionDAOFacade,
-            Optional<RestClientManager> restClientManager,
             Optional<KafkaWorkflowStatusPublisherProperties> kafkaProperties,
             Optional<ConductorQueueStatusPublisherProperties> queueProperties,
             Optional<StatusNotifierNotificationProperties> notifierProperties,
@@ -147,23 +137,18 @@ public class CompositeWorkflowStatusListenerConfiguration {
                                                         + "Please configure conductor.workflow-status-listener.queue-publisher.* properties"));
 
             case "workflow_publisher":
-                return restClientManager
-                        .map(
-                                rcm -> {
-                                    LOGGER.debug(
-                                            "Creating workflow status change publisher (webhook)");
-                                    return new StatusChangePublisher(
-                                            rcm,
-                                            executionDAOFacade,
-                                            notifierProperties
-                                                    .get()
-                                                    .getSubscribedWorkflowStatuses());
-                                })
-                        .orElseThrow(
+                StatusNotifierNotificationProperties notifierProps =
+                        notifierProperties.orElseThrow(
                                 () ->
                                         new IllegalStateException(
                                                 "Workflow publisher requested but notification properties not configured. "
                                                         + "Please configure conductor.status-notifier.notification.* properties"));
+                LOGGER.debug("Creating workflow status change publisher (webhook)");
+                RestClientManager restClientManager = new RestClientManager(notifierProps);
+                return new StatusChangePublisher(
+                        restClientManager,
+                        executionDAOFacade,
+                        notifierProps.getSubscribedWorkflowStatuses());
 
             case "archive":
                 return archiveProperties
@@ -192,11 +177,11 @@ public class CompositeWorkflowStatusListenerConfiguration {
                                                         + "Please configure conductor.workflow-status-listener.archival.* properties"));
 
             default:
-                LOGGER.warn(
-                        "Unknown workflow listener type: '{}'. Skipping. "
-                                + "Valid values: workflow_publisher, queue_publisher, kafka, archive",
-                        type);
-                return null;
+                throw new IllegalArgumentException(
+                        String.format(
+                                "Unknown workflow listener type: '%s'. "
+                                        + "Valid values: workflow_publisher, queue_publisher, kafka, archive",
+                                type));
         }
     }
 }
