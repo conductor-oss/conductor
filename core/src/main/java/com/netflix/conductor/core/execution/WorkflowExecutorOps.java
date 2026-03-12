@@ -1204,7 +1204,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                             workflow.getWorkflowId(),
                             updatedOffset.getSeconds() * 1000);
                 }
-
+            }
             return workflow;
 
         } catch (TerminateWorkflowException twe) {
