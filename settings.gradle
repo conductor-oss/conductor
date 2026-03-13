@@ -66,6 +66,7 @@ include 'kafka-event-queue'
 include 'test-harness'
 
 include 'scheduler'
+include 'scheduler-postgres-persistence'
 
 rootProject.children.each {it.name="conductor-${it.name}"}
 
