@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Conductor Authors.
+ * Copyright 2026 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,30 +12,23 @@
  */
 package org.conductoross.conductor.scheduler.config;
 
-import javax.sql.DataSource;
-
-import org.conductoross.conductor.scheduler.dao.PostgresSchedulerDAO;
 import org.conductoross.conductor.scheduler.dao.SchedulerDAO;
 import org.conductoross.conductor.scheduler.rest.SchedulerResource;
 import org.conductoross.conductor.scheduler.service.SchedulerService;
-import org.flywaydb.core.Flyway;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.DependsOn;
 
 import com.netflix.conductor.service.WorkflowService;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 /**
- * Spring auto-configuration for the Conductor scheduler module.
+ * Spring auto-configuration for the Conductor scheduler service and REST layer.
  *
- * <p>Activated only when {@code conductor.scheduler.enabled=true} is explicitly set. The scheduler
- * requires a PostgreSQL {@link DataSource} and runs Flyway migrations, so it must not auto-activate
- * in environments that use in-memory or non-Postgres persistence.
+ * <p>Activated only when {@code conductor.scheduler.enabled=true} is set. The {@link SchedulerDAO}
+ * bean must be provided by a persistence-layer module (e.g. {@code
+ * conductor-scheduler-postgres-persistence}).
  */
 @AutoConfiguration
 @ConditionalOnProperty(
@@ -45,26 +38,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @EnableConfigurationProperties(SchedulerProperties.class)
 public class WorkflowSchedulerConfiguration {
 
-    @Bean(initMethod = "migrate")
-    public Flyway flywayForScheduler(DataSource dataSource) {
-        return Flyway.configure()
-                .locations("classpath:db/migration_scheduler")
-                .dataSource(dataSource)
-                .table("flyway_schema_history_scheduler")
-                .outOfOrder(true)
-                .baselineOnMigrate(true)
-                .baselineVersion("0")
-                .load();
-    }
-
     @Bean
-    @DependsOn("flywayForScheduler")
-    public SchedulerDAO schedulerDAO(DataSource dataSource, ObjectMapper objectMapper) {
-        return new PostgresSchedulerDAO(dataSource, objectMapper);
-    }
-
-    @Bean
-    @ConditionalOnBean(WorkflowService.class)
+    @ConditionalOnBean({SchedulerDAO.class, WorkflowService.class})
     public SchedulerService schedulerService(
             SchedulerDAO schedulerDAO,
             WorkflowService workflowService,
