@@ -18,7 +18,7 @@ import org.conductoross.conductor.scheduler.dao.SchedulerDAO;
 import org.conductoross.conductor.scheduler.mysql.dao.MySQLSchedulerDAO;
 import org.flywaydb.core.Flyway;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.DependsOn;
 
@@ -32,8 +32,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * conflict with the main Conductor migration history.
  */
 @AutoConfiguration
-@ConditionalOnProperty(name = "conductor.db.type", havingValue = "mysql")
-@ConditionalOnProperty(name = "conductor.scheduler.enabled", havingValue = "true")
+@ConditionalOnExpression("'${conductor.db.type:}' == 'mysql' && '${conductor.scheduler.enabled:false}' == 'true'")
 public class MySQLSchedulerConfiguration {
 
     @Bean(initMethod = "migrate")
