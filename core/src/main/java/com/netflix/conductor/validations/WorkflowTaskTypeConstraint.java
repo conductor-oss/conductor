@@ -257,7 +257,11 @@ public @interface WorkflowTaskTypeConstraint {
         private boolean isDoWhileTaskValid(
                 WorkflowTask workflowTask, ConstraintValidatorContext context) {
             boolean valid = true;
-            if (workflowTask.getLoopCondition() == null) {
+            boolean isListIterationMode =
+                    (workflowTask.getItems() != null && !workflowTask.getItems().trim().isEmpty())
+                            || (workflowTask.getInputParameters() != null
+                                    && workflowTask.getInputParameters().containsKey("_items"));
+            if (!isListIterationMode && workflowTask.getLoopCondition() == null) {
                 String message =
                         String.format(
                                 PARAM_REQUIRED_STRING_FORMAT,
