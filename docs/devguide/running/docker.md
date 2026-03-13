@@ -81,6 +81,7 @@ A selection of `docker-compose-*.yaml` and `config-*.properties` files are provi
 | File                           | Containers                                                                              |
 |--------------------------------|-----------------------------------------------------------------------------------------|
 | [docker-compose.yaml](https://github.com/conductor-oss/conductor/blob/main/docker/docker-compose.yaml)                          | <ul><li>Redis</li><li>Elasticsearch v7</li><li>Conductor server (includes UI)</li></ul>           |
+| [docker-compose-es8.yaml](https://github.com/conductor-oss/conductor/blob/main/docker/docker-compose-es8.yaml)                 | <ul><li>Redis</li><li>Elasticsearch v8</li><li>Conductor server (includes UI)</li></ul>           |
 | [docker-compose-postgres.yaml](https://github.com/conductor-oss/conductor/blob/main/docker/docker-compose-postgres.yaml)   | <ul><li>Postgres</li><li>Conductor server (includes UI)</li></ul>  |
 | [docker-compose-postgres-es7.yaml](https://github.com/conductor-oss/conductor/blob/main/docker/docker-compose-postgres-es7.yaml)       | <ul><li>Postgres</li><li>Elasticsearch v7</li><li>Conductor server (includes UI)</li></ul>   |
 | [docker-compose-mysql.yaml](https://github.com/conductor-oss/conductor/blob/main/docker/docker-compose-mysql.yaml)       | <ul><li>MySQL</li><li>Redis</li><li>Elasticsearch v7</li><li>Conductor server (includes UI)</li></ul>   |
@@ -101,6 +102,8 @@ conductor $ docker compose -f docker/docker-compose-postgres.yaml up
 ### Configuring Elasticsearch
 
 By default, Conductor comes packaged with Elasticsearch for the UI's indexing backend. While Elasticsearch is optional, disabling it will disable the search functionality in the UI.
+
+For Elasticsearch 8.x, use `docker-compose-es8.yaml` (or set `INDEXING_BACKEND=elasticsearch8` when building) and set `conductor.indexing.type=elasticsearch8` in your config. The ES8 compose file pins Elasticsearch `8.19.11` (8.19.x line) to match the ES8 client.
 
 #### Disabling Elasticsearch
 
