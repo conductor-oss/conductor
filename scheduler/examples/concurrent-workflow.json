@@ -1,0 +1,50 @@
+{
+  "name": "concurrent_demo_workflow",
+  "description": "Scheduled workflow that intentionally takes longer (90s) than the firing interval (60s). Demonstrates that OSS Conductor's scheduler does NOT prevent concurrent executions: each minute a new workflow starts even if the previous one is still running.",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "fetch_start_time",
+      "taskReferenceName": "fetch_start_time",
+      "type": "HTTP",
+      "inputParameters": {
+        "http_request": {
+          "uri": "https://timeapi.io/api/time/current/zone?timeZone=UTC",
+          "method": "GET",
+          "connectionTimeOut": 5000,
+          "readTimeOut": 5000
+        }
+      }
+    },
+    {
+      "name": "wait_90s",
+      "taskReferenceName": "wait_90s",
+      "type": "WAIT",
+      "inputParameters": {
+        "duration": "90s"
+      }
+    },
+    {
+      "name": "fetch_end_time",
+      "taskReferenceName": "fetch_end_time",
+      "type": "HTTP",
+      "inputParameters": {
+        "http_request": {
+          "uri": "https://timeapi.io/api/time/current/zone?timeZone=UTC",
+          "method": "GET",
+          "connectionTimeOut": 5000,
+          "readTimeOut": 5000
+        }
+      }
+    }
+  ],
+  "outputParameters": {
+    "startedAt": "${fetch_start_time.output.response.body.dateTime}",
+    "finishedAt": "${fetch_end_time.output.response.body.dateTime}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "ownerEmail": "demo@example.com",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 300
+}
