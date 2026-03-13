@@ -43,8 +43,6 @@ dependencies {
 
     //Scheduler persistence
     implementation project(':conductor-scheduler-postgres-persistence')
-    implementation project(':conductor-scheduler-mysql-persistence')
-    implementation project(':conductor-scheduler-sqlite-persistence')
 
     // Indexing backend selection (build-time) to avoid Lucene conflicts between ES and OS
     def indexingBackend = project.findProperty('indexingBackend') ?: 'elasticsearch'
