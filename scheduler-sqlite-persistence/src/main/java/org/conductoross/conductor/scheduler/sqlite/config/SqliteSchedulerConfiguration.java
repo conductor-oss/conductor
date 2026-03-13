@@ -18,7 +18,7 @@ import org.conductoross.conductor.scheduler.dao.SchedulerDAO;
 import org.conductoross.conductor.scheduler.sqlite.dao.SqliteSchedulerDAO;
 import org.flywaydb.core.Flyway;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.DependsOn;
 
@@ -32,8 +32,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * conflict with the main Conductor migration history.
  */
 @AutoConfiguration
-@ConditionalOnProperty(name = "conductor.db.type", havingValue = "sqlite")
-@ConditionalOnProperty(name = "conductor.scheduler.enabled", havingValue = "true")
+@ConditionalOnExpression("'${conductor.db.type:}' == 'sqlite' && '${conductor.scheduler.enabled:false}' == 'true'")
 public class SqliteSchedulerConfiguration {
 
     @Bean(initMethod = "migrate")
