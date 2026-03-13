@@ -1195,20 +1195,19 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 Duration timeout = properties.getWorkflowOffsetTimeout();
                 if (!workflow.getStatus().isTerminal()) {
                     Duration updatedOffset = computePostpone(workflow, timeout);
-                    if (updatedOffset.getSeconds() != timeout.getSeconds()) {
-                        // we have a new value, setUnack uses time in millis
-                        LOGGER.debug(
-                                "Pushing the workflow {} into decider queue by {} millis",
-                                workflow.getWorkflowId(),
-                                updatedOffset.getSeconds() * 1000);
-                        queueDAO.setUnackTimeout(
-                                DECIDER_QUEUE,
-                                workflow.getWorkflowId(),
-                                updatedOffset.getSeconds() * 1000);
-                    }
+                    // Always explicitly set the unack timeout so queue-backend defaults do not
+                    // determine re-sweep frequency (e.g. HUMAN/WAIT tasks would otherwise be
+                    // re-swept at the queue's own default unack interval, which may be very short).
+                    LOGGER.debug(
+                            "Pushing the workflow {} into decider queue by {} millis",
+                            workflow.getWorkflowId(),
+                            updatedOffset.getSeconds() * 1000);
+                    queueDAO.setUnackTimeout(
+                            DECIDER_QUEUE,
+                            workflow.getWorkflowId(),
+                            updatedOffset.getSeconds() * 1000);
                 }
             }
-
             return workflow;
 
         } catch (TerminateWorkflowException twe) {
