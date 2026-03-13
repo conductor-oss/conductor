@@ -23,6 +23,8 @@ import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.RestClient;
 
 public class PerplexityAI implements AIModel {
 
@@ -62,11 +64,15 @@ public class PerplexityAI implements AIModel {
 
     @Override
     public ChatModel getChatModel() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setReadTimeout(config.getTimeout());
+
         OpenAiApi perplexityAI =
                 OpenAiApi.builder()
                         .baseUrl(config.getBaseURL())
                         .apiKey(config.getApiKey())
                         .completionsPath(chatPath)
+                        .restClientBuilder(RestClient.builder().requestFactory(factory))
                         .build();
 
         return OpenAiChatModel.builder().openAiApi(perplexityAI).build();

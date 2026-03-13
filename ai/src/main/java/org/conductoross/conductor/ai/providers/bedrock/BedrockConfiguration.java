@@ -12,12 +12,13 @@
  */
 package org.conductoross.conductor.ai.providers.bedrock;
 
+import java.time.Duration;
+
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.ModelConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
@@ -28,7 +29,6 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 @Data
 @Component
 @NoArgsConstructor
-@AllArgsConstructor
 @ConfigurationProperties(prefix = "conductor.ai.bedrock")
 public class BedrockConfiguration implements ModelConfiguration<Bedrock> {
 
@@ -37,6 +37,20 @@ public class BedrockConfiguration implements ModelConfiguration<Bedrock> {
     private String secretKey;
     private String bearerToken;
     private String region = "us-east-1";
+    private Duration timeout = Duration.ofSeconds(600);
+
+    public BedrockConfiguration(
+            AwsCredentialsProvider awsCredentialsProvider,
+            String accessKey,
+            String secretKey,
+            String bearerToken,
+            String region) {
+        this.awsCredentialsProvider = awsCredentialsProvider;
+        this.accessKey = accessKey;
+        this.secretKey = secretKey;
+        this.bearerToken = bearerToken;
+        this.region = region;
+    }
 
     @Override
     public Bedrock get() {
