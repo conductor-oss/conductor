@@ -19,3 +19,4 @@ ext['elasticsearch.version'] = revElasticSearch7
 
 // SB brings groovy 3.0.x which is not compatible with Spock
 ext['groovy.version'] = revGroovy
+
