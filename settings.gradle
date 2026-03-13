@@ -68,6 +68,7 @@ include 'test-harness'
 include 'scheduler'
 include 'scheduler-postgres-persistence'
 include 'scheduler-mysql-persistence'
+include 'scheduler-sqlite-persistence'
 
 rootProject.children.each {it.name="conductor-${it.name}"}
 
