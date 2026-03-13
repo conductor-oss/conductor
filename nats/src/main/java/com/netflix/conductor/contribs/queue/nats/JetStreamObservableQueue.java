@@ -100,8 +100,7 @@ public class JetStreamObservableQueue implements ObservableQueue {
     }
 
     private static String streamNameFromSubject(String subject) {
-        return subject
-                .replace(".", "_")
+        return subject.replace(".", "_")
                 .replace("*", "ANY")
                 .replace(">", "ALL")
                 .toUpperCase(Locale.ROOT);
