@@ -980,6 +980,7 @@ public abstract class AbstractProtoMapper {
             to.setBaseType( from.getBaseType() );
         }
         to.setTotalTimeoutSeconds( from.getTotalTimeoutSeconds() );
+        to.setTaskStatusListenerEnabled( from.isTaskStatusListenerEnabled() );
         return to.build();
     }
 
@@ -1010,6 +1011,7 @@ public abstract class AbstractProtoMapper {
         to.setBackoffScaleFactor( from.getBackoffScaleFactor() );
         to.setBaseType( from.getBaseType() );
         to.setTotalTimeoutSeconds( from.getTotalTimeoutSeconds() );
+        to.setTaskStatusListenerEnabled( from.getTaskStatusListenerEnabled() );
         return to;
     }
 
