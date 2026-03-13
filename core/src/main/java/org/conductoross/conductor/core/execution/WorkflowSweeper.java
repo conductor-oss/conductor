@@ -227,6 +227,8 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
                                                     (now - task.getWaitTimeout()));
                                             Monitors.recordQueueMessageRepushFromRepairService(
                                                     task.getTaskDefName());
+                                            // Another repair path can restore the message between
+                                            // detection and repush; avoid duplicating it.
                                             if (!queueDAO.containsMessage(
                                                     queueName, task.getTaskId())) {
                                                 queueDAO.push(
@@ -312,6 +314,14 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
             case TIMED_OUT:
                 task.setStatus(TaskModel.Status.TIMED_OUT);
                 break;
+            default:
+                log.warn(
+                        "Skipping repair for sub workflow task {} in workflow {} because sub workflow {} has unsupported terminal status {}",
+                        task.getTaskId(),
+                        task.getWorkflowInstanceId(),
+                        task.getSubWorkflowId(),
+                        subWorkflow.getStatus());
+                return;
         }
         task.addOutput(subWorkflow.getOutput());
         executionDAO.updateTask(task);
