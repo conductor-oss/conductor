@@ -20,7 +20,11 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
     testFixturesImplementation project(':conductor-common')
+    testFixturesImplementation project(':conductor-core')
     testFixturesImplementation 'junit:junit'
+    testFixturesImplementation 'org.mockito:mockito-core'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-web'
 }
 
 test {
