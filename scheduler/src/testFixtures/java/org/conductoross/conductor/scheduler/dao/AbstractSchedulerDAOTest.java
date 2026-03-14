@@ -586,6 +586,77 @@ public abstract class AbstractSchedulerDAOTest {
     }
 
     // =========================================================================
+    // 7. Case sensitivity
+    // =========================================================================
+
+    /**
+     * Verifies that {@code findAllSchedules(workflowName)} is case-sensitive. The exact workflow
+     * name string must match; mixed-case variants must return no results. This is consistent with
+     * Postgres and SQLite behavior. MySQL requires {@code COLLATE utf8mb4_bin} on the
+     * {@code workflow_name} column (see the MySQL migration script).
+     */
+    @Test
+    public void testFindAllSchedules_caseSensitive() {
+        dao().updateSchedule(buildSchedule("case-sched", "MyWorkflow"));
+
+        assertEquals(1, dao().findAllSchedules("MyWorkflow").size());
+        assertEquals(
+                "Workflow name lookup must be case-sensitive — use exact case",
+                0,
+                dao().findAllSchedules("myworkflow").size());
+        assertEquals(0, dao().findAllSchedules("MYWORKFLOW").size());
+    }
+
+    // =========================================================================
+    // 8. Large findAllByNames + error conditions
+    // =========================================================================
+
+    /**
+     * Verifies that {@code findAllByNames} handles a large input set (50 existing + 50
+     * non-existent names) correctly and returns only the rows that exist.
+     */
+    @Test
+    public void testFindAllByNames_largeSet() {
+        java.util.Set<String> allNames = new java.util.HashSet<>();
+        for (int i = 0; i < 50; i++) {
+            String name = "large-set-" + i;
+            dao().updateSchedule(buildSchedule(name, "wf"));
+            allNames.add(name);
+        }
+        // Mix in 50 non-existent names
+        java.util.Set<String> queryNames = new java.util.HashSet<>(allNames);
+        for (int i = 50; i < 100; i++) {
+            queryNames.add("large-set-" + i);
+        }
+        java.util.Map<String, WorkflowSchedule> result = dao().findAllByNames(queryNames);
+        assertEquals(50, result.size());
+        for (String name : allNames) {
+            assertTrue(result.containsKey(name));
+        }
+    }
+
+    @Test
+    public void testGetNextRunTime_nonExistentSchedule_returnsMinusOne() {
+        assertEquals(-1L, dao().getNextRunTimeInEpoch("non-existent-schedule"));
+    }
+
+    @Test
+    public void testSetNextRunTime_nonExistentSchedule_doesNotThrow() {
+        // UPDATE on non-existent row should silently no-op — no row should be created
+        dao().setNextRunTimeInEpoch("non-existent-schedule", System.currentTimeMillis());
+        // Verify no row was created
+        assertEquals(-1L, dao().getNextRunTimeInEpoch("non-existent-schedule"));
+    }
+
+    @Test
+    public void testGetExecutionRecords_nonExistentSchedule_returnsEmpty() {
+        List<WorkflowScheduleExecution> records =
+                dao().getExecutionRecords("non-existent-schedule", 10);
+        assertNotNull(records);
+        assertTrue(records.isEmpty());
+    }
+
+    // =========================================================================
     // Helpers
     // =========================================================================
 

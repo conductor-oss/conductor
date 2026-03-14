@@ -4,7 +4,7 @@
 
 CREATE TABLE IF NOT EXISTS scheduler (
     scheduler_name VARCHAR(255) NOT NULL,
-    workflow_name  VARCHAR(255) NOT NULL,
+    workflow_name  VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
     json_data      MEDIUMTEXT   NOT NULL,
     next_run_time  BIGINT,
     PRIMARY KEY (scheduler_name)
