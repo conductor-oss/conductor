@@ -23,6 +23,8 @@ dependencies {
     testFixturesImplementation project(':conductor-core')
     testFixturesImplementation 'junit:junit'
     testFixturesImplementation 'org.mockito:mockito-core'
+    testFixturesImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testFixturesImplementation "com.fasterxml.jackson.core:jackson-databind"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-web'
 }
