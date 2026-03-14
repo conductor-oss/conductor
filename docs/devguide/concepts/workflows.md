@@ -1,3 +1,7 @@
+---
+description: "Understand workflows in Conductor — blueprint definitions and runtime executions that power durable code execution across distributed services."
+---
+
 # Workflows
 
 A workflow is a sequence of tasks with a defined order and execution. Each workflow encapsulates a specific process, such as:

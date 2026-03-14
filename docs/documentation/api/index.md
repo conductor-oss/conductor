@@ -1,3 +1,7 @@
+---
+description: "Conductor REST API reference — endpoints for workflow metadata, task management, workflow execution, and task domains with Swagger UI documentation."
+---
+
 # API Specification
 
 See the following sections for API endpoint documentation. 

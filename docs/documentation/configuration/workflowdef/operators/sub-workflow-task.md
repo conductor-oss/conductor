@@ -1,3 +1,7 @@
+---
+description: "Use Sub Workflow tasks in Conductor to nest and reuse workflows. Enables modular workflow design with synchronous execution and parent references."
+---
+
 # Sub Workflow
 ```json
 "type" : "SUB_WORKFLOW"

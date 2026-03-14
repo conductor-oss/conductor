@@ -1,3 +1,7 @@
+---
+description: "Learn about tasks in Conductor — the reusable building blocks of workflows, including system tasks, worker tasks, and operators."
+---
+
 # Tasks
 
 A task is the basic building block of a Conductor workflow. They are reusable and modular, representing steps in your application like processing data files, calling an AI model, or executing some logic.

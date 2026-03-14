@@ -1,3 +1,7 @@
+---
+description: "Learn the core concepts of Conductor, an open-source workflow engine for building stateful, modular process flows with tasks and workers."
+---
+
 # Basic Concepts
 
 Conductor is an orchestration engine for building stateful, modular process flows. Here are the key concepts that underpin the Conductor system:

@@ -1,3 +1,7 @@
+---
+description: "Learn about workers in Conductor — the code that executes tasks in workflows, written in any language and hosted anywhere you choose."
+---
+
 # Workers
 A worker is responsible for executing a task in a workflow. Each type of worker implements the core functionality of each task, handling the logic as defined in its code.
 

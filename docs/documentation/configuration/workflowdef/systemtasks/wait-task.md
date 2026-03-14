@@ -1,3 +1,7 @@
+---
+description: "Configure Wait tasks in Conductor to pause workflow execution for a set duration or until a specific timestamp. Supports durable code execution patterns."
+---
+
 # Wait Task
 ```json
 "type" : "WAIT"

@@ -1,3 +1,7 @@
+---
+description: "Create and update task definitions in Conductor to configure timeouts, retries, rate limits, and input templates for worker and system tasks."
+---
+
 # Creating / Updating Task Definitions
 
 A [task definition](../../../documentation/configuration/taskdef.md) specifies a task’s general implementation details:
@@ -35,37 +39,45 @@ With the UI, you can create or update task definitions visually.
 2. Modify the task definition JSON. Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for the full parameters.
 3. Select **Save** > **Save**.
 
+## Using the CLI
+
+You can create task definitions using the Conductor CLI. Save your task definitions to a JSON file and run:
+
+```bash
+conductor task create tasks.json
+```
+
+The file should contain an array of task definitions. Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for a reference guide on the full parameters.
+
 ## Using APIs
 
 Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for a reference guide on the full parameters.
 
 ### Creating task definitions
 
-You can create task definitions using the Create Task Definition API (`POST api/metadata/taskdefs`). The API accepts an array of task definitions, allowing you to create them in bulk.
+You can also create task definitions using the Create Task Definition API (`POST api/metadata/taskdefs`). The API accepts an array of task definitions, allowing you to create them in bulk.
 
-#### Example using cURL
-
-```shell
-curl '{{ server_host }}/api/metadata/taskdefs' \
-  -H 'accept: */*' \
-  -H 'content-type: application/json' \
-  --data-raw '[{"createdBy":"user","name":"sample_task_name_1","description":"This is a sample task for demo","responseTimeoutSeconds":10,"timeoutSeconds":30,"inputKeys":[],"outputKeys":[],"timeoutPolicy":"TIME_OUT_WF","retryCount":3,"retryLogic":"FIXED","retryDelaySeconds":5,"inputTemplate":{},"rateLimitPerFrequency":0,"rateLimitFrequencyInSeconds":1}]'
-```
+??? note "Example using cURL"
+    ```shell
+    curl '{{ server_host }}/api/metadata/taskdefs' \
+      -H 'accept: */*' \
+      -H 'content-type: application/json' \
+      --data-raw '[{"createdBy":"user","name":"sample_task_name_1","description":"This is a sample task for demo","responseTimeoutSeconds":10,"timeoutSeconds":30,"inputKeys":[],"outputKeys":[],"timeoutPolicy":"TIME_OUT_WF","retryCount":3,"retryLogic":"FIXED","retryDelaySeconds":5,"inputTemplate":{},"rateLimitPerFrequency":0,"rateLimitFrequencyInSeconds":1}]'
+    ```
 
 
 ### Updating task definitions
 
 You can update task definitions using the Update Task Definition API (`PUT api/metadata/taskdefs`). This API can only be used to update a single task definition at a time.
 
-#### Example using cURL
-
-```shell
-curl '{{ server_host }}/api/metadata/taskdefs' \
-  -X 'PUT' \
-  -H 'accept: */*' \
-  -H 'content-type: application/json' \
-  --data-raw '{"createdBy":"user","name":"sample_task_name_1","description":"This is a sample task for demo","responseTimeoutSeconds":10,"timeoutSeconds":30,"inputKeys":[],"outputKeys":[],"timeoutPolicy":"TIME_OUT_WF","retryCount":3,"retryLogic":"FIXED","retryDelaySeconds":5,"inputTemplate":{},"rateLimitPerFrequency":0,"rateLimitFrequencyInSeconds":1}'
-```
+??? note "Example using cURL"
+    ```shell
+    curl '{{ server_host }}/api/metadata/taskdefs' \
+      -X 'PUT' \
+      -H 'accept: */*' \
+      -H 'content-type: application/json' \
+      --data-raw '{"createdBy":"user","name":"sample_task_name_1","description":"This is a sample task for demo","responseTimeoutSeconds":10,"timeoutSeconds":30,"inputKeys":[],"outputKeys":[],"timeoutPolicy":"TIME_OUT_WF","retryCount":3,"retryLogic":"FIXED","retryDelaySeconds":5,"inputTemplate":{},"rateLimitPerFrequency":0,"rateLimitFrequencyInSeconds":1}'
+    ```
 
 
 ## Using SDKs

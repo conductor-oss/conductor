@@ -1,3 +1,7 @@
+---
+description: "Configure Dynamic Fork tasks in Conductor to run parallel branches determined at runtime. Supports different tasks per fork or the same task type."
+---
+
 # Dynamic Fork
 ```json
 "type" : "FORK_JOIN_DYNAMIC"

@@ -1,3 +1,7 @@
+---
+description: "Create and update workflow definitions in Conductor using the UI, CLI, REST APIs, or client SDKs. Supports versioning and JSON configuration."
+---
+
 # Creating / Updating Workflows
 
 You can create and update workflows using the Conductor UI, APIs, or SDKs. These workflows can be versioned, which is useful for [a variety of cases](versioning-workflows.md#when-to-version-workflows).
@@ -27,21 +31,30 @@ With the UI, you can create or update workflow definitions visually.
 5. Select **Save** again to confirm.
 
 
-## Using APIs
+## Using the CLI
 
-You can create or update workflow definitions using the Update Workflow Definition API (`PUT api/metadata/workflow`). 
+You can create or update workflow definitions using the Conductor CLI. Save your workflow definition to a JSON file and run:
+
+```bash
+conductor workflow create workflow.json
+```
 
 Refer to [Workflow Definition](../../../documentation/configuration/workflowdef/index.md) for the reference guide on the full parameters.
 
-### Example using cURL 
+## Using APIs
 
-```shell
-curl '{{ server_host }}/api/metadata/workflow' \
-  -X 'PUT' \
-  -H 'accept: */*' \
-  -H 'content-type: application/json' \
-  --data-raw '[{"name":"sample_workflow","description":"shipping","version":1,"tasks":[{"name":"ship_via","taskReferenceName":"ship_via","type":"SIMPLE","inputParameters":{"service":"${workflow.input.service}"}}],"inputParameters":["service"],"outputParameters":{},"schemaVersion":2, "ownerEmail": "example@email.com"}]'
-```
+You can also create or update workflow definitions using the Update Workflow Definition API (`PUT api/metadata/workflow`).
+
+Refer to [Workflow Definition](../../../documentation/configuration/workflowdef/index.md) for the reference guide on the full parameters.
+
+??? note "Example using cURL"
+    ```shell
+    curl '{{ server_host }}/api/metadata/workflow' \
+      -X 'PUT' \
+      -H 'accept: */*' \
+      -H 'content-type: application/json' \
+      --data-raw '[{"name":"sample_workflow","description":"shipping","version":1,"tasks":[{"name":"ship_via","taskReferenceName":"ship_via","type":"SIMPLE","inputParameters":{"service":"${workflow.input.service}"}}],"inputParameters":["service"],"outputParameters":{},"schemaVersion":2, "ownerEmail": "example@email.com"}]'
+    ```
 
 ## Using SDKs
 

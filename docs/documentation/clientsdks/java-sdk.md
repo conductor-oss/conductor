@@ -1,3 +1,7 @@
+---
+description: "Use the Conductor Java SDK to build task workers with automated polling, thread management, and server communication via the TaskRunnerConfigurer."
+---
+
 # Java SDK
 
 Conductor provides the following java clients to interact with the various APIs

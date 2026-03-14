@@ -16,21 +16,36 @@ On this screen you can select and view the details of the task queue. The follow
 1. Queue Size - The number of tasks waiting to be executed
 2. Workers - The count and list of works and their instance reference who are polling for work for this task
 
+## Using the CLI
+
+To list tasks and view queue information:
+
+```bash
+conductor task list
+```
+
+To get details for a specific task:
+
+```bash
+conductor task get <TASK_NAME>
+```
+
+!!! note
+    Replace `<TASK_NAME>` with your task name.
+
 ## Using APIs
 
-To see the size of the task queue via API:
+??? note "Queue size using cURL"
+    ```shell
+    curl '{{ server_host }}{{ api_prefix }}/tasks/queue/sizes?taskType=<TASK_NAME>' \
+      -H 'accept: */*'
+    ```
 
-```shell
-curl '{{ server_host }}{{ api_prefix }}/tasks/queue/sizes?taskType=<TASK_NAME>' \
-  -H 'accept: */*' 
-```
-
-To see the worker poll information of the task queue via API:
-
-```shell
-curl '{{ server_host }}{{ api_prefix }}/tasks/queue/polldata?taskType=<TASK_NAME>' \
-  -H 'accept: */*'
-```
+??? note "Worker poll data using cURL"
+    ```shell
+    curl '{{ server_host }}{{ api_prefix }}/tasks/queue/polldata?taskType=<TASK_NAME>' \
+      -H 'accept: */*'
+    ```
 
 !!! note
     Replace `<TASK_NAME>` with your task name

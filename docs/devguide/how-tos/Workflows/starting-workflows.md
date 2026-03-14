@@ -1,3 +1,7 @@
+---
+description: "Start workflow executions in Conductor using the UI, CLI, REST APIs, or client SDKs. Pass inputs and track executions with a unique workflow ID."
+---
+
 # Starting Workflows
 
 In Conductor, workflows can be started using the Conductor UI, APIs, or SDKs.
@@ -16,20 +20,31 @@ The Conductor UI is useful for sandbox testing before deploying the workflows to
 
 Once the workflow has started, you can view the ongoing execution by selecting the Workflow ID hyperlink in the **Execution History** side panel on the right.
 
-## Using APIs
+## Using the CLI
 
-You can start workflow executions using the Start Workflow API (`POST api/workflow/{name}`). `{name}` is the placeholder for the workflow name, and the request body contains the workflow inputs if any.
+You can start workflow executions using the Conductor CLI.
 
-### Example using cURL
+### Example using the CLI
 
-In this example, a cURL request is used to invoke the workflow `sample_workflow` with the input `service`  specified as `fedex`.
+In this example, the CLI is used to invoke the workflow `sample_workflow` with the input `service` specified as `fedex`.
 
 ```bash
-curl '{{ server_host }}/api/workflow/sample_workflow' \
-  -H 'accept: text/plain' \
-  -H 'content-type: application/json' \
-  --data-raw '{"service":"fedex"}'
+conductor workflow start -w sample_workflow -i '{"service":"fedex"}'
 ```
+
+## Using APIs
+
+You can also start workflow executions using the Start Workflow API (`POST api/workflow/{name}`). `{name}` is the placeholder for the workflow name, and the request body contains the workflow inputs if any.
+
+??? note "Example using cURL"
+    In this example, a cURL request is used to invoke the workflow `sample_workflow` with the input `service` specified as `fedex`.
+
+    ```bash
+    curl '{{ server_host }}/api/workflow/sample_workflow' \
+      -H 'accept: text/plain' \
+      -H 'content-type: application/json' \
+      --data-raw '{"service":"fedex"}'
+    ```
 
 ## Using SDKs
 

@@ -1,3 +1,7 @@
+---
+description: "Frequently asked questions about Conductor — scheduling, task polling, worker configuration, failure notifications, and long-running workflows."
+---
+
 # Frequently asked Questions
 
 ## How do you schedule a task to be put in the queue after some time (e.g. 1 hour, 1 day etc.)

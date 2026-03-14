@@ -1,3 +1,7 @@
+---
+description: "Why use Conductor? An open-source workflow engine for durable code execution with built-in retries, state tracking, and language-agnostic workers."
+---
+
 # Introducing Conductor
 
 Conductor enables developers to build highly reliable applications and workflows. As an orchestration engine, Conductor:

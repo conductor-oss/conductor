@@ -1,3 +1,7 @@
+---
+description: "Handle workflow errors in Conductor using the saga pattern with compensation flows, failure workflows, and workflow status listener notifications."
+---
+
 # Handling Workflow Errors
 
 In Conductor there are several ways to handle workflow failure automatically:

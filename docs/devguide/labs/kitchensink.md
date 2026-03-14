@@ -1,3 +1,7 @@
+---
+description: "Run the Conductor kitchen sink example workflow that demonstrates forks, sub-workflows, decisions, dynamic tasks, and HTTP tasks in one definition."
+---
+
 # Kitchen Sink
 An example kitchensink workflow that demonstrates the usage of all the schema constructs.
 
@@ -172,22 +176,33 @@ related task definitions and kick off an instance of kitchensink workflow. Other
 3. We will use the REST endpoints directly to poll for tasks and updating the status.
 
 #### Start workflow execution
-Start the execution of the kitchensink workflow by posting the following:
+Start the execution of the kitchensink workflow:
 
-```shell
-curl -X POST --header 'Content-Type: application/json' --header 'Accept: text/plain' '{{ server_host }}{{ api_prefix }}/workflow/kitchensink' -d '
-{
-	"task2Name": "task_5" 
-}
-'
+```bash
+conductor workflow start -w kitchensink -i '{"task2Name": "task_5"}'
 ```
+
 The response is a text string identifying the workflow instance id.
 
+??? note "Using cURL"
+    ```shell
+    curl -X POST --header 'Content-Type: application/json' --header 'Accept: text/plain' '{{ server_host }}{{ api_prefix }}/workflow/kitchensink' -d '
+    {
+    	"task2Name": "task_5"
+    }
+    '
+    ```
+
 #### Poll for the first task:
-  
-```shell
-curl {{ server_host }}{{ api_prefix }}/tasks/poll/task_1
+
+```bash
+conductor task poll task_1
 ```
+
+??? note "Using cURL"
+    ```shell
+    curl {{ server_host }}{{ api_prefix }}/tasks/poll/task_1
+    ```
    
 The response should look something like:
    
@@ -223,38 +238,43 @@ The response should look something like:
 * Note the values for ```taskId``` and ```workflowInstanceId``` fields from the poll response
 * Update the status of the task as ```COMPLETED``` as below:
 
-```json
-curl -H 'Content-Type:application/json' -H 'Accept:application/json' -X POST {{ server_host }}{{ api_prefix }}/tasks/ -d '
-{
-	"taskId": "b9eea7dd-3fbd-46b9-a9ff-b00279459476",
-	"workflowInstanceId": "b0d1a935-3d74-46fd-92b2-0ca1e388659f",
-	"status": "COMPLETED",
-	"outputData": {
-	    "mod": 5,
-	    "taskToExecute": "task_1",
-	    "oddEven": 0,
-	    "dynamicTasks": [
-	        {
-	            "name": "task_1",
-	            "taskReferenceName": "task_1_1",
-	            "type": "SIMPLE"
-	        },
-	        {
-	            "name": "sub_workflow_4",
-	            "taskReferenceName": "wf_dyn",
-	            "type": "SUB_WORKFLOW",
-	            "subWorkflowParam": {
-	                "name": "sub_flow_1"
-	            }
-	        }
-	    ],
-	    "inputs": {
-	        "task_1_1": {},
-	        "wf_dyn": {}
-	    }
-	}
-}'
+```bash
+conductor task update-execution --workflow-id b0d1a935-3d74-46fd-92b2-0ca1e388659f --task-ref-name task_1 --status COMPLETED --output '{"mod":5,"taskToExecute":"task_1","oddEven":0,"dynamicTasks":[{"name":"task_1","taskReferenceName":"task_1_1","type":"SIMPLE"},{"name":"sub_workflow_4","taskReferenceName":"wf_dyn","type":"SUB_WORKFLOW","subWorkflowParam":{"name":"sub_flow_1"}}],"inputs":{"task_1_1":{},"wf_dyn":{}}}'
 ```
 
-This will mark the task_1 as completed and schedule ```task_5``` as the next task.  
+??? note "Using cURL"
+    ```json
+    curl -H 'Content-Type:application/json' -H 'Accept:application/json' -X POST {{ server_host }}{{ api_prefix }}/tasks/ -d '
+    {
+    	"taskId": "b9eea7dd-3fbd-46b9-a9ff-b00279459476",
+    	"workflowInstanceId": "b0d1a935-3d74-46fd-92b2-0ca1e388659f",
+    	"status": "COMPLETED",
+    	"outputData": {
+    	    "mod": 5,
+    	    "taskToExecute": "task_1",
+    	    "oddEven": 0,
+    	    "dynamicTasks": [
+    	        {
+    	            "name": "task_1",
+    	            "taskReferenceName": "task_1_1",
+    	            "type": "SIMPLE"
+    	        },
+    	        {
+    	            "name": "sub_workflow_4",
+    	            "taskReferenceName": "wf_dyn",
+    	            "type": "SUB_WORKFLOW",
+    	            "subWorkflowParam": {
+    	                "name": "sub_flow_1"
+    	            }
+    	        }
+    	    ],
+    	    "inputs": {
+    	        "task_1_1": {},
+    	        "wf_dyn": {}
+    	    }
+    	}
+    }'
+    ```
+
+This will mark the task_1 as completed and schedule ```task_5``` as the next task.
 Repeat the same process for the subsequently scheduled tasks until the completion.

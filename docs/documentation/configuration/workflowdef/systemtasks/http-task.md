@@ -1,3 +1,7 @@
+---
+description: "Configure HTTP tasks in Conductor to call remote APIs and services. Supports GET, POST, PUT, DELETE methods with headers, body, and timeout options."
+---
+
 # HTTP Task
 
 ```json

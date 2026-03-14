@@ -1,3 +1,6 @@
+---
+description: "Set up Conductor locally using Docker Compose with Redis, Elasticsearch, and configurable persistence backends like Postgres or MySQL."
+---
 
 # Running Conductor Using Docker
 
@@ -57,7 +60,7 @@ To access the REST API Swagger documentation, go to [http://localhost:8080/swagg
 **To shut down Conductor:**
 
 1. From the terminal, exit Docker Compose using **Ctrl** + **c** keys.
-2. Run `docker-compose down` to make sure that the images are stopped.
+2. Run `docker compose down` to make sure that the images are stopped.
 
 
 ## Default database specifications
@@ -186,7 +189,7 @@ The API documentation should now be accessible at [http://localhost:8080/swagger
     - In order for the UI to do anything useful the Conductor server must already be running on port 8080, either in a Docker container (as above), or running directly in the local JRE.
     - Significant parts of the UI will also not be functional without Elastisearch.
     
-    Using the `docker-compose` approach alleviates these considerations.
+    Using the `docker compose` approach alleviates these considerations.
 
 **To run the UI image:**
 

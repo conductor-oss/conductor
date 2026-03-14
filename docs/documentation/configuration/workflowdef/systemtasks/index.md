@@ -1,3 +1,7 @@
+---
+description: "Overview of built-in system tasks in Conductor — HTTP, Event, Human, Wait, Inline, Kafka Publish, and JSON JQ Transform for durable code execution."
+---
+
 # System Tasks
 
 System tasks are built-in tasks that are general purpose and reusable. These tasks run on the Conductor servers and are executed by Conductor workers, allowing you to get started without having to write custom workers.

@@ -1,3 +1,7 @@
+---
+description: "Use the Conductor Python SDK to implement task workers with polling, execution handling, and status updates. Quick start guide with code examples."
+---
+
 # Python SDK
 
 Software Development Kit for Conductor, written on and providing support for Python.
@@ -88,68 +92,61 @@ The code for the Python SDk is available on [Github](https://github.com/conducto
       * Conductor UI:
         * http://localhost:5000
 
-6. Create a `Task` within `Conductor`. Example:
+6. Create a `Task` within `Conductor`. Save the following to `task.json`:
 
-        $ curl -X 'POST' \
-            '{{ server_host }}{{ api_prefix }}/metadata/taskdefs' \
-            -H 'accept: */*' \
-            -H 'Content-Type: application/json' \
-            -d '[
+        [
+          {
+            "name": "python_task_example",
+            "description": "Python task example",
+            "retryCount": 3,
+            "retryLogic": "FIXED",
+            "retryDelaySeconds": 10,
+            "timeoutSeconds": 300,
+            "timeoutPolicy": "TIME_OUT_WF",
+            "responseTimeoutSeconds": 180,
+            "ownerEmail": "example@example.com"
+          }
+        ]
+
+    Then register it:
+
+        $ conductor task create task.json
+
+7. Create a `Workflow` within `Conductor`. Save the following to `workflow.json`:
+
+        {
+          "name": "workflow_with_python_task_example",
+          "description": "Workflow with Python Task example",
+          "version": 1,
+          "tasks": [
             {
-                "name": "python_task_example",
-                "description": "Python task example",
-                "retryCount": 3,
-                "retryLogic": "FIXED",
-                "retryDelaySeconds": 10,
-                "timeoutSeconds": 300,
-                "timeoutPolicy": "TIME_OUT_WF",
-                "responseTimeoutSeconds": 180,
-                "ownerEmail": "example@example.com"
+              "name": "python_task_example",
+              "taskReferenceName": "python_task_example_ref_1",
+              "inputParameters": {},
+              "type": "SIMPLE"
             }
-            ]'
+          ],
+          "outputParameters": {
+            "workerOutput": "${python_task_example_ref_1.output}"
+          },
+          "schemaVersion": 2,
+          "restartable": true,
+          "ownerEmail": "example@example.com",
+          "timeoutPolicy": "ALERT_ONLY",
+          "timeoutSeconds": 0
+        }
 
-7. Create a `Workflow` within `Conductor`. Example:
+    Then register it:
 
-        $ curl -X 'POST' \
-            '{{ server_host }}{{ api_prefix }}/metadata/workflow' \
-            -H 'accept: */*' \
-            -H 'Content-Type: application/json' \
-            -d '{
-            "createTime": 1634021619147,
-            "updateTime": 1630694890267,
-            "name": "workflow_with_python_task_example",
-            "description": "Workflow with Python Task example",
-            "version": 1,
-            "tasks": [
-                {
-                "name": "python_task_example",
-                "taskReferenceName": "python_task_example_ref_1",
-                "inputParameters": {},
-                "type": "SIMPLE"
-                }
-            ],
-            "inputParameters": [],
-            "outputParameters": {
-                "workerOutput": "${python_task_example_ref_1.output}"
-            },
-            "schemaVersion": 2,
-            "restartable": true,
-            "ownerEmail": "example@example.com",
-            "timeoutPolicy": "ALERT_ONLY",
-            "timeoutSeconds": 0
-            }'
+        $ conductor workflow create workflow.json
 
 8. Start a new workflow:
 
-        $ curl -X 'POST' \
-            '{{ server_host }}{{ api_prefix }}/workflow/workflow_with_python_task_example' \
-            -H 'accept: text/plain' \
-            -H 'Content-Type: application/json' \
-            -d '{}'
+        $ conductor workflow start -w workflow_with_python_task_example -i '{}'
 
     You should receive a *Workflow ID* at the *Response body*
     * *Workflow ID* example: `8ff0bc06-4413-4c94-b27a-b3210412a914`
-    
+
     Now you must be able to see its execution through the UI.
     * Example: `http://localhost:5000/execution/8ff0bc06-4413-4c94-b27a-b3210412a914`
 
