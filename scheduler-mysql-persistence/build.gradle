@@ -17,6 +17,7 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation "org.testcontainers:mysql:${revTestContainer}"
+    testImplementation testFixtures(project(':conductor-scheduler'))
 }
 
 test {
