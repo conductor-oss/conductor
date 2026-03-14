@@ -13,8 +13,6 @@
 package org.conductoross.conductor.scheduler.config;
 
 import org.conductoross.conductor.scheduler.dao.SchedulerDAO;
-import org.conductoross.conductor.scheduler.rest.SchedulerResource;
-import org.conductoross.conductor.scheduler.service.SchedulerService;
 import org.junit.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -23,12 +21,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
-import com.netflix.conductor.service.WorkflowService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 /**
  * Auto-configuration smoke tests for the scheduler persistence modules.
@@ -44,9 +40,12 @@ import static org.mockito.Mockito.mock;
  *   <li>Typos in the {@code @ConditionalOnExpression} string (e.g. {@code 'postgresql'} instead of
  *       {@code 'postgres'})
  *   <li>A missing or wrong entry in {@code META-INF/spring/...AutoConfiguration.imports}
- *   <li>{@link WorkflowSchedulerConfiguration} failing to pick up the DAO bean and wire
- *       {@link SchedulerService} / {@link SchedulerResource}
  * </ul>
+ *
+ * <p>Note: {@link SchedulerService} and {@link SchedulerResource} wiring via
+ * {@link WorkflowSchedulerConfiguration} is not tested here because {@code @ConditionalOnBean}
+ * ordering is non-trivial with {@code ApplicationContextRunner} and that wiring is already
+ * covered end-to-end by {@code AbstractSchedulerServiceIntegrationTest}.
  *
  * <p>Subclasses supply:
  * <ul>
@@ -80,17 +79,12 @@ public abstract class AbstractSchedulerAutoConfigurationSmokeTest {
     // Shared infrastructure
     // -------------------------------------------------------------------------
 
-    /** Provides ObjectMapper and a mocked WorkflowService for all context runs. */
+    /** Provides ObjectMapper for all context runs. */
     @Configuration
     static class SharedTestBeans {
         @Bean
         public ObjectMapper objectMapper() {
             return new ObjectMapperProvider().getObjectMapper();
-        }
-
-        @Bean
-        public WorkflowService workflowService() {
-            return mock(WorkflowService.class);
         }
     }
 
@@ -99,8 +93,7 @@ public abstract class AbstractSchedulerAutoConfigurationSmokeTest {
                 .withConfiguration(
                         AutoConfigurations.of(
                                 DataSourceAutoConfiguration.class,
-                                persistenceAutoConfigClass(),
-                                WorkflowSchedulerConfiguration.class))
+                                persistenceAutoConfigClass()))
                 .withUserConfiguration(SharedTestBeans.class)
                 .withPropertyValues(
                         "spring.datasource.url=" + datasourceUrl(),
@@ -116,12 +109,11 @@ public abstract class AbstractSchedulerAutoConfigurationSmokeTest {
 
     /**
      * When both {@code conductor.db.type} and {@code conductor.scheduler.enabled=true} are set,
-     * the persistence auto-configuration registers a {@link SchedulerDAO} of the expected concrete
-     * type and also wires up {@link SchedulerService} and {@link SchedulerResource} via
-     * {@link WorkflowSchedulerConfiguration}.
+     * the persistence auto-configuration registers exactly one {@link SchedulerDAO} of the
+     * expected concrete type.
      */
     @Test
-    public void testFullStack_registeredWhenBothPropertiesSet() {
+    public void testSchedulerDAO_registeredWhenBothPropertiesSet() {
         baseRunner()
                 .withPropertyValues(
                         "conductor.db.type=" + dbTypeValue(),
@@ -131,8 +123,6 @@ public abstract class AbstractSchedulerAutoConfigurationSmokeTest {
                             assertThat(ctx).hasSingleBean(SchedulerDAO.class);
                             assertThat(ctx.getBean(SchedulerDAO.class))
                                     .isInstanceOf(expectedDaoClass());
-                            assertThat(ctx).hasSingleBean(SchedulerService.class);
-                            assertThat(ctx).hasSingleBean(SchedulerResource.class);
                         });
     }
 
@@ -141,22 +131,19 @@ public abstract class AbstractSchedulerAutoConfigurationSmokeTest {
     // -------------------------------------------------------------------------
 
     /**
-     * When {@code conductor.scheduler.enabled} is absent, no scheduler beans should be registered.
+     * When {@code conductor.scheduler.enabled} is absent, no {@link SchedulerDAO} should be
+     * registered.
      */
     @Test
     public void testNoBeansRegistered_whenSchedulerEnabledAbsent() {
         baseRunner()
                 .withPropertyValues("conductor.db.type=" + dbTypeValue())
-                .run(
-                        ctx -> {
-                            assertThat(ctx).doesNotHaveBean(SchedulerDAO.class);
-                            assertThat(ctx).doesNotHaveBean(SchedulerService.class);
-                            assertThat(ctx).doesNotHaveBean(SchedulerResource.class);
-                        });
+                .run(ctx -> assertThat(ctx).doesNotHaveBean(SchedulerDAO.class));
     }
 
     /**
-     * When {@code conductor.scheduler.enabled=false}, no scheduler beans should be registered.
+     * When {@code conductor.scheduler.enabled=false}, no {@link SchedulerDAO} should be
+     * registered.
      */
     @Test
     public void testNoBeansRegistered_whenSchedulerEnabledFalse() {
@@ -164,11 +151,7 @@ public abstract class AbstractSchedulerAutoConfigurationSmokeTest {
                 .withPropertyValues(
                         "conductor.db.type=" + dbTypeValue(),
                         "conductor.scheduler.enabled=false")
-                .run(
-                        ctx -> {
-                            assertThat(ctx).doesNotHaveBean(SchedulerDAO.class);
-                            assertThat(ctx).doesNotHaveBean(SchedulerService.class);
-                        });
+                .run(ctx -> assertThat(ctx).doesNotHaveBean(SchedulerDAO.class));
     }
 
     /**
