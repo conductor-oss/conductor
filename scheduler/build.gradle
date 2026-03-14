@@ -1,3 +1,7 @@
+plugins {
+    id 'java-test-fixtures'
+}
+
 dependencies {
     implementation project(':conductor-common')
     implementation project(':conductor-core')
@@ -14,6 +18,9 @@ dependencies {
 
     testImplementation 'org.springframework.boot:spring-boot-starter'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    testFixturesImplementation project(':conductor-common')
+    testFixturesImplementation 'junit:junit'
 }
 
 test {
