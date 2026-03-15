@@ -1,3 +1,6 @@
+---
+description: "Set up Conductor locally using Docker Compose with Redis, Elasticsearch, and configurable persistence backends like Postgres or MySQL."
+---
 
 # Running Conductor Using Docker
 
@@ -43,7 +46,7 @@ If you encounter any issues running Conductor from Docker, refer to [Troubleshoo
 
 ### Accessing Conductor
 
-To access the Conductor UI, go to [http://localhost:8127](http://localhost:8127).
+To access the Conductor UI, go to [http://localhost:8080](http://localhost:8080).
 
 ![Screenshot of the Conductor UI](conductorUI.png)
 
@@ -57,7 +60,7 @@ To access the REST API Swagger documentation, go to [http://localhost:8080/swagg
 **To shut down Conductor:**
 
 1. From the terminal, exit Docker Compose using **Ctrl** + **c** keys.
-2. Run `docker-compose down` to make sure that the images are stopped.
+2. Run `docker compose down` to make sure that the images are stopped.
 
 
 ## Default database specifications
@@ -145,7 +148,7 @@ conductor.opensearch.indexReplicasCount=0
 conductor.opensearch.clusterHealthColor=green
 ```
 
-For the full property reference, see the [OpenSearch configuration guide](../documentation/advanced/opensearch.md).
+For the full property reference, see the [OpenSearch configuration guide](../../documentation/advanced/opensearch.md).
 
 
 
@@ -186,7 +189,7 @@ The API documentation should now be accessible at [http://localhost:8080/swagger
     - In order for the UI to do anything useful the Conductor server must already be running on port 8080, either in a Docker container (as above), or running directly in the local JRE.
     - Significant parts of the UI will also not be functional without Elastisearch.
     
-    Using the `docker-compose` approach alleviates these considerations.
+    Using the `docker compose` approach alleviates these considerations.
 
 **To run the UI image:**
 
@@ -199,10 +202,10 @@ The API documentation should now be accessible at [http://localhost:8080/swagger
 2. Run the UI image in a container named `conductor_ui`.
 
     ```
-    docker run -p 8127:5000 -d --name conductor_ui conductor:ui
+    docker run -p 8080:5000 -d --name conductor_ui conductor:ui
     ```
 
-The UI should now be accessible at [http://localhost:8127](http://localhost:8127).
+The UI should now be accessible at [http://localhost:8080](http://localhost:8080).
 
 
 ## Troubleshooting 

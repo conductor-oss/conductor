@@ -17,7 +17,7 @@ For example, if `dynamicTaskNameParam` is "taskToExecute", the task name to exec
 | Parameter          | Type                | Description                                       | Required / Optional  |
 | ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
 | dynamicTaskNameParam | String | The parameter name for `inputParameters` whose value is used to schedule the task. For example, "taskToExecute". | Required. |
-| inputParameters.taskToExecute | String | The name of the task that will be executed. | Required.
+| taskToExecute | String | The name of the task that will be executed. | Required.
 | 
 
 You can also pass any other input for the Dynamic task into `inputParameters`.
@@ -92,14 +92,16 @@ Here is the workflow definition:
 }
 ```
 
-Here is the corresponding workflow diagram:
+Here is the workflow flow:
 
-![Workflow diagram containing a Dynamic task.](ShippingWorkflow.png)
+```mermaid
+graph LR
+    A[Start] --> B[shipping_info]
+    B --> C["Dynamic Task<br/>(resolves at runtime)"]
+    C -->|"postal code starts with 9"| D[ship_via_fedex]
+    C -->|"other postal codes"| E[ship_via_ups]
+    D --> F[End]
+    E --> F
+```
 
-The shipping service is decided based on the postal code. If the postal code starts with 9, `ship_via_fedex` is executed:
-
-![Conductor UI - Workflow Run](ShippingWorkflowRunning.png)
-
-If the postal code starts with any other number, `ship_via_ups` is executed:
-
-![Conductor UI - Workflow Run](ShippingWorkflowUPS.png)
+The shipping service is decided based on the postal code. If the postal code starts with 9, `ship_via_fedex` is executed. If the postal code starts with any other number, `ship_via_ups` is executed.

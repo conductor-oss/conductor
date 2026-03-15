@@ -1,3 +1,7 @@
+---
+description: "Complete reference for Conductor workflow definitions — properties, task configurations, input expressions, failure workflows, and timeout policies."
+---
+
 # Workflow Definition
 
 The Workflow Definition contains all the information necessary to define the behavior of a workflow. The most important part of this definition is the `tasks` property, which is an array of [**Task Configurations**](#task-configurations). 

@@ -12,15 +12,15 @@ Use these parameters inside `inputParameters` in the Kafka Publish task configur
 
 | Parameter          | Type                | Description                                       | Required / Optional  |
 | ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
-| inputParameters.kafka_request | KafkaRequest | JSON object containing the bootstrap server, message, and more. | Required. |
-| inputParameters.kafka_request.bootStrapServers | String        | The bootstrap server for connecting to the Kafka cluster.             | Required.     |
-| inputParameters.kafka_request.topic            | String        | The topic to publish the message to.                                  | Required.     |
-| inputParameters.kafka_request.value            | Any        | The message to publish.                                         | Required.     |
-| inputParameters.kafka_request.key              | String        | The Kafka message key. Messages with the same key will be sent to the same topic partition.             | Optional.     |
-| inputParameters.kafka_request.keySerializer    | String (enum) | The serializer used for serializing the message key. The default is `StringSerializer`. Supported values: <ul><li>`org.apache.kafka.common.serialization.IntegerSerializer`</li> <li>`org.apache.kafka.common.serialization.LongSerializer`</li> <li>`org.apache.kafka.common.serialization.StringSerializer`</li></ul> | Optional.     |
-| inputParameters.kafka_request.headers          | Map[String, Any]  | Any additional headers to be sent along with the Kafka message.                     | Optional.     |
-| inputParameters.kafka_request.requestTimeoutMs | Integer     | The request timeout in milliseconds while awaiting a response.          | Optional.   |
-| inputParameters.kafka_request.maxBlockMs       | Integer     | The maximum blocking time while publishing to Kafka.                  | Optional.   |
+| kafka_request | KafkaRequest | JSON object containing the bootstrap server, message, and more. | Required. |
+| kafka_request.bootStrapServers | String        | The bootstrap server for connecting to the Kafka cluster.             | Required.     |
+| kafka_request.topic            | String        | The topic to publish the message to.                                  | Required.     |
+| kafka_request.value            | Any        | The message to publish.                                         | Required.     |
+| kafka_request.key              | String        | The Kafka message key. Messages with the same key will be sent to the same topic partition.             | Optional.     |
+| kafka_request.keySerializer    | String (enum) | The serializer used for serializing the message key. The default is `StringSerializer`. Supported values: <ul><li>`org.apache.kafka.common.serialization.IntegerSerializer`</li> <li>`org.apache.kafka.common.serialization.LongSerializer`</li> <li>`org.apache.kafka.common.serialization.StringSerializer`</li></ul> | Optional.     |
+| kafka_request.headers          | Map[String, Any]  | Any additional headers to be sent along with the Kafka message.                     | Optional.     |
+| kafka_request.requestTimeoutMs | Integer     | The request timeout in milliseconds while awaiting a response.          | Optional.   |
+| kafka_request.maxBlockMs       | Integer     | The maximum blocking time while publishing to Kafka.                  | Optional.   |
 
 ## JSON configuration
 

@@ -13,7 +13,7 @@ Use these parameters inside `inputParameters` in the Start Workflow task configu
 
 | Parameter          | Type                | Description                                       | Required / Optional  |
 | ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
-| inputParameters.startWorkflow | Map[String, Any] | A map that includes the requested workflow’s configuration, such as the name and version. Refer to [Start Workflow Request](../../../api/startworkflow.md#start-workflow-request) for what to include in this parameter. | Required. |
+| startWorkflow | Map[String, Any] | A map that includes the requested workflow’s configuration, such as the name and version. Refer to the [Start Workflow API](../../../api/startworkflow.md#request-body) for what to include in this parameter. | Required. |
 
 ## Task configuration
 Here is the task configuration for a Start Workflow task.​

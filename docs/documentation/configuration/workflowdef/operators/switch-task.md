@@ -145,11 +145,18 @@ In this example workflow, a package with be shipped by a specific shipping provi
 
 In the Switch task above, the value of the task input `switchCaseValue` is used to determine the selected case. The evaluator type is `value-param` and the expression is a direct reference to the name of the input parameter. 
 
-If the value of `switchCaseValue` is `fedex`, then the `fedex` branch containing the `ship_via_fedex`task will be executed as shown below.
+If the value of `switchCaseValue` is `fedex`, then the `fedex` branch containing the `ship_via_fedex` task will be executed. Likewise, if the input is `ups`, then the `ship_via_ups` task will be executed. If none of the cases match, then the default path will be executed.
 
-![Conductor UI - Workflow Run](Switch_Fedex.png)
-
-Likewise, if the input is `ups`, then the `ship_via_ups` task will be executed. If none of the cases match, then the default path will be executed.
+```mermaid
+graph LR
+    A[Start] --> B{Switch}
+    B -->|fedex| C[ship_via_fedex]
+    B -->|ups| D[ship_via_ups]
+    B -->|default| E[default_handler]
+    C --> F[End]
+    D --> F
+    E --> F
+```
 
 ### Using `javascript` 
 
