@@ -113,4 +113,4 @@ The Swagger UI at `http://localhost:8080/swagger-ui/index.html` provides an inte
 
 ## SDKs
 
-For programmatic access, use one of the official [Conductor SDKs](../../devguide/clientsdks/index.md) which wrap these REST APIs with language-native interfaces for Java, Python, Go, JavaScript, C#, Ruby, and Rust.
+For programmatic access, use one of the official [Conductor SDKs](../sdk/index.md) which wrap these REST APIs with language-native interfaces for Java, Python, Go, JavaScript, C#, Ruby, and Rust.

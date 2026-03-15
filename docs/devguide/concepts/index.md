@@ -53,7 +53,6 @@ These are the facts that matter when comparing workflow and orchestration engine
 
 ## Deep dives
 
-- [Why Conductor](why.md) — problems it solves, use cases, and when to choose Conductor
 - [Architecture](../architecture/index.md) — system design and components
 - [Durable Execution](../../architecture/durable-execution.md) — failure semantics and state persistence
-- [Agents & AI](../agents/agents.md) — LLM orchestration patterns and agentic workflows
+- [Agents & AI](../ai/index.md) — LLM orchestration patterns and agentic workflows

@@ -349,7 +349,7 @@ All the workflow commands above work the same — just replace the CLI commands 
 | `conductor workflow start -w hello_workflow --sync` | `curl -s -X POST http://localhost:8080/api/workflow/hello_workflow -H 'Content-Type: application/json'` |
 | `conductor server stop` | `docker rm -f conductor` |
 
-For production deployment options, see [Running with Docker](../devguide/running/docker.md).
+For production deployment options, see [Running with Docker](../devguide/running/deploy.md).
 
 
 ## Next steps
@@ -357,4 +357,4 @@ For production deployment options, see [Running with Docker](../devguide/running
 - **[System tasks](../devguide/configuration/workflowdef/systemtasks/index.md)** — HTTP, Wait, Event tasks without workers
 - **[Operators](../devguide/configuration/workflowdef/operators/index.md)** — Fork/join, switch, loops, sub-workflows
 - **[Error handling](../devguide/how-tos/Workflows/handling-errors.md)** — Saga pattern, compensation flows
-- **[Client SDKs](../devguide/clientsdks/index.md)** — Java, Python, Go, C#, JavaScript, and more
+- **[Client SDKs](../devguide/sdk/index.md)** — Java, Python, Go, C#, JavaScript, and more

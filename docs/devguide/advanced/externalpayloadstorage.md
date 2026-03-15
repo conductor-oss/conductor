@@ -60,7 +60,7 @@ Set the following properties to the desired values in the JVM system properties:
 | conductor.external-payload-storage.s3.bucketName | S3 bucket where the payloads will be stored | |
 | conductor.external-payload-storage.s3.signedUrlExpirationDuration | The expiration time in seconds of the signed url for the payload | 5 |
 
-The payloads will be stored in the bucket configured above in a `UUID.json` file at locations determined by the type of the payload. See [here](https://github.com/conductor-oss/conductor/blob/main/awss3-storage/src/main/java/com/netflix/conductor/s3/storage/S3PayloadStorage.java#L149-L167) for information about how the object key is determined.
+The payloads will be stored in the bucket configured above in a `UUID.json` file at locations determined by the type of the payload. See the [S3PayloadStorage source](https://github.com/conductor-oss/conductor/blob/main/awss3-storage/src/main/java/com/netflix/conductor/s3/storage/S3PayloadStorage.java#L149-L167) for information about how the object key is determined.
 
 ### Azure Blob Storage
 

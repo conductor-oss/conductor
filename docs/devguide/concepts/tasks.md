@@ -136,4 +136,4 @@ For retrieval-augmented generation (RAG), Conductor supports vector stores inclu
 
 Beyond text, Conductor's AI tasks support generating images, audio, video, and PDFs — useful for workflows that produce rich media from LLM outputs.
 
-For end-to-end AI agent patterns that combine LLM reasoning with tool use, see the [agents documentation](../agents/agents.md).
+For end-to-end AI agent patterns that combine LLM reasoning with tool use, see the [agents documentation](../ai/index.md).

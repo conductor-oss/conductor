@@ -44,9 +44,9 @@ The failure workflow gets the _original failed workflow’s input_ along with 3 
 ### Workflow Status Listener
 Setting the `workflowStatusListenerEnabled` field in your Workflow Definition to `true` enables notifications.
 
-To add a custom implementation of the Workflow Status Listener. Refer to [this](../../advanced/extend.md#workflow-status-listener) .
+To add a custom implementation of the Workflow Status Listener. Refer to the [Workflow Status Listener extension guide](../../advanced/extend.md#workflow-status-listener).
 
-The listener can be implemented in such a way as to either send a notification to an external system or to send an event on the conductor queue to complete/fail another task in another workflow as described [here](..).
+The listener can be implemented in such a way as to either send a notification to an external system or to send an event on the conductor queue to complete/fail another task in another workflow as described in the [developer guide](..).
 
 ### Default Input with `inputTemplate`
 
@@ -109,7 +109,7 @@ Generally, `inputParameters` can use *expressions* of the following syntax:
 
 
 !!! note "JSON Path Support"
-    Conductor supports [JSONPath](http://goessner.net/articles/JsonPath/) specification and uses Java implementation from [here](https://github.com/jayway/JsonPath).
+    Conductor supports [JSONPath](http://goessner.net/articles/JsonPath/) specification and uses the [jayway/JsonPath](https://github.com/jayway/JsonPath) Java implementation.
 
 !!! note "Escaping expressions"
     To escape an expression, prefix it with an extra _$_ character (ex.: ```$${workflow.input...}```).
