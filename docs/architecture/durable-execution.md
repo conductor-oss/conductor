@@ -90,8 +90,21 @@ Beyond individual tasks, Conductor provides workflow-level durability:
 
 - **Compensation flows**: Configure a `failureWorkflow` that runs automatically when the main workflow fails, with full context (reason, failed task ID, workflow execution data).
 - **Pause and resume**: Any running workflow can be paused via API and resumed later. State is fully preserved.
-- **Restart and retry**: Failed workflows can be restarted from the beginning or retried from the failed task, using either the original or latest definition.
+- **Restart, rerun, and retry**: See [Replay & recovery](#replay--recovery) below for full details on re-executing workflows.
 - **Versioning**: Multiple workflow versions can run concurrently. Running executions are immutable against definition changes. Restarts can optionally use the latest definition.
+
+
+## Replay & recovery
+
+Every workflow execution is fully replayable. Conductor preserves the complete execution graph — inputs, outputs, and state for every task — so you can re-execute workflows at any time.
+
+| Operation | What it does | When to use |
+|-----------|-------------|-------------|
+| **Restart** | Re-executes the entire workflow from the beginning | Definition changed, need a clean run |
+| **Rerun** | Re-executes from a specific task, reusing outputs of prior tasks | Fix a task in the middle without re-running everything |
+| **Retry** | Retries the last failed task and continues from that point | Transient failure, external dependency was down |
+
+All three operations work on workflows in any terminal state (COMPLETED, FAILED, TIMED_OUT, TERMINATED) and are available indefinitely — Conductor preserves the full execution graph. Restart can optionally use the latest workflow definition, so you can fix a bug in the definition and replay immediately.
 
 
 ## Distributed consistency

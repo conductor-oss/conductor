@@ -46,9 +46,19 @@ Yes. Conductor supports advanced patterns including nested loops, dynamic branch
 
 Conductor combines durable execution, 14+ native LLM providers, JSON-native workflow definitions, 7+ language SDKs, and battle-tested scale (Netflix, Tesla, LinkedIn, JP Morgan). It's the only open source workflow engine with native AI/LLM task types, MCP integration, and built-in vector database support.
 
+### Isn't JSON too limited for complex workflows?
+
+No — JSON makes workflows *more* capable, not less. A JSON workflow definition is pure orchestration: it describes what runs, in what order, with what inputs. It cannot open connections, mutate state, or produce side effects. This means every execution is deterministic by construction — given the same inputs, the same task graph executes every time. That is why replay, restart, and retry work unconditionally.
+
+Code-based workflow engines embed orchestration logic alongside business logic, which means your workflow code can introduce non-determinism (system clocks, random values, uncontrolled I/O). These engines must impose restrictions on what your code is allowed to do — and bugs from violating those restrictions are subtle and hard to debug.
+
+Conductor's dynamic primitives — [DYNAMIC tasks](configuration/workflowdef/operators/dynamic-task.md), [DYNAMIC_FORK](configuration/workflowdef/operators/dynamic-fork-task.md), and [dynamic sub-workflows](configuration/workflowdef/operators/sub-workflow-task.md) — provide more runtime flexibility than code-based definitions. An LLM can generate a complete workflow definition as JSON and Conductor executes it immediately, with full durability and observability. No code generation, no compilation, no deployment. See [JSON + Code Native](../architecture/json-native.md) for the full picture.
+
 ### How is Conductor different from Temporal?
 
-Both are durable execution engines, but Conductor is fully open source (Apache 2.0) with no proprietary server components. Conductor provides native LLM orchestration for 14+ providers, MCP tool calling, and vector database support out of the box — capabilities Temporal does not offer. Conductor also supports JSON-native workflow definitions, allowing workflows to be generated and modified at runtime by LLMs or APIs.
+Both are durable execution engines, but with fundamentally different approaches. Conductor's JSON-native definitions separate orchestration from implementation, making workflows deterministic by construction — no side-effect restrictions to remember, no non-determinism bugs to debug. Temporal embeds orchestration in code, which requires developers to avoid non-deterministic operations (system clocks, random values, uncontrolled I/O) or risk subtle replay failures.
+
+Conductor is fully open source (Apache 2.0) with no proprietary server components. It provides native LLM orchestration for 14+ providers, MCP tool calling, and vector database support out of the box — capabilities Temporal does not offer. Conductor's JSON definitions can be generated and modified at runtime by LLMs or APIs without a compile/deploy cycle.
 
 ### How is Conductor different from AWS Step Functions?
 

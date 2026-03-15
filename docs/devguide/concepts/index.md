@@ -60,14 +60,18 @@ generation — enabling AI agent orchestration and LLM orchestration alongside t
       <div class="wcc-body">Set timeouts and rate limits to manage failures for tasks and workflows. <a href="../how-tos/Workflows/handling-errors.md">Learn more</a></div>
     </div>
     <div class="wcc-item" data-wcc="9" role="tab" aria-selected="false" tabindex="0">
+      <div class="wcc-header"><span class="wcc-title">Replay Any Workflow</span><span class="wcc-chevron"></span></div>
+      <div class="wcc-body">Replay completed or failed workflows from the beginning, from any task, or retry just the failed step — even months later. Full execution history is always preserved. <a href="../how-tos/Workflows/debugging-workflows.md">Learn more</a></div>
+    </div>
+    <div class="wcc-item" data-wcc="10" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Integrate With Applications</span><span class="wcc-chevron"></span></div>
       <div class="wcc-body">Connect Conductor to your ecosystem with event-driven triggers using Kafka, NATS, SQS, AMQP, and webhooks. <a href="../cookbook/event-driven.md">Learn more</a></div>
     </div>
-    <div class="wcc-item" data-wcc="10" role="tab" aria-selected="false" tabindex="0">
+    <div class="wcc-item" data-wcc="11" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Debug Visually</span><span class="wcc-chevron"></span></div>
       <div class="wcc-body">Track and debug workflows from Conductor UI. View inputs, pull logs, and restart from any point. <a href="../../quickstart/index.md">Get started</a></div>
     </div>
-    <div class="wcc-item" data-wcc="11" role="tab" aria-selected="false" tabindex="0">
+    <div class="wcc-item" data-wcc="12" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Scale Horizontally</span><span class="wcc-chevron"></span></div>
       <div class="wcc-body">Run multiple server instances behind a load balancer with shared backends for high availability. <a href="../running/deploy.md">Deployment guide</a></div>
     </div>
@@ -214,8 +218,32 @@ generation — enabling AI agent orchestration and LLM orchestration alongside t
       <circle cx="110" cy="342" r="22" fill="#e2e8f0" stroke="#4a5568" stroke-width="1.5"/><text x="110" y="347" text-anchor="middle" font-size="11" fill="#2e3545" font-family="sans-serif">End</text>
       <defs><marker id="wcc-arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626"/></marker></defs>
     </svg>
-    <!-- 9: Integrate -->
-    <svg class="wcc-diagram" data-wcc-diagram="9" viewBox="0 0 300 350" xmlns="http://www.w3.org/2000/svg">
+    <!-- 9: Replay Any Workflow -->
+    <svg class="wcc-diagram" data-wcc-diagram="9" viewBox="0 0 340 420" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="110" cy="30" r="22" fill="#e2e8f0" stroke="#4a5568" stroke-width="1.5"/><text x="110" y="35" text-anchor="middle" font-size="11" fill="#2e3545" font-family="sans-serif">Start</text>
+      <line x1="110" y1="52" x2="110" y2="80" stroke="#a0aec0" stroke-width="1.5" marker-end="url(#wcc-arrow)"/>
+      <rect x="35" y="80" width="150" height="40" rx="6" fill="#e2e8f0" stroke="#4a5568" stroke-width="1.5"/><text x="110" y="105" text-anchor="middle" font-size="12" fill="#2e3545" font-family="sans-serif">Task A</text>
+      <line x1="110" y1="120" x2="110" y2="160" stroke="#a0aec0" stroke-width="1.5" marker-end="url(#wcc-arrow)"/>
+      <rect x="35" y="160" width="150" height="40" rx="6" fill="#e2e8f0" stroke="#4a5568" stroke-width="1.5"/><text x="110" y="185" text-anchor="middle" font-size="12" fill="#2e3545" font-family="sans-serif">Task B</text>
+      <line x1="110" y1="200" x2="110" y2="240" stroke="#a0aec0" stroke-width="1.5" marker-end="url(#wcc-arrow)"/>
+      <rect x="35" y="240" width="150" height="40" rx="6" fill="#dc2626" stroke="#dc2626" stroke-width="1.5"/><text x="110" y="265" text-anchor="middle" font-size="12" fill="#fff" font-weight="600" font-family="sans-serif">Task C</text>
+      <text x="110" y="300" text-anchor="middle" font-size="10" fill="#dc2626" font-family="sans-serif" font-weight="600">FAILED</text>
+      <!-- Restart arrow -->
+      <path d="M 35 260 C -20 260 -20 30 60 30" stroke="#06d6a0" stroke-width="2" fill="none" stroke-dasharray="5,3" marker-end="url(#wcc-arrow-teal)"/>
+      <text x="-8" y="150" text-anchor="middle" font-size="9" fill="#06d6a0" font-family="sans-serif" font-weight="600" transform="rotate(-90 -8 150)">Restart</text>
+      <!-- Rerun arrow -->
+      <path d="M 185 260 C 240 260 240 180 185 180" stroke="#3b82f6" stroke-width="2" fill="none" stroke-dasharray="5,3" marker-end="url(#wcc-arrow-blue)"/>
+      <text x="248" y="220" text-anchor="start" font-size="9" fill="#3b82f6" font-family="sans-serif" font-weight="600">Rerun</text>
+      <!-- Retry arrow -->
+      <path d="M 185 250 C 300 250 300 240 185 240" stroke="#f59e0b" stroke-width="2" fill="none" stroke-dasharray="5,3" marker-end="url(#wcc-arrow-amber)"/>
+      <text x="290" y="258" text-anchor="start" font-size="9" fill="#f59e0b" font-family="sans-serif" font-weight="600">Retry</text>
+      <defs>
+        <marker id="wcc-arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#3b82f6"/></marker>
+        <marker id="wcc-arrow-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#f59e0b"/></marker>
+      </defs>
+    </svg>
+    <!-- 10: Integrate -->
+    <svg class="wcc-diagram" data-wcc-diagram="10" viewBox="0 0 300 350" xmlns="http://www.w3.org/2000/svg">
       <rect x="75" y="20" width="150" height="50" rx="8" fill="#06d6a0" stroke="#05c792" stroke-width="1.5"/><text x="150" y="42" text-anchor="middle" font-size="11" fill="#fff" font-weight="600" font-family="sans-serif">Conductor</text><text x="150" y="58" text-anchor="middle" font-size="10" fill="#fff" font-family="sans-serif">Workflow Engine</text>
       <line x1="75" y1="45" x2="20" y2="115" stroke="#a0aec0" stroke-width="1.5" marker-end="url(#wcc-arrow)"/>
       <line x1="120" y1="70" x2="90" y2="115" stroke="#a0aec0" stroke-width="1.5" marker-end="url(#wcc-arrow)"/>
@@ -228,8 +256,8 @@ generation — enabling AI agent orchestration and LLM orchestration alongside t
       <line x1="150" y1="70" x2="150" y2="200" stroke="#a0aec0" stroke-width="1.5" marker-end="url(#wcc-arrow)"/>
       <rect x="80" y="200" width="140" height="36" rx="6" fill="#e2e8f0" stroke="#4a5568" stroke-width="1.5"/><text x="150" y="223" text-anchor="middle" font-size="10" fill="#2e3545" font-family="sans-serif">Webhooks</text>
     </svg>
-    <!-- 10: Debug Visually -->
-    <svg class="wcc-diagram" data-wcc-diagram="10" viewBox="0 0 300 420" xmlns="http://www.w3.org/2000/svg">
+    <!-- 11: Debug Visually -->
+    <svg class="wcc-diagram" data-wcc-diagram="11" viewBox="0 0 300 420" xmlns="http://www.w3.org/2000/svg">
       <circle cx="110" cy="30" r="22" fill="#e2e8f0" stroke="#4a5568" stroke-width="1.5"/><text x="110" y="35" text-anchor="middle" font-size="11" fill="#2e3545" font-family="sans-serif">Start</text>
       <line x1="110" y1="52" x2="110" y2="80" stroke="#a0aec0" stroke-width="1.5" marker-end="url(#wcc-arrow)"/>
       <rect x="35" y="80" width="150" height="40" rx="6" fill="#e2e8f0" stroke="#4a5568" stroke-width="1.5"/><text x="110" y="105" text-anchor="middle" font-size="12" fill="#2e3545" font-family="sans-serif">Task A</text>
@@ -246,8 +274,8 @@ generation — enabling AI agent orchestration and LLM orchestration alongside t
       <line x1="110" y1="300" x2="110" y2="340" stroke="#a0aec0" stroke-width="1.5" marker-end="url(#wcc-arrow)"/>
       <circle cx="110" cy="362" r="22" fill="#e2e8f0" stroke="#4a5568" stroke-width="1.5"/><text x="110" y="367" text-anchor="middle" font-size="11" fill="#2e3545" font-family="sans-serif">End</text>
     </svg>
-    <!-- 11: Scale -->
-    <svg class="wcc-diagram" data-wcc-diagram="11" viewBox="0 0 320 300" xmlns="http://www.w3.org/2000/svg">
+    <!-- 12: Scale -->
+    <svg class="wcc-diagram" data-wcc-diagram="12" viewBox="0 0 320 300" xmlns="http://www.w3.org/2000/svg">
       <rect x="90" y="10" width="140" height="40" rx="8" fill="#06d6a0" stroke="#05c792" stroke-width="1.5"/><text x="160" y="35" text-anchor="middle" font-size="11" fill="#fff" font-weight="600" font-family="sans-serif">Load Balancer</text>
       <line x1="120" y1="50" x2="60" y2="80" stroke="#a0aec0" stroke-width="1.5" marker-end="url(#wcc-arrow)"/>
       <line x1="200" y1="50" x2="260" y2="80" stroke="#a0aec0" stroke-width="1.5" marker-end="url(#wcc-arrow)"/>
@@ -306,6 +334,13 @@ These are the facts that matter when comparing workflow and orchestration engine
 
 - **Durable execution** — every step is persisted, automatic retries with configurable policies,
   and workflows survive crashes and restarts without losing state.
+- **Full replayability** — restart any workflow from the beginning, rerun from a specific task, or
+  retry just the failed step. Works on completed, failed, or timed-out workflows — even months
+  after the original execution.
+- **Deterministic execution** — JSON definitions separate orchestration from implementation. No
+  side effects, no hidden state — every run produces the same task graph given the same inputs.
+  Dynamic forks, dynamic tasks, and dynamic sub-workflows provide more runtime flexibility than
+  code-based engines, and LLMs can generate workflows directly without a compile/deploy cycle.
 - **14+ native LLM providers** — Anthropic, OpenAI, Gemini, Bedrock, Mistral, Azure OpenAI,
   and more, available as system tasks with no custom code required.
 - **MCP (Model Context Protocol) native integration** — connect AI agents to external tools and

@@ -256,6 +256,39 @@ Open [http://localhost:8080](http://localhost:8080) to see the retry visually in
     Your worker failed, Conductor retried it after 1 second, and the retry succeeded. This is durable execution — Conductor manages retries so your code doesn't have to.
 
 
+## Phase 3: Replay a workflow
+
+Every Conductor workflow execution is fully replayable — restart from the beginning, rerun from a specific task, or retry the failed step. This works on any workflow, at any time, even months after the original execution.
+
+### Restart from the beginning
+
+Take any workflow execution ID from Phase 1 or Phase 2 and restart it:
+
+```bash
+# Get the workflow execution ID from a previous run
+WORKFLOW_ID=$(conductor workflow start -w hello_workflow --version 2 --sync | jq -r '.workflowId // empty' 2>/dev/null)
+
+# Restart the entire workflow from the beginning
+curl -X POST "http://localhost:8080/api/workflow/$WORKFLOW_ID/restart"
+```
+
+The workflow re-executes all tasks from scratch, creating a new execution trace while preserving the original.
+
+### Retry from the failed task
+
+If a workflow failed (like the simulated failure in Phase 2), you can retry just the failed task instead of re-running everything:
+
+```bash
+# Retry from the last failed task
+curl -X POST "http://localhost:8080/api/workflow/$WORKFLOW_ID/retry"
+```
+
+Conductor picks up from the failed task, reusing the outputs of all previously completed tasks.
+
+!!! success "What just happened"
+    You replayed a workflow execution using two different strategies — full restart and retry from failure. Conductor preserved the full execution history, so you could replay at any time. This works on completed, failed, or timed-out workflows, indefinitely.
+
+
 ??? note "Workers in other languages"
 
     === "Java"

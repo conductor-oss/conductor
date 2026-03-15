@@ -93,8 +93,8 @@ document.addEventListener("DOMContentLoaded", function() {
   </div>
   <div class="value-divider"></div>
   <div class="value-item">
-    <span class="value-metric">Zero downtime</span>
-    <span class="value-label">version upgrades</span>
+    <span class="value-metric">Billions of workflows</span>
+    <span class="value-label">internet scale execution</span>
   </div>
 </div>
 
@@ -112,9 +112,9 @@ document.addEventListener("DOMContentLoaded", function() {
     </div>
     <div class="feature-card">
       <div class="feature-tag">Format</div>
-      <h3>Workflow as code &amp; JSON native</h3>
-      <p>Define workflows as code using SDKs in any language, or as JSON&mdash;store, version, diff, and generate them programmatically. Create dynamic workflows at runtime via SDK, API, or UI without a compile/deploy cycle.</p>
-      <a href="architecture/json-native/" class="feature-link">How it works &rarr;</a>
+      <h3>JSON native &mdash; deterministic by default</h3>
+      <p>JSON definitions separate orchestration from implementation &mdash; no side effects, no hidden state, every run is deterministic. Generate workflows at runtime with LLMs, modify per-execution, and use dynamic forks, dynamic tasks, and dynamic sub-workflows for more flexibility than code-based engines. Code via SDKs when you need it.</p>
+      <a href="architecture/json-native/" class="feature-link">Why JSON wins &rarr;</a>
     </div>
     <div class="feature-card">
       <div class="feature-tag">Primitives</div>
@@ -140,6 +140,12 @@ document.addEventListener("DOMContentLoaded", function() {
         <a href="https://github.com/conductor-oss/ruby-sdk" title="Ruby"><img src="https://upload.wikimedia.org/wikipedia/commons/7/73/Ruby_logo.svg" alt="Ruby"></a>
         <a href="https://github.com/conductor-oss/rust-sdk" title="Rust"><img src="https://upload.wikimedia.org/wikipedia/commons/d/d5/Rust_programming_language_black_logo.svg" alt="Rust"></a>
       </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-tag">Recovery</div>
+      <h3>Replay, Restart, Retry</h3>
+      <p>Re-execute any workflow from the beginning, from a specific task, or retry just the failed step. Works on workflows completed days, weeks, or months ago &mdash; full execution history is always available.</p>
+      <a href="architecture/durable-execution/#replay--recovery" class="feature-link">How it works &rarr;</a>
     </div>
     <div class="feature-card">
       <div class="feature-tag">Reliability</div>
@@ -223,12 +229,20 @@ document.addEventListener("DOMContentLoaded", function() {
       <p>Yes. Conductor pioneered durable execution patterns, ensuring workflows and durable agents complete reliably even in the face of infrastructure failures, process crashes, or network issues.</p>
     </details>
     <details class="faq-item">
+      <summary>Can I replay a workflow after it completes or fails?</summary>
+      <p>Yes. Conductor preserves full execution history indefinitely. You can restart from the beginning, rerun from any specific task, or retry just the failed step &mdash; even months later. Use the API (<code>/restart</code>, <code>/rerun</code>, <code>/retry</code>) or the UI.</p>
+    </details>
+    <details class="faq-item">
       <summary>Are workflows always asynchronous?</summary>
       <p>No. While Conductor excels at asynchronous orchestration, it also supports synchronous workflow execution when immediate results are required.</p>
     </details>
     <details class="faq-item">
       <summary>Do I need to use a Conductor-specific framework?</summary>
       <p>No. Conductor is language and framework agnostic. Use your preferred language and framework&mdash;SDKs provide native integration for Java, Python, JavaScript, Go, C#, and more.</p>
+    </details>
+    <details class="faq-item">
+      <summary>Isn't JSON too limited for complex workflows?</summary>
+      <p>The opposite. JSON separates orchestration from implementation, making every workflow deterministic by construction &mdash; no side effects, no hidden state. Dynamic forks, dynamic tasks, and dynamic sub-workflows let you build workflows that are more flexible than code-based engines. JSON is also AI-native: LLMs can generate and modify workflow definitions at runtime without a compile/deploy cycle. Code-based engines require redeployment for every change.</p>
     </details>
     <details class="faq-item">
       <summary>Is Conductor a low-code/no-code platform?</summary>
