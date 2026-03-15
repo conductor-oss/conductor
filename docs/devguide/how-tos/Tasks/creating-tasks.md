@@ -17,7 +17,7 @@ This definition applies to all instances of the task across workflows.
 You can create task definitions using the Conductor UI or APIs for the following scenarios:
 
 - **Worker tasks**—All Worker tasks (`SIMPLE`) must be registered to the Conductor server as a task definition before it can execute in a workflow.
-- **System tasks**—All system tasks can be [extended with a task definition](extending-system-tasks.md) if required.
+- **System tasks**—System tasks don't require a task definition, but you can create one with the same name to customize retry, timeout, and rate limit behavior.
 
 ## Using Conductor UI
 
@@ -27,7 +27,7 @@ With the UI, you can create or update task definitions visually.
 
 **To create a task definition:**
 
-1. In [**Executions** > **Tasks**](http://localhost:8127/taskDefs), select **+ New Task Definition**.
+1. In [**Executions** > **Tasks**](http://localhost:8080/taskDefs), select **+ New Task Definition**.
 2. Configure the task definition JSON. Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for the full parameters.
 3. Select **Save** > **Save**.
 
@@ -35,7 +35,7 @@ With the UI, you can create or update task definitions visually.
 
 **To update a task definition:**
 
-1. In [**Executions** > **Tasks**](http://localhost:8127/taskDefs), select the task definition to be updated.
+1. In [**Executions** > **Tasks**](http://localhost:8080/taskDefs), select the task definition to be updated.
 2. Modify the task definition JSON. Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for the full parameters.
 3. Select **Save** > **Save**.
 
@@ -116,3 +116,13 @@ fetch("{{ server_host }}/api/metadata/taskdefs", {
     "method": "PUT"
 });
 ```
+
+
+## Reusing tasks
+
+Once a task is defined in Conductor, it can be reused numerous times:
+
+- **In the same workflow** — use the same task with different task reference names.
+- **Across workflows** — any workflow can reference any registered task definition.
+
+When reusing tasks in a multi-tenant system, all work assigned to a task goes into the same queue by default. If a noisy neighbor causes polling delays, you can scale up the number of workers or use [task-to-domain](../../../documentation/api/taskdomains.md) to route task load into separate queues.

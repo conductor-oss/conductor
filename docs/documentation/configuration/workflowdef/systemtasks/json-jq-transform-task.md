@@ -14,7 +14,7 @@ Use these parameters inside `inputParameters` in the JSON JQ Transform task conf
 
 | Parameter          | Type                | Description                                       | Required / Optional  |
 | ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
-| inputParameters.queryExpression | String | The jq filter, which is the expression used to transform the JSON data. <br/><br/> Refer to the [JQ Manual](https://stedolan.github.io/jq/manual/v1.5/) for more information on constructing filters. | Required. |
+| queryExpression | String | The jq filter expression used to transform the JSON data. <br/><br/> Refer to the [jq documentation](https://jqlang.org/) and the [jq manual](https://jqlang.org/manual/) for information on constructing filters. You can test expressions interactively at [jqplay.org](https://jqplay.org/). | Required. |
 | inputParameters | Map[String, Any] | Contains the inputs for the jq transformation. | Required. |
 
 ## JSON configuration

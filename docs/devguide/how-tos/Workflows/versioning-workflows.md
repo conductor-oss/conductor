@@ -53,7 +53,7 @@ Using the Conductor UI or APIs, you can upgrade a running workflow by terminatin
 
 **To upgrade a running workflow**:
 
-1. In **[Executions](http://localhost:8127/executions)**, select an ongoing workflow to upgrade.
+1. In **[Executions](http://localhost:8080/executions)**, select an ongoing workflow to upgrade.
 2. In the top right, select **Actions** > **Terminate**.
 3. Once terminated, select **Actions** > **Restart with Latest Definitions**.
 

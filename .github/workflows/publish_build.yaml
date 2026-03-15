@@ -115,4 +115,8 @@ jobs:
             PREBUILT=true
           tags: |
             conductoross/conductor:${{ env.RELEASE_VERSION }}
+            orkesio/orkes-conductor-community-standalone:${{ env.RELEASE_VERSION }}
+            orkesio/orkes-conductor-community:${{ env.RELEASE_VERSION }}
             ${{ (github.event_name == 'release' && !github.event.release.prerelease) && 'conductoross/conductor:latest' || '' }}
+            ${{ (github.event_name == 'release' && !github.event.release.prerelease) && 'orkesio/orkes-conductor-community-standalone:latest' || '' }}
+            ${{ (github.event_name == 'release' && !github.event.release.prerelease) && 'orkesio/orkes-conductor-community:latest' || '' }}

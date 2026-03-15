@@ -1,59 +1,58 @@
 ---
-description: Get the Conductor durable code execution engine running in under 5 minutes. Install the CLI, define a JSON workflow, write workers in Java, Python, or JavaScript, and execute your first durable workflow.
+description: Run your first Conductor workflow in 2 minutes. Call an API, parse the response with server-side JavaScript, and see durable execution in action — no workers needed.
 ---
 
-# Quickstart
+# Run Your First Workflow
 
-Get Conductor running and execute your first workflow in under 5 minutes.
+**See a workflow execute in 2 minutes. Build your own in 5.**
 
-## 1. Start the server
+You need [Node.js](https://nodejs.org/) (v16+) installed. That's it.
 
-=== "CLI (recommended)"
+## Phase 1: See it work
 
-    ```bash
-    npm install -g @conductor-oss/conductor-cli
-    conductor server start
-    ```
+### Start Conductor
 
-=== "Docker"
+```bash
+npm install -g @conductor-oss/conductor-cli
+conductor server start
+```
 
-    ```bash
-    docker run -p 8080:8080 conductoross/conductor:latest
-    ```
+Wait for the server to start, then open the UI at [http://localhost:8080](http://localhost:8080).
 
-The Conductor UI is available at [http://localhost:8127](http://localhost:8127) and the API at [http://localhost:8080](http://localhost:8080).
+### Define the workflow
 
-
-## 2. Define a workflow
-
-Create a file called `workflow.json` with a simple two-step workflow:
+Save `workflow.json` — a two-task workflow that calls an API and parses the response, all server-side:
 
 ```json
 {
-  "name": "process_order",
-  "description": "Validate and charge an order",
+  "name": "hello_workflow",
   "version": 1,
   "tasks": [
     {
-      "name": "validate_order",
-      "taskReferenceName": "validate",
-      "type": "SIMPLE",
+      "name": "fetch_data",
+      "taskReferenceName": "fetch_ref",
+      "type": "HTTP",
       "inputParameters": {
-        "orderId": "${workflow.input.orderId}"
+        "http_request": {
+          "uri": "https://orkes-api-tester.orkesconductor.com/api",
+          "method": "GET"
+        }
       }
     },
     {
-      "name": "charge_payment",
-      "taskReferenceName": "charge",
-      "type": "SIMPLE",
+      "name": "parse_response",
+      "taskReferenceName": "parse_ref",
+      "type": "INLINE",
       "inputParameters": {
-        "orderId": "${workflow.input.orderId}",
-        "amount": "${validate.output.amount}"
+        "data": "${fetch_ref.output.response.body}",
+        "evaluatorType": "graaljs",
+        "expression": "(function() { var d = $.data; return { summary: 'Host ' + d.hostName + ' responded in ' + d.apiRandomDelay + ' with random value ' + d.randomInt, host: d.hostName, randomValue: d.randomInt }; })()"
       }
     }
   ],
   "outputParameters": {
-    "chargeId": "${charge.output.chargeId}"
+    "summary": "${parse_ref.output.result.summary}",
+    "apiResponse": "${fetch_ref.output.response.body}"
   },
   "schemaVersion": 2,
   "ownerEmail": "dev@example.com"
@@ -62,272 +61,300 @@ Create a file called `workflow.json` with a simple two-step workflow:
 
 **What's happening here:**
 
-- `process_order` defines a workflow with two sequential tasks.
-- Each task has a `name` (task definition) and a `taskReferenceName` (unique alias within this workflow).
-- `type: "SIMPLE"` means these tasks will be executed by your **workers** (external code you write).
-- `inputParameters` use Conductor's expression syntax (`${...}`) to pass data from the workflow input and between tasks.
+- **`fetch_data`** — an [HTTP task](../documentation/configuration/workflowdef/systemtasks/http-task.md) that calls an external API. No worker needed.
+- **`parse_response`** — an [Inline task](../documentation/configuration/workflowdef/systemtasks/inline-task.md) that runs JavaScript server-side to extract and summarize the API response.
+- Both are **system tasks** — Conductor executes them directly. No external code to deploy.
 
+### Register and run
 
-## 3. Register the workflow
+**Register the workflow:**
 
 ```bash
 conductor workflow create workflow.json
 ```
 
-You also need to register the task definitions so Conductor knows about them. Create a file called `tasks.json`:
+**Start the workflow:**
+
+```bash
+conductor workflow start -w hello_workflow --sync
+```
+
+The `--sync` flag waits for completion and prints the result directly. Expected output:
 
 ```json
-[
-  { "name": "validate_order", "retryCount": 3, "retryLogic": "FIXED", "retryDelaySeconds": 10 },
-  { "name": "charge_payment", "retryCount": 3, "retryLogic": "FIXED", "retryDelaySeconds": 10 }
-]
+{
+  "summary": "Host orkes-api-sampler-... responded in 0 ms with random value 1141",
+  "apiResponse": {
+    "randomString": "gbgkaofnvesptvlmocpk",
+    "randomInt": 1141,
+    "hostName": "orkes-api-sampler-...",
+    "apiRandomDelay": "0 ms",
+    "sleepFor": "0 ms",
+    "statusCode": "200",
+    "queryParams": {}
+  }
+}
 ```
 
-Then register the task definitions:
+Open [http://localhost:8080](http://localhost:8080) to see the execution visually — the task timeline, inputs/outputs, and status of each step.
 
-```bash
-conductor task create tasks.json
-```
-
-??? note "Using cURL"
-    ```bash
-    curl -X POST http://localhost:8080/api/metadata/workflow \
-      -H 'Content-Type: application/json' \
-      -d @workflow.json
-    ```
-
-    ```bash
-    curl -X POST http://localhost:8080/api/metadata/taskdefs \
-      -H 'Content-Type: application/json' \
-      -d @tasks.json
-    ```
+!!! success "What just happened"
+    Conductor called an external API, passed the response to server-side JavaScript for parsing, tracked every step, and would have retried on failure — all without writing or deploying any worker code.
 
 
-## 4. Write workers
+## Phase 2: Add a worker
 
-Workers are the code that execute your tasks. They poll Conductor for work, execute your logic, and report results back.
+Now write real code that Conductor orchestrates — with automatic retries.
 
-=== "Java"
+### Update the workflow
 
-    ```java
-    @WorkerTask("validate_order")
-    public Map<String, Object> validateOrder(Map<String, Object> input) {
-        String orderId = (String) input.get("orderId");
-        // Your validation logic here
-        return Map.of(
-            "valid", true,
-            "amount", 49.99
-        );
-    }
+Save `workflow-v2.json` — adds a worker task that processes the parsed data:
 
-    @WorkerTask("charge_payment")
-    public Map<String, Object> chargePayment(Map<String, Object> input) {
-        String orderId = (String) input.get("orderId");
-        double amount = (double) input.get("amount");
-        // Your payment logic here
-        return Map.of("chargeId", "ch_" + orderId);
-    }
-    ```
-
-=== "Python"
-
-    ```python
-    from conductor.client.worker.worker_task import worker_task
-
-    @worker_task(task_definition_name="validate_order")
-    def validate_order(task):
-        order_id = task.input_data.get("orderId")
-        # Your validation logic here
-        return {"valid": True, "amount": 49.99}
-
-    @worker_task(task_definition_name="charge_payment")
-    def charge_payment(task):
-        order_id = task.input_data.get("orderId")
-        amount = task.input_data.get("amount")
-        # Your payment logic here
-        return {"chargeId": f"ch_{order_id}"}
-    ```
-
-=== "JavaScript"
-
-    ```javascript
-    const { ConductorWorker } = require("@conductor-oss/conductor-client");
-
-    const worker = new ConductorWorker({
-      url: "http://localhost:8080/api",
-    });
-
-    worker.register("validate_order", async (task) => {
-      const orderId = task.inputData.orderId;
-      // Your validation logic here
-      return { valid: true, amount: 49.99 };
-    });
-
-    worker.register("charge_payment", async (task) => {
-      const orderId = task.inputData.orderId;
-      const amount = task.inputData.amount;
-      // Your payment logic here
-      return { chargeId: `ch_${orderId}` };
-    });
-
-    worker.start();
-    ```
-
-=== "Go"
-
-    ```go
-    package main
-
-    import (
-        "fmt"
-        "github.com/conductor-sdk/conductor-go/sdk/model"
-        "github.com/conductor-sdk/conductor-go/sdk/worker"
-    )
-
-    func ValidateOrder(task *model.Task) (interface{}, error) {
-        orderId := task.InputData["orderId"]
-        // Your validation logic here
-        return map[string]interface{}{
-            "valid":  true,
-            "amount": 49.99,
-        }, nil
-    }
-
-    func ChargePayment(task *model.Task) (interface{}, error) {
-        orderId := task.InputData["orderId"]
-        // Your payment logic here
-        return map[string]interface{}{
-            "chargeId": fmt.Sprintf("ch_%s", orderId),
-        }, nil
-    }
-    ```
-
-    See the [Go SDK repo](https://github.com/conductor-oss/go-sdk) for full setup instructions.
-
-=== "C#"
-
-    ```csharp
-    using ConductorSharp.Engine;
-
-    [WorkerTask("validate_order")]
-    public static TaskResult ValidateOrder(Task task)
+```json
+{
+  "name": "hello_workflow",
+  "version": 2,
+  "tasks": [
     {
-        var orderId = task.InputData["orderId"];
-        // Your validation logic here
-        return task.Completed(new {
-            valid = true,
-            amount = 49.99
-        });
-    }
-
-    [WorkerTask("charge_payment")]
-    public static TaskResult ChargePayment(Task task)
+      "name": "fetch_data",
+      "taskReferenceName": "fetch_ref",
+      "type": "HTTP",
+      "inputParameters": {
+        "http_request": {
+          "uri": "https://orkes-api-tester.orkesconductor.com/api",
+          "method": "GET"
+        }
+      }
+    },
     {
-        var orderId = task.InputData["orderId"];
-        var amount = task.InputData["amount"];
-        // Your payment logic here
-        return task.Completed(new {
-            chargeId = $"ch_{orderId}"
+      "name": "parse_response",
+      "taskReferenceName": "parse_ref",
+      "type": "INLINE",
+      "inputParameters": {
+        "data": "${fetch_ref.output.response.body}",
+        "evaluatorType": "graaljs",
+        "expression": "(function() { var d = $.data; return { summary: 'Host ' + d.hostName + ' responded in ' + d.apiRandomDelay + ' with random value ' + d.randomInt, host: d.hostName, randomValue: d.randomInt }; })()"
+      }
+    },
+    {
+      "name": "process_result",
+      "taskReferenceName": "process_ref",
+      "type": "SIMPLE",
+      "inputParameters": {
+        "summary": "${parse_ref.output.result.summary}",
+        "randomValue": "${parse_ref.output.result.randomValue}"
+      }
+    }
+  ],
+  "outputParameters": {
+    "finalResult": "${process_ref.output.result}"
+  },
+  "schemaVersion": 2,
+  "ownerEmail": "dev@example.com"
+}
+```
+
+**Register the updated workflow and task definition:**
+
+```bash
+conductor workflow create workflow-v2.json
+```
+
+```bash
+curl -X POST http://localhost:8080/api/metadata/taskdefs \
+  -H 'Content-Type: application/json' \
+  -d '[{
+    "name": "process_result",
+    "retryCount": 2,
+    "retryLogic": "FIXED",
+    "retryDelaySeconds": 1,
+    "responseTimeoutSeconds": 10,
+    "ownerEmail": "dev@example.com"
+  }]'
+```
+
+### Write the worker
+
+Save `worker.py`:
+
+```python
+from conductor.client.automator.task_handler import TaskHandler
+from conductor.client.configuration.configuration import Configuration
+from conductor.client.worker.worker_task import worker_task
+
+
+@worker_task(task_definition_name="process_result")
+def process_result(task) -> dict:
+    summary = task.input_data.get("summary", "")
+    random_value = task.input_data.get("randomValue", 0)
+
+    # Fail on first attempt to demonstrate retries
+    if task.retry_count == 0:
+        raise Exception(f"Simulated failure processing: {summary}")
+
+    return {
+        "result": summary.upper(),
+        "doubled": random_value * 2,
+        "attempt": task.retry_count + 1,
+    }
+
+
+def main():
+    config = Configuration(server_api_url="http://localhost:8080/api")
+    handler = TaskHandler(configuration=config)
+    handler.start_processes()
+
+    try:
+        while True:
+            pass
+    except KeyboardInterrupt:
+        handler.stop_processes()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**Install and run:**
+
+```bash
+pip install conductor-python
+python worker.py
+```
+
+### Start the workflow and watch retries
+
+In a separate terminal:
+
+```bash
+conductor workflow start -w hello_workflow --version 2 --sync
+```
+
+In the terminal running your worker, you'll see:
+
+```
+Simulated failure processing: Host orkes-api-sampler-... responded in 0 ms with random value 1141
+...
+# 1 second later, the retry succeeds
+```
+
+Expected output:
+
+```json
+{
+  "finalResult": {
+    "result": "HOST ORKES-API-SAMPLER-... RESPONDED IN 0 MS WITH RANDOM VALUE 1141",
+    "doubled": 2282,
+    "attempt": 2
+  }
+}
+```
+
+Open [http://localhost:8080](http://localhost:8080) to see the retry visually in the execution diagram.
+
+!!! success "What just happened"
+    Your worker failed, Conductor retried it after 1 second, and the retry succeeded. This is durable execution — Conductor manages retries so your code doesn't have to.
+
+
+??? note "Workers in other languages"
+
+    === "Java"
+
+        ```java
+        @WorkerTask("process_result")
+        public Map<String, Object> processResult(Map<String, Object> input) {
+            String summary = (String) input.get("summary");
+            int randomValue = (int) input.get("randomValue");
+            return Map.of(
+                "result", summary.toUpperCase(),
+                "doubled", randomValue * 2
+            );
+        }
+        ```
+
+        See the [Java SDK](https://github.com/conductor-oss/java-sdk) for full setup.
+
+    === "JavaScript"
+
+        ```javascript
+        const { ConductorWorker } = require("@conductor-oss/conductor-client");
+
+        const worker = new ConductorWorker({
+          url: "http://localhost:8080/api",
         });
-    }
-    ```
 
-    See the [C# SDK repo](https://github.com/conductor-oss/csharp-sdk) for full setup instructions.
+        worker.register("process_result", async (task) => {
+          const { summary, randomValue } = task.inputData;
+          return { result: summary.toUpperCase(), doubled: randomValue * 2 };
+        });
 
-=== "Ruby"
+        worker.start();
+        ```
 
-    ```ruby
-    require 'conductor_worker'
+        See the [JavaScript SDK](https://github.com/conductor-oss/javascript-sdk) for full setup.
 
-    ConductorWorker.new(url: 'http://localhost:8080/api') do |w|
-      w.register('validate_order') do |task|
-        order_id = task.input_data['orderId']
-        # Your validation logic here
-        { valid: true, amount: 49.99 }
-      end
+    === "Go"
 
-      w.register('charge_payment') do |task|
-        order_id = task.input_data['orderId']
-        amount = task.input_data['amount']
-        # Your payment logic here
-        { chargeId: "ch_#{order_id}" }
-      end
-    end
-    ```
+        ```go
+        func ProcessResult(task *model.Task) (interface{}, error) {
+            summary := task.InputData["summary"].(string)
+            randomValue := int(task.InputData["randomValue"].(float64))
+            return map[string]interface{}{
+                "result":  strings.ToUpper(summary),
+                "doubled": randomValue * 2,
+            }, nil
+        }
+        ```
 
-    See the [Ruby SDK repo](https://github.com/conductor-oss/ruby-sdk) for full setup instructions.
+        See the [Go SDK](https://github.com/conductor-oss/go-sdk) for full setup.
 
-=== "Rust"
+    === "C#"
 
-    ```rust
-    use conductor::worker::{Worker, Task, TaskResult};
+        ```csharp
+        [WorkerTask("process_result")]
+        public static TaskResult ProcessResult(Task task)
+        {
+            var summary = task.InputData["summary"].ToString();
+            var randomValue = (int)task.InputData["randomValue"];
+            return task.Completed(new {
+                result = summary.ToUpper(),
+                doubled = randomValue * 2
+            });
+        }
+        ```
 
-    fn validate_order(task: &Task) -> TaskResult {
-        let order_id = task.input_data.get("orderId").unwrap();
-        // Your validation logic here
-        TaskResult::completed(serde_json::json!({
-            "valid": true,
-            "amount": 49.99
-        }))
-    }
-
-    fn charge_payment(task: &Task) -> TaskResult {
-        let order_id = task.input_data.get("orderId").unwrap();
-        let amount = task.input_data.get("amount").unwrap();
-        // Your payment logic here
-        TaskResult::completed(serde_json::json!({
-            "chargeId": format!("ch_{}", order_id)
-        }))
-    }
-    ```
-
-    See the [Rust SDK repo](https://github.com/conductor-oss/rust-sdk) for full setup instructions.
-
-Start your workers so they begin polling for tasks.
+        See the [C# SDK](https://github.com/conductor-oss/csharp-sdk) for full setup.
 
 
-## 5. Run the workflow
+## Cleanup
 
 ```bash
-conductor workflow start -w process_order -i '{"orderId": "order-123"}'
+conductor server stop
 ```
 
-Conductor returns a **workflow execution ID**. Use it to check the status:
+
+## Using Docker instead
+
+If you prefer Docker over the CLI, you can run Conductor with:
 
 ```bash
-conductor workflow status {workflowId}
+docker run --name conductor -p 8080:8080 conductoross/conductor:latest
 ```
 
-??? note "Using cURL"
-    ```bash
-    curl -X POST http://localhost:8080/api/workflow/process_order \
-      -H 'Content-Type: application/json' \
-      -d '{"orderId": "order-123"}'
-    ```
+All the workflow commands above work the same — just replace the CLI commands with their cURL equivalents:
 
-    ```bash
-    curl http://localhost:8080/api/workflow/{workflowId}
-    ```
+| CLI | cURL |
+|-----|------|
+| `conductor workflow create workflow.json` | `curl -X POST http://localhost:8080/api/metadata/workflow -H 'Content-Type: application/json' -d @workflow.json` |
+| `conductor workflow start -w hello_workflow --sync` | `curl -s -X POST http://localhost:8080/api/workflow/hello_workflow -H 'Content-Type: application/json'` |
+| `conductor server stop` | `docker rm -f conductor` |
 
-Or open the Conductor UI at [http://localhost:8127](http://localhost:8127) to see the execution visually—including the task timeline, inputs/outputs, and status of each step.
-
-
-## What just happened?
-
-1. You **registered** a workflow definition and task definitions with Conductor.
-2. Your **workers** started polling for tasks.
-3. When you **started** the workflow, Conductor scheduled `validate_order` first.
-4. Your worker picked it up, executed the logic, and returned the result.
-5. Conductor then scheduled `charge_payment` with the output from the previous step.
-6. Once both tasks completed, the workflow reached the `COMPLETED` state.
-
-Conductor handled the orchestration, retries, state management, and data flow between tasks—your workers just focused on business logic.
+For production deployment options, see [Running with Docker](../devguide/running/docker.md).
 
 
 ## Next steps
 
-- **[System tasks](../documentation/configuration/workflowdef/systemtasks/index.md)** — Use built-in HTTP, Event, and Inline tasks without writing workers.
-- **[Operators](../documentation/configuration/workflowdef/operators/index.md)** — Add fork/join, switch, loops, and sub-workflows.
-- **[Error handling](../devguide/how-tos/Workflows/handling-errors.md)** — Configure retries, timeouts, and failure workflows.
-- **[Client SDKs](../documentation/clientsdks/index.md)** — Java, Python, Go, C#, JavaScript, and Clojure.
-- **[Running with Docker](../devguide/running/docker.md)** — Production-ready deployment with Docker.
+- **[System tasks](../documentation/configuration/workflowdef/systemtasks/index.md)** — HTTP, Wait, Event tasks without workers
+- **[Operators](../documentation/configuration/workflowdef/operators/index.md)** — Fork/join, switch, loops, sub-workflows
+- **[Error handling](../devguide/how-tos/Workflows/handling-errors.md)** — Saga pattern, compensation flows
+- **[Client SDKs](../documentation/clientsdks/index.md)** — Java, Python, Go, C#, JavaScript, and more

@@ -58,9 +58,22 @@ The Fork task has no output. It is used in conjunction with the [JOIN](join-task
 
 ## Examples
 
-In this example workflow, three notifications are sent: email, SMS, and HTTP. Since none of these tasks depend on each other, they can be run in parallel with a Fork task. The workflow diagram looks like this:
+In this example workflow, three notifications are sent: email, SMS, and HTTP. Since none of these tasks depend on each other, they can be run in parallel with a Fork task.
 
-![fork diagram](fork-task-diagram.png)
+```mermaid
+graph LR
+    A[Start] --> B[Fork]
+    B --> C1[process_notification_payload_email]
+    B --> C2[process_notification_payload_sms]
+    B --> C3[process_notification_payload_http]
+    C1 --> D1[email_notification]
+    C2 --> D2[sms_notification]
+    C3 --> D3[http_notification]
+    D1 --> E[Join]
+    D2 --> E
+    D3 --> E
+    E --> F[End]
+```
 
 Here's the JSON configuration for the Fork task, along with its corresponding Join task:
 

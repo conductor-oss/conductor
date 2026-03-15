@@ -16,7 +16,7 @@ With the UI, you can create or update workflow definitions visually.
 
 **To create a workflow definition:**
 
-1. In **[Definitions](http://localhost:8127/workflowDefs)**, select **+ New Workflow Definition**.
+1. In **[Definitions](http://localhost:8080/workflowDefs)**, select **+ New Workflow Definition**.
 2. Configure the workflow definition JSON. Refer to [Workflow Definition](../../../documentation/configuration/workflowdef/index.md) for the reference guide on the full parameters.
 3. Select **Save** > **Save**.
 
@@ -24,7 +24,7 @@ With the UI, you can create or update workflow definitions visually.
 
 **To update a workflow definition:**
 
-1. In **[Definitions](http://localhost:8127/workflowDefs**)**, select the workflow to be updated.
+1. In **[Definitions](http://localhost:8080/workflowDefs**)**, select the workflow to be updated.
 2. Modify the workflow definition JSON. Refer to [Workflow Definition](../../../documentation/configuration/workflowdef/index.md) for the reference guide on the full parameters.
 3. Select **Save**. The workflow version will automatically increment by 1.
 4. (Optional) Clear the **Automatically set version** checkbox to save the updated workflow definition without creating a new version.

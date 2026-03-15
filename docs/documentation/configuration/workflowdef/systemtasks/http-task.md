@@ -15,24 +15,23 @@ The data returned in the HTTP call can be referenced in subsequent tasks as inpu
 
 ## Task parameters
 
-Use these parameters inside `inputParameters` in the HTTP task configuration.
+The HTTP request parameters can be specified directly in `inputParameters` or nested inside `inputParameters.http_request`. Both forms are supported — the flat form is simpler for most use cases.
 
 | Parameter          | Type                | Description                                       | Required / Optional  |
 | ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
-| inputParameters.http_request | HttpRequest | JSON object containing the URI, method, and more. | Required. |
-| inputParameters.http_request.uri | String        | The URI for the HTTP service. You can construct the URI using dynamic references, as shown in the [GET example](#get-method) below.                                  | Required. |
-| inputParameters.http_request.method            | String           | The HTTP method. Supported methods: <ul><li>GET</li> <li>PUT</li> <li>POST</li> <li>PATCH</li><li>DELETE</li> <li>OPTIONS</li> <li>HEAD</li> <li>TRACE</li></ul>                                       | Required. |
-| inputParameters.http_request.accept            | String           | The accept header required by the server. The default value is `application/json`. Supported values include: <ul><li>application/json</li> <li>application/xml</li> <li>application/pdf</li> <li>application/octet-stream</li> <li>application/x-www-form-urlencoded</li> <li>text/plain</li> <li>text/html</li> <li>text/xml</li> <li>image/jpeg</li> <li>image/png</li> <li>image/gif</li></ul>                                     | Optional. |
-| inputParameters.http_request.contentType       | String           | The content type for the server. The default value is `application/json`. Supported values include: <ul><li>application/json</li> <li>text/plain</li> <li>text/html</li> </ul>                                                              | Optional. |
-| inputParameters.http_request.headers           | Map[String, Any] | A map of additional HTTP headers to be sent along with the request. <br/><br/> **Tip:** If the remote address that you are connecting to is a secure location, add the Authorization header with `Bearer <access_token>` to `headers`.                | Optional. |
-| inputParameters.http_request.body              | Map[String, Any]            | The request body.                                          | Required for POST, PUT, or PATCH methods.
-| inputParameters.http_request.asyncComplete     | Boolean          | Whether the task is completed asynchronously. The default value is false. <ul><li>**false**—Task status is set to COMPLETED upon successful execution.</li> <li>**true**—Task status is kept as IN_PROGRESS until an external event (via Conductor or SQS or EventHandler) marks it as complete.</li></ul> <br/> **Tip:** If the remote service sends an asynchronous event to signal the completion of the request, consider setting `asyncComplete` to `true`. | Optional. |
-| inputParameters.http_request.connectionTimeOut | Integer          | The connection timeout in milliseconds. The default is 100. <br/><br/> Set to 0 for no timeout.                       | Optional. |
-| inputParameters.http_request.readTimeOut       | Integer          | Read timeout in milliseconds. The default is 150. <br/><br/> Set to 0 for no timeout.                       | Optional. |
-
+| uri | String        | The URI for the HTTP service. Supports dynamic references like `${workflow.input.url}`.                                  | Required. |
+| method            | String           | The HTTP method. Supported methods: `GET`, `PUT`, `POST`, `PATCH`, `DELETE`, `OPTIONS`, `HEAD`, `TRACE`.                                       | Required. |
+| accept            | String           | The accept header required by the server. Default: `application/json`.                                     | Optional. |
+| contentType       | String           | The content type for the request. Default: `application/json`.                                                              | Optional. |
+| headers           | Map[String, Any] | A map of additional HTTP headers to be sent along with the request. See [Sending headers](#sending-headers) below.                | Optional. |
+| body              | Map[String, Any]            | The request body.                                          | Required for POST, PUT, or PATCH methods. |
+| asyncComplete     | Boolean          | Whether the task is completed asynchronously. Default: `false`. When `true`, the task stays `IN_PROGRESS` until an external event marks it as complete. | Optional. |
+| connectionTimeOut | Integer          | The connection timeout in milliseconds. Default: 100. Set to 0 for no timeout.                       | Optional. |
+| readTimeOut       | Integer          | Read timeout in milliseconds. Default: 150. Set to 0 for no timeout.                       | Optional. |
 
 ## Configuration JSON
-Here is the task configuration for an HTTP task.
+
+Here is the task configuration for an HTTP task. Note that parameters are specified directly in `inputParameters`:
 
 ```json
 {
@@ -40,18 +39,105 @@ Here is the task configuration for an HTTP task.
   "taskReferenceName": "http_ref",
   "type": "HTTP",
   "inputParameters": {
-    "http_request": {
-      "uri": "https://orkes-api-tester.orkesconductor.com/api",
-      "method": "POST",
-      "accept": "application/json",
-      "contentType": "application/json",
-      "encode": true,
-      "headers": {
-        "header-1": "${workflow.input.header-1}"
-      },
-      "body": {
-        "key": "value"
+    "uri": "https://api.example.com/data",
+    "method": "POST",
+    "headers": {
+      "Authorization": "Bearer ${workflow.input.api_token}",
+      "X-Request-Id": "${workflow.correlationId}"
+    },
+    "body": {
+      "key": "value"
+    }
+  }
+}
+```
+
+!!! note "Legacy `http_request` form"
+    The nested `inputParameters.http_request` form is still supported for backward compatibility:
+    ```json
+    "inputParameters": {
+      "http_request": {
+        "uri": "https://api.example.com/data",
+        "method": "POST",
+        "body": { "key": "value" }
       }
+    }
+    ```
+    Both forms work identically. The flat form (shown above) is recommended for new workflows.
+
+## Sending headers
+
+Use the `headers` parameter to send custom HTTP headers, including authentication:
+
+### Bearer token authentication
+
+```json
+{
+  "name": "call_api",
+  "taskReferenceName": "call_api_ref",
+  "type": "HTTP",
+  "inputParameters": {
+    "uri": "https://api.example.com/protected/resource",
+    "method": "GET",
+    "headers": {
+      "Authorization": "Bearer ${workflow.input.access_token}"
+    }
+  }
+}
+```
+
+### API key authentication
+
+```json
+{
+  "name": "call_api",
+  "taskReferenceName": "call_api_ref",
+  "type": "HTTP",
+  "inputParameters": {
+    "uri": "https://api.example.com/data",
+    "method": "GET",
+    "headers": {
+      "X-API-Key": "${workflow.input.api_key}"
+    }
+  }
+}
+```
+
+### Basic authentication
+
+```json
+{
+  "name": "call_api",
+  "taskReferenceName": "call_api_ref",
+  "type": "HTTP",
+  "inputParameters": {
+    "uri": "https://api.example.com/data",
+    "method": "GET",
+    "headers": {
+      "Authorization": "Basic ${workflow.input.basic_auth_token}"
+    }
+  }
+}
+```
+
+### Multiple custom headers
+
+```json
+{
+  "name": "call_api",
+  "taskReferenceName": "call_api_ref",
+  "type": "HTTP",
+  "inputParameters": {
+    "uri": "https://api.example.com/data",
+    "method": "POST",
+    "headers": {
+      "Authorization": "Bearer ${workflow.input.token}",
+      "X-Correlation-Id": "${workflow.correlationId}",
+      "X-Request-Source": "conductor",
+      "Accept-Language": "en-US"
+    },
+    "body": {
+      "data": "${workflow.input.payload}"
     }
   }
 }
@@ -86,13 +172,11 @@ Here are some examples for using the HTTP task.
 {
   "name": "Get Example",
   "taskReferenceName": "get_example",
+  "type": "HTTP",
   "inputParameters": {
-    "http_request": {
-      "uri": "https://jsonplaceholder.typicode.com/posts/${workflow.input.queryid}",
-      "method": "GET"
-    }
-  },
-  "type": "HTTP"
+    "uri": "https://jsonplaceholder.typicode.com/posts/${workflow.input.queryid}",
+    "method": "GET"
+  }
 }
 ```
 
@@ -102,18 +186,16 @@ Here are some examples for using the HTTP task.
 {
   "name": "http_post_example",
   "taskReferenceName": "post_example",
+  "type": "HTTP",
   "inputParameters": {
-    "http_request": {
-      "uri": "https://jsonplaceholder.typicode.com/posts/",
-      "method": "POST",
-      "body": {
-        "title": "${get_example.output.response.body.title}",
-        "userId": "${get_example.output.response.body.userId}",
-        "action": "doSomething"
-      }
+    "uri": "https://jsonplaceholder.typicode.com/posts/",
+    "method": "POST",
+    "body": {
+      "title": "${get_example.output.response.body.title}",
+      "userId": "${get_example.output.response.body.userId}",
+      "action": "doSomething"
     }
-  },
-  "type": "HTTP"
+  }
 }
 ```
 
@@ -122,18 +204,16 @@ Here are some examples for using the HTTP task.
 {
   "name": "http_put_example",
   "taskReferenceName": "put_example",
+  "type": "HTTP",
   "inputParameters": {
-    "http_request": {
-      "uri": "https://jsonplaceholder.typicode.com/posts/1",
-      "method": "PUT",
-      "body": {
-        "title": "${get_example.output.response.body.title}",
-        "userId": "${get_example.output.response.body.userId}",
-        "action": "doSomethingDifferent"
-      }
+    "uri": "https://jsonplaceholder.typicode.com/posts/1",
+    "method": "PUT",
+    "body": {
+      "title": "${get_example.output.response.body.title}",
+      "userId": "${get_example.output.response.body.userId}",
+      "action": "doSomethingDifferent"
     }
-  },
-  "type": "HTTP"
+  }
 }
 ```
 
@@ -142,13 +222,10 @@ Here are some examples for using the HTTP task.
 {
   "name": "DELETE Example",
   "taskReferenceName": "delete_example",
+  "type": "HTTP",
   "inputParameters": {
-    "http_request": {
-      "uri": "https://jsonplaceholder.typicode.com/posts/1",
-      "method": "DELETE"
-    }
-  },
-  "type": "HTTP"
+    "uri": "https://jsonplaceholder.typicode.com/posts/1",
+    "method": "DELETE"
+  }
 }
 ```
-   

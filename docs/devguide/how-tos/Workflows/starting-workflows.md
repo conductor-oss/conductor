@@ -12,7 +12,7 @@ The Conductor UI is useful for sandbox testing before deploying the workflows to
 
 **To start a workflow:**
 
-1. Go to [Workbench](http://localhost:8127/workbench) in the Conductor UI.
+1. Go to [Workbench](http://localhost:8080/workbench) in the Conductor UI.
 2. Select the  **Workflow Name** and **Workflow version**.
 3. If required, provide the workflow inputs in **Input (JSON)**.
 4. (Optional) Specify the **Correlation ID** and **Task to Domain (JSON)** for the execution.

@@ -36,7 +36,8 @@ Each of these steps can fail, take minutes to hours, or require intervention. Ru
 | **Sub-agent delegation** | `SUB_WORKFLOW` task | Spawn a child workflow. Parent waits for completion. Full observability into both. |
 | **Structured output** | Workflow `outputParameters` | Map task outputs to a structured JSON response using Conductor's expression syntax. |
 | **Expose as API** | Conductor REST API: `POST /api/workflow/{name}` | Any workflow is callable via HTTP. Start synchronously or asynchronously. Get structured output back. |
-| **Expose as MCP tool** | MCP Gateway integration | Register a workflow as an MCP tool. LLMs and agents can invoke it directly and receive structured output. |
+| **Expose as MCP tool** | MCP Gateway integration | Register any workflow as an MCP tool. LLMs and agents invoke it directly via LIST_MCP_TOOLS / CALL_MCP_TOOL and receive structured output. |
+| **Call MCP tools** | `LIST_MCP_TOOLS` + `CALL_MCP_TOOL` tasks | Discover and execute tools from any MCP server within a workflow. Enables agents to use external tool ecosystems. |
 
 
 ## What persists during an agent run
@@ -162,6 +163,51 @@ Here is a workflow that demonstrates the key agent patterns:
 6. `publish` &mdash; On approval, the article is published via HTTP.
 
 Every step is persisted, retryable, and visible in the Conductor UI. If the LLM call in step 4 fails, it retries. If the reviewer takes 3 days, the workflow waits. If the server restarts during the wait, execution resumes exactly where it left off.
+
+
+## Supported LLM providers
+
+Conductor provides native system tasks for LLM integration. No external frameworks or custom workers required — configure a provider and use it in any workflow.
+
+| Provider | Chat Completion | Text Completion | Embeddings |
+|---|---|---|---|
+| Anthropic (Claude) | ✓ | ✓ | — |
+| OpenAI (GPT) | ✓ | ✓ | ✓ |
+| Azure OpenAI | ✓ | ✓ | ✓ |
+| Google Gemini | ✓ | ✓ | ✓ |
+| AWS Bedrock | ✓ | ✓ | ✓ |
+| Mistral | ✓ | ✓ | ✓ |
+| Cohere | ✓ | ✓ | ✓ |
+| HuggingFace | ✓ | ✓ | ✓ |
+| Ollama | ✓ | ✓ | ✓ |
+| Perplexity | ✓ | — | — |
+| Grok (xAI) | ✓ | ✓ | — |
+| StabilityAI | — | — | — |
+
+No other workflow engine provides native LLM integration at this breadth. Each provider is a configuration — switch models by changing a parameter, not your code.
+
+
+## Supported vector databases
+
+Built-in vector database integration enables RAG (retrieval-augmented generation) pipelines as standard workflows.
+
+| Vector Database | Store Embeddings | Index Text | Semantic Search |
+|---|---|---|---|
+| Pinecone | ✓ | ✓ | ✓ |
+| pgvector (PostgreSQL) | ✓ | ✓ | ✓ |
+| MongoDB Atlas Vector Search | ✓ | ✓ | ✓ |
+
+
+## Content generation
+
+Native system tasks for multimodal content generation:
+
+| Task | Type | Description |
+|---|---|---|
+| Generate Image | `GENERATE_IMAGE` | Text-to-image generation via AI models |
+| Generate Audio | `GENERATE_AUDIO` | Text-to-speech synthesis |
+| Generate Video | `GENERATE_VIDEO` | Text/image-to-video generation (async) |
+| Generate PDF | `GENERATE_PDF` | Markdown-to-PDF document conversion |
 
 
 ## Next steps

@@ -2,69 +2,79 @@
 hide:
   - navigation
   - toc
-description: Conductor is an open-source durable code execution engine and agentic workflow engine. Build distributed workflows with saga pattern compensation, at-least-once task delivery, human-in-the-loop approval, and polyglot workers. The workflow engine for teams that need durable execution at scale.
+description: Conductor is an open-source durable execution engine and agentic workflow engine with 14+ native LLM providers, MCP tool calling, and built-in vector database support. Build distributed workflows with saga pattern compensation, at-least-once task delivery, human-in-the-loop approval, and polyglot workers. The workflow engine for teams that need durable execution and LLM orchestration at scale.
 ---
 
 <div class="home-wrapper">
 
 <div class="hero">
-  <div class="hero-grid">
-    <div class="hero-text">
-      <div class="hero-eyebrow">Open Source Durable Execution Engine</div>
-      <h1 class="hero-title">Durable execution<br/>for JSON + code native workflows<br/>and AI&nbsp;agents.</h1>
-      <p class="hero-subtitle">Model long-running workflows as JSON. Pause on time, signals, webhooks, or human input. Resume safely after failures. Expose any workflow as an API or MCP tool.</p>
+  <h1 class="hero-title">Durable execution for workflows<br/>and AI&nbsp;agents.</h1>
+  <div class="hero-columns">
+    <div class="hero-left">
+      <p class="hero-subtitle">Ship workflows and AI agents that survive crashes, retries, and scale&mdash;without building the infrastructure yourself.</p>
       <div class="hero-actions">
         <a href="quickstart/" class="btn-primary">Get Started<span class="btn-arrow">&rarr;</span></a>
-        <a href="https://github.com/conductor-oss/conductor" class="btn-ghost">View on GitHub</a>
+        <a href="https://github.com/conductor-oss/conductor" class="repo-link">
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          <span>conductor-oss/conductor</span>
+        </a>
+      </div>
+      <div class="hero-skills-cta">
+        <a href="https://github.com/conductor-oss/conductor-skills" class="skills-link">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          <span>Install Conductor Skills for your AI agents</span>
+          <span class="btn-arrow">&rarr;</span>
+        </a>
       </div>
     </div>
-    <div class="hero-terminal">
-      <div class="terminal-chrome">
-        <span class="terminal-dot"></span>
-        <span class="terminal-dot"></span>
-        <span class="terminal-dot"></span>
-        <span class="terminal-title">terminal</span>
-      </div>
-      <div class="terminal-body">
-        <div class="terminal-line"><span class="terminal-prompt">$</span> npm install -g @conductor-oss/conductor-cli</div>
-        <div class="terminal-line dim">added 142 packages in 8s</div>
-        <div class="terminal-line"><span class="terminal-prompt">$</span> conductor server start</div>
-        <div class="terminal-line dim">&#9632; Conductor server running on http://localhost:8080</div>
-        <div class="terminal-line dim">&#9632; UI available at http://localhost:8127</div>
-        <div class="terminal-line"><span class="terminal-prompt">$</span> conductor workflow start -w kitchensink</div>
-        <div class="terminal-line success">"e3b0c442-98fc-1c14-b39f-4c5e8a21d0f7"</div>
+    <div class="hero-right">
+      <div class="hero-code-block">
+        <div class="hero-code-label">Write workers in any language</div>
+        <div class="hero-lang-tabs">
+          <button class="hero-lang-tab active" data-lang="java">Java</button>
+          <button class="hero-lang-tab" data-lang="python">Python</button>
+          <button class="hero-lang-tab" data-lang="go">Go</button>
+          <button class="hero-lang-tab" data-lang="js">JavaScript</button>
+          <button class="hero-lang-tab" data-lang="csharp">C#</button>
+        </div>
+        <pre class="hero-code"><code id="hero-code-java" class="hero-code-panel active">@WorkerTask("charge_payment")
+public ChargeResult charge(OrderInput input) {
+    var chargeId = paymentService.charge(input.orderId, input.amount);
+    return new ChargeResult(chargeId);
+}</code><code id="hero-code-python" class="hero-code-panel">@worker_task(task_definition_name="charge_payment")
+def charge_payment(order_id: str, amount: float) -&gt; dict:
+    charge_id = payment_service.charge(order_id, amount)
+    return {"chargeId": charge_id}</code><code id="hero-code-go" class="hero-code-panel">func ChargePayment(input *OrderInput) (*ChargeResult, error) {
+    chargeId, err := paymentService.Charge(input.OrderId, input.Amount)
+    if err != nil {
+        return nil, err
+    }
+    return &amp;ChargeResult{ChargeId: chargeId}, nil
+}</code><code id="hero-code-js" class="hero-code-panel">worker.register("charge_payment", async ({ orderId, amount }) =&gt; {
+    const chargeId = await paymentService.charge(orderId, amount);
+    return { chargeId };
+});</code><code id="hero-code-csharp" class="hero-code-panel">[WorkerTask("charge_payment")]
+public ChargeResult ChargePayment(OrderInput input) {
+    var chargeId = _paymentService.Charge(input.OrderId, input.Amount);
+    return new ChargeResult(chargeId);
+}</code></pre>
       </div>
     </div>
   </div>
 </div>
 
-<div class="logo-wall">
-  <p class="logo-wall-label">Trusted by engineering teams at</p>
-  <div class="logo-marquee">
-    <div class="logo-track">
-      <span class="logo-name">Netflix</span>
-      <span class="logo-name">Tesla</span>
-      <span class="logo-name">LinkedIn</span>
-      <span class="logo-name">JP Morgan</span>
-      <span class="logo-name">Freshworks</span>
-      <span class="logo-name">American Express</span>
-      <span class="logo-name">Redfin</span>
-      <span class="logo-name">VMware</span>
-      <span class="logo-name">Coupang</span>
-      <span class="logo-name">Swiggy</span>
-      <span class="logo-name">Netflix</span>
-      <span class="logo-name">Tesla</span>
-      <span class="logo-name">LinkedIn</span>
-      <span class="logo-name">JP Morgan</span>
-      <span class="logo-name">Freshworks</span>
-      <span class="logo-name">American Express</span>
-      <span class="logo-name">Redfin</span>
-      <span class="logo-name">VMware</span>
-      <span class="logo-name">Coupang</span>
-      <span class="logo-name">Swiggy</span>
-    </div>
-  </div>
-</div>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  document.querySelectorAll(".hero-lang-tab").forEach(function(tab) {
+    tab.addEventListener("click", function() {
+      document.querySelectorAll(".hero-lang-tab").forEach(function(t) { t.classList.remove("active"); });
+      document.querySelectorAll(".hero-code-panel").forEach(function(p) { p.classList.remove("active"); });
+      tab.classList.add("active");
+      document.getElementById("hero-code-" + tab.dataset.lang).classList.add("active");
+    });
+  });
+});
+</script>
 
 <div class="value-strip">
   <div class="value-item">
@@ -114,18 +124,27 @@ description: Conductor is an open-source durable code execution engine and agent
     <div class="feature-card">
       <div class="feature-tag">AI</div>
       <h3>Agent-ready orchestration</h3>
-      <p>Orchestrate AI agents with LLM tasks, tool calls, human-in-the-loop approval, and structured output. Expose any workflow as an API endpoint or MCP tool.</p>
+      <p>Orchestrate AI agents with 14+ native LLM providers (Anthropic, OpenAI, Gemini, Bedrock, Mistral, and more), MCP tool calling, human-in-the-loop approval, and structured output. Built-in vector database support (Pinecone, pgvector, MongoDB Atlas) for RAG pipelines.</p>
       <a href="architecture/agents/" class="feature-link">Agent patterns &rarr;</a>
     </div>
     <div class="feature-card">
       <div class="feature-tag">Workers</div>
       <h3>Polyglot workers</h3>
-      <p>Write task workers in <a href="https://github.com/conductor-oss/java-sdk">Java</a>, <a href="https://github.com/conductor-oss/python-sdk">Python</a>, <a href="https://github.com/conductor-oss/go-sdk">Go</a>, <a href="https://github.com/conductor-oss/csharp-sdk">C#</a>, <a href="https://github.com/conductor-oss/javascript-sdk">JavaScript</a>, <a href="https://github.com/conductor-oss/ruby-sdk">Ruby</a>, or <a href="https://github.com/conductor-oss/rust-sdk">Rust</a>. Workers poll for tasks, execute your logic, and report results&mdash;run them anywhere.</p>
+      <p>Write task workers in any language. Workers poll for tasks, execute your logic, and report results&mdash;run them anywhere.</p>
+      <div class="lang-logos">
+        <a href="https://github.com/conductor-oss/java-sdk" title="Java"><img src="https://orkes.io/content/img/java.svg" alt="Java"></a>
+        <a href="https://github.com/conductor-oss/python-sdk" title="Python"><img src="https://orkes.io/content/img/Python_logo.svg" alt="Python"></a>
+        <a href="https://github.com/conductor-oss/go-sdk" title="Go"><img src="https://orkes.io/content/img/Go_Logo_Blue.svg" alt="Go"></a>
+        <a href="https://github.com/conductor-oss/csharp-sdk" title="C#"><img src="https://orkes.io/content/img/csharp.png" alt="C#"></a>
+        <a href="https://github.com/conductor-oss/javascript-sdk" title="JavaScript"><img src="https://orkes.io/content/img/JavaScript_logo_2.svg" alt="JavaScript"></a>
+        <a href="https://github.com/conductor-oss/ruby-sdk" title="Ruby"><img src="https://upload.wikimedia.org/wikipedia/commons/7/73/Ruby_logo.svg" alt="Ruby"></a>
+        <a href="https://github.com/conductor-oss/rust-sdk" title="Rust"><img src="https://upload.wikimedia.org/wikipedia/commons/d/d5/Rust_programming_language_black_logo.svg" alt="Rust"></a>
+      </div>
     </div>
     <div class="feature-card">
       <div class="feature-tag">Reliability</div>
       <h3>Saga pattern &amp; compensation</h3>
-      <p>Model distributed transactions as sagas with automatic compensation. When a step fails, Conductor runs your undo logic in reverse order&mdash;rolling back payments, releasing inventory, and cancelling reservations without manual intervention.</p>
+      <p>Model distributed transactions as sagas. When a step fails, Conductor automatically runs undo logic in reverse order&mdash;no manual intervention.</p>
       <a href="devguide/how-tos/Workflows/handling-errors/" class="feature-link">Error handling &rarr;</a>
     </div>
   </div>
@@ -223,6 +242,42 @@ description: Conductor is an open-source durable code execution engine and agent
       <summary>Is Orkes Conductor compatible with Conductor OSS?</summary>
       <p>100% compatible. Orkes Conductor is built on top of Conductor OSS, ensuring full compatibility between the open-source version and the enterprise offering.</p>
     </details>
+    <details class="faq-item">
+      <summary>Can Conductor orchestrate AI agents and LLMs?</summary>
+      <p>Yes. Conductor provides native system tasks for 14+ LLM providers (Anthropic, OpenAI, Azure OpenAI, Google Gemini, AWS Bedrock, Mistral, Cohere, HuggingFace, Ollama, and more), MCP tool calling (LIST_MCP_TOOLS, CALL_MCP_TOOL), vector database integration (Pinecone, pgvector, MongoDB Atlas) for RAG, and content generation (image, audio, video, PDF). All with the same durability guarantees as any other workflow task.</p>
+    </details>
+    <details class="faq-item">
+      <summary>How does Conductor compare to other workflow engines?</summary>
+      <p>Conductor is the only open-source workflow engine with native LLM task types for 14+ providers, built-in MCP integration, and vector database support. Combined with durable execution, 7+ language SDKs (Java, Python, Go, JavaScript, C#, Ruby, Rust), 6 message brokers, 8+ persistence backends, and battle-tested scale at Netflix, Tesla, LinkedIn, and JP Morgan, Conductor provides the most complete workflow orchestration platform available.</p>
+    </details>
+  </div>
+</div>
+
+<div class="logo-wall">
+  <p class="logo-wall-label">Trusted by engineering teams at</p>
+  <div class="logo-marquee">
+    <div class="logo-track">
+      <span class="logo-name">Netflix</span>
+      <span class="logo-name">Tesla</span>
+      <span class="logo-name">LinkedIn</span>
+      <span class="logo-name">JP Morgan</span>
+      <span class="logo-name">Freshworks</span>
+      <span class="logo-name">American Express</span>
+      <span class="logo-name">Redfin</span>
+      <span class="logo-name">VMware</span>
+      <span class="logo-name">Coupang</span>
+      <span class="logo-name">Swiggy</span>
+      <span class="logo-name">Netflix</span>
+      <span class="logo-name">Tesla</span>
+      <span class="logo-name">LinkedIn</span>
+      <span class="logo-name">JP Morgan</span>
+      <span class="logo-name">Freshworks</span>
+      <span class="logo-name">American Express</span>
+      <span class="logo-name">Redfin</span>
+      <span class="logo-name">VMware</span>
+      <span class="logo-name">Coupang</span>
+      <span class="logo-name">Swiggy</span>
+    </div>
   </div>
 </div>
 
