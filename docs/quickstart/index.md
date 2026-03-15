@@ -61,8 +61,8 @@ Save `workflow.json` — a two-task workflow that calls an API and parses the re
 
 **What's happening here:**
 
-- **`fetch_data`** — an [HTTP task](../documentation/configuration/workflowdef/systemtasks/http-task.md) that calls an external API. No worker needed.
-- **`parse_response`** — an [Inline task](../documentation/configuration/workflowdef/systemtasks/inline-task.md) that runs JavaScript server-side to extract and summarize the API response.
+- **`fetch_data`** — an [HTTP task](../devguide/configuration/workflowdef/systemtasks/http-task.md) that calls an external API. No worker needed.
+- **`parse_response`** — an [Inline task](../devguide/configuration/workflowdef/systemtasks/inline-task.md) that runs JavaScript server-side to extract and summarize the API response.
 - Both are **system tasks** — Conductor executes them directly. No external code to deploy.
 
 ### Register and run
@@ -354,7 +354,7 @@ For production deployment options, see [Running with Docker](../devguide/running
 
 ## Next steps
 
-- **[System tasks](../documentation/configuration/workflowdef/systemtasks/index.md)** — HTTP, Wait, Event tasks without workers
-- **[Operators](../documentation/configuration/workflowdef/operators/index.md)** — Fork/join, switch, loops, sub-workflows
+- **[System tasks](../devguide/configuration/workflowdef/systemtasks/index.md)** — HTTP, Wait, Event tasks without workers
+- **[Operators](../devguide/configuration/workflowdef/operators/index.md)** — Fork/join, switch, loops, sub-workflows
 - **[Error handling](../devguide/how-tos/Workflows/handling-errors.md)** — Saga pattern, compensation flows
-- **[Client SDKs](../documentation/clientsdks/index.md)** — Java, Python, Go, C#, JavaScript, and more
+- **[Client SDKs](../devguide/clientsdks/index.md)** — Java, Python, Go, C#, JavaScript, and more

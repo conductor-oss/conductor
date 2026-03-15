@@ -15,7 +15,7 @@ Tasks are categorized into three types, enabling you to flexibly build workflows
 
 ### System tasks
 
-Conductor ships with 20+ [system tasks](../../documentation/configuration/workflowdef/systemtasks/index.md) — built-in, general-purpose tasks designed for common uses like calling an HTTP endpoint, publishing events, or running AI inference.
+Conductor ships with 20+ [system tasks](../configuration/workflowdef/systemtasks/index.md) — built-in, general-purpose tasks designed for common uses like calling an HTTP endpoint, publishing events, or running AI inference.
 
 System tasks are managed by Conductor and executed within its server's JVM, allowing you to get started without having to write custom workers.
 
@@ -51,12 +51,12 @@ def process_payment(orderId: str, amount: float) -> dict:
 ```
 
 ### Operators
-[Operators](../../documentation/configuration/workflowdef/operators/index.md) are built-in control flow primitives similar to programming language constructs like loops, switch cases, or fork/joins. Like system tasks, operators are also managed by Conductor.
+[Operators](../configuration/workflowdef/operators/index.md) are built-in control flow primitives similar to programming language constructs like loops, switch cases, or fork/joins. Like system tasks, operators are also managed by Conductor.
 
 
 ## Task definition
 
-[Task definitions](../../documentation/configuration/taskdef.md) are used to define a task's default parameters, like inputs and output keys, timeouts, and retries. This provides reusability across workflows, as the registered task definition will be referenced when a task is configured in a workflow definition.
+[Task definitions](../configuration/taskdef.md) are used to define a task's default parameters, like inputs and output keys, timeouts, and retries. This provides reusability across workflows, as the registered task definition will be referenced when a task is configured in a workflow definition.
 
 ```json
 {
@@ -114,7 +114,7 @@ A task execution object is created during runtime when an input is passed into a
 
 ## AI and LLM tasks
 
-Conductor includes first-class support for building AI-powered workflows through its AI/LLM [system tasks](../../documentation/configuration/workflowdef/systemtasks/index.md).
+Conductor includes first-class support for building AI-powered workflows through its AI/LLM [system tasks](../configuration/workflowdef/systemtasks/index.md).
 
 ### Supported LLM providers
 
@@ -136,4 +136,4 @@ For retrieval-augmented generation (RAG), Conductor supports vector stores inclu
 
 Beyond text, Conductor's AI tasks support generating images, audio, video, and PDFs — useful for workflows that produce rich media from LLM outputs.
 
-For end-to-end AI agent patterns that combine LLM reasoning with tool use, see the [agents documentation](../../architecture/agents.md).
+For end-to-end AI agent patterns that combine LLM reasoning with tool use, see the [agents documentation](../agents/agents.md).

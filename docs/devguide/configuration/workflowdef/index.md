@@ -4,7 +4,10 @@ description: "Complete reference for Conductor workflow definitions — properti
 
 # Workflow Definition
 
-The Workflow Definition contains all the information necessary to define the behavior of a workflow. The most important part of this definition is the `tasks` property, which is an array of [**Task Configurations**](#task-configurations). 
+The Workflow Definition contains all the information necessary to define the behavior of a workflow. The most important part of this definition is the `tasks` property, which is an array of [**Task Configurations**](#task-configurations).
+
+For the formal JSON Schema definitions of workflow and task structures, see the [`schemas/`](https://github.com/conductor-oss/conductor/tree/main/schemas) directory in the repository.
+
 
 ## Workflow Properties
 | Field                         | Type                             | Description                                                                                                                     | Notes                                                                                             |
@@ -43,7 +46,7 @@ Setting the `workflowStatusListenerEnabled` field in your Workflow Definition to
 
 To add a custom implementation of the Workflow Status Listener. Refer to [this](../../advanced/extend.md#workflow-status-listener) .
 
-The listener can be implemented in such a way as to either send a notification to an external system or to send an event on the conductor queue to complete/fail another task in another workflow as described [here](../../configuration/eventhandlers.md).
+The listener can be implemented in such a way as to either send a notification to an external system or to send an event on the conductor queue to complete/fail another task in another workflow as described [here](..).
 
 ### Default Input with `inputTemplate`
 

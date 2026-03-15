@@ -2,16 +2,16 @@
 hide:
   - navigation
   - toc
-description: Conductor is an open-source durable execution engine and agentic workflow engine with 14+ native LLM providers, MCP tool calling, and built-in vector database support. Build distributed workflows with saga pattern compensation, at-least-once task delivery, human-in-the-loop approval, and polyglot workers. The workflow engine for teams that need durable execution and LLM orchestration at scale.
+description: Conductor is an open source workflow engine and durable execution platform for workflow orchestration, microservice orchestration, and AI agent orchestration. Self-hosted, Apache 2.0 licensed. 14+ native LLM providers, MCP tool calling, and built-in vector database support. Build distributed workflows with saga pattern compensation, at-least-once task delivery, human-in-the-loop approval, and polyglot workers. The workflow automation platform for teams that need LLM orchestration and durable execution at scale.
 ---
 
 <div class="home-wrapper">
 
 <div class="hero">
-  <h1 class="hero-title">Durable execution for workflows<br/>and AI&nbsp;agents.</h1>
+  <h1 class="hero-title">The durable runtime <br/> for workflows and AI agents</h1>
   <div class="hero-columns">
     <div class="hero-left">
-      <p class="hero-subtitle">Ship workflows and AI agents that survive crashes, retries, and scale&mdash;without building the infrastructure yourself.</p>
+      <p class="hero-subtitle">Stop stitching together retries, state, and compensation by hand. Conductor gives your workflows a durable runtime.</p>
       <div class="hero-actions">
         <a href="quickstart/" class="btn-primary">Get Started<span class="btn-arrow">&rarr;</span></a>
         <a href="https://github.com/conductor-oss/conductor" class="repo-link">
@@ -106,14 +106,14 @@ document.addEventListener("DOMContentLoaded", function() {
   <div class="features-grid">
     <div class="feature-card feature-accent">
       <div class="feature-tag">Core</div>
-      <h3>Durable by default</h3>
-      <p>Workflow state is persisted at every step. Survive server restarts, worker crashes, and network failures. At-least-once task delivery with configurable retries, timeouts, and compensation flows.</p>
+      <h3>Durable execution by default</h3>
+      <p>Workflow state is persisted at every step. Survive server restarts, worker crashes, and network failures. Durable execution with at-least-once task delivery, configurable retries, timeouts, and compensation flows. Build durable agents that never lose progress.</p>
       <a href="architecture/durable-execution/" class="feature-link">Failure semantics &rarr;</a>
     </div>
     <div class="feature-card">
       <div class="feature-tag">Format</div>
-      <h3>JSON + code native workflows</h3>
-      <p>Define workflows as JSON&mdash;store, version, diff, and generate them programmatically. Create dynamic workflows at runtime via SDK, API, or UI without a compile/deploy cycle.</p>
+      <h3>Workflow as code &amp; JSON native</h3>
+      <p>Define workflows as code using SDKs in any language, or as JSON&mdash;store, version, diff, and generate them programmatically. Create dynamic workflows at runtime via SDK, API, or UI without a compile/deploy cycle.</p>
       <a href="architecture/json-native/" class="feature-link">How it works &rarr;</a>
     </div>
     <div class="feature-card">
@@ -123,8 +123,8 @@ document.addEventListener("DOMContentLoaded", function() {
     </div>
     <div class="feature-card">
       <div class="feature-tag">AI</div>
-      <h3>Agent-ready orchestration</h3>
-      <p>Orchestrate AI agents with 14+ native LLM providers (Anthropic, OpenAI, Gemini, Bedrock, Mistral, and more), MCP tool calling, human-in-the-loop approval, and structured output. Built-in vector database support (Pinecone, pgvector, MongoDB Atlas) for RAG pipelines.</p>
+      <h3>AI agent orchestration &amp; LLM orchestration</h3>
+      <p>Orchestrate AI agents with 14+ native LLM providers (Anthropic, OpenAI, Gemini, Bedrock, Mistral, and more), MCP tool calling, function calling, human-in-the-loop approval, and structured output. Built-in vector database support (Pinecone, pgvector, MongoDB Atlas) for RAG pipelines.</p>
       <a href="architecture/agents/" class="feature-link">Agent patterns &rarr;</a>
     </div>
     <div class="feature-card">
@@ -203,6 +203,10 @@ document.addEventListener("DOMContentLoaded", function() {
   </div>
   <div class="faq-grid">
     <details class="faq-item">
+      <summary>Is Conductor open source?</summary>
+      <p>Yes. Conductor is a fully open source workflow engine, Apache 2.0 licensed. You can self-host it on your own infrastructure with no vendor lock-in. It supports 8+ persistence backends, 6 message brokers, and runs anywhere Docker runs.</p>
+    </details>
+    <details class="faq-item">
       <summary>Is this the same as Netflix Conductor?</summary>
       <p>Yes. Conductor OSS is the continuation of the original Netflix Conductor repository after Netflix contributed the project to the open-source foundation.</p>
     </details>
@@ -215,8 +219,8 @@ document.addEventListener("DOMContentLoaded", function() {
       <p>Conductor was built at Netflix to handle massive scale and has been battle-tested in production environments processing millions of workflows. It scales horizontally to meet virtually any demand.</p>
     </details>
     <details class="faq-item">
-      <summary>Does Conductor support durable code execution?</summary>
-      <p>Yes. Conductor pioneered durable execution patterns, ensuring workflows complete reliably even in the face of infrastructure failures, process crashes, or network issues.</p>
+      <summary>Does Conductor support durable execution?</summary>
+      <p>Yes. Conductor pioneered durable execution patterns, ensuring workflows and durable agents complete reliably even in the face of infrastructure failures, process crashes, or network issues.</p>
     </details>
     <details class="faq-item">
       <summary>Are workflows always asynchronous?</summary>
@@ -244,11 +248,11 @@ document.addEventListener("DOMContentLoaded", function() {
     </details>
     <details class="faq-item">
       <summary>Can Conductor orchestrate AI agents and LLMs?</summary>
-      <p>Yes. Conductor provides native system tasks for 14+ LLM providers (Anthropic, OpenAI, Azure OpenAI, Google Gemini, AWS Bedrock, Mistral, Cohere, HuggingFace, Ollama, and more), MCP tool calling (LIST_MCP_TOOLS, CALL_MCP_TOOL), vector database integration (Pinecone, pgvector, MongoDB Atlas) for RAG, and content generation (image, audio, video, PDF). All with the same durability guarantees as any other workflow task.</p>
+      <p>Yes. Conductor provides AI agent orchestration and LLM orchestration as native capabilities. 14+ LLM providers (Anthropic, OpenAI, Azure OpenAI, Google Gemini, AWS Bedrock, Mistral, Cohere, HuggingFace, Ollama, and more), MCP tool calling and function calling (LIST_MCP_TOOLS, CALL_MCP_TOOL), vector database integration (Pinecone, pgvector, MongoDB Atlas) for RAG, and content generation (image, audio, video, PDF). All with the same durability guarantees as any other workflow task.</p>
     </details>
     <details class="faq-item">
       <summary>How does Conductor compare to other workflow engines?</summary>
-      <p>Conductor is the only open-source workflow engine with native LLM task types for 14+ providers, built-in MCP integration, and vector database support. Combined with durable execution, 7+ language SDKs (Java, Python, Go, JavaScript, C#, Ruby, Rust), 6 message brokers, 8+ persistence backends, and battle-tested scale at Netflix, Tesla, LinkedIn, and JP Morgan, Conductor provides the most complete workflow orchestration platform available.</p>
+      <p>Conductor is the only open source workflow engine with native LLM task types for 14+ providers, built-in MCP integration, and vector database support. Combined with durable execution, 7+ language SDKs (Java, Python, Go, JavaScript, C#, Ruby, Rust), 6 message brokers, 8+ persistence backends, and battle-tested scale at Netflix, Tesla, LinkedIn, and JP Morgan, Conductor provides the most complete workflow orchestration platform available. Unlike Temporal, Step Functions, or Airflow, Conductor is fully self-hosted, supports both code-first and JSON workflow definitions, and provides native AI agent orchestration out of the box.</p>
     </details>
   </div>
 </div>
@@ -283,8 +287,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
 <div class="cta-section">
   <div class="cta-content">
-    <h2>Open source. Community driven.</h2>
-    <p>Apache-2.0 licensed. Originally created at Netflix, now maintained by the community.</p>
+    <h2>Open source workflow engine. Community driven.</h2>
+    <p>Apache-2.0 licensed. Self-hosted, no vendor lock-in. Originally created at Netflix, now maintained by the community.</p>
     <div class="cta-actions">
       <a href="https://github.com/conductor-oss/conductor" class="btn-primary">Star on GitHub<span class="btn-arrow">&rarr;</span></a>
       <a href="resources/contributing/" class="btn-ghost">Contributing guide</a>

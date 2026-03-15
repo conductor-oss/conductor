@@ -1,10 +1,10 @@
 ---
-description: How Conductor guarantees durable code execution — what persists at every step, at-least-once task delivery, saga pattern compensation, failure matrix, task state transitions, retry configuration, and distributed consistency. The workflow engine built for reliability.
+description: How Conductor guarantees durable code execution for distributed workflows — what persists at every step, at-least-once task delivery, saga pattern compensation, failure matrix, task state transitions, retry logic with exponential backoff, and distributed consistency. The open source distributed workflow engine built for reliability.
 ---
 
 # Durable Execution Semantics
 
-Conductor is a durable execution engine. Every workflow execution is persisted at every step, survives infrastructure failures, and guarantees at-least-once task delivery. This page defines exactly what that means.
+Conductor is a durable execution engine for distributed workflows and durable agents. Every workflow execution is persisted at every step, survives infrastructure failures, and guarantees at-least-once task delivery. This durable execution model means your workflows and agents never lose progress. This page defines exactly what that means.
 
 ## What persists
 
@@ -71,7 +71,7 @@ Each transition is persisted before any subsequent action is taken.
 
 ## Timeout and retry configuration
 
-Durability is configurable per task via the [task definition](../documentation/configuration/taskdef.md):
+Durability is configurable per task via the [task definition](../devguide/configuration/taskdef.md):
 
 | Parameter | What it controls |
 |---|---|
@@ -102,7 +102,7 @@ In multi-node deployments, Conductor ensures consistency through:
 - **Fencing tokens**: Prevent stale updates from nodes with expired locks.
 - **Persistent queues**: Task queues survive node failures. Configurable sharding strategies (round-robin or local-only) trade off distribution vs. consistency.
 
-See [Technical Details](../devguide/architecture/technicaldetails.md) for the full consistency model.
+See the [deployment guide](../devguide/running/deploy.md#locking) for distributed lock configuration.
 
 
 ## What this means for your code

@@ -1,3 +1,7 @@
+---
+description: "Extend Conductor with custom persistence backends, queue implementations, and workflow status listeners for this open source workflow orchestration engine."
+---
+
 # Extending Conductor
 
 ## Backend

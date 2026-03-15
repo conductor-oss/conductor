@@ -2,7 +2,7 @@
 description: "Monitor task queues and scale Conductor workers — queue depth, poll data, Prometheus metrics, autoscaling policies, and performance tuning."
 ---
 
-# Monitoring and Scaling Workers
+# Scaling Task Workers
 
 Workers execute business logic outside the Conductor server. Keeping them healthy requires two things: **monitoring** queue and worker state, and **scaling** based on what the data tells you.
 
@@ -137,4 +137,4 @@ This limits the task to 100 executions per 60-second window across all workers.
 
 ### Domain isolation
 
-Use [task-to-domain](../../../documentation/api/taskdomains.md) to route tasks to specific worker pools. This prevents noisy neighbors — a high-volume workflow won't starve workers serving a latency-sensitive one.
+Use [task-to-domain](../../api/taskdomains.md) to route tasks to specific worker pools. This prevents noisy neighbors — a high-volume workflow won't starve workers serving a latency-sensitive one.

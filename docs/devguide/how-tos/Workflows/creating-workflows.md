@@ -17,7 +17,7 @@ With the UI, you can create or update workflow definitions visually.
 **To create a workflow definition:**
 
 1. In **[Definitions](http://localhost:8080/workflowDefs)**, select **+ New Workflow Definition**.
-2. Configure the workflow definition JSON. Refer to [Workflow Definition](../../../documentation/configuration/workflowdef/index.md) for the reference guide on the full parameters.
+2. Configure the workflow definition JSON. Refer to [Workflow Definition](../../configuration/workflowdef/index.md) for the reference guide on the full parameters.
 3. Select **Save** > **Save**.
 
 ### Updating workflows
@@ -25,7 +25,7 @@ With the UI, you can create or update workflow definitions visually.
 **To update a workflow definition:**
 
 1. In **[Definitions](http://localhost:8080/workflowDefs**)**, select the workflow to be updated.
-2. Modify the workflow definition JSON. Refer to [Workflow Definition](../../../documentation/configuration/workflowdef/index.md) for the reference guide on the full parameters.
+2. Modify the workflow definition JSON. Refer to [Workflow Definition](../../configuration/workflowdef/index.md) for the reference guide on the full parameters.
 3. Select **Save**. The workflow version will automatically increment by 1.
 4. (Optional) Clear the **Automatically set version** checkbox to save the updated workflow definition without creating a new version.
 5. Select **Save** again to confirm.
@@ -39,13 +39,13 @@ You can create or update workflow definitions using the Conductor CLI. Save your
 conductor workflow create workflow.json
 ```
 
-Refer to [Workflow Definition](../../../documentation/configuration/workflowdef/index.md) for the reference guide on the full parameters.
+Refer to [Workflow Definition](../../configuration/workflowdef/index.md) for the reference guide on the full parameters.
 
 ## Using APIs
 
 You can also create or update workflow definitions using the Update Workflow Definition API (`PUT api/metadata/workflow`).
 
-Refer to [Workflow Definition](../../../documentation/configuration/workflowdef/index.md) for the reference guide on the full parameters.
+Refer to [Workflow Definition](../../configuration/workflowdef/index.md) for the reference guide on the full parameters.
 
 ??? note "Example using cURL"
     ```shell
@@ -60,7 +60,7 @@ Refer to [Workflow Definition](../../../documentation/configuration/workflowdef/
 
 Conductor offers client SDKs for popular languages which have library methods for making the API call. Refer to the SDK documentation to configure a client in your selected language to invoke workflow executions.
 
-Refer to [Workflow Definition](../../../documentation/configuration/workflowdef/index.md) for the reference guide on the full parameters.
+Refer to [Workflow Definition](../../configuration/workflowdef/index.md) for the reference guide on the full parameters.
 
 ### Example using JavaScript
 

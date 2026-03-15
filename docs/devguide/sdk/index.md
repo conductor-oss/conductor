@@ -1,10 +1,10 @@
 ---
-description: "Conductor SDKs for Java, Python, Go, JavaScript, C#, Ruby, and Rust — build workers in any language with type-safe APIs, automatic polling, and workflow management."
+description: "Conductor SDKs for Java, Python, Go, JavaScript, C#, Ruby, and Rust — build workflow as code and task workers in any language with type-safe APIs, automatic polling, and workflow orchestration management for this open source workflow engine."
 ---
 
 # SDKs
 
-Build Conductor workers in your language of choice. Every SDK provides task polling, workflow management, and full API coverage — so you can focus on your business logic while Conductor handles retries, state, and orchestration.
+Build Conductor workers and define workflow as code in your language of choice. Every SDK provides task polling, workflow management, and full API coverage for this open source workflow orchestration engine — so you can focus on your business logic while Conductor handles retries, state, and orchestration.
 
 <div class="sdk-grid">
 <a href="java-sdk/" class="sdk-card"><div class="sdk-icon sdk-java" aria-hidden="true"></div><div class="sdk-info"><h3>Java</h3><p>Spring Boot integration, annotation-based workers, thread management, and testing framework.</p></div><span class="sdk-arrow">→</span></a>

@@ -483,11 +483,12 @@ label.md-nav__link {
 }
 .hero-title {
   font-family: var(--font-display) !important;
-  font-size: 3rem !important;
+  font-size: 3.4rem !important;
   font-weight: 400 !important;
   line-height: 1.12 !important;
   letter-spacing: -0.02em;
-  margin: 0 0 28px !important;
+  margin: 0 0 48px !important;
+  padding: 32px 0;
   text-align: center;
   background: linear-gradient(93deg, #6B4FBB 0%, #1DCAFF 100%);
   -webkit-background-clip: text;

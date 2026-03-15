@@ -1,5 +1,5 @@
 ---
-description: "Overview of built-in system tasks in Conductor — HTTP, Event, Human, Wait, Inline, Kafka Publish, JSON JQ Transform, and more for durable code execution."
+description: "Overview of built-in system tasks in Conductor — HTTP, Event, Human, Wait, Inline, Kafka Publish, JSON JQ Transform, LLM orchestration, MCP function calling, and more for durable workflow orchestration."
 ---
 
 # System Tasks

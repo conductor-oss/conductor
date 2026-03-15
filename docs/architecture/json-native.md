@@ -169,7 +169,7 @@ For MCP integration, a Conductor workflow can be registered as an MCP tool, allo
 ## Next steps
 
 - **[Durable Execution Semantics](durable-execution.md)** &mdash; What persists, what gets retried, failure matrix.
-- **[Why Conductor for Agents](agents.md)** &mdash; How Conductor's primitives map to agent patterns.
+- **[Why Conductor for Agents](../devguide/agents/agents.md)** &mdash; How Conductor's primitives map to agent patterns.
 - **[Quickstart](../quickstart/index.md)** &mdash; Get running in 5 minutes.
-- **[Workflow Definition Reference](../documentation/configuration/workflowdef/index.md)** &mdash; Full JSON schema for workflow definitions.
-- **[Dynamic Fork](../documentation/configuration/workflowdef/operators/dynamic-fork-task.md)** &mdash; Runtime-determined parallel execution.
+- **[Workflow Definition Reference](../devguide/configuration/workflowdef/index.md)** &mdash; Full JSON schema for workflow definitions.
+- **[Dynamic Fork](../devguide/configuration/workflowdef/operators/dynamic-fork-task.md)** &mdash; Runtime-determined parallel execution.

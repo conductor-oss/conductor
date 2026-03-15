@@ -18,7 +18,7 @@ In Conductor, workflows are executed on a worker-task queue architecture, where 
 * **APIs**—REST APIs for programmatic access to the Conductor server. 
 
 
-By default, Conductor uses Redis as its data store, with Elasticsearch used for its indexing backend. These [storage layers are pluggable](../../documentation/advanced/extend.md), allowing you to work with alternative backends and queue service providers.
+By default, Conductor uses Redis as its data store, with Elasticsearch used for its indexing backend. These [storage layers are pluggable](../advanced/extend.md), allowing you to work with alternative backends and queue service providers.
 
 
 ## Task execution

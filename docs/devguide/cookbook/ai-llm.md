@@ -1,8 +1,10 @@
 ---
-description: "Conductor cookbook — AI and LLM workflow recipes for chat completion, RAG pipelines, MCP agents, image generation, LLM-to-PDF, and provider configuration."
+description: "LLM orchestration cookbook — AI agent orchestration recipes for chat completion, RAG pipelines with vector databases, MCP agents with function calling and tool use, image generation, LLM-to-PDF, and provider configuration."
 ---
 
-# AI & LLM recipes
+# AI & LLM orchestration recipes
+
+Build durable agents and LLM workflows with Conductor's native AI capabilities. Every recipe below runs with full durable execution guarantees — retries, state persistence, and crash recovery.
 
 ### Chat completion
 
@@ -51,9 +53,9 @@ curl -X POST 'http://localhost:8080/api/workflow/chat_workflow' \
 
 ---
 
-### RAG pipeline (search + answer)
+### RAG pipeline with vector database (search + answer)
 
-Vector search retrieves relevant documents, then an LLM generates an answer grounded in those results.
+A vector database workflow for retrieval-augmented generation: vector search retrieves relevant documents, then an LLM generates an answer grounded in those results.
 
 ```json
 {
@@ -115,9 +117,9 @@ curl -X POST 'http://localhost:8080/api/workflow/rag_workflow' \
 
 ---
 
-### MCP AI agent
+### MCP AI agent with function calling
 
-A four-step agentic workflow: discover available tools via MCP, ask an LLM to pick the right tool, execute it, and summarize the result.
+A four-step agentic workflow demonstrating AI agent orchestration with function calling: discover available tools via MCP, ask an LLM to pick the right tool, execute it via tool use, and summarize the result.
 
 ```json
 {

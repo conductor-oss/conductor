@@ -86,7 +86,25 @@ Set the following properties to the desired values in the JVM system properties:
 | workflow.external.payload.storage.azure_blob.task_input_path | Path prefix where tasks input will be stored with an random UUID filename | task/input/ |
 | workflow.external.payload.storage.azure_blob.task_output_path | Path prefix where tasks output will be stored with an random UUID filename | task/output/ |
 
-The payloads will be stored as done in [Amazon S3](https://github.com/conductor-oss/conductor/blob/main/awss3-storage/src/main/java/com/netflix/conductor/s3/storage/S3PayloadStorage.java#L149-L167).
+The payloads will be stored in the same path structure as [Amazon S3](https://github.com/conductor-oss/conductor/blob/main/awss3-storage/src/main/java/com/netflix/conductor/s3/storage/S3PayloadStorage.java#L149-L167).
+
+#### Testing with Azurite
+
+You can use [Azurite](https://github.com/Azure/Azurite) to simulate Azure Storage locally for development and testing.
+
+#### Troubleshooting
+
+When using Elasticsearch persistence, you may receive a `java.lang.IllegalStateException` because the Netty library calls `setAvailableProcessors` twice. To resolve this, set:
+
+```properties
+es.set.netty.runtime.available.processors=false
+```
+
+To use `okhttp` instead of the default Netty HTTP client, add the following dependency:
+
+```
+com.azure:azure-core-http-okhttp:${compatible version}
+```
 
 ### PostgreSQL Storage
 

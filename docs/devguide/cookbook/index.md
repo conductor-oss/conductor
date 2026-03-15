@@ -1,5 +1,5 @@
 ---
-description: "Conductor cookbook — copy-paste workflow recipes for microservice orchestration, dynamic parallelism, event-driven patterns, AI/LLM, content generation, and RAG pipelines."
+description: "Conductor cookbook — copy-paste workflow orchestration recipes for microservice orchestration, dynamic parallelism, event-driven patterns, AI agent orchestration, LLM orchestration, workflow automation, and RAG pipelines."
 ---
 
 # Cookbook
@@ -24,8 +24,12 @@ Production-ready workflow recipes. Each recipe includes the complete JSON workfl
 
     Publish to Kafka/NATS/RabbitMQ/SQS, event handlers to trigger workflows, complete tasks from events.
 
--   **[AI & LLM recipes](ai-llm.md)**
+-   **[AI & LLM orchestration recipes](ai-llm.md)**
 
-    Chat completion, RAG pipelines, MCP agents, image generation, LLM-to-PDF, and provider configuration.
+    Chat completion, RAG pipelines, MCP agents with function calling, image generation, LLM-to-PDF, and provider configuration.
+
+-   **[Dynamic workflows as code](dynamic-workflows.md)**
+
+    Workflow as code in Python — sequential chains, conditional branching, parallel execution, loops, sub-workflows, and runtime-generated definitions.
 
 </div>

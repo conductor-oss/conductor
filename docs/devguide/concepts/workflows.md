@@ -1,5 +1,5 @@
 ---
-description: "Understand workflows in Conductor — JSON workflow definition, dynamic workflows, and runtime executions that power durable code execution across distributed services."
+description: "Understand workflows in Conductor — JSON workflow definition, dynamic workflows, distributed workflow execution, and long-running async workflows that power durable code execution across distributed services."
 ---
 
 # Workflows
@@ -19,9 +19,9 @@ In Conductor, workflows can be defined and then executed. Learn more about the t
 
 Conductor workflows stand apart from traditional orchestration approaches in several key ways:
 
-- **Durable execution** — Workflows survive process failures, restarts, and infrastructure outages. Conductor persists state at every step, so a long-running workflow picks up exactly where it left off.
+- **Durable execution** — Workflows survive process failures, restarts, and infrastructure outages. Conductor persists state at every step, so a long-running workflow or async workflow picks up exactly where it left off — even after days or weeks.
 - **JSON-native definitions** — Every workflow is a JSON workflow definition you can store in version control, diff across releases, and generate programmatically. No compiled DSL or proprietary format required.
-- **Dynamic workflows** — Workflows can be created and modified at runtime, enabling use cases where the task graph is not known ahead of time (for example, when the number of parallel branches depends on an API response).
+- **Dynamic workflows** — Workflows can be created and modified at runtime as code-first or JSON definitions, enabling use cases where the task graph is not known ahead of time (for example, when the number of parallel branches depends on an API response).
 - **Versioned** — Each workflow definition carries an explicit version number so you can roll out changes incrementally and run multiple versions side by side.
 - **Language-agnostic** — Workers that execute tasks can be written in any language — Java, Python, Go, JavaScript, C#, or Clojure — and deployed anywhere. The workflow definition itself is decoupled from implementation.
 

@@ -1,10 +1,14 @@
 ---
-description: "Frequently asked questions about Conductor — AI agent orchestration, durable execution, LLM providers, saga pattern, scaling, persistence backends, and worker configuration."
+description: "Frequently asked questions about Conductor — open source workflow engine, self-hosted deployment, AI agent orchestration, LLM orchestration, workflow automation, durable execution, microservice orchestration, saga pattern, scaling, and how Conductor compares to Temporal, Airflow, and Step Functions."
 ---
 
 # Frequently Asked Questions
 
 ## General
+
+### Is Conductor open source?
+
+Yes. Conductor is a fully open source workflow engine, released under the Apache 2.0 license. You can self-host it on your own infrastructure — there is no vendor lock-in, no proprietary runtime, and no cloud dependency. The self-hosted workflow engine supports 8+ persistence backends, 6 message brokers, and runs anywhere Docker or a JVM runs.
 
 ### Is this the same as Netflix Conductor?
 
@@ -40,11 +44,27 @@ Yes. Conductor supports advanced patterns including nested loops, dynamic branch
 
 ## How does Conductor compare to other workflow engines?
 
-Conductor combines durable execution, 14+ native LLM providers, JSON-native workflow definitions, 7+ language SDKs, and battle-tested scale (Netflix, Tesla, LinkedIn, JP Morgan). It's the only workflow engine with native AI/LLM task types, MCP integration, and built-in vector database support.
+Conductor combines durable execution, 14+ native LLM providers, JSON-native workflow definitions, 7+ language SDKs, and battle-tested scale (Netflix, Tesla, LinkedIn, JP Morgan). It's the only open source workflow engine with native AI/LLM task types, MCP integration, and built-in vector database support.
+
+### How is Conductor different from Temporal?
+
+Both are durable execution engines, but Conductor is fully open source (Apache 2.0) with no proprietary server components. Conductor provides native LLM orchestration for 14+ providers, MCP tool calling, and vector database support out of the box — capabilities Temporal does not offer. Conductor also supports JSON-native workflow definitions, allowing workflows to be generated and modified at runtime by LLMs or APIs.
+
+### How is Conductor different from AWS Step Functions?
+
+Step Functions is a proprietary, cloud-locked service. Conductor is an open source, self-hosted workflow engine you can run on any infrastructure. Conductor supports 7+ language SDKs, 8+ persistence backends, and provides native AI agent orchestration — none of which Step Functions offers. If you need an open source Step Functions alternative with no cloud lock-in, Conductor is a strong fit.
+
+### How is Conductor different from Airflow?
+
+Airflow is a DAG-based batch scheduler designed for data pipelines. Conductor is a real-time workflow orchestration engine designed for microservice orchestration, event-driven workflows, and AI agent orchestration. Conductor provides durable execution with sub-second task scheduling, while Airflow is optimized for scheduled batch jobs. If you need a real-time workflow engine rather than a job scheduler, Conductor is the better choice.
+
+### Can I use Conductor for workflow automation?
+
+Yes. Conductor is a developer-first workflow automation platform — not a low-code drag-and-drop tool, but a code-first workflow engine where you define workflows as code or JSON and implement task workers in any language. It is well suited for automating business processes, data pipelines, and multi-service workflows that need durable execution and full observability.
 
 ## Can Conductor orchestrate AI agents?
 
-Yes. Conductor provides native LLM tasks (chat completion, text completion), MCP tool calling (LIST_MCP_TOOLS, CALL_MCP_TOOL), human-in-the-loop approval (HUMAN task), and dynamic workflows that agents can generate at runtime. All with the same durability guarantees as any other workflow.
+Yes. Conductor provides native AI agent orchestration with LLM tasks (chat completion, text completion), MCP tool calling and function calling (LIST_MCP_TOOLS, CALL_MCP_TOOL), human-in-the-loop approval (HUMAN task), and dynamic workflows that agents can generate at runtime. Every agent built on Conductor is a durable agent — LLM orchestration runs with the same durable execution guarantees as any other workflow, so agents survive crashes, retries, and infrastructure failures without losing progress.
 
 ## Does Conductor support MCP (Model Context Protocol)?
 
@@ -52,7 +72,7 @@ Yes. LIST_MCP_TOOLS discovers available tools from any MCP server, and CALL_MCP_
 
 ## What LLM providers does Conductor support?
 
-14+ providers natively: Anthropic (Claude), OpenAI (GPT), Azure OpenAI, Google Gemini, AWS Bedrock, Mistral, Cohere, HuggingFace, Ollama, Perplexity, Grok, StabilityAI, and more. All accessible as workflow system tasks.
+14+ providers natively: Anthropic (Claude), OpenAI (GPT), Azure OpenAI, Google Gemini, AWS Bedrock, Mistral, Cohere, HuggingFace, Ollama, Perplexity, Grok, StabilityAI, and more. All accessible as workflow system tasks with built-in function calling and tool use via MCP integration.
 
 ## Does Conductor support vector databases and RAG?
 
@@ -64,7 +84,7 @@ Yes. Every workflow execution is persisted at each step. If a task fails, it's r
 
 ## Can Conductor handle millions of workflows?
 
-Yes. Originally built at Netflix to handle massive scale, Conductor scales horizontally. Workers scale independently, and the server supports millions of concurrent workflow executions across multiple persistence backends.
+Yes. Originally built at Netflix to handle massive scale, Conductor scales horizontally across multiple server instances. Workers scale independently, and the server supports millions of concurrent workflow executions across multiple persistence backends. This horizontal scaling architecture makes Conductor suitable for production workflow deployments at any scale.
 
 ## Does Conductor support the saga pattern?
 
@@ -103,13 +123,13 @@ Ensure all the tasks are registered via `/metadata/taskdefs` APIs.  Add any miss
 ## Where does my worker run?  How does conductor run my tasks?
 
 Conductor does not run the workers.  When a task is scheduled, it is put into the queue maintained by Conductor.  Workers are required to poll for tasks using `/tasks/poll` API at periodic interval, execute the business logic for the task and report back the results using `POST {{ api_prefix }}/tasks` API call.
-Conductor, however will run [system tasks](../documentation/configuration/workflowdef/systemtasks/index.md) on the Conductor server.
+Conductor, however will run [system tasks](configuration/workflowdef/systemtasks/index.md) on the Conductor server.
 
 ## How can I schedule workflows to run at a specific time?
 
 Conductor itself does not provide any scheduling mechanism.  But there is a community project [_Schedule Conductor Workflows_](https://github.com/jas34/scheduledwf) which provides workflow scheduling capability as a pluggable module as well as workflow server.
 Other way is you can use any of the available scheduling systems to make REST calls to Conductor to start a workflow.  Alternatively, publish a message to a supported eventing system like SQS to trigger a workflow.
-More details about [eventing](../documentation/configuration/eventhandlers.md).
+More details about [eventing](configuration/eventhandlers.md).
 
 ## Can I use Conductor with Ruby / Go / Python / JavaScript / C# / Rust?
 
@@ -140,11 +160,11 @@ When a workflow fails, you can configure a "failure workflow" to run using the``
 
 You can also use the Workflow Status Listener:
 
-* Set the workflowStatusListenerEnabled field in your workflow definition to true which enables [notifications](../documentation/configuration/workflowdef/index.md#workflow-notifications).
-* Add a custom implementation of the Workflow Status Listener. Refer [this](../documentation/advanced/extend.md#workflow-status-listener).
-* This notification can be implemented in such a way as to either send a notification to an external system or to send an event on the conductor queue to complete/fail another task in another workflow as described [here](../documentation/configuration/eventhandlers.md).
+* Set the workflowStatusListenerEnabled field in your workflow definition to true which enables [notifications](configuration/workflowdef/index.md#workflow-notifications).
+* Add a custom implementation of the Workflow Status Listener. Refer [this](advanced/extend.md#workflow-status-listener).
+* This notification can be implemented in such a way as to either send a notification to an external system or to send an event on the conductor queue to complete/fail another task in another workflow as described [here](configuration/eventhandlers.md).
 
-Refer to this [documentation](../documentation/configuration/workflowdef/index.md#workflow-notifications) to extend conductor to send out events/notifications upon workflow completion/failure.
+Refer to this [documentation](configuration/workflowdef/index.md#workflow-notifications) to extend conductor to send out events/notifications upon workflow completion/failure.
 
 ## I want my worker to stop polling and executing tasks when the process is being terminated. (Java client)
 

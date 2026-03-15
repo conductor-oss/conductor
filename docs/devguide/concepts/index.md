@@ -1,11 +1,11 @@
 ---
-description: "Core concepts of Conductor — a durable execution engine and agentic workflow engine for orchestrating distributed workflows, AI agents, and microservices with JSON-native definitions and polyglot workers."
+description: "Core concepts of Conductor — an open source workflow orchestration engine for distributed workflows, microservice orchestration, AI agent orchestration, and workflow automation with code-first and JSON-native definitions and polyglot workers."
 ---
 
 # Basic Concepts
 
-Conductor is a durable execution engine that orchestrates distributed workflows. You define
-workflows as JSON, write workers in any language, and let Conductor handle state persistence,
+Conductor is an open source workflow orchestration engine that orchestrates distributed workflows. You define
+workflows as code or as JSON, write workers in any language, and let Conductor handle state persistence,
 retries, timeouts, and flow control. Every step is durably recorded, so processes survive crashes,
 restarts, and network partitions without losing progress.
 
@@ -16,8 +16,8 @@ so teams can use the language that best fits each task.
 
 Built-in system tasks handle common operations like HTTP calls, event publishing, inline transforms,
 and sub-workflow orchestration without writing custom code. AI capabilities extend the system task
-library with native support for 14+ LLM providers, MCP tool calling, vector databases, and content
-generation — enabling agentic workflows alongside traditional microservice orchestration.
+library with native support for 14+ LLM providers, MCP tool calling, function calling, vector databases, and content
+generation — enabling AI agent orchestration and LLM orchestration alongside traditional microservice orchestration and workflow automation.
 
 ## Core building blocks
 
@@ -56,4 +56,4 @@ These are the facts that matter when comparing workflow and orchestration engine
 - [Why Conductor](why.md) — problems it solves, use cases, and when to choose Conductor
 - [Architecture](../architecture/index.md) — system design and components
 - [Durable Execution](../../architecture/durable-execution.md) — failure semantics and state persistence
-- [Agents & AI](../../architecture/agents.md) — LLM orchestration patterns and agentic workflows
+- [Agents & AI](../agents/agents.md) — LLM orchestration patterns and agentic workflows

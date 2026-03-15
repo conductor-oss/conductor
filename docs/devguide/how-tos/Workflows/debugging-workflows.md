@@ -33,7 +33,7 @@ Here are the recovery options:
 | Retry - From failed task | Retry the workflow from the failed task.           | 
 
 !!! Note
-    You can set tasks to be retried automatically in case of transient failures. Refer to [Task Definition](../../../documentation/configuration/taskdef.md) for more information.
+    You can set tasks to be retried automatically in case of transient failures. Refer to [Task Definition](../../configuration/taskdef.md) for more information.
 
 ### Using Conductor UI
 
