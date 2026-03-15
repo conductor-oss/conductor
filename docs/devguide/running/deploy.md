@@ -10,41 +10,7 @@ Conductor is a self-hosted, open source workflow engine that you deploy on your 
 
 A Conductor deployment consists of these components:
 
-```mermaid
-graph TB
-    subgraph Conductor Server
-        API[REST / gRPC API]
-        Decider[Decider — workflow state machine]
-        Sweeper[Sweeper — monitors running workflows]
-        STW[System Task Workers — HTTP, Event, Wait, etc.]
-        EP[Event Processor — listens to event queues]
-    end
-
-    subgraph Backends
-        DB[(Database<br/>workflow & task state)]
-        Queue[(Queue<br/>task scheduling)]
-        Index[(Index<br/>search & UI)]
-        Lock[(Lock<br/>execution consistency)]
-    end
-
-    subgraph External
-        Workers[Your Workers<br/>poll via REST/gRPC]
-        EventBus[Event Bus<br/>Kafka / NATS / SQS / AMQP]
-    end
-
-    API --> Decider
-    Decider --> DB
-    Decider --> Queue
-    Decider --> Index
-    Decider --> Lock
-    Sweeper --> Queue
-    Sweeper --> Decider
-    STW --> Queue
-    STW --> API
-    EP --> EventBus
-    EP --> API
-    Workers --> API
-```
+![Conductor Architecture](../architecture/conductor-architecture.png)
 
 **What each component does:**
 
