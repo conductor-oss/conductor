@@ -69,4 +69,11 @@ public interface AdminService {
      * @return map of event queues
      */
     Map<String, ?> getEventQueues(boolean verbose);
+
+    /**
+     * Reindex all workflows and tasks from the primary data store into the index store.
+     *
+     * @return summary with success/error counts
+     */
+    Map<String, Object> reindexWorkflows();
 }

@@ -76,4 +76,10 @@ public class AdminResource {
                     boolean verbose) {
         return adminService.getEventQueues(verbose);
     }
+
+    @PostMapping("/reindex")
+    @Operation(summary = "Reindex all workflows and tasks from database to search index")
+    public Map<String, Object> reindex() {
+        return adminService.reindexWorkflows();
+    }
 }

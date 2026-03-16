@@ -18,26 +18,38 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.stereotype.Service;
 
 import com.netflix.conductor.annotations.Audit;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.run.TaskSummary;
+import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.EventQueueManager;
 import com.netflix.conductor.core.reconciliation.WorkflowRepairService;
 import com.netflix.conductor.core.utils.Utils;
+import com.netflix.conductor.dao.ExecutionDAO;
+import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 @Audit
 @Trace
 @Service
 public class AdminServiceImpl implements AdminService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(AdminServiceImpl.class);
+
     private final ConductorProperties properties;
     private final ExecutionService executionService;
     private final QueueDAO queueDAO;
+    private final ExecutionDAO executionDAO;
+    private final IndexDAO indexDAO;
     private final WorkflowRepairService workflowRepairService;
     private final EventQueueManager eventQueueManager;
     private final BuildProperties buildProperties;
@@ -46,12 +58,16 @@ public class AdminServiceImpl implements AdminService {
             ConductorProperties properties,
             ExecutionService executionService,
             QueueDAO queueDAO,
+            ExecutionDAO executionDAO,
+            IndexDAO indexDAO,
             Optional<WorkflowRepairService> workflowRepairService,
             Optional<EventQueueManager> eventQueueManager,
             Optional<BuildProperties> buildProperties) {
         this.properties = properties;
         this.executionService = executionService;
         this.queueDAO = queueDAO;
+        this.executionDAO = executionDAO;
+        this.indexDAO = indexDAO;
         this.workflowRepairService = workflowRepairService.orElse(null);
         this.eventQueueManager = eventQueueManager.orElse(null);
         this.buildProperties = buildProperties.orElse(null);
@@ -134,5 +150,52 @@ public class AdminServiceImpl implements AdminService {
             throw new IllegalStateException("Event processing is DISABLED");
         }
         return (verbose ? eventQueueManager.getQueueSizes() : eventQueueManager.getQueues());
+    }
+
+    @Override
+    public Map<String, Object> reindexWorkflows() {
+        int batchSize = 100;
+        int offset = 0;
+        int successCount = 0;
+        int errorCount = 0;
+
+        LOGGER.info("Starting full reindex of workflows and tasks");
+
+        while (true) {
+            List<String> workflowIds = executionDAO.getAllWorkflowIds(offset, batchSize);
+            if (workflowIds.isEmpty()) {
+                break;
+            }
+
+            for (String workflowId : workflowIds) {
+                try {
+                    WorkflowModel wfModel = executionDAO.getWorkflow(workflowId, true);
+                    if (wfModel == null) {
+                        LOGGER.warn("Workflow {} not found in data store, skipping", workflowId);
+                        errorCount++;
+                        continue;
+                    }
+                    indexDAO.indexWorkflow(new WorkflowSummary(wfModel.toWorkflow()));
+                    for (TaskModel task : wfModel.getTasks()) {
+                        indexDAO.indexTask(new TaskSummary(task.toTask()));
+                    }
+                    successCount++;
+                } catch (Exception e) {
+                    errorCount++;
+                    LOGGER.error("Failed to reindex workflow: {}", workflowId, e);
+                }
+            }
+
+            offset += batchSize;
+            LOGGER.info("Reindex progress: processed {} workflows so far", offset);
+        }
+
+        LOGGER.info(
+                "Reindex completed. success={}, errors={}", successCount, errorCount);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", successCount);
+        result.put("errors", errorCount);
+        return result;
     }
 }

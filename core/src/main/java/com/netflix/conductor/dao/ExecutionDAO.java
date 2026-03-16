@@ -195,6 +195,18 @@ public interface ExecutionDAO {
      */
     boolean canSearchAcrossWorkflows();
 
+    /**
+     * Get all workflow ids with pagination. Used for reindexing.
+     *
+     * @param offset start offset
+     * @param limit max number of ids to return
+     * @return list of workflow ids
+     */
+    default List<String> getAllWorkflowIds(int offset, int limit) {
+        throw new UnsupportedOperationException(
+                getClass().getSimpleName() + " does not support getAllWorkflowIds");
+    }
+
     // Events
 
     /**
