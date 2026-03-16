@@ -47,6 +47,9 @@ nav:
   - AI Cookbook:
     - devguide/ai/index.md
     - Build Your First AI Agent: devguide/ai/first-ai-agent.md
+    - Production Agent Architecture: devguide/ai/production-agent-architecture.md
+    - Failure Semantics: devguide/ai/failure-semantics.md
+    - Why Conductor for Agents: devguide/ai/why-conductor.md
     - MCP Integration: devguide/ai/mcp-guide.md
     - Durable Agents: devguide/ai/durable-agents.md
     - Human-in-the-Loop: devguide/ai/human-in-the-loop.md
