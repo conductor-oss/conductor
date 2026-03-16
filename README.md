@@ -26,6 +26,8 @@ Conductor is an open-source, durable workflow engine built at [Netflix](https://
 
 # Get Running in 60 Seconds
 
+**Prerequisites:** [Node.js](https://nodejs.org/) v16+ and [Java](https://adoptium.net/) 21+ must be installed.
+
 ```shell
 npm install -g @conductor-oss/conductor-cli
 conductor server start
@@ -42,7 +44,7 @@ conductor workflow create workflow.json
 conductor workflow start -w hello_workflow --sync
 ```
 
-See the [Quickstart guide](https://conductor-oss.org/quickstart) for the full walkthrough, including writing workers and replaying workflows.
+See the [Quickstart guide](https://docs.conductor-oss.org/quickstart/) for the full walkthrough, including writing workers and replaying workflows.
 
 <details>
 <summary><strong>Prefer Docker?</strong></summary>
@@ -51,7 +53,7 @@ See the [Quickstart guide](https://conductor-oss.org/quickstart) for the full wa
 docker run -p 8080:8080 conductoross/conductor:latest
 ```
 
-All CLI commands have equivalent cURL/API calls. See the [Quickstart](https://conductor-oss.org/quickstart) for details.
+All CLI commands have equivalent cURL/API calls. See the [Quickstart](https://docs.conductor-oss.org/quickstart/) for details.
 </details>
 
 ---
