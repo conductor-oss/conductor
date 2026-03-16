@@ -429,6 +429,10 @@ conductor.ai.payload-store-location=/tmp/conductor-ai
 
 Vector databases support multiple named instances. For detailed configuration options and examples, see [Vector Database Configuration](VECTORDB_CONFIGURATION.md).
 
+### JDBC Configuration
+
+JDBC connections support multiple named instances for the `JDBC` worker task. For detailed configuration options, migration guide, and examples, see [JDBC Configuration](JDBC_CONFIGURATION.md).
+
 ### Provider-Specific Configuration (LLM)
 
 #### OpenAI

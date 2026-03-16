@@ -18,6 +18,7 @@ System tasks are built-in tasks that run on the Conductor server. They execute w
 | [Kafka Publish](kafka-publish-task.md) | `KAFKA_PUBLISH` | Publish messages directly to a Kafka topic with configurable serializers and headers. |
 | [JSON JQ Transform](json-jq-transform-task.md) | `JSON_JQ_TRANSFORM` | Transform JSON data using [jq](https://jqlang.org/) expressions. Powerful for reshaping, filtering, and aggregating data. |
 | [No Op](noop-task.md) | `NOOP` | Do nothing. Useful as a placeholder or to merge branches in fork/join patterns. |
+| [JDBC](jdbc-task.md) | `JDBC` | Execute SQL queries and updates against relational databases (MySQL, PostgreSQL, Oracle, etc.) with connection pooling and transaction management. |
 
 ## Operators (flow control)
 

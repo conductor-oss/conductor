@@ -86,6 +86,7 @@ nav:
       - devguide/configuration/workflowdef/systemtasks/json-jq-transform-task.md
       - devguide/configuration/workflowdef/systemtasks/kafka-publish-task.md
       - devguide/configuration/workflowdef/systemtasks/noop-task.md
+      - devguide/configuration/workflowdef/systemtasks/jdbc-task.md
       - devguide/configuration/workflowdef/systemtasks/wait-task.md
     - Operators:
       - devguide/configuration/workflowdef/operators/index.md
