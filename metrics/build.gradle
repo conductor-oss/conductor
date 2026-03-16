@@ -24,7 +24,11 @@ dependencies {
     implementation "io.micrometer:micrometer-registry-elastic:${revMicrometer}"
     implementation "io.micrometer:micrometer-registry-new-relic:${revMicrometer}"
     implementation "io.micrometer:micrometer-registry-stackdriver:${revMicrometer}"
-    implementation "io.micrometer:micrometer-registry-statsd:${revMicrometer}"
+    implementation("io.micrometer:micrometer-registry-statsd:${revMicrometer}") {
+        exclude group: 'io.netty', module: 'netty-codec'
+    }
+    // Force secure Netty codec version for StatsD registry
+    implementation "io.netty:netty-codec:${revNetty}"
     implementation "io.micrometer:micrometer-registry-cloudwatch2:${revMicrometer}"
     implementation "io.micrometer:micrometer-registry-azure-monitor:${revMicrometer}"
     implementation "io.micrometer:micrometer-registry-influx:${revMicrometer}"

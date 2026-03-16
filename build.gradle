@@ -81,6 +81,10 @@ allprojects {
                 if (details.requested.group == 'io.micrometer' && details.requested.name.startsWith('micrometer-')) {
                     details.useVersion revMicrometer
                 }
+                // Force Netty codec specifically for Micrometer transitive dependencies
+                if (details.requested.group == 'io.netty' && details.requested.name == 'netty-codec') {
+                    details.useVersion revNetty
+                }
             }
         }
     }
