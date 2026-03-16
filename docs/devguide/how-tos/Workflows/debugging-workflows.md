@@ -29,11 +29,12 @@ Here are the recovery options:
 | Recovery Action     | Description                |
 |---------------------|----------------------------|
 | Restart with Current Definitions | Restart the workflow from the beginning using the same workflow definition that was used in the original execution. This option is useful if the workflow definition has changed and you want to run the execution instance using the original definition.            |
-| Restart with Latest Definitions | Restart the workflow from the beginning using the latest workflow definition. This option is useful if changes were made to the workflow definition and you want to run the execution instance with the latest definition. | 
-| Retry - From failed task | Retry the workflow from the failed task.           | 
+| Restart with Latest Definitions | Restart the workflow from the beginning using the latest workflow definition. This option is useful if changes were made to the workflow definition and you want to run the execution instance with the latest definition. |
+| Rerun from a specific task | Re-execute the workflow from a specific task, reusing the outputs of all prior tasks. This option is useful when a task in the middle of the workflow failed and you want to fix and re-run it without re-executing everything before it. |
+| Retry - From failed task | Retry the workflow from the last failed task.           |
 
 !!! Note
-    You can set tasks to be retried automatically in case of transient failures. Refer to [Task Definition](../../../documentation/configuration/taskdef.md) for more information.
+    You can set tasks to be retried automatically in case of transient failures. Refer to [Task Definition](../../configuration/taskdef.md) for more information.
 
 ### Using Conductor UI
 
@@ -43,10 +44,15 @@ Here are the recovery options:
 2. Select one of the following options:
     - Restart with Current Definitions
     - Restart with Latest Definitions
+    - Rerun from a specific task
     - Retry - From failed task
 
 ### Using APIs
 
 You can restart workflow executions using the Restart Workflow API (`POST api/workflow/{workflowId}/restart`) or the Bulk Restart Workflow API (`POST api/workflow/bulk/restart`).
 
-Likewise, you can retry workflow executions from the last failed task using the Retry Workflow API (`POST api/workflow/{workflowId}/retry`) or the Bulk Retry Workflow API (`POST api/workflow/bulk/retry`)
+You can rerun a workflow from a specific task using the Rerun Workflow API (`POST api/workflow/{workflowId}/rerun`) with a request body specifying the `reRunFromTaskId`.
+
+Likewise, you can retry workflow executions from the last failed task using the Retry Workflow API (`POST api/workflow/{workflowId}/retry`) or the Bulk Retry Workflow API (`POST api/workflow/bulk/retry`).
+
+All three recovery operations — restart, rerun, and retry — work on workflows in any terminal state (COMPLETED, FAILED, TIMED_OUT, TERMINATED) and are available indefinitely. Conductor preserves the full execution history, so you can replay any workflow even months after the original run.
