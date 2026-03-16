@@ -1554,6 +1554,34 @@ a.skills-link:hover .btn-arrow {
 }
 [data-md-color-scheme="slate"] .md-footer {
   background: #020617 !important;
+  color: #a0aec0 !important;
+}
+[data-md-color-scheme="slate"] .md-footer-meta {
+  background: #0a0f1a !important;
+}
+[data-md-color-scheme="slate"] .md-footer-nav__link {
+  color: #e2e8f0 !important;
+}
+[data-md-color-scheme="slate"] .md-footer-nav__title {
+  color: #e2e8f0 !important;
+}
+[data-md-color-scheme="slate"] .md-footer-nav__direction {
+  color: #94a3b8 !important;
+}
+[data-md-color-scheme="slate"] .md-copyright {
+  color: #94a3b8 !important;
+}
+[data-md-color-scheme="slate"] .md-copyright a {
+  color: #a0aec0 !important;
+}
+[data-md-color-scheme="slate"] .md-social__link svg {
+  fill: #a0aec0 !important;
+}
+[data-md-color-scheme="slate"] .md-social__link:hover svg {
+  fill: #06d6a0 !important;
+}
+[data-md-color-scheme="slate"] .md-footer-nav__link:hover .md-footer-nav__title {
+  color: #06d6a0 !important;
 }
 [data-md-color-scheme="slate"] .terminal-chrome {
   background: #020617;

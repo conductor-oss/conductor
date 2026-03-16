@@ -34,7 +34,7 @@ Every LLM call in a Conductor workflow is persisted at completion. The prompt, r
 
 ### 2. Retry from failed task
 
-When a workflow fails (e.g., a tool call returns an error after the LLM planned successfully), you can [retry from the failed task](../../architecture/durable-execution.md#replay--recovery). Conductor reuses the outputs of all previously completed tasks.
+When a workflow fails (e.g., a tool call returns an error after the LLM planned successfully), you can [retry from the failed task](../../architecture/durable-execution.md#replay-and-recovery). Conductor reuses the outputs of all previously completed tasks.
 
 **Example:** A 5-task agent workflow fails at task 4 (tool execution). Tasks 1-3 included two LLM calls that consumed 8,000 tokens total. Retry from task 4:
 
@@ -44,7 +44,7 @@ When a workflow fails (e.g., a tool call returns an error after the LLM planned 
 
 ### 3. Rerun from a specific task
 
-When you fix a bug in a task definition and [rerun from that task](../../architecture/durable-execution.md#replay--recovery), all tasks before it keep their persisted outputs. Upstream LLM calls are not re-executed.
+When you fix a bug in a task definition and [rerun from that task](../../architecture/durable-execution.md#replay-and-recovery), all tasks before it keep their persisted outputs. Upstream LLM calls are not re-executed.
 
 ### 4. Loop checkpointing
 

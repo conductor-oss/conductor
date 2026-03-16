@@ -185,7 +185,7 @@ Running executions are **not affected**. Each execution uses an immutable snapsh
 - Running executions continue with their original definition.
 - You can have multiple versions running concurrently.
 
-**If you want to apply the new definition:** Use [restart with latest definitions](../../architecture/durable-execution.md#replay--recovery). This re-executes the workflow from the beginning using the updated definition.
+**If you want to apply the new definition:** Use [restart with latest definitions](../../architecture/durable-execution.md#replay-and-recovery). This re-executes the workflow from the beginning using the updated definition.
 
 
 ## Worker deploy during active executions

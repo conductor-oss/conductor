@@ -120,7 +120,7 @@ document.addEventListener("DOMContentLoaded", function() {
       <div class="feature-tag">Primitives</div>
       <h3>Pause, Resume, Replay, Restart</h3>
       <p>Pause workflows on time, external signals, webhooks, or human approval. Resume safely after minutes, hours, or days. Replay any workflow from the beginning, from a specific task, or retry just the failed step &mdash; even months later. Full execution history is always preserved.</p>
-      <a href="architecture/durable-execution/#replay--recovery" class="feature-link">How it works &rarr;</a>
+      <a href="architecture/durable-execution/#replay-and-recovery" class="feature-link">How it works &rarr;</a>
     </div>
     <div class="feature-card">
       <div class="feature-tag">AI</div>

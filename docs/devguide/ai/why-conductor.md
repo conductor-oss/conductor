@@ -235,7 +235,7 @@ Conductor eliminates this entirely. Each execution snapshots its definition at s
 }
 ```
 
-Running executions continue with their original definition. New executions pick up the updated definition. No version guards. No branching. No archaeology. Update the definition, register it, and move on. If you need to apply the new definition to a running execution, [restart it](../../architecture/durable-execution.md#replay--recovery) — Conductor re-executes the workflow with the latest definition from the beginning.
+Running executions continue with their original definition. New executions pick up the updated definition. No version guards. No branching. No archaeology. Update the definition, register it, and move on. If you need to apply the new definition to a running execution, [restart it](../../architecture/durable-execution.md#replay-and-recovery) — Conductor re-executes the workflow with the latest definition from the beginning.
 
 This is not a minor convenience. For AI agents that run for hours or days — iterating through plan/act/observe loops, waiting for human approvals, pausing for external events — the ability to evolve the workflow definition without version branching is the difference between a maintainable system and a fragile one.
 
@@ -277,7 +277,7 @@ These guarantees apply uniformly across the entire workflow graph — including 
 
 ## Deterministic by construction
 
-JSON workflow definitions cannot have side effects. There is no ambient state, no thread-local context, no hidden mutation. Given the same inputs, a Conductor workflow schedules the same tasks in the same order, every time. This is why [replay](../../architecture/durable-execution.md#replay--recovery) works unconditionally — restart a workflow from three months ago and it re-executes the same graph.
+JSON workflow definitions cannot have side effects. There is no ambient state, no thread-local context, no hidden mutation. Given the same inputs, a Conductor workflow schedules the same tasks in the same order, every time. This is why [replay](../../architecture/durable-execution.md#replay-and-recovery) works unconditionally — restart a workflow from three months ago and it re-executes the same graph.
 
 When workflow logic lives in code, developers must manually enforce determinism constraints: no system clocks, no random numbers, no uncontrolled I/O. Violating these constraints causes subtle replay bugs that are hard to detect and harder to debug. Conductor eliminates this entire class of bugs by construction — JSON cannot have side effects.
 
