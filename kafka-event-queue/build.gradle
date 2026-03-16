@@ -25,7 +25,7 @@ dependencies {
     
 
     // Add Kafka client dependency
-    implementation 'org.apache.kafka:kafka-clients:3.5.1'
+    implementation "org.apache.kafka:kafka-clients:${revKafka}"
 
     // Add SLF4J API for logging
     implementation 'org.slf4j:slf4j-api:2.0.9'

@@ -8,7 +8,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:3.3.5'
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:3.3.11'
         classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.+'
     }
 }
@@ -21,13 +21,13 @@ plugins {
     id 'signing'
     id 'java-library'
     id "com.diffplug.spotless" version "6.25.0"
-    id 'org.springframework.boot' version '3.3.5'
+    id 'org.springframework.boot' version '3.3.11'
 }
 
 // Establish version and status
 ext.githubProjectName = rootProject.name // Change if github project name is not the same as the root project's name
 
-ext["tomcat.version"] = "10.1.45"
+ext["tomcat.version"] = "10.1.52"
 
 subprojects {
     tasks.withType(Javadoc).all { enabled = false }
@@ -67,6 +67,14 @@ allprojects {
                 // Force commons-lang3 to 3.18.0+ for compatibility with commons-compress used by Testcontainers
                 if (details.requested.group == 'org.apache.commons' && details.requested.name == 'commons-lang3') {
                     details.useVersion "3.18.0"
+                }
+                // Force all Netty components to fixed version
+                if (details.requested.group == 'io.netty') {
+                    details.useVersion revNetty
+                }
+                // Force Micrometer to prevent version downgrade that brings vulnerable Netty
+                if (details.requested.group == 'io.micrometer') {
+                    details.useVersion revMicrometer
                 }
             }
         }
