@@ -445,7 +445,7 @@ The parent agent waits for the child to complete. If the child fails, the parent
 ## Next steps
 
 - **[Failure Semantics for AI Agents](failure-semantics.md)** — The exact failure contract: what happens under crashes, retries, duplicates, and long waits.
-- **[Why Conductor for Agents](why-conductor.md)** — Decision guide: Conductor vs Temporal, n8n, and Prefect for agentic use cases.
+- **[Why Conductor for Agents](why-conductor.md)** — What Conductor gives you out of the box for agentic workflows.
 - **[Build Your First AI Agent](first-ai-agent.md)** — Start simple and build up to this architecture in 5 minutes.
 - **[MCP Integration](mcp-guide.md)** — Connect to any MCP server, expose workflows as MCP tools.
 - **[Token Efficiency](token-efficiency.md)** — How durable execution saves tokens and reduces LLM costs.

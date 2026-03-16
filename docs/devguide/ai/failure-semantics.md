@@ -277,5 +277,5 @@ This is a normal operating mode for Conductor. The workflow stays `RUNNING` with
 
 - **[Production Agent Architecture](production-agent-architecture.md)** — The canonical end-to-end agent pattern.
 - **[Durable Execution Semantics](../../architecture/durable-execution.md)** — The full persistence model, task state machine, and retry configuration.
-- **[Why Conductor for Agents](why-conductor.md)** — Decision guide: Conductor vs Temporal, n8n, and Prefect.
+- **[Why Conductor for Agents](why-conductor.md)** — What Conductor gives you out of the box for agentic workflows.
 - **[Token Efficiency](token-efficiency.md)** — How durable execution saves tokens across all these failure scenarios.

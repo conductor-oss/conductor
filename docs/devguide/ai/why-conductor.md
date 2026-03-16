@@ -4,7 +4,7 @@ description: "Why Conductor for AI agents — native LLM tasks, MCP tool calling
 
 # Why Conductor for agents
 
-Other engines give you generic primitives and say "build your agent infrastructure yourself." Conductor gives you the agent infrastructure. Here's what that looks like in practice.
+Conductor is the original durable workflow orchestration engine — born at Netflix to run microservices at internet scale, now powering AI agents with the same battle-tested execution model. Other engines give you generic primitives and say "build your agent infrastructure yourself." Conductor gives you the agent infrastructure. Here's what that looks like in practice.
 
 
 ## Call an LLM — zero boilerplate
@@ -217,11 +217,69 @@ A parent agent delegates to specialist agents. Each specialist is a sub-workflow
 The LLM decides how many research agents to spawn and what each one investigates. Conductor creates the branches at runtime, runs them in parallel, and joins the results. If one branch fails, it retries independently without affecting the others. The parent agent sees the full execution tree — drill from parent to child to sub-child in the UI.
 
 
+## Long-running workflows — evolve without breaking
+
+An agent workflow runs for days. Midway through, you need to fix a bug or add a step. On code-based engines, this is where things get painful — you end up littering your workflow code with version guards and `if/else` branches to keep old executions replaying correctly while new ones pick up the change. Every change adds a permanent branch that can never be removed. After a year of iteration, the workflow is an archaeology site of version checks.
+
+Conductor eliminates this entirely. Each execution snapshots its definition at start time:
+
+```json
+{
+  "name": "agent_workflow",
+  "version": 2,
+  "tasks": [
+    {"name": "plan", "type": "LLM_CHAT_COMPLETE", "...": "..."},
+    {"name": "validate", "type": "INLINE", "...": "..."},
+    {"name": "execute", "type": "CALL_MCP_TOOL", "...": "..."}
+  ]
+}
+```
+
+Running executions continue with their original definition. New executions pick up the updated definition. No version guards. No branching. No archaeology. Update the definition, register it, and move on. If you need to apply the new definition to a running execution, [restart it](../../architecture/durable-execution.md#replay--recovery) — Conductor re-executes the workflow with the latest definition from the beginning.
+
+This is not a minor convenience. For AI agents that run for hours or days — iterating through plan/act/observe loops, waiting for human approvals, pausing for external events — the ability to evolve the workflow definition without version branching is the difference between a maintainable system and a fragile one.
+
+
+## Guaranteed execution — failure is not a choice
+
+Conductor was built as a state machine engine at Netflix to orchestrate microservices at internet scale. The execution model is designed around one principle: **every task will be executed to completion, or every failure will be explicitly handled.** There is no silent failure mode.
+
+The guarantees:
+
+- **At-least-once task delivery** — Every task is persisted to durable storage before execution. If a worker crashes, the task is automatically requeued and delivered to another worker. Tasks do not disappear.
+- **Sweeper recovery** — A background sweeper service continuously scans for stalled tasks. If a task is `IN_PROGRESS` but its worker has gone silent (no heartbeat, past `responseTimeoutSeconds`), the sweeper requeues it. If the Conductor server itself restarts, the sweeper recovers all in-flight work on startup.
+- **Configurable retry policies** — Every task has retry count, delay, and backoff strategy. Retries are managed by the engine, not your code. Exponential backoff, fixed delay, and linear backoff are built in.
+- **Failure workflows** — When a workflow fails after exhausting retries, a `failureWorkflow` runs automatically. This is where you put compensation logic: undo API calls, release resources, send alerts. The failure workflow has the full context of what failed and why.
+- **Terminal state is always reached** — A workflow always reaches `COMPLETED`, `FAILED`, or `TERMINATED`. There is no limbo state. You can query, alert, and act on any terminal state.
+
+```json
+{
+  "name": "critical_agent",
+  "failureWorkflow": "agent_failure_handler",
+  "tasks": [
+    {
+      "name": "risky_action",
+      "type": "CALL_MCP_TOOL",
+      "retryCount": 5,
+      "retryLogic": "EXPONENTIAL_BACKOFF",
+      "retryDelaySeconds": 10,
+      "responseTimeoutSeconds": 30,
+      "timeoutPolicy": "RETRY"
+    }
+  ]
+}
+```
+
+This task retries 5 times with exponential backoff (10s, 20s, 40s, 80s, 160s). If the worker doesn't respond within 30 seconds, the task is timed out and retried. If all retries are exhausted, the workflow fails and `agent_failure_handler` runs with full context. At no point does the task silently disappear.
+
+These guarantees apply uniformly across the entire workflow graph — including sub-workflows, dynamic forks, and agent loops. You configure them declaratively in the definition. The engine enforces them.
+
+
 ## Deterministic by construction
 
 JSON workflow definitions cannot have side effects. There is no ambient state, no thread-local context, no hidden mutation. Given the same inputs, a Conductor workflow schedules the same tasks in the same order, every time. This is why [replay](../../architecture/durable-execution.md#replay--recovery) works unconditionally — restart a workflow from three months ago and it re-executes the same graph.
 
-Code-based engines require developers to keep workflow functions deterministic: no system clocks, no random numbers, no uncontrolled I/O. Violating these constraints causes subtle replay bugs that are hard to detect and harder to debug. Conductor eliminates this entire class of bugs by construction.
+When workflow logic lives in code, developers must manually enforce determinism constraints: no system clocks, no random numbers, no uncontrolled I/O. Violating these constraints causes subtle replay bugs that are hard to detect and harder to debug. Conductor eliminates this entire class of bugs by construction — JSON cannot have side effects.
 
 
 ## Observability — automatic, not opt-in

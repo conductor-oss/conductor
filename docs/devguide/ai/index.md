@@ -81,7 +81,7 @@ Conductor provides all of this as infrastructure. Your agent code focuses on the
 - **[Build Your First AI Agent](first-ai-agent.md)** &mdash; Step-by-step: discover MCP tools, call an LLM, execute, add human approval, make it autonomous. 5 minutes.
 - **[Production Agent Architecture](production-agent-architecture.md)** &mdash; The canonical reference architecture for a durable production agent. End-to-end pattern with every primitive mapped.
 - **[Failure Semantics for AI Agents](failure-semantics.md)** &mdash; The exact failure contract: what happens under crashes, retries, duplicates, long waits, and partial side effects.
-- **[Why Conductor for Agents](why-conductor.md)** &mdash; Technical decision guide: Conductor vs Temporal, n8n, and Prefect for agentic use cases.
+- **[Why Conductor for Agents](why-conductor.md)** &mdash; What Conductor gives you out of the box for agentic workflows.
 - **[MCP Integration](mcp-guide.md)** &mdash; Connect to any MCP server, expose workflows as MCP tools, multi-server agents.
 - **[Durable Agents](durable-agents.md)** &mdash; What persists, what gets retried, and why JSON is AI-native.
 - **[Human-in-the-Loop](human-in-the-loop.md)** &mdash; Pre-execution review, conditional approval, and LLM-as-judge patterns.

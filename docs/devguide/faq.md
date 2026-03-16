@@ -145,14 +145,13 @@ More details about [eventing](configuration/eventhandlers.md).
 
 Yes. Workers can be written in any language as long as they can poll and update the task results via HTTP endpoints. Conductor provides official and community SDKs for many languages:
 
-- **Java** — [conductor-community/conductor](https://github.com/conductoross/conductor)
-- **Python** — [conductor-community/conductor-python](https://github.com/conductor-sdk/conductor-python)
-- **Go** — [conductor-community/conductor-go](https://github.com/conductor-sdk/conductor-go)
-- **JavaScript** — [conductor-community/conductor-javascript](https://github.com/conductor-sdk/conductor-javascript)
-- **C#** — [conductor-community/conductor-csharp](https://github.com/conductor-sdk/conductor-csharp)
-- **Clojure** — [conductor-community/conductor-clojure](https://github.com/conductor-sdk/conductor-clojure)
-- **Ruby** — [nicklaros/conductor_ruby](https://github.com/nicklaros/conductor_ruby)
-- **Rust** — [nicklaros/conductor_rust](https://github.com/nicklaros/conductor_rust)
+- **Java** — [conductor-oss/java-sdk](https://github.com/conductor-oss/java-sdk)
+- **Python** — [conductor-oss/python-sdk](https://github.com/conductor-oss/python-sdk)
+- **Go** — [conductor-oss/go-sdk](https://github.com/conductor-oss/go-sdk)
+- **JavaScript** — [conductor-oss/javascript-sdk](https://github.com/conductor-oss/javascript-sdk)
+- **C#** — [conductor-oss/csharp-sdk](https://github.com/conductor-oss/csharp-sdk)
+- **Ruby** — [conductor-oss/ruby-sdk](https://github.com/conductor-oss/ruby-sdk)
+- **Rust** — [conductor-oss/rust-sdk](https://github.com/conductor-oss/rust-sdk)
 
 ## My workflow is running and the task is SCHEDULED but it is not being processed.
 

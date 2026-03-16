@@ -99,6 +99,7 @@ conductor-skills install <skill-name>
 | 🟨 JavaScript | [conductor-oss/javascript-sdk](https://github.com/conductor-oss/javascript-sdk) | `npm install @io-orkes/conductor-javascript` |
 | 🐹 Go | [conductor-oss/go-sdk](https://github.com/conductor-oss/go-sdk) | `go get github.com/conductor-sdk/conductor-go` |
 | 🟣 C# | [conductor-oss/csharp-sdk](https://github.com/conductor-oss/csharp-sdk) | `dotnet add package conductor-csharp` |
+| 💎 Ruby | [conductor-oss/ruby-sdk](https://github.com/conductor-oss/ruby-sdk) | `gem install conductor_ruby` |
 | 🦀 Rust | [conductor-oss/rust-sdk](https://github.com/conductor-oss/rust-sdk) | *(incubating)* |
 
 ---
