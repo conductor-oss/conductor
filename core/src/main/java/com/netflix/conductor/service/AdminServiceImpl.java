@@ -17,6 +17,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +48,25 @@ import com.netflix.conductor.model.WorkflowModel;
 public class AdminServiceImpl implements AdminService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AdminServiceImpl.class);
+
+    // ---- reindex state ----
+    private enum ReindexState {
+        IDLE, RUNNING, COMPLETED, FAILED
+    }
+
+    private final AtomicReference<ReindexState> reindexState =
+            new AtomicReference<>(ReindexState.IDLE);
+    private final AtomicInteger reindexProcessed = new AtomicInteger(0);
+    private final AtomicInteger reindexErrors = new AtomicInteger(0);
+    private final AtomicInteger reindexTotal = new AtomicInteger(0);
+    private volatile String reindexMessage = "";
+    private final ExecutorService reindexExecutor =
+            Executors.newSingleThreadExecutor(
+                    r -> {
+                        Thread t = new Thread(r, "reindex-worker");
+                        t.setDaemon(true);
+                        return t;
+                    });
 
     private final ConductorProperties properties;
     private final ExecutionService executionService;
@@ -153,49 +176,95 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    public Map<String, Object> reindexWorkflows() {
-        int batchSize = 100;
-        int offset = 0;
-        int successCount = 0;
-        int errorCount = 0;
-
-        LOGGER.info("Starting full reindex of workflows and tasks");
-
-        while (true) {
-            List<String> workflowIds = executionDAO.getAllWorkflowIds(offset, batchSize);
-            if (workflowIds.isEmpty()) {
-                break;
-            }
-
-            for (String workflowId : workflowIds) {
-                try {
-                    WorkflowModel wfModel = executionDAO.getWorkflow(workflowId, true);
-                    if (wfModel == null) {
-                        LOGGER.warn("Workflow {} not found in data store, skipping", workflowId);
-                        errorCount++;
-                        continue;
-                    }
-                    indexDAO.indexWorkflow(new WorkflowSummary(wfModel.toWorkflow()));
-                    for (TaskModel task : wfModel.getTasks()) {
-                        indexDAO.indexTask(new TaskSummary(task.toTask()));
-                    }
-                    successCount++;
-                } catch (Exception e) {
-                    errorCount++;
-                    LOGGER.error("Failed to reindex workflow: {}", workflowId, e);
-                }
-            }
-
-            offset += batchSize;
-            LOGGER.info("Reindex progress: processed {} workflows so far", offset);
+    public Map<String, Object> startReindex() {
+        if (!reindexState.compareAndSet(ReindexState.IDLE, ReindexState.RUNNING)
+                && !reindexState.compareAndSet(ReindexState.COMPLETED, ReindexState.RUNNING)
+                && !reindexState.compareAndSet(ReindexState.FAILED, ReindexState.RUNNING)) {
+            Map<String, Object> result = new HashMap<>();
+            result.put("state", "ALREADY_RUNNING");
+            result.put("message", "A reindex job is already in progress");
+            return result;
         }
 
-        LOGGER.info(
-                "Reindex completed. success={}, errors={}", successCount, errorCount);
+        // Reset counters
+        reindexProcessed.set(0);
+        reindexErrors.set(0);
+        reindexTotal.set(0);
+        reindexMessage = "Starting...";
+
+        reindexExecutor.submit(this::doReindex);
 
         Map<String, Object> result = new HashMap<>();
-        result.put("success", successCount);
-        result.put("errors", errorCount);
+        result.put("state", "STARTED");
+        result.put("message", "Reindex job started. Use GET /api/admin/reindex/status to track progress.");
         return result;
+    }
+
+    @Override
+    public Map<String, Object> getReindexStatus() {
+        Map<String, Object> result = new HashMap<>();
+        result.put("state", reindexState.get().name());
+        result.put("processed", reindexProcessed.get());
+        result.put("errors", reindexErrors.get());
+        result.put("total", reindexTotal.get());
+        result.put("message", reindexMessage);
+        return result;
+    }
+
+    private void doReindex() {
+        LOGGER.info("Reindex job started");
+        int batchSize = 100;
+        int offset = 0;
+
+        try {
+            // First pass: count total
+            int total = executionDAO.getAllWorkflowIds(0, Integer.MAX_VALUE).size();
+            reindexTotal.set(total);
+            reindexMessage = "Indexing 0 / " + total;
+            LOGGER.info("Reindex: {} workflows to process", total);
+
+            while (true) {
+                List<String> workflowIds = executionDAO.getAllWorkflowIds(offset, batchSize);
+                if (workflowIds.isEmpty()) {
+                    break;
+                }
+
+                for (String workflowId : workflowIds) {
+                    try {
+                        WorkflowModel wfModel = executionDAO.getWorkflow(workflowId, true);
+                        if (wfModel == null) {
+                            LOGGER.warn("Workflow {} not found, skipping", workflowId);
+                            reindexErrors.incrementAndGet();
+                            continue;
+                        }
+                        indexDAO.indexWorkflow(new WorkflowSummary(wfModel.toWorkflow()));
+                        for (TaskModel task : wfModel.getTasks()) {
+                            indexDAO.indexTask(new TaskSummary(task.toTask()));
+                        }
+                        int done = reindexProcessed.incrementAndGet();
+                        reindexMessage = "Indexing " + done + " / " + reindexTotal.get();
+                    } catch (Exception e) {
+                        reindexErrors.incrementAndGet();
+                        LOGGER.error("Failed to reindex workflow {}", workflowId, e);
+                    }
+                }
+
+                offset += batchSize;
+                LOGGER.info(
+                        "Reindex progress: {}/{}", reindexProcessed.get(), reindexTotal.get());
+            }
+
+            reindexMessage =
+                    "Completed. processed="
+                            + reindexProcessed.get()
+                            + ", errors="
+                            + reindexErrors.get();
+            reindexState.set(ReindexState.COMPLETED);
+            LOGGER.info("Reindex job completed. {}", reindexMessage);
+        } catch (Exception e) {
+            reindexMessage = "Failed: " + e.getMessage();
+            reindexState.set(ReindexState.FAILED);
+            LOGGER.error("Reindex job failed", e);
+        }
     }
 }

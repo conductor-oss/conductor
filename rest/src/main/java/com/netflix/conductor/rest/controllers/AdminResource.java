@@ -78,8 +78,14 @@ public class AdminResource {
     }
 
     @PostMapping("/reindex")
-    @Operation(summary = "Reindex all workflows and tasks from database to search index")
-    public Map<String, Object> reindex() {
-        return adminService.reindexWorkflows();
+    @Operation(summary = "Start async reindex of all workflows and tasks from database to search index")
+    public Map<String, Object> startReindex() {
+        return adminService.startReindex();
+    }
+
+    @GetMapping("/reindex/status")
+    @Operation(summary = "Get the current reindex job status and progress")
+    public Map<String, Object> getReindexStatus() {
+        return adminService.getReindexStatus();
     }
 }

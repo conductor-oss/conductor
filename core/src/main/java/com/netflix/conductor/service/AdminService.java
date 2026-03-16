@@ -71,9 +71,16 @@ public interface AdminService {
     Map<String, ?> getEventQueues(boolean verbose);
 
     /**
-     * Reindex all workflows and tasks from the primary data store into the index store.
+     * Start an async reindex job. Returns immediately. Use getReindexStatus() to track progress.
      *
-     * @return summary with success/error counts
+     * @return initial status map
      */
-    Map<String, Object> reindexWorkflows();
+    Map<String, Object> startReindex();
+
+    /**
+     * Get the current reindex job status and progress.
+     *
+     * @return status map with state, processed, errors, total fields
+     */
+    Map<String, Object> getReindexStatus();
 }
