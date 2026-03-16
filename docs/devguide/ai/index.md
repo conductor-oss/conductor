@@ -2,7 +2,7 @@
 description: AI agent orchestration and LLM orchestration with Conductor — LLM tasks with function calling, tool use via MCP, human-in-the-loop approval, dynamic workflows, vector database workflows, and saga pattern compensation. The open source workflow engine for AI agents.
 ---
 
-# AI agent orchestration with Conductor
+# AI Cookbook
 
 Conductor is not an AI framework. It is a durable execution engine that provides AI agent orchestration and LLM orchestration by solving the hard infrastructure problems that AI agents create: long-running processes, unreliable external calls, function calling and tool use, human-in-the-loop approval, structured output, and the need to survive failures across any of these steps. Conductor makes every agent a durable agent — one that survives crashes, retries, and infrastructure failures without losing progress.
 
@@ -78,10 +78,12 @@ Conductor provides all of this as infrastructure. Your agent code focuses on the
 
 ## Next steps
 
+- **[Build Your First AI Agent](first-ai-agent.md)** &mdash; Step-by-step: discover MCP tools, call an LLM, execute, add human approval, make it autonomous. 5 minutes.
+- **[MCP Integration](mcp-guide.md)** &mdash; Connect to any MCP server, expose workflows as MCP tools, multi-server agents.
 - **[Durable Agents](durable-agents.md)** &mdash; What persists, what gets retried, and why JSON is AI-native.
 - **[Human-in-the-Loop](human-in-the-loop.md)** &mdash; Pre-execution review, conditional approval, and LLM-as-judge patterns.
 - **[Dynamic Workflows](dynamic-workflows.md)** &mdash; Agent loops, dynamic workflow generation, and tool use examples.
 - **[LLM Orchestration](llm-orchestration.md)** &mdash; Native LLM providers, vector databases, and content generation.
+- **[Token Efficiency](token-efficiency.md)** &mdash; How durable execution saves tokens and reduces LLM costs.
 - **[Durable Execution Semantics](../../architecture/durable-execution.md)** &mdash; Failure matrix, state transitions, and exactly what persists.
 - **[Quickstart](../../quickstart/index.md)** &mdash; Get Conductor running and execute your first workflow.
-- **[Client SDKs](../sdk/index.md)** &mdash; Java, Python, Go, C#, JavaScript, Clojure.

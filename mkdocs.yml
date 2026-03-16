@@ -44,12 +44,15 @@ nav:
     - Event-Driven Recipes: devguide/cookbook/event-driven.md
     - AI & LLM Recipes: devguide/cookbook/ai-llm.md
     - Dynamic Workflows in Code: devguide/cookbook/dynamic-workflows.md
-  - AI & Agents:
+  - AI Cookbook:
     - devguide/ai/index.md
+    - Build Your First AI Agent: devguide/ai/first-ai-agent.md
+    - MCP Integration: devguide/ai/mcp-guide.md
     - Durable Agents: devguide/ai/durable-agents.md
     - Human-in-the-Loop: devguide/ai/human-in-the-loop.md
     - Dynamic Workflows: devguide/ai/dynamic-workflows.md
     - LLM Orchestration: devguide/ai/llm-orchestration.md
+    - Token Efficiency: devguide/ai/token-efficiency.md
   - SDKs:
     - devguide/sdk/index.md
     - Java: devguide/sdk/java-sdk.md

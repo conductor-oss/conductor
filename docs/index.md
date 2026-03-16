@@ -118,14 +118,15 @@ document.addEventListener("DOMContentLoaded", function() {
     </div>
     <div class="feature-card">
       <div class="feature-tag">Primitives</div>
-      <h3>Wait, Signal, Pause, Resume, Retry</h3>
-      <p>Pause workflows on time, external signals, webhooks, or human approval. Resume safely after minutes, hours, or days&mdash;even across deploys and version changes.</p>
+      <h3>Pause, Resume, Replay, Restart</h3>
+      <p>Pause workflows on time, external signals, webhooks, or human approval. Resume safely after minutes, hours, or days. Replay any workflow from the beginning, from a specific task, or retry just the failed step &mdash; even months later. Full execution history is always preserved.</p>
+      <a href="architecture/durable-execution/#replay--recovery" class="feature-link">How it works &rarr;</a>
     </div>
     <div class="feature-card">
       <div class="feature-tag">AI</div>
       <h3>AI agent orchestration &amp; LLM orchestration</h3>
       <p>Orchestrate AI agents with 14+ native LLM providers (Anthropic, OpenAI, Gemini, Bedrock, Mistral, and more), MCP tool calling, function calling, human-in-the-loop approval, and structured output. Built-in vector database support (Pinecone, pgvector, MongoDB Atlas) for RAG pipelines.</p>
-      <a href="architecture/agents/" class="feature-link">Agent patterns &rarr;</a>
+      <a href="devguide/ai/" class="feature-link">AI Cookbook &rarr;</a>
     </div>
     <div class="feature-card">
       <div class="feature-tag">Workers</div>
@@ -140,12 +141,6 @@ document.addEventListener("DOMContentLoaded", function() {
         <a href="https://github.com/conductor-oss/ruby-sdk" title="Ruby"><img src="https://upload.wikimedia.org/wikipedia/commons/7/73/Ruby_logo.svg" alt="Ruby"></a>
         <a href="https://github.com/conductor-oss/rust-sdk" title="Rust"><img src="https://upload.wikimedia.org/wikipedia/commons/d/d5/Rust_programming_language_black_logo.svg" alt="Rust"></a>
       </div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-tag">Recovery</div>
-      <h3>Replay, Restart, Retry</h3>
-      <p>Re-execute any workflow from the beginning, from a specific task, or retry just the failed step. Works on workflows completed days, weeks, or months ago &mdash; full execution history is always available.</p>
-      <a href="architecture/durable-execution/#replay--recovery" class="feature-link">How it works &rarr;</a>
     </div>
     <div class="feature-card">
       <div class="feature-tag">Reliability</div>
@@ -167,9 +162,9 @@ document.addEventListener("DOMContentLoaded", function() {
       <h3>Durable Execution</h3>
       <p>What persists, what gets retried, failure matrix, and state transitions.</p>
     </a>
-    <a href="architecture/agents/" class="arch-card">
+    <a href="devguide/ai/" class="arch-card">
       <div class="arch-number">02</div>
-      <h3>Agents &amp; AI</h3>
+      <h3>AI Cookbook</h3>
       <p>LLM tasks, tool calls, human approval, dynamic workflows, MCP tools.</p>
     </a>
     <a href="architecture/json-native/" class="arch-card">
