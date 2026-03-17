@@ -166,7 +166,7 @@ cargo run
 > export CONDUCTOR_AUTH_KEY="your-key"
 > export CONDUCTOR_AUTH_SECRET="your-secret"
 > ```
-> See [Configuration](#configuration) for details.
+> See the [rust-sdk README](https://github.com/conductor-oss/rust-sdk) for details.
 
 That's it -- you just defined a worker, built a workflow, and executed it. Open the Conductor UI (default:
 [http://localhost:8080](http://localhost:8080)) to see the execution.
@@ -186,7 +186,7 @@ Workers are Rust functions that execute Conductor tasks. Use the `#[worker]` mac
 - register it as a worker (auto-discovered by `TaskHandler`)
 - use it as a workflow task (call it with `task_ref_name=...`)
 
-Note: Workers can also be used by LLMs for tool calling (see [AI & LLM Workflows](#ai--llm-workflows)).
+Note: Workers can also be used by LLMs for tool calling (see [AI & LLM Workflows](#ai-llm-workflows)).
 
 ```rust
 use conductor_macros::worker;

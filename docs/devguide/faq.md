@@ -169,11 +169,11 @@ When a workflow fails, you can configure a "failure workflow" to run using the``
 
 You can also use the Workflow Status Listener:
 
-* Set the workflowStatusListenerEnabled field in your workflow definition to true which enables [notifications](../documentation/configuration/workflowdef/index.md#workflow-notifications).
+* Set the workflowStatusListenerEnabled field in your workflow definition to true which enables [notifications](../documentation/configuration/workflowdef/index.md#workflow-status-listener).
 * Add a custom implementation of the Workflow Status Listener. Refer to the [Workflow Status Listener extension guide](advanced/extend.md#workflow-status-listener).
 * This notification can be implemented in such a way as to either send a notification to an external system or to send an event on the conductor queue to complete/fail another task in another workflow as described in the [event handlers documentation](../documentation/configuration/eventhandlers.md).
 
-Refer to this [documentation](../documentation/configuration/workflowdef/index.md#workflow-notifications) to extend conductor to send out events/notifications upon workflow completion/failure.
+Refer to this [documentation](../documentation/configuration/workflowdef/index.md#workflow-status-listener) to extend conductor to send out events/notifications upon workflow completion/failure.
 
 ## I want my worker to stop polling and executing tasks when the process is being terminated. (Java client)
 

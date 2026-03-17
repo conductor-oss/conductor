@@ -136,7 +136,7 @@ python quickstart.py
 > # Optional — set to false to force HTTP/1.1 if your network environment has unstable long-lived HTTP/2 connections (default: true)
 > # export CONDUCTOR_HTTP2_ENABLED=false
 > ```
-> See [Configuration](#configuration) for details.
+> See the [Worker Configuration](https://github.com/conductor-oss/python-sdk/blob/main/WORKER_CONFIGURATION.md) guide for details.
 
 That's it — you just defined a worker, built a workflow, and executed it. Open the Conductor UI (default:
 [http://localhost:8127](http://localhost:8127)) to see the execution.
