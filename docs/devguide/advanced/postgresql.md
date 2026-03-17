@@ -1,3 +1,6 @@
+---
+description: "PostgreSQL Backend — configure Conductor to use PostgreSQL for workflow persistence, queues, indexing, and locking."
+---
 # PostgreSQL
 
 By default conductor runs with an in-memory Redis mock. However, you

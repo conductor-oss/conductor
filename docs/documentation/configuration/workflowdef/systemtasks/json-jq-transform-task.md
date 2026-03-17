@@ -1,3 +1,6 @@
+---
+description: "JSON JQ Transform Task — transform and filter JSON data inside Conductor workflows using JQ expressions."
+---
 # JSON JQ Transform Task
 ```json
 "type" : "JSON_JQ_TRANSFORM"

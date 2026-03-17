@@ -1,3 +1,6 @@
+---
+description: "Event Handlers — configure Conductor to produce and consume events from Kafka, SQS, and other message systems."
+---
 # Event Handlers
 Eventing in Conductor provides for loose coupling between workflows and support for producing and consuming events from external systems.
 

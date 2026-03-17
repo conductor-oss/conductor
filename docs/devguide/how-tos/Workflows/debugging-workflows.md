@@ -1,3 +1,6 @@
+---
+description: "Debugging Workflows — identify and resolve failed Conductor workflow executions using the UI diagram and task details."
+---
 # Debugging Workflows
 
 The [workflow execution views](viewing-workflow-executions.md) in the Conductor UI are useful for debugging workflow issues. Learn how to debug failed executions and rerun them. 

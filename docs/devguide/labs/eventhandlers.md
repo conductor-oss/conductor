@@ -1,3 +1,6 @@
+---
+description: "Event Handlers Lab — hands-on tutorial for publishing events and triggering Conductor workflows with event handlers."
+---
 # Events and Event Handlers
 
 In this exercise, we shall:

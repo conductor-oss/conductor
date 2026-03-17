@@ -1,3 +1,6 @@
+---
+description: "Dynamic Task — resolve the task type at runtime in Conductor workflows for flexible, data-driven orchestration."
+---
 # Dynamic
 ```json
 "type" : "DYNAMIC"

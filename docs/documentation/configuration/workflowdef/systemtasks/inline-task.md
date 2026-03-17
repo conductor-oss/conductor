@@ -1,3 +1,6 @@
+---
+description: "Inline Task — execute JavaScript expressions inside Conductor workflows for data transformation and conditional logic."
+---
 # Inline Task
 ```json
 "type": "INLINE"

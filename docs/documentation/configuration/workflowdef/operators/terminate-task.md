@@ -1,3 +1,6 @@
+---
+description: "Terminate Task — end a Conductor workflow execution with a specified status and output from any point in the flow."
+---
 # Terminate
 ```json
 "type" : "TERMINATE"

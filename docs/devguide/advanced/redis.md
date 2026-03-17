@@ -1,3 +1,6 @@
+---
+description: "Redis Backend — configure Redis Standalone, Cluster, or Sentinel as the database and queue backend for Conductor."
+---
 # Redis
 
 Configure Redis as the database and queue backend by setting the properties below.

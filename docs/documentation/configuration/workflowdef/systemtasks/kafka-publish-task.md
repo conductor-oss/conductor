@@ -1,3 +1,6 @@
+---
+description: "Kafka Publish Task — send messages to Kafka topics from Conductor workflows with configurable serialization."
+---
 # Kafka Publish Task
 ```json
 "type" : "KAFKA_PUBLISH"

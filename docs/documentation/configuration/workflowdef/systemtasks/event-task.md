@@ -1,3 +1,6 @@
+---
+description: "Event Task — publish events to message brokers (Kafka, SQS, NATS) from Conductor workflows for event-driven orchestration."
+---
 # Event Task
 
 ```json

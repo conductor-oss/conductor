@@ -1,3 +1,6 @@
+---
+description: "OpenSearch Integration — configure OpenSearch as the indexing backend for searching Conductor workflows and tasks."
+---
 # OpenSearch
 
 Conductor supports OpenSearch as an indexing backend for searching workflows and tasks via the UI.

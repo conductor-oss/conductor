@@ -1,3 +1,6 @@
+---
+description: "Start Workflow Task — asynchronously launch a new Conductor workflow execution from within a running workflow."
+---
 # Start Workflow
 ```json
 "type" : "START_WORKFLOW"
