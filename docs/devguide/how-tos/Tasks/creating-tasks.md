@@ -4,7 +4,7 @@ description: "Create and update task definitions in Conductor to configure timeo
 
 # Creating / Updating Task Definitions
 
-A [task definition](../../configuration/taskdef.md) specifies a task’s general implementation details:
+A [task definition](../../../documentation/configuration/taskdef.md) specifies a task’s general implementation details:
 
 - Timeout policy
 - Retry logic
@@ -28,7 +28,7 @@ With the UI, you can create or update task definitions visually.
 **To create a task definition:**
 
 1. In [**Executions** > **Tasks**](http://localhost:8080/taskDefs), select **+ New Task Definition**.
-2. Configure the task definition JSON. Refer to [Task Definitions](../../configuration/taskdef.md) for the full parameters.
+2. Configure the task definition JSON. Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for the full parameters.
 3. Select **Save** > **Save**.
 
 ### Updating task definitions
@@ -36,7 +36,7 @@ With the UI, you can create or update task definitions visually.
 **To update a task definition:**
 
 1. In [**Executions** > **Tasks**](http://localhost:8080/taskDefs), select the task definition to be updated.
-2. Modify the task definition JSON. Refer to [Task Definitions](../../configuration/taskdef.md) for the full parameters.
+2. Modify the task definition JSON. Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for the full parameters.
 3. Select **Save** > **Save**.
 
 ## Using the CLI
@@ -47,11 +47,11 @@ You can create task definitions using the Conductor CLI. Save your task definiti
 conductor task create tasks.json
 ```
 
-The file should contain an array of task definitions. Refer to [Task Definitions](../../configuration/taskdef.md) for a reference guide on the full parameters.
+The file should contain an array of task definitions. Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for a reference guide on the full parameters.
 
 ## Using APIs
 
-Refer to [Task Definitions](../../configuration/taskdef.md) for a reference guide on the full parameters.
+Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for a reference guide on the full parameters.
 
 ### Creating task definitions
 
@@ -84,7 +84,7 @@ You can update task definitions using the Update Task Definition API (`PUT api/m
 
 Conductor offers client SDKs for popular languages which have library methods for making the API call. Refer to the SDK documentation to configure a client in your selected language to create or update task definitions.
 
-Refer to [Task Definitions](../../configuration/taskdef.md) for a reference guide on the full parameters.
+Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for a reference guide on the full parameters.
 
 ### Creating task definitions - Example using JavaScript
 

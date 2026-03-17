@@ -4,7 +4,7 @@ In this article we will explore how we can run a really simple workflow that run
 
 Conductor can orchestrate HTTP services out of the box without implementing any code.  We will use that to create and run the first workflow.
 
-See [System Task](../configuration/workflowdef/systemtasks/index.md) for the list of such built-in tasks.
+See [System Task](../../documentation/configuration/workflowdef/systemtasks/index.md) for the list of such built-in tasks.
 Using system tasks is a great way to run a lot of our code in production.
 
 ## Configuring our First Workflow

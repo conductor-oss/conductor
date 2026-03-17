@@ -25,27 +25,27 @@ generation — enabling AI agent orchestration and LLM orchestration alongside t
   <div class="wcc-left">
     <div class="wcc-item wcc-active" data-wcc="0" role="tab" aria-selected="true" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Create Workflows</span><span class="wcc-chevron"></span></div>
-      <div class="wcc-body">Define workflows consisting of multiple tasks that are executed in a specific order. <a href="../configuration/workflowdef/index.md">Learn more</a></div>
+      <div class="wcc-body">Define workflows consisting of multiple tasks that are executed in a specific order. <a href="../../documentation/configuration/workflowdef/index.md">Learn more</a></div>
     </div>
     <div class="wcc-item" data-wcc="1" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Branch Your Flows</span><span class="wcc-chevron"></span></div>
-      <div class="wcc-body">Use switch-case operators to make branching decisions. <a href="../configuration/workflowdef/operators/switch-task.md">Learn more</a></div>
+      <div class="wcc-body">Use switch-case operators to make branching decisions. <a href="../../documentation/configuration/workflowdef/operators/switch-task.md">Learn more</a></div>
     </div>
     <div class="wcc-item" data-wcc="2" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Run Loops</span><span class="wcc-chevron"></span></div>
-      <div class="wcc-body">Use the Do-While loop operator to iterate through a set of tasks. <a href="../configuration/workflowdef/operators/do-while-task.md">Learn more</a></div>
+      <div class="wcc-body">Use the Do-While loop operator to iterate through a set of tasks. <a href="../../documentation/configuration/workflowdef/operators/do-while-task.md">Learn more</a></div>
     </div>
     <div class="wcc-item" data-wcc="3" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Parallelize Your Tasks</span><span class="wcc-chevron"></span></div>
-      <div class="wcc-body">Execute tasks in parallel using either static or dynamic forks. <a href="../configuration/workflowdef/operators/fork-task.md">Learn more</a></div>
+      <div class="wcc-body">Execute tasks in parallel using either static or dynamic forks. <a href="../../documentation/configuration/workflowdef/operators/fork-task.md">Learn more</a></div>
     </div>
     <div class="wcc-item" data-wcc="4" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Run Your Tasks Externally</span><span class="wcc-chevron"></span></div>
-      <div class="wcc-body">Implement tasks using external workers in microservices, serverless functions, or applications. <a href="workers.md">Workers</a> · <a href="../sdk/index.md">SDKs</a></div>
+      <div class="wcc-body">Implement tasks using external workers in microservices, serverless functions, or applications. <a href="workers.md">Workers</a> · <a href="../../documentation/clientsdks/index.md">SDKs</a></div>
     </div>
     <div class="wcc-item" data-wcc="5" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Use Built-In Tasks</span><span class="wcc-chevron"></span></div>
-      <div class="wcc-body">Use built-in tasks for common actions such as calling HTTP endpoints, writing to event queues, and executing inline code. <a href="../configuration/workflowdef/systemtasks/index.md">Learn more</a></div>
+      <div class="wcc-body">Use built-in tasks for common actions such as calling HTTP endpoints, writing to event queues, and executing inline code. <a href="../../documentation/configuration/workflowdef/systemtasks/index.md">Learn more</a></div>
     </div>
     <div class="wcc-item" data-wcc="6" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Use LLM Tasks</span><span class="wcc-chevron"></span></div>
@@ -53,7 +53,7 @@ generation — enabling AI agent orchestration and LLM orchestration alongside t
     </div>
     <div class="wcc-item" data-wcc="7" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Human in the Loop</span><span class="wcc-chevron"></span></div>
-      <div class="wcc-body">Plug in manual steps in your workflows using Human tasks. <a href="../configuration/workflowdef/systemtasks/human-task.md">Human tasks</a> · <a href="../configuration/workflowdef/systemtasks/wait-task.md">Wait tasks</a></div>
+      <div class="wcc-body">Plug in manual steps in your workflows using Human tasks. <a href="../../documentation/configuration/workflowdef/systemtasks/human-task.md">Human tasks</a> · <a href="../../documentation/configuration/workflowdef/systemtasks/wait-task.md">Wait tasks</a></div>
     </div>
     <div class="wcc-item" data-wcc="8" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Handle Failures</span><span class="wcc-chevron"></span></div>

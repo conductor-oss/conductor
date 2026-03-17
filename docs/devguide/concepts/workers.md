@@ -36,7 +36,7 @@ Workers are configured through the task definition on the Conductor server. Key 
 | `rateLimitPerFrequency` | Max task executions per frequency window. |
 | `concurrentExecLimit` | Max concurrent executions across all workers. |
 
-See [Task Definitions](../configuration/taskdef.md) for the full reference.
+See [Task Definitions](../../documentation/configuration/taskdef.md) for the full reference.
 
 
 ## Scaling task workers

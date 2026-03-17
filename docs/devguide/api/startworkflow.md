@@ -21,7 +21,7 @@ Starts a new workflow execution asynchronously. Returns the workflow ID immediat
 | `input` | JSON object with input parameters for the workflow | No |
 | `correlationId` | Unique ID to correlate multiple workflow executions | No |
 | `taskToDomain` | Task-to-domain mapping. See [Task Domains](taskdomains.md). | No |
-| `workflowDef` | Inline [Workflow Definition](../configuration/workflowdef/index.md) for dynamic workflows. See [Dynamic Workflows](#dynamic-workflows). | No |
+| `workflowDef` | Inline [Workflow Definition](../../documentation/configuration/workflowdef/index.md) for dynamic workflows. See [Dynamic Workflows](#dynamic-workflows). | No |
 | `externalInputPayloadStoragePath` | Path to external payload storage. See [External Payload Storage](../advanced/externalpayloadstorage.md). | No |
 | `priority` | Priority level (0–99) for tasks within this workflow | No |
 

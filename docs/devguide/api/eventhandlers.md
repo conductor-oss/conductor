@@ -6,7 +6,7 @@ description: "Conductor Event Handlers API — create, update, delete, and list 
 
 The Event Handlers API manages event handler definitions — rules that start workflows or complete tasks in response to events from message brokers (Kafka, NATS, SQS, AMQP). All endpoints use the base path `/api/event`.
 
-For details on configuring event handlers, see [Event Handler Configuration](../configuration/eventhandlers.md). For configuring message broker connections, see the [Event Bus Orchestration](../how-tos/event-bus.md) guide.
+For details on configuring event handlers, see [Event Handler Configuration](../../documentation/configuration/eventhandlers.md). For configuring message broker connections, see the [Event Bus Orchestration](../how-tos/event-bus.md) guide.
 
 ## Endpoints
 

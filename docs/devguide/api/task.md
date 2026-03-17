@@ -43,7 +43,7 @@ curl 'http://localhost:8080/api/tasks/a1b2c3d4-5678-90ab-cdef-111111111111'
 
 ## Poll and Update Tasks
 
-These endpoints are used by workers to poll for tasks and update their results. They are typically called by the [SDK](../sdk/index.md), not manually.
+These endpoints are used by workers to poll for tasks and update their results. They are typically called by the [SDK](../../documentation/clientsdks/index.md), not manually.
 
 ### Poll for a Task
 

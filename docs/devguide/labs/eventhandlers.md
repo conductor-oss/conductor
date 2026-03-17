@@ -9,8 +9,8 @@ In this exercise, we shall:
 
 Conductor supports eventing with two Interfaces:
 
-* [Event Task](../configuration/workflowdef/systemtasks/event-task.md)
-* [Event Handlers](../configuration/eventhandlers.md)
+* [Event Task](../../documentation/configuration/workflowdef/systemtasks/event-task.md)
+* [Event Handlers](../../documentation/configuration/eventhandlers.md)
 
 ## Create Workflow Definitions
 
