@@ -511,9 +511,34 @@ label.md-nav__link {
   font-weight: 400;
   line-height: 1.6;
   color: var(--c-text-muted);
-  margin: 0 auto 32px;
+  margin: 0 auto 16px;
   max-width: 640px;
   text-align: center;
+}
+.hero-differentiators {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--c-text-dim);
+  margin: 0 auto 28px;
+  text-align: center;
+}
+.hero-install {
+  margin: 20px auto 0;
+  text-align: center;
+}
+.hero-install code {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--c-text-muted);
+  background: var(--c-bg-secondary);
+  border: 1px solid var(--c-border-dim);
+  border-radius: var(--r-md);
+  padding: 10px 20px;
+  display: inline-block;
+  user-select: all;
+  cursor: text;
 }
 
 /* Buttons */
@@ -599,6 +624,25 @@ a.repo-link:hover {
 a.repo-link svg {
   flex-shrink: 0;
   color: var(--c-text-muted) !important;
+}
+.repo-stats {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 6px;
+  padding-left: 10px;
+  border-left: 1px solid var(--c-border);
+}
+.repo-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-text-muted);
+}
+.repo-stat svg {
+  opacity: 0.7;
 }
 
 /* ---------- Hero Quickstart ---------- */
@@ -1159,28 +1203,27 @@ code.hero-terminal {
 .faq-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 0 40px;
 }
 .faq-item.faq-item {
-  background: var(--c-bg-secondary) !important;
-  border: 1px solid var(--c-border-dim) !important;
-  border-radius: var(--r-md) !important;
-  border-left: 3px solid var(--c-border-dim) !important;
+  background: none !important;
+  border: none !important;
+  border-bottom: 1px solid var(--c-border-dim) !important;
+  border-radius: 0 !important;
   padding: 0 !important;
   margin: 0 !important;
   box-shadow: none !important;
-  transition: border-color 0.2s;
   font-size: inherit !important;
 }
 .faq-item.faq-item[open] {
-  border-left-color: var(--c-accent) !important;
+  border-bottom-color: var(--c-accent) !important;
 }
 .faq-item.faq-item > summary {
   font-family: var(--font-body) !important;
-  font-size: 16px !important;
-  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
   color: var(--c-text) !important;
-  padding: 12px 18px !important;
+  padding: 14px 0 !important;
   margin: 0 !important;
   min-height: 0 !important;
   cursor: pointer;
@@ -1192,6 +1235,9 @@ code.hero-terminal {
   background: none !important;
   border: none !important;
 }
+.faq-item.faq-item > summary:hover {
+  color: var(--c-accent) !important;
+}
 .faq-item.faq-item > summary::-webkit-details-marker {
   display: none !important;
 }
@@ -1201,7 +1247,7 @@ code.hero-terminal {
 .faq-item.faq-item > summary::after {
   content: "+" !important;
   font-family: var(--font-mono) !important;
-  font-size: 1rem !important;
+  font-size: 14px !important;
   font-weight: 400 !important;
   color: var(--c-text-dim) !important;
   flex-shrink: 0;
@@ -1219,14 +1265,14 @@ code.hero-terminal {
   transform: none !important;
 }
 .faq-item.faq-item > p {
-  font-size: 15px !important;
+  font-size: 14px !important;
   line-height: 1.6 !important;
   color: var(--c-text-muted) !important;
-  padding: 0 18px 14px !important;
+  padding: 0 0 14px !important;
   margin: 0 !important;
 }
 .faq-item.faq-item > p a {
-  color: var(--c-blue) !important;
+  color: var(--c-accent) !important;
 }
 @media (max-width: 900px) {
   .faq-grid { grid-template-columns: 1fr; }
