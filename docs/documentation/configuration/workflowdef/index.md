@@ -46,7 +46,7 @@ Setting the `workflowStatusListenerEnabled` field in your Workflow Definition to
 
 To add a custom implementation of the Workflow Status Listener. Refer to the [Workflow Status Listener extension guide](../../../devguide/advanced/extend.md#workflow-status-listener).
 
-The listener can be implemented in such a way as to either send a notification to an external system or to send an event on the conductor queue to complete/fail another task in another workflow as described in the [developer guide](../../../devguide/configuration).
+The listener can be implemented in such a way as to either send a notification to an external system or to send an event on the conductor queue to complete/fail another task in another workflow as described in the [event handlers guide](../eventhandlers.md).
 
 ### Default Input with `inputTemplate`
 

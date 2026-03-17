@@ -25,55 +25,55 @@ generation — enabling AI agent orchestration and LLM orchestration alongside t
   <div class="wcc-left">
     <div class="wcc-item wcc-active" data-wcc="0" role="tab" aria-selected="true" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Create Workflows</span><span class="wcc-chevron"></span></div>
-      <div class="wcc-body">Define workflows consisting of multiple tasks that are executed in a specific order. <a href="../../documentation/configuration/workflowdef/index.md">Learn more</a></div>
+      <div class="wcc-body">Define workflows consisting of multiple tasks that are executed in a specific order. <a href="../../documentation/configuration/workflowdef/index.html">Learn more</a></div>
     </div>
     <div class="wcc-item" data-wcc="1" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Branch Your Flows</span><span class="wcc-chevron"></span></div>
-      <div class="wcc-body">Use switch-case operators to make branching decisions. <a href="../../documentation/configuration/workflowdef/operators/switch-task.md">Learn more</a></div>
+      <div class="wcc-body">Use switch-case operators to make branching decisions. <a href="../../documentation/configuration/workflowdef/operators/switch-task.html">Learn more</a></div>
     </div>
     <div class="wcc-item" data-wcc="2" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Run Loops</span><span class="wcc-chevron"></span></div>
-      <div class="wcc-body">Use the Do-While loop operator to iterate through a set of tasks. <a href="../../documentation/configuration/workflowdef/operators/do-while-task.md">Learn more</a></div>
+      <div class="wcc-body">Use the Do-While loop operator to iterate through a set of tasks. <a href="../../documentation/configuration/workflowdef/operators/do-while-task.html">Learn more</a></div>
     </div>
     <div class="wcc-item" data-wcc="3" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Parallelize Your Tasks</span><span class="wcc-chevron"></span></div>
-      <div class="wcc-body">Execute tasks in parallel using either static or dynamic forks. <a href="../../documentation/configuration/workflowdef/operators/fork-task.md">Learn more</a></div>
+      <div class="wcc-body">Execute tasks in parallel using either static or dynamic forks. <a href="../../documentation/configuration/workflowdef/operators/fork-task.html">Learn more</a></div>
     </div>
     <div class="wcc-item" data-wcc="4" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Run Your Tasks Externally</span><span class="wcc-chevron"></span></div>
-      <div class="wcc-body">Implement tasks using external workers in microservices, serverless functions, or applications. <a href="workers.md">Workers</a> · <a href="../../documentation/clientsdks/index.md">SDKs</a></div>
+      <div class="wcc-body">Implement tasks using external workers in microservices, serverless functions, or applications. <a href="workers.html">Workers</a> · <a href="../../documentation/clientsdks/index.html">SDKs</a></div>
     </div>
     <div class="wcc-item" data-wcc="5" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Use Built-In Tasks</span><span class="wcc-chevron"></span></div>
-      <div class="wcc-body">Use built-in tasks for common actions such as calling HTTP endpoints, writing to event queues, and executing inline code. <a href="../../documentation/configuration/workflowdef/systemtasks/index.md">Learn more</a></div>
+      <div class="wcc-body">Use built-in tasks for common actions such as calling HTTP endpoints, writing to event queues, and executing inline code. <a href="../../documentation/configuration/workflowdef/systemtasks/index.html">Learn more</a></div>
     </div>
     <div class="wcc-item" data-wcc="6" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Use LLM Tasks</span><span class="wcc-chevron"></span></div>
-      <div class="wcc-body">Use LLM tasks to build AI-powered workflows, including agentic workflows. <a href="../ai/index.md">Learn more</a></div>
+      <div class="wcc-body">Use LLM tasks to build AI-powered workflows, including agentic workflows. <a href="../ai/index.html">Learn more</a></div>
     </div>
     <div class="wcc-item" data-wcc="7" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Human in the Loop</span><span class="wcc-chevron"></span></div>
-      <div class="wcc-body">Plug in manual steps in your workflows using Human tasks. <a href="../../documentation/configuration/workflowdef/systemtasks/human-task.md">Human tasks</a> · <a href="../../documentation/configuration/workflowdef/systemtasks/wait-task.md">Wait tasks</a></div>
+      <div class="wcc-body">Plug in manual steps in your workflows using Human tasks. <a href="../../documentation/configuration/workflowdef/systemtasks/human-task.html">Human tasks</a> · <a href="../../documentation/configuration/workflowdef/systemtasks/wait-task.html">Wait tasks</a></div>
     </div>
     <div class="wcc-item" data-wcc="8" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Handle Failures</span><span class="wcc-chevron"></span></div>
-      <div class="wcc-body">Set timeouts and rate limits to manage failures for tasks and workflows. <a href="../how-tos/Workflows/handling-errors.md">Learn more</a></div>
+      <div class="wcc-body">Set timeouts and rate limits to manage failures for tasks and workflows. <a href="../how-tos/Workflows/handling-errors.html">Learn more</a></div>
     </div>
     <div class="wcc-item" data-wcc="9" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Replay Any Workflow</span><span class="wcc-chevron"></span></div>
-      <div class="wcc-body">Replay completed or failed workflows from the beginning, from any task, or retry just the failed step — even months later. Full execution history is always preserved. <a href="../how-tos/Workflows/debugging-workflows.md">Learn more</a></div>
+      <div class="wcc-body">Replay completed or failed workflows from the beginning, from any task, or retry just the failed step — even months later. Full execution history is always preserved. <a href="../how-tos/Workflows/debugging-workflows.html">Learn more</a></div>
     </div>
     <div class="wcc-item" data-wcc="10" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Integrate With Applications</span><span class="wcc-chevron"></span></div>
-      <div class="wcc-body">Connect Conductor to your ecosystem with event-driven triggers using Kafka, NATS, SQS, AMQP, and webhooks. <a href="../cookbook/event-driven.md">Learn more</a></div>
+      <div class="wcc-body">Connect Conductor to your ecosystem with event-driven triggers using Kafka, NATS, SQS, AMQP, and webhooks. <a href="../cookbook/event-driven.html">Learn more</a></div>
     </div>
     <div class="wcc-item" data-wcc="11" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Debug Visually</span><span class="wcc-chevron"></span></div>
-      <div class="wcc-body">Track and debug workflows from Conductor UI. View inputs, pull logs, and restart from any point. <a href="../../quickstart/index.md">Get started</a></div>
+      <div class="wcc-body">Track and debug workflows from Conductor UI. View inputs, pull logs, and restart from any point. <a href="../../quickstart/index.html">Get started</a></div>
     </div>
     <div class="wcc-item" data-wcc="12" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Scale Horizontally</span><span class="wcc-chevron"></span></div>
-      <div class="wcc-body">Run multiple server instances behind a load balancer with shared backends for high availability. <a href="../running/deploy.md">Deployment guide</a></div>
+      <div class="wcc-body">Run multiple server instances behind a load balancer with shared backends for high availability. <a href="../running/deploy.html">Deployment guide</a></div>
     </div>
   </div>
   <div class="wcc-right" role="tabpanel">

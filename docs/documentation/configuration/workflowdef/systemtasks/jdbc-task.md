@@ -104,7 +104,7 @@ Example output:
 
 ## Connection configuration
 
-JDBC connections are configured using named instances under `conductor.jdbc.instances`. For the full configuration reference, see [JDBC Configuration](../../../../../ai/JDBC_CONFIGURATION.md).
+JDBC connections are configured using named instances under `conductor.jdbc.instances`.
 
 ### Quick setup
 

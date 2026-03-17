@@ -4,7 +4,7 @@ repo_url: https://github.com/conductor-oss/conductor
 site_url: https://conductor-oss.github.io/conductor
 edit_uri: ''
 strict: false
-use_directory_urls: true
+use_directory_urls: false
 
 nav:
   - Home: index.md

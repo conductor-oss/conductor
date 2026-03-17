@@ -13,7 +13,7 @@ description: Conductor is an open source workflow engine and durable execution p
     <div class="hero-left">
       <p class="hero-subtitle">Stop stitching together retries, state, and compensation by hand. Conductor gives your workflows a durable runtime.</p>
       <div class="hero-actions">
-        <a href="quickstart/" class="btn-primary">Get Started<span class="btn-arrow">&rarr;</span></a>
+        <a href="quickstart/index.html" class="btn-primary">Get Started<span class="btn-arrow">&rarr;</span></a>
         <a href="https://github.com/conductor-oss/conductor" class="repo-link">
           <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
           <span>conductor-oss/conductor</span>
@@ -108,25 +108,25 @@ document.addEventListener("DOMContentLoaded", function() {
       <div class="feature-tag">Core</div>
       <h3>Durable execution by default</h3>
       <p>Workflow state is persisted at every step. Survive server restarts, worker crashes, and network failures. Durable execution with at-least-once task delivery, configurable retries, timeouts, and compensation flows. Build durable agents that never lose progress.</p>
-      <a href="architecture/durable-execution/" class="feature-link">Failure semantics &rarr;</a>
+      <a href="architecture/durable-execution.html" class="feature-link">Failure semantics &rarr;</a>
     </div>
     <div class="feature-card">
       <div class="feature-tag">Format</div>
       <h3>JSON native &mdash; deterministic by default</h3>
       <p>JSON definitions separate orchestration from implementation &mdash; no side effects, no hidden state, every run is deterministic. Generate workflows at runtime with LLMs, modify per-execution, and use dynamic forks, dynamic tasks, and dynamic sub-workflows for more flexibility than code-based engines. Code via SDKs when you need it.</p>
-      <a href="architecture/json-native/" class="feature-link">Why JSON wins &rarr;</a>
+      <a href="architecture/json-native.html" class="feature-link">Why JSON wins &rarr;</a>
     </div>
     <div class="feature-card">
       <div class="feature-tag">Primitives</div>
       <h3>Pause, Resume, Replay, Restart</h3>
       <p>Pause workflows on time, external signals, webhooks, or human approval. Resume safely after minutes, hours, or days. Replay any workflow from the beginning, from a specific task, or retry just the failed step &mdash; even months later. Full execution history is always preserved.</p>
-      <a href="architecture/durable-execution/#replay-and-recovery" class="feature-link">How it works &rarr;</a>
+      <a href="architecture/durable-execution.html#replay-and-recovery" class="feature-link">How it works &rarr;</a>
     </div>
     <div class="feature-card">
       <div class="feature-tag">AI</div>
       <h3>AI agent orchestration &amp; LLM orchestration</h3>
       <p>Orchestrate AI agents with 14+ native LLM providers (Anthropic, OpenAI, Gemini, Bedrock, Mistral, and more), MCP tool calling, function calling, human-in-the-loop approval, and structured output. Built-in vector database support (Pinecone, pgvector, MongoDB Atlas) for RAG pipelines.</p>
-      <a href="devguide/ai/" class="feature-link">AI Cookbook &rarr;</a>
+      <a href="devguide/ai/index.html" class="feature-link">AI Cookbook &rarr;</a>
     </div>
     <div class="feature-card">
       <div class="feature-tag">Workers</div>
@@ -146,7 +146,7 @@ document.addEventListener("DOMContentLoaded", function() {
       <div class="feature-tag">Reliability</div>
       <h3>Saga pattern &amp; compensation</h3>
       <p>Model distributed transactions as sagas. When a step fails, Conductor automatically runs undo logic in reverse order&mdash;no manual intervention.</p>
-      <a href="devguide/how-tos/Workflows/handling-errors/" class="feature-link">Error handling &rarr;</a>
+      <a href="devguide/how-tos/Workflows/handling-errors.html" class="feature-link">Error handling &rarr;</a>
     </div>
   </div>
 </div>
@@ -157,22 +157,22 @@ document.addEventListener("DOMContentLoaded", function() {
     <h2>Understand the engine.</h2>
   </div>
   <div class="arch-grid">
-    <a href="architecture/durable-execution/" class="arch-card">
+    <a href="architecture/durable-execution.html" class="arch-card">
       <div class="arch-number">01</div>
       <h3>Durable Execution</h3>
       <p>What persists, what gets retried, failure matrix, and state transitions.</p>
     </a>
-    <a href="devguide/ai/" class="arch-card">
+    <a href="devguide/ai/index.html" class="arch-card">
       <div class="arch-number">02</div>
       <h3>AI Cookbook</h3>
       <p>LLM tasks, tool calls, human approval, dynamic workflows, MCP tools.</p>
     </a>
-    <a href="architecture/json-native/" class="arch-card">
+    <a href="architecture/json-native.html" class="arch-card">
       <div class="arch-number">03</div>
       <h3>JSON + Code Native</h3>
       <p>Runtime generation, versioning, dynamic definitions, API/SDK parity.</p>
     </a>
-    <a href="devguide/architecture/" class="arch-card">
+    <a href="devguide/architecture/index.html" class="arch-card">
       <div class="arch-number">04</div>
       <h3>System Architecture</h3>
       <p>Worker-task queues, persistence, polling, distributed consistency.</p>
@@ -300,7 +300,7 @@ document.addEventListener("DOMContentLoaded", function() {
     <p>Apache-2.0 licensed. Self-hosted, no vendor lock-in. Originally created at Netflix, now maintained by the community.</p>
     <div class="cta-actions">
       <a href="https://github.com/conductor-oss/conductor" class="btn-primary">Star on GitHub<span class="btn-arrow">&rarr;</span></a>
-      <a href="resources/contributing/" class="btn-ghost">Contributing guide</a>
+      <a href="resources/contributing.html" class="btn-ghost">Contributing guide</a>
     </div>
   </div>
 </div>
