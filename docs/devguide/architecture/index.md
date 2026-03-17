@@ -1,3 +1,7 @@
+---
+description: "Conductor system architecture — worker-task queue model, state machine evaluator, pluggable data stores, and RPC-based polling for durable code execution."
+---
+
 # Architecture Overview
 
 This diagram showcases an overview of Conductor's system architecture:
@@ -14,7 +18,7 @@ In Conductor, workflows are executed on a worker-task queue architecture, where 
 * **APIs**—REST APIs for programmatic access to the Conductor server. 
 
 
-By default, Conductor uses Redis as its data store, with Elasticsearch used for its indexing backend. These [storage layers are pluggable](../../documentation/advanced/extend.md), allowing you to work with alternative backends and queue service providers.
+By default, Conductor uses Redis as its data store, with Elasticsearch used for its indexing backend. These [storage layers are pluggable](../advanced/extend.md), allowing you to work with alternative backends and queue service providers.
 
 
 ## Task execution

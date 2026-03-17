@@ -2,12 +2,12 @@
 
 The Conductor UI provides a convenient interface for viewing workflow executions as visual diagrams. You can view workflow executions:
 
-- In **[Executions](http://localhost:8127/executions)**, after [searching for workflows](searching-workflows.md).
-- In **[Workbench](http://localhost:8127/workbench)** > **Execution History**
+- In **[Executions](http://localhost:8080/executions)**, after [searching for workflows](searching-workflows.md).
+- In **[Workbench](http://localhost:8080/workbench)** > **Execution History**
 
 **To view a workflow execution:**
 
-In **[Executions](http://localhost:8127/executions)** or **[Workbench](http://localhost:8127/workbench)**, select the Workflow ID hyperlink.
+In **[Executions](http://localhost:8080/executions)** or **[Workbench](http://localhost:8080/workbench)**, select the Workflow ID hyperlink.
 
 
 ## Workflow execution details
