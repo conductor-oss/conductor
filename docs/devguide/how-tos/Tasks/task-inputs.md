@@ -1,3 +1,7 @@
+---
+description: "Wire task inputs in Conductor workflows — reference workflow inputs, task outputs, and variables using dynamic expressions in this open source workflow orchestration engine."
+---
+
 # Wiring Task Inputs
 
 In Conductor, task inputs can be provided in the workflow definition in multiple ways:
@@ -24,7 +28,7 @@ These dynamic references are formatted as dot-notation expressions, taking after
 | Component            | Description                                                                                                                    |
 | -------------------- | ----------------------------------------------------------------------------------------------------- |
 | `${...}`             | The root notation indicating that the variable will be dynamically replaced at runtime.             |
-| type                 | The type of reference. Supported values:<ul><li>**workflow**—Refers to the current workflow instance.</li> <li>**workflow.input**—Refers to the workflow’s input parameters.</li> <li>**workflow.output**—Refers to the workflow’s output parameters.</li> <li>**workflow.variables**—Refers to the workflow variables set in the workflow using the [Set Variable](../../../documentation/configuration/workflowdef/operators/set-variable-task.md) task.</li> <li>**_taskReferenceName_**—Refers to a task in the current workflow instance by its reference name. (For example, “http_ref”).</li> <li>**_taskReferenceName_.input**—Refers to the task’s input parameters.</li> <li>**_taskReferenceName_.output**—Refers to the task’s output parameters.</li></ul> |
+| type                 | The type of reference. Supported values:<ul><li>**workflow**—Refers to the current workflow instance.</li> <li>**workflow.input**—Refers to the workflow’s input parameters.</li> <li>**workflow.output**—Refers to the workflow’s output parameters.</li> <li>**workflow.variables**—Refers to the workflow variables set in the workflow using the [Set Variable](../../configuration/workflowdef/operators/set-variable-task.md) task.</li> <li>**_taskReferenceName_**—Refers to a task in the current workflow instance by its reference name. (For example, “http_ref”).</li> <li>**_taskReferenceName_.input**—Refers to the task’s input parameters.</li> <li>**_taskReferenceName_.output**—Refers to the task’s output parameters.</li></ul> |
 | jsonpath             | The [JSONPath](https://goessner.net/articles/JsonPath/) expression in dot-notation.                 |
 
 

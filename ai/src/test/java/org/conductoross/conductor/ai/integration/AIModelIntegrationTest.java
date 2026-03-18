@@ -282,7 +282,7 @@ public class AIModelIntegrationTest {
             assertNotNull(chatModel);
 
             ChatCompletion input = new ChatCompletion();
-            input.setModel("claude-3-5-haiku-latest");
+            input.setModel("claude-haiku-4-5");
             input.setMaxTokens(50);
             input.setTemperature(0.0);
 
@@ -304,7 +304,7 @@ public class AIModelIntegrationTest {
             ChatModel chatModel = anthropic.getChatModel();
 
             ChatCompletion input = new ChatCompletion();
-            input.setModel("claude-3-5-haiku-latest");
+            input.setModel("claude-haiku-4-5");
             input.setMaxTokens(20);
             input.setTemperature(0.0); // Deterministic
 

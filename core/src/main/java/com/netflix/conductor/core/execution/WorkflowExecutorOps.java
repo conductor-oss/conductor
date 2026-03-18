@@ -917,8 +917,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             LOGGER.error(errorMsg, e);
         }
 
-        taskResult.getLogs().forEach(taskExecLog -> taskExecLog.setTaskId(task.getTaskId()));
-        executionDAOFacade.addTaskExecLog(taskResult.getLogs());
+        List<TaskExecLog> taskLogs = taskResult.getLogs();
+        if (taskLogs != null) {
+            taskLogs.forEach(taskExecLog -> taskExecLog.setTaskId(task.getTaskId()));
+            executionDAOFacade.addTaskExecLog(taskLogs);
+        }
 
         if (task.getStatus().isTerminal()) {
             long duration = getTaskDuration(0, task);
@@ -1191,7 +1194,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
                 Duration timeout = properties.getWorkflowOffsetTimeout();
                 if (!workflow.getStatus().isTerminal()) {
-                    Duration updatedOffset = computePostpone(workflow, timeout);
+                    Duration updatedOffset =
+                            computePostpone(
+                                    workflow, timeout, properties.getMaxPostponeDurationSeconds());
                     if (updatedOffset.getSeconds() != timeout.getSeconds()) {
                         // we have a new value, setUnack uses time in millis
                         LOGGER.debug(
