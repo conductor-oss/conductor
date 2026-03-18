@@ -117,6 +117,7 @@ conductor-skills install <skill-name>
 | Backend | Configuration |
 |---------|---------------|
 | Redis + ES7 (default) | [config-redis.properties](docker/server/config/config-redis.properties) |
+| Redis + ES8 | [config-redis-es8.properties](docker/server/config/config-redis-es8.properties) |
 | Redis + OpenSearch | [config-redis-os.properties](docker/server/config/config-redis-os.properties) |
 | Postgres | [config-postgres.properties](docker/server/config/config-postgres.properties) |
 | Postgres + ES7 | [config-postgres-es7.properties](docker/server/config/config-postgres-es7.properties) |
