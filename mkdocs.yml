@@ -104,8 +104,8 @@ nav:
     - Event Handlers: documentation/configuration/eventhandlers.md
     - Configuration: documentation/configuration/appconf.md
     - Metrics:
-      - Server Metrics: devguide/metrics/server.md
-      - Client Metrics: devguide/metrics/client.md
+      - Server Metrics: documentation/metrics/server.md
+      - Client Metrics: documentation/metrics/client.md
   - Deploy:
     - Docker: devguide/running/deploy.md
     - From Source: devguide/running/source.md
