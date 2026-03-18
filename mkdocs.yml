@@ -67,14 +67,14 @@ nav:
     - Rust: documentation/clientsdks/rust-sdk.md
   - Reference:
     - API:
-      - devguide/api/index.md
-      - devguide/api/metadata.md
-      - devguide/api/startworkflow.md
-      - devguide/api/workflow.md
-      - devguide/api/task.md
-      - devguide/api/bulk.md
-      - devguide/api/eventhandlers.md
-      - devguide/api/taskdomains.md
+      - documentation/api/index.md
+      - documentation/api/metadata.md
+      - documentation/api/startworkflow.md
+      - documentation/api/workflow.md
+      - documentation/api/task.md
+      - documentation/api/bulk.md
+      - documentation/api/eventhandlers.md
+      - documentation/api/taskdomains.md
     - Workflow Definition:
       - documentation/configuration/workflowdef/index.md
     - System Tasks:
@@ -112,13 +112,13 @@ nav:
     - Hosted: devguide/running/hosted.md
     - devguide/architecture/index.md
     - Advanced:
-      - devguide/advanced/extend.md
-      - devguide/advanced/isolationgroups.md
-      - devguide/advanced/archival-of-workflows.md
-      - devguide/advanced/externalpayloadstorage.md
-      - devguide/advanced/redis.md
-      - devguide/advanced/postgresql.md
-      - devguide/advanced/opensearch.md
+      - documentation/advanced/extend.md
+      - documentation/advanced/isolationgroups.md
+      - documentation/advanced/archival-of-workflows.md
+      - documentation/advanced/externalpayloadstorage.md
+      - documentation/advanced/redis.md
+      - documentation/advanced/postgresql.md
+      - documentation/advanced/opensearch.md
 
 theme:
   name: material

@@ -52,7 +52,7 @@ curl http://localhost:8080/api/metadata/workflow
 POST /api/metadata/workflow
 ```
 
-Registers a new workflow definition. Request body is a [Workflow Definition](../../documentation/configuration/workflowdef/index.md).
+Registers a new workflow definition. Request body is a [Workflow Definition](../configuration/workflowdef/index.md).
 
 ```shell
 curl -X POST 'http://localhost:8080/api/metadata/workflow' \
@@ -80,7 +80,7 @@ curl -X POST 'http://localhost:8080/api/metadata/workflow' \
 PUT /api/metadata/workflow
 ```
 
-Creates or updates workflow definitions in bulk. Request body is a list of [Workflow Definitions](../../documentation/configuration/workflowdef/index.md). Returns a `BulkResponse` indicating success and failure for each definition.
+Creates or updates workflow definitions in bulk. Request body is a list of [Workflow Definitions](../configuration/workflowdef/index.md). Returns a `BulkResponse` indicating success and failure for each definition.
 
 ```shell
 curl -X PUT 'http://localhost:8080/api/metadata/workflow' \
@@ -247,7 +247,7 @@ curl http://localhost:8080/api/metadata/taskdefs
 POST /api/metadata/taskdefs
 ```
 
-Registers new task definitions. Request body is a list of [Task Definitions](../../documentation/configuration/taskdef.md).
+Registers new task definitions. Request body is a list of [Task Definitions](../configuration/taskdef.md).
 
 ```shell
 curl -X POST 'http://localhost:8080/api/metadata/taskdefs' \
@@ -274,7 +274,7 @@ curl -X POST 'http://localhost:8080/api/metadata/taskdefs' \
 PUT /api/metadata/taskdefs
 ```
 
-Updates an existing task definition. Request body is a single [Task Definition](../../documentation/configuration/taskdef.md).
+Updates an existing task definition. Request body is a single [Task Definition](../configuration/taskdef.md).
 
 ```shell
 curl -X PUT 'http://localhost:8080/api/metadata/taskdefs' \

@@ -125,4 +125,4 @@ Once a task is defined in Conductor, it can be reused numerous times:
 - **In the same workflow** — use the same task with different task reference names.
 - **Across workflows** — any workflow can reference any registered task definition.
 
-When reusing tasks in a multi-tenant system, all work assigned to a task goes into the same queue by default. If a noisy neighbor causes polling delays, you can scale up the number of workers or use [task-to-domain](../../api/taskdomains.md) to route task load into separate queues.
+When reusing tasks in a multi-tenant system, all work assigned to a task goes into the same queue by default. If a noisy neighbor causes polling delays, you can scale up the number of workers or use [task-to-domain](../../../documentation/api/taskdomains.md) to route task load into separate queues.

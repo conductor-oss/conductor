@@ -26,7 +26,7 @@ Use these parameters inside `subWorkflowParam` in the Sub Workflow task configur
 | ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
 | subWorkflowParam.name               | String              | Name of the workflow to be executed. This workflow should have a pre-existing definition in Conductor.                                                                      | Required. |
 | subWorkflowParam.version            | Integer              | The version of the workflow to be executed. If unspecified, the latest version will be used.                                     | Required. |
-| subWorkflowParam.taskToDomain       | Map[String, String]               | Allows scheduling the sub-workflow's tasks to specific domain mappings. <br/> Refer to [Task Domains](../../../../devguide/api/taskdomains.md) for how to configure `taskToDomain`. | Optional. |
+| subWorkflowParam.taskToDomain       | Map[String, String]               | Allows scheduling the sub-workflow's tasks to specific domain mappings. <br/> Refer to [Task Domains](../../../api/taskdomains.md) for how to configure `taskToDomain`. | Optional. |
 | inputParameters | Map[String, Any] | Contains the sub-workflow's input parameters, if any. | Optional. |
 
 ## Task configuration

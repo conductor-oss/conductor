@@ -177,7 +177,7 @@ This limits the task to 50 executions per second globally, with at most 20 runni
 
 ### Domain isolation
 
-Use [task domains](api/taskdomains.md) to route tasks to specific worker pools. Common use cases:
+Use [task domains](../documentation/api/taskdomains.md) to route tasks to specific worker pools. Common use cases:
 
 - **Environment isolation** — dev workers only pick up dev tasks.
 - **Priority lanes** — premium customers routed to dedicated capacity.

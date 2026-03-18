@@ -425,7 +425,7 @@ conductor.app.maxTaskOutputPayloadSizeThreshold=10240KB
 conductor.app.maxWorkflowVariablesPayloadSizeThreshold=256KB
 ```
 
-For external payload storage configuration, see [External Payload Storage](../advanced/externalpayloadstorage.md).
+For external payload storage configuration, see [External Payload Storage](../../documentation/advanced/externalpayloadstorage.md).
 
 ---
 
