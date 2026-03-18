@@ -2112,7 +2112,8 @@ public class TestWorkflowExecutor {
         assertFalse(captor.getValue().isSubworkflowChanged());
 
         // The IN_PROGRESS JOIN must NOT have been pushed to its task queue
-        verify(queueDAO, never()).push(eq(TaskType.TASK_TYPE_JOIN), eq("join_task_id"), anyInt(), anyLong());
+        verify(queueDAO, never())
+                .push(eq(TaskType.TASK_TYPE_JOIN), eq("join_task_id"), anyInt(), anyLong());
     }
 
     /**
