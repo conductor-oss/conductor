@@ -7,7 +7,7 @@ The Conductor UI provides a convenient interface for searching workflow executio
 
 **To search workflow executions:**
 
-1. Go to **[Executions](http://localhost:8127/executions)** in the Conductor UI.
+1. Go to **[Executions](http://localhost:8080/executions)** in the Conductor UI.
 2. Configure the [search parameters](#search-parameters).
 3. Select **Search**.
 
