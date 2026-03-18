@@ -1223,7 +1223,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         }
     }
 
-    private void adjustStateIfSubWorkflowChanged(WorkflowModel workflow) {
+    @VisibleForTesting
+    void adjustStateIfSubWorkflowChanged(WorkflowModel workflow) {
         Optional<TaskModel> changedSubWorkflowTask = findChangedSubWorkflowTask(workflow);
         if (changedSubWorkflowTask.isPresent()) {
             // reset the flag

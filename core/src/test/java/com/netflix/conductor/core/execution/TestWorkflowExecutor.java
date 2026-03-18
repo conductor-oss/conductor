@@ -2058,8 +2058,125 @@ public class TestWorkflowExecutor {
         assertEquals(TaskModel.Status.COMPLETED, argumentCaptor.getAllValues().get(0).getStatus());
         assertEquals(workflowId, argumentCaptor.getAllValues().get(0).getSubWorkflowId());
         assertTrue(
-                argumentCaptor.getAllValues().get(0).isSubworkflowChanged(),
-                "subworkflowChanged should be set to true when subworkflow reaches terminal state");
+                "subworkflowChanged should be set to true when subworkflow reaches terminal state",
+                argumentCaptor.getAllValues().get(0).isSubworkflowChanged());
+    }
+
+    /**
+     * When a subworkflow completes and sets subworkflowChanged=true on the parent's SUB_WORKFLOW
+     * task, adjustStateIfSubWorkflowChanged should reset the flag but must NOT re-queue an
+     * IN_PROGRESS JOIN task. Only terminal+unsuccessful JOIN tasks match the UNSUCCESSFUL_JOIN_TASK
+     * predicate and should be reset.
+     */
+    @Test
+    public void testAdjustStateForSubworkflowChangedDoesNotResetInProgressJoin() {
+        WorkflowTask subWorkflowWorkflowTask = new WorkflowTask();
+        subWorkflowWorkflowTask.setType(TaskType.SUB_WORKFLOW.name());
+        subWorkflowWorkflowTask.setTaskReferenceName("sub_wf_ref");
+
+        WorkflowTask joinWorkflowTask = new WorkflowTask();
+        joinWorkflowTask.setType(TaskType.JOIN.name());
+        joinWorkflowTask.setTaskReferenceName("join_ref");
+
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("fork_join_workflow");
+        workflowDef.setTasks(Arrays.asList(subWorkflowWorkflowTask, joinWorkflowTask));
+
+        TaskModel subWorkflowTask = new TaskModel();
+        subWorkflowTask.setTaskId("sub_wf_task_id");
+        subWorkflowTask.setTaskType(TaskType.TASK_TYPE_SUB_WORKFLOW);
+        subWorkflowTask.setReferenceTaskName("sub_wf_ref");
+        subWorkflowTask.setStatus(TaskModel.Status.COMPLETED);
+        subWorkflowTask.setSubworkflowChanged(true);
+        subWorkflowTask.setWorkflowTask(subWorkflowWorkflowTask);
+
+        TaskModel joinTask = new TaskModel();
+        joinTask.setTaskId("join_task_id");
+        joinTask.setTaskType(TaskType.TASK_TYPE_JOIN);
+        joinTask.setReferenceTaskName("join_ref");
+        joinTask.setStatus(TaskModel.Status.IN_PROGRESS);
+        joinTask.setWorkflowTask(joinWorkflowTask);
+
+        WorkflowModel parentWorkflow = new WorkflowModel();
+        parentWorkflow.setWorkflowId("parent_id");
+        parentWorkflow.setStatus(WorkflowModel.Status.RUNNING);
+        parentWorkflow.setWorkflowDefinition(workflowDef);
+        parentWorkflow.getTasks().addAll(Arrays.asList(subWorkflowTask, joinTask));
+
+        workflowExecutor.adjustStateIfSubWorkflowChanged(parentWorkflow);
+
+        // Only the SUB_WORKFLOW task flag reset should have been persisted
+        ArgumentCaptor<TaskModel> captor = ArgumentCaptor.forClass(TaskModel.class);
+        verify(executionDAOFacade, times(1)).updateTask(captor.capture());
+        assertEquals("sub_wf_task_id", captor.getValue().getTaskId());
+        assertFalse(captor.getValue().isSubworkflowChanged());
+
+        // The IN_PROGRESS JOIN must NOT have been pushed to its task queue
+        verify(queueDAO, never()).push(eq(TaskType.TASK_TYPE_JOIN), eq("join_task_id"), anyInt(), anyLong());
+    }
+
+    /**
+     * When a subworkflow is retried and subworkflowChanged=true is set on the parent's SUB_WORKFLOW
+     * task, adjustStateIfSubWorkflowChanged should reset a CANCELED JOIN task back to IN_PROGRESS
+     * so the parent can re-evaluate the fork-join after the retry completes.
+     */
+    @Test
+    public void testAdjustStateForSubworkflowChangedResetsCanceledJoin() {
+        WorkflowTask subWorkflowWorkflowTask = new WorkflowTask();
+        subWorkflowWorkflowTask.setType(TaskType.SUB_WORKFLOW.name());
+        subWorkflowWorkflowTask.setTaskReferenceName("sub_wf_ref");
+
+        WorkflowTask joinWorkflowTask = new WorkflowTask();
+        joinWorkflowTask.setType(TaskType.JOIN.name());
+        joinWorkflowTask.setTaskReferenceName("join_ref");
+
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("fork_join_workflow");
+        workflowDef.setTasks(Arrays.asList(subWorkflowWorkflowTask, joinWorkflowTask));
+
+        TaskModel subWorkflowTask = new TaskModel();
+        subWorkflowTask.setTaskId("sub_wf_task_id");
+        subWorkflowTask.setTaskType(TaskType.TASK_TYPE_SUB_WORKFLOW);
+        subWorkflowTask.setReferenceTaskName("sub_wf_ref");
+        subWorkflowTask.setStatus(TaskModel.Status.IN_PROGRESS);
+        subWorkflowTask.setSubworkflowChanged(true);
+        subWorkflowTask.setWorkflowTask(subWorkflowWorkflowTask);
+
+        TaskModel joinTask = new TaskModel();
+        joinTask.setTaskId("join_task_id");
+        joinTask.setTaskType(TaskType.TASK_TYPE_JOIN);
+        joinTask.setReferenceTaskName("join_ref");
+        joinTask.setStatus(TaskModel.Status.CANCELED);
+        joinTask.setWorkflowTask(joinWorkflowTask);
+
+        WorkflowModel parentWorkflow = new WorkflowModel();
+        parentWorkflow.setWorkflowId("parent_id");
+        parentWorkflow.setStatus(WorkflowModel.Status.RUNNING);
+        parentWorkflow.setWorkflowDefinition(workflowDef);
+        parentWorkflow.getTasks().addAll(Arrays.asList(subWorkflowTask, joinTask));
+
+        workflowExecutor.adjustStateIfSubWorkflowChanged(parentWorkflow);
+
+        // Both the SUB_WORKFLOW flag reset and the JOIN reset should have been persisted
+        ArgumentCaptor<TaskModel> captor = ArgumentCaptor.forClass(TaskModel.class);
+        verify(executionDAOFacade, times(2)).updateTask(captor.capture());
+
+        TaskModel updatedSubWfTask =
+                captor.getAllValues().stream()
+                        .filter(t -> t.getTaskId().equals("sub_wf_task_id"))
+                        .findFirst()
+                        .orElseThrow(AssertionError::new);
+        assertFalse(updatedSubWfTask.isSubworkflowChanged());
+
+        // The CANCELED JOIN must have been reset to IN_PROGRESS and pushed to its task queue
+        TaskModel updatedJoinTask =
+                captor.getAllValues().stream()
+                        .filter(t -> t.getTaskId().equals("join_task_id"))
+                        .findFirst()
+                        .orElseThrow(AssertionError::new);
+        assertEquals(TaskModel.Status.IN_PROGRESS, updatedJoinTask.getStatus());
+        verify(queueDAO, times(1))
+                .push(eq(TaskType.TASK_TYPE_JOIN), eq("join_task_id"), anyInt(), anyLong());
     }
 
     @Test
