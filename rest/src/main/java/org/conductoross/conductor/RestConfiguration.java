@@ -52,10 +52,15 @@ public class RestConfiguration implements WebMvcConfigurer {
         if (spaInterceptor != null) {
             registry.addInterceptor(spaInterceptor)
                     .excludePathPatterns("/api/**")
+                    .excludePathPatterns("/actuator")
                     .excludePathPatterns("/actuator/**")
+                    .excludePathPatterns("/health")
                     .excludePathPatterns("/health/**")
+                    .excludePathPatterns("/api-docs")
+                    .excludePathPatterns("/api-docs/**")
                     .excludePathPatterns("/v3/api-docs")
                     .excludePathPatterns("/v3/api-docs/**")
+                    .excludePathPatterns("/swagger-ui")
                     .excludePathPatterns("/swagger-ui/**")
                     .order(Ordered.HIGHEST_PRECEDENCE);
         }
