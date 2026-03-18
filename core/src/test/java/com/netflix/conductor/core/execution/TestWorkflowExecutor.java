@@ -2057,6 +2057,9 @@ public class TestWorkflowExecutor {
         verify(executionDAOFacade, times(1)).updateTask(argumentCaptor.capture());
         assertEquals(TaskModel.Status.COMPLETED, argumentCaptor.getAllValues().get(0).getStatus());
         assertEquals(workflowId, argumentCaptor.getAllValues().get(0).getSubWorkflowId());
+        assertTrue(
+                argumentCaptor.getAllValues().get(0).isSubworkflowChanged(),
+                "subworkflowChanged should be set to true when subworkflow reaches terminal state");
     }
 
     @Test

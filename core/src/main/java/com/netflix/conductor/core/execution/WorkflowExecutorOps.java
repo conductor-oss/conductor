@@ -1919,6 +1919,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         TaskModel subWorkflowTask =
                 executionDAOFacade.getTaskModel(subWorkflow.getParentWorkflowTaskId());
         executeSubworkflowTaskAndSyncData(subWorkflow, subWorkflowTask);
+        // Mark the sub workflow task as changed so that adjustStateIfSubWorkflowChanged
+        // can properly re-evaluate the parent. This ensures correctness even when the
+        // sweeper resets the flag between updateAndPushParents and completeWorkflow.
+        subWorkflowTask.setSubworkflowChanged(true);
         executionDAOFacade.updateTask(subWorkflowTask);
     }
 
