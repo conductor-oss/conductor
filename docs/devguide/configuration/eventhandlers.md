@@ -103,6 +103,7 @@ Examples of actions that can be configured in the `actions` array:
     "fail_task": {
       "workflowId": "${workflowId}",
       "taskRefName": "task_1",
+      "reasonForIncompletion": "${error}",
       "output": {
         "response": "${result}"
       }
@@ -110,6 +111,8 @@ Examples of actions that can be configured in the `actions` array:
     "expandInlineJSON": true
 }
 ```
+`reasonForIncompletion` is optional, but when provided on `fail_task` it is stored on the failed task and can propagate to the workflow failure reason when that task causes the workflow to fail.
+
 Input for starting a workflow and output when completing / failing task follows the same [expressions](workflowdef/index.md#using-expressions) used for wiring task inputs.
 
 !!!info "Expanding stringified JSON elements in payload"
