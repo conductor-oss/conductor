@@ -1,0 +1,26 @@
+{
+  "template": {
+    "settings": {},
+    "mappings": {
+      "properties": {
+        "created": {
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        },
+        "messageId": {
+          "type": "keyword",
+          "index": true
+        },
+        "payload": {
+          "type": "keyword",
+          "index": false,
+          "doc_values": false
+        },
+        "queue": {
+          "type": "keyword",
+          "index": true
+        }
+      }
+    }
+  }
+}
