@@ -67,10 +67,6 @@ The payloads will be stored in the bucket configured above in a `UUID.json` file
 
 ### Azure Blob Storage
 
-ProductLive provides an implementation of [Azure Blob Storage](https://azure.microsoft.com/services/storage/blobs/) used to externalize large payload storage.  
-
-To build conductor with azure blob feature read the [README.md](https://github.com/conductor-oss/conductor/blob/main/azureblob-storage/README.md) in `azureblob-storage` module 
-
 !!!note
     This implementation assumes that you have an [Azure Blob Storage account's connection string or SAS Token](https://github.com/Azure/azure-sdk-for-java/blob/master/sdk/storage/azure-storage-blob/README.md).
     If you want signed url to expired you must specify a Connection String. 

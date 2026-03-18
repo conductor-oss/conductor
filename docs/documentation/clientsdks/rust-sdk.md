@@ -264,7 +264,7 @@ task_handler.start().await?;
 // Metrics at http://localhost:9090/metrics
 ```
 
-See [METRICS.md](https://github.com/conductor-oss/rust-sdk/blob/main/METRICS.md) for details.
+See the [rust-sdk README](https://github.com/conductor-oss/rust-sdk) for details.
 
 **Learn more:**
 - [Worker Guide](https://github.com/conductor-oss/rust-sdk/blob/main/docs/WORKER.md) — All worker patterns (function, closure, macro, async)
@@ -328,7 +328,6 @@ workflow_client.restart_workflow(&workflow_id, false).await?;
 
 **Learn more:**
 - [Workflow Management](https://github.com/conductor-oss/rust-sdk/blob/main/docs/WORKFLOW.md) — Start, pause, resume, terminate, retry, search
-- [Workflow Testing](https://github.com/conductor-oss/rust-sdk/blob/main/docs/WORKFLOW_TESTING.md) — Unit testing with mock task outputs
 - [Metadata Management](https://github.com/conductor-oss/rust-sdk/blob/main/docs/METADATA.md) — Task & workflow definitions
 
 ## Troubleshooting
@@ -407,7 +406,6 @@ End-to-end examples covering all APIs for each domain:
 | [Worker Guide](https://github.com/conductor-oss/rust-sdk/blob/main/docs/WORKER.md) | All worker patterns (function, closure, macro, async) |
 | [Worker Configuration](https://github.com/conductor-oss/rust-sdk/blob/main/WORKER_CONFIGURATION.md) | Hierarchical environment variable configuration |
 | [Workflow Management](https://github.com/conductor-oss/rust-sdk/blob/main/docs/WORKFLOW.md) | Start, pause, resume, terminate, retry, search |
-| [Workflow Testing](https://github.com/conductor-oss/rust-sdk/blob/main/docs/WORKFLOW_TESTING.md) | Unit testing with mock outputs |
 | [Task Management](https://github.com/conductor-oss/rust-sdk/blob/main/docs/TASK_MANAGEMENT.md) | Task operations |
 | [Metadata](https://github.com/conductor-oss/rust-sdk/blob/main/docs/METADATA.md) | Task & workflow definitions |
 | [Authorization](https://github.com/conductor-oss/rust-sdk/blob/main/docs/AUTHORIZATION.md) | Users, groups, applications, permissions |
@@ -415,11 +413,11 @@ End-to-end examples covering all APIs for each domain:
 | [Secrets](https://github.com/conductor-oss/rust-sdk/blob/main/docs/SECRET_MANAGEMENT.md) | Secret storage |
 | [Prompts](https://github.com/conductor-oss/rust-sdk/blob/main/docs/PROMPT.md) | AI/LLM prompt templates |
 | [Integrations](https://github.com/conductor-oss/rust-sdk/blob/main/docs/INTEGRATION.md) | AI/LLM provider integrations |
-| [Metrics](https://github.com/conductor-oss/rust-sdk/blob/main/METRICS.md) | Prometheus metrics collection |
+| [Metrics](https://github.com/conductor-oss/rust-sdk) | Prometheus metrics collection |
 
 ## Support
 
-- [Open an issue (SDK)](https://github.com/conductor-oss/conductor-rust/issues) for SDK bugs, questions, and feature requests
+- [Open an issue (SDK)](https://github.com/conductor-oss/rust-sdk/issues) for SDK bugs, questions, and feature requests
 - [Open an issue (Conductor server)](https://github.com/conductor-oss/conductor/issues) for Conductor OSS server issues
 - [Join the Conductor Slack](https://join.slack.com/t/orkes-conductor/shared_invite/zt-2vdbx239s-Eacdyqya9giNLHfrCavfaA) for community discussion and help
 - [Orkes Community Forum](https://community.orkes.io/) for Q&A
@@ -468,7 +466,7 @@ Workers are standard Rust applications. Deploy them as you would any Rust applic
 
 **How do I test workflows without running a full Conductor server?**
 
-The SDK provides a test framework that uses Conductor's `POST /api/workflow/test` endpoint to evaluate workflows with mock task outputs. See [Workflow Testing](https://github.com/conductor-oss/rust-sdk/blob/main/docs/WORKFLOW_TESTING.md) for details.
+The SDK provides a test framework that uses Conductor's `POST /api/workflow/test` endpoint to evaluate workflows with mock task outputs. See the [rust-sdk examples](https://github.com/conductor-oss/rust-sdk/blob/main/examples/test_workflows.rs) for details.
 
 ## License
 

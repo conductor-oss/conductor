@@ -480,15 +480,10 @@ See [examples/agentic-workflows/](https://github.com/conductor-oss/javascript-sd
 | [Task Management](https://github.com/conductor-oss/javascript-sdk/blob/main/docs/api-reference/task-client.md) | Task operations, logs, queue management |
 | [Metadata](https://github.com/conductor-oss/javascript-sdk/blob/main/docs/api-reference/metadata-client.md) | Task & workflow definitions, tags, rate limits |
 | [Scheduling](https://github.com/conductor-oss/javascript-sdk/blob/main/docs/api-reference/scheduler-client.md) | Workflow scheduling with CRON expressions |
-| [Authorization](https://github.com/conductor-oss/javascript-sdk/blob/main/docs/api-reference/authorization-client.md) | Users, groups, permissions |
 | [Applications](https://github.com/conductor-oss/javascript-sdk/blob/main/docs/api-reference/application-client.md) | Application management, access keys, roles |
 | [Events](https://github.com/conductor-oss/javascript-sdk/blob/main/docs/api-reference/event-client.md) | Event handlers, event-driven workflows |
 | [Human Tasks](https://github.com/conductor-oss/javascript-sdk/blob/main/docs/api-reference/human-executor.md) | Human-in-the-loop workflows, form templates |
 | [Service Registry](https://github.com/conductor-oss/javascript-sdk/blob/main/docs/api-reference/service-registry-client.md) | Service discovery, circuit breakers |
-| [Secrets](https://github.com/conductor-oss/javascript-sdk/blob/main/docs/api-reference/secret-client.md) | Secret storage and management |
-| [Prompts](https://github.com/conductor-oss/javascript-sdk/blob/main/docs/api-reference/prompt-client.md) | AI/LLM prompt templates |
-| [Integrations](https://github.com/conductor-oss/javascript-sdk/blob/main/docs/api-reference/integration-client.md) | AI/LLM provider integrations |
-| [Schemas](https://github.com/conductor-oss/javascript-sdk/blob/main/docs/api-reference/schema-client.md) | JSON/Avro/Protobuf schema management |
 
 ## Support
 

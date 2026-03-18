@@ -39,7 +39,6 @@ To create system tasks follow the steps below:
 * Extend ```com.netflix.conductor.core.execution.tasks.WorkflowSystemTask```
 * Instantiate the new class as part of the startup (eager singleton)
 * Implement the ```TaskMapper``` [interface](https://github.com/conductor-oss/conductor/blob/main/core/src/main/java/com/netflix/conductor/core/execution/mapper/TaskMapper.java)
-* Add this implementation to the map identified by [TaskMappers](https://github.com/conductor-oss/conductor/blob/master/core/src/main/java/com/netflix/conductor/core/config/CoreModule.java#L70)
 
 ## Workflow Status Listener
 To provide a notification mechanism upon completion/termination of workflows:

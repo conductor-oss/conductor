@@ -32,7 +32,7 @@ conductor.redis.database=1
 
 ## `conductor.redis.username`
 
-[Redis ACL](https://redis.io/docs/management/security/acl/) using username and password authentication is now supported. 
+[Redis ACL](https://redis.io/docs/latest/operate/oss_and_stack/management/security/acl/) using username and password authentication is now supported. 
 
 The username property should be set as `conductor.redis.username`, e.g.:
 ```properties

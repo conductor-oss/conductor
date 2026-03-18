@@ -33,7 +33,7 @@ Let's analyze the app in 3 steps.
 > [!note]
 > You will need an up & running Conductor Server. 
 >
-> For details on how to run Conductor take a look at [our guide](https://conductor-oss.github.io/conductor/devguide/running/docker.html).
+> For details on how to run Conductor take a look at [our guide](https://conductor-oss.github.io/conductor/devguide/running/deploy.html).
 >
 > The examples expect the server to be listening on http://localhost:8080.
 

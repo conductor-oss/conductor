@@ -442,7 +442,7 @@ management.endpoint.health.show-details=always
 
 Scrape `http://<conductor-host>:8080/actuator/prometheus` with Prometheus.
 
-For details on available metrics, see [Server Metrics](../metrics/server.md) and [Client Metrics](../metrics/client.md).
+For details on available metrics, see [Server Metrics](../../documentation/metrics/server.md) and [Client Metrics](../../documentation/metrics/client.md).
 
 ---
 
