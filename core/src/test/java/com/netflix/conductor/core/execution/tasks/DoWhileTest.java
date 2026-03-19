@@ -433,8 +433,7 @@ public class DoWhileTest {
                 "Output key '1' should have been removed by keepLastN cleanup",
                 doWhileTask.getOutputData().containsKey("1"));
         assertTrue(
-                "Output key '2' should be retained",
-                doWhileTask.getOutputData().containsKey("2"));
+                "Output key '2' should be retained", doWhileTask.getOutputData().containsKey("2"));
         assertTrue(
                 "Output key '3' should be retained (just added)",
                 doWhileTask.getOutputData().containsKey("3"));
@@ -462,10 +461,7 @@ public class DoWhileTest {
                 "Task should NOT be COMPLETED — iteration 1 must be scheduled",
                 TaskModel.Status.COMPLETED,
                 doWhileTask.getStatus());
-        assertEquals(
-                "Iteration should be set to 1",
-                1,
-                doWhileTask.getIteration());
+        assertEquals("Iteration should be set to 1", 1, doWhileTask.getIteration());
         verify(workflowExecutor, times(1)).scheduleNextIteration(any(), any());
     }
 
@@ -525,7 +521,9 @@ public class DoWhileTest {
         assertFalse("Key '2' should be removed", doWhileTask.getOutputData().containsKey("2"));
         assertFalse("Key '3' should be removed", doWhileTask.getOutputData().containsKey("3"));
         assertTrue("Key '4' should be retained", doWhileTask.getOutputData().containsKey("4"));
-        assertTrue("Key '5' should be retained (just added)", doWhileTask.getOutputData().containsKey("5"));
+        assertTrue(
+                "Key '5' should be retained (just added)",
+                doWhileTask.getOutputData().containsKey("5"));
     }
 
     // List iteration tests
