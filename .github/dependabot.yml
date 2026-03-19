@@ -8,7 +8,15 @@ updates:
       - "v1r3n"
       - "boney9"
       - "c4lm"
+    groups:
+      all-gradle-dependencies:
+        patterns:
+          - "*"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      all-github-actions:
+        patterns:
+          - "*"
