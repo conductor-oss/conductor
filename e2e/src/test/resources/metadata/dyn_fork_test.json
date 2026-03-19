@@ -1,0 +1,81 @@
+{
+  "createTime": 1732330133323,
+  "updateTime": 1732648744923,
+  "name": "dyn_fork_test",
+  "description": "test",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "inline",
+      "taskReferenceName": "inline_ref",
+      "inputParameters": {
+        "evaluatorType": "graaljs",
+        "expression": "(function() {\n  return {\n    \"tasks\": [ \n        {\n          \"optional\": true,\n          \"name\" : \"simple_1\",\n          \"taskReferenceName\": \"simple_1\",\n          \"type\": \"SIMPLE\"\n        },\n        {\n          \"optional\": true,\n          \"name\" : \"simple_2\",\n          \"taskReferenceName\": \"simple_2\",\n          \"type\": \"SIMPLE\"\n        },\n        {\n          \"optional\": true,\n          \"name\" : \"simple_3\",\n          \"taskReferenceName\": \"simple_3\",\n          \"type\": \"SIMPLE\"\n        }\n      ],\n      \"inputs\" : {\n        \"simple_1\": {},\n        \"simple_2\": {},\n        \"simple_3\": {},\n      }\n  }\n})();"
+      },
+      "type": "INLINE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "rateLimited": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {}
+    },
+    {
+      "name": "dyn_fork",
+      "taskReferenceName": "dyn_fork_ref",
+      "inputParameters": {
+        "dynamicTasks": "${inline_ref.output.result.tasks}",
+        "dynamicTasksInput": "${inline_ref.output.result.inputs}"
+      },
+      "type": "FORK_JOIN_DYNAMIC",
+      "decisionCases": {},
+      "dynamicForkTasksParam": "dynamicTasks",
+      "dynamicForkTasksInputParamName": "dynamicTasksInput",
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "rateLimited": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {}
+    },
+    {
+      "name": "join_1",
+      "taskReferenceName": "join_1",
+      "inputParameters": {},
+      "type": "JOIN",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "rateLimited": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "evaluatorType": "js",
+      "expression": "(function(){\n  let results = {};\n  let pendingJoinsFound = false;\n  if($.joinOn){\n    $.joinOn.forEach((element)=>{\n      if($[element] && $[element].status !== 'COMPLETED'){\n        results[element] = $[element].status;\n        pendingJoinsFound = true;\n      }\n    });\n    if(pendingJoinsFound){\n      return {\n        \"status\":\"IN_PROGRESS\",\n        \"reasonForIncompletion\":\"Pending\",\n        \"outputData\":{\n          \"scriptResults\": results\n        }\n      };\n    }\n    return true;\n  }\n})();",
+      "onStateChange": {}
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "failureWorkflow": "",
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "ownerEmail": "e2e-test@orkes.io",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {},
+  "inputTemplate": {}
+}

@@ -1,0 +1,75 @@
+{
+  "name": "mailbot_workflow",
+  "description": "CPEWF issue + dyn task issue",
+  "version": 219,
+  "tasks": [
+    {
+      "name": "inline",
+      "taskReferenceName": "inline_ref",
+      "inputParameters": {
+        "expression": "[\n  {\n    \"name\": \"fail_on_purpose\",\n    \"taskReferenceName\": \"fail_on_purpose_ref\",\n    \"inputParameters\": {\n      \"task_id\": \"$\"+\"{CPEWF_TASK_ID}\"\n    },\n    \"type\": \"SIMPLE\",\n    \"defaultCase\": [],\n    \"forkTasks\": [],\n    \"startDelay\": 0,\n    \"joinOn\": [],\n    \"optional\": false,\n    \"defaultExclusiveJoinTask\": [],\n    \"asyncComplete\": false,\n    \"loopOver\": []\n  }\n]",
+        "evaluatorType": "graaljs"
+      },
+      "type": "INLINE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {},
+      "permissive": false
+    },
+    {
+      "name": "extracted_file_data_fork",
+      "taskReferenceName": "extracted_file_data_fork_ref",
+      "inputParameters": {
+        "dynamicTasks": "${inline_ref.output.result}",
+        "dynamicTasksInput": {}
+      },
+      "type": "FORK_JOIN_DYNAMIC",
+      "decisionCases": {},
+      "dynamicForkTasksParam": "dynamicTasks",
+      "dynamicForkTasksInputParamName": "dynamicTasksInput",
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {}
+    },
+    {
+      "name": "extracted_file_data_join",
+      "taskReferenceName": "extracted_file_data_join_ref",
+      "inputParameters": {},
+      "type": "JOIN",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "expression": "(function(){\n  let results = {};\n  let pendingJoinsFound = false;\n  if($.joinOn){\n    $.joinOn.forEach((element)=>{\n      if($[element] && $[element].status !== 'COMPLETED'){\n        results[element] = $[element].status;\n        pendingJoinsFound = true;\n      }\n    });\n    if(pendingJoinsFound){\n      return {\n        \"status\":\"IN_PROGRESS\",\n        \"reasonForIncompletion\":\"Pending\",\n        \"outputData\":{\n          \"scriptResults\": results\n        }\n      };\n    }\n    // To complete the Join - return true OR an object with status = 'COMPLETED' like above.\n    return true;\n  }\n})();",
+      "onStateChange": {}
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "failureWorkflow": "",
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {},
+  "inputTemplate": {}
+}

@@ -1,0 +1,46 @@
+{
+  "name": "e2e_on_state_change_tests",
+  "description": "Workflow to debug on state change issues - missing events for subworkflow task",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "sub_workflow",
+      "taskReferenceName": "sub_workflow_ref",
+      "inputParameters": {},
+      "type": "SUB_WORKFLOW",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "subWorkflowParam": {
+        "name": "e2e_on_state_change_tests_sub",
+        "version": 1
+      },
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {
+        "onSuccess,onFailed,onScheduled,onCancelled,onStart": [
+          {
+            "type": "e2e_subworkflow_task",
+            "payload": {
+              "parentWorkflowId": "${workflow.workflowId}"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "failureWorkflow": "",
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {},
+  "inputTemplate": {}
+}
