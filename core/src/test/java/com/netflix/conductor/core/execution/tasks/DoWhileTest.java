@@ -440,6 +440,94 @@ public class DoWhileTest {
                 doWhileTask.getOutputData().containsKey("3"));
     }
 
+    @Test
+    public void testExecute_NonEmptyItemsList_SchedulesFirstIteration() {
+        // Regression test: non-empty items list must still schedule iteration 1.
+        WorkflowModel workflow = createWorkflowWithDef();
+        workflow.setTasks(new ArrayList<>());
+
+        Map<String, Object> workflowInput = new HashMap<>();
+        workflowInput.put("itemList", List.of("x", "y", "z"));
+        workflow.setInput(workflowInput);
+
+        TaskModel doWhileTask = createDoWhileTask();
+        doWhileTask.getWorkflowTask().setItems("${workflow.input.itemList}");
+        doWhileTask.getWorkflowTask().setLoopCondition(null);
+        workflow.getTasks().add(doWhileTask);
+
+        boolean result = doWhile.execute(workflow, doWhileTask, workflowExecutor);
+
+        assertTrue("execute() should return true when scheduling first iteration", result);
+        assertNotEquals(
+                "Task should NOT be COMPLETED — iteration 1 must be scheduled",
+                TaskModel.Status.COMPLETED,
+                doWhileTask.getStatus());
+        assertEquals(
+                "Iteration should be set to 1",
+                1,
+                doWhileTask.getIteration());
+        verify(workflowExecutor, times(1)).scheduleNextIteration(any(), any());
+    }
+
+    @Test
+    public void testKeepLastN_OutputCleanup_RemovesMultipleKeys() {
+        // At iteration=5, keepLastN=2: should remove "1","2","3" and retain "4","5".
+        WorkflowModel workflow = createWorkflowWithDef();
+
+        Map<String, Object> workflowInput = new HashMap<>();
+        List<String> items = List.of("a", "b", "c", "d", "e", "f");
+        workflowInput.put("items", items);
+        workflow.setInput(workflowInput);
+
+        TaskModel doWhileTask = new TaskModel();
+        doWhileTask.setTaskId("dw-keepLastN-multi");
+        doWhileTask.setReferenceTaskName("dw");
+        doWhileTask.setTaskType("DO_WHILE");
+        doWhileTask.setStatus(TaskModel.Status.IN_PROGRESS);
+        doWhileTask.setIteration(5);
+
+        WorkflowTask wft = new WorkflowTask();
+        wft.setTaskReferenceName("dw");
+        wft.setType("DO_WHILE");
+        wft.setItems("${workflow.input.items}");
+
+        WorkflowTask loopTask = new WorkflowTask();
+        loopTask.setTaskReferenceName("t1");
+        wft.setLoopOver(List.of(loopTask));
+
+        Map<String, Object> inputParams = new HashMap<>();
+        inputParams.put("keepLastN", 2);
+        wft.setInputParameters(inputParams);
+        doWhileTask.setWorkflowTask(wft);
+
+        // Pre-populate output keys "1" through "4"
+        doWhileTask.addOutput("1", Map.of("t1", "r1"));
+        doWhileTask.addOutput("2", Map.of("t1", "r2"));
+        doWhileTask.addOutput("3", Map.of("t1", "r3"));
+        doWhileTask.addOutput("4", Map.of("t1", "r4"));
+
+        TaskModel completedTask = new TaskModel();
+        completedTask.setTaskId("t1-iter5");
+        completedTask.setReferenceTaskName("t1__5");
+        completedTask.setIteration(5);
+        completedTask.setStatus(TaskModel.Status.COMPLETED);
+        completedTask.setWorkflowTask(loopTask);
+
+        List<TaskModel> tasks = new ArrayList<>();
+        tasks.add(doWhileTask);
+        tasks.add(completedTask);
+        workflow.setTasks(tasks);
+
+        doWhile.execute(workflow, doWhileTask, workflowExecutor);
+
+        // rangeClosed(1, 5-2) → removes "1","2","3"; keeps "4","5"
+        assertFalse("Key '1' should be removed", doWhileTask.getOutputData().containsKey("1"));
+        assertFalse("Key '2' should be removed", doWhileTask.getOutputData().containsKey("2"));
+        assertFalse("Key '3' should be removed", doWhileTask.getOutputData().containsKey("3"));
+        assertTrue("Key '4' should be retained", doWhileTask.getOutputData().containsKey("4"));
+        assertTrue("Key '5' should be retained (just added)", doWhileTask.getOutputData().containsKey("5"));
+    }
+
     // List iteration tests
 
     @Test
