@@ -1,3 +1,6 @@
+---
+description: "Directed Acyclic Graph (DAG) — understand how Conductor models workflows as DAGs for reliable task orchestration."
+---
 # Directed Acyclic Graph (DAG)
 
 All Conductor workflows are directed acyclic graphs (DAGs). A directed acyclic graph (DAG) is a set of vertices where the connections are unidirectional without any repetition. DAG workflows can only "move forward" and cannot redo a step (or series of steps).

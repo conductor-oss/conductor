@@ -53,6 +53,7 @@ include 'postgres-persistence'
 include 'sqlite-persistence'
 include 'metrics'
 include 'es7-persistence'
+include 'es8-persistence'
 include 'os-persistence'
 include 'os-persistence-v2'
 include 'os-persistence-v3'
@@ -66,4 +67,3 @@ include 'kafka-event-queue'
 include 'test-harness'
 
 rootProject.children.each {it.name="conductor-${it.name}"}
-

@@ -107,7 +107,7 @@ export const TASK_SEARCH_QUERY_SUGGESTIONS = [
   "outputData",
 ];
 
-export const enum ButtonPosition {
+export enum ButtonPosition {
   TOP = "top",
   RIGHT = "right",
   BOTTOM = "bottom",
