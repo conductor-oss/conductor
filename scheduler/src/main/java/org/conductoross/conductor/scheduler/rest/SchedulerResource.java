@@ -13,6 +13,7 @@
 package org.conductoross.conductor.scheduler.rest;
 
 import java.util.List;
+import java.util.Map;
 
 import org.conductoross.conductor.scheduler.model.WorkflowSchedule;
 import org.conductoross.conductor.scheduler.model.WorkflowScheduleExecution;
@@ -112,6 +113,17 @@ public class SchedulerResource {
     // -------------------------------------------------------------------------
     // Execution history
     // -------------------------------------------------------------------------
+
+    @GetMapping(value = "/search/executions", produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Search execution records across all schedules")
+    public Map<String, Object> searchExecutions(
+            @RequestParam(defaultValue = "0") int start,
+            @RequestParam(defaultValue = "15") int size,
+            @RequestParam(defaultValue = "startTime:DESC") String sort,
+            @RequestParam(defaultValue = "") String query,
+            @RequestParam(defaultValue = "*") String freeText) {
+        return schedulerService.searchExecutions(start, size, sort, query, freeText);
+    }
 
     @GetMapping(value = "/schedules/{name}/executions", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Get execution history for a schedule")

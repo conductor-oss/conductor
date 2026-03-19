@@ -15,10 +15,17 @@ package org.conductoross.conductor.scheduler.service;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
@@ -219,6 +226,167 @@ public class SchedulerService {
 
     public List<WorkflowScheduleExecution> getExecutionHistory(String name, int limit) {
         return schedulerDAO.getExecutionRecords(name, limit);
+    }
+
+    /**
+     * Cross-schedule execution search with in-memory filtering, sorting, and pagination.
+     *
+     * <p>Supports the query syntax used by the UI: {@code scheduleName IN (n1,n2) AND status IN
+     * (EXECUTED) AND startTime>X AND startTime<X AND executionId='id'}.
+     *
+     * @param start zero-based page offset
+     * @param size page size
+     * @param sort field and direction, e.g. {@code startTime:DESC}
+     * @param query structured filter string (may be null/blank for no filter)
+     * @param freeText free-text search term ({@code *} means match all)
+     * @return map with {@code results} and {@code totalHits} keys
+     */
+    public Map<String, Object> searchExecutions(
+            int start, int size, String sort, String query, String freeText) {
+        List<WorkflowScheduleExecution> all = schedulerDAO.getAllExecutionRecords(1000);
+
+        if (query != null && !query.isBlank()) {
+            all = applyQueryFilter(all, query);
+        }
+        if (freeText != null && !freeText.isBlank() && !"*".equals(freeText)) {
+            all = applyFreeTextFilter(all, freeText);
+        }
+
+        applySort(all, sort);
+
+        int totalHits = all.size();
+        int fromIdx = Math.min(start, all.size());
+        int toIdx = Math.min(start + size, all.size());
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("results", all.subList(fromIdx, toIdx));
+        result.put("totalHits", totalHits);
+        return result;
+    }
+
+    private List<WorkflowScheduleExecution> applyQueryFilter(
+            List<WorkflowScheduleExecution> records, String query) {
+        return records.stream()
+                .filter(r -> matchesQuery(r, query))
+                .collect(Collectors.toList());
+    }
+
+    private boolean matchesQuery(WorkflowScheduleExecution r, String query) {
+        for (String clause : query.split("(?i)\\s+AND\\s+")) {
+            clause = clause.trim();
+            if (clause.isBlank()) {
+                continue;
+            }
+            Matcher m;
+
+            m = Pattern.compile("(?i)scheduleName\\s+IN\\s+\\(([^)]+)\\)").matcher(clause);
+            if (m.find()) {
+                Set<String> names =
+                        Arrays.stream(m.group(1).split(","))
+                                .map(String::trim)
+                                .collect(Collectors.toSet());
+                if (r.getScheduleName() == null || !names.contains(r.getScheduleName())) {
+                    return false;
+                }
+                continue;
+            }
+
+            m = Pattern.compile("(?i)status\\s+IN\\s+\\(([^)]+)\\)").matcher(clause);
+            if (m.find()) {
+                Set<String> states =
+                        Arrays.stream(m.group(1).split(","))
+                                .map(String::trim)
+                                .collect(Collectors.toSet());
+                if (r.getState() == null || !states.contains(r.getState().name())) {
+                    return false;
+                }
+                continue;
+            }
+
+            m = Pattern.compile("(?i)workflowType\\s+IN\\s+\\(([^)]+)\\)").matcher(clause);
+            if (m.find()) {
+                Set<String> types =
+                        Arrays.stream(m.group(1).split(","))
+                                .map(String::trim)
+                                .collect(Collectors.toSet());
+                if (r.getWorkflowName() == null || !types.contains(r.getWorkflowName())) {
+                    return false;
+                }
+                continue;
+            }
+
+            m = Pattern.compile("(?i)startTime\\s*>\\s*(\\d+)").matcher(clause);
+            if (m.find()) {
+                long threshold = Long.parseLong(m.group(1));
+                if (r.getExecutionTime() == null || r.getExecutionTime() <= threshold) {
+                    return false;
+                }
+                continue;
+            }
+
+            m = Pattern.compile("(?i)startTime\\s*<\\s*(\\d+)").matcher(clause);
+            if (m.find()) {
+                long threshold = Long.parseLong(m.group(1));
+                if (r.getExecutionTime() == null || r.getExecutionTime() >= threshold) {
+                    return false;
+                }
+                continue;
+            }
+
+            m = Pattern.compile("(?i)executionId\\s*=\\s*'([^']+)'").matcher(clause);
+            if (m.find()) {
+                String id = m.group(1);
+                if (!id.equals(r.getExecutionId())) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private List<WorkflowScheduleExecution> applyFreeTextFilter(
+            List<WorkflowScheduleExecution> records, String freeText) {
+        String lower = freeText.toLowerCase();
+        return records.stream()
+                .filter(
+                        r ->
+                                (r.getScheduleName() != null
+                                                && r.getScheduleName()
+                                                        .toLowerCase()
+                                                        .contains(lower))
+                                        || (r.getWorkflowId() != null
+                                                && r.getWorkflowId().toLowerCase().contains(lower))
+                                        || (r.getExecutionId() != null
+                                                && r.getExecutionId()
+                                                        .toLowerCase()
+                                                        .contains(lower)))
+                .collect(Collectors.toList());
+    }
+
+    private void applySort(List<WorkflowScheduleExecution> records, String sort) {
+        if (sort == null || sort.isBlank()) {
+            return;
+        }
+        String[] parts = sort.split(":");
+        String field = parts[0].trim().toLowerCase();
+        boolean desc = parts.length < 2 || "desc".equalsIgnoreCase(parts[1].trim());
+
+        Comparator<WorkflowScheduleExecution> cmp;
+        switch (field) {
+            case "scheduledtime":
+                cmp =
+                        Comparator.comparingLong(
+                                r -> r.getScheduledTime() != null ? r.getScheduledTime() : 0L);
+                break;
+            default: // startTime, executionTime, or anything else
+                cmp =
+                        Comparator.comparingLong(
+                                r -> r.getExecutionTime() != null ? r.getExecutionTime() : 0L);
+        }
+        if (desc) {
+            cmp = cmp.reversed();
+        }
+        records.sort(cmp);
     }
 
     // -------------------------------------------------------------------------

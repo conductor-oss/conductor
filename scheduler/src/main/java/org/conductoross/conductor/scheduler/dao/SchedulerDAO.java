@@ -108,6 +108,14 @@ public interface SchedulerDAO {
      */
     List<WorkflowScheduleExecution> getExecutionRecords(String scheduleName, int limit);
 
+    /**
+     * Returns recent execution records across all schedules, ordered by execution time descending.
+     * Used to back the cross-schedule search endpoint consumed by the UI.
+     *
+     * @param limit maximum number of records to return
+     */
+    List<WorkflowScheduleExecution> getAllExecutionRecords(int limit);
+
     // -------------------------------------------------------------------------
     // Next-run time management
     // -------------------------------------------------------------------------

@@ -177,6 +177,15 @@ public class MySQLSchedulerDAO implements SchedulerDAO {
     }
 
     @Override
+    public List<WorkflowScheduleExecution> getAllExecutionRecords(int limit) {
+        String sql =
+                "SELECT json_data FROM scheduler_execution "
+                        + "ORDER BY execution_time DESC "
+                        + "LIMIT ?";
+        return jdbc.query(sql, executionRowMapper(), limit);
+    }
+
+    @Override
     public long getNextRunTimeInEpoch(String scheduleName) {
         String sql = "SELECT next_run_time FROM scheduler WHERE scheduler_name = ?";
         List<Long> results = jdbc.queryForList(sql, Long.class, scheduleName);

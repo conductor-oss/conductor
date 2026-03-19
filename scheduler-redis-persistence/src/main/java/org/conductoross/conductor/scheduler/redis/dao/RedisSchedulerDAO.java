@@ -242,6 +242,22 @@ public class RedisSchedulerDAO implements SchedulerDAO {
         return result;
     }
 
+    @Override
+    public List<WorkflowScheduleExecution> getAllExecutionRecords(int limit) {
+        List<WorkflowSchedule> schedules = getAllSchedules();
+        List<WorkflowScheduleExecution> all = new ArrayList<>();
+        for (WorkflowSchedule schedule : schedules) {
+            all.addAll(getExecutionRecords(schedule.getName(), limit));
+        }
+        all.sort(
+                (a, b) -> {
+                    long ta = a.getExecutionTime() != null ? a.getExecutionTime() : 0L;
+                    long tb = b.getExecutionTime() != null ? b.getExecutionTime() : 0L;
+                    return Long.compare(tb, ta);
+                });
+        return all.size() > limit ? all.subList(0, limit) : all;
+    }
+
     // -------------------------------------------------------------------------
     // Next-run time management
     // -------------------------------------------------------------------------
