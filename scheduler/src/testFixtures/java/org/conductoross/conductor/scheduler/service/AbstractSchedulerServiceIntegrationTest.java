@@ -37,6 +37,8 @@ import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import org.mockito.ArgumentCaptor;
+
 /**
  * Integration tests for {@link SchedulerService} using a real {@link SchedulerDAO} (from a concrete
  * subclass) and a mocked {@link WorkflowService}.
@@ -428,6 +430,35 @@ public abstract class AbstractSchedulerServiceIntegrationTest {
         WorkflowSchedule schedule = buildSchedule(name, workflowName);
         schedule.setPaused(true);
         return schedule;
+    }
+
+    // =========================================================================
+    // Event field injection
+    // =========================================================================
+
+    /**
+     * Verifies that the {@code event} field on the {@link StartWorkflowRequest} passed to
+     * {@link WorkflowService#startWorkflow} is set to {@code "scheduler:<scheduleName>"} so that
+     * the resulting {@link com.netflix.conductor.common.run.Workflow} records which schedule
+     * triggered it.
+     */
+    @Test
+    public void testDispatch_setsEventFieldToSchedulerName() throws Exception {
+        String scheduleName = "event-field-test-" + UUID.randomUUID();
+        WorkflowSchedule schedule = buildSchedule(scheduleName, "some-workflow");
+        dao().updateSchedule(schedule);
+
+        long pastTime = System.currentTimeMillis() - 2000;
+        dao().setNextRunTimeInEpoch(scheduleName, pastTime);
+
+        when(workflowService.startWorkflow(any())).thenReturn("wf-event-test");
+
+        service.pollAndExecuteSchedules();
+
+        ArgumentCaptor<StartWorkflowRequest> captor =
+                ArgumentCaptor.forClass(StartWorkflowRequest.class);
+        verify(workflowService).startWorkflow(captor.capture());
+        assertEquals("scheduler:" + scheduleName, captor.getValue().getEvent());
     }
 
     protected WorkflowScheduleExecution buildExecution(String scheduleName) {

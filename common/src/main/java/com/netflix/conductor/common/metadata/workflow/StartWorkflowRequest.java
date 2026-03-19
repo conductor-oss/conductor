@@ -61,6 +61,8 @@ public class StartWorkflowRequest {
 
     private IdempotencyStrategy idempotencyStrategy;
 
+    private String event;
+
     public String getIdempotencyKey() {
         return idempotencyKey;
     }
@@ -193,5 +195,13 @@ public class StartWorkflowRequest {
     public StartWorkflowRequest withCreatedBy(String createdBy) {
         this.createdBy = createdBy;
         return this;
+    }
+
+    public String getEvent() {
+        return event;
+    }
+
+    public void setEvent(String event) {
+        this.event = event;
     }
 }

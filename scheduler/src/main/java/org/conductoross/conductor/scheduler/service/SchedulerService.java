@@ -354,6 +354,7 @@ public class SchedulerService {
             StartWorkflowRequest req =
                     buildDispatchRequest(
                             schedule.getStartWorkflowRequest(), scheduledTime, dispatchTime);
+            req.setEvent("scheduler:" + schedule.getName());
 
             String workflowId = workflowService.startWorkflow(req);
 

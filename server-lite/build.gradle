@@ -37,6 +37,9 @@ dependencies {
     //Persistence
     implementation project(':conductor-sqlite-persistence')
 
+    //Scheduler persistence
+    implementation project(':conductor-scheduler-sqlite-persistence')
+
 
 
 
