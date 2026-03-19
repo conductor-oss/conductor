@@ -27,12 +27,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * Spring auto-configuration that registers a MySQL-backed {@link SchedulerDAO}.
  *
- * <p>Active when {@code conductor.db.type=mysql} AND {@code conductor.scheduler.enabled=true}.
- * Runs Flyway migrations for the scheduler tables using a dedicated history table so they do not
+ * <p>Active when {@code conductor.db.type=mysql} AND {@code conductor.scheduler.enabled=true}. Runs
+ * Flyway migrations for the scheduler tables using a dedicated history table so they do not
  * conflict with the main Conductor migration history.
  */
 @AutoConfiguration
-@ConditionalOnExpression("'${conductor.db.type:}' == 'mysql' && '${conductor.scheduler.enabled:false}' == 'true'")
+@ConditionalOnExpression(
+        "'${conductor.db.type:}' == 'mysql' && '${conductor.scheduler.enabled:false}' == 'true'")
 public class MySQLSchedulerConfiguration {
 
     @Bean(initMethod = "migrate")

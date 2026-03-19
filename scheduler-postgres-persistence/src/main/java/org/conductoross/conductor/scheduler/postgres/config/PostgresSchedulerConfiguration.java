@@ -32,7 +32,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * conflict with the main Conductor migration history.
  */
 @AutoConfiguration
-@ConditionalOnExpression("'${conductor.db.type:}' == 'postgres' && '${conductor.scheduler.enabled:false}' == 'true'")
+@ConditionalOnExpression(
+        "'${conductor.db.type:}' == 'postgres' && '${conductor.scheduler.enabled:false}' == 'true'")
 public class PostgresSchedulerConfiguration {
 
     @Bean(initMethod = "migrate")

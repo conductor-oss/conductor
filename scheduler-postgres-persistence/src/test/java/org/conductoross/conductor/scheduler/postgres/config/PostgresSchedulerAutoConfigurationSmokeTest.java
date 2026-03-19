@@ -19,8 +19,8 @@ import org.conductoross.conductor.scheduler.postgres.dao.PostgresSchedulerDAO;
 /**
  * Smoke-tests {@link PostgresSchedulerConfiguration} auto-configuration conditions.
  *
- * <p>Positive path uses a Testcontainers PostgreSQL instance (the {@code jdbc:tc:…} URL spins up
- * a container on first use and reuses it within the JVM). Negative paths run without any DB.
+ * <p>Positive path uses a Testcontainers PostgreSQL instance (the {@code jdbc:tc:…} URL spins up a
+ * container on first use and reuses it within the JVM). Negative paths run without any DB.
  */
 public class PostgresSchedulerAutoConfigurationSmokeTest
         extends AbstractSchedulerAutoConfigurationSmokeTest {
