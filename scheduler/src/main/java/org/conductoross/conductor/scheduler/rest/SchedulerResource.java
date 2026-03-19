@@ -117,11 +117,11 @@ public class SchedulerResource {
     @GetMapping(value = "/search/executions", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Search execution records across all schedules")
     public Map<String, Object> searchExecutions(
-            @RequestParam(defaultValue = "0") int start,
-            @RequestParam(defaultValue = "15") int size,
-            @RequestParam(defaultValue = "startTime:DESC") String sort,
-            @RequestParam(defaultValue = "") String query,
-            @RequestParam(defaultValue = "*") String freeText) {
+            @RequestParam(value = "start", defaultValue = "0") int start,
+            @RequestParam(value = "size", defaultValue = "15") int size,
+            @RequestParam(value = "sort", defaultValue = "startTime:DESC") String sort,
+            @RequestParam(value = "query", defaultValue = "") String query,
+            @RequestParam(value = "freeText", defaultValue = "*") String freeText) {
         return schedulerService.searchExecutions(start, size, sort, query, freeText);
     }
 
