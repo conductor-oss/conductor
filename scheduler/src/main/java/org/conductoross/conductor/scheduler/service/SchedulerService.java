@@ -18,18 +18,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.conductoross.conductor.scheduler.config.SchedulerProperties;
 import org.conductoross.conductor.scheduler.dao.SchedulerDAO;
@@ -40,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.support.CronExpression;
 
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
+import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.service.WorkflowService;
 
@@ -239,9 +239,9 @@ public class SchedulerService {
      * @param sort field and direction, e.g. {@code startTime:DESC}
      * @param query structured filter string (may be null/blank for no filter)
      * @param freeText free-text search term ({@code *} means match all)
-     * @return map with {@code results} and {@code totalHits} keys
+     * @return search result with {@code results} and {@code totalHits}
      */
-    public Map<String, Object> searchExecutions(
+    public SearchResult<WorkflowScheduleExecution> searchExecutions(
             int start, int size, String sort, String query, String freeText) {
         List<WorkflowScheduleExecution> all = schedulerDAO.getAllExecutionRecords(1000);
 
@@ -257,11 +257,110 @@ public class SchedulerService {
         int totalHits = all.size();
         int fromIdx = Math.min(start, all.size());
         int toIdx = Math.min(start + size, all.size());
+        return new SearchResult<>(totalHits, all.subList(fromIdx, toIdx));
+    }
 
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("results", all.subList(fromIdx, toIdx));
-        result.put("totalHits", totalHits);
-        return result;
+    /**
+     * Schedule definitions search with in-memory filtering, sorting, and pagination.
+     *
+     * @param workflowName optional workflow name filter (exact match)
+     * @param scheduleName optional schedule name filter (substring match)
+     * @param paused optional paused-state filter
+     * @param freeText free-text search on name ({@code *} means match all)
+     * @param start zero-based page offset
+     * @param size page size
+     * @param sortOptions list of sort options, e.g. {@code ["name:ASC", "createTime:DESC"]}
+     * @return search result with {@code results} and {@code totalHits}
+     */
+    public SearchResult<WorkflowSchedule> searchSchedules(
+            String workflowName,
+            String scheduleName,
+            Boolean paused,
+            String freeText,
+            int start,
+            int size,
+            List<String> sortOptions) {
+        List<WorkflowSchedule> all =
+                (workflowName != null && !workflowName.isBlank())
+                        ? schedulerDAO.findAllSchedules(workflowName)
+                        : schedulerDAO.getAllSchedules();
+
+        // freeText name filter (used as schedule name prefix/substring by the UI)
+        if (freeText != null && !freeText.isBlank() && !"*".equals(freeText)) {
+            String lower = freeText.toLowerCase();
+            all = all.stream()
+                    .filter(s -> s.getName() != null && s.getName().toLowerCase().contains(lower))
+                    .collect(Collectors.toList());
+        }
+
+        // explicit scheduleName filter (also substring)
+        if (scheduleName != null && !scheduleName.isBlank()) {
+            String lower = scheduleName.toLowerCase();
+            all = all.stream()
+                    .filter(s -> s.getName() != null && s.getName().toLowerCase().contains(lower))
+                    .collect(Collectors.toList());
+        }
+
+        // paused filter
+        if (paused != null) {
+            boolean filterPaused = paused;
+            all = all.stream()
+                    .filter(s -> s.isPaused() == filterPaused)
+                    .collect(Collectors.toList());
+        }
+
+        // sort — apply the first sort option only
+        if (sortOptions != null && !sortOptions.isEmpty()) {
+            applyScheduleSort(all, sortOptions.get(0));
+        } else {
+            // default: newest first
+            all.sort(
+                    Comparator.comparingLong(
+                                    (WorkflowSchedule s) ->
+                                            s.getCreateTime() != null ? s.getCreateTime() : 0L)
+                            .reversed());
+        }
+
+        int totalHits = all.size();
+        int fromIdx = Math.min(start, all.size());
+        int toIdx = Math.min(start + size, all.size());
+        return new SearchResult<>(totalHits, all.subList(fromIdx, toIdx));
+    }
+
+    /**
+     * Returns the next {@code limit} scheduled execution times (epoch millis) for a raw cron
+     * expression, honouring optional start/end time bounds.
+     *
+     * @param cronExpression Spring 6-field cron expression
+     * @param scheduleStartTime optional lower bound (epoch millis); ignored if null
+     * @param scheduleEndTime optional upper bound (epoch millis); ignored if null
+     * @param limit maximum number of times to return
+     */
+    public List<Long> getListOfNextSchedules(
+            String cronExpression,
+            Long scheduleStartTime,
+            Long scheduleEndTime,
+            int limit) {
+        CronExpression cron = parseCron(cronExpression);
+        ZonedDateTime cursor = scheduleStartTime != null
+                ? ZonedDateTime.ofInstant(
+                        java.time.Instant.ofEpochMilli(scheduleStartTime), ZoneId.of("UTC"))
+                : ZonedDateTime.now(ZoneId.of("UTC"));
+
+        List<Long> times = new ArrayList<>();
+        for (int i = 0; i < limit; i++) {
+            ZonedDateTime next = cron.next(cursor);
+            if (next == null) {
+                break;
+            }
+            long epochMillis = next.toInstant().toEpochMilli();
+            if (scheduleEndTime != null && epochMillis > scheduleEndTime) {
+                break;
+            }
+            times.add(epochMillis);
+            cursor = next;
+        }
+        return times;
     }
 
     private List<WorkflowScheduleExecution> applyQueryFilter(
@@ -361,6 +460,35 @@ public class SchedulerService {
                                                         .toLowerCase()
                                                         .contains(lower)))
                 .collect(Collectors.toList());
+    }
+
+    private void applyScheduleSort(List<WorkflowSchedule> schedules, String sort) {
+        if (sort == null || sort.isBlank()) {
+            return;
+        }
+        String[] parts = sort.split(":");
+        String field = parts[0].trim().toLowerCase();
+        boolean desc = parts.length < 2 || "desc".equalsIgnoreCase(parts[1].trim());
+
+        Comparator<WorkflowSchedule> cmp;
+        switch (field) {
+            case "name":
+                cmp = Comparator.comparing(
+                        s -> s.getName() != null ? s.getName() : "", String.CASE_INSENSITIVE_ORDER);
+                break;
+            case "updatetime":
+            case "updatedtime":
+                cmp = Comparator.comparingLong(
+                        s -> s.getUpdatedTime() != null ? s.getUpdatedTime() : 0L);
+                break;
+            default: // createTime
+                cmp = Comparator.comparingLong(
+                        s -> s.getCreateTime() != null ? s.getCreateTime() : 0L);
+        }
+        if (desc) {
+            cmp = cmp.reversed();
+        }
+        schedules.sort(cmp);
     }
 
     private void applySort(List<WorkflowScheduleExecution> records, String sort) {
