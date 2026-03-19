@@ -1,0 +1,34 @@
+plugins {
+    id 'java-test-fixtures'
+}
+
+dependencies {
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+    compileOnly 'org.springframework.boot:spring-boot-starter-web'
+
+    compileOnly "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
+
+    implementation "com.fasterxml.jackson.core:jackson-databind"
+    implementation "com.fasterxml.jackson.core:jackson-core"
+
+    implementation "org.apache.commons:commons-lang3"
+
+    testImplementation 'org.springframework.boot:spring-boot-starter'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    testFixturesImplementation project(':conductor-common')
+    testFixturesImplementation project(':conductor-core')
+    testFixturesImplementation 'junit:junit'
+    testFixturesImplementation 'org.mockito:mockito-core'
+    testFixturesImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testFixturesImplementation "com.fasterxml.jackson.core:jackson-databind"
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-web'
+}
+
+test {
+    maxParallelForks = 1
+}
