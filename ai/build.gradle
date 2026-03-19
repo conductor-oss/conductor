@@ -57,5 +57,6 @@ dependencies {
     testImplementation "org.testcontainers:postgresql:${revTestContainer}"
     testImplementation "org.postgresql:postgresql:${revPostgres}"
     testImplementation "org.apache.commons:commons-compress:${revCommonsCompress}"
+    testImplementation "com.h2database:h2:2.2.224"
 
 }

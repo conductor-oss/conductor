@@ -251,7 +251,7 @@ This is a normal operating mode for Conductor. The workflow stays `RUNNING` with
 
 **Practical limits:**
 
-- Execution data grows linearly with the number of completed tasks. For very long loops (thousands of iterations), consider offloading large payloads to external storage and storing only pointers in task output. See [external payload storage](../advanced/externalpayloadstorage.md).
+- Execution data grows linearly with the number of completed tasks. For very long loops (thousands of iterations), consider offloading large payloads to external storage and storing only pointers in task output. See [external payload storage](../../documentation/advanced/externalpayloadstorage.md).
 - Workflow-level `timeoutSeconds` applies to the total execution. Set it high enough for your expected duration, or omit it for unlimited execution time.
 
 

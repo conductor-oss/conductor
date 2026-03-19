@@ -52,7 +52,7 @@ No — JSON makes workflows *more* capable, not less. A JSON workflow definition
 
 Code-based workflow engines embed orchestration logic alongside business logic, which means your workflow code can introduce non-determinism (system clocks, random values, uncontrolled I/O). These engines must impose restrictions on what your code is allowed to do — and bugs from violating those restrictions are subtle and hard to debug.
 
-Conductor's dynamic primitives — [DYNAMIC tasks](configuration/workflowdef/operators/dynamic-task.md), [DYNAMIC_FORK](configuration/workflowdef/operators/dynamic-fork-task.md), and [dynamic sub-workflows](configuration/workflowdef/operators/sub-workflow-task.md) — provide more runtime flexibility than code-based definitions. An LLM can generate a complete workflow definition as JSON and Conductor executes it immediately, with full durability and observability. No code generation, no compilation, no deployment. See [JSON + Code Native](../architecture/json-native.md) for the full picture.
+Conductor's dynamic primitives — [DYNAMIC tasks](../documentation/configuration/workflowdef/operators/dynamic-task.md), [DYNAMIC_FORK](../documentation/configuration/workflowdef/operators/dynamic-fork-task.md), and [dynamic sub-workflows](../documentation/configuration/workflowdef/operators/sub-workflow-task.md) — provide more runtime flexibility than code-based definitions. An LLM can generate a complete workflow definition as JSON and Conductor executes it immediately, with full durability and observability. No code generation, no compilation, no deployment. See [JSON + Code Native](../architecture/json-native.md) for the full picture.
 
 ### How is Conductor different from Temporal?
 
@@ -133,13 +133,13 @@ Ensure all the tasks are registered via `/metadata/taskdefs` APIs.  Add any miss
 ## Where does my worker run?  How does conductor run my tasks?
 
 Conductor does not run the workers.  When a task is scheduled, it is put into the queue maintained by Conductor.  Workers are required to poll for tasks using `/tasks/poll` API at periodic interval, execute the business logic for the task and report back the results using `POST {{ api_prefix }}/tasks` API call.
-Conductor, however will run [system tasks](configuration/workflowdef/systemtasks/index.md) on the Conductor server.
+Conductor, however will run [system tasks](../documentation/configuration/workflowdef/systemtasks/index.md) on the Conductor server.
 
 ## How can I schedule workflows to run at a specific time?
 
 Conductor itself does not provide any scheduling mechanism.  But there is a community project [_Schedule Conductor Workflows_](https://github.com/jas34/scheduledwf) which provides workflow scheduling capability as a pluggable module as well as workflow server.
 Other way is you can use any of the available scheduling systems to make REST calls to Conductor to start a workflow.  Alternatively, publish a message to a supported eventing system like SQS to trigger a workflow.
-More details about [eventing](configuration/eventhandlers.md).
+More details about [eventing](../documentation/configuration/eventhandlers.md).
 
 ## Can I use Conductor with Ruby / Go / Python / JavaScript / C# / Rust?
 
@@ -169,11 +169,11 @@ When a workflow fails, you can configure a "failure workflow" to run using the``
 
 You can also use the Workflow Status Listener:
 
-* Set the workflowStatusListenerEnabled field in your workflow definition to true which enables [notifications](configuration/workflowdef/index.md#workflow-notifications).
-* Add a custom implementation of the Workflow Status Listener. Refer to the [Workflow Status Listener extension guide](advanced/extend.md#workflow-status-listener).
-* This notification can be implemented in such a way as to either send a notification to an external system or to send an event on the conductor queue to complete/fail another task in another workflow as described in the [event handlers documentation](configuration/eventhandlers.md).
+* Set the workflowStatusListenerEnabled field in your workflow definition to true which enables [notifications](../documentation/configuration/workflowdef/index.md#workflow-status-listener).
+* Add a custom implementation of the Workflow Status Listener. Refer to the [Workflow Status Listener extension guide](../documentation/advanced/extend.md#workflow-status-listener).
+* This notification can be implemented in such a way as to either send a notification to an external system or to send an event on the conductor queue to complete/fail another task in another workflow as described in the [event handlers documentation](../documentation/configuration/eventhandlers.md).
 
-Refer to this [documentation](configuration/workflowdef/index.md#workflow-notifications) to extend conductor to send out events/notifications upon workflow completion/failure.
+Refer to this [documentation](../documentation/configuration/workflowdef/index.md#workflow-status-listener) to extend conductor to send out events/notifications upon workflow completion/failure.
 
 ## I want my worker to stop polling and executing tasks when the process is being terminated. (Java client)
 

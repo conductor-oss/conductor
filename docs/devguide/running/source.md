@@ -1,3 +1,6 @@
+---
+description: "Building from Source — build and run the Conductor server and UI locally from source for development and testing."
+---
 # Building from source
 
 Build and run Conductor server and UI locally from source. The default configuration uses in-memory persistence with no indexing — all data is lost when the server stops. This setup is for development and testing only.

@@ -28,10 +28,10 @@ Conductor is a durable execution engine — every workflow execution is persiste
 Write workers in Python, Java, Go, JavaScript, C#, or Clojure. Each task in a workflow can use a different language — pick the best tool for each job. Workers communicate with Conductor via REST or gRPC and can run anywhere: containers, VMs, serverless, or your laptop.
 
 ### Built-in system tasks
-HTTP calls, inline JavaScript execution, JSON transforms, event publishing, wait timers, and human approval gates — all available without writing a single worker. See [System Tasks](../configuration/workflowdef/systemtasks/index.md).
+HTTP calls, inline JavaScript execution, JSON transforms, event publishing, wait timers, and human approval gates — all available without writing a single worker. See [System Tasks](../../documentation/configuration/workflowdef/systemtasks/index.md).
 
 ### Flow control operators
-Fork/join for parallelism, switch for conditional branching, do-while for loops, sub-workflows for composition, and dynamic tasks resolved at runtime. See [Operators](../configuration/workflowdef/operators/index.md).
+Fork/join for parallelism, switch for conditional branching, do-while for loops, sub-workflows for composition, and dynamic tasks resolved at runtime. See [Operators](../../documentation/configuration/workflowdef/operators/index.md).
 
 ### AI agent orchestration and LLM orchestration
 Conductor provides LLM orchestration and AI agent orchestration as native system tasks — no external frameworks required. Supported providers include Anthropic (Claude), OpenAI (GPT), Azure OpenAI, Google Gemini, AWS Bedrock, Mistral, Cohere, HuggingFace, Ollama, Perplexity, Grok, and StabilityAI — 14+ providers available out of the box for chat completion, text completion, and embedding generation.
