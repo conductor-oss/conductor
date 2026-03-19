@@ -1,3 +1,6 @@
+---
+description: "OpenSearch Integration — configure OpenSearch as the indexing backend for searching Conductor workflows and tasks."
+---
 # OpenSearch
 
 Conductor supports OpenSearch as an indexing backend for searching workflows and tasks via the UI.
@@ -205,7 +208,7 @@ Alternatively, mount the config file as a Docker volume to pick up changes witho
 
 ## See Also
 
-- [os-persistence-v2 README](../../os-persistence-v2/README.md)
-- [os-persistence-v3 README](../../os-persistence-v3/README.md)
+- [os-persistence-v2 README](https://github.com/conductor-oss/conductor/blob/main/os-persistence-v2/README.md)
+- [os-persistence-v3 README](https://github.com/conductor-oss/conductor/blob/main/os-persistence-v3/README.md)
 - [Issue #678](https://github.com/conductor-oss/conductor/issues/678) — OpenSearch improvement epic
 - [OpenSearch documentation](https://opensearch.org/docs/latest/)

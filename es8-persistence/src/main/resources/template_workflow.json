@@ -1,0 +1,86 @@
+{
+  "template": {
+    "settings": {},
+    "mappings": {
+      "dynamic": false,
+      "properties": {
+        "correlationId": {
+          "type": "keyword",
+          "index": true
+        },
+        "endTime": {
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        },
+        "executionTime": {
+          "type": "long"
+        },
+        "failedReferenceTaskNames": {
+          "type": "text"
+        },
+        "input": {
+          "type": "text"
+        },
+        "output": {
+          "type": "text"
+        },
+        "reasonForIncompletion": {
+          "type": "keyword",
+          "ignore_above": 1024
+        },
+        "startTime": {
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        },
+        "status": {
+          "type": "keyword",
+          "index": true
+        },
+        "updateTime": {
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        },
+        "version": {
+          "type": "long"
+        },
+        "workflowId": {
+          "type": "keyword",
+          "index": true
+        },
+        "workflowType": {
+          "type": "keyword",
+          "index": true
+        },
+        "rawJSON": {
+          "type": "keyword",
+          "index": false,
+          "doc_values": false
+        },
+        "event": {
+          "type": "keyword",
+          "index": true
+        },
+        "priority": {
+          "type": "integer"
+        },
+        "externalInputPayloadStoragePath": {
+          "type": "keyword",
+          "index": false,
+          "doc_values": false
+        },
+        "externalOutputPayloadStoragePath": {
+          "type": "keyword",
+          "index": false,
+          "doc_values": false
+        },
+        "taskToDomain": {
+          "type": "object",
+          "enabled": false
+        },
+        "archived": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

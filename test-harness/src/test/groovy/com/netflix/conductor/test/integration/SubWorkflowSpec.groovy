@@ -166,8 +166,15 @@ class SubWorkflowSpec extends AbstractSpecification {
             tasks[1].status == Task.Status.SCHEDULED
         }
 
-        and: "verify that change flag is set on the sub workflow task in parent"
-        workflowExecutionService.getTask(subworkflowTaskId).subworkflowChanged
+        and: "verify that the parent workflow is resumed with the subworkflow task back in progress"
+        conditions.eventually {
+            with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+                status == Workflow.WorkflowStatus.RUNNING
+                tasks.size() == 2
+                tasks[1].taskType == TaskType.SUB_WORKFLOW.name()
+                tasks[1].status == Task.Status.IN_PROGRESS
+            }
+        }
 
         when: "Polled for simple_task_in_sub_wf task in subworkflow"
         pollAndCompleteTask = workflowTestUtil.pollAndCompleteTask('simple_task_in_sub_wf', 'task1.integration.worker', ['op': 'simple_task_in_sub_wf.done'])
@@ -186,9 +193,10 @@ class SubWorkflowSpec extends AbstractSpecification {
         }
 
         and: "subworkflow task is in a completed state"
-        with(workflowExecutionService.getTask(subworkflowTaskId)) {
-            status == Task.Status.COMPLETED
-            subworkflowChanged
+        conditions.eventually {
+            with(workflowExecutionService.getTask(subworkflowTaskId)) {
+                status == Task.Status.COMPLETED
+            }
         }
 
         and: "the parent workflow is swept"

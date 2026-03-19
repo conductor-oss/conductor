@@ -1,3 +1,7 @@
+---
+description: "Wire task inputs in Conductor workflows — reference workflow inputs, task outputs, and variables using dynamic expressions in this open source workflow orchestration engine."
+---
+
 # Wiring Task Inputs
 
 In Conductor, task inputs can be provided in the workflow definition in multiple ways:

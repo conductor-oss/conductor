@@ -30,6 +30,7 @@ RUN if [ "$PREBUILT" = "true" ]; then \
         --no-daemon --no-parallel; \
     fi
 
+
 # ===========================================================================================================
 # 1. UI builder stage
 # ===========================================================================================================
@@ -40,7 +41,7 @@ ARG YARN_OPTS
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
-COPY . /conductor
+COPY ui /conductor/ui
 WORKDIR /conductor/ui
 
 RUN if [ "$PREBUILT" = "false" ]; then \
@@ -77,7 +78,7 @@ COPY --from=builder /conductor/server/build/libs/*boot*.jar /app/libs/conductor-
 WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
 COPY --from=ui-builder /conductor/ui/build .
-COPY --from=ui-builder /conductor/docker/server/nginx/nginx.conf /etc/nginx/conf.d/default.conf
+COPY docker/server/nginx/nginx.conf  /etc/nginx/conf.d/default.conf
 
 # Copy the files for the server into the app folders
 RUN chmod +x /app/startup.sh
