@@ -362,4 +362,4 @@ pip install conductor-python
 export CONDUCTOR_SERVER_URL=http://localhost:8080/api
 ```
 
-For more Python SDK examples, see the [Python SDK documentation](../sdk/python-sdk.md) and the [examples on GitHub](https://github.com/conductor-oss/python-sdk/tree/main/examples).
+For more Python SDK examples, see the [Python SDK documentation](../../documentation/clientsdks/python-sdk.md) and the [examples on GitHub](https://github.com/conductor-oss/python-sdk/tree/main/examples).

@@ -4,7 +4,7 @@ repo_url: https://github.com/conductor-oss/conductor
 site_url: https://conductor-oss.github.io/conductor
 edit_uri: ''
 strict: false
-use_directory_urls: true
+use_directory_urls: false
 
 nav:
   - Home: index.md
@@ -57,67 +57,68 @@ nav:
     - LLM Orchestration: devguide/ai/llm-orchestration.md
     - Token Efficiency: devguide/ai/token-efficiency.md
   - SDKs:
-    - devguide/sdk/index.md
-    - Java: devguide/sdk/java-sdk.md
-    - Python: devguide/sdk/python-sdk.md
-    - Go: devguide/sdk/go-sdk.md
-    - JavaScript: devguide/sdk/js-sdk.md
-    - C#: devguide/sdk/csharp-sdk.md
-    - Ruby: devguide/sdk/ruby-sdk.md
-    - Rust: devguide/sdk/rust-sdk.md
+    - documentation/clientsdks/index.md
+    - Java: documentation/clientsdks/java-sdk.md
+    - Python: documentation/clientsdks/python-sdk.md
+    - Go: documentation/clientsdks/go-sdk.md
+    - JavaScript: documentation/clientsdks/js-sdk.md
+    - C#: documentation/clientsdks/csharp-sdk.md
+    - Ruby: documentation/clientsdks/ruby-sdk.md
+    - Rust: documentation/clientsdks/rust-sdk.md
   - Reference:
     - API:
-      - devguide/api/index.md
-      - devguide/api/metadata.md
-      - devguide/api/startworkflow.md
-      - devguide/api/workflow.md
-      - devguide/api/task.md
-      - devguide/api/bulk.md
-      - devguide/api/eventhandlers.md
-      - devguide/api/taskdomains.md
+      - documentation/api/index.md
+      - documentation/api/metadata.md
+      - documentation/api/startworkflow.md
+      - documentation/api/workflow.md
+      - documentation/api/task.md
+      - documentation/api/bulk.md
+      - documentation/api/eventhandlers.md
+      - documentation/api/taskdomains.md
     - Workflow Definition:
-      - devguide/configuration/workflowdef/index.md
+      - documentation/configuration/workflowdef/index.md
     - System Tasks:
-      - devguide/configuration/workflowdef/systemtasks/index.md
-      - devguide/configuration/workflowdef/systemtasks/http-task.md
-      - devguide/configuration/workflowdef/systemtasks/inline-task.md
-      - devguide/configuration/workflowdef/systemtasks/event-task.md
-      - devguide/configuration/workflowdef/systemtasks/human-task.md
-      - devguide/configuration/workflowdef/systemtasks/json-jq-transform-task.md
-      - devguide/configuration/workflowdef/systemtasks/kafka-publish-task.md
-      - devguide/configuration/workflowdef/systemtasks/noop-task.md
-      - devguide/configuration/workflowdef/systemtasks/wait-task.md
+      - documentation/configuration/workflowdef/systemtasks/index.md
+      - documentation/configuration/workflowdef/systemtasks/http-task.md
+      - documentation/configuration/workflowdef/systemtasks/inline-task.md
+      - documentation/configuration/workflowdef/systemtasks/event-task.md
+      - documentation/configuration/workflowdef/systemtasks/human-task.md
+      - documentation/configuration/workflowdef/systemtasks/json-jq-transform-task.md
+      - documentation/configuration/workflowdef/systemtasks/kafka-publish-task.md
+      - documentation/configuration/workflowdef/systemtasks/noop-task.md
+      - documentation/configuration/workflowdef/systemtasks/jdbc-task.md
+      - documentation/configuration/workflowdef/systemtasks/wait-task.md
     - Operators:
-      - devguide/configuration/workflowdef/operators/index.md
-      - devguide/configuration/workflowdef/operators/fork-task.md
-      - devguide/configuration/workflowdef/operators/join-task.md
-      - devguide/configuration/workflowdef/operators/switch-task.md
-      - devguide/configuration/workflowdef/operators/do-while-task.md
-      - devguide/configuration/workflowdef/operators/dynamic-task.md
-      - devguide/configuration/workflowdef/operators/dynamic-fork-task.md
-      - devguide/configuration/workflowdef/operators/sub-workflow-task.md
-      - devguide/configuration/workflowdef/operators/start-workflow-task.md
-      - devguide/configuration/workflowdef/operators/set-variable-task.md
-      - devguide/configuration/workflowdef/operators/terminate-task.md
-    - Task Definition: devguide/configuration/taskdef.md
-    - Event Handlers: devguide/configuration/eventhandlers.md
-    - Configuration: devguide/configuration/appconf.md
+      - documentation/configuration/workflowdef/operators/index.md
+      - documentation/configuration/workflowdef/operators/fork-task.md
+      - documentation/configuration/workflowdef/operators/join-task.md
+      - documentation/configuration/workflowdef/operators/switch-task.md
+      - documentation/configuration/workflowdef/operators/do-while-task.md
+      - documentation/configuration/workflowdef/operators/dynamic-task.md
+      - documentation/configuration/workflowdef/operators/dynamic-fork-task.md
+      - documentation/configuration/workflowdef/operators/sub-workflow-task.md
+      - documentation/configuration/workflowdef/operators/start-workflow-task.md
+      - documentation/configuration/workflowdef/operators/set-variable-task.md
+      - documentation/configuration/workflowdef/operators/terminate-task.md
+    - Task Definition: documentation/configuration/taskdef.md
+    - Event Handlers: documentation/configuration/eventhandlers.md
+    - Configuration: documentation/configuration/appconf.md
     - Metrics:
-      - Server Metrics: devguide/metrics/server.md
-      - Client Metrics: devguide/metrics/client.md
+      - Server Metrics: documentation/metrics/server.md
+      - Client Metrics: documentation/metrics/client.md
   - Deploy:
     - Docker: devguide/running/deploy.md
     - From Source: devguide/running/source.md
     - Hosted: devguide/running/hosted.md
     - devguide/architecture/index.md
     - Advanced:
-      - devguide/advanced/extend.md
-      - devguide/advanced/isolationgroups.md
-      - devguide/advanced/archival-of-workflows.md
-      - devguide/advanced/externalpayloadstorage.md
-      - devguide/advanced/redis.md
-      - devguide/advanced/postgresql.md
-      - devguide/advanced/opensearch.md
+      - documentation/advanced/extend.md
+      - documentation/advanced/isolationgroups.md
+      - documentation/advanced/archival-of-workflows.md
+      - documentation/advanced/externalpayloadstorage.md
+      - documentation/advanced/redis.md
+      - documentation/advanced/postgresql.md
+      - documentation/advanced/opensearch.md
 
 theme:
   name: material

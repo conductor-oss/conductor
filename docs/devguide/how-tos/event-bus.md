@@ -23,8 +23,8 @@ Conductor integrates with external messaging systems to enable event-driven work
 
 Event bus orchestration has two sides:
 
-1. **Publishing** — Use the [Event task](../configuration/workflowdef/systemtasks/event-task.md) or [Kafka Publish task](../configuration/workflowdef/systemtasks/kafka-publish-task.md) to send messages from a workflow.
-2. **Consuming** — Register [event handlers](../configuration/eventhandlers.md) that listen for messages and trigger actions.
+1. **Publishing** — Use the [Event task](../../documentation/configuration/workflowdef/systemtasks/event-task.md) or [Kafka Publish task](../../documentation/configuration/workflowdef/systemtasks/kafka-publish-task.md) to send messages from a workflow.
+2. **Consuming** — Register [event handlers](../../documentation/configuration/eventhandlers.md) that listen for messages and trigger actions.
 
 ```
 ┌──────────────┐     Event Task      ┌──────────────┐    Event Handler    ┌──────────────┐
@@ -39,7 +39,7 @@ Event bus orchestration has two sides:
 
 ### Event task
 
-The [Event task](../configuration/workflowdef/systemtasks/event-task.md) publishes a message to any supported event bus. The `sink` parameter determines the target:
+The [Event task](../../documentation/configuration/workflowdef/systemtasks/event-task.md) publishes a message to any supported event bus. The `sink` parameter determines the target:
 
 ```json
 {
@@ -56,7 +56,7 @@ The [Event task](../configuration/workflowdef/systemtasks/event-task.md) publish
 
 ### Kafka Publish task
 
-For Kafka-specific features (custom headers, key, serializers), use the dedicated [Kafka Publish task](../configuration/workflowdef/systemtasks/kafka-publish-task.md):
+For Kafka-specific features (custom headers, key, serializers), use the dedicated [Kafka Publish task](../../documentation/configuration/workflowdef/systemtasks/kafka-publish-task.md):
 
 ```json
 {

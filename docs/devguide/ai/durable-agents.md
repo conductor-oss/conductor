@@ -31,7 +31,7 @@ LLM generates plan → JSON workflow definition → Conductor executes it
 
 This is not a workaround. It is the intended design, and it makes Conductor uniquely suited to agent orchestration:
 
-**Runtime generation.** An LLM or planner emits a workflow definition as JSON, your code passes it to the [StartWorkflowRequest API](../api/startworkflow.md), and Conductor validates, persists, and executes it immediately — without pre-registration. The workflow itself becomes a first-class output of the agent's planning step.
+**Runtime generation.** An LLM or planner emits a workflow definition as JSON, your code passes it to the [StartWorkflowRequest API](../../documentation/api/startworkflow.md), and Conductor validates, persists, and executes it immediately — without pre-registration. The workflow itself becomes a first-class output of the agent's planning step.
 
 **Inspectability.** Every agent run is a JSON document you can query, diff, and audit. You can see exactly what the LLM decided, what tools were called, what the human approved, and in what order. No opaque framework state — just data.
 
@@ -167,7 +167,7 @@ Every agent execution in Conductor is fully observable — not through external 
 
 This observability applies to every workflow — including workflows [generated dynamically by an LLM](dynamic-workflows.md). A workflow that was created 30 seconds ago by an agent's planning step gets the same execution visibility as one that was registered months ago.
 
-For programmatic access, the [Workflow API](../api/workflow.md) and [Task API](../api/task.md) provide the same data via REST: query execution status, retrieve task inputs/outputs, and search across executions.
+For programmatic access, the [Workflow API](../../documentation/api/workflow.md) and [Task API](../../documentation/api/task.md) provide the same data via REST: query execution status, retrieve task inputs/outputs, and search across executions.
 
 
 ## Next steps

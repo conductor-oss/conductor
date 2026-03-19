@@ -66,9 +66,9 @@ Every task definition should have explicit timeouts. A task without timeouts can
 | `ALERT_ONLY` | Marks the task as timed out but keeps the workflow running. | Human-in-the-loop tasks or tasks with external completion signals. |
 
 !!! warning
-    Setting `responseTimeoutSeconds` to 0 disables the response timeout. Only do this for tasks that are completed externally (e.g., [WAIT](configuration/workflowdef/systemtasks/wait-task.md) or [Human](configuration/workflowdef/systemtasks/human-task.md) tasks).
+    Setting `responseTimeoutSeconds` to 0 disables the response timeout. Only do this for tasks that are completed externally (e.g., [WAIT](../documentation/configuration/workflowdef/systemtasks/wait-task.md) or [Human](../documentation/configuration/workflowdef/systemtasks/human-task.md) tasks).
 
-See [Task Definitions](configuration/taskdef.md) for the full parameter reference.
+See [Task Definitions](../documentation/configuration/taskdef.md) for the full parameter reference.
 
 
 ## Payload management
@@ -120,7 +120,7 @@ Break work into small tasks that each do one thing. This gives you:
 
 | Approach | When to use |
 | :--- | :--- |
-| [Sub-workflow](configuration/workflowdef/operators/sub-workflow-task.md) | Reusable logic shared across multiple parent workflows. Independently versioned and testable. |
+| [Sub-workflow](../documentation/configuration/workflowdef/operators/sub-workflow-task.md) | Reusable logic shared across multiple parent workflows. Independently versioned and testable. |
 | Inline tasks in a single workflow | Logic specific to one workflow. Fewer indirections to debug. |
 
 Use sub-workflows when a group of tasks represents a **bounded business capability** (e.g., "process payment", "send notification bundle"). Don't create sub-workflows for a single task — the overhead isn't worth it.
@@ -129,8 +129,8 @@ Use sub-workflows when a group of tasks represents a **bounded business capabili
 
 | Pattern | When to use |
 | :--- | :--- |
-| [DYNAMIC_FORK](configuration/workflowdef/operators/dynamic-fork-task.md) | Process N items in parallel. Use when items are independent and parallelism improves throughput. |
-| [DO_WHILE](configuration/workflowdef/operators/do-while-task.md) | Process items sequentially when ordering matters or a shared resource requires serialization. |
+| [DYNAMIC_FORK](../documentation/configuration/workflowdef/operators/dynamic-fork-task.md) | Process N items in parallel. Use when items are independent and parallelism improves throughput. |
+| [DO_WHILE](../documentation/configuration/workflowdef/operators/do-while-task.md) | Process items sequentially when ordering matters or a shared resource requires serialization. |
 
 !!! tip
     Keep DYNAMIC_FORK fan-out under 500 concurrent tasks per workflow. Beyond that, consider batching items into chunks and forking over the chunks.
@@ -177,7 +177,7 @@ This limits the task to 50 executions per second globally, with at most 20 runni
 
 ### Domain isolation
 
-Use [task domains](api/taskdomains.md) to route tasks to specific worker pools. Common use cases:
+Use [task domains](../documentation/api/taskdomains.md) to route tasks to specific worker pools. Common use cases:
 
 - **Environment isolation** — dev workers only pick up dev tasks.
 - **Priority lanes** — premium customers routed to dedicated capacity.
@@ -217,7 +217,7 @@ def validate_order(order_id: str, items: list) -> TaskResult:
 
 For workflows that span multiple services, design compensation tasks to undo completed steps when a later step fails.
 
-**Forward compensation** — Fix the problem and continue. Use a [SWITCH](configuration/workflowdef/operators/switch-task.md) after the failed task to route to a recovery path.
+**Forward compensation** — Fix the problem and continue. Use a [SWITCH](../documentation/configuration/workflowdef/operators/switch-task.md) after the failed task to route to a recovery path.
 
 **Backward compensation** — Undo completed work in reverse order. Model this as a separate workflow triggered by the [failure workflow](how-tos/Workflows/handling-errors.md) mechanism:
 
@@ -245,7 +245,7 @@ Conductor supports [workflow versioning](how-tos/Workflows/versioning-workflows.
 Running workflows continue on the version they were started with. You cannot migrate a running execution to a new version. Plan for this:
 
 - **Short-lived workflows** — Wait for drain. Most complete within minutes.
-- **Long-running workflows** — If a critical fix is needed, terminate and restart on the new version. Use the [Terminate](configuration/workflowdef/operators/terminate-task.md) API with a reason, then re-trigger.
+- **Long-running workflows** — If a critical fix is needed, terminate and restart on the new version. Use the [Terminate](../documentation/configuration/workflowdef/operators/terminate-task.md) API with a reason, then re-trigger.
 
 ### Safe rollback
 

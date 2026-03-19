@@ -250,6 +250,6 @@ See the full set of examples in the [`ai/examples/`](https://github.com/conducto
 
 - **[Durable Agents](durable-agents.md)** &mdash; What persists, what gets retried, and why JSON is AI-native.
 - **[LLM Orchestration](llm-orchestration.md)** &mdash; Native LLM providers, vector databases, and content generation.
-- **[Dynamic Fork](../configuration/workflowdef/operators/dynamic-fork-task.md)** &mdash; Runtime-determined parallel execution.
-- **[DO_WHILE](../configuration/workflowdef/operators/do-while-task.md)** &mdash; Loop operator for agent iterations.
-- **[HUMAN task](../configuration/workflowdef/systemtasks/human-task.md)** &mdash; Human-in-the-loop approval.
+- **[Dynamic Fork](../../documentation/configuration/workflowdef/operators/dynamic-fork-task.md)** &mdash; Runtime-determined parallel execution.
+- **[DO_WHILE](../../documentation/configuration/workflowdef/operators/do-while-task.md)** &mdash; Loop operator for agent iterations.
+- **[HUMAN task](../../documentation/configuration/workflowdef/systemtasks/human-task.md)** &mdash; Human-in-the-loop approval.

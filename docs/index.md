@@ -8,99 +8,91 @@ description: Conductor is an open source workflow engine and durable execution p
 <div class="home-wrapper">
 
 <div class="hero">
-  <h1 class="hero-title">The durable runtime <br/> for workflows and AI agents</h1>
-  <div class="hero-columns">
-    <div class="hero-left">
-      <p class="hero-subtitle">Stop stitching together retries, state, and compensation by hand. Conductor gives your workflows a durable runtime.</p>
-      <div class="hero-actions">
-        <a href="quickstart/" class="btn-primary">Get Started<span class="btn-arrow">&rarr;</span></a>
-        <a href="https://github.com/conductor-oss/conductor" class="repo-link">
-          <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-          <span>conductor-oss/conductor</span>
-        </a>
+  <div class="hero-badge">Apache 2.0 Licensed &middot; Originally created at Netflix</div>
+  <h1 class="hero-title">Code breaks. Infrastructure fails.<br/><span class="hero-highlight">Your workflows don't.</span></h1>
+  <p class="hero-subtitle">Crash-proof workflows and AI agents that finish what they start &mdash; powered by durable execution at Netflix scale.</p>
+  <p class="hero-differentiators">No SDK restrictions. No non-determinism bugs. No cloud lock-in.</p>
+  <div class="hero-actions">
+    <a href="quickstart/index.html" class="btn-primary">Get Started<span class="btn-arrow">&rarr;</span></a>
+    <a href="https://github.com/conductor-oss/conductor" class="repo-link" id="hero-repo-link">
+      <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      <span>conductor-oss/conductor</span>
+      <span class="repo-stats" id="repo-stats"></span>
+    </a>
+    <script>
+      fetch("https://api.github.com/repos/conductor-oss/conductor")
+        .then(function(r){return r.json()})
+        .then(function(d){
+          var el=document.getElementById("repo-stats");
+          if(el&&d.stargazers_count){
+            var s=d.stargazers_count>=1000?(d.stargazers_count/1000).toFixed(1)+"k":d.stargazers_count;
+            var f=d.forks_count>=1000?(d.forks_count/1000).toFixed(1)+"k":d.forks_count;
+            el.innerHTML='<span class="repo-stat">&#9733; '+s+'</span><span class="repo-stat"><svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor"><path d="M5 5.372v.878c0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75v-.878a2.25 2.25 0 1 1 1.5 0v.878a2.25 2.25 0 0 1-2.25 2.25h-1.5v2.128a2.251 2.251 0 1 1-1.5 0V8.5h-1.5A2.25 2.25 0 0 1 3.5 6.25v-.878a2.25 2.25 0 1 1 1.5 0ZM5 3.25a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Zm6.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm-3 8.75a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Z"/></svg> '+f+'</span>';
+          }
+        }).catch(function(){});
+    </script>
+  </div>
+  <div class="hero-install"><code>$ npm install -g @conductor-oss/conductor-cli</code></div>
+  <div class="hero-ai-card">
+    <div class="hero-ai-header">
+      <div class="hero-ai-icon">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 0-4 4c0 2 1.5 3 1.5 5h5c0-2 1.5-3 1.5-5a4 4 0 0 0-4-4z"/><line x1="10" y1="17" x2="14" y2="17"/><line x1="10" y1="20" x2="14" y2="20"/><line x1="11" y1="23" x2="13" y2="23"/></svg>
       </div>
-      <div class="hero-skills-cta">
-        <a href="https://github.com/conductor-oss/conductor-skills" class="skills-link">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-          <span>Install Conductor Skills for your AI agents</span>
-          <span class="btn-arrow">&rarr;</span>
-        </a>
-      </div>
+      <h3>Build with AI Agents</h3>
     </div>
-    <div class="hero-right">
-      <div class="hero-code-block">
-        <div class="hero-code-label">Write workers in any language</div>
-        <div class="hero-lang-tabs">
-          <button class="hero-lang-tab active" data-lang="java">Java</button>
-          <button class="hero-lang-tab" data-lang="python">Python</button>
-          <button class="hero-lang-tab" data-lang="go">Go</button>
-          <button class="hero-lang-tab" data-lang="js">JavaScript</button>
-          <button class="hero-lang-tab" data-lang="csharp">C#</button>
-        </div>
-        <pre class="hero-code"><code id="hero-code-java" class="hero-code-panel active">@WorkerTask("charge_payment")
-public ChargeResult charge(OrderInput input) {
-    var chargeId = paymentService.charge(input.orderId, input.amount);
-    return new ChargeResult(chargeId);
-}</code><code id="hero-code-python" class="hero-code-panel">@worker_task(task_definition_name="charge_payment")
-def charge_payment(order_id: str, amount: float) -&gt; dict:
-    charge_id = payment_service.charge(order_id, amount)
-    return {"chargeId": charge_id}</code><code id="hero-code-go" class="hero-code-panel">func ChargePayment(input *OrderInput) (*ChargeResult, error) {
-    chargeId, err := paymentService.Charge(input.OrderId, input.Amount)
-    if err != nil {
-        return nil, err
-    }
-    return &amp;ChargeResult{ChargeId: chargeId}, nil
-}</code><code id="hero-code-js" class="hero-code-panel">worker.register("charge_payment", async ({ orderId, amount }) =&gt; {
-    const chargeId = await paymentService.charge(orderId, amount);
-    return { chargeId };
-});</code><code id="hero-code-csharp" class="hero-code-panel">[WorkerTask("charge_payment")]
-public ChargeResult ChargePayment(OrderInput input) {
-    var chargeId = _paymentService.Charge(input.OrderId, input.Amount);
-    return new ChargeResult(chargeId);
-}</code></pre>
+    <div class="hero-ai-body">
+      <div class="hero-ai-item">
+        <a href="devguide/how-tos/conductor-skills.html" class="hero-ai-link" title="Conductor Skills for AI agent orchestration">Conductor Skills &rarr;</a>
+        <span class="hero-ai-sub">Install Conductor Skills for your AI Agent</span>
+      </div>
+      <div class="hero-ai-item">
+        <a href="devguide/ai/index.html" class="hero-ai-link" title="AI Cookbook — LLM orchestration, MCP tools, and durable agents">AI Cookbook &rarr;</a>
+        <span class="hero-ai-sub">14+ LLM providers, MCP tool calling, human-in-the-loop, and durable agent execution.</span>
       </div>
     </div>
   </div>
 </div>
 
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-  document.querySelectorAll(".hero-lang-tab").forEach(function(tab) {
-    tab.addEventListener("click", function() {
-      document.querySelectorAll(".hero-lang-tab").forEach(function(t) { t.classList.remove("active"); });
-      document.querySelectorAll(".hero-code-panel").forEach(function(p) { p.classList.remove("active"); });
-      tab.classList.add("active");
-      document.getElementById("hero-code-" + tab.dataset.lang).classList.add("active");
-    });
-  });
-});
-</script>
-
 <div class="value-strip">
-  <div class="value-item">
-    <span class="value-metric">Guaranteed at-least-once</span>
-    <span class="value-label">task delivery</span>
-  </div>
+  <div class="value-item"><div class="value-metric">Guaranteed at-least-once</div><div class="value-label">Task Delivery</div></div>
   <div class="value-divider"></div>
-  <div class="value-item">
-    <span class="value-metric">Any language</span>
-    <span class="value-label">worker support</span>
-  </div>
+  <div class="value-item"><div class="value-metric">Any language</div><div class="value-label">Worker Support</div></div>
   <div class="value-divider"></div>
-  <div class="value-item">
-    <span class="value-metric">Millions</span>
-    <span class="value-label">concurrent workflows</span>
-  </div>
+  <div class="value-item"><div class="value-metric">Millions</div><div class="value-label">Concurrent Workflows</div></div>
   <div class="value-divider"></div>
-  <div class="value-item">
-    <span class="value-metric">Billions of workflows</span>
-    <span class="value-label">internet scale execution</span>
+  <div class="value-item"><div class="value-metric">Billions of workflows</div><div class="value-label">Internet Scale Execution</div></div>
+</div>
+
+<div class="logo-wall hero-logos">
+  <p class="logo-wall-label">Trusted by engineering teams at</p>
+  <div class="logo-marquee">
+    <div class="logo-track">
+      <span class="logo-name">Netflix</span>
+      <span class="logo-name">Tesla</span>
+      <span class="logo-name">LinkedIn</span>
+      <span class="logo-name">JP Morgan</span>
+      <span class="logo-name">Freshworks</span>
+      <span class="logo-name">American Express</span>
+      <span class="logo-name">Redfin</span>
+      <span class="logo-name">VMware</span>
+      <span class="logo-name">Coupang</span>
+      <span class="logo-name">Swiggy</span>
+      <span class="logo-name">Netflix</span>
+      <span class="logo-name">Tesla</span>
+      <span class="logo-name">LinkedIn</span>
+      <span class="logo-name">JP Morgan</span>
+      <span class="logo-name">Freshworks</span>
+      <span class="logo-name">American Express</span>
+      <span class="logo-name">Redfin</span>
+      <span class="logo-name">VMware</span>
+      <span class="logo-name">Coupang</span>
+      <span class="logo-name">Swiggy</span>
+    </div>
   </div>
 </div>
 
 <div class="features-section">
   <div class="section-header-inline">
-    <span class="section-label">Capabilities</span>
     <h2>Built for workflows that can't afford to fail.</h2>
   </div>
   <div class="features-grid">
@@ -108,25 +100,25 @@ document.addEventListener("DOMContentLoaded", function() {
       <div class="feature-tag">Core</div>
       <h3>Durable execution by default</h3>
       <p>Workflow state is persisted at every step. Survive server restarts, worker crashes, and network failures. Durable execution with at-least-once task delivery, configurable retries, timeouts, and compensation flows. Build durable agents that never lose progress.</p>
-      <a href="architecture/durable-execution/" class="feature-link">Failure semantics &rarr;</a>
+      <a href="architecture/durable-execution.html" class="feature-link">Failure semantics &rarr;</a>
     </div>
     <div class="feature-card">
-      <div class="feature-tag">Format</div>
+      <div class="feature-tag">JSON superpower</div>
       <h3>JSON native &mdash; deterministic by default</h3>
       <p>JSON definitions separate orchestration from implementation &mdash; no side effects, no hidden state, every run is deterministic. Generate workflows at runtime with LLMs, modify per-execution, and use dynamic forks, dynamic tasks, and dynamic sub-workflows for more flexibility than code-based engines. Code via SDKs when you need it.</p>
-      <a href="architecture/json-native/" class="feature-link">Why JSON wins &rarr;</a>
+      <a href="architecture/json-native.html" class="feature-link">Why JSON wins &rarr;</a>
     </div>
     <div class="feature-card">
       <div class="feature-tag">Primitives</div>
-      <h3>Pause, Resume, Replay, Restart</h3>
+      <h3>Replay, Restart, Pause, Resume</h3>
       <p>Pause workflows on time, external signals, webhooks, or human approval. Resume safely after minutes, hours, or days. Replay any workflow from the beginning, from a specific task, or retry just the failed step &mdash; even months later. Full execution history is always preserved.</p>
-      <a href="architecture/durable-execution/#replay-and-recovery" class="feature-link">How it works &rarr;</a>
+      <a href="architecture/durable-execution.html#replay-and-recovery" class="feature-link">How it works &rarr;</a>
     </div>
     <div class="feature-card">
       <div class="feature-tag">AI</div>
       <h3>AI agent orchestration &amp; LLM orchestration</h3>
       <p>Orchestrate AI agents with 14+ native LLM providers (Anthropic, OpenAI, Gemini, Bedrock, Mistral, and more), MCP tool calling, function calling, human-in-the-loop approval, and structured output. Built-in vector database support (Pinecone, pgvector, MongoDB Atlas) for RAG pipelines.</p>
-      <a href="devguide/ai/" class="feature-link">AI Cookbook &rarr;</a>
+      <a href="devguide/ai/index.html" class="feature-link">AI Cookbook &rarr;</a>
     </div>
     <div class="feature-card">
       <div class="feature-tag">Workers</div>
@@ -146,33 +138,32 @@ document.addEventListener("DOMContentLoaded", function() {
       <div class="feature-tag">Reliability</div>
       <h3>Saga pattern &amp; compensation</h3>
       <p>Model distributed transactions as sagas. When a step fails, Conductor automatically runs undo logic in reverse order&mdash;no manual intervention.</p>
-      <a href="devguide/how-tos/Workflows/handling-errors/" class="feature-link">Error handling &rarr;</a>
+      <a href="devguide/how-tos/Workflows/handling-errors.html" class="feature-link">Error handling &rarr;</a>
     </div>
   </div>
 </div>
 
 <div class="arch-section">
   <div class="section-header-inline">
-    <span class="section-label">Architecture</span>
     <h2>Understand the engine.</h2>
   </div>
   <div class="arch-grid">
-    <a href="architecture/durable-execution/" class="arch-card">
+    <a href="architecture/durable-execution.html" class="arch-card">
       <div class="arch-number">01</div>
       <h3>Durable Execution</h3>
       <p>What persists, what gets retried, failure matrix, and state transitions.</p>
     </a>
-    <a href="devguide/ai/" class="arch-card">
+    <a href="devguide/ai/index.html" class="arch-card">
       <div class="arch-number">02</div>
       <h3>AI Cookbook</h3>
       <p>LLM tasks, tool calls, human approval, dynamic workflows, MCP tools.</p>
     </a>
-    <a href="architecture/json-native/" class="arch-card">
+    <a href="architecture/json-native.html" class="arch-card">
       <div class="arch-number">03</div>
       <h3>JSON + Code Native</h3>
       <p>Runtime generation, versioning, dynamic definitions, API/SDK parity.</p>
     </a>
-    <a href="devguide/architecture/" class="arch-card">
+    <a href="devguide/architecture/index.html" class="arch-card">
       <div class="arch-number">04</div>
       <h3>System Architecture</h3>
       <p>Worker-task queues, persistence, polling, distributed consistency.</p>
@@ -180,29 +171,15 @@ document.addEventListener("DOMContentLoaded", function() {
   </div>
 </div>
 
-<div class="install-section">
-  <div class="section-header-inline">
-    <span class="section-label">Install</span>
-    <h2>Multiple ways to run.</h2>
-  </div>
-  <div class="install-options">
-    <div class="install-option">
-      <h3>CLI <span class="install-rec">recommended</span></h3>
-      <div class="install-cmd"><code><span class="install-comment"># Install CLI</span><br/>npm install -g @conductor-oss/conductor-cli<br/><span class="install-comment"># Start the server</span><br/>conductor server start</code></div>
-    </div>
-    <div class="install-option">
-      <h3>Docker</h3>
-      <div class="install-cmd"><code>docker run -p 8080:8080 conductoross/conductor:latest</code></div>
-    </div>
-  </div>
-</div>
-
 <div class="faq-section">
   <div class="section-header-inline">
-    <span class="section-label">FAQ</span>
     <h2>Frequently asked questions.</h2>
   </div>
   <div class="faq-grid">
+    <details class="faq-item">
+      <summary>How do I run Conductor with Docker?</summary>
+      <p>Run <code>docker run -p 8080:8080 conductoross/conductor:latest</code> to start Conductor with all dependencies included. The server will be available at <code>http://localhost:8080</code>. For production deployments with external persistence, see the <a href="devguide/running/deploy.html">Docker deployment guide</a>.</p>
+    </details>
     <details class="faq-item">
       <summary>Is Conductor open source?</summary>
       <p>Yes. Conductor is a fully open source workflow engine, Apache 2.0 licensed. You can self-host it on your own infrastructure with no vendor lock-in. It supports 8+ persistence backends, 6 message brokers, and runs anywhere Docker runs.</p>
@@ -300,7 +277,7 @@ document.addEventListener("DOMContentLoaded", function() {
     <p>Apache-2.0 licensed. Self-hosted, no vendor lock-in. Originally created at Netflix, now maintained by the community.</p>
     <div class="cta-actions">
       <a href="https://github.com/conductor-oss/conductor" class="btn-primary">Star on GitHub<span class="btn-arrow">&rarr;</span></a>
-      <a href="resources/contributing/" class="btn-ghost">Contributing guide</a>
+      <a href="resources/contributing.html" class="btn-ghost">Contributing guide</a>
     </div>
   </div>
 </div>

@@ -36,7 +36,7 @@ Workers are configured through the task definition on the Conductor server. Key 
 | `rateLimitPerFrequency` | Max task executions per frequency window. |
 | `concurrentExecLimit` | Max concurrent executions across all workers. |
 
-See [Task Definitions](../configuration/taskdef.md) for the full reference.
+See [Task Definitions](../../documentation/configuration/taskdef.md) for the full reference.
 
 
 ## Scaling task workers
@@ -46,6 +46,6 @@ Workers can be scaled independently of the Conductor server:
 - **Horizontal scaling** — Run multiple instances of the same worker. Conductor distributes tasks across all polling workers automatically.
 - **Rate limiting** — Use `rateLimitPerFrequency` to control throughput per task type.
 - **Concurrency limits** — Use `concurrentExecLimit` to cap parallel executions.
-- **Domain isolation** — Use [task domains](../api/taskdomains.md) to route tasks to specific worker groups.
+- **Domain isolation** — Use [task domains](../../documentation/api/taskdomains.md) to route tasks to specific worker groups.
 
 See [Scaling Workers](../how-tos/Workers/scaling-workers.md) for detailed guidance.
