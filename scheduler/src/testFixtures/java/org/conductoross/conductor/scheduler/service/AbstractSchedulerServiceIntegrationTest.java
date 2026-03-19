@@ -13,7 +13,6 @@
 package org.conductoross.conductor.scheduler.service;
 
 import java.sql.Connection;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -39,8 +38,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
- * Integration tests for {@link SchedulerService} using a real {@link SchedulerDAO} (from a
- * concrete subclass) and a mocked {@link WorkflowService}.
+ * Integration tests for {@link SchedulerService} using a real {@link SchedulerDAO} (from a concrete
+ * subclass) and a mocked {@link WorkflowService}.
  *
  * <p>Subclasses provide the wired {@link SchedulerDAO} and {@link DataSource} via Spring. This
  * abstract class handles DB cleanup between tests and constructs a real {@link SchedulerService}
@@ -86,8 +85,9 @@ public abstract class AbstractSchedulerServiceIntegrationTest {
      * Verifies that {@code pruneExecutionHistory} is invoked correctly after a poll fires.
      *
      * <p>Setup: 6 pre-existing EXECUTED records (executionTimes 1000..1005). After the poll fires,
-     * there are 7 total. {@code pruneExecutionHistory} fetches {@code threshold+1=6} newest records,
-     * sees 6 > threshold(5), removes the 3 oldest (indices 3,4,5). After pruning 4 records remain.
+     * there are 7 total. {@code pruneExecutionHistory} fetches {@code threshold+1=6} newest
+     * records, sees 6 > threshold(5), removes the 3 oldest (indices 3,4,5). After pruning 4 records
+     * remain.
      */
     @Test
     public void testPruneExecution_withRealDAO_removesOldestRecords() throws Exception {
@@ -141,7 +141,8 @@ public abstract class AbstractSchedulerServiceIntegrationTest {
 
     /**
      * Verifies that a POLLED execution record stuck longer than the stale threshold (5 minutes) is
-     * transitioned to FAILED state by the cleanup pass at the end of {@code pollAndExecuteSchedules}.
+     * transitioned to FAILED state by the cleanup pass at the end of {@code
+     * pollAndExecuteSchedules}.
      */
     @Test
     public void testStalePollRecord_withRealDAO_transitionsToFailed() throws Exception {
@@ -294,9 +295,9 @@ public abstract class AbstractSchedulerServiceIntegrationTest {
      * NOT skip forward to startTime. This test documents the actual behavior: times are returned
      * starting from {@code now}, even if the schedule's startTime is in the future.
      *
-     * <p>The {@code startTime} constraint is enforced by the polling loop (via
-     * {@code isDue()} checking {@code now < scheduleStartTime}), not by
-     * {@code getNextExecutionTimes}. This is documented behavior, not a bug.
+     * <p>The {@code startTime} constraint is enforced by the polling loop (via {@code isDue()}
+     * checking {@code now < scheduleStartTime}), not by {@code getNextExecutionTimes}. This is
+     * documented behavior, not a bug.
      */
     @Test
     public void testGetNextExecutionTimes_withStartTimeBound() throws Exception {
@@ -313,8 +314,10 @@ public abstract class AbstractSchedulerServiceIntegrationTest {
         List<Long> times = service.getNextExecutionTimes(scheduleName, 5);
 
         // The service starts the cursor at now() so we get 5 times regardless of startTime
-        assertEquals("getNextExecutionTimes returns count times starting from now, ignoring startTime",
-                5, times.size());
+        assertEquals(
+                "getNextExecutionTimes returns count times starting from now, ignoring startTime",
+                5,
+                times.size());
         // All times should be in the future (cron fires every minute from now)
         for (Long t : times) {
             assertTrue("All times should be in the future", t > now);
@@ -362,30 +365,33 @@ public abstract class AbstractSchedulerServiceIntegrationTest {
 
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
-        executor.submit(() -> {
-            try {
-                startLatch.await();
-                service1.pollAndExecuteSchedules();
-            } catch (Exception e) {
-                exceptionCount.incrementAndGet();
-            } finally {
-                doneLatch.countDown();
-            }
-        });
+        executor.submit(
+                () -> {
+                    try {
+                        startLatch.await();
+                        service1.pollAndExecuteSchedules();
+                    } catch (Exception e) {
+                        exceptionCount.incrementAndGet();
+                    } finally {
+                        doneLatch.countDown();
+                    }
+                });
 
-        executor.submit(() -> {
-            try {
-                startLatch.await();
-                service2.pollAndExecuteSchedules();
-            } catch (Exception e) {
-                exceptionCount.incrementAndGet();
-            } finally {
-                doneLatch.countDown();
-            }
-        });
+        executor.submit(
+                () -> {
+                    try {
+                        startLatch.await();
+                        service2.pollAndExecuteSchedules();
+                    } catch (Exception e) {
+                        exceptionCount.incrementAndGet();
+                    } finally {
+                        doneLatch.countDown();
+                    }
+                });
 
         startLatch.countDown();
-        assertTrue("Concurrent poll must complete within 30 s", doneLatch.await(30, TimeUnit.SECONDS));
+        assertTrue(
+                "Concurrent poll must complete within 30 s", doneLatch.await(30, TimeUnit.SECONDS));
         executor.shutdown();
 
         assertEquals("No exceptions expected during concurrent poll", 0, exceptionCount.get());

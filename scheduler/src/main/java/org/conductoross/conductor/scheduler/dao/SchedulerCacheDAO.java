@@ -60,7 +60,7 @@ public interface SchedulerCacheDAO {
      * Stores the next-run epoch millis in the cache.
      *
      * @param scheduleName schedule name
-     * @param epochMillis  epoch millis of the next planned execution
+     * @param epochMillis epoch millis of the next planned execution
      */
     void setNextRunTimeInEpoch(String scheduleName, long epochMillis);
 }
