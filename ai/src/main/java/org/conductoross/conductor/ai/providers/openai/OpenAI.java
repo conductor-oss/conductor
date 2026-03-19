@@ -38,17 +38,17 @@ import org.springframework.ai.audio.tts.Speech;
 import org.springframework.ai.audio.tts.TextToSpeechPrompt;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
 import org.springframework.ai.openai.OpenAiAudioSpeechOptions;
-import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openaisdk.OpenAiSdkChatModel;
 import org.springframework.ai.openaisdk.OpenAiSdkChatOptions;
+import org.springframework.ai.openaisdk.OpenAiSdkEmbeddingModel;
+import org.springframework.ai.openaisdk.OpenAiSdkEmbeddingOptions;
 import org.springframework.ai.openaisdk.OpenAiSdkImageModel;
 import org.springframework.ai.openaisdk.OpenAiSdkImageOptions;
 import org.springframework.ai.tool.ToolCallback;
@@ -65,7 +65,7 @@ public class OpenAI implements AIModel {
     // Cached instances
     private final OpenAiApi openAiApi;
     private final OpenAiSdkChatModel chatModel;
-    private final OpenAiEmbeddingModel embeddingModel;
+    private final OpenAiSdkEmbeddingModel embeddingModel;
     private final OpenAiSdkImageModel imageModel;
     private final OpenAiAudioApi audioApi;
     private final OpenAiAudioSpeechModel speechModel;
@@ -75,7 +75,7 @@ public class OpenAI implements AIModel {
         this.config = config;
         this.openAiApi = createOpenAiApi();
         this.chatModel = createChatModel();
-        this.embeddingModel = new OpenAiEmbeddingModel(this.openAiApi);
+        this.embeddingModel = createEmbeddingModel();
         this.imageModel = createImageModel();
         this.audioApi = createAudioApi();
         this.speechModel = new OpenAiAudioSpeechModel(this.audioApi);
@@ -89,8 +89,8 @@ public class OpenAI implements AIModel {
 
     @Override
     public List<Float> generateEmbeddings(EmbeddingGenRequest embeddingGenRequest) {
-        EmbeddingOptions options =
-                EmbeddingOptions.builder()
+        OpenAiSdkEmbeddingOptions options =
+                OpenAiSdkEmbeddingOptions.builder()
                         .model(embeddingGenRequest.getModel())
                         .dimensions(embeddingGenRequest.getDimensions())
                         .build();
@@ -268,6 +268,16 @@ public class OpenAI implements AIModel {
             baseURL = baseURL.substring(0, baseURL.length() - 3);
         }
         return OpenAiApi.builder().apiKey(apiKey).baseUrl(baseURL).build();
+    }
+
+    private OpenAiSdkEmbeddingModel createEmbeddingModel() {
+        OpenAiSdkEmbeddingOptions opts =
+                OpenAiSdkEmbeddingOptions.builder()
+                        .organizationId(config.getOrganizationId())
+                        .apiKey(config.getApiKey())
+                        .baseUrl(config.getBaseURL())
+                        .build();
+        return new OpenAiSdkEmbeddingModel(opts);
     }
 
     private OpenAiSdkChatModel createChatModel() {

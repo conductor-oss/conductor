@@ -15,12 +15,20 @@ package org.conductoross.conductor.scheduler.service;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.conductoross.conductor.scheduler.config.SchedulerProperties;
 import org.conductoross.conductor.scheduler.dao.SchedulerDAO;
@@ -31,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.support.CronExpression;
 
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
+import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.service.WorkflowService;
 
@@ -90,6 +99,7 @@ public class SchedulerService {
             log.info("Scheduler is disabled via conductor.scheduler.enabled=false");
             return;
         }
+        validateProperties();
         initExecutors();
         pollingExecutor.scheduleWithFixedDelay(
                 this::pollAndExecuteSchedules,
@@ -180,10 +190,7 @@ public class SchedulerService {
     }
 
     public void pauseSchedule(String name) {
-        WorkflowSchedule schedule = getSchedule(name);
-        schedule.setPaused(true);
-        schedule.setUpdatedTime(System.currentTimeMillis());
-        schedulerDAO.updateSchedule(schedule);
+        pauseSchedule(name, null);
     }
 
     public void pauseSchedule(String name, String reason) {
@@ -219,6 +226,304 @@ public class SchedulerService {
 
     public List<WorkflowScheduleExecution> getExecutionHistory(String name, int limit) {
         return schedulerDAO.getExecutionRecords(name, limit);
+    }
+
+    /**
+     * Cross-schedule execution search with in-memory filtering, sorting, and pagination.
+     *
+     * <p>Supports the query syntax used by the UI: {@code scheduleName IN (n1,n2) AND status IN
+     * (EXECUTED) AND startTime>X AND startTime<X AND executionId='id'}.
+     *
+     * @param start zero-based page offset
+     * @param size page size
+     * @param sort field and direction, e.g. {@code startTime:DESC}
+     * @param query structured filter string (may be null/blank for no filter)
+     * @param freeText free-text search term ({@code *} means match all)
+     * @return search result with {@code results} and {@code totalHits}
+     */
+    public SearchResult<WorkflowScheduleExecution> searchExecutions(
+            int start, int size, String sort, String query, String freeText) {
+        List<WorkflowScheduleExecution> all = schedulerDAO.getAllExecutionRecords(1000);
+
+        if (query != null && !query.isBlank()) {
+            all = applyQueryFilter(all, query);
+        }
+        if (freeText != null && !freeText.isBlank() && !"*".equals(freeText)) {
+            all = applyFreeTextFilter(all, freeText);
+        }
+
+        applySort(all, sort);
+
+        int totalHits = all.size();
+        int fromIdx = Math.min(start, all.size());
+        int toIdx = Math.min(start + size, all.size());
+        return new SearchResult<>(totalHits, all.subList(fromIdx, toIdx));
+    }
+
+    /**
+     * Schedule definitions search with in-memory filtering, sorting, and pagination.
+     *
+     * @param workflowName optional workflow name filter (exact match)
+     * @param scheduleName optional schedule name filter (substring match)
+     * @param paused optional paused-state filter
+     * @param freeText free-text search on name ({@code *} means match all)
+     * @param start zero-based page offset
+     * @param size page size
+     * @param sortOptions list of sort options, e.g. {@code ["name:ASC", "createTime:DESC"]}
+     * @return search result with {@code results} and {@code totalHits}
+     */
+    public SearchResult<WorkflowSchedule> searchSchedules(
+            String workflowName,
+            String scheduleName,
+            Boolean paused,
+            String freeText,
+            int start,
+            int size,
+            List<String> sortOptions) {
+        List<WorkflowSchedule> all =
+                (workflowName != null && !workflowName.isBlank())
+                        ? schedulerDAO.findAllSchedules(workflowName)
+                        : schedulerDAO.getAllSchedules();
+
+        // freeText name filter (used as schedule name prefix/substring by the UI)
+        if (freeText != null && !freeText.isBlank() && !"*".equals(freeText)) {
+            String lower = freeText.toLowerCase();
+            all =
+                    all.stream()
+                            .filter(
+                                    s ->
+                                            s.getName() != null
+                                                    && s.getName().toLowerCase().contains(lower))
+                            .collect(Collectors.toList());
+        }
+
+        // explicit scheduleName filter (also substring)
+        if (scheduleName != null && !scheduleName.isBlank()) {
+            String lower = scheduleName.toLowerCase();
+            all =
+                    all.stream()
+                            .filter(
+                                    s ->
+                                            s.getName() != null
+                                                    && s.getName().toLowerCase().contains(lower))
+                            .collect(Collectors.toList());
+        }
+
+        // paused filter
+        if (paused != null) {
+            boolean filterPaused = paused;
+            all =
+                    all.stream()
+                            .filter(s -> s.isPaused() == filterPaused)
+                            .collect(Collectors.toList());
+        }
+
+        // sort — apply the first sort option only
+        if (sortOptions != null && !sortOptions.isEmpty()) {
+            applyScheduleSort(all, sortOptions.get(0));
+        } else {
+            // default: newest first
+            all.sort(
+                    Comparator.comparingLong(
+                                    (WorkflowSchedule s) ->
+                                            s.getCreateTime() != null ? s.getCreateTime() : 0L)
+                            .reversed());
+        }
+
+        int totalHits = all.size();
+        int fromIdx = Math.min(start, all.size());
+        int toIdx = Math.min(start + size, all.size());
+        return new SearchResult<>(totalHits, all.subList(fromIdx, toIdx));
+    }
+
+    /**
+     * Returns the next {@code limit} scheduled execution times (epoch millis) for a raw cron
+     * expression, honouring optional start/end time bounds.
+     *
+     * @param cronExpression Spring 6-field cron expression
+     * @param scheduleStartTime optional lower bound (epoch millis); ignored if null
+     * @param scheduleEndTime optional upper bound (epoch millis); ignored if null
+     * @param limit maximum number of times to return
+     */
+    public List<Long> getListOfNextSchedules(
+            String cronExpression, Long scheduleStartTime, Long scheduleEndTime, int limit) {
+        CronExpression cron = parseCron(cronExpression);
+        ZonedDateTime cursor =
+                scheduleStartTime != null
+                        ? ZonedDateTime.ofInstant(
+                                java.time.Instant.ofEpochMilli(scheduleStartTime), ZoneId.of("UTC"))
+                        : ZonedDateTime.now(ZoneId.of("UTC"));
+
+        List<Long> times = new ArrayList<>();
+        for (int i = 0; i < limit; i++) {
+            ZonedDateTime next = cron.next(cursor);
+            if (next == null) {
+                break;
+            }
+            long epochMillis = next.toInstant().toEpochMilli();
+            if (scheduleEndTime != null && epochMillis > scheduleEndTime) {
+                break;
+            }
+            times.add(epochMillis);
+            cursor = next;
+        }
+        return times;
+    }
+
+    private List<WorkflowScheduleExecution> applyQueryFilter(
+            List<WorkflowScheduleExecution> records, String query) {
+        return records.stream().filter(r -> matchesQuery(r, query)).collect(Collectors.toList());
+    }
+
+    private boolean matchesQuery(WorkflowScheduleExecution r, String query) {
+        for (String clause : query.split("(?i)\\s+AND\\s+")) {
+            clause = clause.trim();
+            if (clause.isBlank()) {
+                continue;
+            }
+            Matcher m;
+
+            m = Pattern.compile("(?i)scheduleName\\s+IN\\s+\\(([^)]+)\\)").matcher(clause);
+            if (m.find()) {
+                Set<String> names =
+                        Arrays.stream(m.group(1).split(","))
+                                .map(String::trim)
+                                .collect(Collectors.toSet());
+                if (r.getScheduleName() == null || !names.contains(r.getScheduleName())) {
+                    return false;
+                }
+                continue;
+            }
+
+            m = Pattern.compile("(?i)status\\s+IN\\s+\\(([^)]+)\\)").matcher(clause);
+            if (m.find()) {
+                Set<String> states =
+                        Arrays.stream(m.group(1).split(","))
+                                .map(String::trim)
+                                .collect(Collectors.toSet());
+                if (r.getState() == null || !states.contains(r.getState().name())) {
+                    return false;
+                }
+                continue;
+            }
+
+            m = Pattern.compile("(?i)workflowType\\s+IN\\s+\\(([^)]+)\\)").matcher(clause);
+            if (m.find()) {
+                Set<String> types =
+                        Arrays.stream(m.group(1).split(","))
+                                .map(String::trim)
+                                .collect(Collectors.toSet());
+                if (r.getWorkflowName() == null || !types.contains(r.getWorkflowName())) {
+                    return false;
+                }
+                continue;
+            }
+
+            m = Pattern.compile("(?i)startTime\\s*>\\s*(\\d+)").matcher(clause);
+            if (m.find()) {
+                long threshold = Long.parseLong(m.group(1));
+                if (r.getExecutionTime() == null || r.getExecutionTime() <= threshold) {
+                    return false;
+                }
+                continue;
+            }
+
+            m = Pattern.compile("(?i)startTime\\s*<\\s*(\\d+)").matcher(clause);
+            if (m.find()) {
+                long threshold = Long.parseLong(m.group(1));
+                if (r.getExecutionTime() == null || r.getExecutionTime() >= threshold) {
+                    return false;
+                }
+                continue;
+            }
+
+            m = Pattern.compile("(?i)executionId\\s*=\\s*'([^']+)'").matcher(clause);
+            if (m.find()) {
+                String id = m.group(1);
+                if (!id.equals(r.getExecutionId())) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private List<WorkflowScheduleExecution> applyFreeTextFilter(
+            List<WorkflowScheduleExecution> records, String freeText) {
+        String lower = freeText.toLowerCase();
+        return records.stream()
+                .filter(
+                        r ->
+                                (r.getScheduleName() != null
+                                                && r.getScheduleName()
+                                                        .toLowerCase()
+                                                        .contains(lower))
+                                        || (r.getWorkflowId() != null
+                                                && r.getWorkflowId().toLowerCase().contains(lower))
+                                        || (r.getExecutionId() != null
+                                                && r.getExecutionId()
+                                                        .toLowerCase()
+                                                        .contains(lower)))
+                .collect(Collectors.toList());
+    }
+
+    private void applyScheduleSort(List<WorkflowSchedule> schedules, String sort) {
+        if (sort == null || sort.isBlank()) {
+            return;
+        }
+        String[] parts = sort.split(":");
+        String field = parts[0].trim().toLowerCase();
+        boolean desc = parts.length < 2 || "desc".equalsIgnoreCase(parts[1].trim());
+
+        Comparator<WorkflowSchedule> cmp;
+        switch (field) {
+            case "name":
+                cmp =
+                        Comparator.comparing(
+                                s -> s.getName() != null ? s.getName() : "",
+                                String.CASE_INSENSITIVE_ORDER);
+                break;
+            case "updatetime":
+            case "updatedtime":
+                cmp =
+                        Comparator.comparingLong(
+                                s -> s.getUpdatedTime() != null ? s.getUpdatedTime() : 0L);
+                break;
+            default: // createTime
+                cmp =
+                        Comparator.comparingLong(
+                                s -> s.getCreateTime() != null ? s.getCreateTime() : 0L);
+        }
+        if (desc) {
+            cmp = cmp.reversed();
+        }
+        schedules.sort(cmp);
+    }
+
+    private void applySort(List<WorkflowScheduleExecution> records, String sort) {
+        if (sort == null || sort.isBlank()) {
+            return;
+        }
+        String[] parts = sort.split(":");
+        String field = parts[0].trim().toLowerCase();
+        boolean desc = parts.length < 2 || "desc".equalsIgnoreCase(parts[1].trim());
+
+        Comparator<WorkflowScheduleExecution> cmp;
+        switch (field) {
+            case "scheduledtime":
+                cmp =
+                        Comparator.comparingLong(
+                                r -> r.getScheduledTime() != null ? r.getScheduledTime() : 0L);
+                break;
+            default: // startTime, executionTime, or anything else
+                cmp =
+                        Comparator.comparingLong(
+                                r -> r.getExecutionTime() != null ? r.getExecutionTime() : 0L);
+        }
+        if (desc) {
+            cmp = cmp.reversed();
+        }
+        records.sort(cmp);
     }
 
     // -------------------------------------------------------------------------
@@ -265,16 +570,22 @@ public class SchedulerService {
                 if (processed >= properties.getPollBatchSize()) {
                     break;
                 }
-                if (isDue(schedule, now)) {
-                    handleSchedule(schedule, now);
+                Long scheduledTime = getNextRunIfDue(schedule, now);
+                if (scheduledTime != null) {
+                    handleSchedule(schedule, now, scheduledTime);
                     processed++;
                 }
             }
-
-            // Prune stale POLLED records
-            cleanupStalePollRecords();
         } catch (Exception e) {
             log.error("Error during scheduler polling cycle", e);
+        }
+
+        // Stale record cleanup in its own try/catch so a cleanup failure doesn't suppress
+        // diagnostics about the dispatch loop and vice versa.
+        try {
+            cleanupStalePollRecords();
+        } catch (Exception e) {
+            log.error("Error during stale poll record cleanup", e);
         }
     }
 
@@ -282,25 +593,27 @@ public class SchedulerService {
     // Private helpers
     // -------------------------------------------------------------------------
 
-    private boolean isDue(WorkflowSchedule schedule, long now) {
+    /**
+     * Returns the cached next-run time for the schedule if it is currently due, or {@code null} if
+     * the schedule should not fire right now. Combines the due-check and the DAO read into a single
+     * call so the caller doesn't need to fetch the value a second time.
+     */
+    private Long getNextRunIfDue(WorkflowSchedule schedule, long now) {
         if (schedule.isPaused()) {
-            return false;
+            return null;
         }
         if (schedule.getScheduleStartTime() != null && now < schedule.getScheduleStartTime()) {
-            return false;
+            return null;
         }
         if (schedule.getScheduleEndTime() != null && now > schedule.getScheduleEndTime()) {
-            return false;
+            return null;
         }
-        Long nextRun = schedulerDAO.getNextRunTimeInEpoch(schedule.getName());
-        return nextRun >= 0 && now >= nextRun;
+        long nextRun = schedulerDAO.getNextRunTimeInEpoch(schedule.getName());
+        return (nextRun >= 0 && now >= nextRun) ? nextRun : null;
     }
 
-    private void handleSchedule(WorkflowSchedule schedule, long now) {
+    private void handleSchedule(WorkflowSchedule schedule, long now, long scheduledTime) {
         String executionId = UUID.randomUUID().toString();
-
-        // Fetch the slot we are firing for before advancing the pointer.
-        long scheduledTime = schedulerDAO.getNextRunTimeInEpoch(schedule.getName());
 
         // In catchup mode, advance to the next slot after the one we just fired for
         // (i.e. step through missed slots one per poll cycle). In normal mode, jump
@@ -322,7 +635,9 @@ public class SchedulerService {
 
         // Trigger the workflow — optionally with a random jitter delay to spread concurrent
         // dispatch across a small time window and reduce DB/thread-pool contention.
-        if (properties.getJitterMaxMs() > 0) {
+        // Guard on jitterExecutor (not properties) so the two checks are structurally tied:
+        // jitterExecutor is non-null iff jitter was enabled when initExecutors() ran.
+        if (jitterExecutor != null) {
             long jitterMs =
                     ThreadLocalRandom.current().nextLong(0, properties.getJitterMaxMs() + 1);
             jitterExecutor.schedule(
@@ -337,9 +652,14 @@ public class SchedulerService {
     private void dispatchWorkflow(
             WorkflowSchedule schedule, WorkflowScheduleExecution execution, long scheduledTime) {
         try {
-            StartWorkflowRequest req = schedule.getStartWorkflowRequest();
-
-            long dispatchTime = injectSchedulerContext(req, scheduledTime);
+            long dispatchTime = System.currentTimeMillis();
+            // Build a per-dispatch copy of the StartWorkflowRequest with scheduler context
+            // injected into the input. Never mutate the shared request on the schedule object —
+            // the same instance may be reused across concurrent jitter lambdas or future caching.
+            StartWorkflowRequest req =
+                    buildDispatchRequest(
+                            schedule.getStartWorkflowRequest(), scheduledTime, dispatchTime);
+            req.setEvent("scheduler:" + schedule.getName());
 
             String workflowId = workflowService.startWorkflow(req);
 
@@ -358,6 +678,40 @@ public class SchedulerService {
             schedulerDAO.saveExecutionRecord(execution);
             pruneExecutionHistory(schedule.getName());
         }
+    }
+
+    /**
+     * Creates a per-dispatch copy of the given {@link StartWorkflowRequest} with scheduler context
+     * keys injected into the input map. The original request is never mutated.
+     *
+     * @param original the template request from the schedule definition
+     * @param scheduledTime the exact cron slot epoch millis
+     * @param dispatchTime the actual wall-clock dispatch time (epoch millis)
+     * @return a new request with augmented input; all other fields copied from the original
+     */
+    private StartWorkflowRequest buildDispatchRequest(
+            StartWorkflowRequest original, long scheduledTime, long dispatchTime) {
+        Map<String, Object> input = new HashMap<>();
+        if (original.getInput() != null) {
+            input.putAll(original.getInput());
+        }
+        // These keys match Orkes Conductor's scheduler for convergence compatibility.
+        input.put("scheduledTime", scheduledTime);
+        input.put("executionTime", dispatchTime);
+
+        StartWorkflowRequest copy = new StartWorkflowRequest();
+        copy.setName(original.getName());
+        copy.setVersion(original.getVersion());
+        copy.setCorrelationId(original.getCorrelationId());
+        copy.setInput(input);
+        copy.setTaskToDomain(original.getTaskToDomain());
+        copy.setWorkflowDef(original.getWorkflowDef());
+        copy.setExternalInputPayloadStoragePath(original.getExternalInputPayloadStoragePath());
+        copy.setPriority(original.getPriority());
+        copy.setCreatedBy(original.getCreatedBy());
+        copy.setIdempotencyKey(original.getIdempotencyKey());
+        copy.setIdempotencyStrategy(original.getIdempotencyStrategy());
+        return copy;
     }
 
     /**
@@ -396,27 +750,6 @@ public class SchedulerService {
         execution.setState(WorkflowScheduleExecution.ExecutionState.POLLED);
         execution.setZoneId(schedule.getZoneId());
         return execution;
-    }
-
-    /**
-     * Injects scheduler context into the workflow input so workflows can use the scheduled time for
-     * date-range calculations, idempotency keys, audit trails, etc. Preserves any existing input
-     * keys. These keys match Orkes Conductor's scheduler for convergence compatibility.
-     *
-     * @param req the workflow request to modify
-     * @param scheduledTime the exact cron slot epoch millis
-     * @return the actual dispatch time (now)
-     */
-    private long injectSchedulerContext(StartWorkflowRequest req, long scheduledTime) {
-        java.util.Map<String, Object> input = new java.util.HashMap<>();
-        if (req.getInput() != null) {
-            input.putAll(req.getInput());
-        }
-        input.put("scheduledTime", scheduledTime);
-        long dispatchTime = System.currentTimeMillis();
-        input.put("executionTime", dispatchTime);
-        req.setInput(input);
-        return dispatchTime;
     }
 
     /**
@@ -503,13 +836,13 @@ public class SchedulerService {
     }
 
     private void cleanupStalePollRecords() {
-        List<String> pendingIds = schedulerDAO.getPendingExecutionRecordIds();
-        if (pendingIds.isEmpty()) {
+        // Fetch all POLLED records in a single query to avoid N+1 round trips.
+        List<WorkflowScheduleExecution> pending = schedulerDAO.getPendingExecutionRecords();
+        if (pending.isEmpty()) {
             return;
         }
         long staleThreshold = System.currentTimeMillis() - STALE_POLLED_THRESHOLD_MS;
-        for (String id : pendingIds) {
-            WorkflowScheduleExecution record = schedulerDAO.readExecutionRecord(id);
+        for (WorkflowScheduleExecution record : pending) {
             if (isRecordStale(record, staleThreshold)) {
                 transitionStaleRecordToFailed(record);
             }
@@ -570,6 +903,17 @@ public class SchedulerService {
         validateWorkflowRequest(schedule.getStartWorkflowRequest());
         validateZoneId(schedule.getZoneId());
         validateTimeBounds(schedule.getScheduleStartTime(), schedule.getScheduleEndTime());
+    }
+
+    private void validateProperties() {
+        if (properties.getArchivalMaxRecords() >= properties.getArchivalMaxRecordThreshold()) {
+            throw new IllegalArgumentException(
+                    "conductor.scheduler.archivalMaxRecords ("
+                            + properties.getArchivalMaxRecords()
+                            + ") must be less than archivalMaxRecordThreshold ("
+                            + properties.getArchivalMaxRecordThreshold()
+                            + ")");
+        }
     }
 
     private void validateName(String name) {

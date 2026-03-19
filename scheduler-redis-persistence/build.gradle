@@ -1,0 +1,23 @@
+dependencies {
+    implementation project(':conductor-scheduler')
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+    implementation project(':conductor-redis-persistence')
+
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+
+    implementation "com.fasterxml.jackson.core:jackson-databind"
+    implementation "com.fasterxml.jackson.core:jackson-core"
+    implementation "org.apache.commons:commons-lang3"
+
+    testImplementation 'org.springframework.boot:spring-boot-starter'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation "org.testcontainers:testcontainers:${revTestContainer}"
+    testImplementation testFixtures(project(':conductor-scheduler'))
+    testImplementation "redis.clients:jedis:${revJedis}"
+}
+
+test {
+    maxParallelForks = 1
+    environment 'DOCKER_API_VERSION', '1.44'
+}

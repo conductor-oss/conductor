@@ -10,6 +10,8 @@ The project is built with Java 21 and uses Gradle as the build system.
 
 ## Setup Commands
 
+### Java / Gradle
+
 | Command | Description |
 |---------|-------------|
 | `./gradlew build` | Build the entire project |
@@ -18,7 +20,16 @@ The project is built with Java 21 and uses Gradle as the build system.
 | `./gradlew spotlessApply` | Apply code formatting |
 | `./gradlew clean build` | Clean and rebuild |
 
-> **Important**: Always run `./gradlew spotlessApply` after making code changes to ensure consistent formatting.
+> **Important**: Always run `./gradlew spotlessApply` after making Java/Gradle code changes to ensure consistent formatting.
+
+### UI (ui-next)
+
+| Command | Description |
+|---------|-------------|
+| `cd ui-next && npx prettier --write .` | Auto-fix all formatting issues |
+| `cd ui-next && npm run prettier:check` | Check formatting without modifying files |
+
+> **Important**: Always run `npx prettier --write .` from the `ui-next` directory after making any UI changes to ensure the Prettier check passes in CI.
 
 ## Code Style
 

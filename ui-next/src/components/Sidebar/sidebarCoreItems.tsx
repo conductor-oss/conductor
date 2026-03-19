@@ -21,6 +21,8 @@ import {
   EVENT_HANDLERS_URL,
   NEW_TASK_DEF_URL,
   RUN_WORKFLOW_URL,
+  SCHEDULER_DEFINITION_URL,
+  SCHEDULER_EXECUTION_URL,
   TASK_DEF_URL,
   TASK_QUEUE_URL,
   WORKFLOW_DEFINITION_URL,
@@ -48,12 +50,14 @@ const CORE_SIDEBAR_POSITIONS = {
   EXECUTIONS: {
     workflowExeItem: 100,
     queueMonitorItem: 200,
+    schedulerExeItem: 300,
   },
   // Definitions submenu children
   DEFINITIONS: {
     workflowDefItem: 100,
     taskDefItem: 200,
     eventHandlerDefItem: 300,
+    schedulerDefItem: 400,
   },
   // Help submenu children
   HELP: {
@@ -106,6 +110,16 @@ export function getCoreSidebarItems(open: boolean): MenuItemType[] {
           hotkeys: "",
           hidden: false,
           position: E.queueMonitorItem,
+        },
+        {
+          id: "schedulerExeItem",
+          title: "Scheduler",
+          icon: null,
+          linkTo: SCHEDULER_EXECUTION_URL,
+          shortcuts: [],
+          hotkeys: "",
+          hidden: false,
+          position: E.schedulerExeItem,
         },
       ],
     },
@@ -166,6 +180,20 @@ export function getCoreSidebarItems(open: boolean): MenuItemType[] {
           hotkeys: "",
           hidden: false,
           position: D.eventHandlerDefItem,
+        },
+        {
+          id: "schedulerDefItem",
+          title: "Scheduler",
+          icon: null,
+          linkTo: SCHEDULER_DEFINITION_URL.BASE,
+          activeRoutes: [
+            SCHEDULER_DEFINITION_URL.NEW,
+            SCHEDULER_DEFINITION_URL.NAME,
+          ],
+          shortcuts: [],
+          hotkeys: "",
+          hidden: false,
+          position: D.schedulerDefItem,
         },
       ],
     },

@@ -53,10 +53,8 @@ public class SchedulerResourceTest {
         saved.setCreateTime(System.currentTimeMillis());
         when(schedulerService.saveSchedule(input)).thenReturn(saved);
 
-        WorkflowSchedule result = resource.saveSchedule(input);
+        resource.saveSchedule(input);
 
-        assertNotNull(result);
-        assertEquals("daily-report", result.getName());
         verify(schedulerService).saveSchedule(input);
     }
 
@@ -171,23 +169,12 @@ public class SchedulerResourceTest {
     // -------------------------------------------------------------------------
 
     @Test
-    public void testPauseSchedule_noReason() {
+    public void testPauseSchedule() {
         doNothing().when(schedulerService).pauseSchedule("s1");
 
-        resource.pauseSchedule("s1", null);
+        resource.pauseSchedule("s1");
 
         verify(schedulerService).pauseSchedule("s1");
-        verify(schedulerService, never()).pauseSchedule(anyString(), anyString());
-    }
-
-    @Test
-    public void testPauseSchedule_withReason() {
-        doNothing().when(schedulerService).pauseSchedule("s1", "maintenance window");
-
-        resource.pauseSchedule("s1", "maintenance window");
-
-        verify(schedulerService).pauseSchedule("s1", "maintenance window");
-        verify(schedulerService, never()).pauseSchedule(eq("s1"));
     }
 
     // -------------------------------------------------------------------------
@@ -253,13 +240,11 @@ public class SchedulerResourceTest {
         // Even if a client sends orgId in the payload, the service (not the resource)
         // is responsible for enforcing DEFAULT_ORG_ID. The resource just passes through.
         WorkflowSchedule schedule = buildSchedule("s1");
+        when(schedulerService.saveSchedule(any())).thenReturn(buildSchedule("s1"));
 
-        WorkflowSchedule returned = buildSchedule("s1");
-        when(schedulerService.saveSchedule(any())).thenReturn(returned);
+        resource.saveSchedule(schedule);
 
-        WorkflowSchedule result = resource.saveSchedule(schedule);
-
-        // Resource returns whatever the service returns — enforcement is in the service
+        // Resource delegates to service — orgId enforcement is in the service
     }
 
     // -------------------------------------------------------------------------

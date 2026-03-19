@@ -90,7 +90,7 @@ public abstract class AbstractSchedulerAutoConfigurationSmokeTest {
         }
     }
 
-    private ApplicationContextRunner baseRunner() {
+    protected ApplicationContextRunner baseRunner() {
         return new ApplicationContextRunner()
                 .withConfiguration(
                         AutoConfigurations.of(

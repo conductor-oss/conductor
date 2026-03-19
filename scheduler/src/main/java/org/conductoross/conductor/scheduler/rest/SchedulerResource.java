@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.scheduler.rest;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.conductoross.conductor.scheduler.model.WorkflowSchedule;
@@ -23,12 +24,13 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.netflix.conductor.common.run.SearchResult;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,13 +40,13 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 /**
  * REST API for workflow scheduling.
  *
- * <p>OSS Conductor uses a single-tenant schema. Orkes Conductor injects multi-tenancy (orgId)
- * within their DAO implementation layer.
+ * <p>API surface is kept compatible with Orkes Conductor's SchedulerResource (minus tagging and
+ * RBAC). OSS Conductor uses a single-tenant schema.
  */
 @RestController
-@ConditionalOnBean(SchedulerService.class)
 @RequestMapping("/api/scheduler")
 @Tag(name = "Scheduler", description = "Workflow scheduling API")
+@ConditionalOnBean(SchedulerService.class)
 public class SchedulerResource {
 
     private final SchedulerService schedulerService;
@@ -58,10 +60,10 @@ public class SchedulerResource {
     // -------------------------------------------------------------------------
 
     @PostMapping(value = "/schedules", produces = APPLICATION_JSON_VALUE)
-    @ResponseStatus(HttpStatus.CREATED)
+    @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Create or update a workflow schedule")
-    public WorkflowSchedule saveSchedule(@RequestBody WorkflowSchedule schedule) {
-        return schedulerService.saveSchedule(schedule);
+    public void saveSchedule(@RequestBody WorkflowSchedule schedule) {
+        schedulerService.saveSchedule(schedule);
     }
 
     @GetMapping(value = "/schedules/{name}", produces = APPLICATION_JSON_VALUE)
@@ -71,7 +73,8 @@ public class SchedulerResource {
     }
 
     @GetMapping(value = "/schedules", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "List all schedules")
+    @Operation(
+            summary = "Get all existing workflow schedules and optionally filter by workflow name")
     public List<WorkflowSchedule> getAllSchedules(
             @RequestParam(value = "workflowName", required = false) String workflowName) {
         if (workflowName != null && !workflowName.isBlank()) {
@@ -80,39 +83,67 @@ public class SchedulerResource {
         return schedulerService.getAllSchedules();
     }
 
+    @GetMapping(value = "/schedules/search", produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Search scheduler definitions with pagination support")
+    public SearchResult<WorkflowSchedule> searchSchedules(
+            @RequestParam(value = "start", defaultValue = "0") int start,
+            @RequestParam(value = "size", defaultValue = "100") int size,
+            @RequestParam(value = "sort", required = false) String sort,
+            @RequestParam(value = "workflowName", required = false) String workflowName,
+            @RequestParam(value = "name", required = false) String scheduleName,
+            @RequestParam(value = "paused", required = false) Boolean paused,
+            @RequestParam(value = "freeText", defaultValue = "*") String freeText) {
+        List<String> sortOptions = sort != null ? Arrays.asList(sort.split(",")) : List.of();
+        return schedulerService.searchSchedules(
+                workflowName, scheduleName, paused, freeText, start, size, sortOptions);
+    }
+
     @DeleteMapping("/schedules/{name}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Delete a schedule")
     public void deleteSchedule(@PathVariable("name") String name) {
         schedulerService.deleteSchedule(name);
     }
 
     // -------------------------------------------------------------------------
-    // Pause / resume
+    // Pause / resume  (GET to match Orkes API)
     // -------------------------------------------------------------------------
 
-    @PutMapping("/schedules/{name}/pause")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @GetMapping("/schedules/{name}/pause")
+    @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Pause a schedule")
-    public void pauseSchedule(
-            @PathVariable("name") String name,
-            @RequestParam(value = "reason", required = false) String reason) {
-        if (reason != null) {
-            schedulerService.pauseSchedule(name, reason);
-        } else {
-            schedulerService.pauseSchedule(name);
-        }
+    public void pauseSchedule(@PathVariable("name") String name) {
+        schedulerService.pauseSchedule(name);
     }
 
-    @PutMapping("/schedules/{name}/resume")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @GetMapping("/schedules/{name}/resume")
+    @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Resume a paused schedule")
     public void resumeSchedule(@PathVariable("name") String name) {
         schedulerService.resumeSchedule(name);
     }
 
     // -------------------------------------------------------------------------
-    // Execution history
+    // Execution search
+    // -------------------------------------------------------------------------
+
+    @GetMapping(value = "/search/executions", produces = APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Search for workflow schedule executions",
+            description =
+                    "use sort options as sort=<field>:ASC|DESC e.g. sort=startTime:DESC. "
+                            + "If order is not specified, defaults to DESC.")
+    public SearchResult<WorkflowScheduleExecution> searchExecutions(
+            @RequestParam(value = "start", defaultValue = "0") int start,
+            @RequestParam(value = "size", defaultValue = "100") int size,
+            @RequestParam(value = "sort", required = false) String sort,
+            @RequestParam(value = "freeText", defaultValue = "*") String freeText,
+            @RequestParam(value = "query", required = false) String query) {
+        return schedulerService.searchExecutions(start, size, sort, query, freeText);
+    }
+
+    // -------------------------------------------------------------------------
+    // Execution history (per-schedule)
     // -------------------------------------------------------------------------
 
     @GetMapping(value = "/schedules/{name}/executions", produces = APPLICATION_JSON_VALUE)
@@ -127,8 +158,19 @@ public class SchedulerResource {
     // Next execution time preview
     // -------------------------------------------------------------------------
 
+    @GetMapping(value = "/nextFewSchedules", produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get list of the next few execution times for a cron expression")
+    public List<Long> getNextFewSchedules(
+            @RequestParam(value = "cronExpression") String cronExpression,
+            @RequestParam(value = "scheduleStartTime", required = false) Long scheduleStartTime,
+            @RequestParam(value = "scheduleEndTime", required = false) Long scheduleEndTime,
+            @RequestParam(value = "limit", defaultValue = "3") int limit) {
+        return schedulerService.getListOfNextSchedules(
+                cronExpression, scheduleStartTime, scheduleEndTime, Math.min(5, limit));
+    }
+
     @GetMapping(value = "/schedules/{name}/next-execution-times", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "Preview the next N execution times for a schedule (epoch millis)")
+    @Operation(summary = "Preview the next N execution times for a named schedule (epoch millis)")
     public List<Long> getNextExecutionTimes(
             @PathVariable("name") String name,
             @RequestParam(value = "count", defaultValue = "5") int count) {

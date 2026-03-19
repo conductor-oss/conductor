@@ -46,6 +46,7 @@ public class StartWorkflowInput {
         this.externalInputPayloadStoragePath =
                 startWorkflowRequest.getExternalInputPayloadStoragePath();
         this.taskToDomain = startWorkflowRequest.getTaskToDomain();
+        this.event = startWorkflowRequest.getEvent();
     }
 
     public String getName() {

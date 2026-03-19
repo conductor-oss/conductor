@@ -94,12 +94,27 @@ public interface SchedulerDAO {
     List<String> getPendingExecutionRecordIds();
 
     /**
+     * Returns all execution records currently in the POLLED state, with full data. Prefer this over
+     * {@link #getPendingExecutionRecordIds()} + {@link #readExecutionRecord(String)} to avoid N+1
+     * queries during stale-record cleanup.
+     */
+    List<WorkflowScheduleExecution> getPendingExecutionRecords();
+
+    /**
      * Returns recent execution records for a given schedule, ordered by execution time descending.
      *
      * @param scheduleName schedule to query
      * @param limit maximum number of records to return
      */
     List<WorkflowScheduleExecution> getExecutionRecords(String scheduleName, int limit);
+
+    /**
+     * Returns recent execution records across all schedules, ordered by execution time descending.
+     * Used to back the cross-schedule search endpoint consumed by the UI.
+     *
+     * @param limit maximum number of records to return
+     */
+    List<WorkflowScheduleExecution> getAllExecutionRecords(int limit);
 
     // -------------------------------------------------------------------------
     // Next-run time management
