@@ -63,11 +63,7 @@ public abstract class AbstractSchedulerServiceIntegrationTest {
 
     @Before
     public final void setUpService() throws Exception {
-        try (Connection conn = dataSource().getConnection()) {
-            conn.prepareStatement("DELETE FROM scheduler_execution").executeUpdate();
-            conn.prepareStatement("DELETE FROM scheduler").executeUpdate();
-            conn.prepareStatement("DELETE FROM workflow_scheduled_executions").executeUpdate();
-        }
+        truncateStore();
         workflowService = mock(WorkflowService.class);
         SchedulerProperties props = new SchedulerProperties();
         props.setEnabled(false);
@@ -75,6 +71,13 @@ public abstract class AbstractSchedulerServiceIntegrationTest {
         props.setArchivalMaxRecordThreshold(5);
         props.setPollBatchSize(10);
         service = new SchedulerService(dao(), workflowService, props);
+    }
+
+    protected void truncateStore() throws Exception {
+        try (Connection conn = dataSource().getConnection()) {
+            conn.prepareStatement("DELETE FROM scheduler_execution").executeUpdate();
+            conn.prepareStatement("DELETE FROM scheduler").executeUpdate();
+        }
     }
 
     // =========================================================================

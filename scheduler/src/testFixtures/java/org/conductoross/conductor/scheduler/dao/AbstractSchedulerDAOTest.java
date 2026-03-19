@@ -71,10 +71,18 @@ public abstract class AbstractSchedulerDAOTest {
 
     @Before
     public final void setUp() throws Exception {
+        truncateStore();
+    }
+
+    /**
+     * Clears all scheduler data between tests. SQL subclasses rely on the default JDBC
+     * implementation. Non-JDBC subclasses (e.g. Redis) override this method directly and must
+     * also override {@link #dataSource()} to throw {@link UnsupportedOperationException}.
+     */
+    protected void truncateStore() throws Exception {
         try (Connection conn = dataSource().getConnection()) {
             conn.prepareStatement("DELETE FROM scheduler_execution").executeUpdate();
             conn.prepareStatement("DELETE FROM scheduler").executeUpdate();
-            conn.prepareStatement("DELETE FROM workflow_scheduled_executions").executeUpdate();
         }
     }
 
