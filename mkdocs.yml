@@ -44,6 +44,7 @@ nav:
     - Event-Driven Recipes: devguide/cookbook/event-driven.md
     - AI & LLM Recipes: devguide/cookbook/ai-llm.md
     - Dynamic Workflows in Code: devguide/cookbook/dynamic-workflows.md
+    - Scheduled Workflows: devguide/cookbook/scheduled-workflows.md
   - AI Cookbook:
     - devguide/ai/index.md
     - Build Your First AI Agent: devguide/ai/first-ai-agent.md
@@ -75,6 +76,7 @@ nav:
       - documentation/api/bulk.md
       - documentation/api/eventhandlers.md
       - documentation/api/taskdomains.md
+      - Scheduler API: documentation/api/scheduler.md
     - Workflow Definition:
       - documentation/configuration/workflowdef/index.md
     - System Tasks:
@@ -101,6 +103,7 @@ nav:
       - documentation/configuration/workflowdef/operators/set-variable-task.md
       - documentation/configuration/workflowdef/operators/terminate-task.md
     - Task Definition: documentation/configuration/taskdef.md
+    - Scheduler: documentation/configuration/scheduler.md
     - Event Handlers: documentation/configuration/eventhandlers.md
     - Configuration: documentation/configuration/appconf.md
     - Metrics:

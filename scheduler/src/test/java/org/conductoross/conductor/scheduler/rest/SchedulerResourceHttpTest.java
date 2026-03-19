@@ -183,8 +183,7 @@ public class SchedulerResourceHttpTest {
     public void testDeleteSchedule_exists_returns204() throws Exception {
         doNothing().when(schedulerService).deleteSchedule("old-schedule");
 
-        mockMvc.perform(delete("/api/scheduler/schedules/old-schedule"))
-                .andExpect(status().isOk());
+        mockMvc.perform(delete("/api/scheduler/schedules/old-schedule")).andExpect(status().isOk());
     }
 
     @Test
@@ -255,8 +254,7 @@ public class SchedulerResourceHttpTest {
     public void testResumeSchedule_exists_returns204() throws Exception {
         doNothing().when(schedulerService).resumeSchedule("s1");
 
-        mockMvc.perform(get("/api/scheduler/schedules/s1/resume"))
-                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/scheduler/schedules/s1/resume")).andExpect(status().isOk());
     }
 
     @Test
