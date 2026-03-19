@@ -186,7 +186,10 @@ export function getCoreSidebarItems(open: boolean): MenuItemType[] {
           title: "Scheduler",
           icon: null,
           linkTo: SCHEDULER_DEFINITION_URL.BASE,
-          activeRoutes: [SCHEDULER_DEFINITION_URL.NEW, SCHEDULER_DEFINITION_URL.NAME],
+          activeRoutes: [
+            SCHEDULER_DEFINITION_URL.NEW,
+            SCHEDULER_DEFINITION_URL.NAME,
+          ],
           shortcuts: [],
           hotkeys: "",
           hidden: false,
