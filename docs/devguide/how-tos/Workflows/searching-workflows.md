@@ -1,3 +1,6 @@
+---
+description: "Searching Workflows — find Conductor workflow executions by name, status, time range, or task parameters in the UI."
+---
 # Searching Workflows
 
 The Conductor UI provides a convenient interface for searching workflow executions. There are two modes of searching:
