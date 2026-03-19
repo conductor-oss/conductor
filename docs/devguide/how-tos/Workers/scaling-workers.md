@@ -137,4 +137,4 @@ This limits the task to 100 executions per 60-second window across all workers.
 
 ### Domain isolation
 
-Use [task-to-domain](../../api/taskdomains.md) to route tasks to specific worker pools. This prevents noisy neighbors — a high-volume workflow won't starve workers serving a latency-sensitive one.
+Use [task-to-domain](../../../documentation/api/taskdomains.md) to route tasks to specific worker pools. This prevents noisy neighbors — a high-volume workflow won't starve workers serving a latency-sensitive one.

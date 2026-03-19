@@ -1,3 +1,6 @@
+---
+description: "Viewing Workflow Executions — inspect Conductor workflow runs with visual diagrams, task timelines, and input/output data."
+---
 # Viewing Workflow Executions
 
 The Conductor UI provides a convenient interface for viewing workflow executions as visual diagrams. You can view workflow executions:

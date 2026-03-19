@@ -1,3 +1,6 @@
+---
+description: "Guided Tutorial — learn Conductor step by step with hands-on labs covering task workers, definitions, and workflows."
+---
 # Guided Tutorial
 
 ## High Level Steps

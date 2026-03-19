@@ -1,3 +1,6 @@
+---
+description: "Debugging Workflows — identify and resolve failed Conductor workflow executions using the UI diagram and task details."
+---
 # Debugging Workflows
 
 The [workflow execution views](viewing-workflow-executions.md) in the Conductor UI are useful for debugging workflow issues. Learn how to debug failed executions and rerun them. 
@@ -34,7 +37,7 @@ Here are the recovery options:
 | Retry - From failed task | Retry the workflow from the last failed task.           |
 
 !!! Note
-    You can set tasks to be retried automatically in case of transient failures. Refer to [Task Definition](../../configuration/taskdef.md) for more information.
+    You can set tasks to be retried automatically in case of transient failures. Refer to [Task Definition](../../../documentation/configuration/taskdef.md) for more information.
 
 ### Using Conductor UI
 
