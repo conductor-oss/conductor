@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.redis.jedis;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -88,6 +89,17 @@ public class JedisProxy {
 
     public long zcount(String key, double min, double max) {
         return jedisCommands.zcount(key, min, max);
+    }
+
+    public Double zscore(String key, String member) {
+        LOGGER.trace("zscore {} {}", key, member);
+        return jedisCommands.zscore(key, member);
+    }
+
+    public List<String> zrevrangeByScore(
+            String key, String max, String min, int offset, int count) {
+        LOGGER.trace("zrevrangeByScore {} {} {} {} {}", key, max, min, offset, count);
+        return new ArrayList<>(jedisCommands.zrevrangeByScore(key, max, min, offset, count));
     }
 
     public String set(String key, String value) {
