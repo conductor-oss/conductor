@@ -593,8 +593,8 @@ public abstract class AbstractSchedulerDAOTest {
     /**
      * Verifies that {@code findAllSchedules(workflowName)} is case-sensitive. The exact workflow
      * name string must match; mixed-case variants must return no results. This is consistent with
-     * Postgres and SQLite behavior. MySQL requires {@code COLLATE utf8mb4_bin} on the
-     * {@code workflow_name} column (see the MySQL migration script).
+     * Postgres and SQLite behavior. MySQL requires {@code COLLATE utf8mb4_bin} on the {@code
+     * workflow_name} column (see the MySQL migration script).
      */
     @Test
     public void testFindAllSchedules_caseSensitive() {
@@ -613,8 +613,8 @@ public abstract class AbstractSchedulerDAOTest {
     // =========================================================================
 
     /**
-     * Verifies that {@code findAllByNames} handles a large input set (50 existing + 50
-     * non-existent names) correctly and returns only the rows that exist.
+     * Verifies that {@code findAllByNames} handles a large input set (50 existing + 50 non-existent
+     * names) correctly and returns only the rows that exist.
      */
     @Test
     public void testFindAllByNames_largeSet() {
