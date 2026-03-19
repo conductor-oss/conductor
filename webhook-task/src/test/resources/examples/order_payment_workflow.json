@@ -1,0 +1,65 @@
+{
+  "name": "order_payment_workflow",
+  "description": "Order processing workflow that pauses and waits for a payment provider webhook before fulfilling the order. Demonstrates WAIT_FOR_WEBHOOK task type.",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "create_order",
+      "taskReferenceName": "createOrder",
+      "type": "SIMPLE",
+      "inputParameters": {
+        "customerId": "${workflow.input.customerId}",
+        "items": "${workflow.input.items}"
+      }
+    },
+    {
+      "name": "initiate_payment",
+      "taskReferenceName": "initiatePayment",
+      "type": "HTTP",
+      "inputParameters": {
+        "http_request": {
+          "uri": "${workflow.input.paymentGatewayUrl}/charges",
+          "method": "POST",
+          "body": {
+            "orderId": "${createOrder.output.orderId}",
+            "amount": "${createOrder.output.totalAmount}",
+            "currency": "USD",
+            "callbackWebhookId": "${workflow.input.webhookId}"
+          }
+        }
+      }
+    },
+    {
+      "name": "wait_for_payment",
+      "taskReferenceName": "waitForPayment",
+      "type": "WAIT_FOR_WEBHOOK",
+      "inputParameters": {
+        "matches": {
+          "$['event']['type']": "payment.completed",
+          "$['data']['orderId']": "${createOrder.output.orderId}"
+        }
+      }
+    },
+    {
+      "name": "fulfill_order",
+      "taskReferenceName": "fulfillOrder",
+      "type": "SIMPLE",
+      "inputParameters": {
+        "orderId": "${createOrder.output.orderId}",
+        "paymentId": "${waitForPayment.output.payload.data.paymentId}"
+      }
+    }
+  ],
+  "inputParameters": [
+    "customerId",
+    "items",
+    "paymentGatewayUrl",
+    "webhookId"
+  ],
+  "outputParameters": {
+    "orderId": "${createOrder.output.orderId}",
+    "paymentId": "${waitForPayment.output.payload.data.paymentId}",
+    "fulfillmentStatus": "${fulfillOrder.output.status}"
+  },
+  "schemaVersion": 2
+}
