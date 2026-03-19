@@ -93,7 +93,7 @@ CREATE INDEX IF NOT EXISTS scheduler_execution_sched_time_idx
 `SqliteSchedulerConfiguration` matches the existing Postgres/MySQL conditional pattern exactly:
 ```java
 @ConditionalOnExpression(
-    "'${conductor.db.type:}' == 'memory' && '${conductor.scheduler.enabled:false}' == 'true'"
+    "'${conductor.db.type:}' == 'sqlite' && '${conductor.scheduler.enabled:false}' == 'true'"
 )
 ```
 
@@ -321,16 +321,20 @@ Contract tests for the `SchedulerDAO` interface. Each persistence module subclas
 - `setNextRunTimeInEpoch` / `getNextRunTimeInEpoch` round-trip
 - Archival/cleanup behavior
 
-The abstract `dataSource()` method and JDBC-based `setUp()` teardown work for SQL modules but not Redis. The base class will be updated to extract teardown into a protected `void truncateStore(DataSource ds)` default implementation, with an override hook:
+**Prerequisite refactoring (must complete before implementing Redis module):** The current base classes call `dataSource().getConnection()` directly in `setUp()`. This must be refactored to a `protected void truncateStore() throws Exception` hook before the Redis module can subclass them:
+
 ```java
+// New default implementation (JDBC path — SQL subclasses inherit as-is):
 protected void truncateStore() throws Exception {
     try (Connection conn = dataSource().getConnection()) {
         conn.prepareStatement("DELETE FROM scheduler_execution").executeUpdate();
         conn.prepareStatement("DELETE FROM scheduler").executeUpdate();
     }
 }
+// setUp() calls truncateStore() instead of calling dataSource() directly.
 ```
-SQL subclasses inherit this as-is. Redis subclass overrides `truncateStore()` with a `FLUSHDB` command and overrides `dataSource()` to return null (or throws `UnsupportedOperationException`).
+
+SQL subclasses require no changes. Redis subclass overrides `truncateStore()` with a FLUSHDB call and overrides `dataSource()` to throw `UnsupportedOperationException`. This refactoring applies to both `AbstractSchedulerDAOTest` and `AbstractSchedulerServiceIntegrationTest`.
 
 #### `AbstractSchedulerServiceIntegrationTest`
 
@@ -342,8 +346,8 @@ Behavior tests for `SchedulerService` running against a real DAO. Same teardown 
 - `computeNextRunTime` with start/end time bounds
 - `pollAndExecuteSchedules` fires due schedules, skips paused, records failure
 - Catchup enabled vs disabled behavior
-- DST spring-forward and fall-back edge cases
-- Slow polling (poll interval > cron interval)
+- DST spring-forward and fall-back edge cases (future work — not yet in current testFixtures)
+- Slow polling (poll interval > cron interval) (future work)
 
 ### Concrete subclasses per module
 
