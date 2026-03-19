@@ -13,8 +13,6 @@
  */
 package org.conductoross.conductor.scheduler.redis.service;
 
-import javax.sql.DataSource;
-
 import org.conductoross.conductor.scheduler.dao.SchedulerDAO;
 import org.conductoross.conductor.scheduler.redis.dao.RedisSchedulerDAO;
 import org.conductoross.conductor.scheduler.service.AbstractSchedulerServiceIntegrationTest;
