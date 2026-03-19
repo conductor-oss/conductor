@@ -65,6 +65,13 @@ function pluginItemToMenuItem(item: SidebarItemRegistration): MenuItemType {
   };
 }
 
+/** Replace an existing item with the same id, or append if not found. */
+function upsertById(items: MenuItemType[], item: MenuItemType) {
+  const idx = items.findIndex((i) => i.id === item.id);
+  if (idx !== -1) items[idx] = item;
+  else items.push(item);
+}
+
 /** Sort items by position (undefined last). Uses Number() so comparison is always numeric. */
 function sortItemsByPosition(items: MenuItemType[]): MenuItemType[] {
   return [...items].sort(
@@ -140,12 +147,10 @@ function mergePluginSidebarItems(
     for (const item of items) {
       const menuItem = pluginItemToMenuItem(item);
       if (targetId === "root") {
-        result.push(menuItem);
+        upsertById(result, menuItem);
       } else {
         const targetMenu = result.find((i) => i.id === targetId);
-        if (targetMenu && targetMenu.items) {
-          targetMenu.items.push(menuItem);
-        }
+        if (targetMenu?.items) upsertById(targetMenu.items, menuItem);
       }
     }
   }
