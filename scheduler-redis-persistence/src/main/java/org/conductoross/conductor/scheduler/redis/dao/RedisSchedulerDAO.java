@@ -51,6 +51,10 @@ public class RedisSchedulerDAO implements SchedulerDAO {
     static final String KEY_SCHEDULES = "conductor_scheduler:schedules";
     static final String KEY_NEXT_RUN = "conductor_scheduler:next_run";
     static final String KEY_PENDING_EXECS = "conductor_scheduler:pending_execs";
+    // Tracks every schedule name that has had at least one execution record saved.
+    // Used by getAllExecutionRecords to enumerate per-schedule ZSETs without relying
+    // on the schedules hash (executions may outlive their schedule definition).
+    static final String KEY_EXEC_SCHED_NAMES = "conductor_scheduler:exec_sched_names";
 
     private static String keyByWorkflow(String workflowName) {
         return "conductor_scheduler:by_workflow:" + workflowName;
@@ -186,6 +190,7 @@ public class RedisSchedulerDAO implements SchedulerDAO {
                 keyExecBySched(execution.getScheduleName()),
                 (double) score,
                 execution.getExecutionId());
+        jedis.sadd(KEY_EXEC_SCHED_NAMES, execution.getScheduleName());
         if (execution.getState() == WorkflowScheduleExecution.ExecutionState.POLLED) {
             jedis.sadd(KEY_PENDING_EXECS, execution.getExecutionId());
         } else {
@@ -248,10 +253,10 @@ public class RedisSchedulerDAO implements SchedulerDAO {
 
     @Override
     public List<WorkflowScheduleExecution> getAllExecutionRecords(int limit) {
-        List<WorkflowSchedule> schedules = getAllSchedules();
+        Set<String> scheduleNames = jedis.smembers(KEY_EXEC_SCHED_NAMES);
         List<WorkflowScheduleExecution> all = new ArrayList<>();
-        for (WorkflowSchedule schedule : schedules) {
-            all.addAll(getExecutionRecords(schedule.getName(), limit));
+        for (String scheduleName : scheduleNames) {
+            all.addAll(getExecutionRecords(scheduleName, limit));
         }
         all.sort(
                 (a, b) -> {
