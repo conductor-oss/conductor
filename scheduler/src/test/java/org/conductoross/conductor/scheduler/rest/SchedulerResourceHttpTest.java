@@ -26,8 +26,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
+import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.core.exception.NotFoundException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,6 +45,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * {@link SchedulerService} calls are mocked — no database is needed.
  *
  * <p>Uses standalone MockMvc setup with a local exception handler that maps:
+ *
  * <ul>
  *   <li>{@link NotFoundException} → 404
  *   <li>{@link IllegalArgumentException} → 400
@@ -120,8 +121,7 @@ public class SchedulerResourceHttpTest {
 
         when(schedulerService.saveSchedule(any()))
                 .thenThrow(
-                        new IllegalArgumentException(
-                                "Invalid cron expression 'not-a-valid-cron'"));
+                        new IllegalArgumentException("Invalid cron expression 'not-a-valid-cron'"));
 
         mockMvc.perform(
                         post("/api/scheduler/schedules")
@@ -149,8 +149,7 @@ public class SchedulerResourceHttpTest {
         when(schedulerService.getSchedule("ghost"))
                 .thenThrow(new NotFoundException("Schedule not found: ghost"));
 
-        mockMvc.perform(get("/api/scheduler/schedules/ghost"))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/scheduler/schedules/ghost")).andExpect(status().isNotFound());
     }
 
     // =========================================================================
@@ -172,8 +171,7 @@ public class SchedulerResourceHttpTest {
         when(schedulerService.getSchedulesForWorkflow("report-wf"))
                 .thenReturn(List.of(buildSchedule("nightly")));
 
-        mockMvc.perform(
-                        get("/api/scheduler/schedules").param("workflowName", "report-wf"))
+        mockMvc.perform(get("/api/scheduler/schedules").param("workflowName", "report-wf"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1));
     }
@@ -196,8 +194,7 @@ public class SchedulerResourceHttpTest {
                 .when(schedulerService)
                 .deleteSchedule("ghost");
 
-        mockMvc.perform(delete("/api/scheduler/schedules/ghost"))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(delete("/api/scheduler/schedules/ghost")).andExpect(status().isNotFound());
     }
 
     // =========================================================================
@@ -238,8 +235,7 @@ public class SchedulerResourceHttpTest {
     public void testPauseSchedule_exists_returns204() throws Exception {
         doNothing().when(schedulerService).pauseSchedule("s1");
 
-        mockMvc.perform(put("/api/scheduler/schedules/s1/pause"))
-                .andExpect(status().isNoContent());
+        mockMvc.perform(put("/api/scheduler/schedules/s1/pause")).andExpect(status().isNoContent());
     }
 
     @Test

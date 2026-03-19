@@ -36,18 +36,20 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>These tests catch bugs that the DAO-level and service-level integration tests cannot, because
  * those tests bypass auto-configuration and wire beans manually:
+ *
  * <ul>
  *   <li>Typos in the {@code @ConditionalOnExpression} string (e.g. {@code 'postgresql'} instead of
  *       {@code 'postgres'})
  *   <li>A missing or wrong entry in {@code META-INF/spring/...AutoConfiguration.imports}
  * </ul>
  *
- * <p>Note: {@link SchedulerService} and {@link SchedulerResource} wiring via
- * {@link WorkflowSchedulerConfiguration} is not tested here because {@code @ConditionalOnBean}
- * ordering is non-trivial with {@code ApplicationContextRunner} and that wiring is already
- * covered end-to-end by {@code AbstractSchedulerServiceIntegrationTest}.
+ * <p>Note: {@link SchedulerService} and {@link SchedulerResource} wiring via {@link
+ * WorkflowSchedulerConfiguration} is not tested here because {@code @ConditionalOnBean} ordering is
+ * non-trivial with {@code ApplicationContextRunner} and that wiring is already covered end-to-end
+ * by {@code AbstractSchedulerServiceIntegrationTest}.
  *
  * <p>Subclasses supply:
+ *
  * <ul>
  *   <li>{@link #dbTypeValue()} — the exact string to use for {@code conductor.db.type}
  *   <li>{@link #datasourceUrl()} — a JDBC URL suitable for the backend (in-memory for SQLite;
@@ -92,8 +94,7 @@ public abstract class AbstractSchedulerAutoConfigurationSmokeTest {
         return new ApplicationContextRunner()
                 .withConfiguration(
                         AutoConfigurations.of(
-                                DataSourceAutoConfiguration.class,
-                                persistenceAutoConfigClass()))
+                                DataSourceAutoConfiguration.class, persistenceAutoConfigClass()))
                 .withUserConfiguration(SharedTestBeans.class)
                 .withPropertyValues(
                         "spring.datasource.url=" + datasourceUrl(),
@@ -108,16 +109,15 @@ public abstract class AbstractSchedulerAutoConfigurationSmokeTest {
     // -------------------------------------------------------------------------
 
     /**
-     * When both {@code conductor.db.type} and {@code conductor.scheduler.enabled=true} are set,
-     * the persistence auto-configuration registers exactly one {@link SchedulerDAO} of the
-     * expected concrete type.
+     * When both {@code conductor.db.type} and {@code conductor.scheduler.enabled=true} are set, the
+     * persistence auto-configuration registers exactly one {@link SchedulerDAO} of the expected
+     * concrete type.
      */
     @Test
     public void testSchedulerDAO_registeredWhenBothPropertiesSet() {
         baseRunner()
                 .withPropertyValues(
-                        "conductor.db.type=" + dbTypeValue(),
-                        "conductor.scheduler.enabled=true")
+                        "conductor.db.type=" + dbTypeValue(), "conductor.scheduler.enabled=true")
                 .run(
                         ctx -> {
                             assertThat(ctx).hasSingleBean(SchedulerDAO.class);
@@ -142,15 +142,13 @@ public abstract class AbstractSchedulerAutoConfigurationSmokeTest {
     }
 
     /**
-     * When {@code conductor.scheduler.enabled=false}, no {@link SchedulerDAO} should be
-     * registered.
+     * When {@code conductor.scheduler.enabled=false}, no {@link SchedulerDAO} should be registered.
      */
     @Test
     public void testNoBeansRegistered_whenSchedulerEnabledFalse() {
         baseRunner()
                 .withPropertyValues(
-                        "conductor.db.type=" + dbTypeValue(),
-                        "conductor.scheduler.enabled=false")
+                        "conductor.db.type=" + dbTypeValue(), "conductor.scheduler.enabled=false")
                 .run(ctx -> assertThat(ctx).doesNotHaveBean(SchedulerDAO.class));
     }
 

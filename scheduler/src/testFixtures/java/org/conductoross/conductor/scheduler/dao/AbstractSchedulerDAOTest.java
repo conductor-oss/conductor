@@ -39,8 +39,8 @@ import static org.junit.Assert.*;
  * Shared contract test suite for all {@link SchedulerDAO} implementations.
  *
  * <p>Every persistence module (Postgres, MySQL, SQLite) subclasses this and provides only the
- * Spring wiring ({@link #dao()} and {@link #dataSource()}). Adding a test here automatically
- * covers all three backends.
+ * Spring wiring ({@link #dao()} and {@link #dataSource()}). Adding a test here automatically covers
+ * all three backends.
  *
  * <p><b>Test categories:</b>
  *
@@ -200,9 +200,9 @@ public abstract class AbstractSchedulerDAOTest {
     // =========================================================================
 
     /**
-     * Verifies that every field on {@link WorkflowSchedule} survives the JSON blob round-trip.
-     * The existing basic tests only check name/cron/zone; this covers the remaining fields that
-     * could silently drop if the model or serialization changes.
+     * Verifies that every field on {@link WorkflowSchedule} survives the JSON blob round-trip. The
+     * existing basic tests only check name/cron/zone; this covers the remaining fields that could
+     * silently drop if the model or serialization changes.
      */
     @Test
     public void testScheduleJsonRoundTrip_allFields() {
@@ -239,9 +239,9 @@ public abstract class AbstractSchedulerDAOTest {
     }
 
     /**
-     * Verifies that Orkes-specific extension fields (stored via {@code @JsonAnySetter}) survive
-     * the round-trip. This is the compatibility mechanism that allows Orkes Conductor to add
-     * fields (e.g. orgId, tags) without breaking the OSS model.
+     * Verifies that Orkes-specific extension fields (stored via {@code @JsonAnySetter}) survive the
+     * round-trip. This is the compatibility mechanism that allows Orkes Conductor to add fields
+     * (e.g. orgId, tags) without breaking the OSS model.
      */
     @Test
     public void testScheduleExtensionFields_roundTrip() {
@@ -274,7 +274,8 @@ public abstract class AbstractSchedulerDAOTest {
         exec.setWorkflowId("wf-instance-456");
         exec.setWorkflowName("exec-rt-wf");
         exec.setReason("Something went wrong");
-        exec.setStackTrace("java.lang.RuntimeException: Something went wrong\n\tat Foo.bar(Foo.java:42)");
+        exec.setStackTrace(
+                "java.lang.RuntimeException: Something went wrong\n\tat Foo.bar(Foo.java:42)");
         exec.setState(WorkflowScheduleExecution.ExecutionState.FAILED);
         exec.setStartWorkflowRequest(req);
         dao().saveExecutionRecord(exec);
@@ -347,7 +348,8 @@ public abstract class AbstractSchedulerDAOTest {
 
         exec.setState(WorkflowScheduleExecution.ExecutionState.FAILED);
         exec.setReason("No such workflow defined. name=missing-wf, version=1");
-        exec.setStackTrace("com.netflix.conductor.core.exception.NotFoundException: No such workflow\n\tat ...");
+        exec.setStackTrace(
+                "com.netflix.conductor.core.exception.NotFoundException: No such workflow\n\tat ...");
         dao().saveExecutionRecord(exec);
 
         WorkflowScheduleExecution found = dao().readExecutionRecord(exec.getExecutionId());
@@ -388,9 +390,8 @@ public abstract class AbstractSchedulerDAOTest {
     }
 
     /**
-     * After a POLLED record transitions to EXECUTED, it must no longer appear in
-     * {@code getPendingExecutionRecordIds}. This verifies the state-column write-through is
-     * correct.
+     * After a POLLED record transitions to EXECUTED, it must no longer appear in {@code
+     * getPendingExecutionRecordIds}. This verifies the state-column write-through is correct.
      */
     @Test
     public void testGetPendingExecutionRecordIds_afterTransition() {
@@ -426,8 +427,8 @@ public abstract class AbstractSchedulerDAOTest {
     }
 
     /**
-     * Records inserted in reverse time order must still be returned newest-first. This verifies
-     * the ORDER BY in the query, not just insertion order.
+     * Records inserted in reverse time order must still be returned newest-first. This verifies the
+     * ORDER BY in the query, not just insertion order.
      */
     @Test
     public void testGetExecutionRecords_reverseInsertionOrder() {

@@ -15,9 +15,10 @@ package org.conductoross.conductor.scheduler.model;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
+
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 
 /** Represents a scheduled workflow execution. */
 public class WorkflowSchedule {
@@ -190,8 +191,10 @@ public class WorkflowSchedule {
         this.nextRunTime = nextRunTime;
     }
 
-    /** Extension fields for forward compatibility. Preserves unknown fields (e.g. Orkes-specific
-     *  tags) during JSON round-trips so the adapter layer does not lose data. */
+    /**
+     * Extension fields for forward compatibility. Preserves unknown fields (e.g. Orkes-specific
+     * tags) during JSON round-trips so the adapter layer does not lose data.
+     */
     private Map<String, Object> extensionFields;
 
     @JsonAnyGetter
