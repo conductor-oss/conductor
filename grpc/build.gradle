@@ -44,16 +44,16 @@ dependencies {
 
 // Use protoc 3.25.5 for code generation to maintain compatibility with protobuf-java 4.x runtime
 // See: https://github.com/grpc/grpc-java/issues/12246
-def artifactName = 'com.google.protobuf:protoc:3.25.5'
+def artifactName = 'com.google.protobuf:protoc:4.34.0'
 switch (org.gradle.internal.os.OperatingSystem.current()) {
     case org.gradle.internal.os.OperatingSystem.LINUX:
-        artifactName = "com.google.protobuf:protoc:3.25.5"
+        artifactName = "com.google.protobuf:protoc:4.34.0"
         break;
     case org.gradle.internal.os.OperatingSystem.MAC_OS:
-        artifactName = "com.google.protobuf:protoc:3.25.5"
+        artifactName = "com.google.protobuf:protoc:4.34.0"
         break;
     case org.gradle.internal.os.OperatingSystem.WINDOWS:
-        artifactName = "com.google.protobuf:protoc:3.25.5"
+        artifactName = "com.google.protobuf:protoc:4.34.0"
         break;
 }
 
