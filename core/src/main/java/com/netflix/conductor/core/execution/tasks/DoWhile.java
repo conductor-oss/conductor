@@ -93,6 +93,18 @@ public class DoWhile extends WorkflowSystemTask {
         // if the loopOverTasks collection is empty, no tasks inside the loop have been scheduled.
         // so schedule it and exit the method.
         if (loopOverTasks.isEmpty()) {
+            // For list iteration, check if the items list is empty before scheduling iteration 1.
+            // An empty items list means there is nothing to iterate over, so complete immediately.
+            if (isListIteration(doWhileTaskModel)) {
+                List<Object> itemsList = evaluateItemsList(workflow, doWhileTaskModel);
+                if (itemsList.isEmpty()) {
+                    LOGGER.debug(
+                            "Task {} has an empty items list, completing without executing loop tasks",
+                            doWhileTaskModel.getTaskId());
+                    return markTaskSuccess(doWhileTaskModel);
+                }
+            }
+
             doWhileTaskModel.setIteration(1);
             doWhileTaskModel.addOutput("iteration", doWhileTaskModel.getIteration());
 

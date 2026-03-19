@@ -28,6 +28,7 @@ import org.mockito.MockitoAnnotations;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
+import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -35,12 +36,14 @@ import com.netflix.conductor.model.WorkflowModel;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 public class DoWhileTest {
 
     @Mock private ExecutionDAOFacade executionDAOFacade;
+    @Mock private WorkflowExecutor workflowExecutor;
 
     private ParametersUtils parametersUtils;
     private DoWhile doWhile;
@@ -946,6 +949,59 @@ public class DoWhileTest {
 
         // Should return false (stop) since we're beyond the list
         assertFalse("Should stop when iteration exceeds list size", shouldContinue);
+    }
+
+    @Test
+    public void testExecute_EmptyItemsList_CompletesWithoutSchedulingIteration() {
+        // Issue #876: DO_WHILE with an empty items list should complete immediately
+        // without scheduling or executing any loop tasks.
+        WorkflowModel workflow = createWorkflowWithDef();
+        workflow.setTasks(new ArrayList<>());
+
+        Map<String, Object> workflowInput = new HashMap<>();
+        workflowInput.put("itemList", new ArrayList<>());
+        workflow.setInput(workflowInput);
+
+        TaskModel doWhileTask = createDoWhileTask();
+        doWhileTask.getWorkflowTask().setItems("${workflow.input.itemList}");
+        doWhileTask.getWorkflowTask().setLoopCondition(null);
+        workflow.getTasks().add(doWhileTask);
+
+        boolean result = doWhile.execute(workflow, doWhileTask, workflowExecutor);
+
+        assertTrue("execute() should return true when completing immediately", result);
+        assertEquals(
+                "Task should be COMPLETED when items list is empty",
+                TaskModel.Status.COMPLETED,
+                doWhileTask.getStatus());
+        verify(workflowExecutor, never()).scheduleNextIteration(any(), any());
+    }
+
+    @Test
+    public void testExecute_EmptyItemsList_OrkesCompat_CompletesWithoutSchedulingIteration() {
+        // Issue #876: same behavior when using _items in inputParameters (Orkes compat)
+        WorkflowModel workflow = createWorkflowWithDef();
+        workflow.setTasks(new ArrayList<>());
+
+        Map<String, Object> workflowInput = new HashMap<>();
+        workflowInput.put("itemList", new ArrayList<>());
+        workflow.setInput(workflowInput);
+
+        TaskModel doWhileTask = createDoWhileTask();
+        Map<String, Object> inputParams = new HashMap<>();
+        inputParams.put("_items", "${workflow.input.itemList}");
+        doWhileTask.getWorkflowTask().setInputParameters(inputParams);
+        doWhileTask.getWorkflowTask().setLoopCondition(null);
+        workflow.getTasks().add(doWhileTask);
+
+        boolean result = doWhile.execute(workflow, doWhileTask, workflowExecutor);
+
+        assertTrue("execute() should return true when completing immediately", result);
+        assertEquals(
+                "Task should be COMPLETED when _items list is empty",
+                TaskModel.Status.COMPLETED,
+                doWhileTask.getStatus());
+        verify(workflowExecutor, never()).scheduleNextIteration(any(), any());
     }
 
     @Test
