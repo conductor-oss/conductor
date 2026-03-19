@@ -38,6 +38,7 @@ export const AssistantPanelHeader = ({
 
   return (
     <Box
+      data-testid="assistant-panel-header"
       onMouseDown={onHeaderMouseDown}
       onClick={onHeaderClick}
       sx={{
