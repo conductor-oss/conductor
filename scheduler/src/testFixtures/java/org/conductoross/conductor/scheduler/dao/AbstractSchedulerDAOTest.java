@@ -76,8 +76,8 @@ public abstract class AbstractSchedulerDAOTest {
 
     /**
      * Clears all scheduler data between tests. SQL subclasses rely on the default JDBC
-     * implementation. Non-JDBC subclasses (e.g. Redis) override this method directly and must
-     * also override {@link #dataSource()} to throw {@link UnsupportedOperationException}.
+     * implementation. Non-JDBC subclasses (e.g. Redis) override this method directly and must also
+     * override {@link #dataSource()} to throw {@link UnsupportedOperationException}.
      */
     protected void truncateStore() throws Exception {
         try (Connection conn = dataSource().getConnection()) {

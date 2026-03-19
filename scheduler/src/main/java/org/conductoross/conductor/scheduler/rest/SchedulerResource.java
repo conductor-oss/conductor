@@ -71,7 +71,8 @@ public class SchedulerResource {
     }
 
     @GetMapping(value = "/schedules", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "Get all existing workflow schedules and optionally filter by workflow name")
+    @Operation(
+            summary = "Get all existing workflow schedules and optionally filter by workflow name")
     public List<WorkflowSchedule> getAllSchedules(
             @RequestParam(value = "workflowName", required = false) String workflowName) {
         if (workflowName != null && !workflowName.isBlank()) {

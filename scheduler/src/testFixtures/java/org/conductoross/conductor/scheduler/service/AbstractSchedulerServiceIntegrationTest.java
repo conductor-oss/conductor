@@ -29,6 +29,7 @@ import org.conductoross.conductor.scheduler.model.WorkflowSchedule;
 import org.conductoross.conductor.scheduler.model.WorkflowScheduleExecution;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.service.WorkflowService;
@@ -36,8 +37,6 @@ import com.netflix.conductor.service.WorkflowService;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-
-import org.mockito.ArgumentCaptor;
 
 /**
  * Integration tests for {@link SchedulerService} using a real {@link SchedulerDAO} (from a concrete
@@ -437,10 +436,10 @@ public abstract class AbstractSchedulerServiceIntegrationTest {
     // =========================================================================
 
     /**
-     * Verifies that the {@code event} field on the {@link StartWorkflowRequest} passed to
-     * {@link WorkflowService#startWorkflow} is set to {@code "scheduler:<scheduleName>"} so that
-     * the resulting {@link com.netflix.conductor.common.run.Workflow} records which schedule
-     * triggered it.
+     * Verifies that the {@code event} field on the {@link StartWorkflowRequest} passed to {@link
+     * WorkflowService#startWorkflow} is set to {@code "scheduler:<scheduleName>"} so that the
+     * resulting {@link com.netflix.conductor.common.run.Workflow} records which schedule triggered
+     * it.
      */
     @Test
     public void testDispatch_setsEventFieldToSchedulerName() throws Exception {

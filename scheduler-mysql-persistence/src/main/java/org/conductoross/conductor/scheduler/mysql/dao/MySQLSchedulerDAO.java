@@ -115,8 +115,7 @@ public class MySQLSchedulerDAO implements SchedulerDAO {
     public void deleteWorkflowSchedule(String name) {
         txTemplate.executeWithoutResult(
                 status -> {
-                    jdbc.update(
-                            "DELETE FROM scheduler_execution WHERE schedule_name = ?", name);
+                    jdbc.update("DELETE FROM scheduler_execution WHERE schedule_name = ?", name);
                     jdbc.update("DELETE FROM scheduler WHERE scheduler_name = ?", name);
                 });
     }

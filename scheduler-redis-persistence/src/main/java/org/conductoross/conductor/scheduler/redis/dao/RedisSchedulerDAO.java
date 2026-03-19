@@ -1,15 +1,14 @@
 /*
  * Copyright 2026 Conductor Authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
- * except in compliance with the License. You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
  * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the
- * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific language governing permissions
- * and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package org.conductoross.conductor.scheduler.redis.dao;
 
@@ -83,10 +82,14 @@ public class RedisSchedulerDAO implements SchedulerDAO {
         String existingJson = jedis.hget(KEY_SCHEDULES, schedule.getName());
         if (existingJson != null) {
             WorkflowSchedule existing = fromJson(existingJson, WorkflowSchedule.class);
-            String oldWf = existing.getStartWorkflowRequest() != null
-                    ? existing.getStartWorkflowRequest().getName() : null;
-            String newWf = schedule.getStartWorkflowRequest() != null
-                    ? schedule.getStartWorkflowRequest().getName() : null;
+            String oldWf =
+                    existing.getStartWorkflowRequest() != null
+                            ? existing.getStartWorkflowRequest().getName()
+                            : null;
+            String newWf =
+                    schedule.getStartWorkflowRequest() != null
+                            ? schedule.getStartWorkflowRequest().getName()
+                            : null;
             if (oldWf != null && !oldWf.equals(newWf)) {
                 jedis.srem(keyByWorkflow(oldWf), schedule.getName());
             }
@@ -158,8 +161,7 @@ public class RedisSchedulerDAO implements SchedulerDAO {
             WorkflowSchedule schedule = fromJson(json, WorkflowSchedule.class);
             if (schedule.getStartWorkflowRequest() != null
                     && schedule.getStartWorkflowRequest().getName() != null) {
-                jedis.srem(
-                        keyByWorkflow(schedule.getStartWorkflowRequest().getName()), name);
+                jedis.srem(keyByWorkflow(schedule.getStartWorkflowRequest().getName()), name);
             }
         }
         // Remove all execution records for this schedule
@@ -180,7 +182,9 @@ public class RedisSchedulerDAO implements SchedulerDAO {
     public void saveExecutionRecord(WorkflowScheduleExecution execution) {
         jedis.set(keyExecution(execution.getExecutionId()), toJson(execution));
         long score = execution.getExecutionTime() != null ? execution.getExecutionTime() : 0L;
-        jedis.zadd(keyExecBySched(execution.getScheduleName()), (double) score,
+        jedis.zadd(
+                keyExecBySched(execution.getScheduleName()),
+                (double) score,
                 execution.getExecutionId());
         if (execution.getState() == WorkflowScheduleExecution.ExecutionState.POLLED) {
             jedis.sadd(KEY_PENDING_EXECS, execution.getExecutionId());

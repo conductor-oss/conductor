@@ -288,25 +288,34 @@ public class SchedulerService {
         // freeText name filter (used as schedule name prefix/substring by the UI)
         if (freeText != null && !freeText.isBlank() && !"*".equals(freeText)) {
             String lower = freeText.toLowerCase();
-            all = all.stream()
-                    .filter(s -> s.getName() != null && s.getName().toLowerCase().contains(lower))
-                    .collect(Collectors.toList());
+            all =
+                    all.stream()
+                            .filter(
+                                    s ->
+                                            s.getName() != null
+                                                    && s.getName().toLowerCase().contains(lower))
+                            .collect(Collectors.toList());
         }
 
         // explicit scheduleName filter (also substring)
         if (scheduleName != null && !scheduleName.isBlank()) {
             String lower = scheduleName.toLowerCase();
-            all = all.stream()
-                    .filter(s -> s.getName() != null && s.getName().toLowerCase().contains(lower))
-                    .collect(Collectors.toList());
+            all =
+                    all.stream()
+                            .filter(
+                                    s ->
+                                            s.getName() != null
+                                                    && s.getName().toLowerCase().contains(lower))
+                            .collect(Collectors.toList());
         }
 
         // paused filter
         if (paused != null) {
             boolean filterPaused = paused;
-            all = all.stream()
-                    .filter(s -> s.isPaused() == filterPaused)
-                    .collect(Collectors.toList());
+            all =
+                    all.stream()
+                            .filter(s -> s.isPaused() == filterPaused)
+                            .collect(Collectors.toList());
         }
 
         // sort — apply the first sort option only
@@ -337,15 +346,13 @@ public class SchedulerService {
      * @param limit maximum number of times to return
      */
     public List<Long> getListOfNextSchedules(
-            String cronExpression,
-            Long scheduleStartTime,
-            Long scheduleEndTime,
-            int limit) {
+            String cronExpression, Long scheduleStartTime, Long scheduleEndTime, int limit) {
         CronExpression cron = parseCron(cronExpression);
-        ZonedDateTime cursor = scheduleStartTime != null
-                ? ZonedDateTime.ofInstant(
-                        java.time.Instant.ofEpochMilli(scheduleStartTime), ZoneId.of("UTC"))
-                : ZonedDateTime.now(ZoneId.of("UTC"));
+        ZonedDateTime cursor =
+                scheduleStartTime != null
+                        ? ZonedDateTime.ofInstant(
+                                java.time.Instant.ofEpochMilli(scheduleStartTime), ZoneId.of("UTC"))
+                        : ZonedDateTime.now(ZoneId.of("UTC"));
 
         List<Long> times = new ArrayList<>();
         for (int i = 0; i < limit; i++) {
@@ -365,9 +372,7 @@ public class SchedulerService {
 
     private List<WorkflowScheduleExecution> applyQueryFilter(
             List<WorkflowScheduleExecution> records, String query) {
-        return records.stream()
-                .filter(r -> matchesQuery(r, query))
-                .collect(Collectors.toList());
+        return records.stream().filter(r -> matchesQuery(r, query)).collect(Collectors.toList());
     }
 
     private boolean matchesQuery(WorkflowScheduleExecution r, String query) {
@@ -473,17 +478,21 @@ public class SchedulerService {
         Comparator<WorkflowSchedule> cmp;
         switch (field) {
             case "name":
-                cmp = Comparator.comparing(
-                        s -> s.getName() != null ? s.getName() : "", String.CASE_INSENSITIVE_ORDER);
+                cmp =
+                        Comparator.comparing(
+                                s -> s.getName() != null ? s.getName() : "",
+                                String.CASE_INSENSITIVE_ORDER);
                 break;
             case "updatetime":
             case "updatedtime":
-                cmp = Comparator.comparingLong(
-                        s -> s.getUpdatedTime() != null ? s.getUpdatedTime() : 0L);
+                cmp =
+                        Comparator.comparingLong(
+                                s -> s.getUpdatedTime() != null ? s.getUpdatedTime() : 0L);
                 break;
             default: // createTime
-                cmp = Comparator.comparingLong(
-                        s -> s.getCreateTime() != null ? s.getCreateTime() : 0L);
+                cmp =
+                        Comparator.comparingLong(
+                                s -> s.getCreateTime() != null ? s.getCreateTime() : 0L);
         }
         if (desc) {
             cmp = cmp.reversed();
