@@ -376,6 +376,70 @@ public class DoWhileTest {
                 .orElseThrow(() -> new IllegalStateException("No DO_WHILE task found"));
     }
 
+    @Test
+    public void testKeepLastN_OutputCleanup_RemovesCorrectKeys() {
+        // Verifies that the in-memory output key cleanup removes keys "1".."N-keepLastN"
+        // and retains the most recent keepLastN iterations.
+        WorkflowModel workflow = createWorkflowWithDef();
+
+        Map<String, Object> workflowInput = new HashMap<>();
+        List<String> items = List.of("a", "b", "c", "d");
+        workflowInput.put("items", items);
+        workflow.setInput(workflowInput);
+
+        // Build a minimal DO_WHILE task with 1 loop task and keepLastN=2
+        TaskModel doWhileTask = new TaskModel();
+        doWhileTask.setTaskId("dw-keepLastN");
+        doWhileTask.setReferenceTaskName("dw");
+        doWhileTask.setTaskType("DO_WHILE");
+        doWhileTask.setStatus(TaskModel.Status.IN_PROGRESS);
+        doWhileTask.setIteration(3); // completing iteration 3 now
+
+        WorkflowTask wft = new WorkflowTask();
+        wft.setTaskReferenceName("dw");
+        wft.setType("DO_WHILE");
+        wft.setItems("${workflow.input.items}");
+
+        WorkflowTask loopTask = new WorkflowTask();
+        loopTask.setTaskReferenceName("t1");
+        wft.setLoopOver(List.of(loopTask));
+
+        Map<String, Object> inputParams = new HashMap<>();
+        inputParams.put("keepLastN", 2);
+        wft.setInputParameters(inputParams);
+        doWhileTask.setWorkflowTask(wft);
+
+        // Pre-populate output keys "1" and "2" (from previous iterations)
+        doWhileTask.addOutput("1", Map.of("t1", "result1"));
+        doWhileTask.addOutput("2", Map.of("t1", "result2"));
+
+        // Set up the completed loop task for iteration 3
+        TaskModel completedTask = new TaskModel();
+        completedTask.setTaskId("t1-iter3");
+        completedTask.setReferenceTaskName("t1__3");
+        completedTask.setIteration(3);
+        completedTask.setStatus(TaskModel.Status.COMPLETED);
+        completedTask.setWorkflowTask(loopTask);
+
+        List<TaskModel> tasks = new ArrayList<>();
+        tasks.add(doWhileTask);
+        tasks.add(completedTask);
+        workflow.setTasks(tasks);
+
+        doWhile.execute(workflow, doWhileTask, workflowExecutor);
+
+        // iteration=3, keepLastN=2 → should remove key "1", keep "2" and "3"
+        assertFalse(
+                "Output key '1' should have been removed by keepLastN cleanup",
+                doWhileTask.getOutputData().containsKey("1"));
+        assertTrue(
+                "Output key '2' should be retained",
+                doWhileTask.getOutputData().containsKey("2"));
+        assertTrue(
+                "Output key '3' should be retained (just added)",
+                doWhileTask.getOutputData().containsKey("3"));
+    }
+
     // List iteration tests
 
     @Test
@@ -974,6 +1038,10 @@ public class DoWhileTest {
                 "Task should be COMPLETED when items list is empty",
                 TaskModel.Status.COMPLETED,
                 doWhileTask.getStatus());
+        assertEquals(
+                "iteration output should be 0 for empty items list",
+                0,
+                doWhileTask.getOutputData().get("iteration"));
         verify(workflowExecutor, never()).scheduleNextIteration(any(), any());
     }
 
@@ -1001,6 +1069,10 @@ public class DoWhileTest {
                 "Task should be COMPLETED when _items list is empty",
                 TaskModel.Status.COMPLETED,
                 doWhileTask.getStatus());
+        assertEquals(
+                "iteration output should be 0 for empty items list",
+                0,
+                doWhileTask.getOutputData().get("iteration"));
         verify(workflowExecutor, never()).scheduleNextIteration(any(), any());
     }
 
