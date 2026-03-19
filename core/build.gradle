@@ -53,7 +53,7 @@ dependencies {
     implementation("org.graalvm.js:js:24.1.0")
     implementation("org.graalvm.js:js-scriptengine:24.1.0")
     implementation("org.graalvm.polyglot:python:24.1.0")
-    implementation "org.graalvm.sdk:graal-sdk:24.1.0"
+    implementation "org.graalvm.sdk:graal-sdk:25.0.2"
 
     // JAXB is not bundled with Java 11, dependencies added explicitly
     // These are needed by Apache BVAL
