@@ -17,10 +17,14 @@ import javax.sql.DataSource;
 import org.conductoross.conductor.scheduler.dao.SchedulerDAO;
 import org.conductoross.conductor.scheduler.sqlite.dao.SqliteSchedulerDAO;
 import org.flywaydb.core.Flyway;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.retry.backoff.NoBackOffPolicy;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -48,9 +52,20 @@ public class SqliteSchedulerConfiguration {
                 .load();
     }
 
+    @Bean("sqliteSchedulerRetryTemplate")
+    public RetryTemplate sqliteSchedulerRetryTemplate() {
+        RetryTemplate retryTemplate = new RetryTemplate();
+        retryTemplate.setRetryPolicy(new SimpleRetryPolicy(3));
+        retryTemplate.setBackOffPolicy(new NoBackOffPolicy());
+        return retryTemplate;
+    }
+
     @Bean
     @DependsOn("flywayForScheduler")
-    public SchedulerDAO schedulerDAO(DataSource dataSource, ObjectMapper objectMapper) {
-        return new SqliteSchedulerDAO(dataSource, objectMapper);
+    public SchedulerDAO schedulerDAO(
+            @Qualifier("sqliteSchedulerRetryTemplate") RetryTemplate retryTemplate,
+            DataSource dataSource,
+            ObjectMapper objectMapper) {
+        return new SqliteSchedulerDAO(retryTemplate, objectMapper, dataSource);
     }
 }

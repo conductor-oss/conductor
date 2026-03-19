@@ -12,15 +12,23 @@
  */
 package org.conductoross.conductor.scheduler.mysql.config;
 
+import java.sql.SQLException;
+import java.util.Optional;
+
 import javax.sql.DataSource;
 
 import org.conductoross.conductor.scheduler.dao.SchedulerDAO;
 import org.conductoross.conductor.scheduler.mysql.dao.MySQLSchedulerDAO;
 import org.flywaydb.core.Flyway;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.retry.RetryContext;
+import org.springframework.retry.backoff.NoBackOffPolicy;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -48,9 +56,52 @@ public class MySQLSchedulerConfiguration {
                 .load();
     }
 
+    @Bean("mysqlSchedulerRetryTemplate")
+    public RetryTemplate mysqlSchedulerRetryTemplate() {
+        SimpleRetryPolicy retryPolicy = new DeadlockRetryPolicy();
+        retryPolicy.setMaxAttempts(3);
+        RetryTemplate retryTemplate = new RetryTemplate();
+        retryTemplate.setRetryPolicy(retryPolicy);
+        retryTemplate.setBackOffPolicy(new NoBackOffPolicy());
+        return retryTemplate;
+    }
+
     @Bean
     @DependsOn("flywayForScheduler")
-    public SchedulerDAO schedulerDAO(DataSource dataSource, ObjectMapper objectMapper) {
-        return new MySQLSchedulerDAO(dataSource, objectMapper);
+    public SchedulerDAO schedulerDAO(
+            @Qualifier("mysqlSchedulerRetryTemplate") RetryTemplate retryTemplate,
+            DataSource dataSource,
+            ObjectMapper objectMapper) {
+        return new MySQLSchedulerDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    static class DeadlockRetryPolicy extends SimpleRetryPolicy {
+
+        private static final String ER_LOCK_DEADLOCK = "1213";
+
+        @Override
+        public boolean canRetry(final RetryContext context) {
+            final Optional<Throwable> lastThrowable =
+                    Optional.ofNullable(context.getLastThrowable());
+            return lastThrowable
+                    .map(throwable -> super.canRetry(context) && isDeadLockError(throwable))
+                    .orElseGet(() -> super.canRetry(context));
+        }
+
+        private boolean isDeadLockError(Throwable throwable) {
+            SQLException sqlException = findCauseSQLException(throwable);
+            if (sqlException == null) {
+                return false;
+            }
+            return ER_LOCK_DEADLOCK.equals(sqlException.getSQLState());
+        }
+
+        private SQLException findCauseSQLException(Throwable throwable) {
+            Throwable cause = throwable;
+            while (null != cause && !(cause instanceof SQLException)) {
+                cause = cause.getCause();
+            }
+            return (SQLException) cause;
+        }
     }
 }

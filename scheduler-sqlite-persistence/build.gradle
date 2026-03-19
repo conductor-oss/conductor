@@ -2,14 +2,15 @@ dependencies {
     implementation project(':conductor-scheduler')
     implementation project(':conductor-common')
     implementation project(':conductor-core')
+    implementation project(':conductor-sqlite-persistence')
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.retry:spring-retry'
 
     implementation "com.fasterxml.jackson.core:jackson-databind"
     implementation "com.fasterxml.jackson.core:jackson-core"
     implementation "org.apache.commons:commons-lang3"
     implementation 'org.xerial:sqlite-jdbc:3.49.0.0'
-    implementation "org.springframework.boot:spring-boot-starter-jdbc"
     implementation "org.flywaydb:flyway-core:${revFlyway}"
 
     testImplementation 'org.springframework.boot:spring-boot-starter'

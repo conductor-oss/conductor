@@ -16,49 +16,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
 import org.conductoross.conductor.scheduler.dao.SchedulerDAO;
 import org.conductoross.conductor.scheduler.model.WorkflowSchedule;
 import org.conductoross.conductor.scheduler.model.WorkflowScheduleExecution;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.retry.support.RetryTemplate;
 
-import com.netflix.conductor.core.exception.NonTransientException;
+import com.netflix.conductor.sqlite.dao.SqliteBaseDAO;
+import com.netflix.conductor.sqlite.util.Query;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-/**
- * SQLite implementation of {@link SchedulerDAO}.
- *
- * <p>Uses Spring {@link JdbcTemplate} and Flyway-managed migrations ({@code
- * db/migration_scheduler_sqlite}). Functionally equivalent to the MySQL implementation but uses
- * SQLite-compatible SQL syntax ({@code INSERT OR REPLACE INTO} for upserts; no {@code NULLS LAST}
- * in ORDER BY; manual {@code IN} placeholder expansion).
- *
- * <p><b>Pool size constraint:</b> The DataSource must be configured with {@code maximumPoolSize=1}.
- * SQLite in-memory databases are connection-scoped; a second connection creates an independent
- * database instance.
- */
-public class SqliteSchedulerDAO implements SchedulerDAO {
+public class SqliteSchedulerDAO extends SqliteBaseDAO implements SchedulerDAO {
 
-    private static final Logger log = LoggerFactory.getLogger(SqliteSchedulerDAO.class);
-
-    private final JdbcTemplate jdbc;
-    private final TransactionTemplate txTemplate;
-    private final ObjectMapper objectMapper;
-
-    public SqliteSchedulerDAO(DataSource dataSource, ObjectMapper objectMapper) {
-        this.jdbc = new JdbcTemplate(dataSource);
-        this.txTemplate = new TransactionTemplate(new DataSourceTransactionManager(dataSource));
-        this.objectMapper = objectMapper;
+    public SqliteSchedulerDAO(
+            RetryTemplate retryTemplate, ObjectMapper objectMapper, DataSource dataSource) {
+        super(retryTemplate, objectMapper, dataSource);
     }
 
     @Override
@@ -67,32 +42,37 @@ public class SqliteSchedulerDAO implements SchedulerDAO {
                 "INSERT OR REPLACE INTO scheduler "
                         + "(scheduler_name, workflow_name, json_data, next_run_time) "
                         + "VALUES (?, ?, ?, ?)";
-        jdbc.update(
+        executeWithTransaction(
                 sql,
-                schedule.getName(),
-                schedule.getStartWorkflowRequest() != null
-                        ? schedule.getStartWorkflowRequest().getName()
-                        : null,
-                toJson(schedule),
-                schedule.getNextRunTime());
+                q ->
+                        q.addParameter(schedule.getName())
+                                .addParameter(
+                                        schedule.getStartWorkflowRequest() != null
+                                                ? schedule.getStartWorkflowRequest().getName()
+                                                : null)
+                                .addJsonParameter(schedule)
+                                .addParameter(schedule.getNextRunTime())
+                                .executeUpdate());
     }
 
     @Override
     public WorkflowSchedule findScheduleByName(String name) {
         String sql = "SELECT json_data FROM scheduler WHERE scheduler_name = ?";
-        List<WorkflowSchedule> results = jdbc.query(sql, scheduleRowMapper(), name);
-        return results.isEmpty() ? null : results.get(0);
+        return queryWithTransaction(
+                sql, q -> q.addParameter(name).executeAndFetchFirst(WorkflowSchedule.class));
     }
 
     @Override
     public List<WorkflowSchedule> getAllSchedules() {
-        return jdbc.query("SELECT json_data FROM scheduler", scheduleRowMapper());
+        return queryWithTransaction(
+                "SELECT json_data FROM scheduler", q -> q.executeAndFetch(WorkflowSchedule.class));
     }
 
     @Override
     public List<WorkflowSchedule> findAllSchedules(String workflowName) {
         String sql = "SELECT json_data FROM scheduler WHERE workflow_name = ?";
-        return jdbc.query(sql, scheduleRowMapper(), workflowName);
+        return queryWithTransaction(
+                sql, q -> q.addParameter(workflowName).executeAndFetch(WorkflowSchedule.class));
     }
 
     @Override
@@ -100,10 +80,17 @@ public class SqliteSchedulerDAO implements SchedulerDAO {
         if (names == null || names.isEmpty()) {
             return new HashMap<>();
         }
-        String placeholders = names.stream().map(n -> "?").collect(Collectors.joining(","));
         String sql =
-                "SELECT json_data FROM scheduler WHERE scheduler_name IN (" + placeholders + ")";
-        List<WorkflowSchedule> schedules = jdbc.query(sql, scheduleRowMapper(), names.toArray());
+                "SELECT json_data FROM scheduler WHERE scheduler_name IN ("
+                        + Query.generateInBindings(names.size())
+                        + ")";
+        List<WorkflowSchedule> schedules =
+                queryWithTransaction(
+                        sql,
+                        q -> {
+                            names.forEach(q::addParameter);
+                            return q.executeAndFetch(WorkflowSchedule.class);
+                        });
         Map<String, WorkflowSchedule> result = new HashMap<>();
         for (WorkflowSchedule s : schedules) {
             result.put(s.getName(), s);
@@ -113,10 +100,16 @@ public class SqliteSchedulerDAO implements SchedulerDAO {
 
     @Override
     public void deleteWorkflowSchedule(String name) {
-        txTemplate.executeWithoutResult(
-                status -> {
-                    jdbc.update("DELETE FROM scheduler_execution WHERE schedule_name = ?", name);
-                    jdbc.update("DELETE FROM scheduler WHERE scheduler_name = ?", name);
+        withTransaction(
+                tx -> {
+                    execute(
+                            tx,
+                            "DELETE FROM scheduler_execution WHERE schedule_name = ?",
+                            q -> q.addParameter(name).executeDelete());
+                    execute(
+                            tx,
+                            "DELETE FROM scheduler WHERE scheduler_name = ?",
+                            q -> q.addParameter(name).executeDelete());
                 });
     }
 
@@ -126,40 +119,49 @@ public class SqliteSchedulerDAO implements SchedulerDAO {
                 "INSERT OR REPLACE INTO scheduler_execution "
                         + "(execution_id, schedule_name, state, execution_time, json_data) "
                         + "VALUES (?, ?, ?, ?, ?)";
-        jdbc.update(
+        executeWithTransaction(
                 sql,
-                execution.getExecutionId(),
-                execution.getScheduleName(),
-                execution.getState() != null ? execution.getState().name() : null,
-                execution.getExecutionTime(),
-                toJson(execution));
+                q ->
+                        q.addParameter(execution.getExecutionId())
+                                .addParameter(execution.getScheduleName())
+                                .addParameter(
+                                        execution.getState() != null
+                                                ? execution.getState().name()
+                                                : null)
+                                .addParameter(execution.getExecutionTime())
+                                .addJsonParameter(execution)
+                                .executeUpdate());
     }
 
     @Override
     public WorkflowScheduleExecution readExecutionRecord(String executionId) {
         String sql = "SELECT json_data FROM scheduler_execution WHERE execution_id = ?";
-        List<WorkflowScheduleExecution> results =
-                jdbc.query(sql, executionRowMapper(), executionId);
-        return results.isEmpty() ? null : results.get(0);
+        return queryWithTransaction(
+                sql,
+                q ->
+                        q.addParameter(executionId)
+                                .executeAndFetchFirst(WorkflowScheduleExecution.class));
     }
 
     @Override
     public void removeExecutionRecord(String executionId) {
-        jdbc.update("DELETE FROM scheduler_execution WHERE execution_id = ?", executionId);
+        executeWithTransaction(
+                "DELETE FROM scheduler_execution WHERE execution_id = ?",
+                q -> q.addParameter(executionId).executeDelete());
     }
 
     @Override
     public List<String> getPendingExecutionRecordIds() {
-        return jdbc.queryForList(
+        return queryWithTransaction(
                 "SELECT execution_id FROM scheduler_execution WHERE state = 'POLLED'",
-                String.class);
+                q -> q.executeScalarList(String.class));
     }
 
     @Override
     public List<WorkflowScheduleExecution> getPendingExecutionRecords() {
-        return jdbc.query(
+        return queryWithTransaction(
                 "SELECT json_data FROM scheduler_execution WHERE state = 'POLLED'",
-                executionRowMapper());
+                q -> q.executeAndFetch(WorkflowScheduleExecution.class));
     }
 
     @Override
@@ -169,7 +171,12 @@ public class SqliteSchedulerDAO implements SchedulerDAO {
                         + "WHERE schedule_name = ? "
                         + "ORDER BY execution_time DESC "
                         + "LIMIT ?";
-        return jdbc.query(sql, executionRowMapper(), scheduleName, limit);
+        return queryWithTransaction(
+                sql,
+                q ->
+                        q.addParameter(scheduleName)
+                                .addParameter(limit)
+                                .executeAndFetch(WorkflowScheduleExecution.class));
     }
 
     @Override
@@ -178,54 +185,29 @@ public class SqliteSchedulerDAO implements SchedulerDAO {
                 "SELECT json_data FROM scheduler_execution "
                         + "ORDER BY execution_time DESC "
                         + "LIMIT ?";
-        return jdbc.query(sql, executionRowMapper(), limit);
+        return queryWithTransaction(
+                sql, q -> q.addParameter(limit).executeAndFetch(WorkflowScheduleExecution.class));
     }
 
     @Override
     public long getNextRunTimeInEpoch(String scheduleName) {
         String sql = "SELECT next_run_time FROM scheduler WHERE scheduler_name = ?";
-        List<Long> results = jdbc.queryForList(sql, Long.class, scheduleName);
-        if (results.isEmpty() || results.get(0) == null) {
-            return -1L;
-        }
-        return results.get(0);
+        return queryWithTransaction(
+                sql,
+                q ->
+                        q.addParameter(scheduleName)
+                                .executeAndFetch(
+                                        rs -> {
+                                            if (!rs.next()) return -1L;
+                                            long val = rs.getLong(1);
+                                            return rs.wasNull() ? -1L : val;
+                                        }));
     }
 
     @Override
     public void setNextRunTimeInEpoch(String scheduleName, long epochMillis) {
-        jdbc.update(
+        executeWithTransaction(
                 "UPDATE scheduler SET next_run_time = ? WHERE scheduler_name = ?",
-                epochMillis,
-                scheduleName);
-    }
-
-    private RowMapper<WorkflowSchedule> scheduleRowMapper() {
-        return (rs, rowNum) -> {
-            try {
-                return objectMapper.readValue(rs.getString("json_data"), WorkflowSchedule.class);
-            } catch (Exception e) {
-                throw new NonTransientException("Failed to deserialize WorkflowSchedule", e);
-            }
-        };
-    }
-
-    private RowMapper<WorkflowScheduleExecution> executionRowMapper() {
-        return (rs, rowNum) -> {
-            try {
-                return objectMapper.readValue(
-                        rs.getString("json_data"), WorkflowScheduleExecution.class);
-            } catch (Exception e) {
-                throw new NonTransientException(
-                        "Failed to deserialize WorkflowScheduleExecution", e);
-            }
-        };
-    }
-
-    private String toJson(Object value) {
-        try {
-            return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException e) {
-            throw new NonTransientException("Failed to serialize to JSON", e);
-        }
+                q -> q.addParameter(epochMillis).addParameter(scheduleName).executeUpdate());
     }
 }

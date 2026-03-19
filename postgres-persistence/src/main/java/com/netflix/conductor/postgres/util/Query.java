@@ -107,6 +107,17 @@ public class Query implements AutoCloseable {
         return addParameterInternal((ps, idx) -> ps.setLong(idx, value));
     }
 
+    public Query addParameter(final Long value) {
+        return addParameterInternal(
+                (ps, idx) -> {
+                    if (value != null) {
+                        ps.setLong(idx, value);
+                    } else {
+                        ps.setNull(idx, java.sql.Types.BIGINT);
+                    }
+                });
+    }
+
     public Query addParameter(final double value) {
         return addParameterInternal((ps, idx) -> ps.setDouble(idx, value));
     }

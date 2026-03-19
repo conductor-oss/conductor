@@ -25,6 +25,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.retry.backoff.NoBackOffPolicy;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -73,7 +76,10 @@ public class SqliteSchedulerDAOTest extends AbstractSchedulerDAOTest {
         @Bean
         @DependsOn("flywayForScheduler")
         public SchedulerDAO schedulerDAO(DataSource dataSource, ObjectMapper objectMapper) {
-            return new SqliteSchedulerDAO(dataSource, objectMapper);
+            RetryTemplate retryTemplate = new RetryTemplate();
+            retryTemplate.setRetryPolicy(new SimpleRetryPolicy(1));
+            retryTemplate.setBackOffPolicy(new NoBackOffPolicy());
+            return new SqliteSchedulerDAO(retryTemplate, objectMapper, dataSource);
         }
     }
 
