@@ -15,7 +15,9 @@ package org.conductoross.conductor.scheduler.service;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -90,6 +92,7 @@ public class SchedulerService {
             log.info("Scheduler is disabled via conductor.scheduler.enabled=false");
             return;
         }
+        validateProperties();
         initExecutors();
         pollingExecutor.scheduleWithFixedDelay(
                 this::pollAndExecuteSchedules,
@@ -180,10 +183,7 @@ public class SchedulerService {
     }
 
     public void pauseSchedule(String name) {
-        WorkflowSchedule schedule = getSchedule(name);
-        schedule.setPaused(true);
-        schedule.setUpdatedTime(System.currentTimeMillis());
-        schedulerDAO.updateSchedule(schedule);
+        pauseSchedule(name, null);
     }
 
     public void pauseSchedule(String name, String reason) {
@@ -265,16 +265,22 @@ public class SchedulerService {
                 if (processed >= properties.getPollBatchSize()) {
                     break;
                 }
-                if (isDue(schedule, now)) {
-                    handleSchedule(schedule, now);
+                Long scheduledTime = getNextRunIfDue(schedule, now);
+                if (scheduledTime != null) {
+                    handleSchedule(schedule, now, scheduledTime);
                     processed++;
                 }
             }
-
-            // Prune stale POLLED records
-            cleanupStalePollRecords();
         } catch (Exception e) {
             log.error("Error during scheduler polling cycle", e);
+        }
+
+        // Stale record cleanup in its own try/catch so a cleanup failure doesn't suppress
+        // diagnostics about the dispatch loop and vice versa.
+        try {
+            cleanupStalePollRecords();
+        } catch (Exception e) {
+            log.error("Error during stale poll record cleanup", e);
         }
     }
 
@@ -282,25 +288,27 @@ public class SchedulerService {
     // Private helpers
     // -------------------------------------------------------------------------
 
-    private boolean isDue(WorkflowSchedule schedule, long now) {
+    /**
+     * Returns the cached next-run time for the schedule if it is currently due, or {@code null} if
+     * the schedule should not fire right now. Combines the due-check and the DAO read into a single
+     * call so the caller doesn't need to fetch the value a second time.
+     */
+    private Long getNextRunIfDue(WorkflowSchedule schedule, long now) {
         if (schedule.isPaused()) {
-            return false;
+            return null;
         }
         if (schedule.getScheduleStartTime() != null && now < schedule.getScheduleStartTime()) {
-            return false;
+            return null;
         }
         if (schedule.getScheduleEndTime() != null && now > schedule.getScheduleEndTime()) {
-            return false;
+            return null;
         }
-        Long nextRun = schedulerDAO.getNextRunTimeInEpoch(schedule.getName());
-        return nextRun >= 0 && now >= nextRun;
+        long nextRun = schedulerDAO.getNextRunTimeInEpoch(schedule.getName());
+        return (nextRun >= 0 && now >= nextRun) ? nextRun : null;
     }
 
-    private void handleSchedule(WorkflowSchedule schedule, long now) {
+    private void handleSchedule(WorkflowSchedule schedule, long now, long scheduledTime) {
         String executionId = UUID.randomUUID().toString();
-
-        // Fetch the slot we are firing for before advancing the pointer.
-        long scheduledTime = schedulerDAO.getNextRunTimeInEpoch(schedule.getName());
 
         // In catchup mode, advance to the next slot after the one we just fired for
         // (i.e. step through missed slots one per poll cycle). In normal mode, jump
@@ -322,7 +330,9 @@ public class SchedulerService {
 
         // Trigger the workflow — optionally with a random jitter delay to spread concurrent
         // dispatch across a small time window and reduce DB/thread-pool contention.
-        if (properties.getJitterMaxMs() > 0) {
+        // Guard on jitterExecutor (not properties) so the two checks are structurally tied:
+        // jitterExecutor is non-null iff jitter was enabled when initExecutors() ran.
+        if (jitterExecutor != null) {
             long jitterMs =
                     ThreadLocalRandom.current().nextLong(0, properties.getJitterMaxMs() + 1);
             jitterExecutor.schedule(
@@ -337,9 +347,13 @@ public class SchedulerService {
     private void dispatchWorkflow(
             WorkflowSchedule schedule, WorkflowScheduleExecution execution, long scheduledTime) {
         try {
-            StartWorkflowRequest req = schedule.getStartWorkflowRequest();
-
-            long dispatchTime = injectSchedulerContext(req, scheduledTime);
+            long dispatchTime = System.currentTimeMillis();
+            // Build a per-dispatch copy of the StartWorkflowRequest with scheduler context
+            // injected into the input. Never mutate the shared request on the schedule object —
+            // the same instance may be reused across concurrent jitter lambdas or future caching.
+            StartWorkflowRequest req =
+                    buildDispatchRequest(
+                            schedule.getStartWorkflowRequest(), scheduledTime, dispatchTime);
 
             String workflowId = workflowService.startWorkflow(req);
 
@@ -358,6 +372,40 @@ public class SchedulerService {
             schedulerDAO.saveExecutionRecord(execution);
             pruneExecutionHistory(schedule.getName());
         }
+    }
+
+    /**
+     * Creates a per-dispatch copy of the given {@link StartWorkflowRequest} with scheduler context
+     * keys injected into the input map. The original request is never mutated.
+     *
+     * @param original the template request from the schedule definition
+     * @param scheduledTime the exact cron slot epoch millis
+     * @param dispatchTime the actual wall-clock dispatch time (epoch millis)
+     * @return a new request with augmented input; all other fields copied from the original
+     */
+    private StartWorkflowRequest buildDispatchRequest(
+            StartWorkflowRequest original, long scheduledTime, long dispatchTime) {
+        Map<String, Object> input = new HashMap<>();
+        if (original.getInput() != null) {
+            input.putAll(original.getInput());
+        }
+        // These keys match Orkes Conductor's scheduler for convergence compatibility.
+        input.put("scheduledTime", scheduledTime);
+        input.put("executionTime", dispatchTime);
+
+        StartWorkflowRequest copy = new StartWorkflowRequest();
+        copy.setName(original.getName());
+        copy.setVersion(original.getVersion());
+        copy.setCorrelationId(original.getCorrelationId());
+        copy.setInput(input);
+        copy.setTaskToDomain(original.getTaskToDomain());
+        copy.setWorkflowDef(original.getWorkflowDef());
+        copy.setExternalInputPayloadStoragePath(original.getExternalInputPayloadStoragePath());
+        copy.setPriority(original.getPriority());
+        copy.setCreatedBy(original.getCreatedBy());
+        copy.setIdempotencyKey(original.getIdempotencyKey());
+        copy.setIdempotencyStrategy(original.getIdempotencyStrategy());
+        return copy;
     }
 
     /**
@@ -396,27 +444,6 @@ public class SchedulerService {
         execution.setState(WorkflowScheduleExecution.ExecutionState.POLLED);
         execution.setZoneId(schedule.getZoneId());
         return execution;
-    }
-
-    /**
-     * Injects scheduler context into the workflow input so workflows can use the scheduled time for
-     * date-range calculations, idempotency keys, audit trails, etc. Preserves any existing input
-     * keys. These keys match Orkes Conductor's scheduler for convergence compatibility.
-     *
-     * @param req the workflow request to modify
-     * @param scheduledTime the exact cron slot epoch millis
-     * @return the actual dispatch time (now)
-     */
-    private long injectSchedulerContext(StartWorkflowRequest req, long scheduledTime) {
-        java.util.Map<String, Object> input = new java.util.HashMap<>();
-        if (req.getInput() != null) {
-            input.putAll(req.getInput());
-        }
-        input.put("scheduledTime", scheduledTime);
-        long dispatchTime = System.currentTimeMillis();
-        input.put("executionTime", dispatchTime);
-        req.setInput(input);
-        return dispatchTime;
     }
 
     /**
@@ -503,13 +530,13 @@ public class SchedulerService {
     }
 
     private void cleanupStalePollRecords() {
-        List<String> pendingIds = schedulerDAO.getPendingExecutionRecordIds();
-        if (pendingIds.isEmpty()) {
+        // Fetch all POLLED records in a single query to avoid N+1 round trips.
+        List<WorkflowScheduleExecution> pending = schedulerDAO.getPendingExecutionRecords();
+        if (pending.isEmpty()) {
             return;
         }
         long staleThreshold = System.currentTimeMillis() - STALE_POLLED_THRESHOLD_MS;
-        for (String id : pendingIds) {
-            WorkflowScheduleExecution record = schedulerDAO.readExecutionRecord(id);
+        for (WorkflowScheduleExecution record : pending) {
             if (isRecordStale(record, staleThreshold)) {
                 transitionStaleRecordToFailed(record);
             }
@@ -570,6 +597,17 @@ public class SchedulerService {
         validateWorkflowRequest(schedule.getStartWorkflowRequest());
         validateZoneId(schedule.getZoneId());
         validateTimeBounds(schedule.getScheduleStartTime(), schedule.getScheduleEndTime());
+    }
+
+    private void validateProperties() {
+        if (properties.getArchivalMaxRecords() >= properties.getArchivalMaxRecordThreshold()) {
+            throw new IllegalArgumentException(
+                    "conductor.scheduler.archivalMaxRecords ("
+                            + properties.getArchivalMaxRecords()
+                            + ") must be less than archivalMaxRecordThreshold ("
+                            + properties.getArchivalMaxRecordThreshold()
+                            + ")");
+        }
     }
 
     private void validateName(String name) {

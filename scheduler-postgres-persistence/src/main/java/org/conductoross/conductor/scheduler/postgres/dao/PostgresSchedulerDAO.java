@@ -27,6 +27,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.netflix.conductor.core.exception.NonTransientException;
 
@@ -38,8 +40,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *
  * <p>Mirrors the Orkes Conductor schema: schedules and execution records are stored as JSON blobs
  * in {@code scheduler} and {@code scheduler_execution} tables respectively. The {@code
- * scheduler_execution} table additionally carries {@code schedule_name} and {@code state} columns
- * to support efficient queries (OSS has no queue infrastructure to offload this work).
+ * scheduler_execution} table additionally carries {@code schedule_name}, {@code state}, and {@code
+ * execution_time} columns to support efficient queries (OSS has no queue infrastructure to offload
+ * this work).
  *
  * <p>Managed by Flyway ({@code db/migration_scheduler}).
  */
@@ -48,10 +51,12 @@ public class PostgresSchedulerDAO implements SchedulerDAO {
     private static final Logger log = LoggerFactory.getLogger(PostgresSchedulerDAO.class);
 
     private final JdbcTemplate jdbc;
+    private final TransactionTemplate txTemplate;
     private final ObjectMapper objectMapper;
 
     public PostgresSchedulerDAO(DataSource dataSource, ObjectMapper objectMapper) {
         this.jdbc = new JdbcTemplate(dataSource);
+        this.txTemplate = new TransactionTemplate(new DataSourceTransactionManager(dataSource));
         this.objectMapper = objectMapper;
     }
 
@@ -119,25 +124,31 @@ public class PostgresSchedulerDAO implements SchedulerDAO {
 
     @Override
     public void deleteWorkflowSchedule(String name) {
-        jdbc.update("DELETE FROM scheduler_execution WHERE schedule_name = ?", name);
-        jdbc.update("DELETE FROM scheduler WHERE scheduler_name = ?", name);
+        txTemplate.executeWithoutResult(
+                status -> {
+                    jdbc.update(
+                            "DELETE FROM scheduler_execution WHERE schedule_name = ?", name);
+                    jdbc.update("DELETE FROM scheduler WHERE scheduler_name = ?", name);
+                });
     }
 
     @Override
     public void saveExecutionRecord(WorkflowScheduleExecution execution) {
         String sql =
                 """
-                INSERT INTO scheduler_execution (execution_id, schedule_name, state, json_data)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO scheduler_execution (execution_id, schedule_name, state, execution_time, json_data)
+                VALUES (?, ?, ?, ?, ?)
                 ON CONFLICT (execution_id)
-                DO UPDATE SET state     = EXCLUDED.state,
-                              json_data = EXCLUDED.json_data
+                DO UPDATE SET state          = EXCLUDED.state,
+                              execution_time = EXCLUDED.execution_time,
+                              json_data      = EXCLUDED.json_data
                 """;
         jdbc.update(
                 sql,
                 execution.getExecutionId(),
                 execution.getScheduleName(),
                 execution.getState() != null ? execution.getState().name() : null,
+                execution.getExecutionTime(),
                 toJson(execution));
     }
 
@@ -162,12 +173,19 @@ public class PostgresSchedulerDAO implements SchedulerDAO {
     }
 
     @Override
+    public List<WorkflowScheduleExecution> getPendingExecutionRecords() {
+        return jdbc.query(
+                "SELECT json_data FROM scheduler_execution WHERE state = 'POLLED'",
+                executionRowMapper());
+    }
+
+    @Override
     public List<WorkflowScheduleExecution> getExecutionRecords(String scheduleName, int limit) {
         String sql =
                 """
                 SELECT json_data FROM scheduler_execution
                 WHERE schedule_name = ?
-                ORDER BY (json_data::jsonb->>'executionTime')::bigint DESC
+                ORDER BY execution_time DESC NULLS LAST
                 LIMIT ?
                 """;
         return jdbc.query(sql, executionRowMapper(), scheduleName, limit);

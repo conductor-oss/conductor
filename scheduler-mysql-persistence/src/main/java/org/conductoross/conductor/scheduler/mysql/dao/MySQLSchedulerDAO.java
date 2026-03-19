@@ -27,6 +27,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.netflix.conductor.core.exception.NonTransientException;
 
@@ -47,10 +49,12 @@ public class MySQLSchedulerDAO implements SchedulerDAO {
     private static final Logger log = LoggerFactory.getLogger(MySQLSchedulerDAO.class);
 
     private final JdbcTemplate jdbc;
+    private final TransactionTemplate txTemplate;
     private final ObjectMapper objectMapper;
 
     public MySQLSchedulerDAO(DataSource dataSource, ObjectMapper objectMapper) {
         this.jdbc = new JdbcTemplate(dataSource);
+        this.txTemplate = new TransactionTemplate(new DataSourceTransactionManager(dataSource));
         this.objectMapper = objectMapper;
     }
 
@@ -109,23 +113,29 @@ public class MySQLSchedulerDAO implements SchedulerDAO {
 
     @Override
     public void deleteWorkflowSchedule(String name) {
-        jdbc.update("DELETE FROM scheduler_execution WHERE schedule_name = ?", name);
-        jdbc.update("DELETE FROM scheduler WHERE scheduler_name = ?", name);
+        txTemplate.executeWithoutResult(
+                status -> {
+                    jdbc.update(
+                            "DELETE FROM scheduler_execution WHERE schedule_name = ?", name);
+                    jdbc.update("DELETE FROM scheduler WHERE scheduler_name = ?", name);
+                });
     }
 
     @Override
     public void saveExecutionRecord(WorkflowScheduleExecution execution) {
         String sql =
-                "INSERT INTO scheduler_execution (execution_id, schedule_name, state, json_data) "
-                        + "VALUES (?, ?, ?, ?) "
+                "INSERT INTO scheduler_execution (execution_id, schedule_name, state, execution_time, json_data) "
+                        + "VALUES (?, ?, ?, ?, ?) "
                         + "ON DUPLICATE KEY UPDATE "
-                        + "    state     = VALUES(state), "
-                        + "    json_data = VALUES(json_data)";
+                        + "    state          = VALUES(state), "
+                        + "    execution_time = VALUES(execution_time), "
+                        + "    json_data      = VALUES(json_data)";
         jdbc.update(
                 sql,
                 execution.getExecutionId(),
                 execution.getScheduleName(),
                 execution.getState() != null ? execution.getState().name() : null,
+                execution.getExecutionTime(),
                 toJson(execution));
     }
 
@@ -150,11 +160,18 @@ public class MySQLSchedulerDAO implements SchedulerDAO {
     }
 
     @Override
+    public List<WorkflowScheduleExecution> getPendingExecutionRecords() {
+        return jdbc.query(
+                "SELECT json_data FROM scheduler_execution WHERE state = 'POLLED'",
+                executionRowMapper());
+    }
+
+    @Override
     public List<WorkflowScheduleExecution> getExecutionRecords(String scheduleName, int limit) {
         String sql =
                 "SELECT json_data FROM scheduler_execution "
                         + "WHERE schedule_name = ? "
-                        + "ORDER BY json_extract(json_data, '$.executionTime') DESC "
+                        + "ORDER BY execution_time DESC "
                         + "LIMIT ?";
         return jdbc.query(sql, executionRowMapper(), scheduleName, limit);
     }
