@@ -201,7 +201,7 @@ public class SwitchTests {
         }
     }
 
-    class WorkflowOutput {
+    public static class WorkflowOutput {
         private String phoneNumber;
         private String email;
 
