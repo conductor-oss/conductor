@@ -89,28 +89,13 @@ export function useWorkflowDefs() {
 }
 
 export function useLatestWorkflowDefs() {
-  const { data, ...rest } = useWorkflowDefs();
-
-  // Filter latest versions only
-  const workflows = useMemo(() => {
-    if (data) {
-      const unique = new Map();
-      for (let workflowDef of data) {
-        if (!unique.has(workflowDef.name)) {
-          unique.set(workflowDef.name, workflowDef);
-        } else if (unique.get(workflowDef.name).version < workflowDef.version) {
-          unique.set(workflowDef.name, workflowDef);
-        }
-      }
-
-      return Array.from(unique.values());
+  return useFetch(
+    ["latestWorkflowDefs"],
+    "/metadata/workflow/latest-versions",
+    {
+      staleTime: STALE_TIME_WORKFLOW_DEFS,
     }
-  }, [data]);
-
-  return {
-    data: workflows,
-    ...rest,
-  };
+  );
 }
 
 export function useSaveWorkflow(callbacks) {
