@@ -579,7 +579,7 @@ export const sendWorkflowChangesToMetadataMachine = sendTo<
   DefinitionMachineContext,
   any,
   ActorRef<WorkflowMetadataEvents>
->("workflowMetadataEditorMachine", ({ workflowChanges }) => {
+>("workflowTabMetaEditor", ({ workflowChanges }) => {
   return {
     type: WorkflowMetadataMachineEventTypes.FORCE_WORKFLOW,
     workflow: workflowChanges || {},
