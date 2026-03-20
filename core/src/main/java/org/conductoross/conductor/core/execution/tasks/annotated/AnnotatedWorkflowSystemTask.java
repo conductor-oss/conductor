@@ -14,9 +14,7 @@ package org.conductoross.conductor.core.execution.tasks.annotated;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.Optional;
 
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
@@ -26,19 +24,25 @@ import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 import com.netflix.conductor.sdk.workflow.executor.task.TaskContext;
 import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Adapter that wraps a @WorkerTask annotated method as a WorkflowSystemTask. This enables
  * annotation-based system task development while maintaining compatibility with the existing
  * SystemTaskWorkerCoordinator infrastructure.
  */
+@Slf4j
 public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AnnotatedWorkflowSystemTask.class);
+    @Getter private final Method method;
 
-    private final Method method;
-    private final Object bean;
-    private final WorkerTask annotation;
+    @Getter private final Object bean;
+
+    @Getter private final WorkerTask annotation;
+
     private final AnnotatedMethodParameterMapper parameterMapper;
+
     private final AnnotatedMethodResultMapper resultMapper;
 
     /**
@@ -75,7 +79,7 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         TaskContext.set(task.toTask());
         try {
-            LOGGER.debug(
+            log.debug(
                     "Executing annotated task {} for workflow {}",
                     getTaskType(),
                     workflow.getWorkflowId());
@@ -89,7 +93,7 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
             // Apply the result to the task
             resultMapper.applyResult(result, task, method);
 
-            LOGGER.debug(
+            log.debug(
                     "Completed annotated task {} with status {}", getTaskType(), task.getStatus());
 
             return true;
@@ -98,7 +102,7 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
             handleInvocationException(task, e);
             return true;
         } catch (Exception e) {
-            LOGGER.error("error executing annotated task " + getTaskType(), e);
+            log.error("error executing annotated task " + getTaskType(), e);
             task.setStatus(TaskModel.Status.FAILED);
             task.setReasonForIncompletion(e.getMessage());
             return true;
@@ -110,7 +114,7 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
     private void handleInvocationException(TaskModel task, InvocationTargetException e) {
         Throwable cause = e.getCause();
 
-        LOGGER.error("Error executing annotated task " + getTaskType(), cause);
+        log.error("Error executing annotated task " + getTaskType(), cause);
 
         if (cause instanceof NonRetryableException) {
             task.setStatus(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
@@ -125,31 +129,17 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
     public void cancel(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         // Default implementation - annotated tasks typically don't need custom cancel
         // logic
-        LOGGER.debug(
+        log.debug(
                 "Cancelling annotated task {} for workflow {}",
                 getTaskType(),
                 workflow.getWorkflowId());
         task.setStatus(TaskModel.Status.CANCELED);
     }
 
-    /**
-     * @return The annotation metadata for this task
-     */
-    public WorkerTask getAnnotation() {
-        return annotation;
-    }
-
-    /**
-     * @return The method that implements this task
-     */
-    public Method getMethod() {
-        return method;
-    }
-
-    /**
-     * @return The Spring bean instance
-     */
-    public Object getBean() {
-        return bean;
+    @Override
+    public Optional<Long> getEvaluationOffset(TaskModel taskModel, long maxOffset) {
+        return taskModel.getCallbackAfterSeconds() > 0
+                ? Optional.of(taskModel.getCallbackAfterSeconds())
+                : Optional.empty();
     }
 }

@@ -448,6 +448,87 @@ public class SqliteIndexDAOTest {
     }
 
     @Test
+    public void testSearchWorkflows() {
+        WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-v2");
+
+        indexDAO.indexWorkflow(wfs);
+
+        String query = String.format("workflowId=\"%s\"", wfs.getWorkflowId());
+        SearchResult<String> results =
+                indexDAO.searchWorkflows(query, "*", 0, 15, new ArrayList<>());
+        assertEquals("No results returned", 1, results.getResults().size());
+        assertEquals(
+                "Wrong workflow id returned", wfs.getWorkflowId(), results.getResults().get(0));
+    }
+
+    @Test
+    public void testSearchWorkflowsPagination() {
+        for (int i = 0; i < 5; i++) {
+            WorkflowSummary wfs = getMockWorkflowSummary("wf-v2-pagination-" + i);
+            indexDAO.indexWorkflow(wfs);
+        }
+
+        List<String> orderBy = Arrays.asList(new String[] {"workflowId:DESC"});
+        SearchResult<String> results = indexDAO.searchWorkflows("", "*", 0, 2, orderBy);
+        assertEquals("Wrong totalHits returned", 5, results.getTotalHits());
+        assertEquals("Wrong number of results returned", 2, results.getResults().size());
+        assertEquals(
+                "Results returned in wrong order",
+                "wf-v2-pagination-4",
+                results.getResults().get(0));
+        assertEquals(
+                "Results returned in wrong order",
+                "wf-v2-pagination-3",
+                results.getResults().get(1));
+    }
+
+    @Test
+    public void testSearchWorkflowsWithNullSort() {
+        WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-null-sort");
+
+        indexDAO.indexWorkflow(wfs);
+
+        String query = String.format("workflowId=\"%s\"", wfs.getWorkflowId());
+        SearchResult<String> results = indexDAO.searchWorkflows(query, "*", 0, 15, null);
+        assertEquals("No results returned", 1, results.getResults().size());
+        assertEquals(
+                "Wrong workflow id returned", wfs.getWorkflowId(), results.getResults().get(0));
+    }
+
+    @Test
+    public void testSearchTasks() {
+        TaskSummary ts = getMockTaskSummary("task-id-v2");
+
+        indexDAO.indexTask(ts);
+
+        String query = String.format("taskId=\"%s\"", ts.getTaskId());
+        SearchResult<String> results = indexDAO.searchTasks(query, "*", 0, 15, new ArrayList<>());
+        assertEquals("No results returned", 1, results.getResults().size());
+        assertEquals("Wrong task id returned", ts.getTaskId(), results.getResults().get(0));
+    }
+
+    @Test
+    public void testSearchTasksPagination() {
+        for (int i = 0; i < 5; i++) {
+            TaskSummary ts = getMockTaskSummary("task-v2-pagination-" + i);
+            indexDAO.indexTask(ts);
+        }
+
+        List<String> orderBy = Arrays.asList(new String[] {"taskId:DESC"});
+        SearchResult<String> results = indexDAO.searchTasks("", "*", 0, 2, orderBy);
+        assertEquals("Wrong totalHits returned", 5, results.getTotalHits());
+        assertEquals("Wrong number of results returned", 2, results.getResults().size());
+        assertEquals(
+                "Results returned in wrong order",
+                "task-v2-pagination-4",
+                results.getResults().get(0));
+        assertEquals(
+                "Results returned in wrong order",
+                "task-v2-pagination-3",
+                results.getResults().get(1));
+    }
+
+    @Test
     public void testSearchTaskSummary() {
         TaskSummary ts = getMockTaskSummary("task-id");
 

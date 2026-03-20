@@ -1,5 +1,5 @@
-site_name: Conductor Documentation
-site_description: Conductor is a platform created to orchestrate workflows that span across microservices.
+site_name: Durable Execution for workflows and agents
+site_description: Conductor is an open-source durable code execution engine and agentic workflow engine. Orchestrate distributed workflows with saga pattern compensation, at-least-once task delivery, and polyglot workers in Java, Python, Go, and more.
 repo_url: https://github.com/conductor-oss/conductor
 site_url: https://conductor-oss.github.io/conductor
 edit_uri: ''
@@ -7,133 +7,184 @@ strict: false
 use_directory_urls: false
 
 nav:
-  - index.md
-  - Developer Guide:
-    - devguide/concepts/why.md 
-    - Running Conductor:
-      - devguide/running/docker.md
-      - devguide/running/source.md
-      - devguide/running/hosted.md
-    - Concepts: 
-      - devguide/concepts/index.md
-      - devguide/concepts/workflows.md
-      - devguide/concepts/tasks.md
-      - devguide/concepts/workers.md
-    - Architecture: 
-      - devguide/architecture/index.md
-      - devguide/architecture/tasklifecycle.md
-      - devguide/architecture/technicaldetails.md
-      - devguide/architecture/directed-acyclic-graph.md
-    - How Tos:
-      - Workflows:
-        - devguide/how-tos/Workflows/creating-workflows.md
-        - devguide/how-tos/Workflows/handling-errors.md
-        - devguide/how-tos/Workflows/starting-workflows.md
-        - devguide/how-tos/Workflows/searching-workflows.md
-        - devguide/how-tos/Workflows/viewing-workflow-executions.md
-        - devguide/how-tos/Workflows/debugging-workflows.md
-        - devguide/how-tos/Workflows/versioning-workflows.md
-      - Tasks:
-        - devguide/how-tos/Tasks/choosing-tasks.md
-        - devguide/how-tos/Tasks/reusing-tasks.md
-        - devguide/how-tos/Tasks/task-inputs.md
-        - devguide/how-tos/Tasks/creating-tasks.md
-        - devguide/how-tos/Tasks/extending-system-tasks.md
-      - Workers:
-        - devguide/how-tos/Workers/build-a-java-task-worker.md
-        - devguide/how-tos/Workers/build-a-python-task-worker.md
-        - devguide/how-tos/Workers/build-a-golang-task-worker.md
-        - devguide/how-tos/Tasks/monitoring-task-queues.md
-        - devguide/how-tos/Workers/scaling-workers.md
-    - Tutorial:
-      - devguide/labs/index.md
-      - devguide/labs/first-workflow.md
-      - devguide/labs/eventhandlers.md
-      - devguide/labs/kitchensink.md
+  - Home: index.md
+  - Quickstart:
+    - quickstart/index.md
+    - Concepts: devguide/concepts/index.md
+    - Workflows: devguide/concepts/workflows.md
+    - Tasks: devguide/concepts/tasks.md
+    - Workers: devguide/concepts/workers.md
+    - Durable Execution: architecture/durable-execution.md
+    - JSON + Code Native: architecture/json-native.md
+    - Task Lifecycle: devguide/architecture/tasklifecycle.md
+  - Guides:
+    - Build with AI Agents: devguide/how-tos/conductor-skills.md
+    - devguide/concepts/conductor.md
+    - Workflows:
+      - devguide/how-tos/Workflows/creating-workflows.md
+      - devguide/how-tos/Workflows/starting-workflows.md
+      - devguide/how-tos/Workflows/handling-errors.md
+      - devguide/how-tos/Workflows/debugging-workflows.md
+      - devguide/how-tos/Workflows/versioning-workflows.md
+      - devguide/how-tos/Workflows/searching-workflows.md
+      - devguide/how-tos/Workflows/viewing-workflow-executions.md
+    - Tasks:
+      - devguide/how-tos/Tasks/creating-tasks.md
+      - devguide/how-tos/Tasks/task-inputs.md
+      - devguide/how-tos/Tasks/choosing-tasks.md
+      - devguide/how-tos/Workers/scaling-workers.md
+    - Event Bus Orchestration: devguide/how-tos/event-bus.md
     - Best Practices: devguide/bestpractices.md
-    - Advanced Topics:
-      - documentation/advanced/extend.md
-      - documentation/advanced/isolationgroups.md
-      - documentation/advanced/annotation-processor.md
-      - documentation/advanced/archival-of-workflows.md
-      - documentation/advanced/azureblob-storage.md
-      - documentation/advanced/externalpayloadstorage.md
-      - documentation/advanced/redis.md
-      - documentation/advanced/postgresql.md
     - FAQ: devguide/faq.md
-  - Reference: 
-    - API Specification:
+  - Cookbook:
+    - devguide/cookbook/index.md
+    - Microservice Orchestration: devguide/cookbook/microservice-orchestration.md
+    - Dynamic Parallelism: devguide/cookbook/dynamic-parallelism.md
+    - Wait & Timer Patterns: devguide/cookbook/wait-and-timers.md
+    - Event-Driven Recipes: devguide/cookbook/event-driven.md
+    - AI & LLM Recipes: devguide/cookbook/ai-llm.md
+    - Dynamic Workflows in Code: devguide/cookbook/dynamic-workflows.md
+  - AI Cookbook:
+    - devguide/ai/index.md
+    - Build Your First AI Agent: devguide/ai/first-ai-agent.md
+    - Production Agent Architecture: devguide/ai/production-agent-architecture.md
+    - Failure Semantics: devguide/ai/failure-semantics.md
+    - Why Conductor for Agents: devguide/ai/why-conductor.md
+    - MCP Integration: devguide/ai/mcp-guide.md
+    - Durable Agents: devguide/ai/durable-agents.md
+    - Human-in-the-Loop: devguide/ai/human-in-the-loop.md
+    - Dynamic Workflows: devguide/ai/dynamic-workflows.md
+    - LLM Orchestration: devguide/ai/llm-orchestration.md
+    - Token Efficiency: devguide/ai/token-efficiency.md
+  - SDKs:
+    - documentation/clientsdks/index.md
+    - Java: documentation/clientsdks/java-sdk.md
+    - Python: documentation/clientsdks/python-sdk.md
+    - Go: documentation/clientsdks/go-sdk.md
+    - JavaScript: documentation/clientsdks/js-sdk.md
+    - C#: documentation/clientsdks/csharp-sdk.md
+    - Ruby: documentation/clientsdks/ruby-sdk.md
+    - Rust: documentation/clientsdks/rust-sdk.md
+  - Reference:
+    - API:
       - documentation/api/index.md
       - documentation/api/metadata.md
       - documentation/api/startworkflow.md
       - documentation/api/workflow.md
       - documentation/api/task.md
-    - Configuration:
-      - Workflow Definition:
-        - documentation/configuration/workflowdef/index.md
-      - Task Configuration:
-        - System Tasks:
-          - documentation/configuration/workflowdef/systemtasks/index.md
-          - documentation/configuration/workflowdef/systemtasks/event-task.md
-          - documentation/configuration/workflowdef/systemtasks/http-task.md
-          - documentation/configuration/workflowdef/systemtasks/human-task.md
-          - documentation/configuration/workflowdef/systemtasks/inline-task.md
-          - documentation/configuration/workflowdef/systemtasks/json-jq-transform-task.md
-          - documentation/configuration/workflowdef/systemtasks/kafka-publish-task.md
-          - documentation/configuration/workflowdef/systemtasks/noop-task.md
-          - documentation/configuration/workflowdef/systemtasks/wait-task.md
-        - Operators:
-          - documentation/configuration/workflowdef/operators/index.md
-          - documentation/configuration/workflowdef/operators/do-while-task.md
-          - documentation/configuration/workflowdef/operators/dynamic-task.md
-          - documentation/configuration/workflowdef/operators/dynamic-fork-task.md
-          - documentation/configuration/workflowdef/operators/fork-task.md
-          - documentation/configuration/workflowdef/operators/join-task.md
-          - documentation/configuration/workflowdef/operators/set-variable-task.md
-          - documentation/configuration/workflowdef/operators/start-workflow-task.md
-          - documentation/configuration/workflowdef/operators/sub-workflow-task.md
-          - documentation/configuration/workflowdef/operators/switch-task.md
-          - documentation/configuration/workflowdef/operators/terminate-task.md
-      - documentation/configuration/taskdef.md
-      - documentation/configuration/eventhandlers.md
-    - Conductor Metrics:
+      - documentation/api/bulk.md
+      - documentation/api/eventhandlers.md
+      - documentation/api/taskdomains.md
+    - Workflow Definition:
+      - documentation/configuration/workflowdef/index.md
+    - System Tasks:
+      - documentation/configuration/workflowdef/systemtasks/index.md
+      - documentation/configuration/workflowdef/systemtasks/http-task.md
+      - documentation/configuration/workflowdef/systemtasks/inline-task.md
+      - documentation/configuration/workflowdef/systemtasks/event-task.md
+      - documentation/configuration/workflowdef/systemtasks/human-task.md
+      - documentation/configuration/workflowdef/systemtasks/json-jq-transform-task.md
+      - documentation/configuration/workflowdef/systemtasks/kafka-publish-task.md
+      - documentation/configuration/workflowdef/systemtasks/noop-task.md
+      - documentation/configuration/workflowdef/systemtasks/jdbc-task.md
+      - documentation/configuration/workflowdef/systemtasks/wait-task.md
+    - Operators:
+      - documentation/configuration/workflowdef/operators/index.md
+      - documentation/configuration/workflowdef/operators/fork-task.md
+      - documentation/configuration/workflowdef/operators/join-task.md
+      - documentation/configuration/workflowdef/operators/switch-task.md
+      - documentation/configuration/workflowdef/operators/do-while-task.md
+      - documentation/configuration/workflowdef/operators/dynamic-task.md
+      - documentation/configuration/workflowdef/operators/dynamic-fork-task.md
+      - documentation/configuration/workflowdef/operators/sub-workflow-task.md
+      - documentation/configuration/workflowdef/operators/start-workflow-task.md
+      - documentation/configuration/workflowdef/operators/set-variable-task.md
+      - documentation/configuration/workflowdef/operators/terminate-task.md
+    - Task Definition: documentation/configuration/taskdef.md
+    - Event Handlers: documentation/configuration/eventhandlers.md
+    - Configuration: documentation/configuration/appconf.md
+    - Metrics:
       - Server Metrics: documentation/metrics/server.md
       - Client Metrics: documentation/metrics/client.md
-    - Client SDKs:
-      - documentation/clientsdks/index.md
-      - documentation/clientsdks/java-sdk.md
-      - documentation/clientsdks/csharp-sdk.md
-      - documentation/clientsdks/clojure-sdk.md
-      - documentation/clientsdks/go-sdk.md
-      - documentation/clientsdks/python-sdk.md
-      - documentation/clientsdks/js-sdk.md
-  - Resources:
-    - Contributing: resources/contributing.md
-    - Code of Conduct: https://orkes.io/orkes-conductor-community-code-of-conduct
-    - Related Projects: resources/related.md
-    - License: resources/license.md
-theme: 
+  - Deploy:
+    - Docker: devguide/running/deploy.md
+    - From Source: devguide/running/source.md
+    - Hosted: devguide/running/hosted.md
+    - devguide/architecture/index.md
+    - Advanced:
+      - documentation/advanced/extend.md
+      - documentation/advanced/isolationgroups.md
+      - documentation/advanced/archival-of-workflows.md
+      - documentation/advanced/externalpayloadstorage.md
+      - documentation/advanced/redis.md
+      - documentation/advanced/postgresql.md
+      - documentation/advanced/opensearch.md
+
+theme:
   name: material
   logo: img/logo.svg
   custom_dir: docs/overrides
+  palette:
+    - scheme: default
+      primary: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: custom
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font: false
   features:
     - navigation.tabs
     - navigation.tabs.sticky
     - navigation.indexes
     - navigation.footer
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - toc.follow
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/conductor-oss/conductor
+    - icon: fontawesome/brands/slack
+      link: https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA
+    - icon: fontawesome/brands/youtube
+      link: https://www.youtube.com/@orkesio
+
 extra_css:
   - css/custom.css
+
 plugins:
   - search
   - macros
+
 markdown_extensions:
   - admonition
   - codehilite
   - attr_list
+  - md_in_html
+  - tables
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
-  - pymdownx.superfences  
-copyright: Conductor authors
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
 
+copyright: Conductor authors

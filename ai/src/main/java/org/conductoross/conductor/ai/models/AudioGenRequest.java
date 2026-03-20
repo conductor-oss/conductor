@@ -26,7 +26,7 @@ import lombok.NoArgsConstructor;
 public class AudioGenRequest extends LLMWorkerInput {
     private String text;
     private String voice;
-    private double speed;
-    private String responseFormat;
+    @Builder.Default private double speed = 1.0;
+    @Builder.Default private String responseFormat = "mp3";
     @Builder.Default private int n = 1;
 }

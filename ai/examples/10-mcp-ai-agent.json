@@ -1,0 +1,62 @@
+{
+  "name": "mcp_ai_agent_workflow",
+  "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "list_available_tools",
+      "taskReferenceName": "discover_tools",
+      "type": "LIST_MCP_TOOLS",
+      "inputParameters": {
+        "mcpServer": "http://localhost:3001/mcp"
+      }
+    },
+    {
+      "name": "decide_which_tools_to_use",
+      "taskReferenceName": "plan",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "anthropic",
+        "model": "claude-3-5-sonnet-20241022",
+        "messages": [
+          {
+            "role": "system",
+            "message": "You are an AI agent. Available tools: ${discover_tools.output.tools}. User wants to: ${workflow.input.task}"
+          },
+          {
+            "role": "user",
+            "message": "Which tool should I use and what parameters? Respond with JSON: {method: string, arguments: object}"
+          }
+        ],
+        "temperature": 0.1,
+        "maxTokens": 500
+      }
+    },
+    {
+      "name": "execute_tool",
+      "taskReferenceName": "execute",
+      "type": "CALL_MCP_TOOL",
+      "inputParameters": {
+        "mcpServer": "http://localhost:3001/mcp",
+        "method": "${plan.output.result.method}",
+        "arguments": "${plan.output.result.arguments}"
+      }
+    },
+    {
+      "name": "summarize_result",
+      "taskReferenceName": "summarize",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "gpt-4o-mini",
+        "messages": [
+          {
+            "role": "user",
+            "message": "Summarize this result for the user: ${execute.output.content}"
+          }
+        ],
+        "maxTokens": 200
+      }
+    }
+  ]
+}

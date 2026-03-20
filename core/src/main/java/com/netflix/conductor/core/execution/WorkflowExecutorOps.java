@@ -64,7 +64,7 @@ import static org.conductoross.conductor.core.execution.ExecutorUtils.computePos
 @Component
 public class WorkflowExecutorOps implements WorkflowExecutor {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowExecutor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowExecutorOps.class);
     private static final int EXPEDITED_PRIORITY = 10;
     private static final String CLASS_NAME = WorkflowExecutor.class.getSimpleName();
     private static final Predicate<TaskModel> UNSUCCESSFUL_TERMINAL_TASK =
@@ -512,6 +512,13 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                                 workflow,
                                 new TerminateWorkflowException(
                                         reason, workflow.getStatus(), terminateTask));
+            } else if (WorkflowModel.Status.TERMINATED.name().equals(terminationStatus)) {
+                workflow.setStatus(WorkflowModel.Status.TERMINATED);
+                workflow =
+                        terminate(
+                                workflow,
+                                new TerminateWorkflowException(
+                                        reason, workflow.getStatus(), terminateTask));
             } else {
                 workflow.setReasonForIncompletion(reason);
                 workflow = completeWorkflow(workflow);
@@ -601,6 +608,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         if (WorkflowModel.Status.COMPLETED.equals(workflow.getStatus())) {
             throw new ConflictException("Cannot terminate a COMPLETED workflow.");
         }
+        if (WorkflowModel.Status.TERMINATED.equals(workflow.getStatus())) {
+            // Workflow is already in TERMINATED state; no additional termination action is
+            // required.
+            return;
+        }
         workflow.setStatus(WorkflowModel.Status.TERMINATED);
         terminateWorkflow(workflow, reason, null);
     }
@@ -657,6 +669,18 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
             String workflowId = workflow.getWorkflowId();
             workflow.setReasonForIncompletion(reason);
+            // Cancel non-terminal tasks before updating workflow state and notifying the status
+            // listener. The TERMINATED notification may trigger an archiving listener (e.g.
+            // ArchivingWorkflowStatusListener) that immediately removes the workflow from the
+            // primary data store. Archival requires tasks to be in a terminal state, so we must
+            // cancel SCHEDULED/IN_PROGRESS tasks first.
+            List<String> cancelErrors = cancelNonTerminalTasks(workflow);
+            if (!cancelErrors.isEmpty()) {
+                throw new NonTransientException(
+                        String.format(
+                                "Error canceling system tasks: %s",
+                                String.join(",", cancelErrors)));
+            }
             executionDAOFacade.updateWorkflow(workflow);
             notifyWorkflowStatusListener(workflow, WorkflowEventType.TERMINATED);
             Monitors.recordWorkflowTermination(
@@ -724,13 +748,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             executionDAOFacade.removeFromPendingWorkflow(
                     workflow.getWorkflowName(), workflow.getWorkflowId());
 
-            List<String> erroredTasks = cancelNonTerminalTasks(workflow);
-            if (!erroredTasks.isEmpty()) {
-                throw new NonTransientException(
-                        String.format(
-                                "Error canceling system tasks: %s",
-                                String.join(",", erroredTasks)));
-            }
             return workflow;
         } finally {
             executionLockService.releaseLock(workflow.getWorkflowId());
@@ -900,8 +917,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             LOGGER.error(errorMsg, e);
         }
 
-        taskResult.getLogs().forEach(taskExecLog -> taskExecLog.setTaskId(task.getTaskId()));
-        executionDAOFacade.addTaskExecLog(taskResult.getLogs());
+        List<TaskExecLog> taskLogs = taskResult.getLogs();
+        if (taskLogs != null) {
+            taskLogs.forEach(taskExecLog -> taskExecLog.setTaskId(task.getTaskId()));
+            executionDAOFacade.addTaskExecLog(taskLogs);
+        }
 
         if (task.getStatus().isTerminal()) {
             long duration = getTaskDuration(0, task);
@@ -1106,60 +1126,88 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         // and change the workflow/task state accordingly
         adjustStateIfSubWorkflowChanged(workflow);
 
+        // Guard against holding the lock past its lease time. If synchronous system tasks
+        // (e.g. INLINE inside a DO_WHILE) keep changing state, we loop instead of recursing to
+        // avoid a StackOverflowError. When the lease is about to expire we break out, persist the
+        // current state, and re-queue the workflow so the sweeper picks it up cleanly.
+        final long maxRuntime = properties.getLockLeaseTime().toMillis() - 100;
+        StopWatch decideWatch = new StopWatch();
+        decideWatch.start();
+
         try {
-            DeciderService.DeciderOutcome outcome = deciderService.decide(workflow);
-            if (outcome.isComplete) {
-                endExecution(workflow, outcome.terminateTask);
-                return workflow;
-            }
+            boolean continueLoop = true;
+            while (continueLoop) {
+                continueLoop = false;
 
-            List<TaskModel> tasksToBeScheduled = outcome.tasksToBeScheduled;
-            setTaskDomains(tasksToBeScheduled, workflow);
-            List<TaskModel> tasksToBeUpdated = outcome.tasksToBeUpdated;
+                DeciderService.DeciderOutcome outcome = deciderService.decide(workflow);
+                if (outcome.isComplete) {
+                    endExecution(workflow, outcome.terminateTask);
+                    return workflow;
+                }
 
-            tasksToBeScheduled = dedupAndAddTasks(workflow, tasksToBeScheduled);
+                List<TaskModel> tasksToBeScheduled = outcome.tasksToBeScheduled;
+                setTaskDomains(tasksToBeScheduled, workflow);
+                List<TaskModel> tasksToBeUpdated = outcome.tasksToBeUpdated;
 
-            boolean stateChanged = scheduleTask(workflow, tasksToBeScheduled); // start
+                tasksToBeScheduled = dedupAndAddTasks(workflow, tasksToBeScheduled);
 
-            for (TaskModel task : outcome.tasksToBeScheduled) {
-                executionDAOFacade.populateTaskData(task);
-                if (systemTaskRegistry.isSystemTask(task.getTaskType())
-                        && NON_TERMINAL_TASK.test(task)) {
-                    WorkflowSystemTask workflowSystemTask =
-                            systemTaskRegistry.get(task.getTaskType());
-                    if (!workflowSystemTask.isAsync()
-                            && workflowSystemTask.execute(workflow, task, this)) {
-                        tasksToBeUpdated.add(task);
-                        stateChanged = true;
+                boolean stateChanged = scheduleTask(workflow, tasksToBeScheduled);
+
+                for (TaskModel task : outcome.tasksToBeScheduled) {
+                    executionDAOFacade.populateTaskData(task);
+                    if (systemTaskRegistry.isSystemTask(task.getTaskType())
+                            && NON_TERMINAL_TASK.test(task)) {
+                        WorkflowSystemTask workflowSystemTask =
+                                systemTaskRegistry.get(task.getTaskType());
+                        if (!workflowSystemTask.isAsync()
+                                && workflowSystemTask.execute(workflow, task, this)) {
+                            tasksToBeUpdated.add(task);
+                            stateChanged = true;
+                        }
                     }
                 }
-            }
 
-            if (!outcome.tasksToBeUpdated.isEmpty() || !tasksToBeScheduled.isEmpty()) {
-                executionDAOFacade.updateTasks(tasksToBeUpdated);
-            }
+                if (!outcome.tasksToBeUpdated.isEmpty() || !tasksToBeScheduled.isEmpty()) {
+                    executionDAOFacade.updateTasks(tasksToBeUpdated);
+                }
 
-            if (stateChanged) {
-                return decide(workflow);
-            }
-
-            if (!outcome.tasksToBeUpdated.isEmpty() || !tasksToBeScheduled.isEmpty()) {
-                executionDAOFacade.updateWorkflow(workflow);
-            }
-
-            Duration timeout = properties.getWorkflowOffsetTimeout();
-            if (!workflow.getStatus().isTerminal()) {
-                Duration updatedOffset = computePostpone(workflow, timeout);
-                if (updatedOffset.getSeconds() != timeout.getSeconds()) {
-                    // we have a new value, setUnack uses time in millis
-                    LOGGER.debug(
-                            "Pushing the workflow {} into decider queue by {} millis",
+                if (stateChanged) {
+                    if (decideWatch.getTime() < maxRuntime) {
+                        continueLoop = true;
+                        continue;
+                    }
+                    // Lock lease is about to expire. Persist current state and re-queue so
+                    // the next decide() cycle continues without holding a stale lock.
+                    LOGGER.info(
+                            "Workflow {} decide loop approaching lock lease time after {} ms, "
+                                    + "re-queuing for continued processing",
                             workflow.getWorkflowId(),
-                            updatedOffset.getSeconds() * 1000);
-                    queueDAO.setUnackTimeout(
-                            DECIDER_QUEUE,
-                            workflow.getWorkflowId(),
-                            updatedOffset.getSeconds() * 1000);
+                            decideWatch.getTime());
+                    executionDAOFacade.updateWorkflow(workflow);
+                    queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), 0);
+                    return workflow;
+                }
+
+                if (!outcome.tasksToBeUpdated.isEmpty() || !tasksToBeScheduled.isEmpty()) {
+                    executionDAOFacade.updateWorkflow(workflow);
+                }
+
+                Duration timeout = properties.getWorkflowOffsetTimeout();
+                if (!workflow.getStatus().isTerminal()) {
+                    Duration updatedOffset =
+                            computePostpone(
+                                    workflow, timeout, properties.getMaxPostponeDurationSeconds());
+                    if (updatedOffset.getSeconds() != timeout.getSeconds()) {
+                        // we have a new value, setUnack uses time in millis
+                        LOGGER.debug(
+                                "Pushing the workflow {} into decider queue by {} millis",
+                                workflow.getWorkflowId(),
+                                updatedOffset.getSeconds() * 1000);
+                        queueDAO.setUnackTimeout(
+                                DECIDER_QUEUE,
+                                workflow.getWorkflowId(),
+                                updatedOffset.getSeconds() * 1000);
+                    }
                 }
             }
 

@@ -14,9 +14,16 @@ if errorlevel 1 (
     exit /b 1
 )
 
+set JAVA_VER=
+set JAVA_MAJOR=
 for /f "tokens=3" %%i in ('java -version 2^>^&1 ^| findstr /i "version"') do set JAVA_VER=%%i
 set JAVA_VER=%JAVA_VER:"=%
 for /f "tokens=1 delims=." %%a in ("%JAVA_VER%") do set JAVA_MAJOR=%%a
+
+if not defined JAVA_MAJOR (
+    echo Error: Unable to determine Java version
+    exit /b 1
+)
 
 if %JAVA_MAJOR% LSS 21 (
     echo Error: JDK 21 or higher is required. Current version: %JAVA_VER%

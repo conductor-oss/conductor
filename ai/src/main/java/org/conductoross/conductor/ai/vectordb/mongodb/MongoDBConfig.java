@@ -13,16 +13,12 @@
 package org.conductoross.conductor.ai.vectordb.mongodb;
 
 import org.conductoross.conductor.ai.vectordb.VectorDBConfig;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@ConfigurationProperties(prefix = "conductor.vectordb.mongodb")
 @Data
-@Component
 @NoArgsConstructor
 @AllArgsConstructor
 public class MongoDBConfig implements VectorDBConfig<MongoVectorDB> {
@@ -37,6 +33,10 @@ public class MongoDBConfig implements VectorDBConfig<MongoVectorDB> {
 
     @Override
     public MongoVectorDB get() {
-        return new MongoVectorDB(this);
+        throw new UnsupportedOperationException("Use get(String name) instead");
+    }
+
+    public MongoVectorDB get(String name) {
+        return new MongoVectorDB(name, this);
     }
 }

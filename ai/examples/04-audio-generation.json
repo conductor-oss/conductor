@@ -1,0 +1,18 @@
+{
+  "name": "tts_workflow",
+  "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "generate_audio",
+      "taskReferenceName": "audio",
+      "type": "GENERATE_AUDIO",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "tts-1",
+        "text": "Hello, this is a test of text to speech.",
+        "voice": "alloy"
+      }
+    }
+  ]
+}

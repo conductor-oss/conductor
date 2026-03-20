@@ -1,3 +1,7 @@
+---
+description: "Use Sub Workflow tasks in Conductor to nest and reuse workflows. Enables modular workflow design with synchronous execution and parent references."
+---
+
 # Sub Workflow
 ```json
 "type" : "SUB_WORKFLOW"
@@ -69,9 +73,17 @@ If the Sub Workflow task is defined as optional in the parent workflow definitio
 
 In this example workflow, a Fork task containing two tasks is used to simultaneously create two images from one image:
 
-![workflow with fork](workflow_fork.png)
+```mermaid
+graph LR
+    A[Start] --> B[Fork]
+    B --> C[image_convert_jpg]
+    B --> D[image_convert_webp]
+    C --> E[Join]
+    D --> E
+    E --> F[End]
+```
 
-The left fork will create a JPG file, and the right fork a WEBP file. Maintaining this workflow might be cumbersome, as changes made to one of the fork tasks do not automatically propagate the other.  Rather than using two tasks, we can define a single, reuseable `image_convert_resize` workflow that can be called as a sub-workflow in both forks:
+The left fork will create a JPG file, and the right fork a WEBP file. Maintaining this workflow might be cumbersome, as changes made to one of the fork tasks do not automatically propagate the other. Rather than using two tasks, we can define a single, reusable `image_convert_resize` workflow that can be called as a sub-workflow in both forks:
 
 
 ```json
@@ -165,9 +177,16 @@ The left fork will create a JPG file, and the right fork a WEBP file. Maintainin
 }
 ```
 
-Here is the corresponding workflow diagram:
+Here is the workflow flow:
 
-![workflow with 2 subworkflows](subworkflow_diagram.png)
-
+```mermaid
+graph LR
+    A[Start] --> B[Fork]
+    B --> C["Sub Workflow<br/>image_convert_resize<br/>(JPG)"]
+    B --> D["Sub Workflow<br/>image_convert_resize<br/>(WEBP)"]
+    C --> E[Join]
+    D --> E
+    E --> F[End]
+```
 
 Now that the tasks are abstracted into a sub-workflow, any changes to the sub-workflow will automatically apply to both forks.
