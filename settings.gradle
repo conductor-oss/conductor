@@ -70,4 +70,6 @@ include 'scheduler'
 include 'scheduler-postgres-persistence'
 include 'scheduler-mysql-persistence'
 
+include 'e2e'
+
 rootProject.children.each {it.name="conductor-${it.name}"}

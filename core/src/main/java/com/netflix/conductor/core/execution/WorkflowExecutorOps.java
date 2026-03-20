@@ -294,6 +294,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             // update parent's sub workflow task
             TaskModel subWorkflowTask =
                     executionDAOFacade.getTaskModel(workflow.getParentWorkflowTaskId());
+            if (subWorkflowTask == null || subWorkflowTask.getWorkflowTask() == null) {
+                // orphan sub-workflow: parent task reference no longer exists (e.g. parent was
+                // restarted and task list was cleared) — stop walking parent chain
+                break;
+            }
             if (subWorkflowTask.getWorkflowTask().isOptional()) {
                 // break out
                 LOGGER.info(
@@ -470,13 +475,15 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         taskToBeRetried.setSeq(0);
 
         // perform parameter replacement for retried task
-        Map<String, Object> taskInput =
-                parametersUtils.getTaskInput(
-                        taskToBeRetried.getWorkflowTask().getInputParameters(),
-                        workflow,
-                        taskToBeRetried.getWorkflowTask().getTaskDefinition(),
-                        taskToBeRetried.getTaskId());
-        taskToBeRetried.getInputData().putAll(taskInput);
+        if (taskToBeRetried.getWorkflowTask() != null) {
+            Map<String, Object> taskInput =
+                    parametersUtils.getTaskInput(
+                            taskToBeRetried.getWorkflowTask().getInputParameters(),
+                            workflow,
+                            taskToBeRetried.getWorkflowTask().getTaskDefinition(),
+                            taskToBeRetried.getTaskId());
+            taskToBeRetried.getInputData().putAll(taskInput);
+        }
 
         task.setRetried(true);
         // since this task is being retried and a retry has been computed, task
@@ -1031,8 +1038,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     && task.getStatus().isSuccessful();
         }
 
-        return workflowTasks.stream().noneMatch(t -> t.getTaskReferenceName().equals(taskRefName))
-                && task.getStatus().isSuccessful();
+        // Tasks not in the workflow definition are dynamically forked (FORK_JOIN_DYNAMIC).
+        // Always trigger decide for these tasks: they rely on the sweeper which has a
+        // 30+ second initial delay, causing workflows to stall if decide is skipped.
+        return false;
     }
 
     @Override
@@ -1918,6 +1927,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     void updateParentWorkflowTask(WorkflowModel subWorkflow) {
         TaskModel subWorkflowTask =
                 executionDAOFacade.getTaskModel(subWorkflow.getParentWorkflowTaskId());
+        if (subWorkflowTask == null) {
+            // orphan sub-workflow: parent task was cleared (e.g. parent workflow restarted)
+            return;
+        }
         executeSubworkflowTaskAndSyncData(subWorkflow, subWorkflowTask);
         executionDAOFacade.updateTask(subWorkflowTask);
     }

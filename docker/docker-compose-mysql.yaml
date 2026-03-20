@@ -15,7 +15,7 @@ services:
     networks:
       - internal
     ports:
-      - 8080:8080
+      - 7001:8080
       - 8127:5000
     healthcheck:
       test: [ "CMD", "curl","-I" ,"-XGET", "http://localhost:8080/health" ]
