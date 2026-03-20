@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Orkes, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -53,7 +53,8 @@ public class JavaSDKTests {
     }
 
     @Test
-    @Disabled("Worker thread pool gets terminated by SwitchTests.@AfterAll when tests run sequentially; shared static AnnotatedWorkerExecutor thread pool in SDK causes RejectedExecutionException, leaving task1 worker unresponsive")
+    @Disabled(
+            "Worker thread pool gets terminated by SwitchTests.@AfterAll when tests run sequentially; shared static AnnotatedWorkerExecutor thread pool in SDK causes RejectedExecutionException, leaving task1 worker unresponsive")
     public void testSDK() throws ExecutionException, InterruptedException, TimeoutException {
         ConductorWorkflow<Map<String, Object>> workflow = new ConductorWorkflow<>(executor);
         workflow.setName("sdk_integration_test");
@@ -63,10 +64,10 @@ public class JavaSDKTests {
         workflow.add(new SimpleTask("task1", "task1").input("name", "orkes"));
 
         Switch decision = new Switch("decide_ref", "${workflow.input.caseValue}");
-        decision.switchCase("caseA", new SimpleTask("task1", "task1"), new SimpleTask("task1", "task11"));
+        decision.switchCase(
+                "caseA", new SimpleTask("task1", "task1"), new SimpleTask("task1", "task11"));
         decision.switchCase("caseB", new SimpleTask("task2", "task2"));
         decision.defaultCase(new SimpleTask("task1", "default_task"));
-
 
         CompletableFuture<Workflow> future = workflow.executeDynamic(new HashMap<>());
         assertNotNull(future);
@@ -79,7 +80,7 @@ public class JavaSDKTests {
 
     @AfterAll
     public static void cleanup() {
-        if(executor != null) {
+        if (executor != null) {
             executor.shutdown();
         }
     }
@@ -90,8 +91,8 @@ public class JavaSDKTests {
     }
 
     @WorkerTask("task1")
-    public Map<String, Object> task1(@com.netflix.conductor.sdk.workflow.task.InputParam("name") String name) {
+    public Map<String, Object> task1(
+            @com.netflix.conductor.sdk.workflow.task.InputParam("name") String name) {
         return Map.of("greetings", "Hello, " + name);
     }
-
 }

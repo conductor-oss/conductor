@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Orkes, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,7 +12,13 @@
  */
 package io.conductor.e2e.workflow;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import org.junit.jupiter.api.Test;
+
 import com.netflix.conductor.client.http.MetadataClient;
 import com.netflix.conductor.client.http.WorkflowClient;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -21,15 +27,12 @@ import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
-import io.conductor.e2e.util.ApiUtil;
-import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.conductor.e2e.util.ApiUtil;
+
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class WorkflowInputTests {
 
@@ -46,26 +49,32 @@ public class WorkflowInputTests {
         // Register workflow
         try {
             registerWorkflowDef(workflowName1, taskName1, metadataAdminClient);
-        } catch (Exception e){}
+        } catch (Exception e) {
+        }
 
         // Trigger two workflows
         StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
         startWorkflowRequest.setName(workflowName1);
         startWorkflowRequest.setVersion(1);
-        startWorkflowRequest.setInput(objectMapper.readValue("{\"a\":[{\"b\":[\"${workflow.functions.date_utc}\"]}], \"c\":\"${workflow.c}\", \"d\":\"${workflow.task2.output.a}\"}", Map.class));
+        startWorkflowRequest.setInput(
+                objectMapper.readValue(
+                        "{\"a\":[{\"b\":[\"${workflow.functions.date_utc}\"]}], \"c\":\"${workflow.c}\", \"d\":\"${workflow.task2.output.a}\"}",
+                        Map.class));
 
         String workflowId = workflowAdminClient.startWorkflow(startWorkflowRequest);
 
-        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() ->
-        {
-            Workflow workflow = workflowAdminClient.getWorkflow(workflowId, false);
-            assertEquals(workflow.getInput().get("c"), "${workflow.c}");
-            assertEquals(workflow.getInput().get("d"), "${workflow.task2.output.a}");
-        });
-
+        await().atMost(5, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow = workflowAdminClient.getWorkflow(workflowId, false);
+                            assertEquals(workflow.getInput().get("c"), "${workflow.c}");
+                            assertEquals(
+                                    workflow.getInput().get("d"), "${workflow.task2.output.a}");
+                        });
     }
 
-    private void registerWorkflowDef(String workflowName, String taskName, MetadataClient metadataClient1) {
+    private void registerWorkflowDef(
+            String workflowName, String taskName, MetadataClient metadataClient1) {
         TaskDef taskDef = new TaskDef(taskName);
         taskDef.setOwnerEmail("test@orkes.io");
         WorkflowTask workflowTask = new WorkflowTask();
@@ -83,5 +92,4 @@ public class WorkflowInputTests {
         metadataClient1.updateWorkflowDefs(java.util.List.of(workflowDef));
         metadataClient1.registerTaskDefs(Arrays.asList(taskDef));
     }
-
 }

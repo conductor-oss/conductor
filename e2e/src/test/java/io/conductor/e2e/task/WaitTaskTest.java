@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Orkes, Inc.
+ * Copyright 2023 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,6 +12,18 @@
  */
 package io.conductor.e2e.task;
 
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
 import com.netflix.conductor.client.http.MetadataClient;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.http.WorkflowClient;
@@ -23,18 +35,8 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.sdk.workflow.def.ConductorWorkflow;
 import com.netflix.conductor.sdk.workflow.def.tasks.Wait;
 import com.netflix.conductor.sdk.workflow.executor.WorkflowExecutor;
-import io.conductor.e2e.util.ApiUtil;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import io.conductor.e2e.util.ApiUtil;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
@@ -45,7 +47,8 @@ public class WaitTaskTest {
     private WorkflowExecutor executor;
 
     @Test
-    public void testWaitTimeout() throws ExecutionException, InterruptedException, TimeoutException {
+    public void testWaitTimeout()
+            throws ExecutionException, InterruptedException, TimeoutException {
         TaskClient taskClient = ApiUtil.TASK_CLIENT;
         WorkflowClient workflowClient = ApiUtil.WORKFLOW_CLIENT;
         MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
@@ -62,14 +65,19 @@ public class WaitTaskTest {
         assertNotNull(run);
         assertEquals(Workflow.WorkflowStatus.COMPLETED, run.getStatus());
         assertEquals(1, run.getTasks().size());
-        long timeToExecute = run.getTasks().get(0).getEndTime() - run.getTasks().get(0).getScheduledTime();
+        long timeToExecute =
+                run.getTasks().get(0).getEndTime() - run.getTasks().get(0).getScheduledTime();
 
-        // conductor-oss postgres queue may have up to ~10s overhead over the configured wait duration
-        assertTrue(timeToExecute < 15000, "Wait task did not complete in time, took " + timeToExecute + " millis");
+        // conductor-oss postgres queue may have up to ~10s overhead over the configured wait
+        // duration
+        assertTrue(
+                timeToExecute < 15000,
+                "Wait task did not complete in time, took " + timeToExecute + " millis");
     }
 
     @Test
-    @DisplayName("when a workflow is started with task '*' to domain mapping, WAIT task should be executed without a domain")
+    @DisplayName(
+            "when a workflow is started with task '*' to domain mapping, WAIT task should be executed without a domain")
     public void startWorkflowWithDomain() {
         var workflowClient = ApiUtil.WORKFLOW_CLIENT;
 
@@ -91,16 +99,19 @@ public class WaitTaskTest {
         request.setTaskToDomain(Map.of("*", "my_domain"));
 
         var workflowId = workflowClient.startWorkflow(request);
-        // conductor-oss postgres queue may have up to ~10s overhead over the configured wait duration;
+        // conductor-oss postgres queue may have up to ~10s overhead over the configured wait
+        // duration;
         // 2s WAIT + ~10s sweeper overhead + buffer = 30s to be safe
-        await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
-            var wf = workflowClient.getWorkflow(workflowId, true);
-            assertEquals(1, wf.getTasks().size());
-            var t0 = wf.getTasks().get(0);
-            assertEquals("WAIT", t0.getTaskType());
-            assertNull(t0.getDomain());
-            assertEquals(Task.Status.COMPLETED, t0.getStatus());
-        });
+        await().atMost(30, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            var wf = workflowClient.getWorkflow(workflowId, true);
+                            assertEquals(1, wf.getTasks().size());
+                            var t0 = wf.getTasks().get(0);
+                            assertEquals("WAIT", t0.getTaskType());
+                            assertNull(t0.getDomain());
+                            assertEquals(Task.Status.COMPLETED, t0.getStatus());
+                        });
     }
 
     @Test
@@ -136,26 +147,28 @@ public class WaitTaskTest {
 
         var workflowId = workflowClient.startWorkflow(request);
         // 1s WAIT + ~10s postgres sweeper overhead + buffer
-        await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
-            var wf = workflowClient.getWorkflow(workflowId, true);
-            assertEquals(2, wf.getTasks().size());
+        await().atMost(30, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            var wf = workflowClient.getWorkflow(workflowId, true);
+                            assertEquals(2, wf.getTasks().size());
 
-            var setVar = wf.getTasks().get(0);
-            assertEquals("SET_VARIABLE", setVar.getTaskType());
-            assertEquals(Task.Status.COMPLETED, setVar.getStatus());
+                            var setVar = wf.getTasks().get(0);
+                            assertEquals("SET_VARIABLE", setVar.getTaskType());
+                            assertEquals(Task.Status.COMPLETED, setVar.getStatus());
 
-            var wait = wf.getTasks().get(1);
-            assertEquals("WAIT", wait.getTaskType());
-            assertEquals(Task.Status.COMPLETED, wait.getStatus());
-            assertNotNull(wait.getWorkflowTask());
-            assertNotNull(wait.getWorkflowTask().getTaskDefinition());
-            assertNotNull(wait.getWorkflowTask().getTaskDefinition().getName());
-        });
+                            var wait = wf.getTasks().get(1);
+                            assertEquals("WAIT", wait.getTaskType());
+                            assertEquals(Task.Status.COMPLETED, wait.getStatus());
+                            assertNotNull(wait.getWorkflowTask());
+                            assertNotNull(wait.getWorkflowTask().getTaskDefinition());
+                            assertNotNull(wait.getWorkflowTask().getTaskDefinition().getName());
+                        });
     }
 
     @AfterEach
     public void cleanup() {
-        if(executor != null) {
+        if (executor != null) {
             executor.shutdown();
         }
     }

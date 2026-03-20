@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Orkes, Inc.
+ * Copyright 2024 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,31 +12,30 @@
  */
 package io.conductor.e2e.workflow;
 
-import com.netflix.conductor.client.exception.ConductorClientException;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
 import com.netflix.conductor.client.http.MetadataClient;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.http.WorkflowClient;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.WorkflowSummary;
+
 import io.conductor.e2e.util.ApiUtil;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.awaitility.Awaitility.await;
 
 public class WorkflowPriorityTests {
 
@@ -72,15 +71,19 @@ public class WorkflowPriorityTests {
         workflowClient.terminateWorkflows(List.of(higherPriorityWorkflowId), "Terminated by e2e");
 
         // When task is polled. Task from lower priority workflow comes.
-        await().atMost(5, TimeUnit.SECONDS).pollInterval(1,TimeUnit.SECONDS).untilAsserted(() -> {
-            Task task = taskClient.pollTask(taskName, "e2e", null);
-            assertNotNull(task);
-            assertEquals(task.getWorkflowInstanceId(), lowerPriorityWorkflowId);
-        });
+        await().atMost(5, TimeUnit.SECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Task task = taskClient.pollTask(taskName, "e2e", null);
+                            assertNotNull(task);
+                            assertEquals(task.getWorkflowInstanceId(), lowerPriorityWorkflowId);
+                        });
         terminateExistingRunningWorkflows(workflowName);
     }
 
-    private static void registerWorkflowDef(String workflowName, String taskName, MetadataClient metadataClient) {
+    private static void registerWorkflowDef(
+            String workflowName, String taskName, MetadataClient metadataClient) {
         TaskDef taskDef = new TaskDef(taskName);
         taskDef.setOwnerEmail("test@orkes.io");
         taskDef.setRetryCount(0);
@@ -100,7 +103,6 @@ public class WorkflowPriorityTests {
         simpleTask2.setWorkflowTaskType(TaskType.SIMPLE);
         simpleTask2.setInputParameters(Map.of("value", "${workflow.input.value}", "order", "123"));
 
-
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName(workflowName);
         workflowDef.setOwnerEmail("test@orkes.io");
@@ -114,14 +116,25 @@ public class WorkflowPriorityTests {
     }
 
     private void terminateExistingRunningWorkflows(String workflowName) {
-        //clean up first
-        SearchResult<WorkflowSummary> found = workflowClient.search(0, 5000, "", "*", "workflowType IN (" + workflowName + ") AND status IN (RUNNING)");
-        found.getResults().forEach(workflowSummary -> {
-            try {
-                workflowClient.terminateWorkflow(workflowSummary.getWorkflowId(), "terminate - priority limiter test - " + workflowName);
-                System.out.println("Going to terminate " + workflowSummary.getWorkflowId());
-            }catch (Exception ignored) {
-            }
-        });
+        // clean up first
+        SearchResult<WorkflowSummary> found =
+                workflowClient.search(
+                        0,
+                        5000,
+                        "",
+                        "*",
+                        "workflowType IN (" + workflowName + ") AND status IN (RUNNING)");
+        found.getResults()
+                .forEach(
+                        workflowSummary -> {
+                            try {
+                                workflowClient.terminateWorkflow(
+                                        workflowSummary.getWorkflowId(),
+                                        "terminate - priority limiter test - " + workflowName);
+                                System.out.println(
+                                        "Going to terminate " + workflowSummary.getWorkflowId());
+                            } catch (Exception ignored) {
+                            }
+                        });
     }
 }

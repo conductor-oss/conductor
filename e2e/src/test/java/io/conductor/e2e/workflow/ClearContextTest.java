@@ -1,4 +1,20 @@
+/*
+ * Copyright 2026 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package io.conductor.e2e.workflow;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.client.http.MetadataClient;
 import com.netflix.conductor.client.http.TaskClient;
@@ -6,10 +22,8 @@ import com.netflix.conductor.client.http.WorkflowClient;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+
 import io.conductor.e2e.util.ApiUtil;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 
 public class ClearContextTest {
 
@@ -35,10 +49,12 @@ public class ClearContextTest {
 
         // Step 2: Register a workflow definition using this task
         String workflowName = "clear_context_test_workflow";
-        WorkflowTask workflowTask = new com.netflix.conductor.common.metadata.workflow.WorkflowTask();
+        WorkflowTask workflowTask =
+                new com.netflix.conductor.common.metadata.workflow.WorkflowTask();
         workflowTask.setName(taskName);
         workflowTask.setTaskReferenceName(taskName);
-        workflowTask.setWorkflowTaskType(com.netflix.conductor.common.metadata.tasks.TaskType.SIMPLE);
+        workflowTask.setWorkflowTaskType(
+                com.netflix.conductor.common.metadata.tasks.TaskType.SIMPLE);
         workflowTask.setTaskDefinition(taskDef);
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName(workflowName);
@@ -48,28 +64,31 @@ public class ClearContextTest {
         metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
 
         // Step 3: Start a thread that constantly calls updateTaskDef
-        Thread updater = new Thread(() -> {
-            for (int i = 0; i < 1000; i++) {
-                try {
-                    metadataClient.updateTaskDef(taskDef);
-                } catch (Exception ignored) {}
-            }
-        });
+        Thread updater =
+                new Thread(
+                        () -> {
+                            for (int i = 0; i < 1000; i++) {
+                                try {
+                                    metadataClient.updateTaskDef(taskDef);
+                                } catch (Exception ignored) {
+                                }
+                            }
+                        });
         updater.start();
 
         // Step 4: Start a workflow while the updater thread is running
-        com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest startWorkflowRequest = new com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest();
+        com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest startWorkflowRequest =
+                new com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest();
         startWorkflowRequest.setName(workflowName);
         startWorkflowRequest.setVersion(1);
         String workflowId = workflowClient.startWorkflow(startWorkflowRequest);
 
         // Step 5: Fetch the workflow and assert ownerApp is empty
-        com.netflix.conductor.common.run.Workflow workflow = workflowClient.getWorkflow(workflowId, true);
+        com.netflix.conductor.common.run.Workflow workflow =
+                workflowClient.getWorkflow(workflowId, true);
         org.junit.jupiter.api.Assertions.assertTrue(
-            workflow.getOwnerApp() == null || workflow.getOwnerApp().isEmpty(),
-            "ownerApp should be empty but was: " + workflow.getOwnerApp()
-        );
+                workflow.getOwnerApp() == null || workflow.getOwnerApp().isEmpty(),
+                "ownerApp should be empty but was: " + workflow.getOwnerApp());
         updater.interrupt();
-
     }
 }

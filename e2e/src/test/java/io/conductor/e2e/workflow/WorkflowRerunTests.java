@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Orkes, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,31 +15,28 @@ package io.conductor.e2e.workflow;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
-import com.netflix.conductor.client.exception.ConductorClientException;
-import com.netflix.conductor.common.config.ObjectMapperProvider;
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.common.metadata.tasks.TaskType;
-import com.netflix.conductor.common.run.SearchResult;
-import com.netflix.conductor.common.run.WorkflowSummary;
-import lombok.SneakyThrows;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.TaskResult;
-import com.netflix.conductor.common.metadata.workflow.*;
-import com.netflix.conductor.common.run.Workflow;
-
+import com.netflix.conductor.client.exception.ConductorClientException;
 import com.netflix.conductor.client.http.MetadataClient;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.http.WorkflowClient;
+import com.netflix.conductor.common.config.ObjectMapperProvider;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
+import com.netflix.conductor.common.metadata.workflow.*;
+import com.netflix.conductor.common.run.SearchResult;
+import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.run.WorkflowSummary;
 
 import io.conductor.e2e.util.ApiUtil;
+import lombok.SneakyThrows;
 
 import static io.conductor.e2e.util.RegistrationUtil.registerWorkflowDef;
 import static io.conductor.e2e.util.RegistrationUtil.registerWorkflowWithSubWorkflowDef;
@@ -75,21 +72,39 @@ public class WorkflowRerunTests {
         startWorkflowRequest.setVersion(1);
 
         String workflowId = workflowClient.startWorkflow(startWorkflowRequest);
-        await().atMost(33, TimeUnit.SECONDS).untilAsserted(()->{
-            assertFalse(workflowClient.getWorkflow(workflowId, true).getTasks().isEmpty());
-        });
+        await().atMost(33, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            assertFalse(
+                                    workflowClient
+                                            .getWorkflow(workflowId, true)
+                                            .getTasks()
+                                            .isEmpty());
+                        });
 
-        await().atMost(33, TimeUnit.SECONDS).untilAsserted(()->{
-            assertFalse(workflowClient.getWorkflow(workflowId, true).getTasks().isEmpty());
-            assertTrue(workflowClient.getWorkflow(workflowId, true).getTasks().size() > 1) ;
-        });
+        await().atMost(33, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            assertFalse(
+                                    workflowClient
+                                            .getWorkflow(workflowId, true)
+                                            .getTasks()
+                                            .isEmpty());
+                            assertTrue(
+                                    workflowClient.getWorkflow(workflowId, true).getTasks().size()
+                                            > 1);
+                        });
 
         Workflow workflow = workflowClient.getWorkflow(workflowId, true);
         // Fail the simple task
         Task task = workflow.getTasks().get(1);
-        workflow = taskClient.updateTaskSync(workflowId, task.getReferenceTaskName(), TaskResult.Status.FAILED, new HashMap<>());
+        workflow =
+                taskClient.updateTaskSync(
+                        workflowId,
+                        task.getReferenceTaskName(),
+                        TaskResult.Status.FAILED,
+                        new HashMap<>());
         assertEquals(Workflow.WorkflowStatus.FAILED, workflow.getStatus());
-
 
         RerunWorkflowRequest rerunWorkflowRequest = new RerunWorkflowRequest();
         rerunWorkflowRequest.setReRunFromWorkflowId(workflowId);
@@ -100,9 +115,13 @@ public class WorkflowRerunTests {
         assertEquals(workflow.getStatus().name(), Workflow.WorkflowStatus.RUNNING.name());
         assertEquals(workflow.getTasks().get(1).getStatus().name(), Task.Status.SCHEDULED.name());
 
-        workflow = taskClient.updateTaskSync(workflowId, task.getReferenceTaskName(), TaskResult.Status.COMPLETED, new HashMap<>());
+        workflow =
+                taskClient.updateTaskSync(
+                        workflowId,
+                        task.getReferenceTaskName(),
+                        TaskResult.Status.COMPLETED,
+                        new HashMap<>());
         assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
-
     }
 
     @Test
@@ -122,16 +141,29 @@ public class WorkflowRerunTests {
         String workflowId = workflowClient.startWorkflow(startWorkflowRequest);
 
         // Wait for tasks to be created
-        await().atMost(33, TimeUnit.SECONDS).untilAsserted(() -> {
-            assertFalse(workflowClient.getWorkflow(workflowId, true).getTasks().isEmpty());
-            assertTrue(workflowClient.getWorkflow(workflowId, true).getTasks().size() > 1);
-        });
+        await().atMost(33, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            assertFalse(
+                                    workflowClient
+                                            .getWorkflow(workflowId, true)
+                                            .getTasks()
+                                            .isEmpty());
+                            assertTrue(
+                                    workflowClient.getWorkflow(workflowId, true).getTasks().size()
+                                            > 1);
+                        });
 
         Workflow workflow = workflowClient.getWorkflow(workflowId, true);
 
         // Fail the first task
         Task task = workflow.getTasks().get(1);
-        workflow = taskClient.updateTaskSync(workflowId, task.getReferenceTaskName(), TaskResult.Status.FAILED, new HashMap<>());
+        workflow =
+                taskClient.updateTaskSync(
+                        workflowId,
+                        task.getReferenceTaskName(),
+                        TaskResult.Status.FAILED,
+                        new HashMap<>());
         assertEquals(Workflow.WorkflowStatus.FAILED, workflow.getStatus());
 
         // Rerun from the failed task
@@ -145,7 +177,12 @@ public class WorkflowRerunTests {
         assertEquals(Task.Status.SCHEDULED, workflow.getTasks().get(1).getStatus());
 
         // Complete the rerun task
-        workflow = taskClient.updateTaskSync(workflowId, task.getReferenceTaskName(), TaskResult.Status.COMPLETED, new HashMap<>());
+        workflow =
+                taskClient.updateTaskSync(
+                        workflowId,
+                        task.getReferenceTaskName(),
+                        TaskResult.Status.COMPLETED,
+                        new HashMap<>());
         assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
     }
 
@@ -171,12 +208,15 @@ public class WorkflowRerunTests {
         System.out.print("Workflow id is " + workflowId);
         // Wait for sub-workflow to be started and get its ID
         final String wfIdRerun = workflowId;
-        await().atMost(10, TimeUnit.SECONDS).pollInterval(500, TimeUnit.MILLISECONDS).untilAsserted(() -> {
-            Workflow wf = workflowClient.getWorkflow(wfIdRerun, true);
-            assertFalse(wf.getTasks().isEmpty());
-            assertNotNull(wf.getTasks().get(0).getSubWorkflowId());
-            assertFalse(wf.getTasks().get(0).getSubWorkflowId().isBlank());
-        });
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(500, TimeUnit.MILLISECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow wf = workflowClient.getWorkflow(wfIdRerun, true);
+                            assertFalse(wf.getTasks().isEmpty());
+                            assertNotNull(wf.getTasks().get(0).getSubWorkflowId());
+                            assertFalse(wf.getTasks().get(0).getSubWorkflowId().isBlank());
+                        });
         Workflow workflow = workflowClient.getWorkflow(workflowId, true);
         // Fail the simple task
         String subworkflowId = workflow.getTasks().get(0).getSubWorkflowId();
@@ -198,10 +238,13 @@ public class WorkflowRerunTests {
         subWorkflow = completeTask(subWorkflow.getTasks().get(0), TaskResult.Status.COMPLETED);
         assertEquals(Workflow.WorkflowStatus.COMPLETED, subWorkflow.getStatus());
 
-        await().pollInterval(Duration.ofSeconds(1)).atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
-            Workflow workflow1 = workflowClient.getWorkflow(workflowId, true);
-            assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow1.getStatus());
-        });
+        await().pollInterval(Duration.ofSeconds(1))
+                .atMost(Duration.ofSeconds(5))
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow1 = workflowClient.getWorkflow(workflowId, true);
+                            assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow1.getStatus());
+                        });
     }
 
     @Test
@@ -226,10 +269,12 @@ public class WorkflowRerunTests {
         String childWorkflowId = parentWf.getTasks().get(0).getSubWorkflowId();
         assertNotNull(childWorkflowId, "Child workflow ID should not be null");
 
-        await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow child = workflowClient.getWorkflow(childWorkflowId, true);
-            assertFalse(child.getTasks().isEmpty(), "Child should have tasks");
-        });
+        await().atMost(30, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow child = workflowClient.getWorkflow(childWorkflowId, true);
+                            assertFalse(child.getTasks().isEmpty(), "Child should have tasks");
+                        });
 
         parentWf = workflowClient.getWorkflow(parentWorkflowId, true);
         int parentTaskCountBefore = parentWf.getTasks().size();
@@ -238,11 +283,15 @@ public class WorkflowRerunTests {
         Task failedTask = childWf.getTasks().get(0);
         completeTask(failedTask, TaskResult.Status.FAILED);
 
-        await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow parent = workflowClient.getWorkflow(parentWorkflowId, true);
-            assertEquals(Workflow.WorkflowStatus.FAILED, parent.getStatus(),
-                    "Parent should be FAILED after child task failure");
-        });
+        await().atMost(30, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow parent = workflowClient.getWorkflow(parentWorkflowId, true);
+                            assertEquals(
+                                    Workflow.WorkflowStatus.FAILED,
+                                    parent.getStatus(),
+                                    "Parent should be FAILED after child task failure");
+                        });
 
         // forceUploadToDocumentStore is enterprise-only; skip archival wait in OSS
         // forceUploadToDocumentStore();
@@ -254,43 +303,63 @@ public class WorkflowRerunTests {
         workflowClient.rerunWorkflow(childWorkflowId, rerunRequest);
 
         // Wait for parent to be RUNNING
-        await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow parent = workflowClient.getWorkflow(parentWorkflowId, true);
-            assertEquals(Workflow.WorkflowStatus.RUNNING, parent.getStatus(),
-                    "Parent should be RUNNING after child rerun");
-        });
+        await().atMost(30, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow parent = workflowClient.getWorkflow(parentWorkflowId, true);
+                            assertEquals(
+                                    Workflow.WorkflowStatus.RUNNING,
+                                    parent.getStatus(),
+                                    "Parent should be RUNNING after child rerun");
+                        });
 
         // KEY ASSERTION: parent tasks should NOT be wiped
         Workflow parentAfterRerun = workflowClient.getWorkflow(parentWorkflowId, true);
-        assertTrue(parentAfterRerun.getTasks().size() >= parentTaskCountBefore,
-                String.format("BUG: Parent tasks wiped from %d to %d after rerun",
+        assertTrue(
+                parentAfterRerun.getTasks().size() >= parentTaskCountBefore,
+                String.format(
+                        "BUG: Parent tasks wiped from %d to %d after rerun",
                         parentTaskCountBefore, parentAfterRerun.getTasks().size()));
 
-        Task subWfTaskAfterRerun = parentAfterRerun.getTasks().stream()
-                .filter(t -> t.getTaskType().equals("SUB_WORKFLOW"))
-                .findFirst().orElse(null);
-        assertNotNull(subWfTaskAfterRerun, "SUB_WORKFLOW task should still exist in parent after rerun");
+        Task subWfTaskAfterRerun =
+                parentAfterRerun.getTasks().stream()
+                        .filter(t -> t.getTaskType().equals("SUB_WORKFLOW"))
+                        .findFirst()
+                        .orElse(null);
+        assertNotNull(
+                subWfTaskAfterRerun, "SUB_WORKFLOW task should still exist in parent after rerun");
 
         // Complete the rescheduled task in child
-        await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow child = workflowClient.getWorkflow(childWorkflowId, true);
-            Task scheduledTask = child.getTasks().stream()
-                    .filter(t -> t.getStatus() == Task.Status.SCHEDULED)
-                    .findFirst().orElse(null);
-            assertNotNull(scheduledTask, "Rescheduled task should be SCHEDULED in child");
-        });
+        await().atMost(30, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow child = workflowClient.getWorkflow(childWorkflowId, true);
+                            Task scheduledTask =
+                                    child.getTasks().stream()
+                                            .filter(t -> t.getStatus() == Task.Status.SCHEDULED)
+                                            .findFirst()
+                                            .orElse(null);
+                            assertNotNull(
+                                    scheduledTask, "Rescheduled task should be SCHEDULED in child");
+                        });
 
         childWf = workflowClient.getWorkflow(childWorkflowId, true);
-        Task scheduledTask = childWf.getTasks().stream()
-                .filter(t -> t.getStatus() == Task.Status.SCHEDULED)
-                .findFirst().orElseThrow();
+        Task scheduledTask =
+                childWf.getTasks().stream()
+                        .filter(t -> t.getStatus() == Task.Status.SCHEDULED)
+                        .findFirst()
+                        .orElseThrow();
         completeTask(scheduledTask, TaskResult.Status.COMPLETED);
 
-        await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow parent = workflowClient.getWorkflow(parentWorkflowId, true);
-            assertEquals(Workflow.WorkflowStatus.COMPLETED, parent.getStatus(),
-                    "Parent should be COMPLETED after child completes");
-        });
+        await().atMost(30, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow parent = workflowClient.getWorkflow(parentWorkflowId, true);
+                            assertEquals(
+                                    Workflow.WorkflowStatus.COMPLETED,
+                                    parent.getStatus(),
+                                    "Parent should be COMPLETED after child completes");
+                        });
     }
 
     public static class SearchResultList {
@@ -299,7 +368,8 @@ public class WorkflowRerunTests {
     }
 
     @Test
-    @DisplayName("Check workflow with sub_workflow task and rerun functionality from parent workflow")
+    @DisplayName(
+            "Check workflow with sub_workflow task and rerun functionality from parent workflow")
     public void testRerunWithSubWorkflowFromParentWorkflow() {
 
         String workflowName = "workflow-re-run-with-sub-workflow";
@@ -320,12 +390,15 @@ public class WorkflowRerunTests {
         System.out.print("Workflow id is " + workflowId);
         // Wait for sub-workflow to be started and get its ID
         final String wfIdParentRerun = workflowId;
-        await().atMost(10, TimeUnit.SECONDS).pollInterval(500, TimeUnit.MILLISECONDS).untilAsserted(() -> {
-            Workflow wf = workflowClient.getWorkflow(wfIdParentRerun, true);
-            assertFalse(wf.getTasks().isEmpty());
-            assertNotNull(wf.getTasks().get(0).getSubWorkflowId());
-            assertFalse(wf.getTasks().get(0).getSubWorkflowId().isBlank());
-        });
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(500, TimeUnit.MILLISECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow wf = workflowClient.getWorkflow(wfIdParentRerun, true);
+                            assertFalse(wf.getTasks().isEmpty());
+                            assertNotNull(wf.getTasks().get(0).getSubWorkflowId());
+                            assertFalse(wf.getTasks().get(0).getSubWorkflowId().isBlank());
+                        });
         Workflow workflow = workflowClient.getWorkflow(workflowId, true);
         // Fail the simple task
         String subworkflowId = workflow.getTasks().get(0).getSubWorkflowId();
@@ -335,9 +408,14 @@ public class WorkflowRerunTests {
         assertEquals(Workflow.WorkflowStatus.FAILED, workflow.getStatus());
 
         // Wait for parent workflow to transition to FAILED before rerunning
-        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() ->
-            assertEquals(Workflow.WorkflowStatus.FAILED, workflowClient.getWorkflow(wfIdParentRerun, false).getStatus())
-        );
+        await().atMost(10, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () ->
+                                assertEquals(
+                                        Workflow.WorkflowStatus.FAILED,
+                                        workflowClient
+                                                .getWorkflow(wfIdParentRerun, false)
+                                                .getStatus()));
 
         // Rerun the sub workflow.
         RerunWorkflowRequest rerunWorkflowRequest = new RerunWorkflowRequest();
@@ -355,14 +433,21 @@ public class WorkflowRerunTests {
         subWorkflow = completeTask(subWorkflow.getTasks().get(0), TaskResult.Status.COMPLETED);
         assertEquals(Workflow.WorkflowStatus.COMPLETED, subWorkflow.getStatus());
 
-        await().pollInterval(Duration.ofSeconds(1)).atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
-            Workflow wf = workflowClient.getWorkflow(wfIdParentRerun, true);
-            assertEquals(Workflow.WorkflowStatus.COMPLETED, wf.getStatus(), "Parent workflow should be completed");
-        });
+        await().pollInterval(Duration.ofSeconds(1))
+                .atMost(Duration.ofSeconds(10))
+                .untilAsserted(
+                        () -> {
+                            Workflow wf = workflowClient.getWorkflow(wfIdParentRerun, true);
+                            assertEquals(
+                                    Workflow.WorkflowStatus.COMPLETED,
+                                    wf.getStatus(),
+                                    "Parent workflow should be completed");
+                        });
     }
 
     @Test
-    @Disabled("Fork-join rerun from a completed branch task does not re-schedule sibling branches in conductor-oss")
+    @Disabled(
+            "Fork-join rerun from a completed branch task does not re-schedule sibling branches in conductor-oss")
     @DisplayName("Check workflow fork join task rerun")
     public void testRerunForkJoinWorkflow() {
 
@@ -382,7 +467,9 @@ public class WorkflowRerunTests {
 
         // Complete and Fail the simple task
         workflow = completeTask(workflow.getTasks().get(2), TaskResult.Status.COMPLETED);
-        workflow = completeTask(workflow.getTasks().get(1), TaskResult.Status.FAILED_WITH_TERMINAL_ERROR);
+        workflow =
+                completeTask(
+                        workflow.getTasks().get(1), TaskResult.Status.FAILED_WITH_TERMINAL_ERROR);
 
         assertEquals(Workflow.WorkflowStatus.FAILED, workflow.getStatus());
 
@@ -400,15 +487,21 @@ public class WorkflowRerunTests {
         workflow.getTasks().stream()
                 .filter(task -> task.getWorkflowTask().getType().equals(TaskType.SIMPLE.toString()))
                 .filter(simpleTask -> !simpleTask.getStatus().isTerminal())
-                .forEach(running -> taskClient.updateTaskSync(workflowId, running.getReferenceTaskName(), TaskResult.Status.COMPLETED, new HashMap<>()));
+                .forEach(
+                        running ->
+                                taskClient.updateTaskSync(
+                                        workflowId,
+                                        running.getReferenceTaskName(),
+                                        TaskResult.Status.COMPLETED,
+                                        new HashMap<>()));
 
         workflow = workflowClient.getWorkflow(workflowId, true);
         assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
-
     }
 
     @Test
-    @Disabled("Rerun from DO_WHILE task after fork terminates workflow instead of resuming in conductor-oss")
+    @Disabled(
+            "Rerun from DO_WHILE task after fork terminates workflow instead of resuming in conductor-oss")
     @DisplayName("Check workflow fork join task rerun")
     public void testRerunForkJoinWorkflowWithLoopTask() {
 
@@ -430,11 +523,16 @@ public class WorkflowRerunTests {
         completeTask(workflow.getTasks().get(1), TaskResult.Status.COMPLETED);
         completeTask(workflow.getTasks().get(2), TaskResult.Status.COMPLETED);
 
-        // Wait for JOIN to complete and DO_WHILE to be scheduled (async after fork branches complete)
+        // Wait for JOIN to complete and DO_WHILE to be scheduled (async after fork branches
+        // complete)
         final String wfId1 = workflowId;
-        await().atMost(10, TimeUnit.SECONDS).pollInterval(500, TimeUnit.MILLISECONDS).untilAsserted(() -> {
-            assertTrue(workflowClient.getWorkflow(wfId1, true).getTasks().size() >= 5);
-        });
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(500, TimeUnit.MILLISECONDS)
+                .untilAsserted(
+                        () -> {
+                            assertTrue(
+                                    workflowClient.getWorkflow(wfId1, true).getTasks().size() >= 5);
+                        });
         workflow = workflowClient.getWorkflow(workflowId, true);
 
         // terminate the workflow
@@ -447,11 +545,13 @@ public class WorkflowRerunTests {
         // Retry the workflow
         workflowClient.rerunWorkflow(workflowId, rerunWorkflowRequest);
         // Check the workflow status and few other parameters
-        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow wf = workflowClient.getWorkflow(wfId1, true);
-            assertEquals(Workflow.WorkflowStatus.RUNNING, wf.getStatus());
-            assertTrue(wf.getTasks().size() >= 6);
-        });
+        await().atMost(10, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow wf = workflowClient.getWorkflow(wfId1, true);
+                            assertEquals(Workflow.WorkflowStatus.RUNNING, wf.getStatus());
+                            assertTrue(wf.getTasks().size() >= 6);
+                        });
         workflow = workflowClient.getWorkflow(workflowId, true);
         assertEquals(TaskType.JOIN.name(), workflow.getTasks().get(3).getTaskType());
         assertEquals(Task.Status.COMPLETED, workflow.getTasks().get(3).getStatus());
@@ -460,11 +560,11 @@ public class WorkflowRerunTests {
 
         // Terminate the workflow
         workflowClient.terminateWorkflow(workflowId, "Terminated");
-
     }
 
     @Test
-    @Disabled("Rerun from DO_WHILE task after fork terminates workflow instead of resuming in conductor-oss")
+    @Disabled(
+            "Rerun from DO_WHILE task after fork terminates workflow instead of resuming in conductor-oss")
     @DisplayName("Check workflow fork join task rerun as loop task to rerun from")
     public void testRerunForkJoinWorkflowWithLoopTask2() {
 
@@ -486,11 +586,16 @@ public class WorkflowRerunTests {
         completeTask(workflow.getTasks().get(1), TaskResult.Status.COMPLETED);
         completeTask(workflow.getTasks().get(2), TaskResult.Status.COMPLETED);
 
-        // Wait for JOIN to complete and DO_WHILE to be scheduled (async after fork branches complete)
+        // Wait for JOIN to complete and DO_WHILE to be scheduled (async after fork branches
+        // complete)
         final String wfId2 = workflowId;
-        await().atMost(10, TimeUnit.SECONDS).pollInterval(500, TimeUnit.MILLISECONDS).untilAsserted(() -> {
-            assertTrue(workflowClient.getWorkflow(wfId2, true).getTasks().size() >= 5);
-        });
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(500, TimeUnit.MILLISECONDS)
+                .untilAsserted(
+                        () -> {
+                            assertTrue(
+                                    workflowClient.getWorkflow(wfId2, true).getTasks().size() >= 5);
+                        });
         workflow = workflowClient.getWorkflow(workflowId, true);
 
         // terminate the workflow
@@ -503,11 +608,13 @@ public class WorkflowRerunTests {
         // Rerun the workflow
         workflowClient.rerunWorkflow(workflowId, rerunWorkflowRequest);
         // Check the workflow status and few other parameters
-        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow wf = workflowClient.getWorkflow(wfId2, true);
-            assertEquals(Workflow.WorkflowStatus.RUNNING, wf.getStatus());
-            assertTrue(wf.getTasks().size() >= 6);
-        });
+        await().atMost(10, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow wf = workflowClient.getWorkflow(wfId2, true);
+                            assertEquals(Workflow.WorkflowStatus.RUNNING, wf.getStatus());
+                            assertTrue(wf.getTasks().size() >= 6);
+                        });
         workflow = workflowClient.getWorkflow(workflowId, true);
 
         assertEquals(TaskType.JOIN.name(), workflow.getTasks().get(3).getTaskType());
@@ -517,11 +624,11 @@ public class WorkflowRerunTests {
 
         // Terminate the workflow
         workflowClient.terminateWorkflow(workflowId, "Terminated");
-
     }
 
     @Test
-    @Disabled("Rerun from DO_WHILE iteration task after fork terminates workflow instead of resuming in conductor-oss")
+    @Disabled(
+            "Rerun from DO_WHILE iteration task after fork terminates workflow instead of resuming in conductor-oss")
     @DisplayName("Check workflow fork join task rerun with iteration more than 1")
     public void testRerunForkJoinWorkflowWithLoopOverTask() {
 
@@ -545,18 +652,26 @@ public class WorkflowRerunTests {
         completeTask(workflow.getTasks().get(2), TaskResult.Status.COMPLETED);
 
         // Wait for JOIN to complete and first DO_WHILE iteration (indices 4,5) to be scheduled
-        await().atMost(10, TimeUnit.SECONDS).pollInterval(500, TimeUnit.MILLISECONDS).untilAsserted(() -> {
-            assertTrue(workflowClient.getWorkflow(wfId3, true).getTasks().size() >= 6);
-        });
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(500, TimeUnit.MILLISECONDS)
+                .untilAsserted(
+                        () -> {
+                            assertTrue(
+                                    workflowClient.getWorkflow(wfId3, true).getTasks().size() >= 6);
+                        });
         workflow = workflowClient.getWorkflow(workflowId, true);
 
         // Complete first iteration of the loop simple task (index 5)
         completeTask(workflow.getTasks().get(5), TaskResult.Status.COMPLETED);
 
         // Wait for second DO_WHILE iteration (index 6) to be scheduled
-        await().atMost(10, TimeUnit.SECONDS).pollInterval(500, TimeUnit.MILLISECONDS).untilAsserted(() -> {
-            assertTrue(workflowClient.getWorkflow(wfId3, true).getTasks().size() >= 7);
-        });
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(500, TimeUnit.MILLISECONDS)
+                .untilAsserted(
+                        () -> {
+                            assertTrue(
+                                    workflowClient.getWorkflow(wfId3, true).getTasks().size() >= 7);
+                        });
         workflow = workflowClient.getWorkflow(workflowId, true);
 
         // Complete second iteration of the loop simple task (index 6)
@@ -574,27 +689,31 @@ public class WorkflowRerunTests {
         // Retry the workflow
         workflowClient.rerunWorkflow(workflowId, rerunWorkflowRequest);
         // Check the workflow status and few other parameters
-        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow wf = workflowClient.getWorkflow(wfId3, true);
-            assertEquals(Workflow.WorkflowStatus.RUNNING, wf.getStatus());
-            assertTrue(wf.getTasks().size() >= 7);
-        });
+        await().atMost(10, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow wf = workflowClient.getWorkflow(wfId3, true);
+                            assertEquals(Workflow.WorkflowStatus.RUNNING, wf.getStatus());
+                            assertTrue(wf.getTasks().size() >= 7);
+                        });
         workflow = workflowClient.getWorkflow(workflowId, true);
         assertEquals(TaskType.JOIN.name(), workflow.getTasks().get(3).getTaskType());
         assertEquals(Task.Status.COMPLETED, workflow.getTasks().get(3).getStatus());
         assertEquals(TaskType.DO_WHILE.name(), workflow.getTasks().get(4).getTaskType());
         assertEquals(Task.Status.COMPLETED, workflow.getTasks().get(5).getStatus());
         assertEquals(Task.Status.SCHEDULED, workflow.getTasks().get(6).getStatus());
-        assertEquals(workflow.getTasks().get(4).getIteration(), workflow.getTasks().get(6).getIteration());
+        assertEquals(
+                workflow.getTasks().get(4).getIteration(),
+                workflow.getTasks().get(6).getIteration());
         assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
 
         // Terminate the workflow
         workflowClient.terminateWorkflow(workflowId, "Terminated");
-
     }
 
     @Test
-    @Disabled("Rerunning a RUNNING workflow is not allowed in conductor-oss (requires terminal state); conductor-oss throws ConflictException")
+    @Disabled(
+            "Rerunning a RUNNING workflow is not allowed in conductor-oss (requires terminal state); conductor-oss throws ConflictException")
     @DisplayName("When rerunning from a duration wait task should be IN PROGRESS")
     void testRerunFromWaitTask() {
         var workflowDef = registerWaitWorkflow();
@@ -604,14 +723,20 @@ public class WorkflowRerunTests {
         startWorkflowRequest.setVersion(1);
         var workflowId = workflowClient.startWorkflow(startWorkflowRequest);
 
-        // Wait for the 1-second WAIT task to complete (WAIT sweeper may take up to 15s in conductor-oss)
+        // Wait for the 1-second WAIT task to complete (WAIT sweeper may take up to 15s in
+        // conductor-oss)
         final String wfIdWait = workflowId;
-        await().atMost(15, TimeUnit.SECONDS).untilAsserted(() -> {
-            var wf = workflowClient.getWorkflow(wfIdWait, true);
-            assertFalse(wf.getTasks().isEmpty());
-            assertEquals(Task.Status.COMPLETED, wf.getTasks().get(0).getStatus(), "1 second task not completed");
-            assertEquals(2, wf.getTasks().size(), "Expected 2 tasks");
-        });
+        await().atMost(15, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            var wf = workflowClient.getWorkflow(wfIdWait, true);
+                            assertFalse(wf.getTasks().isEmpty());
+                            assertEquals(
+                                    Task.Status.COMPLETED,
+                                    wf.getTasks().get(0).getStatus(),
+                                    "1 second task not completed");
+                            assertEquals(2, wf.getTasks().size(), "Expected 2 tasks");
+                        });
 
         var workflow = workflowClient.getWorkflow(workflowId, true);
         // if task0 is completed, there's a worker polling and completing duration tasks
@@ -628,7 +753,11 @@ public class WorkflowRerunTests {
 
         // After 3 seconds, if there is a worker polling and the
         // task was available to be polled it should have been polled
-        try { Thread.sleep(3000L); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+        try {
+            Thread.sleep(3000L);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
         workflow = workflowClient.getWorkflow(workflowId, true);
         assertEquals(2, workflow.getTasks().size());
 
@@ -649,8 +778,10 @@ public class WorkflowRerunTests {
     }
 
     @Test
-    @Disabled("Rerun from sub-workflow task inside fork terminates workflow instead of resuming in conductor-oss")
-    @DisplayName("Ticket #7097: Rerun from SUB_WORKFLOW task inside FORK should not restart from beginning")
+    @Disabled(
+            "Rerun from sub-workflow task inside fork terminates workflow instead of resuming in conductor-oss")
+    @DisplayName(
+            "Ticket #7097: Rerun from SUB_WORKFLOW task inside FORK should not restart from beginning")
     public void testRerunSubWorkflowInsideFork() {
 
         String parentWfName = "rerun-fork-subwf-parent-" + System.currentTimeMillis();
@@ -750,65 +881,95 @@ public class WorkflowRerunTests {
 
             String workflowId = workflowClient.startWorkflow(startRequest);
 
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                Workflow wf = workflowClient.getWorkflow(workflowId, true);
-                assertFalse(wf.getTasks().isEmpty(), "Tasks should be created");
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                                assertFalse(wf.getTasks().isEmpty(), "Tasks should be created");
+                            });
 
             Workflow workflow = workflowClient.getWorkflow(workflowId, true);
 
-            Task taskBefore = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(simpleTaskBefore))
-                    .findFirst().orElseThrow();
+            Task taskBefore =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(simpleTaskBefore))
+                            .findFirst()
+                            .orElseThrow();
             workflow = completeTask(taskBefore, TaskResult.Status.COMPLETED);
 
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                Workflow wf = workflowClient.getWorkflow(workflowId, true);
-                assertTrue(wf.getTasks().size() >= 5,
-                        "Should have at least 5 tasks. Got: " + wf.getTasks().size());
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                                assertTrue(
+                                        wf.getTasks().size() >= 5,
+                                        "Should have at least 5 tasks. Got: "
+                                                + wf.getTasks().size());
+                            });
 
             workflow = workflowClient.getWorkflow(workflowId, true);
 
-            Task subWfTask1Instance = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(subWfFork1Ref))
-                    .findFirst().orElseThrow(() -> new AssertionError("sub_wf_fork1 task not found"));
-            Task subWfTask2Instance = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(subWfFork2Ref))
-                    .findFirst().orElseThrow(() -> new AssertionError("sub_wf_fork2 task not found"));
+            Task subWfTask1Instance =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(subWfFork1Ref))
+                            .findFirst()
+                            .orElseThrow(() -> new AssertionError("sub_wf_fork1 task not found"));
+            Task subWfTask2Instance =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(subWfFork2Ref))
+                            .findFirst()
+                            .orElseThrow(() -> new AssertionError("sub_wf_fork2 task not found"));
 
             String subWfId1 = subWfTask1Instance.getSubWorkflowId();
             assertNotNull(subWfId1, "sub_wf_fork1 should have a subWorkflowId");
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                Workflow sw = workflowClient.getWorkflow(subWfId1, true);
-                assertFalse(sw.getTasks().isEmpty(), "Sub-workflow 1 should have tasks");
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow sw = workflowClient.getWorkflow(subWfId1, true);
+                                assertFalse(
+                                        sw.getTasks().isEmpty(),
+                                        "Sub-workflow 1 should have tasks");
+                            });
             Workflow subWf1 = workflowClient.getWorkflow(subWfId1, true);
             completeTask(subWf1.getTasks().get(0), TaskResult.Status.COMPLETED);
 
             String subWfId2 = subWfTask2Instance.getSubWorkflowId();
             assertNotNull(subWfId2, "sub_wf_fork2 should have a subWorkflowId");
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                Workflow sw = workflowClient.getWorkflow(subWfId2, true);
-                assertFalse(sw.getTasks().isEmpty(), "Sub-workflow 2 should have tasks");
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow sw = workflowClient.getWorkflow(subWfId2, true);
+                                assertFalse(
+                                        sw.getTasks().isEmpty(),
+                                        "Sub-workflow 2 should have tasks");
+                            });
             Workflow subWf2 = workflowClient.getWorkflow(subWfId2, true);
             completeTask(subWf2.getTasks().get(0), TaskResult.Status.FAILED);
 
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                Workflow wf = workflowClient.getWorkflow(workflowId, true);
-                assertEquals(Workflow.WorkflowStatus.FAILED, wf.getStatus());
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                                assertEquals(Workflow.WorkflowStatus.FAILED, wf.getStatus());
+                            });
 
             workflow = workflowClient.getWorkflow(workflowId, true);
 
-            String taskBeforeId = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(simpleTaskBefore))
-                    .findFirst().orElseThrow().getTaskId();
+            String taskBeforeId =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(simpleTaskBefore))
+                            .findFirst()
+                            .orElseThrow()
+                            .getTaskId();
 
-            Task failedSubWfTask = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(subWfFork2Ref))
-                    .findFirst().orElseThrow(() -> new AssertionError("sub_wf_fork2 not found after failure"));
+            Task failedSubWfTask =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(subWfFork2Ref))
+                            .findFirst()
+                            .orElseThrow(
+                                    () ->
+                                            new AssertionError(
+                                                    "sub_wf_fork2 not found after failure"));
 
             assertEquals(Task.Status.FAILED, failedSubWfTask.getStatus());
             String failedTaskId = failedSubWfTask.getTaskId();
@@ -818,78 +979,125 @@ public class WorkflowRerunTests {
             rerunRequest.setReRunFromTaskId(failedTaskId);
             workflowClient.rerunWorkflow(workflowId, rerunRequest);
 
-            try { Thread.sleep(2000L); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+            try {
+                Thread.sleep(2000L);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
 
             workflow = workflowClient.getWorkflow(workflowId, true);
 
             assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
 
-            Task taskBeforeAfterRerun = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(simpleTaskBefore))
-                    .findFirst().orElse(null);
-            assertNotNull(taskBeforeAfterRerun, "simple_task_before should still exist after rerun");
+            Task taskBeforeAfterRerun =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(simpleTaskBefore))
+                            .findFirst()
+                            .orElse(null);
+            assertNotNull(
+                    taskBeforeAfterRerun, "simple_task_before should still exist after rerun");
             assertEquals(Task.Status.COMPLETED, taskBeforeAfterRerun.getStatus());
             assertEquals(taskBeforeId, taskBeforeAfterRerun.getTaskId());
 
-            Task forkAfterRerun = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(forkRef))
-                    .findFirst().orElse(null);
+            Task forkAfterRerun =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(forkRef))
+                            .findFirst()
+                            .orElse(null);
             assertNotNull(forkAfterRerun, "FORK task should still exist after rerun");
 
-            Task rerunSubWfTask = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(subWfFork2Ref))
-                    .filter(t -> !t.getStatus().isTerminal() || t.getStatus() == Task.Status.SCHEDULED)
-                    .findFirst().orElse(null);
+            Task rerunSubWfTask =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(subWfFork2Ref))
+                            .filter(
+                                    t ->
+                                            !t.getStatus().isTerminal()
+                                                    || t.getStatus() == Task.Status.SCHEDULED)
+                            .findFirst()
+                            .orElse(null);
             assertNotNull(rerunSubWfTask, "sub_wf_fork2 should be re-scheduled after rerun");
 
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                Workflow wf = workflowClient.getWorkflow(workflowId, true);
-                Task swTask = wf.getTasks().stream()
-                        .filter(t -> t.getReferenceTaskName().equals(subWfFork2Ref))
-                        .findFirst().orElseThrow();
-                assertNotNull(swTask.getSubWorkflowId());
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                                Task swTask =
+                                        wf.getTasks().stream()
+                                                .filter(
+                                                        t ->
+                                                                t.getReferenceTaskName()
+                                                                        .equals(subWfFork2Ref))
+                                                .findFirst()
+                                                .orElseThrow();
+                                assertNotNull(swTask.getSubWorkflowId());
+                            });
 
             workflow = workflowClient.getWorkflow(workflowId, true);
-            Task rerunSubWf2 = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(subWfFork2Ref))
-                    .findFirst().orElseThrow();
+            Task rerunSubWf2 =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(subWfFork2Ref))
+                            .findFirst()
+                            .orElseThrow();
             String newSubWfId2 = rerunSubWf2.getSubWorkflowId();
 
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                Workflow sw = workflowClient.getWorkflow(newSubWfId2, true);
-                assertFalse(sw.getTasks().isEmpty());
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow sw = workflowClient.getWorkflow(newSubWfId2, true);
+                                assertFalse(sw.getTasks().isEmpty());
+                            });
             Workflow newSubWf2 = workflowClient.getWorkflow(newSubWfId2, true);
             completeTask(newSubWf2.getTasks().get(0), TaskResult.Status.COMPLETED);
 
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                Workflow wf = workflowClient.getWorkflow(workflowId, true);
-                assertTrue(wf.getTasks().stream()
-                        .anyMatch(t -> t.getReferenceTaskName().equals(simpleTaskAfter)
-                                && !t.getStatus().isTerminal()));
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                                assertTrue(
+                                        wf.getTasks().stream()
+                                                .anyMatch(
+                                                        t ->
+                                                                t.getReferenceTaskName()
+                                                                                .equals(
+                                                                                        simpleTaskAfter)
+                                                                        && !t.getStatus()
+                                                                                .isTerminal()));
+                            });
 
             workflow = workflowClient.getWorkflow(workflowId, true);
-            Task afterTask2 = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(simpleTaskAfter))
-                    .findFirst().orElseThrow();
+            Task afterTask2 =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(simpleTaskAfter))
+                            .findFirst()
+                            .orElseThrow();
             completeTask(afterTask2, TaskResult.Status.COMPLETED);
 
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                Workflow wf = workflowClient.getWorkflow(workflowId, true);
-                assertEquals(Workflow.WorkflowStatus.COMPLETED, wf.getStatus());
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                                assertEquals(Workflow.WorkflowStatus.COMPLETED, wf.getStatus());
+                            });
 
         } finally {
-            try { terminateExistingRunningWorkflows(parentWfName); } catch (Exception e) { /* ignore */ }
-            try { terminateExistingRunningWorkflows(subWfName); } catch (Exception e) { /* ignore */ }
+            try {
+                terminateExistingRunningWorkflows(parentWfName);
+            } catch (Exception e) {
+                /* ignore */
+            }
+            try {
+                terminateExistingRunningWorkflows(subWfName);
+            } catch (Exception e) {
+                /* ignore */
+            }
         }
     }
 
     @Test
-    @Disabled("Rerun from sub-workflow task inside fork terminates workflow instead of resuming in conductor-oss")
-    @DisplayName("Ticket #7097 (full): Rerun from second SUB_WORKFLOW in FORK branch with preceding task")
+    @Disabled(
+            "Rerun from sub-workflow task inside fork terminates workflow instead of resuming in conductor-oss")
+    @DisplayName(
+            "Ticket #7097 (full): Rerun from second SUB_WORKFLOW in FORK branch with preceding task")
     public void testRerunSubWorkflowInsideFork_SequentialBranch() {
 
         String parentWfName = "rerun-fork-seq-subwf-" + System.currentTimeMillis();
@@ -989,134 +1197,198 @@ public class WorkflowRerunTests {
 
             String workflowId = workflowClient.startWorkflow(startRequest);
 
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                Workflow wf = workflowClient.getWorkflow(workflowId, true);
-                assertFalse(wf.getTasks().isEmpty());
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                                assertFalse(wf.getTasks().isEmpty());
+                            });
 
             Workflow workflow = workflowClient.getWorkflow(workflowId, true);
-            Task taskBefore = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(taskBeforeRef))
-                    .findFirst().orElseThrow();
+            Task taskBefore =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(taskBeforeRef))
+                            .findFirst()
+                            .orElseThrow();
             completeTask(taskBefore, TaskResult.Status.COMPLETED);
 
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                Workflow wf = workflowClient.getWorkflow(workflowId, true);
-                assertTrue(wf.getTasks().size() >= 5);
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                                assertTrue(wf.getTasks().size() >= 5);
+                            });
 
             workflow = workflowClient.getWorkflow(workflowId, true);
 
-            Task branch1 = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(subWfBranch1Ref))
-                    .findFirst().orElseThrow();
+            Task branch1 =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(subWfBranch1Ref))
+                            .findFirst()
+                            .orElseThrow();
             String subWfId1 = branch1.getSubWorkflowId();
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                Workflow sw = workflowClient.getWorkflow(subWfId1, true);
-                assertFalse(sw.getTasks().isEmpty());
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow sw = workflowClient.getWorkflow(subWfId1, true);
+                                assertFalse(sw.getTasks().isEmpty());
+                            });
             Workflow sw1 = workflowClient.getWorkflow(subWfId1, true);
             completeTask(sw1.getTasks().get(0), TaskResult.Status.COMPLETED);
 
-            Task branch2a = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(subWfBranch2aRef))
-                    .findFirst().orElseThrow();
+            Task branch2a =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(subWfBranch2aRef))
+                            .findFirst()
+                            .orElseThrow();
             String subWfId2a = branch2a.getSubWorkflowId();
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                Workflow sw = workflowClient.getWorkflow(subWfId2a, true);
-                assertFalse(sw.getTasks().isEmpty());
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow sw = workflowClient.getWorkflow(subWfId2a, true);
+                                assertFalse(sw.getTasks().isEmpty());
+                            });
             Workflow sw2a = workflowClient.getWorkflow(subWfId2a, true);
             completeTask(sw2a.getTasks().get(0), TaskResult.Status.COMPLETED);
 
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                Workflow wf = workflowClient.getWorkflow(workflowId, true);
-                assertTrue(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals(subWfBranch2bRef)));
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                                assertTrue(
+                                        wf.getTasks().stream()
+                                                .anyMatch(
+                                                        t ->
+                                                                t.getReferenceTaskName()
+                                                                        .equals(subWfBranch2bRef)));
+                            });
 
             workflow = workflowClient.getWorkflow(workflowId, true);
-            Task branch2b = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(subWfBranch2bRef))
-                    .findFirst().orElseThrow();
+            Task branch2b =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(subWfBranch2bRef))
+                            .findFirst()
+                            .orElseThrow();
             String subWfId2b = branch2b.getSubWorkflowId();
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                Workflow sw = workflowClient.getWorkflow(subWfId2b, true);
-                assertFalse(sw.getTasks().isEmpty());
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow sw = workflowClient.getWorkflow(subWfId2b, true);
+                                assertFalse(sw.getTasks().isEmpty());
+                            });
 
             Workflow sw2b = workflowClient.getWorkflow(subWfId2b, true);
             completeTask(sw2b.getTasks().get(0), TaskResult.Status.FAILED);
 
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                Workflow wf = workflowClient.getWorkflow(workflowId, true);
-                assertEquals(Workflow.WorkflowStatus.FAILED, wf.getStatus());
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                                assertEquals(Workflow.WorkflowStatus.FAILED, wf.getStatus());
+                            });
 
             workflow = workflowClient.getWorkflow(workflowId, true);
 
-            String taskBeforeId = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(taskBeforeRef))
-                    .findFirst().orElseThrow().getTaskId();
-            Task failedTask = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(subWfBranch2bRef))
-                    .findFirst().orElseThrow();
+            String taskBeforeId =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(taskBeforeRef))
+                            .findFirst()
+                            .orElseThrow()
+                            .getTaskId();
+            Task failedTask =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(subWfBranch2bRef))
+                            .findFirst()
+                            .orElseThrow();
 
             RerunWorkflowRequest rerunRequest = new RerunWorkflowRequest();
             rerunRequest.setReRunFromWorkflowId(workflowId);
             rerunRequest.setReRunFromTaskId(failedTask.getTaskId());
             workflowClient.rerunWorkflow(workflowId, rerunRequest);
 
-            try { Thread.sleep(2000L); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+            try {
+                Thread.sleep(2000L);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
             workflow = workflowClient.getWorkflow(workflowId, true);
 
-            Task taskBeforeAfterRerun = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(taskBeforeRef))
-                    .findFirst().orElse(null);
+            Task taskBeforeAfterRerun =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(taskBeforeRef))
+                            .findFirst()
+                            .orElse(null);
             assertNotNull(taskBeforeAfterRerun, "task_before_fork should exist after rerun");
             assertEquals(Task.Status.COMPLETED, taskBeforeAfterRerun.getStatus());
             assertEquals(taskBeforeId, taskBeforeAfterRerun.getTaskId());
 
-            assertNotNull(workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(forkRef))
-                    .findFirst().orElse(null), "FORK task should still exist");
+            assertNotNull(
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(forkRef))
+                            .findFirst()
+                            .orElse(null),
+                    "FORK task should still exist");
 
-            Task branch2aAfter = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(subWfBranch2aRef))
-                    .findFirst().orElse(null);
+            Task branch2aAfter =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(subWfBranch2aRef))
+                            .findFirst()
+                            .orElse(null);
             assertNotNull(branch2aAfter, "sub_wf_branch2a should still exist");
             assertEquals(Task.Status.COMPLETED, branch2aAfter.getStatus());
 
             assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
 
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                Workflow wf = workflowClient.getWorkflow(workflowId, true);
-                Task swTask = wf.getTasks().stream()
-                        .filter(t -> t.getReferenceTaskName().equals(subWfBranch2bRef))
-                        .findFirst().orElseThrow();
-                assertNotNull(swTask.getSubWorkflowId());
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                                Task swTask =
+                                        wf.getTasks().stream()
+                                                .filter(
+                                                        t ->
+                                                                t.getReferenceTaskName()
+                                                                        .equals(subWfBranch2bRef))
+                                                .findFirst()
+                                                .orElseThrow();
+                                assertNotNull(swTask.getSubWorkflowId());
+                            });
 
             workflow = workflowClient.getWorkflow(workflowId, true);
-            Task rerunBranch2b = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(subWfBranch2bRef))
-                    .findFirst().orElseThrow();
+            Task rerunBranch2b =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(subWfBranch2bRef))
+                            .findFirst()
+                            .orElseThrow();
             String newSubWfId2b = rerunBranch2b.getSubWorkflowId();
 
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                Workflow sw = workflowClient.getWorkflow(newSubWfId2b, true);
-                assertFalse(sw.getTasks().isEmpty());
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow sw = workflowClient.getWorkflow(newSubWfId2b, true);
+                                assertFalse(sw.getTasks().isEmpty());
+                            });
             Workflow newSw2b = workflowClient.getWorkflow(newSubWfId2b, true);
             completeTask(newSw2b.getTasks().get(0), TaskResult.Status.COMPLETED);
 
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                Workflow wf = workflowClient.getWorkflow(workflowId, true);
-                assertEquals(Workflow.WorkflowStatus.COMPLETED, wf.getStatus());
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                                assertEquals(Workflow.WorkflowStatus.COMPLETED, wf.getStatus());
+                            });
 
         } finally {
-            try { terminateExistingRunningWorkflows(parentWfName); } catch (Exception e) { /* ignore */ }
-            try { terminateExistingRunningWorkflows(subWfName); } catch (Exception e) { /* ignore */ }
+            try {
+                terminateExistingRunningWorkflows(parentWfName);
+            } catch (Exception e) {
+                /* ignore */
+            }
+            try {
+                terminateExistingRunningWorkflows(subWfName);
+            } catch (Exception e) {
+                /* ignore */
+            }
         }
     }
 
@@ -1217,106 +1489,187 @@ public class WorkflowRerunTests {
             startRequest.setVersion(1);
             String workflowId = workflowClient.startWorkflow(startRequest);
 
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                assertFalse(workflowClient.getWorkflow(workflowId, true).getTasks().isEmpty());
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                assertFalse(
+                                        workflowClient
+                                                .getWorkflow(workflowId, true)
+                                                .getTasks()
+                                                .isEmpty());
+                            });
 
             Workflow workflow = workflowClient.getWorkflow(workflowId, true);
-            Task taskBefore = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(simpleTaskBefore))
-                    .findFirst().orElseThrow();
+            Task taskBefore =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(simpleTaskBefore))
+                            .findFirst()
+                            .orElseThrow();
             workflow = completeTask(taskBefore, TaskResult.Status.COMPLETED);
 
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                assertTrue(workflowClient.getWorkflow(workflowId, true).getTasks().size() >= 5);
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                assertTrue(
+                                        workflowClient
+                                                        .getWorkflow(workflowId, true)
+                                                        .getTasks()
+                                                        .size()
+                                                >= 5);
+                            });
 
             workflow = workflowClient.getWorkflow(workflowId, true);
 
-            Task subWfTask1Instance = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(subWfFork1Ref))
-                    .findFirst().orElseThrow();
-            Task subWfTask2Instance = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(subWfFork2Ref))
-                    .findFirst().orElseThrow();
+            Task subWfTask1Instance =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(subWfFork1Ref))
+                            .findFirst()
+                            .orElseThrow();
+            Task subWfTask2Instance =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(subWfFork2Ref))
+                            .findFirst()
+                            .orElseThrow();
 
             String subWfId1 = subWfTask1Instance.getSubWorkflowId();
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                assertFalse(workflowClient.getWorkflow(subWfId1, true).getTasks().isEmpty());
-            });
-            completeTask(workflowClient.getWorkflow(subWfId1, true).getTasks().get(0), TaskResult.Status.COMPLETED);
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                assertFalse(
+                                        workflowClient
+                                                .getWorkflow(subWfId1, true)
+                                                .getTasks()
+                                                .isEmpty());
+                            });
+            completeTask(
+                    workflowClient.getWorkflow(subWfId1, true).getTasks().get(0),
+                    TaskResult.Status.COMPLETED);
 
             String subWfId2 = subWfTask2Instance.getSubWorkflowId();
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                assertFalse(workflowClient.getWorkflow(subWfId2, true).getTasks().isEmpty());
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                assertFalse(
+                                        workflowClient
+                                                .getWorkflow(subWfId2, true)
+                                                .getTasks()
+                                                .isEmpty());
+                            });
             Workflow subWf2 = workflowClient.getWorkflow(subWfId2, true);
             String innerFailedTaskId = subWf2.getTasks().get(0).getTaskId();
             completeTask(subWf2.getTasks().get(0), TaskResult.Status.FAILED);
 
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                assertEquals(Workflow.WorkflowStatus.FAILED, workflowClient.getWorkflow(workflowId, true).getStatus());
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                assertEquals(
+                                        Workflow.WorkflowStatus.FAILED,
+                                        workflowClient.getWorkflow(workflowId, true).getStatus());
+                            });
 
             RerunWorkflowRequest rerunRequest = new RerunWorkflowRequest();
             rerunRequest.setReRunFromWorkflowId(workflowId);
             rerunRequest.setReRunFromTaskId(innerFailedTaskId);
             workflowClient.rerunWorkflow(workflowId, rerunRequest);
 
-            try { Thread.sleep(2000L); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+            try {
+                Thread.sleep(2000L);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
 
             workflow = workflowClient.getWorkflow(workflowId, true);
 
             assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
 
-            Task taskBeforeAfterRerun = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(simpleTaskBefore))
-                    .findFirst().orElse(null);
+            Task taskBeforeAfterRerun =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(simpleTaskBefore))
+                            .findFirst()
+                            .orElse(null);
             assertNotNull(taskBeforeAfterRerun);
             assertEquals(Task.Status.COMPLETED, taskBeforeAfterRerun.getStatus());
 
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                Workflow wf = workflowClient.getWorkflow(workflowId, true);
-                Task swTask = wf.getTasks().stream()
-                        .filter(t -> t.getReferenceTaskName().equals(subWfFork2Ref))
-                        .findFirst().orElseThrow();
-                assertNotNull(swTask.getSubWorkflowId());
-                assertFalse(workflowClient.getWorkflow(swTask.getSubWorkflowId(), true).getTasks().isEmpty());
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                                Task swTask =
+                                        wf.getTasks().stream()
+                                                .filter(
+                                                        t ->
+                                                                t.getReferenceTaskName()
+                                                                        .equals(subWfFork2Ref))
+                                                .findFirst()
+                                                .orElseThrow();
+                                assertNotNull(swTask.getSubWorkflowId());
+                                assertFalse(
+                                        workflowClient
+                                                .getWorkflow(swTask.getSubWorkflowId(), true)
+                                                .getTasks()
+                                                .isEmpty());
+                            });
 
             workflow = workflowClient.getWorkflow(workflowId, true);
-            Task rerunSubWf2Task = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(subWfFork2Ref))
-                    .findFirst().orElseThrow();
+            Task rerunSubWf2Task =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(subWfFork2Ref))
+                            .findFirst()
+                            .orElseThrow();
             String newSubWfId2 = rerunSubWf2Task.getSubWorkflowId();
             Workflow newSubWf2 = workflowClient.getWorkflow(newSubWfId2, true);
             completeTask(newSubWf2.getTasks().get(0), TaskResult.Status.COMPLETED);
 
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                Workflow wf = workflowClient.getWorkflow(workflowId, true);
-                assertTrue(wf.getTasks().stream()
-                        .anyMatch(t -> t.getReferenceTaskName().equals(simpleTaskAfter) && !t.getStatus().isTerminal()));
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                                assertTrue(
+                                        wf.getTasks().stream()
+                                                .anyMatch(
+                                                        t ->
+                                                                t.getReferenceTaskName()
+                                                                                .equals(
+                                                                                        simpleTaskAfter)
+                                                                        && !t.getStatus()
+                                                                                .isTerminal()));
+                            });
 
             workflow = workflowClient.getWorkflow(workflowId, true);
-            Task afterTask2 = workflow.getTasks().stream()
-                    .filter(t -> t.getReferenceTaskName().equals(simpleTaskAfter))
-                    .findFirst().orElseThrow();
+            Task afterTask2 =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getReferenceTaskName().equals(simpleTaskAfter))
+                            .findFirst()
+                            .orElseThrow();
             completeTask(afterTask2, TaskResult.Status.COMPLETED);
 
-            await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                assertEquals(Workflow.WorkflowStatus.COMPLETED, workflowClient.getWorkflow(workflowId, true).getStatus());
-            });
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                assertEquals(
+                                        Workflow.WorkflowStatus.COMPLETED,
+                                        workflowClient.getWorkflow(workflowId, true).getStatus());
+                            });
 
         } finally {
-            try { terminateExistingRunningWorkflows(parentWfName); } catch (Exception e) { /* ignore */ }
-            try { terminateExistingRunningWorkflows(subWfName); } catch (Exception e) { /* ignore */ }
+            try {
+                terminateExistingRunningWorkflows(parentWfName);
+            } catch (Exception e) {
+                /* ignore */
+            }
+            try {
+                terminateExistingRunningWorkflows(subWfName);
+            } catch (Exception e) {
+                /* ignore */
+            }
         }
     }
 
     @Test
-    @Disabled("DO_WHILE task rerun leaves workflow TERMINATED due to sync task status not being reset to SCHEDULED in conductor-oss")
-    @DisplayName("Test do_while task rerun - verify cancellation of previous iterations and fresh start")
+    @Disabled(
+            "DO_WHILE task rerun leaves workflow TERMINATED due to sync task status not being reset to SCHEDULED in conductor-oss")
+    @DisplayName(
+            "Test do_while task rerun - verify cancellation of previous iterations and fresh start")
     public void testDoWhileRerun() {
         String workflowName = "rerun-do-while-workflow";
         WorkflowDef workflowDef = registerDoWhileWorkflowDef(workflowName);
@@ -1334,43 +1687,65 @@ public class WorkflowRerunTests {
 
         String workflowId = workflowClient.startWorkflow(startWorkflowRequest);
 
-        await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
-            assertFalse(workflow.getTasks().isEmpty());
-        });
+        await().atMost(30, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
+                            assertFalse(workflow.getTasks().isEmpty());
+                        });
 
         Workflow workflow = workflowClient.getWorkflow(workflowId, true);
         assertNotNull(workflow.getTaskToDomain());
         assertEquals("test-domain", workflow.getTaskToDomain().get("simple_do_while_task"));
 
-        Task firstIterationTask = workflow.getTasks().stream()
-                .filter(t -> "simple_do_while_task".equals(t.getTaskDefName()) && t.getIteration() == 1)
-                .findFirst().orElseThrow();
+        Task firstIterationTask =
+                workflow.getTasks().stream()
+                        .filter(
+                                t ->
+                                        "simple_do_while_task".equals(t.getTaskDefName())
+                                                && t.getIteration() == 1)
+                        .findFirst()
+                        .orElseThrow();
         assertEquals("test-domain", firstIterationTask.getDomain());
         completeTask(firstIterationTask, TaskResult.Status.COMPLETED);
 
-        await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow wf = workflowClient.getWorkflow(workflowId, true);
-            assertTrue(wf.getTasks().stream().anyMatch(t -> t.getIteration() == 2));
-        });
+        await().atMost(30, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                            assertTrue(wf.getTasks().stream().anyMatch(t -> t.getIteration() == 2));
+                        });
 
         workflow = workflowClient.getWorkflow(workflowId, true);
-        Task secondIterationTask = workflow.getTasks().stream()
-                .filter(t -> "simple_do_while_task".equals(t.getTaskDefName()) && t.getIteration() == 2)
-                .findFirst().orElseThrow();
+        Task secondIterationTask =
+                workflow.getTasks().stream()
+                        .filter(
+                                t ->
+                                        "simple_do_while_task".equals(t.getTaskDefName())
+                                                && t.getIteration() == 2)
+                        .findFirst()
+                        .orElseThrow();
         assertEquals("test-domain", secondIterationTask.getDomain());
 
-        String firstTaskIdBeforeRerun = workflow.getTasks().stream()
-                .filter(t -> "simple_do_while_task".equals(t.getTaskDefName()) && t.getIteration() == 1)
-                .map(Task::getTaskId).findFirst().orElseThrow();
+        String firstTaskIdBeforeRerun =
+                workflow.getTasks().stream()
+                        .filter(
+                                t ->
+                                        "simple_do_while_task".equals(t.getTaskDefName())
+                                                && t.getIteration() == 1)
+                        .map(Task::getTaskId)
+                        .findFirst()
+                        .orElseThrow();
         String secondTaskIdBeforeRerun = secondIterationTask.getTaskId();
 
         workflow = completeTask(secondIterationTask, TaskResult.Status.FAILED_WITH_TERMINAL_ERROR);
         assertEquals(Workflow.WorkflowStatus.FAILED, workflow.getStatus());
 
-        Task doWhileTask = workflow.getTasks().stream()
-                .filter(t -> TaskType.DO_WHILE.name().equals(t.getTaskType()))
-                .findFirst().orElseThrow();
+        Task doWhileTask =
+                workflow.getTasks().stream()
+                        .filter(t -> TaskType.DO_WHILE.name().equals(t.getTaskType()))
+                        .findFirst()
+                        .orElseThrow();
 
         RerunWorkflowRequest rerunWorkflowRequest = new RerunWorkflowRequest();
         rerunWorkflowRequest.setReRunFromWorkflowId(workflowId);
@@ -1393,13 +1768,16 @@ public class WorkflowRerunTests {
 
         assertNotEquals(firstTaskIdBeforeRerun, firstIterationAfterRerun.getTaskId());
 
-        boolean hasSecondIterationAfterRerun = workflow.getTasks().stream().anyMatch(t -> t.getIteration() == 2);
+        boolean hasSecondIterationAfterRerun =
+                workflow.getTasks().stream().anyMatch(t -> t.getIteration() == 2);
         assertFalse(hasSecondIterationAfterRerun);
     }
 
     @Test
-    @Disabled("SWITCH task rerun leaves workflow TERMINATED due to sync task status not being reset to SCHEDULED in conductor-oss")
-    @DisplayName("Test switch task rerun - verify cancellation of previous branches and re-execution")
+    @Disabled(
+            "SWITCH task rerun leaves workflow TERMINATED due to sync task status not being reset to SCHEDULED in conductor-oss")
+    @DisplayName(
+            "Test switch task rerun - verify cancellation of previous branches and re-execution")
     public void testSwitchTaskRerun() {
         String workflowName = "rerun-switch-workflow";
         registerSwitchWorkflowDef(workflowName);
@@ -1435,12 +1813,17 @@ public class WorkflowRerunTests {
         assertEquals("case2_task", workflow.getTasks().get(1).getReferenceTaskName());
 
         workflow = completeTask(workflow.getTasks().get(1), TaskResult.Status.COMPLETED);
-        try { Thread.sleep(1000L); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+        try {
+            Thread.sleep(1000L);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
         assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
     }
 
     @Test
-    @Disabled("Rerun from fork-join workflow with wait/switch tasks terminates workflow instead of resuming in conductor-oss")
+    @Disabled(
+            "Rerun from fork-join workflow with wait/switch tasks terminates workflow instead of resuming in conductor-oss")
     @DisplayName("Test rerun with fork-join containing wait, wait_for_webhook, and switch tasks")
     public void testRerunForkJoinWithWaitAndSwitchTasks() {
         String workflowName = "test-rerun-fork-join-wait-switch-" + System.currentTimeMillis();
@@ -1455,84 +1838,205 @@ public class WorkflowRerunTests {
         String workflowId = workflowClient.startWorkflow(startWorkflowRequest);
         assertNotNull(workflowId);
 
-        await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
-            assertTrue(workflow.getTasks().size() >= 5);
-            assertTrue(workflow.getTasks().stream()
-                    .anyMatch(t -> "wait_task".equals(t.getReferenceTaskName()) && Task.Status.IN_PROGRESS.equals(t.getStatus())));
-            assertTrue(workflow.getTasks().stream()
-                    .anyMatch(t -> "wait_for_webhook_task".equals(t.getReferenceTaskName()) && Task.Status.IN_PROGRESS.equals(t.getStatus())));
-            assertTrue(workflow.getTasks().stream().anyMatch(t -> "simple_task_case1".equals(t.getReferenceTaskName())));
-            assertTrue(workflow.getTasks().stream().anyMatch(t -> "simple_task_fork4".equals(t.getReferenceTaskName())));
-        });
+        await().atMost(30, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
+                            assertTrue(workflow.getTasks().size() >= 5);
+                            assertTrue(
+                                    workflow.getTasks().stream()
+                                            .anyMatch(
+                                                    t ->
+                                                            "wait_task"
+                                                                            .equals(
+                                                                                    t
+                                                                                            .getReferenceTaskName())
+                                                                    && Task.Status.IN_PROGRESS
+                                                                            .equals(
+                                                                                    t
+                                                                                            .getStatus())));
+                            assertTrue(
+                                    workflow.getTasks().stream()
+                                            .anyMatch(
+                                                    t ->
+                                                            "wait_for_webhook_task"
+                                                                            .equals(
+                                                                                    t
+                                                                                            .getReferenceTaskName())
+                                                                    && Task.Status.IN_PROGRESS
+                                                                            .equals(
+                                                                                    t
+                                                                                            .getStatus())));
+                            assertTrue(
+                                    workflow.getTasks().stream()
+                                            .anyMatch(
+                                                    t ->
+                                                            "simple_task_case1"
+                                                                    .equals(
+                                                                            t
+                                                                                    .getReferenceTaskName())));
+                            assertTrue(
+                                    workflow.getTasks().stream()
+                                            .anyMatch(
+                                                    t ->
+                                                            "simple_task_fork4"
+                                                                    .equals(
+                                                                            t
+                                                                                    .getReferenceTaskName())));
+                        });
 
         Workflow workflow = workflowClient.getWorkflow(workflowId, true);
-        Task simpleTask = workflow.getTasks().stream()
-                .filter(t -> "simple_task_case1".equals(t.getReferenceTaskName()))
-                .findFirst().orElseThrow(() -> new AssertionError("Simple task not found"));
+        Task simpleTask =
+                workflow.getTasks().stream()
+                        .filter(t -> "simple_task_case1".equals(t.getReferenceTaskName()))
+                        .findFirst()
+                        .orElseThrow(() -> new AssertionError("Simple task not found"));
 
         workflow = completeTask(simpleTask, TaskResult.Status.FAILED_WITH_TERMINAL_ERROR);
         assertEquals(Workflow.WorkflowStatus.FAILED, workflow.getStatus());
 
-        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow wf = workflowClient.getWorkflow(workflowId, true);
-            assertEquals(Task.Status.CANCELED, wf.getTasks().stream()
-                    .filter(t -> "wait_task".equals(t.getReferenceTaskName())).findFirst().orElseThrow().getStatus());
-            assertEquals(Task.Status.CANCELED, wf.getTasks().stream()
-                    .filter(t -> "wait_for_webhook_task".equals(t.getReferenceTaskName())).findFirst().orElseThrow().getStatus());
-        });
+        await().atMost(10, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                            assertEquals(
+                                    Task.Status.CANCELED,
+                                    wf.getTasks().stream()
+                                            .filter(
+                                                    t ->
+                                                            "wait_task"
+                                                                    .equals(
+                                                                            t
+                                                                                    .getReferenceTaskName()))
+                                            .findFirst()
+                                            .orElseThrow()
+                                            .getStatus());
+                            assertEquals(
+                                    Task.Status.CANCELED,
+                                    wf.getTasks().stream()
+                                            .filter(
+                                                    t ->
+                                                            "wait_for_webhook_task"
+                                                                    .equals(
+                                                                            t
+                                                                                    .getReferenceTaskName()))
+                                            .findFirst()
+                                            .orElseThrow()
+                                            .getStatus());
+                        });
 
         RerunWorkflowRequest rerunWorkflowRequest = new RerunWorkflowRequest();
         rerunWorkflowRequest.setReRunFromWorkflowId(workflowId);
         rerunWorkflowRequest.setReRunFromTaskId(simpleTask.getTaskId());
         workflowClient.rerunWorkflow(workflowId, rerunWorkflowRequest);
 
-        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            assertEquals(Workflow.WorkflowStatus.RUNNING, workflowClient.getWorkflow(workflowId, true).getStatus());
-        });
+        await().atMost(10, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            assertEquals(
+                                    Workflow.WorkflowStatus.RUNNING,
+                                    workflowClient.getWorkflow(workflowId, true).getStatus());
+                        });
 
-        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow wf = workflowClient.getWorkflow(workflowId, true);
-            assertEquals(Task.Status.IN_PROGRESS, wf.getTasks().stream()
-                    .filter(t -> "wait_task".equals(t.getReferenceTaskName()))
-                    .reduce((first, second) -> second).orElseThrow().getStatus());
-            assertEquals(Task.Status.IN_PROGRESS, wf.getTasks().stream()
-                    .filter(t -> "wait_for_webhook_task".equals(t.getReferenceTaskName()))
-                    .reduce((first, second) -> second).orElseThrow().getStatus());
-            Task newSimpleTask = wf.getTasks().stream()
-                    .filter(t -> "simple_task_case1".equals(t.getReferenceTaskName()))
-                    .reduce((first, second) -> second).orElseThrow();
-            assertTrue(newSimpleTask.getStatus() == Task.Status.SCHEDULED || newSimpleTask.getStatus() == Task.Status.IN_PROGRESS);
-            Task newSimpleTaskFork4 = wf.getTasks().stream()
-                    .filter(t -> "simple_task_fork4".equals(t.getReferenceTaskName()))
-                    .reduce((first, second) -> second).orElseThrow();
-            assertTrue(newSimpleTaskFork4.getStatus() == Task.Status.SCHEDULED || newSimpleTaskFork4.getStatus() == Task.Status.IN_PROGRESS);
-        });
+        await().atMost(10, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                            assertEquals(
+                                    Task.Status.IN_PROGRESS,
+                                    wf.getTasks().stream()
+                                            .filter(
+                                                    t ->
+                                                            "wait_task"
+                                                                    .equals(
+                                                                            t
+                                                                                    .getReferenceTaskName()))
+                                            .reduce((first, second) -> second)
+                                            .orElseThrow()
+                                            .getStatus());
+                            assertEquals(
+                                    Task.Status.IN_PROGRESS,
+                                    wf.getTasks().stream()
+                                            .filter(
+                                                    t ->
+                                                            "wait_for_webhook_task"
+                                                                    .equals(
+                                                                            t
+                                                                                    .getReferenceTaskName()))
+                                            .reduce((first, second) -> second)
+                                            .orElseThrow()
+                                            .getStatus());
+                            Task newSimpleTask =
+                                    wf.getTasks().stream()
+                                            .filter(
+                                                    t ->
+                                                            "simple_task_case1"
+                                                                    .equals(
+                                                                            t
+                                                                                    .getReferenceTaskName()))
+                                            .reduce((first, second) -> second)
+                                            .orElseThrow();
+                            assertTrue(
+                                    newSimpleTask.getStatus() == Task.Status.SCHEDULED
+                                            || newSimpleTask.getStatus()
+                                                    == Task.Status.IN_PROGRESS);
+                            Task newSimpleTaskFork4 =
+                                    wf.getTasks().stream()
+                                            .filter(
+                                                    t ->
+                                                            "simple_task_fork4"
+                                                                    .equals(
+                                                                            t
+                                                                                    .getReferenceTaskName()))
+                                            .reduce((first, second) -> second)
+                                            .orElseThrow();
+                            assertTrue(
+                                    newSimpleTaskFork4.getStatus() == Task.Status.SCHEDULED
+                                            || newSimpleTaskFork4.getStatus()
+                                                    == Task.Status.IN_PROGRESS);
+                        });
 
         workflow = workflowClient.getWorkflow(workflowId, true);
-        Task simpleTaskFork4ToComplete = workflow.getTasks().stream()
-                .filter(t -> "simple_task_fork4".equals(t.getReferenceTaskName()))
-                .reduce((first, second) -> second).orElseThrow();
+        Task simpleTaskFork4ToComplete =
+                workflow.getTasks().stream()
+                        .filter(t -> "simple_task_fork4".equals(t.getReferenceTaskName()))
+                        .reduce((first, second) -> second)
+                        .orElseThrow();
         completeTask(simpleTaskFork4ToComplete, TaskResult.Status.COMPLETED);
 
-        await().atMost(15, TimeUnit.SECONDS).pollInterval(1, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow wf = workflowClient.getWorkflow(workflowId, true);
-            assertEquals(Task.Status.COMPLETED, wf.getTasks().stream()
-                    .filter(t -> "wait_task".equals(t.getReferenceTaskName()))
-                    .reduce((first, second) -> second).orElseThrow().getStatus());
-        });
+        await().atMost(15, TimeUnit.SECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                            assertEquals(
+                                    Task.Status.COMPLETED,
+                                    wf.getTasks().stream()
+                                            .filter(
+                                                    t ->
+                                                            "wait_task"
+                                                                    .equals(
+                                                                            t
+                                                                                    .getReferenceTaskName()))
+                                            .reduce((first, second) -> second)
+                                            .orElseThrow()
+                                            .getStatus());
+                        });
 
         workflowClient.terminateWorkflows(List.of(workflowId), "e2e");
     }
 
     @Test
-    @Disabled("SWITCH task rerun leaves workflow TERMINATED due to sync task status not being reset to SCHEDULED in conductor-oss")
+    @Disabled(
+            "SWITCH task rerun leaves workflow TERMINATED due to sync task status not being reset to SCHEDULED in conductor-oss")
     @SneakyThrows
     @DisplayName("When rerunning a workflow, tasks in a SWITCH are executed again")
     public void switchRerunIssue() {
         var mapper = new ObjectMapperProvider().getObjectMapper();
 
-        var wfDef = mapper.readValue(getResourceAsString("metadata/switch_rerun_issue.json"), WorkflowDef.class);
+        var wfDef =
+                mapper.readValue(
+                        getResourceAsString("metadata/switch_rerun_issue.json"), WorkflowDef.class);
         metadataClient.updateWorkflowDefs(java.util.List.of(wfDef));
 
         var startWorkflowRequest = new StartWorkflowRequest();
@@ -1543,10 +2047,11 @@ public class WorkflowRerunTests {
         var wfId = workflowClient.startWorkflow(startWorkflowRequest);
         await().atMost(5, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.MILLISECONDS)
-                .untilAsserted(() -> {
-                    var wf = workflowClient.getWorkflow(wfId, false);
-                    assertEquals(Workflow.WorkflowStatus.COMPLETED, wf.getStatus());
-                });
+                .untilAsserted(
+                        () -> {
+                            var wf = workflowClient.getWorkflow(wfId, false);
+                            assertEquals(Workflow.WorkflowStatus.COMPLETED, wf.getStatus());
+                        });
 
         var workflow = workflowClient.getWorkflow(wfId, true);
         assertSwitchRerunIssueWorkflowState(workflow);
@@ -1562,10 +2067,11 @@ public class WorkflowRerunTests {
 
         await().atMost(5, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
-                .untilAsserted(() -> {
-                    var wf = workflowClient.getWorkflow(wfId, false);
-                    assertEquals(Workflow.WorkflowStatus.COMPLETED, wf.getStatus());
-                });
+                .untilAsserted(
+                        () -> {
+                            var wf = workflowClient.getWorkflow(wfId, false);
+                            assertEquals(Workflow.WorkflowStatus.COMPLETED, wf.getStatus());
+                        });
 
         workflow = workflowClient.getWorkflow(wfId, true);
         assertSwitchRerunIssueWorkflowState(workflow);
@@ -1599,11 +2105,15 @@ public class WorkflowRerunTests {
     @Test
     @Disabled("SWITCH task inside DO_WHILE rerun leaves workflow TERMINATED in conductor-oss")
     @SneakyThrows
-    @DisplayName("When rerunning a workflow, tasks in a SWITCH task inside a DO_WHILE are executed again")
+    @DisplayName(
+            "When rerunning a workflow, tasks in a SWITCH task inside a DO_WHILE are executed again")
     public void switchRerunIssue2() {
         var mapper = new ObjectMapperProvider().getObjectMapper();
 
-        var wfDef = mapper.readValue(getResourceAsString("metadata/switch_rerun_issue_2.json"), WorkflowDef.class);
+        var wfDef =
+                mapper.readValue(
+                        getResourceAsString("metadata/switch_rerun_issue_2.json"),
+                        WorkflowDef.class);
         metadataClient.updateWorkflowDefs(java.util.List.of(wfDef));
 
         var startWorkflowRequest = new StartWorkflowRequest();
@@ -1614,17 +2124,20 @@ public class WorkflowRerunTests {
         var wfId = workflowClient.startWorkflow(startWorkflowRequest);
         await().atMost(10, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.MILLISECONDS)
-                .untilAsserted(() -> {
-                    var wf = workflowClient.getWorkflow(wfId, false);
-                    assertEquals(Workflow.WorkflowStatus.COMPLETED, wf.getStatus());
-                });
+                .untilAsserted(
+                        () -> {
+                            var wf = workflowClient.getWorkflow(wfId, false);
+                            assertEquals(Workflow.WorkflowStatus.COMPLETED, wf.getStatus());
+                        });
 
         var workflow = workflowClient.getWorkflow(wfId, true);
         assertSwitchRerunIssue2WorkflowState(workflow);
 
-        var task0 = workflow.getTasks().stream()
-                .filter(it -> it.getReferenceTaskName().equals("inline_ref_1__3"))
-                .findFirst().orElseThrow();
+        var task0 =
+                workflow.getTasks().stream()
+                        .filter(it -> it.getReferenceTaskName().equals("inline_ref_1__3"))
+                        .findFirst()
+                        .orElseThrow();
 
         var rerunRequest = new RerunWorkflowRequest();
         rerunRequest.setReRunFromTaskId(task0.getTaskId());
@@ -1635,10 +2148,11 @@ public class WorkflowRerunTests {
 
         await().atMost(5, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
-                .untilAsserted(() -> {
-                    var wf = workflowClient.getWorkflow(wfId, false);
-                    assertEquals(Workflow.WorkflowStatus.COMPLETED, wf.getStatus());
-                });
+                .untilAsserted(
+                        () -> {
+                            var wf = workflowClient.getWorkflow(wfId, false);
+                            assertEquals(Workflow.WorkflowStatus.COMPLETED, wf.getStatus());
+                        });
 
         workflow = workflowClient.getWorkflow(wfId, true);
         assertSwitchRerunIssue2WorkflowState(workflow);
@@ -1673,17 +2187,31 @@ public class WorkflowRerunTests {
     }
 
     private Workflow completeTask(Task task, TaskResult.Status status) {
-        return taskClient.updateTaskSync(task.getWorkflowInstanceId(), task.getReferenceTaskName(), status, task.getOutputData());
+        return taskClient.updateTaskSync(
+                task.getWorkflowInstanceId(),
+                task.getReferenceTaskName(),
+                status,
+                task.getOutputData());
     }
 
     private void terminateExistingRunningWorkflows(String workflowName) {
         try {
-            SearchResult<WorkflowSummary> found = workflowClient.search("workflowType IN (" + workflowName + ") AND status IN (RUNNING)");
-            System.out.println("Found " + found.getResults().size() + " running workflows to be cleaned up");
-            found.getResults().forEach(workflowSummary -> {
-                System.out.println("Going to terminate " + workflowSummary.getWorkflowId() + " with status " + workflowSummary.getStatus());
-                workflowClient.terminateWorkflow(workflowSummary.getWorkflowId(), "terminate - rerun test");
-            });
+            SearchResult<WorkflowSummary> found =
+                    workflowClient.search(
+                            "workflowType IN (" + workflowName + ") AND status IN (RUNNING)");
+            System.out.println(
+                    "Found " + found.getResults().size() + " running workflows to be cleaned up");
+            found.getResults()
+                    .forEach(
+                            workflowSummary -> {
+                                System.out.println(
+                                        "Going to terminate "
+                                                + workflowSummary.getWorkflowId()
+                                                + " with status "
+                                                + workflowSummary.getStatus());
+                                workflowClient.terminateWorkflow(
+                                        workflowSummary.getWorkflowId(), "terminate - rerun test");
+                            });
         } catch (Exception e) {
             if (!(e instanceof ConductorClientException)) {
                 throw e;
@@ -1822,7 +2350,8 @@ public class WorkflowRerunTests {
         doWhileTask.setName("do_while_task");
         doWhileTask.setInputParameters(Map.of("maxIterations", "${workflow.input.maxIterations}"));
         doWhileTask.setWorkflowTaskType(TaskType.DO_WHILE);
-        doWhileTask.setLoopCondition("if ($.do_while_task['iteration'] < $.maxIterations) { true; } else { false; }");
+        doWhileTask.setLoopCondition(
+                "if ($.do_while_task['iteration'] < $.maxIterations) { true; } else { false; }");
         doWhileTask.setLoopOver(List.of(simpleTask));
 
         WorkflowDef workflowDef = new WorkflowDef();
@@ -1890,7 +2419,8 @@ public class WorkflowRerunTests {
         waitForWebhookTask.setTaskReferenceName("wait_for_webhook_task");
         waitForWebhookTask.setName("wait_for_webhook_task");
         waitForWebhookTask.setType("WAIT_FOR_WEBHOOK");
-        waitForWebhookTask.setInputParameters(Map.of("matches", Map.of("$['id']", "${workflow.input.key}")));
+        waitForWebhookTask.setInputParameters(
+                Map.of("matches", Map.of("$['id']", "${workflow.input.key}")));
 
         WorkflowTask simpleTaskCase1 = new WorkflowTask();
         simpleTaskCase1.setTaskReferenceName("simple_task_case1");
@@ -1901,7 +2431,8 @@ public class WorkflowRerunTests {
         httpTaskCase2.setTaskReferenceName("http_task_case2");
         httpTaskCase2.setName("http_task_case2");
         httpTaskCase2.setWorkflowTaskType(TaskType.HTTP);
-        httpTaskCase2.setInputParameters(Map.of("uri", "https://orkes-api-tester.orkesconductor.com/api", "method", "GET"));
+        httpTaskCase2.setInputParameters(
+                Map.of("uri", "https://orkes-api-tester.orkesconductor.com/api", "method", "GET"));
 
         WorkflowTask switchTask = new WorkflowTask();
         switchTask.setTaskReferenceName("switch_task");
@@ -1923,18 +2454,25 @@ public class WorkflowRerunTests {
         forkTask.setTaskReferenceName("fork_task");
         forkTask.setName("fork_task");
         forkTask.setWorkflowTaskType(TaskType.FORK_JOIN);
-        forkTask.setForkTasks(List.of(List.of(waitTask), List.of(waitForWebhookTask), List.of(switchTask), List.of(simpleTaskFork4)));
+        forkTask.setForkTasks(
+                List.of(
+                        List.of(waitTask),
+                        List.of(waitForWebhookTask),
+                        List.of(switchTask),
+                        List.of(simpleTaskFork4)));
 
         WorkflowTask joinTask = new WorkflowTask();
         joinTask.setTaskReferenceName("join_task");
         joinTask.setName("join_task");
         joinTask.setWorkflowTaskType(TaskType.JOIN);
-        joinTask.setJoinOn(List.of("wait_task", "wait_for_webhook_task", "switch_task", "simple_task_fork4"));
+        joinTask.setJoinOn(
+                List.of("wait_task", "wait_for_webhook_task", "switch_task", "simple_task_fork4"));
 
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName(workflowName);
         workflowDef.setVersion(1);
-        workflowDef.setDescription("Test rerun with fork-join containing wait, wait_for_webhook, and switch tasks");
+        workflowDef.setDescription(
+                "Test rerun with fork-join containing wait, wait_for_webhook, and switch tasks");
         workflowDef.setTimeoutSeconds(600);
         workflowDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
         workflowDef.setTasks(List.of(forkTask, joinTask));

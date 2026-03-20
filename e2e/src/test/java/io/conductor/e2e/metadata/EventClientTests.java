@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Orkes, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -16,11 +16,10 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import com.netflix.conductor.client.http.EventClient;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
 import com.netflix.conductor.common.metadata.events.EventHandler.StartWorkflow;
-import com.netflix.conductor.client.exception.ConductorClientException;
-import com.netflix.conductor.client.http.EventClient;
 
 import io.conductor.e2e.util.ApiUtil;
 import io.conductor.e2e.util.Commons;

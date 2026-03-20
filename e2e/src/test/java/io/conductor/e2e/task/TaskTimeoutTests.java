@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Orkes, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,6 +12,13 @@
  */
 package io.conductor.e2e.task;
 
+import java.util.Collections;
+import java.util.concurrent.TimeUnit;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
 import com.netflix.conductor.client.http.MetadataClient;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.http.WorkflowClient;
@@ -21,13 +28,8 @@ import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
-import io.conductor.e2e.util.ApiUtil;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
-import java.util.concurrent.TimeUnit;
+import io.conductor.e2e.util.ApiUtil;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.*;
@@ -56,8 +58,8 @@ public class TaskTimeoutTests {
         // Define TaskDef with pollTimeout and timeoutSeconds
         TaskDef taskDef = new TaskDef();
         taskDef.setName(TASK_NAME);
-        taskDef.setPollTimeoutSeconds(25);  // Task will be timed out if not polled in 5s
-        taskDef.setTimeoutSeconds(100);  // Task execution timeout
+        taskDef.setPollTimeoutSeconds(25); // Task will be timed out if not polled in 5s
+        taskDef.setTimeoutSeconds(100); // Task execution timeout
         taskDef.setResponseTimeoutSeconds(40);
         taskDef.setRetryCount(0); // No retries
         taskDef.setTimeoutPolicy(TaskDef.TimeoutPolicy.TIME_OUT_WF);
@@ -85,7 +87,8 @@ public class TaskTimeoutTests {
         taskDefResponseTimeout.setName(TASK_NAME_RESPONSE_TIMEOUT);
         taskDefResponseTimeout.setPollTimeoutSeconds(6); // Ensure poll doesn't interfere
         taskDefResponseTimeout.setTimeoutSeconds(120); // Total timeout (should not trigger)
-        taskDefResponseTimeout.setResponseTimeoutSeconds(5); // Task should timeout if not updated in 30s
+        taskDefResponseTimeout.setResponseTimeoutSeconds(
+                5); // Task should timeout if not updated in 30s
         taskDefResponseTimeout.setRetryCount(0);
         taskDefResponseTimeout.setTimeoutPolicy(TaskDef.TimeoutPolicy.TIME_OUT_WF);
 
@@ -146,11 +149,14 @@ public class TaskTimeoutTests {
         String workflowId = workflowClient.startWorkflow(request);
         assertNotNull(workflowId);
 
-        await().pollInterval(30, TimeUnit.SECONDS).atMost(45, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
-            assertNotNull(workflow);
-            assertEquals(Workflow.WorkflowStatus.TIMED_OUT, workflow.getStatus());
-        });
+        await().pollInterval(30, TimeUnit.SECONDS)
+                .atMost(45, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
+                            assertNotNull(workflow);
+                            assertEquals(Workflow.WorkflowStatus.TIMED_OUT, workflow.getStatus());
+                        });
     }
 
     @Test
@@ -168,11 +174,14 @@ public class TaskTimeoutTests {
         assertEquals(workflowId, polledTask.getWorkflowInstanceId());
 
         // Wait for response timeout (should timeout in 30s)
-        await().pollInterval(30, TimeUnit.SECONDS).atMost(2, TimeUnit.MINUTES).untilAsserted(() -> {
-            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
-            assertNotNull(workflow);
-            assertEquals(Workflow.WorkflowStatus.TIMED_OUT, workflow.getStatus());
-        });
+        await().pollInterval(30, TimeUnit.SECONDS)
+                .atMost(2, TimeUnit.MINUTES)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
+                            assertNotNull(workflow);
+                            assertEquals(Workflow.WorkflowStatus.TIMED_OUT, workflow.getStatus());
+                        });
     }
 
     @Test
@@ -190,11 +199,14 @@ public class TaskTimeoutTests {
         assertEquals(workflowId, polledTask.getWorkflowInstanceId());
 
         // Wait for overall timeout (should timeout in 45s)
-        await().pollInterval(4, TimeUnit.SECONDS).atMost(40, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
-            assertNotNull(workflow);
-            assertEquals(Workflow.WorkflowStatus.TIMED_OUT, workflow.getStatus());
-        });
+        await().pollInterval(4, TimeUnit.SECONDS)
+                .atMost(40, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
+                            assertNotNull(workflow);
+                            assertEquals(Workflow.WorkflowStatus.TIMED_OUT, workflow.getStatus());
+                        });
     }
 
     @AfterAll

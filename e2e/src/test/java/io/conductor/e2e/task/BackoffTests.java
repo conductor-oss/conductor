@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Orkes, Inc.
+ * Copyright 2023 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -32,9 +32,9 @@ import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.sdk.workflow.def.ConductorWorkflow;
 import com.netflix.conductor.sdk.workflow.def.tasks.SimpleTask;
-import io.conductor.e2e.util.ApiUtil;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.conductor.e2e.util.ApiUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -67,7 +67,6 @@ public class BackoffTests {
         workflow.setName(WORKFLOW_NAME);
         workflow.setVersion(1);
 
-
         List<TaskDef> taskDefs = new ArrayList<>();
         int i = 0;
         for (TaskDef.RetryLogic value : TaskDef.RetryLogic.values()) {
@@ -85,15 +84,15 @@ public class BackoffTests {
         metadataClient.registerTaskDefs(taskDefs);
         metadataClient.updateWorkflowDefs(Arrays.asList(workflow.toWorkflowDef()));
         startWorkers(taskDefs);
-
     }
 
     @AfterAll
     public static void cleanup() {
-        if(configurer != null) {
+        if (configurer != null) {
             try {
                 configurer.shutdown();
-            }catch (Exception e) {}
+            } catch (Exception e) {
+            }
         }
     }
 
@@ -107,18 +106,23 @@ public class BackoffTests {
             String id = workflowClient.startWorkflow(request);
             log.info("Started Retry logic workflow {} ", id);
 
-            await().pollInterval(3, TimeUnit.SECONDS).atMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
-                Workflow workflow = workflowClient.getWorkflow(id, true);
-                assertNotNull(workflow);
-                assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
-            });
+            await().pollInterval(3, TimeUnit.SECONDS)
+                    .atMost(1, TimeUnit.MINUTES)
+                    .untilAsserted(
+                            () -> {
+                                Workflow workflow = workflowClient.getWorkflow(id, true);
+                                assertNotNull(workflow);
+                                assertEquals(
+                                        Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
+                            });
 
             Workflow workflow = workflowClient.getWorkflow(id, true);
             assertNotNull(workflow);
             assertEquals(9, workflow.getTasks().size());
             List<Task> tasks = workflow.getTasks();
             assertTaskRetryLogic(tasks);
-        }catch (Exception e){}
+        } catch (Exception e) {
+        }
     }
 
     private void assertTaskRetryLogic(List<Task> runs) {
@@ -131,21 +135,48 @@ public class BackoffTests {
                 case FIXED:
                     long diff = task.getStartTime() - task.getScheduledTime();
                     long expectedDelay = delay;
-                    assertTrue(diff >= (expectedDelay - 1), "delay " + diff + " not within the range of expected " + expectedDelay + ", taskId = " + task.getReferenceTaskName() + ":" + task.getTaskId());
+                    assertTrue(
+                            diff >= (expectedDelay - 1),
+                            "delay "
+                                    + diff
+                                    + " not within the range of expected "
+                                    + expectedDelay
+                                    + ", taskId = "
+                                    + task.getReferenceTaskName()
+                                    + ":"
+                                    + task.getTaskId());
                     break;
                 case LINEAR_BACKOFF:
                     diff = task.getStartTime() - task.getScheduledTime();
                     expectedDelay = task.getRetryCount() * delay * backoffRate;
-                    assertTrue(diff >= (expectedDelay - 1), "delay " + diff + " not within the range of expected " + expectedDelay + ", taskId = " + task.getReferenceTaskName() + ":" + task.getTaskId());
+                    assertTrue(
+                            diff >= (expectedDelay - 1),
+                            "delay "
+                                    + diff
+                                    + " not within the range of expected "
+                                    + expectedDelay
+                                    + ", taskId = "
+                                    + task.getReferenceTaskName()
+                                    + ":"
+                                    + task.getTaskId());
                     break;
                 case EXPONENTIAL_BACKOFF:
                     diff = task.getStartTime() - task.getScheduledTime();
-                    if(task.getRetryCount() == 0) {
+                    if (task.getRetryCount() == 0) {
                         expectedDelay = 0;
                     } else {
                         expectedDelay = (long) (Math.pow(2, task.getRetryCount() - 1) * (delay));
                     }
-                    assertTrue(diff >= (expectedDelay - 1), "delay " + diff + " not within the range of expected " + expectedDelay + ", taskId = " + task.getReferenceTaskName() + ":" + task.getTaskId());
+                    assertTrue(
+                            diff >= (expectedDelay - 1),
+                            "delay "
+                                    + diff
+                                    + " not within the range of expected "
+                                    + expectedDelay
+                                    + ", taskId = "
+                                    + task.getReferenceTaskName()
+                                    + ":"
+                                    + task.getTaskId());
                     break;
                 default:
                     break;
@@ -153,24 +184,19 @@ public class BackoffTests {
         }
     }
 
-
-
-
     private static void startWorkers(List<TaskDef> tasks) {
         List<Worker> workers = new ArrayList<>();
         for (TaskDef task : tasks) {
             workers.add(new TestWorker(task.getName()));
         }
 
-        configurer = new TaskRunnerConfigurer
-                .Builder(taskClient, workers)
-                .withThreadCount(1)
-                .withTaskPollTimeout(10)
-                .build();
+        configurer =
+                new TaskRunnerConfigurer.Builder(taskClient, workers)
+                        .withThreadCount(1)
+                        .withTaskPollTimeout(10)
+                        .build();
         configurer.init();
     }
-
-
 
     private static class TestWorker implements Worker {
 
@@ -179,6 +205,7 @@ public class BackoffTests {
         public TestWorker(String name) {
             this.name = name;
         }
+
         @Override
         public String getTaskDefName() {
             return name;
@@ -188,7 +215,7 @@ public class BackoffTests {
         public TaskResult execute(Task task) {
             TaskResult result = new TaskResult(task);
             result.getOutputData().put("number", 42);
-            if(task.getRetryCount() < 2) {
+            if (task.getRetryCount() < 2) {
                 result.setStatus(TaskResult.Status.FAILED);
             } else {
                 result.setStatus(TaskResult.Status.COMPLETED);

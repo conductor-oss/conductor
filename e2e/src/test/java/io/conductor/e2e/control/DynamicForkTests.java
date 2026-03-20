@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Orkes, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -11,6 +11,16 @@
  * specific language governing permissions and limitations under the License.
  */
 package io.conductor.e2e.control;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.client.automator.TaskRunnerConfigurer;
 import com.netflix.conductor.client.http.MetadataClient;
@@ -27,21 +37,14 @@ import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
+
 import io.conductor.e2e.util.ApiUtil;
 import io.conductor.e2e.util.TestUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_JOIN;
+
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -89,14 +92,24 @@ public class DynamicForkTests {
         taskResult.setOutputData(output);
         taskClient.updateTask(taskResult);
 
-        await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow workflow1 = workflowAdminClient.getWorkflow(workflowId, true);
-            assertEquals(workflow1.getStatus().name(), Workflow.WorkflowStatus.RUNNING.name());
-            assertTrue(workflow1.getTasks().size() == 5);
-            assertEquals(workflow1.getTasks().get(2).getStatus().name(), Task.Status.SCHEDULED.name());
-            assertEquals(workflow1.getTasks().get(3).getStatus().name(), Task.Status.SCHEDULED.name());
-            assertEquals(workflow1.getTasks().get(4).getStatus().name(), Task.Status.IN_PROGRESS.name());
-        });
+        await().atMost(30, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow1 = workflowAdminClient.getWorkflow(workflowId, true);
+                            assertEquals(
+                                    workflow1.getStatus().name(),
+                                    Workflow.WorkflowStatus.RUNNING.name());
+                            assertTrue(workflow1.getTasks().size() == 5);
+                            assertEquals(
+                                    workflow1.getTasks().get(2).getStatus().name(),
+                                    Task.Status.SCHEDULED.name());
+                            assertEquals(
+                                    workflow1.getTasks().get(3).getStatus().name(),
+                                    Task.Status.SCHEDULED.name());
+                            assertEquals(
+                                    workflow1.getTasks().get(4).getStatus().name(),
+                                    Task.Status.IN_PROGRESS.name());
+                        });
 
         workflow = workflowAdminClient.getWorkflow(workflowId, true);
         taskResult = new TaskResult();
@@ -105,20 +118,33 @@ public class DynamicForkTests {
         taskResult.setStatus(TaskResult.Status.FAILED);
         taskClient.updateTask(taskResult);
 
-        //Since the tasks are marked as optional. The workflow should be in running state.
-        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            try {
-                Workflow workflow1 = workflowAdminClient.getWorkflow(workflowId, true);
-                assertTrue(workflow1.getTasks().size() == 6);
-                assertEquals(workflow1.getStatus().name(), Workflow.WorkflowStatus.RUNNING.name());
-                assertEquals(workflow1.getTasks().get(2).getStatus().name(), Task.Status.SCHEDULED.name());
-                assertEquals(workflow1.getTasks().get(3).getStatus().name(), Task.Status.FAILED.name());
-                assertEquals(workflow1.getTasks().get(4).getStatus().name(), Task.Status.IN_PROGRESS.name());
-                assertEquals(workflow1.getTasks().get(5).getStatus().name(), Task.Status.SCHEDULED.name());
-            }catch(Exception e){
+        // Since the tasks are marked as optional. The workflow should be in running state.
+        await().atMost(10, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            try {
+                                Workflow workflow1 =
+                                        workflowAdminClient.getWorkflow(workflowId, true);
+                                assertTrue(workflow1.getTasks().size() == 6);
+                                assertEquals(
+                                        workflow1.getStatus().name(),
+                                        Workflow.WorkflowStatus.RUNNING.name());
+                                assertEquals(
+                                        workflow1.getTasks().get(2).getStatus().name(),
+                                        Task.Status.SCHEDULED.name());
+                                assertEquals(
+                                        workflow1.getTasks().get(3).getStatus().name(),
+                                        Task.Status.FAILED.name());
+                                assertEquals(
+                                        workflow1.getTasks().get(4).getStatus().name(),
+                                        Task.Status.IN_PROGRESS.name());
+                                assertEquals(
+                                        workflow1.getTasks().get(5).getStatus().name(),
+                                        Task.Status.SCHEDULED.name());
+                            } catch (Exception e) {
 
-            }
-        });
+                            }
+                        });
 
         workflow = workflowAdminClient.getWorkflow(workflowId, true);
         taskResult = new TaskResult();
@@ -135,15 +161,27 @@ public class DynamicForkTests {
         taskClient.updateTask(taskResult);
 
         // Workflow should be completed
-        await().atMost(100, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow workflow1 = workflowAdminClient.getWorkflow(workflowId, true);
-            assertTrue(workflow1.getTasks().size() == 6);
-            assertEquals(workflow1.getStatus().name(), Workflow.WorkflowStatus.COMPLETED.name());
-            assertEquals(workflow1.getTasks().get(2).getStatus().name(), Task.Status.COMPLETED.name());
-            assertEquals(workflow1.getTasks().get(3).getStatus().name(), Task.Status.FAILED.name());
-            assertEquals(workflow1.getTasks().get(4).getStatus().name(), Task.Status.COMPLETED.name());
-            assertEquals(workflow1.getTasks().get(4).getStatus().name(), Task.Status.COMPLETED.name());
-        });
+        await().atMost(100, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow1 = workflowAdminClient.getWorkflow(workflowId, true);
+                            assertTrue(workflow1.getTasks().size() == 6);
+                            assertEquals(
+                                    workflow1.getStatus().name(),
+                                    Workflow.WorkflowStatus.COMPLETED.name());
+                            assertEquals(
+                                    workflow1.getTasks().get(2).getStatus().name(),
+                                    Task.Status.COMPLETED.name());
+                            assertEquals(
+                                    workflow1.getTasks().get(3).getStatus().name(),
+                                    Task.Status.FAILED.name());
+                            assertEquals(
+                                    workflow1.getTasks().get(4).getStatus().name(),
+                                    Task.Status.COMPLETED.name());
+                            assertEquals(
+                                    workflow1.getTasks().get(4).getStatus().name(),
+                                    Task.Status.COMPLETED.name());
+                        });
 
         metadataAdminClient.unregisterWorkflowDef(workflowName1, 1);
     }
@@ -158,9 +196,11 @@ public class DynamicForkTests {
 
         // Register workflow
         registerWorkflowDef(workflowName1, metadataAdminClient);
-        // Register a minimal sub-workflow to use by name (conductor-oss has no built-in "http" workflow)
+        // Register a minimal sub-workflow to use by name (conductor-oss has no built-in "http"
+        // workflow)
         String subWorkflowName = "http_sub_wf_test";
-        SubWorkflowVersionTests.registerSubWorkflow(subWorkflowName, "http_sub_task", metadataAdminClient);
+        SubWorkflowVersionTests.registerSubWorkflow(
+                subWorkflowName, "http_sub_task", metadataAdminClient);
 
         // Trigger workflow
         StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
@@ -188,19 +228,32 @@ public class DynamicForkTests {
         taskResult.setOutputData(output);
         taskClient.updateTask(taskResult);
 
-        await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow workflow1 = workflowAdminClient.getWorkflow(workflowId, true);
-            assertEquals(workflow1.getStatus().name(), Workflow.WorkflowStatus.RUNNING.name());
-            assertTrue(workflow1.getTasks().size() == 4);
-            assertEquals(workflow1.getTasks().get(0).getStatus().name(), Task.Status.COMPLETED.name());
-            assertEquals(workflow1.getTasks().get(1).getStatus().name(), Task.Status.COMPLETED.name());
-            assertEquals(workflow1.getTasks().get(2).getStatus().name(), Task.Status.IN_PROGRESS.name());
-            assertNotNull(workflow1.getTasks().get(2).getSubWorkflowId());
-            assertEquals(workflow1.getTasks().get(3).getStatus().name(), Task.Status.IN_PROGRESS.name());
-        });
+        await().atMost(30, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow1 = workflowAdminClient.getWorkflow(workflowId, true);
+                            assertEquals(
+                                    workflow1.getStatus().name(),
+                                    Workflow.WorkflowStatus.RUNNING.name());
+                            assertTrue(workflow1.getTasks().size() == 4);
+                            assertEquals(
+                                    workflow1.getTasks().get(0).getStatus().name(),
+                                    Task.Status.COMPLETED.name());
+                            assertEquals(
+                                    workflow1.getTasks().get(1).getStatus().name(),
+                                    Task.Status.COMPLETED.name());
+                            assertEquals(
+                                    workflow1.getTasks().get(2).getStatus().name(),
+                                    Task.Status.IN_PROGRESS.name());
+                            assertNotNull(workflow1.getTasks().get(2).getSubWorkflowId());
+                            assertEquals(
+                                    workflow1.getTasks().get(3).getStatus().name(),
+                                    Task.Status.IN_PROGRESS.name());
+                        });
 
         workflow = workflowAdminClient.getWorkflow(workflowId, true);
-        workflowAdminClient.terminateWorkflows(List.of(workflowId, workflow.getTasks().get(2).getSubWorkflowId()), "terminated");
+        workflowAdminClient.terminateWorkflows(
+                List.of(workflowId, workflow.getTasks().get(2).getSubWorkflowId()), "terminated");
     }
 
     @Test
@@ -240,14 +293,23 @@ public class DynamicForkTests {
         taskResult.setOutputData(output);
         taskClient.updateTask(taskResult);
 
-        await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow workflow1 = workflowAdminClient.getWorkflow(workflowId, true);
-            assertEquals(workflow1.getStatus().name(), Workflow.WorkflowStatus.FAILED.name());
-            assertTrue(workflow1.getTasks().size() == 1);
-            assertEquals(workflow1.getTasks().get(0).getStatus().name(), Task.Status.COMPLETED.name());
-            assertNotNull(workflow1.getReasonForIncompletion());
-            assertTrue(workflow1.getReasonForIncompletion().contains("Input 'dynamicTasks' is invalid"));
-        });
+        await().atMost(30, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow1 = workflowAdminClient.getWorkflow(workflowId, true);
+                            assertEquals(
+                                    workflow1.getStatus().name(),
+                                    Workflow.WorkflowStatus.FAILED.name());
+                            assertTrue(workflow1.getTasks().size() == 1);
+                            assertEquals(
+                                    workflow1.getTasks().get(0).getStatus().name(),
+                                    Task.Status.COMPLETED.name());
+                            assertNotNull(workflow1.getReasonForIncompletion());
+                            assertTrue(
+                                    workflow1
+                                            .getReasonForIncompletion()
+                                            .contains("Input 'dynamicTasks' is invalid"));
+                        });
     }
 
     @Test
@@ -295,15 +357,27 @@ public class DynamicForkTests {
         taskResult.setOutputData(output);
         taskClient.updateTask(taskResult);
 
-        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow workflow1 = workflowAdminClient.getWorkflow(workflowId, true);
-            assertEquals(workflow1.getStatus().name(), Workflow.WorkflowStatus.RUNNING.name());
-            assertTrue(workflow1.getTasks().size() == 5);
-            assertEquals(workflow1.getTasks().get(2).getStatus().name(), Task.Status.SCHEDULED.name());
-            assertEquals(workflow1.getTasks().get(2).getWorkflowTask().getSink(), "kitchen_sink");
-            assertEquals(workflow1.getTasks().get(3).getStatus().name(), Task.Status.SCHEDULED.name());
-            assertEquals(workflow1.getTasks().get(4).getStatus().name(), Task.Status.IN_PROGRESS.name());
-        });
+        await().atMost(10, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow1 = workflowAdminClient.getWorkflow(workflowId, true);
+                            assertEquals(
+                                    workflow1.getStatus().name(),
+                                    Workflow.WorkflowStatus.RUNNING.name());
+                            assertTrue(workflow1.getTasks().size() == 5);
+                            assertEquals(
+                                    workflow1.getTasks().get(2).getStatus().name(),
+                                    Task.Status.SCHEDULED.name());
+                            assertEquals(
+                                    workflow1.getTasks().get(2).getWorkflowTask().getSink(),
+                                    "kitchen_sink");
+                            assertEquals(
+                                    workflow1.getTasks().get(3).getStatus().name(),
+                                    Task.Status.SCHEDULED.name());
+                            assertEquals(
+                                    workflow1.getTasks().get(4).getStatus().name(),
+                                    Task.Status.IN_PROGRESS.name());
+                        });
 
         workflow = workflowAdminClient.getWorkflow(workflowId, true);
         taskResult = new TaskResult();
@@ -312,16 +386,28 @@ public class DynamicForkTests {
         taskResult.setStatus(TaskResult.Status.FAILED);
         taskClient.updateTask(taskResult);
 
-        //Since the retry count is 2 task will be retried.
-        await().atMost(20, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow workflow1 = workflowAdminClient.getWorkflow(workflowId, true);
-            assertEquals(workflow1.getStatus().name(), Workflow.WorkflowStatus.RUNNING.name());
-            assertTrue(workflow1.getTasks().size() == 6);
-            assertEquals(workflow1.getTasks().get(2).getStatus().name(), Task.Status.SCHEDULED.name());
-            assertEquals(workflow1.getTasks().get(3).getStatus().name(), Task.Status.FAILED.name());
-            assertEquals(workflow1.getTasks().get(4).getStatus().name(), Task.Status.IN_PROGRESS.name());
-            assertEquals(workflow1.getTasks().get(5).getStatus().name(), Task.Status.SCHEDULED.name());
-        });
+        // Since the retry count is 2 task will be retried.
+        await().atMost(20, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow1 = workflowAdminClient.getWorkflow(workflowId, true);
+                            assertEquals(
+                                    workflow1.getStatus().name(),
+                                    Workflow.WorkflowStatus.RUNNING.name());
+                            assertTrue(workflow1.getTasks().size() == 6);
+                            assertEquals(
+                                    workflow1.getTasks().get(2).getStatus().name(),
+                                    Task.Status.SCHEDULED.name());
+                            assertEquals(
+                                    workflow1.getTasks().get(3).getStatus().name(),
+                                    Task.Status.FAILED.name());
+                            assertEquals(
+                                    workflow1.getTasks().get(4).getStatus().name(),
+                                    Task.Status.IN_PROGRESS.name());
+                            assertEquals(
+                                    workflow1.getTasks().get(5).getStatus().name(),
+                                    Task.Status.SCHEDULED.name());
+                        });
 
         workflow = workflowAdminClient.getWorkflow(workflowId, true);
         taskResult = new TaskResult();
@@ -338,18 +424,29 @@ public class DynamicForkTests {
         taskClient.updateTask(taskResult);
 
         // Workflow should be completed
-        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow workflow1 = workflowAdminClient.getWorkflow(workflowId, true);
-            assertEquals(workflow1.getStatus().name(), Workflow.WorkflowStatus.COMPLETED.name());
-            assertTrue(workflow1.getTasks().size() >= 6);
-            assertEquals(workflow1.getTasks().get(2).getStatus().name(), Task.Status.COMPLETED.name());
-            assertEquals(workflow1.getTasks().get(3).getStatus().name(), Task.Status.FAILED.name());
-            assertEquals(workflow1.getTasks().get(4).getStatus().name(), Task.Status.COMPLETED.name());
-            assertEquals(workflow1.getTasks().get(5).getStatus().name(), Task.Status.COMPLETED.name());
-        });
+        await().atMost(10, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow1 = workflowAdminClient.getWorkflow(workflowId, true);
+                            assertEquals(
+                                    workflow1.getStatus().name(),
+                                    Workflow.WorkflowStatus.COMPLETED.name());
+                            assertTrue(workflow1.getTasks().size() >= 6);
+                            assertEquals(
+                                    workflow1.getTasks().get(2).getStatus().name(),
+                                    Task.Status.COMPLETED.name());
+                            assertEquals(
+                                    workflow1.getTasks().get(3).getStatus().name(),
+                                    Task.Status.FAILED.name());
+                            assertEquals(
+                                    workflow1.getTasks().get(4).getStatus().name(),
+                                    Task.Status.COMPLETED.name());
+                            assertEquals(
+                                    workflow1.getTasks().get(5).getStatus().name(),
+                                    Task.Status.COMPLETED.name());
+                        });
 
         metadataAdminClient.unregisterWorkflowDef(workflowName1, 1);
-
     }
 
     @Test
@@ -369,11 +466,16 @@ public class DynamicForkTests {
         workflowDef.setOwnerEmail("test@orkes.io");
         workflowDef.setTimeoutSeconds(600);
         workflowDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
-        workflowDef.setDescription("Workflow to test two identical forks for duplicate forked task reference names");
+        workflowDef.setDescription(
+                "Workflow to test two identical forks for duplicate forked task reference names");
 
         WorkflowTask dynamicFork1 = new WorkflowTask();
-        dynamicFork1.setInputParameters(Map.of("forkTaskName", taskDef.getName(),
-                "forkTaskInputs", List.of(Map.of("a", 1), Map.of("a", 2))));
+        dynamicFork1.setInputParameters(
+                Map.of(
+                        "forkTaskName",
+                        taskDef.getName(),
+                        "forkTaskInputs",
+                        List.of(Map.of("a", 1), Map.of("a", 2))));
         dynamicFork1.setType(TaskType.FORK_JOIN_DYNAMIC.name());
         dynamicFork1.setName("dynamicFork1");
         dynamicFork1.setTaskReferenceName("dynamicFork1");
@@ -383,8 +485,12 @@ public class DynamicForkTests {
         join1.setTaskReferenceName("join1");
 
         WorkflowTask dynamicFork2 = new WorkflowTask();
-        dynamicFork2.setInputParameters(Map.of("forkTaskName", taskDef.getName(),
-                "forkTaskInputs", List.of(Map.of("a", 1), Map.of("a", 2))));
+        dynamicFork2.setInputParameters(
+                Map.of(
+                        "forkTaskName",
+                        taskDef.getName(),
+                        "forkTaskInputs",
+                        List.of(Map.of("a", 1), Map.of("a", 2))));
         dynamicFork2.setType(TaskType.FORK_JOIN_DYNAMIC.name());
         dynamicFork2.setName("dynamicFork2");
         dynamicFork2.setTaskReferenceName("dynamicFork2");
@@ -397,18 +503,35 @@ public class DynamicForkTests {
         startWorkflowRequest.setWorkflowDef(workflowDef);
         String workflowId = workflowAdminClient.startWorkflow(startWorkflowRequest);
 
-        await().atMost(10, TimeUnit.SECONDS).pollInterval(500, TimeUnit.MILLISECONDS).untilAsserted(() -> {
-            Workflow workflow = workflowAdminClient.getWorkflow(workflowId, true);
-            var tasksToUpdate = workflow.getTasks().stream().filter(t -> t.getTaskType().equals(taskDef.getName()) && t.getStatus().equals(Task.Status.SCHEDULED)).collect(Collectors.toList());
-            tasksToUpdate.forEach(t -> {
-                TaskResult result = new TaskResult(t);
-                result.setOutputData(Map.of("b", true));
-                result.setStatus(TaskResult.Status.COMPLETED);
-                taskClient.updateTask(result);
-            });
-            assertEquals(Workflow.WorkflowStatus.COMPLETED.name(), workflow.getStatus().name());
-        });
-
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(500, TimeUnit.MILLISECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow = workflowAdminClient.getWorkflow(workflowId, true);
+                            var tasksToUpdate =
+                                    workflow.getTasks().stream()
+                                            .filter(
+                                                    t ->
+                                                            t.getTaskType()
+                                                                            .equals(
+                                                                                    taskDef
+                                                                                            .getName())
+                                                                    && t.getStatus()
+                                                                            .equals(
+                                                                                    Task.Status
+                                                                                            .SCHEDULED))
+                                            .collect(Collectors.toList());
+                            tasksToUpdate.forEach(
+                                    t -> {
+                                        TaskResult result = new TaskResult(t);
+                                        result.setOutputData(Map.of("b", true));
+                                        result.setStatus(TaskResult.Status.COMPLETED);
+                                        taskClient.updateTask(result);
+                                    });
+                            assertEquals(
+                                    Workflow.WorkflowStatus.COMPLETED.name(),
+                                    workflow.getStatus().name());
+                        });
     }
 
     @Test
@@ -420,10 +543,17 @@ public class DynamicForkTests {
         var workflowAdminClient = ApiUtil.WORKFLOW_CLIENT;
         var metadataAdminClient = ApiUtil.METADATA_CLIENT;
 
-        var wfDef = mapper.readValue(TestUtil.getResourceAsString("metadata/cpewf_task_id_dyn_fork_wf.json"), WorkflowDef.class);
+        var wfDef =
+                mapper.readValue(
+                        TestUtil.getResourceAsString("metadata/cpewf_task_id_dyn_fork_wf.json"),
+                        WorkflowDef.class);
         metadataAdminClient.updateWorkflowDefs(java.util.List.of(wfDef));
 
-        var taskDef = mapper.readValue(TestUtil.getResourceAsString("metadata/cpewf_task_id_dyn_fork_task_def.json"), TaskDef.class);
+        var taskDef =
+                mapper.readValue(
+                        TestUtil.getResourceAsString(
+                                "metadata/cpewf_task_id_dyn_fork_task_def.json"),
+                        TaskDef.class);
         metadataAdminClient.registerTaskDefs(List.of(taskDef));
 
         var startWorkflowRequest = new StartWorkflowRequest();
@@ -434,15 +564,17 @@ public class DynamicForkTests {
 
         await().atMost(1, TimeUnit.MINUTES)
                 .pollInterval(2, TimeUnit.SECONDS)
-                .untilAsserted(() -> {
-                    var wf = workflowAdminClient.getWorkflow(workflowId, false);
-                    assertEquals(Workflow.WorkflowStatus.FAILED, wf.getStatus());
-                });
+                .untilAsserted(
+                        () -> {
+                            var wf = workflowAdminClient.getWorkflow(workflowId, false);
+                            assertEquals(Workflow.WorkflowStatus.FAILED, wf.getStatus());
+                        });
 
         var workflow = workflowAdminClient.getWorkflow(workflowId, true);
-        var tasks = workflow.getTasks().stream()
-                .filter(it -> "fail_on_purpose".equals(it.getTaskDefName()))
-                .toList();
+        var tasks =
+                workflow.getTasks().stream()
+                        .filter(it -> "fail_on_purpose".equals(it.getTaskDefName()))
+                        .toList();
 
         assertEquals(3, tasks.size());
 
@@ -461,7 +593,10 @@ public class DynamicForkTests {
         var metadataClient = ApiUtil.METADATA_CLIENT;
         var orkesTaskClient = ApiUtil.TASK_CLIENT;
 
-        var wfDef = mapper.readValue(TestUtil.getResourceAsString("metadata/dyn_fork_test.json"), WorkflowDef.class);
+        var wfDef =
+                mapper.readValue(
+                        TestUtil.getResourceAsString("metadata/dyn_fork_test.json"),
+                        WorkflowDef.class);
         metadataClient.updateWorkflowDefs(java.util.List.of(wfDef));
 
         var startWorkflowRequest = new StartWorkflowRequest();
@@ -470,18 +605,20 @@ public class DynamicForkTests {
 
         var workflowId = workflowClient.startWorkflow(startWorkflowRequest);
 
-        await().await().atMost(10, TimeUnit.SECONDS)
+        await().await()
+                .atMost(10, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
-                .untilAsserted(() -> {
-                    var wf = workflowClient.getWorkflow(workflowId, true);
-                    assertEquals(Workflow.WorkflowStatus.RUNNING, wf.getStatus());
-                    assertEquals(6, wf.getTasks().size());
+                .untilAsserted(
+                        () -> {
+                            var wf = workflowClient.getWorkflow(workflowId, true);
+                            assertEquals(Workflow.WorkflowStatus.RUNNING, wf.getStatus());
+                            assertEquals(6, wf.getTasks().size());
 
-                    var joinTask = wf.getTasks().get(5);
-                    assertEquals(Task.Status.IN_PROGRESS, joinTask.getStatus());
-                    assertEquals(TASK_TYPE_JOIN,  joinTask.getTaskType());
-                    assertEquals("join_1", joinTask.getReferenceTaskName());
-                });
+                            var joinTask = wf.getTasks().get(5);
+                            assertEquals(Task.Status.IN_PROGRESS, joinTask.getStatus());
+                            assertEquals(TASK_TYPE_JOIN, joinTask.getTaskType());
+                            assertEquals("join_1", joinTask.getReferenceTaskName());
+                        });
         // complete first and second forked task
         {
             var wf = workflowClient.getWorkflow(workflowId, true);
@@ -489,7 +626,7 @@ public class DynamicForkTests {
             // forked tasks
             var t0 = wf.getTasks().get(2);
             var t1 = wf.getTasks().get(3);
-            //SCHEDULED because it was not polled
+            // SCHEDULED because it was not polled
             assertEquals("simple_1", t0.getReferenceTaskName());
             assertEquals(Task.Status.SCHEDULED, t0.getStatus());
 
@@ -535,17 +672,19 @@ public class DynamicForkTests {
         }
 
         // join task and workflow should be completed
-        await().await().atMost(10, TimeUnit.SECONDS)
+        await().await()
+                .atMost(10, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
-                .untilAsserted(() -> {
-                    var wf = workflowClient.getWorkflow(workflowId, true);
-                    assertEquals(Workflow.WorkflowStatus.COMPLETED, wf.getStatus());
+                .untilAsserted(
+                        () -> {
+                            var wf = workflowClient.getWorkflow(workflowId, true);
+                            assertEquals(Workflow.WorkflowStatus.COMPLETED, wf.getStatus());
 
-                    var joinTask = wf.getTasks().get(5);
-                    assertEquals(Task.Status.COMPLETED, joinTask.getStatus());
-                    assertEquals(TASK_TYPE_JOIN, joinTask.getTaskType());
-                    assertEquals("join_1", joinTask.getReferenceTaskName());
-                });
+                            var joinTask = wf.getTasks().get(5);
+                            assertEquals(Task.Status.COMPLETED, joinTask.getStatus());
+                            assertEquals(TASK_TYPE_JOIN, joinTask.getTaskType());
+                            assertEquals("join_1", joinTask.getReferenceTaskName());
+                        });
     }
 
     private void registerWorkflowDef(String workflowName, MetadataClient metadataClient1) {
@@ -583,8 +722,12 @@ public class DynamicForkTests {
         dynamicFork.setName("dynamicFork");
         dynamicFork.setTaskDefinition(taskDef);
         dynamicFork.setWorkflowTaskType(TaskType.FORK_JOIN_DYNAMIC);
-        dynamicFork.setInputParameters(Map.of("dynamicTasks", "${dt1.output.dynamicTasks}",
-                "dynamicTasksInput", "${dt1.output.dynamicTasksInput}"));
+        dynamicFork.setInputParameters(
+                Map.of(
+                        "dynamicTasks",
+                        "${dt1.output.dynamicTasks}",
+                        "dynamicTasksInput",
+                        "${dt1.output.dynamicTasksInput}"));
         dynamicFork.setDynamicForkTasksParam("dynamicTasks");
         dynamicFork.setDynamicForkTasksInputParamName("dynamicTasksInput");
 
@@ -595,20 +738,21 @@ public class DynamicForkTests {
         workflowDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
         workflowDef.setInputParameters(Arrays.asList("value", "inlineValue"));
         workflowDef.setDescription("Workflow to test retry");
-        workflowDef.setTasks(Arrays.asList( inline, dynamicFork, join));
+        workflowDef.setTasks(Arrays.asList(inline, dynamicFork, join));
         try {
             metadataClient1.updateWorkflowDefs(java.util.List.of(workflowDef));
             metadataClient1.registerTaskDefs(Arrays.asList(taskDef, taskDef2, taskDef3, taskDef4));
-        }catch (Exception e){}
+        } catch (Exception e) {
+        }
     }
 
     private static void startFailureWorkers() {
         var taskClient = ApiUtil.TASK_CLIENT;
-        var configurer = new TaskRunnerConfigurer
-                .Builder(taskClient, List.of(new FailOnPurposeWorker()))
-                .withThreadCount(1)
-                .withTaskPollTimeout(500)
-                .build();
+        var configurer =
+                new TaskRunnerConfigurer.Builder(taskClient, List.of(new FailOnPurposeWorker()))
+                        .withThreadCount(1)
+                        .withTaskPollTimeout(500)
+                        .build();
         configurer.init();
     }
 
@@ -620,7 +764,7 @@ public class DynamicForkTests {
 
         @Override
         public TaskResult execute(Task task) {
-            var result  = new TaskResult(task);
+            var result = new TaskResult(task);
             result.setStatus(TaskResult.Status.FAILED);
             result.getOutputData().put("message", "Failing task on purpose");
             return result;

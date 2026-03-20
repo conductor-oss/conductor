@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Orkes, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,9 +12,6 @@
  */
 package io.conductor.e2e.workflow;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -24,12 +21,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.conductoross.conductor.common.model.WorkflowRun;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.netflix.conductor.client.http.MetadataClient;
 import com.netflix.conductor.client.http.WorkflowClient;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
@@ -37,11 +34,13 @@ import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.conductor.e2e.util.ApiUtil;
-import org.conductoross.conductor.common.model.WorkflowRun;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SyncWorkflowExecutionTest {
-
 
     static WorkflowClient workflowClient;
 
@@ -51,15 +50,22 @@ public class SyncWorkflowExecutionTest {
     public static void init() throws IOException {
         workflowClient = ApiUtil.WORKFLOW_CLIENT;
         MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
-        InputStream is = SyncWorkflowExecutionTest.class.getResourceAsStream("/metadata/sync_workflows.json");
-        TypeReference<List<WorkflowDef>> listOfWorkflows = new TypeReference<List<WorkflowDef>>() {};
-        List<WorkflowDef> workflowDefs = new ObjectMapperProvider().getObjectMapper().readValue(new InputStreamReader(is), listOfWorkflows);
+        InputStream is =
+                SyncWorkflowExecutionTest.class.getResourceAsStream(
+                        "/metadata/sync_workflows.json");
+        TypeReference<List<WorkflowDef>> listOfWorkflows =
+                new TypeReference<List<WorkflowDef>>() {};
+        List<WorkflowDef> workflowDefs =
+                new ObjectMapperProvider()
+                        .getObjectMapper()
+                        .readValue(new InputStreamReader(is), listOfWorkflows);
         metadataClient.updateWorkflowDefs(workflowDefs);
     }
 
     @Test
     @DisplayName("Check sync workflow is executed within 20 seconds")
-    public void testSyncWorkflowExecution() throws ExecutionException, InterruptedException, TimeoutException {
+    public void testSyncWorkflowExecution()
+            throws ExecutionException, InterruptedException, TimeoutException {
 
         String workflowName = "load_test_perf_sync_workflow";
 
@@ -67,25 +73,24 @@ public class SyncWorkflowExecutionTest {
         startWorkflowRequest.setName(workflowName);
         startWorkflowRequest.setVersion(1);
 
-        CompletableFuture<WorkflowRun> completableFuture = workflowClient.executeWorkflow(startWorkflowRequest, List.of(), 25);
+        CompletableFuture<WorkflowRun> completableFuture =
+                workflowClient.executeWorkflow(startWorkflowRequest, List.of(), 25);
         long start = System.currentTimeMillis();
         WorkflowRun workflowRun = completableFuture.get(120, TimeUnit.SECONDS);
         long end = System.currentTimeMillis();
         System.out.println("WorkflowId " + workflowRun.getWorkflowId());
-        long timeTaken = end-start;
+        long timeTaken = end - start;
         System.out.println(
-                String.format("Workflow %s completed in %d ms.",
-                        workflowRun.getWorkflowId(), timeTaken)
-        );
+                String.format(
+                        "Workflow %s completed in %d ms.", workflowRun.getWorkflowId(), timeTaken));
         assertTrue(timeTaken < threshold, "Time taken was " + timeTaken);
         System.out.println("Workflow Run: " + workflowRun.getTasks());
     }
 
-
-
     @Test
     @DisplayName("Check sync workflow end with simple task.")
-    public void testSyncWorkflowExecution2() throws ExecutionException, InterruptedException, TimeoutException {
+    public void testSyncWorkflowExecution2()
+            throws ExecutionException, InterruptedException, TimeoutException {
 
         String workflowName = "sync_workflow_end_with_simple_task";
 
@@ -93,11 +98,12 @@ public class SyncWorkflowExecutionTest {
         startWorkflowRequest.setName(workflowName);
         startWorkflowRequest.setVersion(1);
 
-        CompletableFuture<WorkflowRun> completableFuture = workflowClient.executeWorkflow(startWorkflowRequest, "simple_task_rka0w_ref");
+        CompletableFuture<WorkflowRun> completableFuture =
+                workflowClient.executeWorkflow(startWorkflowRequest, "simple_task_rka0w_ref");
         long start = System.currentTimeMillis();
         WorkflowRun workflowRun = completableFuture.get(11, TimeUnit.SECONDS);
         long end = System.currentTimeMillis();
-        long timeTaken = end-start;
+        long timeTaken = end - start;
         System.out.println("WorkflowId " + workflowRun.getWorkflowId());
         assertTrue(timeTaken < threshold, "Time taken was " + timeTaken);
         assertEquals(Workflow.WorkflowStatus.RUNNING, workflowRun.getStatus());
@@ -106,7 +112,8 @@ public class SyncWorkflowExecutionTest {
 
     @Test
     @DisplayName("Check sync workflow end with set variable task.")
-    public void testSyncWorkflowExecution3() throws ExecutionException, InterruptedException, TimeoutException {
+    public void testSyncWorkflowExecution3()
+            throws ExecutionException, InterruptedException, TimeoutException {
 
         String workflowName = "sync_workflow_end_with_set_variable_task";
 
@@ -114,7 +121,8 @@ public class SyncWorkflowExecutionTest {
         startWorkflowRequest.setName(workflowName);
         startWorkflowRequest.setVersion(1);
 
-        CompletableFuture<WorkflowRun> completableFuture = workflowClient.executeWorkflow(startWorkflowRequest, "set_variable_task_1fi09_ref");
+        CompletableFuture<WorkflowRun> completableFuture =
+                workflowClient.executeWorkflow(startWorkflowRequest, "set_variable_task_1fi09_ref");
         long start = System.currentTimeMillis();
         WorkflowRun workflowRun = completableFuture.get(11, TimeUnit.SECONDS);
         long end = System.currentTimeMillis();
@@ -125,7 +133,8 @@ public class SyncWorkflowExecutionTest {
 
     @Test
     @DisplayName("Check sync workflow end with jq task.")
-    public void testSyncWorkflowExecution4() throws ExecutionException, InterruptedException, TimeoutException {
+    public void testSyncWorkflowExecution4()
+            throws ExecutionException, InterruptedException, TimeoutException {
 
         String workflowName = "sync_workflow_end_with_jq_task";
 
@@ -133,7 +142,9 @@ public class SyncWorkflowExecutionTest {
         startWorkflowRequest.setName(workflowName);
         startWorkflowRequest.setVersion(1);
 
-        CompletableFuture<WorkflowRun> completableFuture = workflowClient.executeWorkflow(startWorkflowRequest, "json_transform_task_jjowa_ref");
+        CompletableFuture<WorkflowRun> completableFuture =
+                workflowClient.executeWorkflow(
+                        startWorkflowRequest, "json_transform_task_jjowa_ref");
         long start = System.currentTimeMillis();
         WorkflowRun workflowRun = completableFuture.get(11, TimeUnit.SECONDS);
         long end = System.currentTimeMillis();
@@ -144,7 +155,8 @@ public class SyncWorkflowExecutionTest {
 
     @Test
     @DisplayName("Check sync workflow end with sub workflow task.")
-    public void testSyncWorkflowExecution5() throws ExecutionException, InterruptedException, TimeoutException {
+    public void testSyncWorkflowExecution5()
+            throws ExecutionException, InterruptedException, TimeoutException {
 
         String workflowName = "sync_workflow_end_with_subworkflow_task";
 
@@ -152,19 +164,22 @@ public class SyncWorkflowExecutionTest {
         startWorkflowRequest.setName(workflowName);
         startWorkflowRequest.setVersion(1);
 
-        CompletableFuture<WorkflowRun> completableFuture = workflowClient.executeWorkflow(startWorkflowRequest, "http_sync");
+        CompletableFuture<WorkflowRun> completableFuture =
+                workflowClient.executeWorkflow(startWorkflowRequest, "http_sync");
         long start = System.currentTimeMillis();
         WorkflowRun workflowRun = completableFuture.get(21, TimeUnit.SECONDS);
         long end = System.currentTimeMillis();
-        long timeTaken = end-start;
+        long timeTaken = end - start;
         System.out.println("WorkflowId " + workflowRun.getWorkflowId());
         assertTrue(timeTaken < threshold, "Time taken was " + timeTaken);
     }
 
     @Test
-    @Disabled("Depends on external HTTP services (orkes-api-tester.orkesconductor.com, cdatfact.ninja) not reliably accessible in conductor-oss e2e; executeWorkflow times out instead of returning RUNNING state")
+    @Disabled(
+            "Depends on external HTTP services (orkes-api-tester.orkesconductor.com, cdatfact.ninja) not reliably accessible in conductor-oss e2e; executeWorkflow times out instead of returning RUNNING state")
     @DisplayName("Check sync workflow end with failed case")
-    public void testSyncWorkflowExecution6() throws ExecutionException, InterruptedException, TimeoutException {
+    public void testSyncWorkflowExecution6()
+            throws ExecutionException, InterruptedException, TimeoutException {
 
         String workflowName = "sync_workflow_failed_case";
 
@@ -172,11 +187,12 @@ public class SyncWorkflowExecutionTest {
         startWorkflowRequest.setName(workflowName);
         startWorkflowRequest.setVersion(1);
 
-        CompletableFuture<WorkflowRun> completableFuture = workflowClient.executeWorkflow(startWorkflowRequest, "http_fail");
+        CompletableFuture<WorkflowRun> completableFuture =
+                workflowClient.executeWorkflow(startWorkflowRequest, "http_fail");
         long start = System.currentTimeMillis();
         WorkflowRun workflowRun = completableFuture.get(9, TimeUnit.SECONDS);
         long end = System.currentTimeMillis();
-        long timeTaken = end-start;
+        long timeTaken = end - start;
         assertTrue(timeTaken < threshold, "Time taken was " + timeTaken);
         System.out.println("WorkflowId " + workflowRun.getWorkflowId());
         assertEquals(Workflow.WorkflowStatus.RUNNING, workflowRun.getStatus());
@@ -185,7 +201,8 @@ public class SyncWorkflowExecutionTest {
 
     @Test
     @DisplayName("Check sync workflow end with no poller")
-    public void testSyncWorkflowExecution7() throws ExecutionException, InterruptedException, TimeoutException {
+    public void testSyncWorkflowExecution7()
+            throws ExecutionException, InterruptedException, TimeoutException {
 
         String workflowName = "sync_workflow_no_poller";
 
@@ -193,11 +210,12 @@ public class SyncWorkflowExecutionTest {
         startWorkflowRequest.setName(workflowName);
         startWorkflowRequest.setVersion(1);
 
-        CompletableFuture<WorkflowRun> completableFuture = workflowClient.executeWorkflow(startWorkflowRequest, "simple_task_pia0h_ref");
+        CompletableFuture<WorkflowRun> completableFuture =
+                workflowClient.executeWorkflow(startWorkflowRequest, "simple_task_pia0h_ref");
         long start = System.currentTimeMillis();
         WorkflowRun workflowRun = completableFuture.get(21, TimeUnit.SECONDS);
         long end = System.currentTimeMillis();
-        long timeTaken = end-start;
+        long timeTaken = end - start;
         assertTrue(timeTaken < threshold, "Time taken was " + timeTaken);
         System.out.println("WorkflowId " + workflowRun.getWorkflowId());
         assertEquals(Workflow.WorkflowStatus.RUNNING, workflowRun.getStatus());
@@ -206,7 +224,8 @@ public class SyncWorkflowExecutionTest {
 
     @Test
     @DisplayName("check sync workflow with update variables")
-    public void testSyncWorkflowVariableUpdates() throws ExecutionException, InterruptedException, TimeoutException {
+    public void testSyncWorkflowVariableUpdates()
+            throws ExecutionException, InterruptedException, TimeoutException {
 
         String workflowName = "sync_workflow_no_poller";
 
@@ -214,11 +233,12 @@ public class SyncWorkflowExecutionTest {
         startWorkflowRequest.setName(workflowName);
         startWorkflowRequest.setVersion(1);
 
-        CompletableFuture<WorkflowRun> completableFuture = workflowClient.executeWorkflow(startWorkflowRequest, "simple_task_pia0h_ref");
+        CompletableFuture<WorkflowRun> completableFuture =
+                workflowClient.executeWorkflow(startWorkflowRequest, "simple_task_pia0h_ref");
         long start = System.currentTimeMillis();
         WorkflowRun workflowRun = completableFuture.get(21, TimeUnit.SECONDS);
         long end = System.currentTimeMillis();
-        long timeTaken = end-start;
+        long timeTaken = end - start;
         assertTrue(timeTaken < threshold, "Time taken was " + timeTaken);
         System.out.println("WorkflowId " + workflowRun.getWorkflowId());
         assertEquals(Workflow.WorkflowStatus.RUNNING, workflowRun.getStatus());
@@ -226,8 +246,10 @@ public class SyncWorkflowExecutionTest {
     }
 
     @Test
-    @DisplayName("Check sync workflow with inline, wait, and simple task returns before timeout when waitUntilTaskRef is set")
-    public void testSyncWorkflowWithInlineWaitAndWaitUntilTaskRef() throws ExecutionException, InterruptedException, TimeoutException {
+    @DisplayName(
+            "Check sync workflow with inline, wait, and simple task returns before timeout when waitUntilTaskRef is set")
+    public void testSyncWorkflowWithInlineWaitAndWaitUntilTaskRef()
+            throws ExecutionException, InterruptedException, TimeoutException {
 
         String workflowName = "sync_workflow_with_inline_wait_and_simple_task";
 
@@ -238,9 +260,11 @@ public class SyncWorkflowExecutionTest {
         // Execute workflow with waitUntilTaskRef pointing to simple_ref
         // The workflow has: inline task (instant) -> wait task (5 seconds) -> simple task
         // With waitForSeconds=25, the workflow should return after the simple task is scheduled.
-        // In conductor-oss postgres, WAIT sweeper adds ~10s overhead on top of the configured duration,
+        // In conductor-oss postgres, WAIT sweeper adds ~10s overhead on top of the configured
+        // duration,
         // so a 5-second WAIT may take ~15 seconds total before simple_ref is scheduled.
-        CompletableFuture<WorkflowRun> completableFuture = workflowClient.executeWorkflow(startWorkflowRequest, "simple_ref", 25);
+        CompletableFuture<WorkflowRun> completableFuture =
+                workflowClient.executeWorkflow(startWorkflowRequest, "simple_ref", 25);
         long start = System.currentTimeMillis();
         WorkflowRun workflowRun = completableFuture.get(35, TimeUnit.SECONDS);
         long end = System.currentTimeMillis();
@@ -251,12 +275,21 @@ public class SyncWorkflowExecutionTest {
 
         // Verify that the workflow returned after the WAIT task (at least 5 seconds)
         // and before the waitForSeconds timeout (25 seconds + buffer)
-        assertTrue(timeTaken >= 5000, "Workflow should take at least 5 seconds due to WAIT task, but took " + timeTaken + "ms");
-        assertTrue(timeTaken < 30000, "Workflow should complete before 30 second timeout, but took " + timeTaken + "ms");
+        assertTrue(
+                timeTaken >= 5000,
+                "Workflow should take at least 5 seconds due to WAIT task, but took "
+                        + timeTaken
+                        + "ms");
+        assertTrue(
+                timeTaken < 30000,
+                "Workflow should complete before 30 second timeout, but took " + timeTaken + "ms");
 
         // Verify that all three tasks were executed (inline, wait, simple)
         assertEquals(Workflow.WorkflowStatus.RUNNING, workflowRun.getStatus());
-        assertEquals(3, workflowRun.getTasks().size(), "Expected 3 tasks to be executed (inline, wait, simple)");
+        assertEquals(
+                3,
+                workflowRun.getTasks().size(),
+                "Expected 3 tasks to be executed (inline, wait, simple)");
 
         // Clean up
         workflowClient.terminateWorkflow(workflowRun.getWorkflowId(), "Terminated");

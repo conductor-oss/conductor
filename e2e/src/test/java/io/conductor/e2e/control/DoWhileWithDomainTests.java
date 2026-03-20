@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Orkes, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -16,7 +16,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
 
@@ -34,10 +33,11 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 
 import io.conductor.e2e.util.ApiUtil;
+import lombok.extern.slf4j.Slf4j;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.awaitility.Awaitility.await;
 
 @Slf4j
 public class DoWhileWithDomainTests {
@@ -62,12 +62,25 @@ public class DoWhileWithDomainTests {
         log.info("workflowId: {}", workflowId);
         System.out.println("workflowId : " + workflowId);
 
-        await().atMost(33, TimeUnit.SECONDS).untilAsserted(()->{
-            assertTrue(!workflowClient.getWorkflow(workflowId, true).getTasks().isEmpty());
-        });
+        await().atMost(33, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            assertTrue(
+                                    !workflowClient
+                                            .getWorkflow(workflowId, true)
+                                            .getTasks()
+                                            .isEmpty());
+                        });
         // User1 should be able to complete task/workflow
-        String taskRefName = workflowClient.getWorkflow(workflowId, true).getTasks().get(0).getReferenceTaskName();
-        Workflow workflow = taskClient.updateTaskSync(workflowId, taskRefName, TaskResult.Status.COMPLETED, Map.of());
+        String taskRefName =
+                workflowClient
+                        .getWorkflow(workflowId, true)
+                        .getTasks()
+                        .get(0)
+                        .getReferenceTaskName();
+        Workflow workflow =
+                taskClient.updateTaskSync(
+                        workflowId, taskRefName, TaskResult.Status.COMPLETED, Map.of());
         assertEquals(workflow.getStatus().name(), Workflow.WorkflowStatus.RUNNING.name());
         assertEquals(workflow.getTasks().get(0).getStatus(), Task.Status.COMPLETED);
         assertEquals(workflow.getTasks().get(1).getStatus(), Task.Status.IN_PROGRESS);
@@ -81,11 +94,15 @@ public class DoWhileWithDomainTests {
         taskClient.updateTask(taskResult);
 
         // Wait for workflow to get completed
-        await().atMost(3, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow workflow1 = workflowClient.getWorkflow(workflowId, true);
-            assertEquals(workflow1.getTasks().get(0).getStatus(), Task.Status.COMPLETED);
-            assertEquals(workflow1.getTasks().get(1).getStatus(), Task.Status.COMPLETED);
-        });
+        await().atMost(3, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow1 = workflowClient.getWorkflow(workflowId, true);
+                            assertEquals(
+                                    workflow1.getTasks().get(0).getStatus(), Task.Status.COMPLETED);
+                            assertEquals(
+                                    workflow1.getTasks().get(1).getStatus(), Task.Status.COMPLETED);
+                        });
 
         // Cleanup
         metadataClient.unregisterWorkflowDef(parentWorkflowName, 1);
@@ -128,7 +145,6 @@ public class DoWhileWithDomainTests {
         subWorkflowParams.setWorkflowDef(inlineWorkflowDef);
         inlineSubworkflow.setSubWorkflowParam(subWorkflowParams);
 
-
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName(workflowName);
         workflowDef.setOwnerEmail("test@orkes.io");
@@ -136,10 +152,11 @@ public class DoWhileWithDomainTests {
         workflowDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
         workflowDef.setInputParameters(Arrays.asList("value", "inlineValue"));
         workflowDef.setDescription("Workflow to test inline sub_workflow definition");
-        workflowDef.setTasks(Arrays.asList( workflowTask, inlineSubworkflow));
+        workflowDef.setTasks(Arrays.asList(workflowTask, inlineSubworkflow));
         try {
             metadataClient1.updateWorkflowDefs(java.util.List.of(workflowDef));
             metadataClient1.registerTaskDefs(Arrays.asList(taskDef, taskDef2));
-        } catch (Exception e){}
+        } catch (Exception e) {
+        }
     }
 }

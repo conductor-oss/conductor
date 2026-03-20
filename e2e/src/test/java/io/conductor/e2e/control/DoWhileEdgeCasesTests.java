@@ -1,7 +1,28 @@
+/*
+ * Copyright 2026 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package io.conductor.e2e.control;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
 import com.netflix.conductor.client.http.MetadataClient;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.http.WorkflowClient;
@@ -11,24 +32,16 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.conductor.e2e.util.ApiUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.awaitility.Awaitility.await;
 
 @Slf4j
 public class DoWhileEdgeCasesTests {
@@ -37,8 +50,7 @@ public class DoWhileEdgeCasesTests {
     private static WorkflowClient workflowClient;
     private static TaskClient taskClient;
     private static final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
-    private static final TypeReference<WorkflowDef> WORKFLOW_DEF = new TypeReference<>() {
-    };
+    private static final TypeReference<WorkflowDef> WORKFLOW_DEF = new TypeReference<>() {};
 
     @SneakyThrows
     @BeforeAll
@@ -47,19 +59,23 @@ public class DoWhileEdgeCasesTests {
         workflowClient = ApiUtil.WORKFLOW_CLIENT;
         taskClient = ApiUtil.TASK_CLIENT;
 
-        InputStream resource = DoWhileEdgeCasesTests.class.getResourceAsStream("/metadata/vialtodoowhile.json");
+        InputStream resource =
+                DoWhileEdgeCasesTests.class.getResourceAsStream("/metadata/vialtodoowhile.json");
         assert resource != null;
-        WorkflowDef workflowDef = objectMapper.readValue(new InputStreamReader(resource), WORKFLOW_DEF);
+        WorkflowDef workflowDef =
+                objectMapper.readValue(new InputStreamReader(resource), WORKFLOW_DEF);
         metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
         log.info("Registered workflow definition: {}", workflowDef.getName());
 
-        resource = DoWhileEdgeCasesTests.class.getResourceAsStream("/metadata/vialtodoowhile3.json");
+        resource =
+                DoWhileEdgeCasesTests.class.getResourceAsStream("/metadata/vialtodoowhile3.json");
         assert resource != null;
         workflowDef = objectMapper.readValue(new InputStreamReader(resource), WORKFLOW_DEF);
         metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
         log.info("Registered workflow definition: {}", workflowDef.getName());
 
-        resource = DoWhileEdgeCasesTests.class.getResourceAsStream("/metadata/stackoverflower.json");
+        resource =
+                DoWhileEdgeCasesTests.class.getResourceAsStream("/metadata/stackoverflower.json");
         assert resource != null;
         workflowDef = objectMapper.readValue(new InputStreamReader(resource), WORKFLOW_DEF);
         metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
@@ -69,12 +85,21 @@ public class DoWhileEdgeCasesTests {
     @AfterAll
     public static void cleanup() {
         try {
-            workflowIdsToTerminate.forEach(id -> {
-                workflowClient.terminateWorkflow(id, String.format("Terminated by cleanup in %s", DoWhileEdgeCasesTests.class.getSimpleName()));
-            });
+            workflowIdsToTerminate.forEach(
+                    id -> {
+                        workflowClient.terminateWorkflow(
+                                id,
+                                String.format(
+                                        "Terminated by cleanup in %s",
+                                        DoWhileEdgeCasesTests.class.getSimpleName()));
+                    });
         } catch (Exception e) {
             if (!e.getMessage().contains("Cannot terminate a COMPLETED workflow.")) {
-                log.error("Error while cleaning up in {} : {}", DoWhileEdgeCasesTests.class.getSimpleName(), e.getMessage(), e);
+                log.error(
+                        "Error while cleaning up in {} : {}",
+                        DoWhileEdgeCasesTests.class.getSimpleName(),
+                        e.getMessage(),
+                        e);
             }
         }
     }
@@ -94,27 +119,39 @@ public class DoWhileEdgeCasesTests {
             // HTTP task before WAIT can take several seconds; allow 30s for conductor-oss postgres
             await().pollInterval(1, TimeUnit.SECONDS)
                     .atMost(30, TimeUnit.SECONDS)
-                    .untilAsserted(() -> {
-                        Workflow workflow = workflowClient.getWorkflow(workflowId, true);
-                        assertNotNull(workflow);
+                    .untilAsserted(
+                            () -> {
+                                Workflow workflow = workflowClient.getWorkflow(workflowId, true);
+                                assertNotNull(workflow);
 
-                        // Find the wait task in the current iteration
-                        Task waitTask = workflow.getTasks().stream()
-                                .filter(t -> t.getTaskType().equals("WAIT") &&
-                                           t.getStatus() == Task.Status.IN_PROGRESS)
-                                .findFirst()
-                                .orElse(null);
+                                // Find the wait task in the current iteration
+                                Task waitTask =
+                                        workflow.getTasks().stream()
+                                                .filter(
+                                                        t ->
+                                                                t.getTaskType().equals("WAIT")
+                                                                        && t.getStatus()
+                                                                                == Task.Status
+                                                                                        .IN_PROGRESS)
+                                                .findFirst()
+                                                .orElse(null);
 
-                        assertNotNull(waitTask, "Wait task should be in progress at iteration " + iteration);
-                    });
+                                assertNotNull(
+                                        waitTask,
+                                        "Wait task should be in progress at iteration "
+                                                + iteration);
+                            });
 
             // Get the workflow and find the wait task
             Workflow workflow = workflowClient.getWorkflow(workflowId, true);
-            Task waitTask = workflow.getTasks().stream()
-                    .filter(t -> t.getTaskType().equals("WAIT") &&
-                               t.getStatus() == Task.Status.IN_PROGRESS)
-                    .findFirst()
-                    .orElseThrow(() -> new RuntimeException("Wait task not found"));
+            Task waitTask =
+                    workflow.getTasks().stream()
+                            .filter(
+                                    t ->
+                                            t.getTaskType().equals("WAIT")
+                                                    && t.getStatus() == Task.Status.IN_PROGRESS)
+                            .findFirst()
+                            .orElseThrow(() -> new RuntimeException("Wait task not found"));
 
             // Update the wait task with the appropriate result
             TaskResult taskResult = new TaskResult();
@@ -137,12 +174,15 @@ public class DoWhileEdgeCasesTests {
 
         await().pollInterval(1, TimeUnit.SECONDS)
                 .atMost(30, TimeUnit.SECONDS)
-                .untilAsserted(() -> {
-                    Workflow workflow = workflowClient.getWorkflow(workflowId, true);
-                    assertNotNull(workflow);
-                    assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus(),
-                            "Workflow should be completed");
-                });
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
+                            assertNotNull(workflow);
+                            assertEquals(
+                                    Workflow.WorkflowStatus.COMPLETED,
+                                    workflow.getStatus(),
+                                    "Workflow should be completed");
+                        });
 
         // Assert that the do_while iterated 10 times
         Workflow finalWorkflow = workflowClient.getWorkflow(workflowId, true);
@@ -169,12 +209,15 @@ public class DoWhileEdgeCasesTests {
         // This workflow runs automatically and stops when iteration > 25
         await().pollInterval(1, TimeUnit.SECONDS)
                 .atMost(2, TimeUnit.MINUTES)
-                .untilAsserted(() -> {
-                    Workflow workflow = workflowClient.getWorkflow(workflowId, true);
-                    assertNotNull(workflow);
-                    assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus(),
-                            "Workflow should be completed");
-                });
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
+                            assertNotNull(workflow);
+                            assertEquals(
+                                    Workflow.WorkflowStatus.COMPLETED,
+                                    workflow.getStatus(),
+                                    "Workflow should be completed");
+                        });
 
         // Assert that the do_while iterated 26 times
         Workflow finalWorkflow = workflowClient.getWorkflow(workflowId, true);
@@ -201,12 +244,15 @@ public class DoWhileEdgeCasesTests {
 
         await().pollInterval(1, TimeUnit.SECONDS)
                 .atMost(2, TimeUnit.MINUTES)
-                .untilAsserted(() -> {
-                    Workflow workflow = workflowClient.getWorkflow(workflowId, true);
-                    assertNotNull(workflow);
-                    assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus(),
-                            "Workflow should be completed");
-                });
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
+                            assertNotNull(workflow);
+                            assertEquals(
+                                    Workflow.WorkflowStatus.COMPLETED,
+                                    workflow.getStatus(),
+                                    "Workflow should be completed");
+                        });
 
         Workflow finalWorkflow = workflowClient.getWorkflow(workflowId, true);
         Task loopTask = finalWorkflow.getTaskByRefName("loop_ref");
@@ -216,6 +262,8 @@ public class DoWhileEdgeCasesTests {
         assertNotNull(iteration, "iteration field should exist in loop task output");
         assertEquals(50, iteration, "loop should have iterated 50 times");
 
-        log.info("testStackoverflower completed. Loop iterated {} times (no StackOverflowError)", iteration);
+        log.info(
+                "testStackoverflower completed. Loop iterated {} times (no StackOverflowError)",
+                iteration);
     }
 }

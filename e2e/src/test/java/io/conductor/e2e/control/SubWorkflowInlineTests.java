@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Orkes, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -11,6 +11,12 @@
  * specific language governing permissions and limitations under the License.
  */
 package io.conductor.e2e.control;
+
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.client.http.MetadataClient;
 import com.netflix.conductor.client.http.TaskClient;
@@ -24,15 +30,11 @@ import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
+
 import io.conductor.e2e.util.ApiUtil;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SubWorkflowInlineTests {
 
@@ -61,34 +63,45 @@ public class SubWorkflowInlineTests {
 
         // User1 should be able to complete task/workflow
         String taskId = workflowClient.getWorkflow(workflowId, true).getTasks().get(0).getTaskId();
-        TaskResult taskResult  = new TaskResult();
+        TaskResult taskResult = new TaskResult();
         taskResult.setWorkflowInstanceId(workflowId);
         taskResult.setStatus(TaskResult.Status.COMPLETED);
         taskResult.setTaskId(taskId);
         taskClient.updateTask(taskResult);
 
         // Workflow will be still running state
-        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow workflow1 = workflowClient.getWorkflow(workflowId, true);
-            assertEquals(workflow1.getStatus().name(), Workflow.WorkflowStatus.RUNNING.name());
-            assertEquals(workflow1.getTasks().get(0).getStatus(), Task.Status.COMPLETED);
-            assertEquals(workflow1.getTasks().get(1).getStatus(), Task.Status.IN_PROGRESS);
-        });
+        await().atMost(10, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow1 = workflowClient.getWorkflow(workflowId, true);
+                            assertEquals(
+                                    workflow1.getStatus().name(),
+                                    Workflow.WorkflowStatus.RUNNING.name());
+                            assertEquals(
+                                    workflow1.getTasks().get(0).getStatus(), Task.Status.COMPLETED);
+                            assertEquals(
+                                    workflow1.getTasks().get(1).getStatus(),
+                                    Task.Status.IN_PROGRESS);
+                        });
 
         Workflow workflow = workflowClient.getWorkflow(workflowId, true);
         String subWorkflowId = workflow.getTasks().get(1).getSubWorkflowId();
-        taskResult  = new TaskResult();
+        taskResult = new TaskResult();
         taskResult.setWorkflowInstanceId(subWorkflowId);
         taskResult.setStatus(TaskResult.Status.COMPLETED);
         taskResult.setTaskId(workflow.getTasks().get(1).getTaskId());
         taskClient.updateTask(taskResult);
 
         // Wait for workflow to get completed
-        await().atMost(3, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow workflow1 = workflowClient.getWorkflow(workflowId, true);
-            assertEquals(workflow1.getTasks().get(0).getStatus(), Task.Status.COMPLETED);
-            assertEquals(workflow1.getTasks().get(1).getStatus(), Task.Status.COMPLETED);
-        });
+        await().atMost(3, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow1 = workflowClient.getWorkflow(workflowId, true);
+                            assertEquals(
+                                    workflow1.getTasks().get(0).getStatus(), Task.Status.COMPLETED);
+                            assertEquals(
+                                    workflow1.getTasks().get(1).getStatus(), Task.Status.COMPLETED);
+                        });
 
         // Cleanup
         metadataClient.unregisterWorkflowDef(parentWorkflowName, 1);
@@ -131,7 +144,6 @@ public class SubWorkflowInlineTests {
         subWorkflowParams.setWorkflowDef(inlineWorkflowDef);
         inlineSubworkflow.setSubWorkflowParam(subWorkflowParams);
 
-
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName(workflowName);
         workflowDef.setTimeoutSeconds(600);
@@ -139,10 +151,11 @@ public class SubWorkflowInlineTests {
         workflowDef.setOwnerEmail("test@orkes.io");
         workflowDef.setInputParameters(Arrays.asList("value", "inlineValue"));
         workflowDef.setDescription("Workflow to test inline sub_workflow definition");
-        workflowDef.setTasks(Arrays.asList( workflowTask, inlineSubworkflow));
+        workflowDef.setTasks(Arrays.asList(workflowTask, inlineSubworkflow));
         try {
             metadataClient1.updateWorkflowDefs(java.util.List.of(workflowDef));
             metadataClient1.registerTaskDefs(Arrays.asList(taskDef, taskDef2));
-        } catch (Exception e){}
+        } catch (Exception e) {
+        }
     }
 }
