@@ -28,7 +28,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.retry.support.RetryTemplate;
 
+import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NonTransientException;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.sqlite.util.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -77,6 +79,13 @@ public abstract class SqliteBaseDAO {
         }
     }
 
+    /**
+     * Initialize a transactional connection and apply {@code function}.
+     *
+     * <p>Domain exceptions ({@link NotFoundException} and {@link ConflictException}) and {@link
+     * NonTransientException} are propagated unchanged; all other failures are wrapped as {@link
+     * NonTransientException}.
+     */
     private <R> R getWithTransaction(final TransactionalFunction<R> function) {
         final Instant start = Instant.now();
         LazyToString callingMethod = getCallingMethod();
@@ -98,8 +107,14 @@ public abstract class SqliteBaseDAO {
                 return result;
             } catch (Throwable th) {
                 tx.rollback();
-                if (th instanceof NonTransientException) {
-                    throw th;
+                if (th instanceof NotFoundException notFoundException) {
+                    throw notFoundException;
+                }
+                if (th instanceof ConflictException conflictException) {
+                    throw conflictException;
+                }
+                if (th instanceof NonTransientException nonTransientException) {
+                    throw nonTransientException;
                 }
                 throw new NonTransientException(th.getMessage(), th);
             } finally {
@@ -119,6 +134,15 @@ public abstract class SqliteBaseDAO {
         try {
             return retryTemplate.execute(context -> getWithTransaction(function));
         } catch (Exception e) {
+            if (e instanceof NotFoundException notFoundException) {
+                throw notFoundException;
+            }
+            if (e instanceof ConflictException conflictException) {
+                throw conflictException;
+            }
+            if (e instanceof NonTransientException nonTransientException) {
+                throw nonTransientException;
+            }
             throw new NonTransientException(e.getMessage(), e);
         }
     }
