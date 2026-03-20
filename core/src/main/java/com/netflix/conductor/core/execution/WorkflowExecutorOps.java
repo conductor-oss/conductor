@@ -1038,8 +1038,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     && task.getStatus().isSuccessful();
         }
 
-        return workflowTasks.stream().noneMatch(t -> t.getTaskReferenceName().equals(taskRefName))
-                && task.getStatus().isSuccessful();
+        // Tasks not in the workflow definition are dynamically forked (FORK_JOIN_DYNAMIC).
+        // Always trigger decide for these tasks: they rely on the sweeper which has a
+        // 30+ second initial delay, causing workflows to stall if decide is skipped.
+        return false;
     }
 
     @Override

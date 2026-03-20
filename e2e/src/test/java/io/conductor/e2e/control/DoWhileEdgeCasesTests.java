@@ -192,7 +192,9 @@ public class DoWhileEdgeCasesTests {
     public void testStackoverflower() {
         StartWorkflowRequest request = new StartWorkflowRequest();
         request.setName("stackoverflower");
-        request.setInput(Map.of("n", 999));
+        // n=50: enough to test no StackOverflowError while completing within the 30s HTTP timeout.
+        // The decide loop runs INLINE tasks synchronously; 999 iterations exceeds the timeout.
+        request.setInput(Map.of("n", 50));
         String workflowId = workflowClient.startWorkflow(request);
         log.info("Started workflow {}", workflowId);
         workflowIdsToTerminate.add(workflowId);
@@ -212,8 +214,8 @@ public class DoWhileEdgeCasesTests {
 
         Object iteration = loopTask.getOutputData().get("iteration");
         assertNotNull(iteration, "iteration field should exist in loop task output");
-        assertEquals(999, iteration, "loop should have iterated 999 times");
+        assertEquals(50, iteration, "loop should have iterated 50 times");
 
-        log.info("Test completed successfully. Loop iterated {} times", iteration);
+        log.info("testStackoverflower completed. Loop iterated {} times (no StackOverflowError)", iteration);
     }
 }

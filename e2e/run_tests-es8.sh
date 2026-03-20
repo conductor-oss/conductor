@@ -6,6 +6,7 @@ COMPOSE_FILE="$SCRIPT_DIR/../docker/docker-compose-es8.yaml"
 export SERVER_ROOT_URI="${SERVER_ROOT_URI:-http://localhost:8080}"
 
 echo "Starting Conductor (Redis + Elasticsearch 8)..."
+docker compose -f "$COMPOSE_FILE" build conductor-server
 docker compose -f "$COMPOSE_FILE" up -d
 
 echo "Waiting for Conductor server at $SERVER_ROOT_URI/health ..."
