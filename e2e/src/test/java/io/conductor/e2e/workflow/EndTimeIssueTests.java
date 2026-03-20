@@ -33,7 +33,7 @@ public class EndTimeIssueTests {
 
         var mapper = new ObjectMapperProvider().getObjectMapper();
         var workflowDef = mapper.readValue(getResourceAsString("metadata/end_time_workflow.json"), WorkflowDef.class);
-        metadataClient.registerWorkflowDef(workflowDef);
+        metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
 
         var startWorkflowRequest = new StartWorkflowRequest();
         startWorkflowRequest.setName(workflowDef.getName());

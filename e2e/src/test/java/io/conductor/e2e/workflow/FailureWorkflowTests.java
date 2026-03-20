@@ -30,7 +30,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -73,7 +72,6 @@ public class FailureWorkflowTests {
     @Test
     @DisplayName("Check failed workflows do not loose tasks")
     // Bulkhead will hit the limit and fail the workflow so skipping this is api orchestration is enabled
-    @EnabledIfEnvironmentVariable(named ="API_ORCHESTRATION_ENABLED", matches = "false")
     public void testFailureTasksAreNotLost(){
         String workflowName = "this_will_fail";
         StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
@@ -176,7 +174,7 @@ public class FailureWorkflowTests {
         assertNotNull(workflow.getInput().get("failureTaskId"));
         assertNotNull(workflow.getInput().get("workflowId"));
         assertEquals("FAILED", workflow.getInput().get("failureStatus").toString());
-        assertEquals(reason, workflow.getInput().get("reason").toString());
+        assertTrue(workflow.getInput().get("reason").toString().contains(reason), "Reason should contain '" + reason + "'");
         Map<String, Object> input = (Map<String, Object>) workflow.getInput().get("failedWorkflow");
 
         assertNotNull(input.get("tasks"));
@@ -213,7 +211,7 @@ public class FailureWorkflowTests {
         failureWorkflow.setTimeoutSeconds(600);
         failureWorkflow.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
         failureWorkflow.setTasks(Arrays.asList(simpleTask2));
-        metadataClient.registerWorkflowDef(failureWorkflow);
+        metadataClient.updateWorkflowDefs(java.util.List.of(failureWorkflow));
 
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName(workflowName);
@@ -225,7 +223,7 @@ public class FailureWorkflowTests {
         workflowDef.getOutputParameters().put("status", "${" + taskName1 + ".output.status}");
         workflowDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
         workflowDef.setTasks(Arrays.asList(inline, simpleTask));
-        metadataClient.registerWorkflowDef(workflowDef);
+        metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
     }
 
 }

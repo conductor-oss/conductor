@@ -80,7 +80,7 @@ public class WorkflowInputTests {
         workflowDef.setInputParameters(Arrays.asList("value", "inlineValue"));
         workflowDef.setDescription("Workflow to monitor order state");
         workflowDef.setTasks(Arrays.asList(workflowTask));
-        metadataClient1.registerWorkflowDef(workflowDef);
+        metadataClient1.updateWorkflowDefs(java.util.List.of(workflowDef));
         metadataClient1.registerTaskDefs(Arrays.asList(taskDef));
     }
 

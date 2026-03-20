@@ -79,7 +79,7 @@ public class TaskTimeoutTests {
         workflowDef.setTasks(Collections.singletonList(workflowTask));
 
         // Register Workflow
-        metadataClient.registerWorkflowDef(workflowDef);
+        metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
 
         TaskDef taskDefResponseTimeout = new TaskDef();
         taskDefResponseTimeout.setName(TASK_NAME_RESPONSE_TIMEOUT);
@@ -106,7 +106,7 @@ public class TaskTimeoutTests {
         workflowDefResponseTimeout.setTasks(Collections.singletonList(workflowTaskResponseTimeout));
 
         // Register Workflow
-        metadataClient.registerWorkflowDef(workflowDefResponseTimeout);
+        metadataClient.updateWorkflowDefs(java.util.List.of(workflowDefResponseTimeout));
 
         // Define TaskDef with overall timeoutSeconds
         TaskDef taskDefOverallTimeout = new TaskDef();
@@ -134,7 +134,7 @@ public class TaskTimeoutTests {
         workflowDefOverallTimeout.setTasks(Collections.singletonList(workflowTaskOverallTimeout));
 
         // Register Workflow
-        metadataClient.registerWorkflowDef(workflowDefOverallTimeout);
+        metadataClient.updateWorkflowDefs(java.util.List.of(workflowDefOverallTimeout));
     }
 
     @Test

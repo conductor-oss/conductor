@@ -8,9 +8,9 @@ import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.run.Workflow;
 import io.conductor.e2e.util.ApiUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -20,10 +20,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@EnabledIfEnvironmentVariable(named = "API_ORCHESTRATION_ENABLED", matches = "false")
 public class HTTPTaskTests {
 
     @Test
+    @Disabled("Requires httpbin-server internal service (http://httpbin-server:8081) not configured in conductor-oss e2e docker setup")
     public void HTTPAsyncCompleteTest() {
         WorkflowClient workflowClient = ApiUtil.WORKFLOW_CLIENT;
         TaskClient taskClient = ApiUtil.TASK_CLIENT;

@@ -197,7 +197,7 @@ public class WorkflowRestartTests {
         task.setOwnerEmail("test@orkes.io");
         metadataClient.registerTaskDefs(Arrays.asList(task));
         workflowDef.getTasks().add(workflowTask);
-        metadataClient.registerWorkflowDef(workflowDef);
+        metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
     }
 
     @Test
@@ -220,9 +220,12 @@ public class WorkflowRestartTests {
 
         String workflowId = workflowClient.startWorkflow(startWorkflowRequest);
         System.out.print("Workflow id is " + workflowId);
-        await().atMost(3, TimeUnit.SECONDS).pollInterval(500, TimeUnit.MILLISECONDS).untilAsserted(() -> {
+        // Wait for sub-workflow to be started and get its ID
+        await().atMost(10, TimeUnit.SECONDS).pollInterval(500, TimeUnit.MILLISECONDS).untilAsserted(() -> {
             Workflow workflow1 = workflowClient.getWorkflow(workflowId, true);
             assertNotEquals(0, workflow1.getTasks().size());
+            assertNotNull(workflow1.getTasks().get(0).getSubWorkflowId());
+            assertFalse(workflow1.getTasks().get(0).getSubWorkflowId().isBlank());
         });
         Workflow workflow = workflowClient.getWorkflow(workflowId, true);
         // Fail the simple task
@@ -236,7 +239,7 @@ public class WorkflowRestartTests {
         taskClient.updateTask(taskResult);
 
         // Wait for parent workflow to get failed
-        await().atMost(3, TimeUnit.SECONDS).pollInterval(1, TimeUnit.SECONDS).untilAsserted(() -> {
+        await().atMost(5, TimeUnit.SECONDS).pollInterval(1, TimeUnit.SECONDS).untilAsserted(() -> {
             Workflow workflow1 = workflowClient.getWorkflow(workflowId, false);
             assertEquals(workflow1.getStatus().name(), Workflow.WorkflowStatus.FAILED.name());
         });
@@ -302,9 +305,12 @@ public class WorkflowRestartTests {
 
         String workflowId = workflowClient.startWorkflow(startWorkflowRequest);
         System.out.print("Workflow id is " + workflowId);
-        await().atMost(3, TimeUnit.SECONDS).pollInterval(500, TimeUnit.MILLISECONDS).untilAsserted(() -> {
+        // Wait for sub-workflow to be started and get its ID
+        await().atMost(10, TimeUnit.SECONDS).pollInterval(500, TimeUnit.MILLISECONDS).untilAsserted(() -> {
             Workflow workflow1 = workflowClient.getWorkflow(workflowId, true);
             assertNotEquals(0, workflow1.getTasks().size());
+            assertNotNull(workflow1.getTasks().get(0).getSubWorkflowId());
+            assertFalse(workflow1.getTasks().get(0).getSubWorkflowId().isBlank());
         });
         Workflow workflow = workflowClient.getWorkflow(workflowId, true);
         // Fail the simple task
@@ -317,8 +323,8 @@ public class WorkflowRestartTests {
         taskResult.setStatus(TaskResult.Status.COMPLETED);
         taskClient.updateTask(taskResult);
 
-        // Wait for parent workflow to get failed
-        await().atMost(3, TimeUnit.SECONDS).pollInterval(1, TimeUnit.SECONDS).untilAsserted(() -> {
+        // Wait for parent workflow to complete
+        await().atMost(5, TimeUnit.SECONDS).pollInterval(1, TimeUnit.SECONDS).untilAsserted(() -> {
             Workflow workflow1 = workflowClient.getWorkflow(workflowId, false);
             assertEquals(workflow1.getStatus().name(), Workflow.WorkflowStatus.COMPLETED.name());
         });
@@ -326,13 +332,19 @@ public class WorkflowRestartTests {
         // Restart the sub workflow.
         workflowClient.restart(workflowId, false);
         // Check the workflow status and few other parameters
-        await().atMost(3, TimeUnit.SECONDS).untilAsserted(() -> {
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
             Workflow workflow1 = workflowClient.getWorkflow(workflowId, true);
             assertEquals(Workflow.WorkflowStatus.RUNNING.name(), workflow1.getStatus().name());
             assertEquals(workflow1.getTasks().get(0).getStatus().name(), Task.Status.IN_PROGRESS.name());
         });
 
-        // Complete the new sub workflow.
+        // Complete the new sub workflow - wait for new sub-workflow ID
+        final String wfIdForRestart2 = workflowId;
+        await().atMost(10, TimeUnit.SECONDS).pollInterval(500, TimeUnit.MILLISECONDS).untilAsserted(() -> {
+            Workflow wf = workflowClient.getWorkflow(wfIdForRestart2, true);
+            assertNotNull(wf.getTasks().get(0).getSubWorkflowId());
+            assertFalse(wf.getTasks().get(0).getSubWorkflowId().isBlank());
+        });
         String newSubWorkflowId = workflowClient.getWorkflow(workflowId, true).getTasks().get(0).getSubWorkflowId();
         taskId = workflowClient.getWorkflow(newSubWorkflowId, true).getTasks().get(0).getTaskId();
         taskResult = new TaskResult();
@@ -378,9 +390,12 @@ public class WorkflowRestartTests {
 
         String workflowId = workflowClient.startWorkflow(startWorkflowRequest);
         System.out.print("Workflow id is " + workflowId);
-        await().atMost(3, TimeUnit.SECONDS).pollInterval(500, TimeUnit.MILLISECONDS).untilAsserted(() -> {
+        // Wait for sub-workflow to be started and get its ID
+        await().atMost(10, TimeUnit.SECONDS).pollInterval(500, TimeUnit.MILLISECONDS).untilAsserted(() -> {
             Workflow workflow1 = workflowClient.getWorkflow(workflowId, true);
             assertNotEquals(0, workflow1.getTasks().size());
+            assertNotNull(workflow1.getTasks().get(0).getSubWorkflowId());
+            assertFalse(workflow1.getTasks().get(0).getSubWorkflowId().isBlank());
         });
         // Fail the simple task
         Workflow workflow = workflowClient.getWorkflow(workflowId, true);
@@ -394,7 +409,7 @@ public class WorkflowRestartTests {
         taskClient.updateTask(taskResult);
 
         // Wait for parent workflow to get failed
-        await().atMost(3, TimeUnit.SECONDS).pollInterval(1, TimeUnit.SECONDS).untilAsserted(() -> {
+        await().atMost(5, TimeUnit.SECONDS).pollInterval(1, TimeUnit.SECONDS).untilAsserted(() -> {
             Workflow workflow1 = workflowClient.getWorkflow(workflowId, false);
             assertEquals(workflow1.getStatus().name(), Workflow.WorkflowStatus.FAILED.name());
         });
@@ -402,13 +417,19 @@ public class WorkflowRestartTests {
         // Restart the sub workflow.
         workflowClient.restart(workflowId, false);
         // Check the workflow status and few other parameters
-        await().atMost(3, TimeUnit.SECONDS).untilAsserted(() -> {
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
             Workflow workflow1 = workflowClient.getWorkflow(workflowId, true);
             assertEquals(Workflow.WorkflowStatus.RUNNING.name(), workflow1.getStatus().name());
             assertEquals(workflow1.getTasks().get(0).getStatus().name(), Task.Status.IN_PROGRESS.name());
         });
 
-        // Complete the new sub workflow.
+        // Complete the new sub workflow - wait for new sub-workflow ID
+        final String wfIdForRetry = workflowId;
+        await().atMost(10, TimeUnit.SECONDS).pollInterval(500, TimeUnit.MILLISECONDS).untilAsserted(() -> {
+            Workflow wf = workflowClient.getWorkflow(wfIdForRetry, true);
+            assertNotNull(wf.getTasks().get(0).getSubWorkflowId());
+            assertFalse(wf.getTasks().get(0).getSubWorkflowId().isBlank());
+        });
         String newSubWorkflowId = workflowClient.getWorkflow(workflowId, true).getTasks().get(0).getSubWorkflowId();
         taskId = workflowClient.getWorkflow(newSubWorkflowId, true).getTasks().get(0).getTaskId();
         taskResult = new TaskResult();

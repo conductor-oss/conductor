@@ -36,13 +36,10 @@ public class EventClientTests {
 
     @Test
     void testEventHandler() {
-        // Clean up any existing event handler
+        // Clean up any existing event handler (server returns 500, not 404, for non-existent)
         try {
             eventClient.unregisterEventHandler(EVENT_NAME);
-        } catch (ConductorClientException e) {
-            if (e.getStatusCode() != 404) {
-                throw e;
-            }
+        } catch (Exception ignored) {
         }
 
         // Create and register event handler

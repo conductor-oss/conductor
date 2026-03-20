@@ -13,7 +13,6 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.conductoross.conductor.common.model.WorkflowRun;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -122,7 +121,6 @@ public class SetVariableTests {
     //this version runs much faster than before but still uses the async start and collection.
     @SneakyThrows
     @Test
-    @Disabled("Test uses the sync api but is still a bit slow")
     public void testAll() {
         ExecutorService es = Executors.newFixedThreadPool(20);
         List<Future<String>> futures = new ArrayList<>();

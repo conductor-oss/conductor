@@ -138,7 +138,7 @@ public class DoWhileWithDomainTests {
         workflowDef.setDescription("Workflow to test inline sub_workflow definition");
         workflowDef.setTasks(Arrays.asList( workflowTask, inlineSubworkflow));
         try {
-            metadataClient1.registerWorkflowDef(workflowDef);
+            metadataClient1.updateWorkflowDefs(java.util.List.of(workflowDef));
             metadataClient1.registerTaskDefs(Arrays.asList(taskDef, taskDef2));
         } catch (Exception e){}
     }

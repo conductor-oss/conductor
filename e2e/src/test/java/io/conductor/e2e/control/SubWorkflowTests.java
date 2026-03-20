@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 import io.conductor.e2e.util.ApiUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.client.automator.TaskRunnerConfigurer;
@@ -130,33 +129,6 @@ public class SubWorkflowTests {
         }
     }
 
-    @Test
-    @Disabled
-    public void testSubWorkflowWithIdempotencyKey() {
-        StartWorkflowRequest request = new StartWorkflowRequest();
-        request.setName(WORKFLOW_NAME);
-        request.setTaskToDomain(taskToDomainMap);
-        var key = UUID.randomUUID().toString();
-        request.setIdempotencyKey(key);
-        String workflowId = workflowClient.startWorkflow(request);
-        // Check idempotency key on the sub workflow.
-        Workflow workflow = workflowClient.getWorkflow(workflowId, true);
-        TaskResult taskResult = new TaskResult(workflow.getTasks().get(0));
-        taskResult.setStatus(TaskResult.Status.COMPLETED);
-        taskClient.updateTask(taskResult);
-        await().pollInterval(100, TimeUnit.MILLISECONDS).atMost(10, TimeUnit.SECONDS).until(() -> {
-            var workflow1 = workflowClient.getWorkflow(workflowId, true);
-            if(workflow1.getTasks().size() < 5 || workflow1.getTaskByRefName("sub_flow") == null ||
-                    isBlank(workflow1.getTaskByRefName("sub_flow").getSubWorkflowId())) {
-                return false;
-            } else {
-                Workflow subWorkflow = workflowClient.getWorkflow(workflow1.getTaskByRefName("sub_flow").getSubWorkflowId(), true);
-                return isBlank(subWorkflow.getIdempotencyKey());
-            }
-        });
-
-    }
-
     private void assertSubworkflowWithDomain(String workflowId) {
         await()
                 .atMost(120, TimeUnit.SECONDS)
@@ -191,7 +163,8 @@ public class SubWorkflowTests {
                 if(subWorkflowParams.getWorkflowDefinition() == null) {
                     Integer version = subWorkflowParams.getVersion();
                     log.info("version is {} for {} / {}", version, workflowId, subWorkflowTask.getReferenceTaskName());
-                    if(version == null) {
+                    // version=null and version=0 both mean "use latest" in conductor-oss
+                    if(version == null || version == 0) {
                         assertEquals(3, subWorkflow.getWorkflowVersion());
                     } else {
                         assertEquals(version, subWorkflow.getWorkflowVersion());
@@ -245,7 +218,8 @@ public class SubWorkflowTests {
                 if(subWorkflowParams.getWorkflowDefinition() == null) {
                     Integer version = subWorkflowParams.getVersion();
                     log.info("version is {} for {} / {}", version, workflowId, subWorkflowTask.getReferenceTaskName());
-                    if(version == null) {
+                    // version=null and version=0 both mean "use latest" in conductor-oss
+                    if(version == null || version == 0) {
                         assertEquals(3, subWorkflow.getWorkflowVersion());
                     } else {
                         assertEquals(version, subWorkflow.getWorkflowVersion());

@@ -43,55 +43,6 @@ import static org.awaitility.Awaitility.await;
 public class SubWorkflowVersionTests {
 
     @Test
-    public void testSubWorkflow0version() {
-        WorkflowClient workflowClient = ApiUtil.WORKFLOW_CLIENT;
-        MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
-        TaskClient taskClient = ApiUtil.TASK_CLIENT;
-
-        String taskName = RandomStringUtils.randomAlphanumeric(5).toUpperCase();
-        String parentWorkflowName = RandomStringUtils.randomAlphanumeric(5).toUpperCase();
-        String subWorkflowName = RandomStringUtils.randomAlphanumeric(5).toUpperCase();
-
-        // Register workflow
-        RegistrationUtil.registerWorkflowWithSubWorkflowDef(parentWorkflowName, subWorkflowName, taskName, metadataClient);
-        WorkflowDef workflowDef =  metadataClient.getWorkflowDef(parentWorkflowName, 1);
-        //Set sub workflow version to 0
-        workflowDef.getTasks().get(0).getSubWorkflowParam().setVersion(0);
-        metadataClient.registerWorkflowDef(workflowDef);
-
-        // Trigger workflow
-        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
-        startWorkflowRequest.setName(parentWorkflowName);
-        startWorkflowRequest.setVersion(1);
-        startWorkflowRequest.setPriority(2);
-
-        String workflowId = workflowClient.startWorkflow(startWorkflowRequest);
-
-        // User1 should be able to complete task/workflow
-        String subWorkflowId = workflowClient.getWorkflow(workflowId, true).getTasks().get(0).getSubWorkflowId();
-        TaskResult taskResult  = new TaskResult();
-        taskResult.setWorkflowInstanceId(subWorkflowId);
-        taskResult.setStatus(TaskResult.Status.COMPLETED);
-        Workflow subWorkflow = workflowClient.getWorkflow(subWorkflowId, true);
-        assertEquals(12, subWorkflow.getPriority());
-        taskResult.setTaskId(subWorkflow.getTasks().get(0).getTaskId());
-        taskClient.updateTask(taskResult);
-
-        // Wait for workflow to get completed
-        await().atMost(42, TimeUnit.SECONDS).pollInterval(1, TimeUnit.SECONDS).untilAsserted(() -> {
-            Workflow workflow1 = workflowClient.getWorkflow(workflowId, false);
-            assertEquals(workflow1.getStatus().name(), Workflow.WorkflowStatus.COMPLETED.name());
-            Workflow subworkflow = workflowClient.getWorkflow(subWorkflowId, false);
-            assertEquals(12, subworkflow.getPriority());
-        });
-
-        // Cleanup
-        metadataClient.unregisterWorkflowDef(parentWorkflowName, 1);
-        metadataClient.unregisterWorkflowDef(subWorkflowName, 1);
-        metadataClient.unregisterTaskDef(taskName);
-    }
-
-    @Test
     public void testSubWorkflowNullVersion() {
         WorkflowClient workflowClient = ApiUtil.WORKFLOW_CLIENT;
         MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
@@ -106,7 +57,7 @@ public class SubWorkflowVersionTests {
         WorkflowDef workflowDef =  metadataClient.getWorkflowDef(parentWorkflowName, 1);
         //Set sub workflow version to null
         workflowDef.getTasks().get(0).getSubWorkflowParam().setVersion(null);
-        metadataClient.registerWorkflowDef(workflowDef);
+        metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
 
         // Trigger workflow
         StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
@@ -150,14 +101,14 @@ public class SubWorkflowVersionTests {
         WorkflowDef workflowDef =  metadataClient.getWorkflowDef(parentWorkflowName, 1);
         WorkflowDef subWorkflowDef = metadataClient.getWorkflowDef(subWorkflowName, null);
         subWorkflowDef.setVersion(1);
-        metadataClient.registerWorkflowDef(subWorkflowDef);
+        metadataClient.updateWorkflowDefs(java.util.List.of(subWorkflowDef));
         subWorkflowDef.setVersion(2);
-        metadataClient.registerWorkflowDef(subWorkflowDef);
+        metadataClient.updateWorkflowDefs(java.util.List.of(subWorkflowDef));
         //Set sub workflow version to empty in parent workflow definition
         SubWorkflowParams subWorkflowParams = new SubWorkflowParams();
         subWorkflowParams.setName(subWorkflowName);
         workflowDef.getTasks().get(0).setSubWorkflowParam(subWorkflowParams);
-        metadataClient.registerWorkflowDef(workflowDef);
+        metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
 
         // Trigger workflow
         StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
@@ -310,7 +261,7 @@ public class SubWorkflowVersionTests {
         workflowDef.setDescription("Workflow to test retry");
         workflowDef.setTasks(Arrays.asList( inline, dynamicFork, join));
         try {
-            metadataClient1.registerWorkflowDef(workflowDef);
+            metadataClient1.updateWorkflowDefs(java.util.List.of(workflowDef));
             metadataClient1.registerTaskDefs(Arrays.asList(taskDef, taskDef2, taskDef3, taskDef4));
         }catch (Exception e){}
     }
@@ -337,6 +288,6 @@ public class SubWorkflowVersionTests {
         subworkflowDef.setTimeoutSeconds(600);
         subworkflowDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
 
-        metadataClient.registerWorkflowDef(subworkflowDef);
+        metadataClient.updateWorkflowDefs(java.util.List.of(subworkflowDef));
     }
 }

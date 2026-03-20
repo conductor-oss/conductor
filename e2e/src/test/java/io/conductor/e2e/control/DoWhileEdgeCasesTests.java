@@ -50,19 +50,19 @@ public class DoWhileEdgeCasesTests {
         InputStream resource = DoWhileEdgeCasesTests.class.getResourceAsStream("/metadata/vialtodoowhile.json");
         assert resource != null;
         WorkflowDef workflowDef = objectMapper.readValue(new InputStreamReader(resource), WORKFLOW_DEF);
-        metadataClient.registerWorkflowDef(workflowDef);
+        metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
         log.info("Registered workflow definition: {}", workflowDef.getName());
 
         resource = DoWhileEdgeCasesTests.class.getResourceAsStream("/metadata/vialtodoowhile3.json");
         assert resource != null;
         workflowDef = objectMapper.readValue(new InputStreamReader(resource), WORKFLOW_DEF);
-        metadataClient.registerWorkflowDef(workflowDef);
+        metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
         log.info("Registered workflow definition: {}", workflowDef.getName());
 
         resource = DoWhileEdgeCasesTests.class.getResourceAsStream("/metadata/stackoverflower.json");
         assert resource != null;
         workflowDef = objectMapper.readValue(new InputStreamReader(resource), WORKFLOW_DEF);
-        metadataClient.registerWorkflowDef(workflowDef);
+        metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
         log.info("Registered workflow definition: {}", workflowDef.getName());
     }
 
@@ -91,8 +91,9 @@ public class DoWhileEdgeCasesTests {
         for (int i = 0; i < 10; i++) {
             final int iteration = i;
             // Poll every second to check if the workflow is in the wait task
+            // HTTP task before WAIT can take several seconds; allow 30s for conductor-oss postgres
             await().pollInterval(1, TimeUnit.SECONDS)
-                    .atMost(10, TimeUnit.SECONDS)
+                    .atMost(30, TimeUnit.SECONDS)
                     .untilAsserted(() -> {
                         Workflow workflow = workflowClient.getWorkflow(workflowId, true);
                         assertNotNull(workflow);

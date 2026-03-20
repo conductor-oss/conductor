@@ -34,7 +34,7 @@ public class ContextPropagationTest {
         var mapper = new ObjectMapperProvider().getObjectMapper();
 
         var workflowDef = mapper.readValue(getResourceAsString("metadata/context_concurrency_issue.json"), WorkflowDef.class);
-        metadataClient.registerWorkflowDef(workflowDef);
+        metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
 
         var swr = new StartWorkflowRequest();
         swr.setName(workflowDef.getName());

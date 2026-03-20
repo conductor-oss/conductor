@@ -64,8 +64,8 @@ public class WaitTaskTest {
         assertEquals(1, run.getTasks().size());
         long timeToExecute = run.getTasks().get(0).getEndTime() - run.getTasks().get(0).getScheduledTime();
 
-        //Ensure the wait completes within 500ms buffer
-        assertTrue(timeToExecute < 2500, "Wait task did not complete in time, took " + timeToExecute + " millis");
+        // conductor-oss postgres queue may have up to ~10s overhead over the configured wait duration
+        assertTrue(timeToExecute < 15000, "Wait task did not complete in time, took " + timeToExecute + " millis");
     }
 
     @Test
@@ -91,7 +91,9 @@ public class WaitTaskTest {
         request.setTaskToDomain(Map.of("*", "my_domain"));
 
         var workflowId = workflowClient.startWorkflow(request);
-        await().atMost(4, TimeUnit.SECONDS).untilAsserted(() -> {
+        // conductor-oss postgres queue may have up to ~10s overhead over the configured wait duration;
+        // 2s WAIT + ~10s sweeper overhead + buffer = 30s to be safe
+        await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
             var wf = workflowClient.getWorkflow(workflowId, true);
             assertEquals(1, wf.getTasks().size());
             var t0 = wf.getTasks().get(0);
@@ -133,7 +135,8 @@ public class WaitTaskTest {
         request.setWorkflowDef(workflowDef);
 
         var workflowId = workflowClient.startWorkflow(request);
-        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+        // 1s WAIT + ~10s postgres sweeper overhead + buffer
+        await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
             var wf = workflowClient.getWorkflow(workflowId, true);
             assertEquals(2, wf.getTasks().size());
 

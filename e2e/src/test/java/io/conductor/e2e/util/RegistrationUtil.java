@@ -108,8 +108,8 @@ public class RegistrationUtil {
         workflowDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
         workflowDef.setTasks(Arrays.asList(subworkflowTask));
         workflowDef.setOwnerEmail("test@conductor.io");
-        metadataClient.registerWorkflowDef(workflowDef);
-        metadataClient.registerWorkflowDef(subworkflowDef);
+        metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
+        metadataClient.updateWorkflowDefs(java.util.List.of(subworkflowDef));
         metadataClient.registerTaskDefs(Arrays.asList(taskDef, taskDef2));
     }
 

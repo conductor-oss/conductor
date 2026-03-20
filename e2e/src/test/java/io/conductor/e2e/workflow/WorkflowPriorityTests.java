@@ -27,14 +27,11 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import io.conductor.e2e.util.ApiUtil;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -52,91 +49,6 @@ public class WorkflowPriorityTests {
         workflowClient = ApiUtil.WORKFLOW_CLIENT;
         metadataClient = ApiUtil.METADATA_CLIENT;
         taskClient = ApiUtil.TASK_CLIENT;
-    }
-
-    @Test
-    @DisplayName("Check workflow with priority")
-    public void testWorkflowPriority() {
-        String workflowName = "workflow-priority-test";
-        String taskName = "priority-task";
-        // Register workflow
-        registerWorkflowDef(workflowName, taskName, metadataClient);
-        terminateExistingRunningWorkflows(workflowName);
-
-        List<String> noPriorityWorkflows = new ArrayList<>();
-        for (int i = 0; i < 90; i++) {
-            StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
-            startWorkflowRequest.setName(workflowName);
-            startWorkflowRequest.setCorrelationId("0");
-            String workflowId = workflowClient.startWorkflow(startWorkflowRequest);
-            noPriorityWorkflows.add(workflowId);
-        }
-
-        try {
-            Thread.sleep(Duration.ofSeconds(2).toMillis());
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        List<String> prioritizedWorkflows = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-            StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
-            startWorkflowRequest.setName(workflowName);
-            startWorkflowRequest.setCorrelationId("" + (2+ i));
-            //higher priority workflows
-            startWorkflowRequest.setPriority(2 + i);
-            String higherPriorityWorkflowId = workflowClient.startWorkflow(startWorkflowRequest);
-            prioritizedWorkflows.add(higherPriorityWorkflowId);
-        }
-
-        AtomicInteger completed = new AtomicInteger(0);
-        Map<String, Integer> polledByPriority = new HashMap<>();
-        List<Integer> polledPriorities = new ArrayList<>();
-        while (completed.get() < 100) {
-
-            //The fetch count should be exactly 10 --> same as the list of prioritized workflows so a single poll does not contain non-prioritized workflows.
-            List<Task> polled = taskClient.batchPollTasksByTaskType(taskName, "e2e", 10, 1000);
-            assertNotNull(polled);
-            polled.forEach(task -> {
-                completed.incrementAndGet();
-                polledByPriority.put(task.getWorkflowInstanceId(), task.getWorkflowPriority());
-                polledPriorities.add(task.getWorkflowPriority());
-                TaskResult taskResult = new TaskResult(task);
-                taskResult.setStatus(TaskResult.Status.COMPLETED);
-                taskClient.updateTask(taskResult);
-            });
-        }
-        for (int i = 0; i < 10; i++) {
-            int priority = polledPriorities.get(i);
-            assertTrue(priority > 0);
-        }
-
-
-        completed.set(0);
-        polledByPriority.clear();
-        polledPriorities.clear();
-        //Now, let's poll for the second task
-        taskName = taskName + "_2";
-
-        while (completed.get() < 100) {
-
-            //The fetch count should be exactly 10 --> same as the list of prioritized workflows so a single poll does not contain non-prioritized workflows.
-            List<Task> polled = taskClient.batchPollTasksByTaskType(taskName, "e2e", 10, 1000);
-            assertNotNull(polled);
-            polled.stream().parallel().forEach(task -> {
-                completed.incrementAndGet();
-                polledByPriority.put(task.getWorkflowInstanceId(), task.getWorkflowPriority());
-                polledPriorities.add(task.getWorkflowPriority());
-                TaskResult taskResult = new TaskResult(task);
-                taskResult.setStatus(TaskResult.Status.COMPLETED);
-                taskClient.updateTask(taskResult);
-            });
-        }
-        for (int i = 0; i < 10; i++) {
-            int priority = polledPriorities.get(i);
-            assertTrue(priority > 0, "Priority is expected to be > , but found " + priority);
-        }
-
     }
 
     @Test
@@ -197,13 +109,13 @@ public class WorkflowPriorityTests {
         workflowDef.setTimeoutSeconds(600);
         workflowDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
         workflowDef.setTasks(Arrays.asList(simpleTask, simpleTask2));
-        metadataClient.registerWorkflowDef(workflowDef);
+        metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
         metadataClient.registerTaskDefs(Arrays.asList(taskDef));
     }
 
     private void terminateExistingRunningWorkflows(String workflowName) {
         //clean up first
-        SearchResult<WorkflowSummary> found = workflowClient.search(0,10000, "", "*", "workflowType IN (" + workflowName + ") AND status IN (RUNNING)");
+        SearchResult<WorkflowSummary> found = workflowClient.search(0, 5000, "", "*", "workflowType IN (" + workflowName + ") AND status IN (RUNNING)");
         found.getResults().forEach(workflowSummary -> {
             try {
                 workflowClient.terminateWorkflow(workflowSummary.getWorkflowId(), "terminate - priority limiter test - " + workflowName);

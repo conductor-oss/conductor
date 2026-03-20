@@ -95,7 +95,7 @@ public class ConcurrentExecLimitTests {
 
         try {
             WorkflowDef workflowDef = objectMapper.readValue(getResourceAsString("exec_limit_workflow.json"), WorkflowDef.class);
-            metadataClient.registerWorkflowDef(workflowDef);
+            metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
             TaskDef tasKDef = new TaskDef(taskName);
             tasKDef.setConcurrentExecLimit(2);
             metadataClient.registerTaskDefs(List.of(tasKDef));
@@ -110,11 +110,10 @@ public class ConcurrentExecLimitTests {
         String workflowId = workflowClient.startWorkflow(startWorkflowRequest);
         workflowClient.getWorkflow(workflowId, true);
 
-        // Wait for workflow to get failed
-        // If this test fails set conductor.app.taskExecutionPostponeDuration=10s in environment properties.
-        //   such as in e2e clusters
+        // With default taskExecutionPostponeDuration=60s, the 6-task fork needs up to ~180s to complete.
+        // To speed up, set conductor.app.taskExecutionPostponeDuration=10s in server config.
         await()
-                .atMost(60, TimeUnit.SECONDS)
+                .atMost(180, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
                 .untilAsserted(() -> {
                     try {

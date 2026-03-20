@@ -62,7 +62,7 @@ public class GraaljsTests {
         System.out.println("testInfiniteExecution: " + workflowName);
         WorkflowDef workflowDef = metadataClient.getWorkflowDef(workflowName, 1);
         workflowDef.getTasks().get(0).setInputParameters(Map.of("evaluatorType", "graaljs", "expression", "function e() { while(true){} }; e();"));
-        metadataClient.registerWorkflowDef(workflowDef);
+        metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
         workflowNames.add(workflowName);
         taskNames.add(taskName1);
         taskNames.add(taskName2);

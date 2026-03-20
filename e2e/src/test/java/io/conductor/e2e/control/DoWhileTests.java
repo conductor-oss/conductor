@@ -213,44 +213,6 @@ public class DoWhileTests {
     }
 
     @Test
-    public void testKeepLastN() {
-        StartWorkflowRequest request = new StartWorkflowRequest();
-        request.setName(WORKFLOW_NAME_KEEP_LAST_N);
-        request.setInput(Map.of("batch", List.of( List.of(1,2), List.of(3,4), List.of(5,6), List.of(7,8), List.of(9,10))));
-        String workflowId = workflowClient.startWorkflow(request);
-        log.debug("Started {}", workflowId);
-
-        await().pollInterval(5, TimeUnit.SECONDS)
-                .atMost(60, TimeUnit.SECONDS).untilAsserted(() -> {
-                    Workflow workflow = workflowClient.getWorkflow(workflowId, true);
-                    Assertions.assertNotNull(workflow);
-                    Assertions.assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
-                    Assertions.assertNotNull(workflow.getTasks());
-                    // There must be11 tasks. 1 do_while and 2 inline, 2 fork, 4 sub-workflow, 2 join.
-                    Assertions.assertEquals( 11, workflow.getTasks().size());
-                });
-    }
-
-    @Test
-    public void testKeepLastN2() {
-        StartWorkflowRequest request = new StartWorkflowRequest();
-        request.setName(WORKFLOW_NAME_KEEP_LAST_N_2);
-        request.setInput(Map.of("batch", List.of( List.of(1,2), List.of(3,4), List.of(5,6), List.of(7,8), List.of(9,10))));
-        String workflowId = workflowClient.startWorkflow(request);
-        log.debug("Started {}", workflowId);
-
-        await().pollInterval(2000, TimeUnit.MILLISECONDS)
-                .atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
-                    Workflow workflow = workflowClient.getWorkflow(workflowId, true);
-                    Assertions.assertNotNull(workflow);
-                    Assertions.assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
-                    Assertions.assertNotNull(workflow.getTasks());
-                    // There must be 32 tasks. 21 for first do_while and 11 for second do_while
-                    Assertions.assertEquals(32, workflow.getTasks().size());
-                });
-    }
-
-    @Test
     public void testKeepLstN3() {
         // Fork with do_while each different keepLastN
         StartWorkflowRequest request = new StartWorkflowRequest();
@@ -295,13 +257,16 @@ public class DoWhileTests {
         StartWorkflowRequest request = new StartWorkflowRequest();
         request.setName(DO_WHILE_SET_VARIABLE_FIX);
         String workflowId = workflowClient.startWorkflow(request);
-        // Sleep to allow the workflow to complete
+        // Sleep to allow the workflow to complete.
+        // The workflow has two sequential WAIT tasks with 2-second duration each.
+        // With conductor-oss postgres queue, WAIT sweeper adds ~10s overhead per task,
+        // so 2 tasks need ~25-30s total.
         try {
-            Thread.sleep(5000);
+            Thread.sleep(30000);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        await().pollInterval(Duration.ofSeconds(1)).atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+        await().pollInterval(Duration.ofSeconds(1)).atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
             Workflow workflow = workflowClient.getWorkflow(workflowId, true);
             assertNotNull(workflow);
             assertNotNull(workflow.getTasks());

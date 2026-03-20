@@ -158,6 +158,9 @@ public class DynamicForkTests {
 
         // Register workflow
         registerWorkflowDef(workflowName1, metadataAdminClient);
+        // Register a minimal sub-workflow to use by name (conductor-oss has no built-in "http" workflow)
+        String subWorkflowName = "http_sub_wf_test";
+        SubWorkflowVersionTests.registerSubWorkflow(subWorkflowName, "http_sub_task", metadataAdminClient);
 
         // Trigger workflow
         StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
@@ -175,7 +178,7 @@ public class DynamicForkTests {
         WorkflowTask workflowTask2 = new WorkflowTask();
         workflowTask2.setTaskReferenceName("test_task");
         SubWorkflowParams subWorkflowParams = new SubWorkflowParams();
-        subWorkflowParams.setName("http");
+        subWorkflowParams.setName(subWorkflowName);
         workflowTask2.setType(TaskType.SUB_WORKFLOW.name());
         workflowTask2.setSubWorkflowParam(subWorkflowParams);
 
@@ -418,7 +421,7 @@ public class DynamicForkTests {
         var metadataAdminClient = ApiUtil.METADATA_CLIENT;
 
         var wfDef = mapper.readValue(TestUtil.getResourceAsString("metadata/cpewf_task_id_dyn_fork_wf.json"), WorkflowDef.class);
-        metadataAdminClient.registerWorkflowDef(wfDef);
+        metadataAdminClient.updateWorkflowDefs(java.util.List.of(wfDef));
 
         var taskDef = mapper.readValue(TestUtil.getResourceAsString("metadata/cpewf_task_id_dyn_fork_task_def.json"), TaskDef.class);
         metadataAdminClient.registerTaskDefs(List.of(taskDef));
@@ -459,7 +462,7 @@ public class DynamicForkTests {
         var orkesTaskClient = ApiUtil.TASK_CLIENT;
 
         var wfDef = mapper.readValue(TestUtil.getResourceAsString("metadata/dyn_fork_test.json"), WorkflowDef.class);
-        metadataClient.registerWorkflowDef(wfDef);
+        metadataClient.updateWorkflowDefs(java.util.List.of(wfDef));
 
         var startWorkflowRequest = new StartWorkflowRequest();
         startWorkflowRequest.setName(wfDef.getName());
@@ -594,7 +597,7 @@ public class DynamicForkTests {
         workflowDef.setDescription("Workflow to test retry");
         workflowDef.setTasks(Arrays.asList( inline, dynamicFork, join));
         try {
-            metadataClient1.registerWorkflowDef(workflowDef);
+            metadataClient1.updateWorkflowDefs(java.util.List.of(workflowDef));
             metadataClient1.registerTaskDefs(Arrays.asList(taskDef, taskDef2, taskDef3, taskDef4));
         }catch (Exception e){}
     }

@@ -45,7 +45,7 @@ public class ClearContextTest {
         workflowDef.setOwnerEmail("test@orkes.io");
         workflowDef.setVersion(1);
         workflowDef.setTasks(java.util.Collections.singletonList(workflowTask));
-        metadataClient.registerWorkflowDef(workflowDef);
+        metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
 
         // Step 3: Start a thread that constantly calls updateTaskDef
         Thread updater = new Thread(() -> {
