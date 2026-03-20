@@ -172,6 +172,46 @@ public class WorkflowTaskTypeConstraintTest {
     }
 
     @Test
+    public void testWorkflowTaskTypeDoWhileListIterationMode() {
+        // When 'items' is set, loopCondition should NOT be required (list-iteration mode)
+        WorkflowTask workflowTask = createSampleWorkflowTask();
+        workflowTask.setType("DO_WHILE");
+        workflowTask.setItems("${workflow.input.itemList}");
+
+        WorkflowTask loopTask = new WorkflowTask();
+        loopTask.setName("http");
+        loopTask.setTaskReferenceName("http_ref");
+        loopTask.setType("HTTP");
+        workflowTask.setLoopOver(List.of(loopTask));
+
+        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
+
+        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    public void testWorkflowTaskTypeDoWhileListIterationModeOrkesCompat() {
+        // When '_items' is in inputParameters (Orkes compat), loopCondition should NOT be required
+        WorkflowTask workflowTask = createSampleWorkflowTask();
+        workflowTask.setType("DO_WHILE");
+        Map<String, Object> inputParam = new HashMap<>();
+        inputParam.put("_items", "${workflow.input.itemList}");
+        workflowTask.setInputParameters(inputParam);
+
+        WorkflowTask loopTask = new WorkflowTask();
+        loopTask.setName("http");
+        loopTask.setTaskReferenceName("http_ref");
+        loopTask.setType("HTTP");
+        workflowTask.setLoopOver(List.of(loopTask));
+
+        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
+
+        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
+        assertEquals(0, result.size());
+    }
+
+    @Test
     public void testWorkflowTaskTypeWait() {
         WorkflowTask workflowTask = createSampleWorkflowTask();
         workflowTask.setType("WAIT");
