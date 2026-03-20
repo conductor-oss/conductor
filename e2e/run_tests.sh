@@ -3,7 +3,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_FILE="$SCRIPT_DIR/../docker/docker-compose.yaml"
-export SERVER_ROOT_URI="${SERVER_ROOT_URI:-http://localhost:8080}"
+export SERVER_ROOT_URI="${SERVER_ROOT_URI:-http://localhost:7001}"
 
 echo "Starting Conductor (Redis + Elasticsearch 7 (default))..."
 docker compose -f "$COMPOSE_FILE" build conductor-server

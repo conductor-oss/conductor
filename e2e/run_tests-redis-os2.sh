@@ -3,7 +3,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_FILE="$SCRIPT_DIR/../docker/docker-compose-redis-os2.yaml"
-export SERVER_ROOT_URI="${SERVER_ROOT_URI:-http://localhost:8080}"
+export SERVER_ROOT_URI="${SERVER_ROOT_URI:-http://localhost:7001}"
 
 echo "Starting Conductor (Redis + OpenSearch 2.x)..."
 docker compose -f "$COMPOSE_FILE" build conductor-server
