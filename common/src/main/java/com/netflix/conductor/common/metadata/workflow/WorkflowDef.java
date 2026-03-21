@@ -60,36 +60,36 @@ public class WorkflowDef extends Auditable {
     private String failureWorkflow;
 
     @ProtoField(id = 8)
-    private Integer failureWorkflowVersion;
-
-    @ProtoField(id = 9)
     @Min(value = 2, message = "workflowDef schemaVersion: {value} is only supported")
     @Max(value = 2, message = "workflowDef schemaVersion: {value} is only supported")
     private int schemaVersion = 2;
 
     // By default a workflow is restartable
-    @ProtoField(id = 10)
+    @ProtoField(id = 9)
     private boolean restartable = true;
 
-    @ProtoField(id = 11)
+    @ProtoField(id = 10)
     private boolean workflowStatusListenerEnabled = false;
 
-    @ProtoField(id = 12)
+    @ProtoField(id = 11)
     @OwnerEmailMandatoryConstraint
     private String ownerEmail;
 
-    @ProtoField(id = 13)
+    @ProtoField(id = 12)
     private TimeoutPolicy timeoutPolicy = TimeoutPolicy.ALERT_ONLY;
 
-    @ProtoField(id = 14)
+    @ProtoField(id = 13)
     @NotNull
     private long timeoutSeconds;
 
-    @ProtoField(id = 15)
+    @ProtoField(id = 14)
     private Map<String, Object> variables = new HashMap<>();
 
-    @ProtoField(id = 16)
+    @ProtoField(id = 15)
     private Map<String, Object> inputTemplate = new HashMap<>();
+
+    @ProtoField(id = 16)
+    private Integer failureWorkflowVersion;
 
     @ProtoField(id = 17)
     private String workflowStatusListenerSink;
@@ -508,6 +508,8 @@ public class WorkflowDef extends Auditable {
                 + ", failureWorkflow='"
                 + failureWorkflow
                 + '\''
+                + ", failureWorkflowVersion="
+                + failureWorkflowVersion
                 + ", schemaVersion="
                 + schemaVersion
                 + ", restartable="
