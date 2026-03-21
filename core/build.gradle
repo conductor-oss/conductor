@@ -48,12 +48,9 @@ dependencies {
     implementation "io.micrometer:micrometer-core:${revMicrometer}"
     implementation "com.google.guava:guava:${revGuava}"
 
-    //GraalVM dependencies for executing JavaScript and Python
+    //GraalVM dependencies for executing JavaScript and Python (JDK 21+ compatible)
     implementation("org.graalvm.polyglot:polyglot:24.1.2")
-    implementation("org.graalvm.js:js:24.1.2")
-    implementation("org.graalvm.js:js-scriptengine:24.1.2")
-    implementation("org.graalvm.polyglot:python:24.1.2")
-    implementation("org.graalvm.sdk:graal-sdk:24.1.2")
+    implementation("org.graalvm.polyglot:js-community:24.1.2")
 
     // JAXB is not bundled with Java 11, dependencies added explicitly
     // These are needed by Apache BVAL
