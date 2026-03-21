@@ -1,8 +1,12 @@
+---
+description: "Task definition schema in Conductor — configure retry logic, exponential backoff, timeouts, rate limiting, and concurrency for durable workflow execution."
+---
+
 # Task Definition
 
 Task Definitions are used to register SIMPLE tasks (workers). Conductor maintains a registry of user task types. A task type MUST be registered before being used in a workflow.
 
-This should not be confused with [*Task Configurations*](./workflowdef/index.md#task-configurations) which are part of the Workflow Definition, and are iterated in the `tasks` property in the definition.
+This should not be confused with [*Task Configurations*](workflowdef/index.md#task-configurations) which are part of the Workflow Definition, and are iterated in the `tasks` property in the definition.
 
 
 ## Schema

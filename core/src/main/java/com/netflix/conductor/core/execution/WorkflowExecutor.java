@@ -106,6 +106,12 @@ public interface WorkflowExecutor {
     WorkflowModel decide(String workflowId);
 
     /**
+     * @param workflow workflow to be evaluated
+     * @return updated workflow or null if the lock cannot be acquired
+     */
+    WorkflowModel decideWithLock(WorkflowModel workflow);
+
+    /**
      * @param workflowId id of the workflow to be terminated
      * @param reason termination reason to be recorded
      */

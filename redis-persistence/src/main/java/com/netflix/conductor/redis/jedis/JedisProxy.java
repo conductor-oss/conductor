@@ -22,7 +22,6 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -34,8 +33,6 @@ import redis.clients.jedis.Tuple;
 import redis.clients.jedis.commands.JedisCommands;
 import redis.clients.jedis.params.ZAddParams;
 
-import static com.netflix.conductor.redis.config.RedisCommonConfiguration.DEFAULT_CLIENT_INJECTION_NAME;
-
 /** Proxy for the {@link JedisCommands} object. */
 @Component
 @Conditional(AnyRedisCondition.class)
@@ -45,7 +42,7 @@ public class JedisProxy {
 
     protected JedisCommands jedisCommands;
 
-    public JedisProxy(@Qualifier(DEFAULT_CLIENT_INJECTION_NAME) JedisCommands jedisCommands) {
+    public JedisProxy(JedisCommands jedisCommands) {
         this.jedisCommands = jedisCommands;
     }
 

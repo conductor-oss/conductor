@@ -156,7 +156,7 @@ public class SqliteIndexQueryBuilder {
         this.freeText = freeText;
         this.start = start;
         this.count = count;
-        this.sort = sort;
+        this.sort = sort != null ? sort : Collections.emptyList();
         this.allowFullTextQueries = true;
         this.allowJsonQueries = true;
         this.parseQuery(query);
@@ -164,6 +164,10 @@ public class SqliteIndexQueryBuilder {
     }
 
     public String getQuery() {
+        return getQuery("json_data");
+    }
+
+    public String getQuery(String selectColumn) {
         String queryString = "";
         List<Condition> validConditions =
                 conditions.stream().filter(c -> c.isValid()).collect(Collectors.toList());
@@ -176,7 +180,13 @@ public class SqliteIndexQueryBuilder {
                                             .map(c -> c.getQueryFragment())
                                             .collect(Collectors.toList()));
         }
-        return "SELECT json_data FROM " + table + queryString + getSort() + " LIMIT ? OFFSET ?";
+        return "SELECT "
+                + selectColumn
+                + " FROM "
+                + table
+                + queryString
+                + getSort()
+                + " LIMIT ? OFFSET ?";
     }
 
     public String getCountQuery() {

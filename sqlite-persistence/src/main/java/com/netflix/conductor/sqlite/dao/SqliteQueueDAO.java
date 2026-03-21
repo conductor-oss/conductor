@@ -190,7 +190,7 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
         long updatedOffsetTimeInSecond = unackTimeout / 1000;
 
         final String UPDATE_UNACK_TIMEOUT =
-                "UPDATE queue_message SET offset_time_seconds = ?, deliver_on = ? WHERE queue_name = ? AND message_id = ?";
+                "UPDATE queue_message SET offset_time_seconds = ?, deliver_on = strftime('%Y-%m-%d %H:%M:%f', 'now', '+' || ? || ' seconds') WHERE queue_name = ? AND message_id = ?";
 
         return queryWithTransaction(
                         UPDATE_UNACK_TIMEOUT,
@@ -273,7 +273,7 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
         getWithRetriedTransactions(
                 tx -> {
                     String LOCK_TASKS =
-                            "SELECT queue_name, message_id FROM queue_message WHERE popped = true AND (deliver_on  '+60 seconds')  <  datetime(current_timestamp) limit 1000";
+                            "SELECT queue_name, message_id FROM queue_message WHERE popped = true AND strftime('%Y-%m-%d %H:%M:%f', deliver_on, '+60 seconds') < strftime('%Y-%m-%d %H:%M:%f', 'now') limit 1000";
 
                     List<QueueMessage> messages =
                             query(
@@ -342,7 +342,7 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
     @Override
     public void processUnacks(String queueName) {
         final String PROCESS_UNACKS =
-                "UPDATE queue_message SET popped = false WHERE queue_name = ? AND popped = true AND datetime(current_timestamp - ('60 seconds'))  > deliver_on";
+                "UPDATE queue_message SET popped = false WHERE queue_name = ? AND popped = true AND strftime('%Y-%m-%d %H:%M:%f', 'now', '-60 seconds') > deliver_on";
         executeWithTransaction(PROCESS_UNACKS, q -> q.addParameter(queueName).executeUpdate());
     }
 
@@ -350,7 +350,7 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
     public boolean resetOffsetTime(String queueName, String id) {
         long offsetTimeInSecond = 0; // Reset to 0
         final String SET_OFFSET_TIME =
-                "UPDATE queue_message SET offset_time_seconds = ?, deliver_on = datetime(CURRENT_TIMESTAMP, '+' || ? || ' seconds')"
+                "UPDATE queue_message SET offset_time_seconds = ?, deliver_on = strftime('%Y-%m-%d %H:%M:%f', 'now', '+' || ? || ' seconds') "
                         + "WHERE queue_name = ? AND message_id = ?";
 
         return queryWithTransaction(
@@ -384,7 +384,7 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
         createQueueIfNotExists(connection, queueName);
 
         String UPDATE_MESSAGE =
-                "UPDATE queue_message SET payload=?, deliver_on=datetime(CURRENT_TIMESTAMP, '+' || ? || ' seconds') WHERE queue_name = ? AND message_id = ?";
+                "UPDATE queue_message SET payload=?, deliver_on=strftime('%Y-%m-%d %H:%M:%f', 'now', '+' || ? || ' seconds'), popped=false WHERE queue_name = ? AND message_id = ?";
         int rowsUpdated =
                 query(
                         connection,
@@ -398,7 +398,7 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
 
         if (rowsUpdated == 0) {
             String PUSH_MESSAGE =
-                    "INSERT INTO queue_message (deliver_on, queue_name, message_id, priority, offset_time_seconds, payload) VALUES (datetime(CURRENT_TIMESTAMP, '+' || ? || ' seconds'), ?,?,?,?,?) ON CONFLICT (queue_name,message_id) DO UPDATE SET payload=excluded.payload, deliver_on=excluded.deliver_on";
+                    "INSERT INTO queue_message (deliver_on, queue_name, message_id, priority, offset_time_seconds, payload) VALUES (strftime('%Y-%m-%d %H:%M:%f', 'now', '+' || ? || ' seconds'), ?,?,?,?,?) ON CONFLICT (queue_name,message_id) DO UPDATE SET payload=excluded.payload, deliver_on=excluded.deliver_on, popped=false";
             execute(
                     connection,
                     PUSH_MESSAGE,
@@ -428,7 +428,7 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
         String POP_QUERY =
                 "UPDATE queue_message SET popped = true WHERE message_id IN ("
                         + "SELECT message_id FROM queue_message WHERE queue_name = ? AND popped = false AND "
-                        + "deliver_on <= datetime(CURRENT_TIMESTAMP, '+1 seconds') "
+                        + "deliver_on <= strftime('%Y-%m-%d %H:%M:%f', 'now') "
                         + "ORDER BY priority DESC, deliver_on, created_on LIMIT ?"
                         + ") RETURNING message_id, priority, payload";
 
