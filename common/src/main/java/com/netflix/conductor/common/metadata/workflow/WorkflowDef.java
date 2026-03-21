@@ -88,6 +88,9 @@ public class WorkflowDef extends Auditable {
     @ProtoField(id = 15)
     private Map<String, Object> inputTemplate = new HashMap<>();
 
+    @ProtoField(id = 16)
+    private Integer failureWorkflowVersion;
+
     @ProtoField(id = 17)
     private String workflowStatusListenerSink;
 
@@ -220,6 +223,24 @@ public class WorkflowDef extends Auditable {
      */
     public void setFailureWorkflow(String failureWorkflow) {
         this.failureWorkflow = failureWorkflow;
+    }
+
+    /**
+     * Failure workflow version
+     *
+     * @return failureWorkflowVersion
+     */
+    public Integer getFailureWorkflowVersion() {
+        return failureWorkflowVersion;
+    }
+
+    /**
+     * Sets the failure workflow version
+     *
+     * @param failureWorkflowVersion
+     */
+    public void setFailureWorkflowVersion(Integer failureWorkflowVersion) {
+        this.failureWorkflowVersion = failureWorkflowVersion;
     }
 
     /**
@@ -487,6 +508,8 @@ public class WorkflowDef extends Auditable {
                 + ", failureWorkflow='"
                 + failureWorkflow
                 + '\''
+                + ", failureWorkflowVersion="
+                + failureWorkflowVersion
                 + ", schemaVersion="
                 + schemaVersion
                 + ", restartable="
