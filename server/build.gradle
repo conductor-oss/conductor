@@ -41,6 +41,9 @@ dependencies {
     implementation project(':conductor-mysql-persistence')
     implementation project(':conductor-sqlite-persistence')
 
+    //Scheduler persistence
+    implementation project(':conductor-scheduler-postgres-persistence')
+
     // Indexing backend selection (build-time) to avoid Lucene conflicts between ES and OS
     def indexingBackend = project.findProperty('indexingBackend') ?: 'elasticsearch'
     if (indexingBackend == 'opensearch' || indexingBackend == 'os') {
@@ -50,10 +53,13 @@ dependencies {
         // The DAO layer needs reimplementation for the new client API (breaking changes)
         // See: os-persistence-v3/build.gradle comments for details
         // implementation project(':conductor-os-persistence-v3')
+    } else if (indexingBackend == 'elasticsearch8' || indexingBackend == 'es8') {
+        implementation project(':conductor-es8-persistence')
+    } else if (indexingBackend == 'elasticsearch7' || indexingBackend == 'es7' || indexingBackend == 'elasticsearch') {
+        implementation project(':conductor-es7-persistence')
     } else {
         implementation project(':conductor-es7-persistence')
     }
-
     implementation project(':conductor-redis-lock')
     implementation project(':conductor-redis-concurrency-limit')
 

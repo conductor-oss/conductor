@@ -16,7 +16,7 @@
  */
 ext {
     revActivation = '2.0.1'
-    revApacheHttpComponentsClient5 = '5.2.1'
+    revApacheHttpComponentsClient5 = '5.3.1'
     revAwaitility = '3.1.6'
     revAwsSdk = '2.31.68'
     revBval = '2.0.5'
@@ -53,13 +53,14 @@ ext {
     revRxJava = '1.2.2'
     revSpock = '2.4-M4-groovy-4.0'
     revSpotifyCompletableFutures = '0.3.3'
-    revTestContainer = '1.19.3'
+    revTestContainer = '1.21.4'
     revFasterXml = '2.15.3'
     revAmqpClient = '5.13.0'
     revKafka = '2.6.0'
     revMicrometer = '1.14.6'
     revPrometheus = '0.9.0'
     revElasticSearch7 = '7.17.11'
+    revElasticSearch8 = '8.19.11'
     revCodec = '1.15'
     revAzureStorageBlobSdk = '12.25.1'
     revNatsStreaming = '2.6.5'
@@ -75,4 +76,5 @@ ext {
     revMCP = '0.13.0'
     revCommonsCompress = '1.26.1'
     pinecone = '3.0.0'
+    revFlexmark = '0.64.8'
 }

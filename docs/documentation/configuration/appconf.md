@@ -1,3 +1,7 @@
+---
+description: "Conductor application server configuration — tuning durable execution, workflow engine scalability, system task workers, and production deployment settings."
+---
+
 # App Configuration
 
 The Conductor application server offers extensive customization options to optimize its operation for specific

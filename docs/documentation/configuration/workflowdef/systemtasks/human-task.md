@@ -1,3 +1,7 @@
+---
+description: "Configure Human tasks in Conductor to pause workflows for manual approval or external signals. Supports human-in-the-loop and agentic workflow patterns."
+---
+
 # Human Task
 ```json
 "type" : "HUMAN"
@@ -35,17 +39,26 @@ There are several ways to complete the Human task:
 ### Task Update API
 Use the Task Update API (`POST api/tasks`) to complete a Human task. Provide the `taskId`, the task status, and the desired task output.
 
+Using the CLI:
+
+```bash
+conductor task update-execution --workflow-id {workflowId} --task-ref-name waiting_around_ref --status COMPLETED --output '{"data_key":"somedatatoWait1","data_key2":"somedatatoWAit2"}'
+```
+
 ### Event handler
 If SQS integration is enabled, the Human task can also be resolved using the Update Queue APIs:
 
-1. `POST api/queue/update/{workflowId}/{taskRefName}/{status}` 
-2. `POST api/queue/update/{workflowId}/task/{taskId}/{status}` 
+1. `POST api/queue/update/{workflowId}/{taskRefName}/{status}`
+2. `POST api/queue/update/{workflowId}/task/{taskId}/{status}`
 
-Any parameter that is sent in the body of the POST message will be repeated as the output of the task.  For example, if we send a COMPLETED message as follows:
+Any parameter that is sent in the body of the POST message will be repeated as the output of the task. For example, if we send a COMPLETED message as follows:
 
-```bash
-curl -X "POST" "{{ server_host }}{{ api_prefix }}/queue/update/{workflowId}/waiting_around_ref/COMPLETED" -H 'Content-Type: application/json' -d '{"data_key":"somedatatoWait1","data_key2":"somedatatoWAit2"}'
-```
+??? note "Using cURL"
+    ```bash
+    curl -X "POST" "{{ server_host }}{{ api_prefix }}/queue/update/{workflowId}/waiting_around_ref/COMPLETED" \
+      -H 'Content-Type: application/json' \
+      -d '{"data_key":"somedatatoWait1","data_key2":"somedatatoWAit2"}'
+    ```
 
 The output of the Human task will be:
 

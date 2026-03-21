@@ -1,3 +1,6 @@
+---
+description: "Client Metrics — monitor Conductor Java client performance with built-in metrics for task polling and execution."
+---
 # Client Metrics
 
 When using the Java client, the following metrics are published:

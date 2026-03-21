@@ -1706,6 +1706,9 @@ public abstract class AbstractProtoMapper {
         for (WorkflowTask elem : from.getLoopOver()) {
             to.addLoopOver( toProto(elem) );
         }
+        if (from.getItems() != null) {
+            to.setItems( from.getItems() );
+        }
         if (from.getRetryCount() != null) {
             to.setRetryCount( from.getRetryCount() );
         }
@@ -1722,6 +1725,9 @@ public abstract class AbstractProtoMapper {
             to.setCacheConfig( toProto( from.getCacheConfig() ) );
         }
         to.setPermissive( from.isPermissive() );
+        if (from.getJoinMode() != null) {
+            to.setJoinMode( toProto( from.getJoinMode() ) );
+        }
         return to.build();
     }
 
@@ -1764,6 +1770,7 @@ public abstract class AbstractProtoMapper {
         to.setAsyncComplete( from.getAsyncComplete() );
         to.setLoopCondition( from.getLoopCondition() );
         to.setLoopOver( from.getLoopOverList().stream().map(this::fromProto).collect(Collectors.toCollection(ArrayList::new)) );
+        to.setItems( from.getItems() );
         to.setRetryCount( from.getRetryCount() );
         to.setEvaluatorType( from.getEvaluatorType() );
         to.setExpression( from.getExpression() );
@@ -1772,6 +1779,27 @@ public abstract class AbstractProtoMapper {
             to.setCacheConfig( fromProto( from.getCacheConfig() ) );
         }
         to.setPermissive( from.getPermissive() );
+        to.setJoinMode( fromProto( from.getJoinMode() ) );
+        return to;
+    }
+
+    public WorkflowTaskPb.WorkflowTask.JoinMode toProto(WorkflowTask.JoinMode from) {
+        WorkflowTaskPb.WorkflowTask.JoinMode to;
+        switch (from) {
+            case SYNC: to = WorkflowTaskPb.WorkflowTask.JoinMode.SYNC; break;
+            case ASYNC: to = WorkflowTaskPb.WorkflowTask.JoinMode.ASYNC; break;
+            default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
+        }
+        return to;
+    }
+
+    public WorkflowTask.JoinMode fromProto(WorkflowTaskPb.WorkflowTask.JoinMode from) {
+        WorkflowTask.JoinMode to;
+        switch (from) {
+            case SYNC: to = WorkflowTask.JoinMode.SYNC; break;
+            case ASYNC: to = WorkflowTask.JoinMode.ASYNC; break;
+            default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
+        }
         return to;
     }
 

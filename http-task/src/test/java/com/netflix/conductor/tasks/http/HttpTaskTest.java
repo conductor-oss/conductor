@@ -189,7 +189,10 @@ public class HttpTaskTest {
         task.getInputData().remove(HttpTask.REQUEST_PARAMETER_NAME);
         httpTask.start(workflow, task, workflowExecutor);
         assertEquals(TaskModel.Status.FAILED, task.getStatus());
-        assertEquals(HttpTask.MISSING_REQUEST, task.getReasonForIncompletion());
+        // Without http_request key, falls back to inputData directly which lacks uri/method
+        assertTrue(
+                task.getReasonForIncompletion().contains("Missing HTTP URI")
+                        || task.getReasonForIncompletion().contains("No HTTP method specified"));
     }
 
     @Test
@@ -338,7 +341,10 @@ public class HttpTaskTest {
         task.setReferenceTaskName("t1");
         httpTask.start(workflow, task, workflowExecutor);
         assertEquals(TaskModel.Status.FAILED, task.getStatus());
-        assertEquals(HttpTask.MISSING_REQUEST, task.getReasonForIncompletion());
+        // Without http_request key, falls back to inputData directly which lacks uri/method
+        assertTrue(
+                task.getReasonForIncompletion().contains("Missing HTTP URI")
+                        || task.getReasonForIncompletion().contains("No HTTP method specified"));
         assertFalse(task.getStatus().isSuccessful());
 
         WorkflowTask workflowTask = new WorkflowTask();

@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Deploy docs
         uses: mhausenblas/mkdocs-deploy-gh-pages@master

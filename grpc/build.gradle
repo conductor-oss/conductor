@@ -20,7 +20,7 @@ buildscript {
 plugins {
     id 'java'
     id 'idea'
-    id "com.google.protobuf" version "0.9.5"
+    id "com.google.protobuf" version "0.9.6"
 }
 
 repositories{
