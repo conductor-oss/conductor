@@ -1,3 +1,7 @@
+---
+description: "Configure Dynamic Fork tasks in Conductor to run parallel branches determined at runtime. Supports different tasks per fork or the same task type."
+---
+
 # Dynamic Fork
 ```json
 "type" : "FORK_JOIN_DYNAMIC"
@@ -27,9 +31,9 @@ To configure the Dynamic Fork task, provide a `dynamicForkTasksParam` and `dynam
 | Parameter          | Type                | Description                                       | Required / Optional  |
 | ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
 | dynamicForkTasksParam          | String | The parameter name for `inputParameters` whose value is used to schedule the task. For example, "dynamicTasks".               | Required. |
-| inputParameters.dynamicTasks | List[Task] | The list of task configurations that will be executed across forks (one task per fork) | Required. |
+| dynamicTasks | List[Task] | The list of task configurations that will be executed across forks (one task per fork) | Required. |
 | dynamicForkTasksInputParamName | String | The parameter name for `inputParameters` whose value is used to pass the required input parameters for each forked task.  For example, "dynamicTasksInput".     | Required. |
-| inputParameters.dynamicTasksInput | Map[String, Map[String, Any]] | The inputs for each forked task. The keys are the task reference names for each fork and the values are the input parameters that will be passed into its corresponding task.  | Required. |
+| dynamicTasksInput | Map[String, Map[String, Any]] | The inputs for each forked task. The keys are the task reference names for each fork and the values are the input parameters that will be passed into its corresponding task.  | Required. |
 
 The [Join](join-task.md) task must run after the forked tasks. Add the Join task to complete the fork-join operations.
 
@@ -39,9 +43,9 @@ Use these parameters inside `inputParameters` in the Dynamic Fork task configura
 
 | Parameter          | Type                | Description                                       | Required / Optional  |
 | ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
-| inputParameters.forkTaskType  | String (enum) | The type of task that will be executed in each fork. For example, "HTTP", or "SIMPLE".                                                                      | Required. |
-| inputParameters.forkTaskName	 | String | The name of the Worker task (`SIMPLE`) that will be executed in each fork.                                                                                                                        | Required only if `forkTaskType` is "SIMPLE". |
-| inputParameters.forkTaskInputs  | List[Map[String, Any]] | The inputs for each forked task. The number of list items corresponds with the number of branches in the dynamic fork at execution.        | Required. |
+| forkTaskType  | String (enum) | The type of task that will be executed in each fork. For example, "HTTP", or "SIMPLE".                                                                      | Required. |
+| forkTaskName	 | String | The name of the Worker task (`SIMPLE`) that will be executed in each fork.                                                                                                                        | Required only if `forkTaskType` is "SIMPLE". |
+| forkTaskInputs  | List[Map[String, Any]] | The inputs for each forked task. The number of list items corresponds with the number of branches in the dynamic fork at execution.        | Required. |
 
 The [Join](join-task.md) task must run after the forked tasks. Configure the Join task as well to complete the fork-join operations.
 
@@ -51,9 +55,9 @@ Use these parameters inside `inputParameters` in the Dynamic Fork task configura
 
 | Parameter          | Type                | Description                                       | Required / Optional  |
 | ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
-| inputParameters.forkTaskWorkflow  | String | The name of the workflow that will be executed in each fork.            | Required. |
-| inputParameters.forkTaskWorkflowVersion	 | Integer | The version of the workflow to be executed. If unspecified, the latest version will be used.                                | Optional. |
-| inputParameters.forkTaskInputs  | List[Map[String, Any]] | The inputs for each forked task. The number of list items corresponds with the number of branches in the dynamic fork at execution.        | Required. |
+| forkTaskWorkflow  | String | The name of the workflow that will be executed in each fork.            | Required. |
+| forkTaskWorkflowVersion	 | Integer | The version of the workflow to be executed. If unspecified, the latest version will be used.                                | Optional. |
+| forkTaskInputs  | List[Map[String, Any]] | The inputs for each forked task. The number of list items corresponds with the number of branches in the dynamic fork at execution.        | Required. |
 
 The [Join](join-task.md) task must run after the forked tasks. Configure the Join task as well to complete the fork-join operations.
 

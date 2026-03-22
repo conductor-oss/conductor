@@ -1,3 +1,6 @@
+---
+description: "Terminate Task — end a Conductor workflow execution with a specified status and output from any point in the flow."
+---
 # Terminate
 ```json
 "type" : "TERMINATE"
@@ -13,9 +16,9 @@ Use these parameters inside `inputParameters` in the Terminate task configuratio
 
 | Parameter          | Type                | Description                                       | Required / Optional  |
 | ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
-| inputParameters.terminationStatus | String (enum) | The termination status. Supported types: <ul><li>COMPLETED</li><li>FAILED</li><li>TERMINATED</li></ul>                                   | Required. |
-| inputParameters.terminationReason | String | The reason for terminating the current workflow, which will provide the context of the termination. <br/><br/> For FAILED workflows, this reason is passed to any configured `failureWorkflow`. | Optional.         |
-| inputParameters.workflowOutput    | Any     | The expected workflow output upon termination.                                                              | Optional.         |
+| terminationStatus | String (enum) | The termination status. Supported types: <ul><li>COMPLETED</li><li>FAILED</li><li>TERMINATED</li></ul>                                   | Required. |
+| terminationReason | String | The reason for terminating the current workflow, which will provide the context of the termination. <br/><br/> For FAILED workflows, this reason is passed to any configured `failureWorkflow`. | Optional.         |
+| workflowOutput    | Any     | The expected workflow output upon termination.                                                              | Optional.         |
 
 
 ## Configuration JSON
@@ -41,7 +44,7 @@ The Terminate task will return the following parameters.
 
 | Name   | Type | Description                                                                                               |
 | ------ | ---- | --------------------------------------------------------------------------------------------------------- |
-| output | Map[String, Any]  | A map of the workflow output on termination, as defined in `inputParameters.workflowOutput`. If `workflowOutput` is not set in the Terminate task configuration, the output will be an empty object. |
+| output | Map[String, Any]  | A map of the workflow output on termination, as defined in `workflowOutput`. If `workflowOutput` is not set in the Terminate task configuration, the output will be an empty object. |
 
 ## Examples
 
@@ -71,9 +74,17 @@ In this example workflow, a decision is made to ship with a specific shipping pr
 }
 ```
 
-The full workflow with the Terminate task looks like this:
+The workflow flow:
 
-![Conductor UI - Workflow Diagram](Terminate_Task.png)
+```mermaid
+graph LR
+    A[Start] --> B{Switch}
+    B -->|fedex| C[ship_via_fedex]
+    B -->|ups| D[ship_via_ups]
+    B -->|default| E[Terminate<br/>FAILED]
+    C --> F[End]
+    D --> F
+```
 
 
 ## Best practices
