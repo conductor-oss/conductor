@@ -69,4 +69,18 @@ public interface AdminService {
      * @return map of event queues
      */
     Map<String, ?> getEventQueues(boolean verbose);
+
+    /**
+     * Start an async reindex job. Returns immediately. Use getReindexStatus() to track progress.
+     *
+     * @return initial status map
+     */
+    Map<String, Object> startReindex();
+
+    /**
+     * Get the current reindex job status and progress.
+     *
+     * @return status map with state, processed, errors, total fields
+     */
+    Map<String, Object> getReindexStatus();
 }
