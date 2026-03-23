@@ -104,6 +104,10 @@ jar {
 bootJar {
     mainClass = 'com.netflix.conductor.Conductor'
     archiveClassifier = 'boot'
+    
+    // Extract GraalVM Polyglot JARs to avoid nested classloader issues
+    // These libraries use ServiceLoader which conflicts with Spring Boot's nested JAR format
+    requiresUnpack '**/polyglot*.jar', '**/truffle*.jar', '**/js-community*.jar', '**/icu4j*.jar'
 }
 
 publishing {
