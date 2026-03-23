@@ -23,22 +23,12 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.netflix.conductor.contribs.listener.RestClientManager;
 import com.netflix.conductor.contribs.listener.StatusNotifierNotificationProperties;
-import com.netflix.conductor.contribs.listener.archive.ArchivingWithTTLWorkflowStatusListener;
+import com.netflix.conductor.contribs.listener.WorkflowStatusListenerFactory;
 import com.netflix.conductor.contribs.listener.archive.ArchivingWorkflowListenerProperties;
-import com.netflix.conductor.contribs.listener.archive.ArchivingWorkflowStatusListener;
-import com.netflix.conductor.contribs.listener.archive.ArchivingWorkflowToS3;
-import com.netflix.conductor.contribs.listener.conductorqueue.ConductorQueueStatusPublisher;
 import com.netflix.conductor.contribs.listener.conductorqueue.ConductorQueueStatusPublisherProperties;
-import com.netflix.conductor.contribs.listener.kafka.KafkaWorkflowStatusPublisher;
 import com.netflix.conductor.contribs.listener.kafka.KafkaWorkflowStatusPublisherProperties;
-import com.netflix.conductor.contribs.listener.statuschange.StatusChangePublisher;
-import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
-import com.netflix.conductor.dao.QueueDAO;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Configuration for composite workflow status listener. Enables multiple workflow status listeners
@@ -61,9 +51,7 @@ public class CompositeWorkflowStatusListenerConfiguration {
     @Bean
     public WorkflowStatusListener compositeWorkflowStatusListener(
             CompositeWorkflowStatusListenerProperties properties,
-            ObjectMapper objectMapper,
-            QueueDAO queueDAO,
-            ExecutionDAOFacade executionDAOFacade,
+            WorkflowStatusListenerFactory factory,
             Optional<KafkaWorkflowStatusPublisherProperties> kafkaProperties,
             Optional<ConductorQueueStatusPublisherProperties> queueProperties,
             Optional<StatusNotifierNotificationProperties> notifierProperties,
@@ -78,9 +66,7 @@ public class CompositeWorkflowStatusListenerConfiguration {
             WorkflowStatusListener listener =
                     createListener(
                             type.trim(),
-                            objectMapper,
-                            queueDAO,
-                            executionDAOFacade,
+                            factory,
                             kafkaProperties,
                             queueProperties,
                             notifierProperties,
@@ -99,82 +85,45 @@ public class CompositeWorkflowStatusListenerConfiguration {
         return new CompositeWorkflowStatusListener(listeners);
     }
 
+    /**
+     * Creates a workflow status listener based on the specified type. Delegates to factory for
+     * construction and validation.
+     *
+     * @param type The listener type (kafka, queue_publisher, workflow_publisher, archive)
+     * @param factory Factory for creating listeners
+     * @param kafkaProperties Optional Kafka configuration
+     * @param queueProperties Optional queue publisher configuration
+     * @param notifierProperties Optional webhook notifier configuration
+     * @param archiveProperties Optional archival configuration
+     * @return Configured workflow status listener
+     * @throws IllegalArgumentException if listener type is unknown
+     * @throws IllegalStateException if required properties are missing (thrown by factory)
+     */
     private WorkflowStatusListener createListener(
             String type,
-            ObjectMapper objectMapper,
-            QueueDAO queueDAO,
-            ExecutionDAOFacade executionDAOFacade,
+            WorkflowStatusListenerFactory factory,
             Optional<KafkaWorkflowStatusPublisherProperties> kafkaProperties,
             Optional<ConductorQueueStatusPublisherProperties> queueProperties,
             Optional<StatusNotifierNotificationProperties> notifierProperties,
             Optional<ArchivingWorkflowListenerProperties> archiveProperties) {
         switch (type.toLowerCase()) {
             case "kafka":
-                return kafkaProperties
-                        .map(
-                                props -> {
-                                    LOGGER.debug("Creating Kafka workflow status publisher");
-                                    return new KafkaWorkflowStatusPublisher(props, objectMapper);
-                                })
-                        .orElseThrow(
-                                () ->
-                                        new IllegalStateException(
-                                                "Kafka listener requested but kafka properties not configured. "
-                                                        + "Please configure conductor.workflow-status-listener.kafka.* properties"));
+                return factory.createKafkaListener(kafkaProperties.orElse(null));
 
             case "queue_publisher":
-                return queueProperties
-                        .map(
-                                props -> {
-                                    LOGGER.debug("Creating Conductor queue status publisher");
-                                    return new ConductorQueueStatusPublisher(
-                                            queueDAO, objectMapper, props);
-                                })
-                        .orElseThrow(
-                                () ->
-                                        new IllegalStateException(
-                                                "Queue publisher requested but queue properties not configured. "
-                                                        + "Please configure conductor.workflow-status-listener.queue-publisher.* properties"));
+                return factory.createQueuePublisherListener(queueProperties.orElse(null));
 
             case "workflow_publisher":
-                StatusNotifierNotificationProperties notifierProps =
-                        notifierProperties.orElseThrow(
-                                () ->
-                                        new IllegalStateException(
-                                                "Workflow publisher requested but notification properties not configured. "
-                                                        + "Please configure conductor.status-notifier.notification.* properties"));
-                LOGGER.debug("Creating workflow status change publisher (webhook)");
-                RestClientManager restClientManager = new RestClientManager(notifierProps);
-                return new StatusChangePublisher(
-                        restClientManager,
-                        executionDAOFacade,
-                        notifierProps.getSubscribedWorkflowStatuses());
+                return factory.createWorkflowPublisherListener(
+                        notifierProperties.orElse(null),
+                        notifierProperties
+                                .map(
+                                        StatusNotifierNotificationProperties
+                                                ::getSubscribedWorkflowStatuses)
+                                .orElse(null));
 
             case "archive":
-                return archiveProperties
-                        .map(
-                                props -> {
-                                    LOGGER.debug(
-                                            "Creating archiving workflow listener (TTL: {})",
-                                            props.getTtlDuration());
-
-                                    if (props.getTtlDuration().getSeconds() > 0) {
-                                        return new ArchivingWithTTLWorkflowStatusListener(
-                                                executionDAOFacade, props);
-                                    } else if (props.getWorkflowArchivalType()
-                                            == ArchivingWorkflowListenerProperties.ArchivalType
-                                                    .S3) {
-                                        return new ArchivingWorkflowToS3(executionDAOFacade, props);
-                                    } else {
-                                        return new ArchivingWorkflowStatusListener(
-                                                executionDAOFacade);
-                                    }
-                                })
-                        .orElseThrow(
-                                () ->
-                                        new IllegalStateException(
-                                                "Archive listener requested but archive properties not configured. "
-                                                        + "Please configure conductor.workflow-status-listener.archival.* properties"));
+                return factory.createArchiveListener(archiveProperties.orElse(null));
 
             default:
                 throw new IllegalArgumentException(

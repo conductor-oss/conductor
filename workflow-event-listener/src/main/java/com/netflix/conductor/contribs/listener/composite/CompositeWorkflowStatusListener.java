@@ -13,6 +13,9 @@
 package com.netflix.conductor.contribs.listener.composite;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
@@ -22,19 +25,38 @@ import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.model.WorkflowModel;
 
 /**
- * Composite workflow status listener that delegates to multiple listeners sequentially. Failures in
- * one listener do not affect others.
+ * Composite workflow status listener that delegates to multiple listeners in parallel. Failures in
+ * one listener do not affect others, and slow listeners do not block fast ones.
+ *
+ * <p>Uses a thread pool to execute listener invocations concurrently, ensuring proper failure
+ * isolation and preventing cascading delays.
  */
 public class CompositeWorkflowStatusListener implements WorkflowStatusListener {
+
+    private final ExecutorService executorService;
 
     private static final Logger LOGGER =
             LoggerFactory.getLogger(CompositeWorkflowStatusListener.class);
     private final List<WorkflowStatusListener> listeners;
 
+    /**
+     * Creates a composite workflow status listener with the given delegates.
+     *
+     * @param listeners List of workflow status listeners to delegate to
+     */
     public CompositeWorkflowStatusListener(List<WorkflowStatusListener> listeners) {
         this.listeners = listeners;
+        this.executorService =
+                Executors.newFixedThreadPool(
+                        Math.max(listeners.size(), 2),
+                        r -> {
+                            Thread thread = new Thread(r);
+                            thread.setName("composite-wf-listener-" + thread.getId());
+                            thread.setDaemon(true);
+                            return thread;
+                        });
         LOGGER.info(
-                "Initialized composite workflow listener with {} listeners: {}",
+                "Initialized composite workflow listener with {} listeners (parallel execution): {}",
                 listeners.size(),
                 listeners.stream().map(d -> d.getClass().getSimpleName()).toList());
     }
@@ -102,7 +124,8 @@ public class CompositeWorkflowStatusListener implements WorkflowStatusListener {
     }
 
     /**
-     * Delegates workflow event to all listeners sequentially with error isolation.
+     * Delegates workflow event to all listeners in parallel with error isolation. Ensures that slow
+     * or blocked listeners do not delay others.
      *
      * @param workflow the workflow model
      * @param methodName the name of the method being invoked (for logging)
@@ -110,21 +133,44 @@ public class CompositeWorkflowStatusListener implements WorkflowStatusListener {
      */
     private void delegateToListeners(
             WorkflowModel workflow, String methodName, Consumer<WorkflowStatusListener> action) {
-        listeners.forEach(
-                listener ->
-                        safeInvoke(
-                                () -> action.accept(listener),
-                                methodName,
-                                workflow.getWorkflowId()));
+        CompletableFuture<?>[] futures =
+                listeners.stream()
+                        .map(
+                                listener ->
+                                        CompletableFuture.runAsync(
+                                                () ->
+                                                        safeInvoke(
+                                                                () -> action.accept(listener),
+                                                                listener.getClass().getSimpleName(),
+                                                                methodName,
+                                                                workflow.getWorkflowId()),
+                                                executorService))
+                        .toArray(CompletableFuture[]::new);
+
+        CompletableFuture.allOf(futures).join();
     }
 
-    private void safeInvoke(Runnable action, String methodName, String workflowId) {
+    /**
+     * Safely invokes a listener action with exception handling. Does not propagate exceptions to
+     * ensure failure isolation.
+     *
+     * @param action The action to execute
+     * @param listenerName Name of the listener for logging
+     * @param methodName Name of the method being invoked
+     * @param workflowId Workflow ID for context
+     */
+    private void safeInvoke(
+            Runnable action, String listenerName, String methodName, String workflowId) {
         try {
             action.run();
         } catch (Exception e) {
             LOGGER.error(
-                    "Error in {} for workflow {}: {}", methodName, workflowId, e.getMessage(), e);
-            // Don't propagate - one listener failure shouldn't affect others
+                    "Error in listener {} during {} for workflow {}: {}",
+                    listenerName,
+                    methodName,
+                    workflowId,
+                    e.getMessage(),
+                    e);
         }
     }
 }
