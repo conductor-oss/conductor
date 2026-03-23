@@ -310,7 +310,7 @@ const QuickAddMenu = ({
     });
   }, [richAddTaskMenuActor]);
 
-  const taskOptions = useMemo(
+  const taskOptions: TaskMenuItem[] = useMemo(
     () =>
       getALL_TASKS().map((bt: BaseTaskMenuItem) => {
         const IconComponent = iconForTaskTypeMap[bt.type];
