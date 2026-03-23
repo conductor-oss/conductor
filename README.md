@@ -56,22 +56,37 @@ All CLI commands have equivalent cURL/API calls. See the [Quickstart](https://co
 
 ---
 
-# Conductor Skills for AI Agents
+## Conductor Skills for AI Agents
 
 **[Conductor Skills](https://github.com/conductor-oss/conductor-skills)** are pre-built, production-ready workflow packages that give your AI agents superpowers — retrieval, web search, document processing, and more. Install a skill, wire it into your agent, and ship.
 
+[https://github.com/conductor-oss/conductor-skills](https://github.com/conductor-oss/conductor-skills)
+
+### Claude
 ```shell
-# Install the skills CLI
-npm install -g @conductor-oss/conductor-skills
-
-# List available skills
-conductor-skills list
-
-# Install a skill
-conductor-skills install <skill-name>
+# Install Skills for Claude Code
+/plugin marketplace add conductor-oss/conductor-skills
+/plugin install conductor@conductor-skills
 ```
 
-**[Browse available skills →](https://github.com/conductor-oss/conductor-skills)**
+### Install for all detected agents
+
+One command to auto-detect every supported agent on your system and install globally where possible. Re-run anytime — it only installs for newly detected agents.
+
+**macOS / Linux**
+```bash
+curl -sSL https://conductor-oss.github.io/conductor-skills/install.sh | bash -s -- --all
+```
+
+**Windows (PowerShell)**
+```powershell
+irm https://conductor-oss.github.io/conductor-skills/install.ps1 -OutFile install.ps1; .\install.ps1 -All
+```
+
+**Windows (cmd)**
+```cmd
+powershell -c "irm https://conductor-oss.github.io/conductor-skills/install.ps1 -OutFile install.ps1; .\install.ps1 -All"
+```
 
 ---
 
