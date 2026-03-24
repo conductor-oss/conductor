@@ -96,8 +96,7 @@ public class WorkflowMessageQueueResource {
 
         String messageId = UUID.randomUUID().toString();
         WorkflowMessage message =
-                new WorkflowMessage(
-                        messageId, workflowId, payload, Instant.now().toString());
+                new WorkflowMessage(messageId, workflowId, payload, Instant.now().toString());
 
         try {
             dao.push(workflowId, message);

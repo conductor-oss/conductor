@@ -28,9 +28,7 @@ public class WorkflowMessage {
     /** The workflow instance that owns this message. */
     private String workflowId;
 
-    /**
-     * Arbitrary caller-supplied data. Conductor does not interpret or validate this structure.
-     */
+    /** Arbitrary caller-supplied data. Conductor does not interpret or validate this structure. */
     private Map<String, Object> payload;
 
     /** ISO-8601 UTC timestamp recorded at ingestion time. */
