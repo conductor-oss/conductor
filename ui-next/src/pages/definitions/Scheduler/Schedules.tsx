@@ -43,7 +43,6 @@ import { TagDto } from "types/Tag";
 import { HTTPMethods } from "types/TaskType";
 import { getSequentiallySuffix, logger } from "utils";
 import {
-  getEarliestCronScheduleNextRun,
   getScheduleCronSchedules,
 } from "pages/scheduler/utils/cronSchedules";
 import {
