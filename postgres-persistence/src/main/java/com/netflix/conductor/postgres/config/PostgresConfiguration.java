@@ -71,14 +71,20 @@ public class PostgresConfiguration {
 
         config.locations(locations.toArray(new String[0]));
 
-        return config.configuration(Map.of("flyway.postgresql.transactional.lock", "false"))
-                .schemas(properties.getSchema())
-                .dataSource(dataSource)
-                .outOfOrder(true)
-                .baselineOnMigrate(true)
-                .repairOnMigrate(properties.isFlywayRepairOnMigrate())
-                .validateOnMigrate(properties.isFlywayValidateOnMigrate())
-                .load();
+        Flyway flyway =
+                config.configuration(Map.of("flyway.postgresql.transactional.lock", "false"))
+                        .schemas(properties.getSchema())
+                        .dataSource(dataSource)
+                        .outOfOrder(true)
+                        .baselineOnMigrate(true)
+                        .validateOnMigrate(properties.isFlywayValidateOnMigrate())
+                        .load();
+
+        if (properties.isFlywayRepairOnMigrate()) {
+            flyway.repair();
+        }
+
+        return flyway;
     }
 
     @Bean
