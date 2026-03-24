@@ -27,4 +27,6 @@ message WorkflowSummary {
     int32 priority = 17;
     repeated string failed_task_names = 18;
     string created_by = 19;
+    map<string, string> task_to_domain = 20;
+    string idempotency_key = 21;
 }

@@ -24,5 +24,5 @@ COPY ./ui .
 
 # Include monaco sources into bundle (instead of using CDN)
 ENV REACT_APP_MONACO_EDITOR_USING_CDN=false
-
+ENV REACT_APP_ENABLE_ERRORS_INSPECTOR=true
 CMD [ "yarn", "start" ]

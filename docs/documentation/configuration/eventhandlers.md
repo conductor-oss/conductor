@@ -1,15 +1,18 @@
+---
+description: "Event Handlers — configure Conductor to produce and consume events from Kafka, SQS, and other message systems."
+---
 # Event Handlers
 Eventing in Conductor provides for loose coupling between workflows and support for producing and consuming events from external systems.
 
 This includes:
 
-1. Being able to produce an event (message) in an external system like SQS or internal to Conductor. 
+1. Being able to produce an event (message) in an external system like SQS, Kafka or internal to Conductor. 
 2. Start a workflow when a specific event occurs that matches the provided criteria.
 
 Conductor provides SUB_WORKFLOW task that can be used to embed a workflow inside parent workflow.  Eventing supports provides similar capability without explicitly adding dependencies and provides **fire-and-forget** style integrations.
 
 ## Event Task
-Event task provides ability to publish an event (message) to either Conductor or an external eventing system like SQS. Event tasks are useful for creating event based dependencies for workflows and tasks.
+Event task provides ability to publish an event (message) to either Conductor or an external eventing system like SQS or Kafka. Event tasks are useful for creating event based dependencies for workflows and tasks.
 
 See [Event Task](workflowdef/systemtasks/event-task.md) for documentation.
 
@@ -20,7 +23,7 @@ Event handlers are listeners registered that executes an action when a matching 
 2.  Fail a Task
 3.  Complete a Task
 
-Event Handlers can be configured to listen to Conductor Events or an external event like SQS.
+Event Handlers can be configured to listen to Conductor Events or an external event like SQS or Kafka.
 
 ## Configuration
 Event Handlers are configured via ```/event/``` APIs.
@@ -103,6 +106,7 @@ Examples of actions that can be configured in the `actions` array:
     "fail_task": {
       "workflowId": "${workflowId}",
       "taskRefName": "task_1",
+      "reasonForIncompletion": "${error}",
       "output": {
         "response": "${result}"
       }
@@ -110,6 +114,8 @@ Examples of actions that can be configured in the `actions` array:
     "expandInlineJSON": true
 }
 ```
+`reasonForIncompletion` is optional, but when provided on `fail_task` it is stored on the failed task and can propagate to the workflow failure reason when that task causes the workflow to fail.
+
 Input for starting a workflow and output when completing / failing task follows the same [expressions](workflowdef/index.md#using-expressions) used for wiring task inputs.
 
 !!!info "Expanding stringified JSON elements in payload"

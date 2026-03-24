@@ -1,8 +1,12 @@
+---
+description: "Task definition schema in Conductor — configure retry logic, exponential backoff, timeouts, rate limiting, and concurrency for durable workflow execution."
+---
+
 # Task Definition
 
 Task Definitions are used to register SIMPLE tasks (workers). Conductor maintains a registry of user task types. A task type MUST be registered before being used in a workflow.
 
-This should not be confused with [*Task Configurations*](./workflowdef/index.md#task-configurations) which are part of the Workflow Definition, and are iterated in the `tasks` property in the definition.
+This should not be confused with [*Task Configurations*](workflowdef/index.md#task-configurations) which are part of the Workflow Definition, and are iterated in the `tasks` property in the definition.
 
 
 ## Schema
@@ -16,7 +20,7 @@ This should not be confused with [*Task Configurations*](./workflowdef/index.md#
 | retryDelaySeconds           | number             | Time to wait before retries.                                                                                                                                                                                   | Defaults to 60 seconds                                                           |
 | timeoutPolicy               | string (enum)      | Task's timeout policy.                                                                                                                                                                                         | Defaults to `TIME_OUT_WF`; See [Timeout Policy](#timeout-policy)                 |
 | timeoutSeconds              | number             | Time in seconds, after which the task is marked as `TIMED_OUT` if it has not reached a terminal state after transitioning to `IN_PROGRESS` status for the first time.                                                                | No timeouts if set to 0                                                          |
-| responseTimeoutSeconds      | number             | If greater than 0, the task is rescheduled if not updated with a status after this time (heartbeat mechanism). Useful when the worker polls for the task but fails to complete due to errors/network failure. | Defaults to 3600                                                                 |
+| responseTimeoutSeconds      | number             | If greater than 0, the task is rescheduled if not updated with a status after this time (heartbeat mechanism). Useful when the worker polls for the task but fails to complete due to errors/network failure. | Defaults to 600                                                                 |
 | pollTimeoutSeconds          | number             | Time in seconds, after which the task is marked as `TIMED_OUT` if not polled by a worker.                                                                                                                     | No timeouts if set to 0                                                          |
 | inputKeys                   | array of string(s) | Array of keys of task's expected input. Used for documenting task's input.                                                                                                                                    | Optional. See [Using inputKeys and outputKeys](#using-inputkeys-and-outputkeys). |
 | outputKeys                  | array of string(s) | Array of keys of task's expected output. Used for documenting task's output.                                                                                                                                  | Optional. See [Using inputKeys and outputKeys](#using-inputkeys-and-outputkeys). |

@@ -235,7 +235,7 @@ public interface IndexDAO {
      *
      * @param indexName Name of the index to search
      * @param archiveTtlDays Archival Time to Live
-     * @return List of worlflow Ids matching the pattern
+     * @return List of workflow Ids matching the pattern
      */
     List<String> searchArchivableWorkflows(String indexName, long archiveTtlDays);
 

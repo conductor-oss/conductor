@@ -1,3 +1,6 @@
+---
+description: "First Workflow Lab — step-by-step tutorial to create and run your first Conductor workflow using built-in HTTP tasks."
+---
 # A First Workflow
 
 In this article we will explore how we can run a really simple workflow that runs without deploying any new microservice. 

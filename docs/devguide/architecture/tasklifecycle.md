@@ -1,59 +1,155 @@
+---
+description: "Understand the task lifecycle in Conductor — state transitions, retries, timeouts, and failure handling for durable workflow execution."
+---
+
 # Task Lifecycle
 
-## Task state transitions
+During a workflow execution, each task transitions through a series of states. Understanding these transitions is key to configuring retries, timeouts, and error handling correctly.
 
-The figure below depicts the state transitions that a task can go through within a workflow execution.
+## State diagram
 
-![Task States](task_states.png)
+```mermaid
+stateDiagram-v2
+    [*] --> SCHEDULED
+    SCHEDULED --> IN_PROGRESS : Worker polls task
+    SCHEDULED --> TIMED_OUT : Poll timeout exceeded
+    SCHEDULED --> CANCELED : Workflow terminated
+    IN_PROGRESS --> COMPLETED : Worker reports success
+    IN_PROGRESS --> FAILED : Worker reports failure
+    IN_PROGRESS --> FAILED_WITH_TERMINAL_ERROR : Non-retryable failure
+    IN_PROGRESS --> TIMED_OUT : Response/task timeout exceeded
+    IN_PROGRESS --> COMPLETED_WITH_ERRORS : Optional task fails
+    SCHEDULED --> SKIPPED : Skip Task API called
+    FAILED --> SCHEDULED : Retry (after delay)
+    TIMED_OUT --> SCHEDULED : Retry (after delay)
+    COMPLETED --> [*]
+    FAILED --> [*] : Retries exhausted
+    FAILED_WITH_TERMINAL_ERROR --> [*]
+    TIMED_OUT --> [*] : Retries exhausted
+    CANCELED --> [*]
+    SKIPPED --> [*]
+    COMPLETED_WITH_ERRORS --> [*]
+```
 
-## Retries and Failure Scenarios
+## Task statuses
 
-### Task failure and retries
+| Status | Description |
+| :--- | :--- |
+| `SCHEDULED` | Task is queued and waiting for a worker to poll it. |
+| `IN_PROGRESS` | A worker has picked up the task and is executing it. |
+| `COMPLETED` | Task completed successfully. |
+| `FAILED` | Task failed due to an error. Conductor will retry based on the task definition's retry configuration. |
+| `FAILED_WITH_TERMINAL_ERROR` | Task failed with a non-retryable error. No retries will be attempted. |
+| `TIMED_OUT` | Task exceeded its configured timeout. Conductor will retry based on the retry configuration. |
+| `CANCELED` | Task was canceled because the workflow was terminated. |
+| `SKIPPED` | Task was skipped via the Skip Task API. The workflow continues to the next task. |
+| `COMPLETED_WITH_ERRORS` | Task failed but is marked as optional in the workflow definition. The workflow continues. |
 
-Retries for failed task executions of each task can be configured independently. `retryCount`, `retryDelaySeconds` and `retryLogic` can be used to configure the retry mechanism.
 
-![Task Failure](TaskFailure.png)
+## Retry behavior
 
-1. Worker (W1) polls for task T1 from the Conductor server and receives the task.
-2. Upon processing this task, the worker determines that the task execution is a failure and reports this to the server with FAILED status after 10 seconds.
-3. The server will persist this FAILED execution of T1. A new execution of task T1 will be created and scheduled to be polled. This task will be available to be polled after 5 (retryDelaySeconds) seconds.
+When a task fails with a retryable error, Conductor automatically reschedules it after the configured delay.
 
-### Poll Timeout Seconds
+```mermaid
+sequenceDiagram
+    participant W as Worker
+    participant C as Conductor Server
 
-Poll timeout is the maximum amount of time by which a worker needs to poll a task, else the task will be marked as `TIMED_OUT`.
+    C->>W: Task T1 available for polling
+    W->>C: Poll task T1
+    C-->>W: Return T1 (IN_PROGRESS)
+    W->>W: Process task...
+    W->>C: Report FAILED (after 10s)
+    C->>C: Persist failed execution
+    Note over C: Wait retryDelaySeconds (5s)
+    C->>C: Schedule new T1 execution
+    C->>W: T1 available for polling again
+    W->>C: Poll task T1
+    C-->>W: Return T1 (IN_PROGRESS)
+    W->>W: Process task...
+    W->>C: Report COMPLETED
+```
 
-![Task Poll Timeout](PollTimeoutSeconds.png)
+Retry behavior is controlled by the task definition:
 
-In the figure above, task T1 does not get polled by the worker within 60 seconds, so Conductor marks it as `TIMED_OUT`.
+| Parameter | Description |
+| :--- | :--- |
+| `retryCount` | Maximum number of retry attempts. |
+| `retryLogic` | `FIXED` (constant delay) or `EXPONENTIAL_BACKOFF`. |
+| `retryDelaySeconds` | Delay between retries. For exponential backoff, this is the base delay. |
 
-### Timeout seconds
 
-Timeout is the maximum amount of time that the task must reach a terminal state in, else it will be marked as `TIMED_OUT`.
+## Timeout scenarios
 
-![Task Timeout](TimeoutSeconds.png)
+### Poll timeout
 
-**0 seconds** -> Worker polls for task T1 from the Conductor server and receives the task. T1 is put into `IN_PROGRESS` status by the server.  
-Worker starts processing the task but is unable to process the task at this time. Worker updates the server with T1 set to `IN_PROGRESS` status and a callback of 9 seconds.  
-Server puts T1 back in the queue but makes it invisible and the worker continues to poll for the task but does not receive T1 for 9 seconds.  
+If no worker polls the task within `pollTimeoutSeconds`, it is marked as `TIMED_OUT`.
 
-**9,18 seconds** -> Worker receives T1 from the server and is still unable to process the task and updates the server with a callback of 9 seconds.
+```mermaid
+sequenceDiagram
+    participant W as Worker
+    participant C as Conductor Server
 
-**27 seconds** -> Worker polls and receives task T1 from the server and is now able to process this task.
+    C->>C: Schedule task T1
+    Note over C,W: No worker polls within 60s
+    C->>C: Mark T1 as TIMED_OUT
+    C->>C: Schedule retry (if retries remain)
+```
 
-**30 seconds** (T1 timeout) -> Server marks T1 as `TIMED_OUT` because it is not in a terminal state after first being moved to `IN_PROGRESS` status. Server schedules a new task based on the retry count.
+This typically indicates a backlogged task queue or insufficient workers.
 
-**32 seconds** -> Worker completes processing of T1 and updates the server with `COMPLETED` status. Server will ignore this update since T1 has already been moved to a terminal status (`TIMED_OUT`).
+### Response timeout
 
-### Response timeout seconds
+If a worker polls a task but doesn't report back within `responseTimeoutSeconds`, the task is marked as `TIMED_OUT`. This handles cases where a worker crashes mid-execution.
 
-Response timeout is the time within which the worker must respond to the server with an update for the task, else the task will be marked as TIMED_OUT.
+```mermaid
+sequenceDiagram
+    participant W as Worker
+    participant C as Conductor Server
 
-![Response Timeout](ResponseTimeoutSeconds.png)
+    C->>W: Task T1 available
+    W->>C: Poll T1
+    C-->>W: Return T1 (IN_PROGRESS)
+    W->>W: Processing...
+    Note over W: Worker crashes
+    Note over C: responseTimeoutSeconds (20s) elapsed
+    C->>C: Mark T1 as TIMED_OUT
+    Note over C: Wait retryDelaySeconds (5s)
+    C->>C: Schedule new T1 execution
+```
 
-**0 seconds** -> Worker polls for the task T1 from the Conductor server and receives the task. T1 is put into `IN_PROGRESS` status by the server.
+Workers can extend the response timeout by sending `IN_PROGRESS` status updates with a `callbackAfterSeconds` value.
 
-Worker starts processing the task but the worker instance dies during this execution.
+### Task timeout
 
-**20 seconds** (T1 responseTimeout) -> Server marks T1 as `TIMED_OUT` since the task has not been updated by the worker within the configured responseTimeoutSeconds (20). A new instance of task T1 is scheduled as per the retry configuration.
+`timeoutSeconds` is the overall SLA for task completion. Even if a worker keeps sending `IN_PROGRESS` updates, the task is marked as `TIMED_OUT` once this duration is exceeded.
 
-**25 seconds** -> The retried instance of T1 is available to be polled by the worker, after the retryDelaySeconds (5) has elapsed.
+```mermaid
+sequenceDiagram
+    participant W as Worker
+    participant C as Conductor Server
+
+    C->>W: Task T1 available
+    W->>C: Poll T1
+    C-->>W: Return T1 (IN_PROGRESS)
+    W->>W: Processing...
+    W->>C: IN_PROGRESS (callback: 9s)
+    Note over C: Task back in queue, invisible 9s
+    W->>C: Poll T1 again
+    W->>C: IN_PROGRESS (callback: 9s)
+    Note over C: Cycle repeats...
+    Note over C: timeoutSeconds (30s) elapsed
+    C->>C: Mark T1 as TIMED_OUT
+    C->>C: Schedule retry (if retries remain)
+    W->>C: Report COMPLETED (at 32s)
+    Note over C: Ignored — T1 already terminal
+```
+
+## Timeout configuration summary
+
+| Parameter | Description | Default |
+| :--- | :--- | :--- |
+| `pollTimeoutSeconds` | Max time for a worker to poll the task. | No timeout |
+| `responseTimeoutSeconds` | Max time for a worker to respond after polling. | No timeout |
+| `timeoutSeconds` | Overall SLA for the task to reach a terminal state. | No timeout |
+| `timeoutPolicy` | Action on timeout: `RETRY`, `TIME_OUT_WF` (fail workflow), or `ALERT_ONLY`. | `TIME_OUT_WF` |

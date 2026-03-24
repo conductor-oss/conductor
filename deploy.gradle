@@ -1,4 +1,3 @@
-
 subprojects {
 
     apply plugin: 'maven-publish'
@@ -52,7 +51,7 @@ subprojects {
 
         repositories {
             maven {
-                url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+                url = "https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/"
                 credentials {
                     username project.properties.username
                     password project.properties.password
@@ -72,6 +71,61 @@ subprojects {
             sign publishing.publications
         }
 
+    }
+
+    task promoteToMavenCentral {
+        group = 'publishing'
+        description = 'Promotes staged artifacts to Maven Central'
+
+        onlyIf {
+            project.hasProperty('mavenCentral') &&
+                    project.hasProperty('username') &&
+                    project.hasProperty('password') &&
+                    !project.version.endsWith('-SNAPSHOT')
+        }
+
+        doLast {
+            def username = project.properties['username']
+            def password = project.properties['password']
+
+            // Create base64 encoded token for authentication
+            def token = "${username}:${password}".bytes.encodeBase64().toString()
+
+            // Get open staging repositories
+            def response = new URL("https://ossrh-staging-api.central.sonatype.com/manual/search/repositories")
+                    .openConnection()
+            response.setRequestProperty("Authorization", "Basic ${token}")
+            response.setRequestProperty("Content-Type", "application/json")
+
+            def repositories = new groovy.json.JsonSlurper().parse(response.inputStream)
+
+            // Promote each open repository
+            repositories.repositories.each { repo ->
+                if (repo.state == "open") {
+                    project.logger.lifecycle("Promoting repository ${repo.key}")
+
+                    def promoteUrl = new URL("https://ossrh-staging-api.central.sonatype.com/manual/upload/repository/${repo.key}?publishing_type=automatic")
+                    def connection = promoteUrl.openConnection()
+                    connection.setRequestMethod("POST")
+                    connection.setRequestProperty("Authorization", "Basic ${token}")
+                    connection.setRequestProperty("Content-Type", "application/json")
+
+                    def responseCode = connection.responseCode
+                    if (responseCode == 200) {
+                        project.logger.lifecycle("Successfully promoted repository ${repo.key}")
+                    } else {
+                        def errorStream = connection.errorStream
+                        def errorBody = errorStream ? errorStream.text : "No error body available"
+                        def errorMessage = "Failed to promote repository ${repo.key}. Response code: ${responseCode}. Response message: ${connection.responseMessage}. Error body: ${errorBody}"
+                        project.logger.error(errorMessage)
+                        //throw new GradleException(errorMessage)
+                    }
+                }
+            }
+        }
+    }
+    tasks.matching { it.name == 'publish' }.configureEach { publishTask ->
+        publishTask.finalizedBy tasks.promoteToMavenCentral
     }
 
 }

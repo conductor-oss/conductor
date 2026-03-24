@@ -1,3 +1,6 @@
+---
+description: "License — Conductor is released under the Apache License 2.0 for free commercial and open-source use."
+---
 # License
 
 Copyright 2023 Conductor authors.

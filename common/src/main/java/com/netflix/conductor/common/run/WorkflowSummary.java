@@ -14,7 +14,9 @@ package com.netflix.conductor.common.run;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TimeZone;
@@ -91,6 +93,12 @@ public class WorkflowSummary {
     @ProtoField(id = 19)
     private String createdBy;
 
+    @ProtoField(id = 20)
+    private Map<String, String> taskToDomain = new HashMap<>();
+
+    @ProtoField(id = 21)
+    private String idempotencyKey;
+
     public WorkflowSummary() {}
 
     public WorkflowSummary(Workflow workflow) {
@@ -103,6 +111,7 @@ public class WorkflowSummary {
         this.workflowId = workflow.getWorkflowId();
         this.priority = workflow.getPriority();
         this.correlationId = workflow.getCorrelationId();
+        this.idempotencyKey = workflow.getIdempotencyKey();
         if (workflow.getCreateTime() != null) {
             this.startTime = sdf.format(new Date(workflow.getCreateTime()));
         }
@@ -133,6 +142,10 @@ public class WorkflowSummary {
         if (StringUtils.isNotBlank(workflow.getExternalOutputPayloadStoragePath())) {
             this.externalOutputPayloadStoragePath = workflow.getExternalOutputPayloadStoragePath();
         }
+        if (workflow.getTaskToDomain() != null) {
+            this.taskToDomain = workflow.getTaskToDomain();
+        }
+        this.createdBy = workflow.getCreatedBy();
     }
 
     /**
@@ -357,6 +370,22 @@ public class WorkflowSummary {
         this.createdBy = createdBy;
     }
 
+    public Map<String, String> getTaskToDomain() {
+        return taskToDomain;
+    }
+
+    public void setTaskToDomain(Map<String, String> taskToDomain) {
+        this.taskToDomain = taskToDomain;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -372,13 +401,15 @@ public class WorkflowSummary {
                 && getWorkflowType().equals(that.getWorkflowType())
                 && getWorkflowId().equals(that.getWorkflowId())
                 && Objects.equals(getCorrelationId(), that.getCorrelationId())
+                && Objects.equals(getIdempotencyKey(), that.getIdempotencyKey())
                 && StringUtils.equals(getStartTime(), that.getStartTime())
                 && StringUtils.equals(getUpdateTime(), that.getUpdateTime())
                 && StringUtils.equals(getEndTime(), that.getEndTime())
                 && getStatus() == that.getStatus()
                 && Objects.equals(getReasonForIncompletion(), that.getReasonForIncompletion())
                 && Objects.equals(getEvent(), that.getEvent())
-                && Objects.equals(getCreatedBy(), that.getCreatedBy());
+                && Objects.equals(getCreatedBy(), that.getCreatedBy())
+                && Objects.equals(getTaskToDomain(), that.getTaskToDomain());
     }
 
     @Override
@@ -388,6 +419,7 @@ public class WorkflowSummary {
                 getVersion(),
                 getWorkflowId(),
                 getCorrelationId(),
+                getIdempotencyKey(),
                 getStartTime(),
                 getUpdateTime(),
                 getEndTime(),
@@ -396,6 +428,7 @@ public class WorkflowSummary {
                 getExecutionTime(),
                 getEvent(),
                 getPriority(),
-                getCreatedBy());
+                getCreatedBy(),
+                getTaskToDomain());
     }
 }

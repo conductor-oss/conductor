@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
@@ -32,11 +33,14 @@ import com.netflix.conductor.postgres.config.PostgresProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 
 public class PostgresPollDataDAO extends PostgresBaseDAO implements PollDataDAO {
 
     private ConcurrentHashMap<String, ConcurrentHashMap<String, PollData>> pollDataCache =
             new ConcurrentHashMap<>();
+
+    private ScheduledExecutorService flushExecutor;
 
     private long pollDataFlushInterval;
 
@@ -66,12 +70,19 @@ public class PostgresPollDataDAO extends PostgresBaseDAO implements PollDataDAO 
     @PostConstruct
     public void schedulePollDataRefresh() {
         if (pollDataFlushInterval > 0) {
-            Executors.newSingleThreadScheduledExecutor()
-                    .scheduleWithFixedDelay(
-                            this::flushData,
-                            pollDataFlushInterval,
-                            pollDataFlushInterval,
-                            TimeUnit.MILLISECONDS);
+            flushExecutor = Executors.newSingleThreadScheduledExecutor();
+            flushExecutor.scheduleWithFixedDelay(
+                    this::flushData,
+                    pollDataFlushInterval,
+                    pollDataFlushInterval,
+                    TimeUnit.MILLISECONDS);
+        }
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        if (flushExecutor != null) {
+            flushExecutor.shutdownNow();
         }
     }
 

@@ -23,6 +23,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.entity.ContentType;
@@ -38,6 +40,7 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.*;
 import org.elasticsearch.client.core.CountRequest;
@@ -121,7 +124,8 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
     private final RestClient elasticSearchAdminClient;
     private final ExecutorService executorService;
     private final ExecutorService logExecutorService;
-    private final ConcurrentHashMap<String, BulkRequests> bulkRequests;
+    private final ConcurrentHashMap<Pair<String, WriteRequest.RefreshPolicy>, BulkRequests>
+            bulkRequests;
     private final int indexBatchSize;
     private final int asyncBufferFlushTimeout;
     private final ElasticSearchProperties properties;
@@ -495,6 +499,9 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
                     new IndexRequest(workflowIndexName)
                             .id(workflowId)
                             .source(docBytes, XContentType.JSON);
+            if (properties.isWaitForIndexRefresh()) {
+                request.setRefreshPolicy(WriteRequest.RefreshPolicy.WAIT_UNTIL);
+            }
             elasticSearchClient.index(request, RequestOptions.DEFAULT);
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
@@ -519,7 +526,11 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
             long startTime = Instant.now().toEpochMilli();
             String taskId = task.getTaskId();
 
-            indexObject(taskIndexName, TASK_DOC_TYPE, taskId, task);
+            WriteRequest.RefreshPolicy refreshPolicy =
+                    properties.isWaitForIndexRefresh()
+                            ? WriteRequest.RefreshPolicy.WAIT_UNTIL
+                            : null;
+            indexObject(taskIndexName, TASK_DOC_TYPE, taskId, task, refreshPolicy);
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for  indexing task:{} in workflow: {}",
@@ -731,7 +742,7 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
                             + "."
                             + eventExecution.getId();
 
-            indexObject(eventIndexName, EVENT_DOC_TYPE, id, eventExecution);
+            indexObject(eventIndexName, EVENT_DOC_TYPE, id, eventExecution, null);
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for indexing event execution: {}",
@@ -1231,12 +1242,15 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
     }
 
     private void indexObject(final String index, final String docType, final Object doc) {
-        indexObject(index, docType, null, doc);
+        indexObject(index, docType, null, doc, null);
     }
 
     private void indexObject(
-            final String index, final String docType, final String docId, final Object doc) {
-
+            final String index,
+            final String docType,
+            final String docId,
+            final Object doc,
+            final WriteRequest.RefreshPolicy refreshPolicy) {
         byte[] docBytes;
         try {
             docBytes = objectMapper.writeValueAsBytes(doc);
@@ -1247,27 +1261,38 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
         IndexRequest request = new IndexRequest(index);
         request.id(docId).source(docBytes, XContentType.JSON);
 
-        if (bulkRequests.get(docType) == null) {
-            bulkRequests.put(
-                    docType, new BulkRequests(System.currentTimeMillis(), new BulkRequest()));
+        Pair<String, WriteRequest.RefreshPolicy> requestKey =
+                new ImmutablePair<>(docType, refreshPolicy);
+        if (bulkRequests.get(requestKey) == null) {
+            BulkRequest bulkRequest = new BulkRequest();
+            Optional.ofNullable(requestKey.getRight()).map(bulkRequest::setRefreshPolicy);
+            bulkRequests.put(requestKey, new BulkRequests(System.currentTimeMillis(), bulkRequest));
         }
 
-        bulkRequests.get(docType).getBulkRequest().add(request);
-        if (bulkRequests.get(docType).getBulkRequest().numberOfActions() >= this.indexBatchSize) {
-            indexBulkRequest(docType);
+        bulkRequests.get(requestKey).getBulkRequest().add(request);
+        if (bulkRequests.get(requestKey).getBulkRequest().numberOfActions()
+                >= this.indexBatchSize) {
+            indexBulkRequest(requestKey);
         }
     }
 
-    private synchronized void indexBulkRequest(String docType) {
-        if (bulkRequests.get(docType).getBulkRequest() != null
-                && bulkRequests.get(docType).getBulkRequest().numberOfActions() > 0) {
-            synchronized (bulkRequests.get(docType).getBulkRequest()) {
+    private synchronized void indexBulkRequest(
+            Pair<String, WriteRequest.RefreshPolicy> requestKey) {
+        if (bulkRequests.get(requestKey).getBulkRequest() != null
+                && bulkRequests.get(requestKey).getBulkRequest().numberOfActions() > 0) {
+            synchronized (bulkRequests.get(requestKey).getBulkRequest()) {
                 indexWithRetry(
-                        bulkRequests.get(docType).getBulkRequest().get(),
-                        "Bulk Indexing " + docType,
-                        docType);
+                        bulkRequests.get(requestKey).getBulkRequest().get(),
+                        "Bulk Indexing "
+                                + requestKey.getLeft()
+                                + " with "
+                                + requestKey.getLeft()
+                                + " policy",
+                        requestKey.getLeft());
+                BulkRequest bulkRequest = new BulkRequest();
+                Optional.ofNullable(requestKey.getRight()).map(bulkRequest::setRefreshPolicy);
                 bulkRequests.put(
-                        docType, new BulkRequests(System.currentTimeMillis(), new BulkRequest()));
+                        requestKey, new BulkRequests(System.currentTimeMillis(), bulkRequest));
             }
         }
     }

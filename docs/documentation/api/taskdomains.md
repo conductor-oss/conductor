@@ -1,3 +1,6 @@
+---
+description: "Task Domains — route Conductor tasks to specific worker groups for isolated development, testing, and canary deployments."
+---
 # Task Domains
 Task domains helps support task development. The idea is same "task definition" can be implemented in different "domains". A domain is some arbitrary name that the developer controls. So when the workflow is started, the caller can specify, out of all the tasks in the workflow, which tasks need to run in a specific domain, this domain is then used to poll for task on the client side to execute it.  
 

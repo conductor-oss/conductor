@@ -65,8 +65,12 @@ public class PostgresQueueListenerTest {
 
     private void clearDb() {
         try (Connection conn = dataSource.getConnection()) {
-            conn.setAutoCommit(true);
-            conn.prepareStatement("truncate table queue_message").executeUpdate();
+            // Explicitly disable autoCommit to match HikariCP pool configuration
+            conn.setAutoCommit(false);
+            conn.prepareStatement("truncate table queue_message restart identity cascade")
+                    .executeUpdate();
+            // Commit to ensure truncation is visible across connection pool
+            conn.commit();
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -99,7 +103,7 @@ public class PostgresQueueListenerTest {
             conn.setAutoCommit(true);
             PreparedStatement stmt =
                     conn.prepareStatement(
-                            "INSERT INTO queue_message (deliver_on, queue_name, message_id, priority, offset_time_seconds, payload) VALUES (current_timestamp, ?,?,?,?,?)");
+                            "INSERT INTO queue_message (deliver_on, queue_name, message_id, priority, offset_time_seconds, payload) VALUES (current_timestamp AT TIME ZONE 'UTC', ?,?,?,?,?)");
             stmt.setString(1, queue_name);
             stmt.setString(2, message_id);
             stmt.setInt(3, 0);

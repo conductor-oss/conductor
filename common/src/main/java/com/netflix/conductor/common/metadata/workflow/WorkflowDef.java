@@ -24,18 +24,15 @@ import com.netflix.conductor.common.metadata.Auditable;
 import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 
-import jakarta.validation.*;
-import jakarta.validation.constraints.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 
 @ProtoMessage
 @TaskReferenceNameUniqueConstraint
 public class WorkflowDef extends Auditable {
-
-    @ProtoEnum
-    public enum TimeoutPolicy {
-        TIME_OUT_WF,
-        ALERT_ONLY
-    }
 
     @NotEmpty(message = "WorkflowDef name cannot be null or empty")
     @ProtoField(id = 1)
@@ -105,6 +102,19 @@ public class WorkflowDef extends Auditable {
 
     @ProtoField(id = 21)
     private boolean enforceSchema = true;
+
+    @ProtoField(id = 22)
+    private Map<String, Object> metadata = new HashMap<>();
+
+    @ProtoField(id = 23)
+    private CacheConfig cacheConfig;
+
+    @ProtoField(id = 24)
+    private List<String> maskedFields = new ArrayList<>();
+
+    public static String getKey(String name, int version) {
+        return name + "." + version;
+    }
 
     public boolean isEnforceSchema() {
         return enforceSchema;
@@ -192,6 +202,13 @@ public class WorkflowDef extends Auditable {
     }
 
     /**
+     * @param version the version to set
+     */
+    public void setVersion(int version) {
+        this.version = version;
+    }
+
+    /**
      * @return the failureWorkflow
      */
     public String getFailureWorkflow() {
@@ -203,13 +220,6 @@ public class WorkflowDef extends Auditable {
      */
     public void setFailureWorkflow(String failureWorkflow) {
         this.failureWorkflow = failureWorkflow;
-    }
-
-    /**
-     * @param version the version to set
-     */
-    public void setVersion(int version) {
-        this.version = version;
     }
 
     /**
@@ -330,10 +340,6 @@ public class WorkflowDef extends Auditable {
         return getKey(name, version);
     }
 
-    public static String getKey(String name, int version) {
-        return name + "." + version;
-    }
-
     public String getWorkflowStatusListenerSink() {
         return workflowStatusListenerSink;
     }
@@ -364,6 +370,30 @@ public class WorkflowDef extends Auditable {
 
     public void setOutputSchema(SchemaDef outputSchema) {
         this.outputSchema = outputSchema;
+    }
+
+    public Map<String, Object> getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(Map<String, Object> metadata) {
+        this.metadata = metadata;
+    }
+
+    public CacheConfig getCacheConfig() {
+        return cacheConfig;
+    }
+
+    public void setCacheConfig(final CacheConfig cacheConfig) {
+        this.cacheConfig = cacheConfig;
+    }
+
+    public List<String> getMaskedFields() {
+        return maskedFields;
+    }
+
+    public void setMaskedFields(List<String> maskedFields) {
+        this.maskedFields = maskedFields;
     }
 
     public boolean containsType(String taskType) {
@@ -485,6 +515,14 @@ public class WorkflowDef extends Auditable {
                 + outputSchema
                 + ", enforceSchema="
                 + enforceSchema
+                + ", maskedFields="
+                + maskedFields
                 + '}';
+    }
+
+    @ProtoEnum
+    public enum TimeoutPolicy {
+        TIME_OUT_WF,
+        ALERT_ONLY
     }
 }

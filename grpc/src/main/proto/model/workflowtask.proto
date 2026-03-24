@@ -4,15 +4,16 @@ package conductor.proto;
 import "model/taskdef.proto";
 import "model/subworkflowparams.proto";
 import "google/protobuf/struct.proto";
+import "model/cacheconfig.proto";
 
 option java_package = "com.netflix.conductor.proto";
 option java_outer_classname = "WorkflowTaskPb";
 option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
 
 message WorkflowTask {
-    message CacheConfig {
-        string key = 1;
-        int32 ttl_in_second = 2;
+    enum JoinMode {
+        SYNC = 0;
+        ASYNC = 1;
     }
     message WorkflowTaskList {
         repeated WorkflowTask tasks = 1;
@@ -42,10 +43,12 @@ message WorkflowTask {
     bool async_complete = 23;
     string loop_condition = 24;
     repeated WorkflowTask loop_over = 25;
+    string items = 33;
     int32 retry_count = 26;
     string evaluator_type = 27;
     string expression = 28;
     string join_status = 30;
-    WorkflowTask.CacheConfig cache_config = 31;
+    CacheConfig cache_config = 31;
     bool permissive = 32;
+    WorkflowTask.JoinMode join_mode = 34;
 }

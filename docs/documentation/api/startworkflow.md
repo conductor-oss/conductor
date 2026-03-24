@@ -1,98 +1,178 @@
+---
+description: "Start Conductor workflow executions — asynchronous, synchronous, and dynamic workflow execution via REST API with curl examples."
+---
+
 # Start Workflow API
 
-## API Parameters
-When starting a Workflow execution with a registered definition, `{{ api_prefix }}/workflow` accepts following parameters in the `POST` payload:
+## Start a Workflow (Asynchronous)
 
-| Field                           | Description                                                                                                                               | Notes                                                                                                   |
-|:--------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------|
-| name                            | Name of the Workflow. MUST be registered with Conductor before starting workflow                                                          |                                                                                                         |
-| version                         | Workflow version                                                                                                                          | defaults to latest available version                                                                    |
-| input                           | JSON object with key value params, that can be used by downstream tasks                                                                   | See [Wiring Inputs and Outputs](../configuration/workflowdef/index.md#wiring-inputs-and-outputs) for details |
-| correlationId                   | Unique Id that correlates multiple Workflow executions                                                                                    | optional                                                                                                |
-| taskToDomain                    | See [Task Domains](taskdomains.md) for more information.                                                   | optional                                                                                                |
-| workflowDef                     | An adhoc [Workflow Definition](../configuration/workflowdef/index.md) to run, without registering. See [Dynamic Workflows](#dynamic-workflows). | optional                                                                                                |
-| externalInputPayloadStoragePath | This is taken care of by Java client. See [External Payload Storage](../advanced/externalpayloadstorage.md) for more info.                        | optional                                                                                                |
-| priority                        | Priority level for the tasks within this workflow execution. Possible values are between 0 - 99.                                          | optional                                                                                                |
+```
+POST /api/workflow
+```
 
-## Output
-On success, this API returns the ID of the workflow.
+Starts a new workflow execution asynchronously. Returns the workflow ID immediately.
 
+### Request Body
 
-## Basic Example
+| Field | Description | Required |
+|---|---|---|
+| `name` | Workflow name (must be registered) | Yes |
+| `version` | Workflow version | No (defaults to latest) |
+| `input` | JSON object with input parameters for the workflow | No |
+| `correlationId` | Unique ID to correlate multiple workflow executions | No |
+| `taskToDomain` | Task-to-domain mapping. See [Task Domains](taskdomains.md). | No |
+| `workflowDef` | Inline [Workflow Definition](../configuration/workflowdef/index.md) for dynamic workflows. See [Dynamic Workflows](#dynamic-workflows). | No |
+| `externalInputPayloadStoragePath` | Path to external payload storage. See [External Payload Storage](../advanced/externalpayloadstorage.md). | No |
+| `priority` | Priority level (0–99) for tasks within this workflow | No |
 
-`POST {{ server_host }}{{ api_prefix }}/workflow` with payload body:
+### Example
 
-```js
-{
-  "name": "myWorkflow", // Name of the workflow
-  "version": 1, // Version
-  "correlationId": "corr1", // Correlation Id
-  "priority": 1, // Priority
-    "input": { // Input Value Map
-      "param1": "value1",
-      "param2": "value2"
+```shell
+curl -X POST 'http://localhost:8080/api/workflow' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "myWorkflow",
+    "version": 1,
+    "correlationId": "order-123",
+    "priority": 1,
+    "input": {
+      "customerId": "CUST-456",
+      "amount": 99.99
     },
-  "taskToDomain": {
-	// Task to domain map
-  }
+    "taskToDomain": {
+      "*": "mydomain"
+    }
+  }'
+```
+
+**Response** `200 OK` — returns the workflow ID as plain text:
+
+```
+3a5b8c2d-1234-5678-9abc-def012345678
+```
+
+### Start with Path Parameters
+
+```
+POST /api/workflow/{name}
+```
+
+Alternative way to start a workflow — specify the name in the path and pass input as the request body.
+
+| Parameter | Type | Description | Required |
+|---|---|---|---|
+| `name` | Path | Workflow name | Yes |
+| `version` | Query | Workflow version | No |
+| `correlationId` | Query | Correlation ID | No |
+| `priority` | Query | Priority 0–99 (default: 0) | No |
+
+```shell
+curl -X POST 'http://localhost:8080/api/workflow/myWorkflow?version=1&correlationId=order-123' \
+  -H 'Content-Type: application/json' \
+  -d '{"customerId": "CUST-456", "amount": 99.99}'
+```
+
+**Response** `200 OK` — returns the workflow ID as plain text.
+
+---
+
+## Execute a Workflow (Synchronous)
+
+```
+POST /api/workflow/execute/{name}/{version}
+```
+
+Starts a workflow and **waits for completion** (or a specified condition) before returning the result. This eliminates the need to poll for workflow status.
+
+| Parameter | Type | Description | Required |
+|---|---|---|---|
+| `name` | Path | Workflow name | Yes |
+| `version` | Path | Workflow version (use `0` for latest) | Yes |
+| `requestId` | Query | Idempotency key | No (auto-generated) |
+| `waitUntilTaskRef` | Query | Comma-separated task reference names to wait for | No |
+| `waitForSeconds` | Query | Maximum wait time in seconds | No (default: 10) |
+| `consistency` | Query | `DURABLE` or `EVENTUAL` | No (default: `DURABLE`) |
+| `returnStrategy` | Query | Controls which workflow state is returned | No (default: `TARGET_WORKFLOW`) |
+
+Request body: a StartWorkflowRequest object (same format as the [async start](#start-a-workflow-asynchronous)).
+
+### Example
+
+```shell
+curl -X POST 'http://localhost:8080/api/workflow/execute/my_workflow/1?waitForSeconds=30' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "my_workflow",
+    "version": 1,
+    "input": {
+      "url": "https://api.example.com/data"
+    }
+  }'
+```
+
+**Response** `200 OK` — returns the workflow execution result:
+
+```json
+{
+  "workflowId": "3a5b8c2d-1234-5678-9abc-def012345678",
+  "requestId": "req-uuid",
+  "status": "COMPLETED",
+  "output": {
+    "response": {...}
+  },
+  "tasks": [...]
 }
 ```
+
+### Wait Behavior
+
+- If `waitUntilTaskRef` is specified, the API returns when any listed task reaches a terminal state (or a WAIT task is encountered)
+- If the workflow completes before the timeout, the result is returned immediately
+- If the timeout is reached, the current workflow state is returned — the workflow continues running in the background
+- Sub-workflow WAIT tasks are detected recursively
+
+---
 
 ## Dynamic Workflows
 
-If the need arises to run a one-time workflow, and it doesn't make sense to register Task and Workflow definitions in Conductor Server, as it could change dynamically for each execution, dynamic workflow executions can be used.
+Start a one-time workflow without pre-registering its definition. Provide the full workflow definition inline via the `workflowDef` field.
 
-This enables you to provide a workflow definition embedded with the required task definitions to the Start Workflow Request in the `workflowDef` parameter, avoiding the need to register the blueprints before execution.
-
-**Example:**
-
-Send a `POST` request to `{{ api_prefix }}/workflow` with payload like:
-```json
-{
-  "name": "my_adhoc_unregistered_workflow",
-  "workflowDef": {
-    "ownerApp": "my_owner_app",
-    "ownerEmail": "my_owner_email@test.com",
-    "createdBy": "my_username",
-    "name": "my_adhoc_unregistered_workflow",
-    "description": "Test Workflow setup",
-    "version": 1,
-    "tasks": [
-    	{
-	        "name": "fetch_data",
-	        "type": "HTTP",
-	        "taskReferenceName": "fetch_data",
-	        "inputParameters": {
-	          "http_request": {
-	            "connectionTimeOut": "3600",
-	            "readTimeOut": "3600",
-	            "uri": "${workflow.input.uri}",
-	            "method": "GET",
-	            "accept": "application/json",
-	            "content-Type": "application/json",
-	            "headers": {
-	            }
-	          }
-	        },
-	        "taskDefinition": {
-	            "name": "fetch_data",
-			    "retryCount": 0,
-			    "timeoutSeconds": 3600,
-			    "timeoutPolicy": "TIME_OUT_WF",
-			    "retryLogic": "FIXED",
-			    "retryDelaySeconds": 0,
-			    "responseTimeoutSeconds": 3000
-	        }
-	    }
-    ],
-    "outputParameters": {
+```shell
+curl -X POST 'http://localhost:8080/api/workflow' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "my_adhoc_workflow",
+    "workflowDef": {
+      "ownerApp": "my_app",
+      "ownerEmail": "owner@example.com",
+      "name": "my_adhoc_workflow",
+      "version": 1,
+      "tasks": [
+        {
+          "name": "fetch_data",
+          "type": "HTTP",
+          "taskReferenceName": "fetch_data",
+          "inputParameters": {
+            "uri": "${workflow.input.uri}",
+            "method": "GET"
+          },
+          "taskDefinition": {
+            "name": "fetch_data",
+            "retryCount": 0,
+            "timeoutSeconds": 3600,
+            "timeoutPolicy": "TIME_OUT_WF",
+            "responseTimeoutSeconds": 3000
+          }
+        }
+      ]
+    },
+    "input": {
+      "uri": "https://api.example.com/data"
     }
-  },
-  "input": {
-    "uri": "http://www.google.com"
-  }
-}
+  }'
 ```
 
-!!! Note
-    If the `taskDefinition` is defined with Metadata API, it doesn't have to be added in above dynamic workflow definition.
+**Response** `200 OK` — returns the workflow ID as plain text.
+
+!!! note
+    If a `taskDefinition` is already registered via the Metadata API, it does not need to be included inline in the dynamic workflow definition.

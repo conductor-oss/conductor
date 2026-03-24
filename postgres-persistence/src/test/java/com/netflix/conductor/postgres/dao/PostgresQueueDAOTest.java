@@ -78,12 +78,18 @@ public class PostgresQueueDAOTest {
     @Before
     public void before() {
         try (Connection conn = dataSource.getConnection()) {
-            conn.setAutoCommit(true);
+            // Explicitly disable autoCommit to match HikariCP pool configuration
+            conn.setAutoCommit(false);
             String[] stmts =
-                    new String[] {"truncate table queue;", "truncate table queue_message;"};
+                    new String[] {
+                        "truncate table queue restart identity cascade;",
+                        "truncate table queue_message restart identity cascade;"
+                    };
             for (String stmt : stmts) {
                 conn.prepareStatement(stmt).executeUpdate();
             }
+            // Commit to ensure truncation is visible across connection pool
+            conn.commit();
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -215,6 +221,85 @@ public class PostgresQueueDAOTest {
             try (Query q = new Query(objectMapper, c, UNPOPPED)) {
                 long count = q.addParameter(queueName).executeCount();
                 assertEquals("Remaining queue size mismatch", expectedSize, count);
+            }
+        } catch (Exception ex) {
+            fail(ex.getMessage());
+        }
+    }
+
+    /**
+     * Test fix for https://github.com/conductor-oss/conductor/issues/369
+     *
+     * <p>Confirms that the queue is taken into account when popping messages from the queue.
+     */
+    @Test
+    public void pollMessagesDuplicatePopsTest() throws InterruptedException {
+        final List<Message> messages = new ArrayList<>();
+        final String queueName1 = "issue369_testQueue_1";
+        final String queueName2 = "issue369_testQueue_2";
+        final int totalSize = 10;
+
+        for (int i = 0; i < totalSize; i++) {
+            String payload = "{\"id\": " + i + ", \"msg\":\"test " + i + "\"}";
+            Message m = new Message("testmsg-" + i, payload, "");
+            if (i % 2 == 0) {
+                // Set priority on message with pair id
+                m.setPriority(99 - i);
+            }
+            messages.add(m);
+        }
+
+        // Populate the queue with our test message batch
+        queueDAO.push(queueName1, ImmutableList.copyOf(messages));
+
+        // Add same messages for queue 2, to make sure that the message_id is duplicated across
+        // queues
+        queueDAO.push(queueName2, ImmutableList.copyOf(messages));
+
+        // Assert that all messages were persisted and no extras are in there
+        assertEquals("Queue size mismatch", totalSize, queueDAO.getSize(queueName1));
+        assertEquals("Queue size mismatch", totalSize, queueDAO.getSize(queueName2));
+
+        List<Message> zeroPoll = queueDAO.pollMessages(queueName1, 0, 10_000);
+        assertTrue("Zero poll should be empty", zeroPoll.isEmpty());
+
+        final int firstPollSize = 3;
+        List<Message> firstPoll = queueDAO.pollMessages(queueName1, firstPollSize, 10_000);
+        assertNotNull("First poll was null", firstPoll);
+        assertFalse("First poll was empty", firstPoll.isEmpty());
+        assertEquals("First poll size mismatch", firstPollSize, firstPoll.size());
+
+        final int secondPollSize = 4;
+        List<Message> secondPoll = queueDAO.pollMessages(queueName1, secondPollSize, 10_000);
+        assertNotNull("Second poll was null", secondPoll);
+        assertFalse("Second poll was empty", secondPoll.isEmpty());
+        assertEquals("Second poll size mismatch", secondPollSize, secondPoll.size());
+
+        // Assert that the total queue 1 size hasn't changed
+        assertEquals(
+                "Total queue 1 size should have remained the same",
+                totalSize,
+                queueDAO.getSize(queueName1));
+
+        // Assert that the total queue 2 size hasn't changed
+        assertEquals(
+                "Total queue 2 size should have remained the same",
+                totalSize,
+                queueDAO.getSize(queueName2));
+
+        // Assert that our un-popped messages match our expected size
+        final long expectedSize = totalSize - firstPollSize - secondPollSize;
+        try (Connection c = dataSource.getConnection()) {
+            String UNPOPPED =
+                    "SELECT COUNT(*) FROM queue_message WHERE queue_name = ? AND popped = false";
+            try (Query q = new Query(objectMapper, c, UNPOPPED)) {
+                long count = q.addParameter(queueName1).executeCount();
+                assertEquals("Remaining queue 1 size mismatch", expectedSize, count);
+            }
+
+            try (Query q = new Query(objectMapper, c, UNPOPPED)) {
+                long count = q.addParameter(queueName2).executeCount();
+                assertEquals("Remaining queue 2 size mismatch", totalSize, count);
             }
         } catch (Exception ex) {
             fail(ex.getMessage());

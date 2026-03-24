@@ -36,8 +36,16 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.listener.TaskStatusListener;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.model.TaskModel;
 
 import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class)
@@ -267,5 +275,64 @@ public class ExecutionServiceTest {
                 executionService.getSearchTasksV2("query", "*", 0, 2, "Sort");
         assertEquals(1, searchResult.getTotalHits());
         assertEquals(Collections.singletonList(taskWorkflow1), searchResult.getResults());
+    }
+
+    @Test
+    public void testGetLastPollTaskAcksOnlyOnce() {
+        // Setup: create a TaskModel that poll() will process
+        String taskType = "test_task";
+        String workerId = "worker1";
+        String domain = null;
+        String taskId = "task-123";
+        String queueName = taskType; // QueueUtils.getQueueName with null domain = taskType
+
+        TaskModel taskModel = new TaskModel();
+        taskModel.setTaskId(taskId);
+        taskModel.setTaskType(taskType);
+        taskModel.setStatus(TaskModel.Status.SCHEDULED);
+        taskModel.setWorkflowInstanceId("wf-123");
+
+        // Mock: queueDAO.pop returns the task ID
+        when(queueDAO.pop(eq(queueName), eq(1), anyInt()))
+                .thenReturn(Collections.singletonList(taskId));
+
+        // Mock: executionDAOFacade returns the TaskModel (called twice: once in poll loop,
+        // once in the taskStatusListener notification block)
+        when(executionDAOFacade.getTaskModel(taskId)).thenReturn(taskModel);
+        when(executionDAOFacade.exceedsInProgressLimit(taskModel)).thenReturn(false);
+
+        // Mock: ack returns true (standard behavior for most QueueDAO implementations)
+        when(queueDAO.ack(eq(queueName), eq(taskId))).thenReturn(true);
+
+        // Act
+        Task result = executionService.getLastPollTask(taskType, workerId, domain);
+
+        // Assert: task was returned
+        assertNotNull(result);
+        assertEquals(taskId, result.getTaskId());
+
+        // Assert: queueDAO.ack was called exactly ONCE (inside poll()), not twice.
+        // This is the core assertion — before the fix, ack was called twice:
+        // once in poll() via tasks.forEach(this::ackTaskReceived), and again
+        // redundantly in getLastPollTask() after poll() returned.
+        verify(queueDAO, times(1)).ack(queueName, taskId);
+    }
+
+    @Test
+    public void testGetLastPollTaskReturnsNullWhenEmpty() {
+        String taskType = "test_task";
+        String workerId = "worker1";
+        String domain = null;
+        String queueName = taskType;
+
+        // Mock: queueDAO.pop returns empty list (no tasks available)
+        when(queueDAO.pop(eq(queueName), eq(1), anyInt())).thenReturn(Collections.emptyList());
+
+        // Act
+        Task result = executionService.getLastPollTask(taskType, workerId, domain);
+
+        // Assert: null returned, no ack called
+        assertNull(result);
+        verify(queueDAO, times(0)).ack(anyString(), anyString());
     }
 }

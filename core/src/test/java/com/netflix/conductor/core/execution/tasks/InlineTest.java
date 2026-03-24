@@ -19,6 +19,7 @@ import org.junit.Test;
 
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
+import com.netflix.conductor.core.execution.evaluators.GraalJSEvaluator;
 import com.netflix.conductor.core.execution.evaluators.JavascriptEvaluator;
 import com.netflix.conductor.core.execution.evaluators.ValueParamEvaluator;
 import com.netflix.conductor.model.TaskModel;
@@ -132,10 +133,51 @@ public class InlineTest {
                 true, ((Map<String, Object>) task.getOutputData().get("result")).get("evalResult"));
     }
 
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testInlineGraalJSEvaluatorType() {
+        Inline inline = new Inline(getStringEvaluatorMap());
+
+        Map<String, Object> inputObj = new HashMap<>();
+        inputObj.put("value", 42);
+        inputObj.put(
+                "expression",
+                "function e() { if ($.value == 42){return {\"evalResult\": true}} else { return {\"evalResult\": false}}} e();");
+        inputObj.put("evaluatorType", "graaljs");
+
+        TaskModel task = new TaskModel();
+        task.getInputData().putAll(inputObj);
+
+        inline.execute(workflow, task, executor);
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        assertNull(task.getReasonForIncompletion());
+        assertEquals(
+                true, ((Map<String, Object>) task.getOutputData().get("result")).get("evalResult"));
+    }
+
+    @Test
+    public void testInlineDefaultEvaluatorType() {
+        Inline inline = new Inline(getStringEvaluatorMap());
+
+        Map<String, Object> inputObj = new HashMap<>();
+        inputObj.put("value", 99);
+        inputObj.put("expression", "function e() { return {\"result\": $.value * 2}} e();");
+        // No evaluatorType specified - should default to "javascript"
+
+        TaskModel task = new TaskModel();
+        task.getInputData().putAll(inputObj);
+
+        inline.execute(workflow, task, executor);
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        assertNull(task.getReasonForIncompletion());
+        assertEquals(198, ((Map<String, Object>) task.getOutputData().get("result")).get("result"));
+    }
+
     private Map<String, Evaluator> getStringEvaluatorMap() {
         Map<String, Evaluator> evaluators = new HashMap<>();
         evaluators.put(ValueParamEvaluator.NAME, new ValueParamEvaluator());
         evaluators.put(JavascriptEvaluator.NAME, new JavascriptEvaluator());
+        evaluators.put(GraalJSEvaluator.NAME, new GraalJSEvaluator());
         return evaluators;
     }
 }

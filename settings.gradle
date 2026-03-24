@@ -11,32 +11,16 @@
  *  specific language governing permissions and limitations under the License.
  */
 
-plugins {
-    id "com.gradle.enterprise" version "3.11.1"
-}
-
-gradleEnterprise {
-    buildScan {
-        termsOfServiceUrl = "https://gradle.com/terms-of-service"
-        termsOfServiceAgree = "yes"
-        publishAlways()
-
-        buildScanPublished { scan ->
-            file("buildscan.log") << "${new Date()} - ${scan.buildScanUri}\n"
-        }
-    }
-}
-
 rootProject.name = 'conductor'
 
+include 'ai'
 include 'annotations'
 include 'annotations-processor'
 
 include 'server'
+include 'server-lite'
 include 'common'
 include 'core'
-include 'client'
-include 'client-spring'
 
 include 'cassandra-persistence'
 include 'redis-persistence'
@@ -58,8 +42,6 @@ include 'grpc'
 include 'grpc-server'
 include 'grpc-client'
 
-include 'java-sdk'
-
 // community modules
 include 'workflow-event-listener'
 include 'task-status-listener'
@@ -68,15 +50,24 @@ include 'kafka'
 include 'common-persistence'
 include 'mysql-persistence'
 include 'postgres-persistence'
+include 'sqlite-persistence'
 include 'metrics'
 include 'es7-persistence'
+include 'es8-persistence'
+include 'os-persistence'
+include 'os-persistence-v2'
+include 'os-persistence-v3'
 include 'azureblob-storage'
 include 'postgres-external-storage'
 include 'amqp'
 include 'nats'
 include 'nats-streaming'
+include 'kafka-event-queue'
 
 include 'test-harness'
 
+include 'scheduler'
+include 'scheduler-postgres-persistence'
+include 'scheduler-mysql-persistence'
 
 rootProject.children.each {it.name="conductor-${it.name}"}

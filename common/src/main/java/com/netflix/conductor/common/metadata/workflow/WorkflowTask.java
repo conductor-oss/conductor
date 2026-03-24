@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import com.netflix.conductor.annotations.protogen.ProtoEnum;
 import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -37,32 +38,6 @@ import jakarta.validation.constraints.*;
  */
 @ProtoMessage
 public class WorkflowTask {
-
-    @ProtoMessage
-    public static class CacheConfig {
-
-        @ProtoField(id = 1)
-        private String key;
-
-        @ProtoField(id = 2)
-        private int ttlInSecond;
-
-        public String getKey() {
-            return key;
-        }
-
-        public void setKey(String key) {
-            this.key = key;
-        }
-
-        public int getTtlInSecond() {
-            return ttlInSecond;
-        }
-
-        public void setTtlInSecond(int ttlInSecond) {
-            this.ttlInSecond = ttlInSecond;
-        }
-    }
 
     @ProtoField(id = 1)
     @NotEmpty(message = "WorkflowTask name cannot be empty or null")
@@ -163,6 +138,9 @@ public class WorkflowTask {
     @ProtoField(id = 25)
     private List<WorkflowTask> loopOver = new LinkedList<>();
 
+    @ProtoField(id = 33)
+    private String items;
+
     @ProtoField(id = 26)
     private Integer retryCount;
 
@@ -187,6 +165,16 @@ public class WorkflowTask {
 
     @ProtoField(id = 32)
     private boolean permissive;
+
+    /** Controls whether a JOIN task is evaluated synchronously (no backoff) or asynchronously. */
+    @ProtoEnum
+    public enum JoinMode {
+        SYNC,
+        ASYNC
+    }
+
+    @ProtoField(id = 34)
+    private JoinMode joinMode;
 
     /**
      * @return the name
@@ -490,6 +478,21 @@ public class WorkflowTask {
     }
 
     /**
+     * @return the items parameter for list iteration in DO_WHILE tasks. Can be a workflow
+     *     expression like "${workflow.input.myList}" or a direct reference.
+     */
+    public String getItems() {
+        return items;
+    }
+
+    /**
+     * @param items the items parameter to set for list iteration in DO_WHILE tasks
+     */
+    public void setItems(String items) {
+        this.items = items;
+    }
+
+    /**
      * @return Sink value for the EVENT type of task
      */
     public String getSink() {
@@ -607,6 +610,20 @@ public class WorkflowTask {
 
     public void setPermissive(boolean permissive) {
         this.permissive = permissive;
+    }
+
+    /**
+     * @return the join mode (SYNC or ASYNC)
+     */
+    public JoinMode getJoinMode() {
+        return joinMode;
+    }
+
+    /**
+     * @param joinMode the join mode to set
+     */
+    public void setJoinMode(JoinMode joinMode) {
+        this.joinMode = joinMode;
     }
 
     private Collection<List<WorkflowTask>> children() {

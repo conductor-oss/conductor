@@ -23,6 +23,9 @@ public class RedisLockProperties {
     /** The address of the redis server following format -- host:port */
     private String serverAddress = "redis://127.0.0.1:6379";
 
+    /** The username for redis authentication (Redis 6+). Default to null when not needed. */
+    private String serverUsername = null;
+
     /** The password for redis authentication */
     private String serverPassword = null;
 
@@ -53,6 +56,9 @@ public class RedisLockProperties {
      */
     private boolean ignoreLockingExceptions = false;
 
+    /** Interval in milliseconds to check the endpoint's DNS (Set -1 to disable). */
+    private long dnsMonitoringInterval = 5000L;
+
     public REDIS_SERVER_TYPE getServerType() {
         return serverType;
     }
@@ -67,6 +73,14 @@ public class RedisLockProperties {
 
     public void setServerAddress(String serverAddress) {
         this.serverAddress = serverAddress;
+    }
+
+    public String getServerUsername() {
+        return serverUsername;
+    }
+
+    public void setServerUsername(String serverUsername) {
+        this.serverUsername = serverUsername;
     }
 
     public String getServerPassword() {
@@ -141,6 +155,14 @@ public class RedisLockProperties {
 
     public void setClusterPrimaryConnectionPoolSize(Integer clusterPrimaryConnectionPoolSize) {
         this.clusterPrimaryConnectionPoolSize = clusterPrimaryConnectionPoolSize;
+    }
+
+    public long getDnsMonitoringInterval() {
+        return dnsMonitoringInterval;
+    }
+
+    public void setDnsMonitoringInterval(long dnsMonitoringInterval) {
+        this.dnsMonitoringInterval = dnsMonitoringInterval;
     }
 
     public enum REDIS_SERVER_TYPE {

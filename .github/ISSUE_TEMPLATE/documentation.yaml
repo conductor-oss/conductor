@@ -1,0 +1,24 @@
+name: Documentation
+description: Report an issue related to https://docs.conductor-oss.org/index.html
+
+body:
+- type: markdown
+  attributes:
+    value: >
+      #### Note: Please report your documentation issue in English to ensure it can be understood and addressed by the development team.
+- type: textarea
+  attributes:
+    label: The doc issue
+    description: >
+      A clear and concise description of what content on https://docs.conductor-oss.org/index.html is an issue. 
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Suggest a potential alternative/fix
+    description: >
+      Tell us how we could improve the documentation in this regard.
+- type: markdown
+  attributes:
+    value: >
+      Thanks for contributing!
