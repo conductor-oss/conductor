@@ -1,3 +1,4 @@
+-- flyway:nonTransactional
 DROP INDEX IF EXISTS combo_queue_message;
 
 CREATE INDEX combo_queue_message
