@@ -42,9 +42,7 @@ import { IScheduleDto, IStartWorkflowRequest } from "types/Schedulers";
 import { TagDto } from "types/Tag";
 import { HTTPMethods } from "types/TaskType";
 import { getSequentiallySuffix, logger } from "utils";
-import {
-  getScheduleCronSchedules,
-} from "pages/scheduler/utils/cronSchedules";
+import { getScheduleCronSchedules } from "pages/scheduler/utils/cronSchedules";
 import {
   ACTIVE_FILTER_QUERY_PARAM,
   generateForbiddenMessage,
