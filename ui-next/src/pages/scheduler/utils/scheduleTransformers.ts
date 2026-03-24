@@ -1,8 +1,10 @@
 import _get from "lodash/get";
+import { ICronSchedule } from "types/Schedulers";
 import { timestampRendererLocal } from "utils/index";
 import { tryToJson } from "utils/index";
 import { WorkflowDef } from "types/WorkflowDef";
 import { ScheduleType } from "../Schedule";
+import { DEFAULT_CRON_ZONE } from "./cronSchedules";
 
 /**
  * Parse JSON string safely, returning null for empty strings
@@ -48,13 +50,28 @@ export function formToCodeData(
     return null;
   }
 
+  const cronPayload =
+    scheduleState.cronMode === "multi"
+      ? {
+          cronSchedules: scheduleState.cronSchedules?.map(
+            (entry: ICronSchedule) => ({
+              cronExpression: entry.cronExpression,
+              zoneId: entry.zoneId || DEFAULT_CRON_ZONE,
+            }),
+          ),
+        }
+      : {
+          cronExpression: scheduleState.cronExpression,
+          zoneId: scheduleState.zoneId || DEFAULT_CRON_ZONE,
+        };
+
   const body = {
     id: _get(schedule, "id"),
     paused: scheduleState.paused,
     runCatchupScheduleInstances: scheduleState.runCatchupScheduleInstances,
     name: scheduleState.name,
     description: scheduleState.description,
-    cronExpression: scheduleState.cronExpression,
+    ...cronPayload,
     scheduleStartTime: start,
     scheduleEndTime: to,
     startWorkflowRequest: {
@@ -70,7 +87,6 @@ export function formToCodeData(
         scheduleState.externalInputPayloadStoragePath,
       priority: scheduleState.priority,
     },
-    zoneId: scheduleState.zoneId,
   };
 
   return body;
@@ -88,6 +104,16 @@ export function codeToFormData(
     name: changedData?.name || "",
     description: changedData?.description || "",
     cronExpression: changedData?.cronExpression || "",
+    cronSchedules: (changedData?.cronSchedules || []).map(
+      (entry: ICronSchedule) => ({
+        cronExpression: entry?.cronExpression || "",
+        zoneId: entry?.zoneId || DEFAULT_CRON_ZONE,
+      }),
+    ),
+    cronMode:
+      changedData?.cronSchedules && changedData?.cronSchedules.length > 0
+        ? ("multi" as const)
+        : ("single" as const),
     runCatchupScheduleInstances: !!changedData?.runCatchupScheduleInstances,
     paused: !!changedData?.paused,
     workflowType: changedData?.startWorkflowRequest?.name,
@@ -121,7 +147,7 @@ export function codeToFormData(
     scheduleEndTime: changedData?.scheduleEndTime
       ? timestampRendererLocal(changedData?.scheduleEndTime)
       : "",
-    zoneId: changedData?.zoneId,
+    zoneId: changedData?.zoneId || DEFAULT_CRON_ZONE,
   };
 
   return body;

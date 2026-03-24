@@ -43,6 +43,10 @@ import { TagDto } from "types/Tag";
 import { HTTPMethods } from "types/TaskType";
 import { getSequentiallySuffix, logger } from "utils";
 import {
+  getEarliestCronScheduleNextRun,
+  getScheduleCronSchedules,
+} from "pages/scheduler/utils/cronSchedules";
+import {
   ACTIVE_FILTER_QUERY_PARAM,
   generateForbiddenMessage,
 } from "utils/constants/common";
@@ -99,18 +103,37 @@ const searchableWorkflow = (workflow: IStartWorkflowRequest) => {
     : `${workflow.name} - Latest`;
 };
 
+const humanizeCronExpression = (cronExpression: string) => {
+  try {
+    return cronstrue.toString(cronExpression);
+  } catch {
+    return cronExpression;
+  }
+};
+
 const columns = [
   {
     id: "cronExpression",
     name: "cronExpression",
     label: "Cron expression",
-    renderer: (cron: string) => {
-      if (!cron) {
+    renderer: (cron: string, row: IScheduleDto) => {
+      const cronSchedules = getScheduleCronSchedules(row);
+      if (!cronSchedules.length) {
         return "";
       }
+
+      const cronDescriptions = cronSchedules.map((entry) => {
+        const expression = entry.cronExpression || cron;
+        const timezone = entry.zoneId || row.zoneId || "UTC";
+        return `${humanizeCronExpression(expression)} (${timezone})`;
+      });
+      const tooltipText = cronSchedules
+        .map((entry) => entry.cronExpression || cron)
+        .join(" | ");
+
       return (
-        <Tooltip title={cron}>
-          <span>{cron ? cronstrue.toString(cron) : ""}</span>
+        <Tooltip title={tooltipText}>
+          <span>{cronDescriptions.join(" | ")}</span>
         </Tooltip>
       );
     },
