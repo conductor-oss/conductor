@@ -1,3 +1,7 @@
+---
+description: "Choose the right task type for your Conductor workflow — system tasks, operators, and worker tasks for microservice orchestration and workflow automation."
+---
+
 # Choosing Tasks
 
 Tasks are the building blocks of Conductor workflows. In this guide, familiarise yourself with the tasks available in Conductor OSS and the differences between each of them.

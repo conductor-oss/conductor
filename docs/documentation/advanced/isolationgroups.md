@@ -1,3 +1,6 @@
+---
+description: "Isolation Groups — isolate Conductor system task execution into dedicated queues and thread pools for predictable performance."
+---
 # Isolation Groups
 
 Consider an HTTP task where the latency of an API is high, task queue piles up effecting execution of other HTTP tasks which have low latency.
