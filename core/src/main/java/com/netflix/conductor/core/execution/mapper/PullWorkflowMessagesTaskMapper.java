@@ -30,9 +30,9 @@ import com.netflix.conductor.model.WorkflowModel;
 /**
  * {@link TaskMapper} for the {@code PULL_WORKFLOW_MESSAGES} system task type.
  *
- * <p>Creates an {@code IN_PROGRESS} task with the caller's input parameters (notably
- * {@code batchSize}) resolved. The system task worker picks it up and calls
- * {@link PullWorkflowMessages#execute} on each poll cycle until messages arrive.
+ * <p>Creates an {@code IN_PROGRESS} task with the caller's input parameters (notably {@code
+ * batchSize}) resolved. The system task worker picks it up and calls {@link
+ * PullWorkflowMessages#execute} on each poll cycle until messages arrive.
  */
 @Component
 @ConditionalOnProperty(name = "conductor.workflow-message-queue.enabled", havingValue = "true")

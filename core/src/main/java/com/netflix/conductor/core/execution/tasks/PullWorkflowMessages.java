@@ -32,11 +32,13 @@ import com.netflix.conductor.model.WorkflowModel;
  * pops up to {@code batchSize} messages and completes with the messages in the output.
  *
  * <p>Input parameters:
+ *
  * <ul>
  *   <li>{@code batchSize} (int, default 1) — maximum number of messages to pull per invocation
  * </ul>
  *
  * <p>Output:
+ *
  * <ul>
  *   <li>{@code messages} — list of {@link WorkflowMessage} objects
  *   <li>{@code count} — number of messages actually returned

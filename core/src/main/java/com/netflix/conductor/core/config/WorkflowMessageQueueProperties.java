@@ -34,14 +34,12 @@ public class WorkflowMessageQueueProperties {
      */
     private int maxQueueSize = 1000;
 
-    /**
-     * TTL in seconds applied to the Redis key. Reset on every push. Default is 24 hours.
-     */
+    /** TTL in seconds applied to the Redis key. Reset on every push. Default is 24 hours. */
     private long ttlSeconds = 86400;
 
     /**
-     * Server-side upper bound on {@code batchSize} for any single PULL_WORKFLOW_MESSAGES
-     * execution. Prevents runaway batch sizes.
+     * Server-side upper bound on {@code batchSize} for any single PULL_WORKFLOW_MESSAGES execution.
+     * Prevents runaway batch sizes.
      */
     private int maxBatchSize = 100;
 

@@ -27,13 +27,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Registers the Redis-backed {@link WorkflowMessageQueueDAO} when both:
+ *
  * <ol>
- *   <li>The WMQ feature is enabled ({@code conductor.workflow-message-queue.enabled=true})</li>
- *   <li>A Redis data store is configured ({@code conductor.db.type} is a Redis variant)</li>
+ *   <li>The WMQ feature is enabled ({@code conductor.workflow-message-queue.enabled=true})
+ *   <li>A Redis data store is configured ({@code conductor.db.type} is a Redis variant)
  * </ol>
  *
- * <p>When active, this bean takes precedence over the in-memory fallback registered by
- * {@code WorkflowMessageQueueConfiguration} in the core module (via {@code @ConditionalOnMissingBean}).
+ * <p>When active, this bean takes precedence over the in-memory fallback registered by {@code
+ * WorkflowMessageQueueConfiguration} in the core module (via {@code @ConditionalOnMissingBean}).
  */
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(name = "conductor.workflow-message-queue.enabled", havingValue = "true")
