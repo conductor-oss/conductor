@@ -15,4 +15,7 @@ dependencies {
     implementation project(':conductor-core')
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-web'
+    compileOnly "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
