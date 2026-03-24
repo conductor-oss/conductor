@@ -102,6 +102,22 @@ public class JedisProxy {
         return jedisCommands.del(key);
     }
 
+    public Long llen(String key) {
+        return jedisCommands.llen(key);
+    }
+
+    public Long rpush(String key, String... values) {
+        return jedisCommands.rpush(key, values);
+    }
+
+    public List<String> lrange(String key, long start, long end) {
+        return jedisCommands.lrange(key, start, end);
+    }
+
+    public String ltrim(String key, long start, long end) {
+        return jedisCommands.ltrim(key, start, end);
+    }
+
     public Long zrem(String key, String member) {
         return jedisCommands.zrem(key, member);
     }
