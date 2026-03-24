@@ -1231,6 +1231,7 @@ export const workflowDefinitionMachine = createMachine<
                     actions: [
                       "persistWorkflowChanges",
                       "notifyFlowUpdatesFromEvent",
+                      "sendWorkflowChangesToMetadataMachine",
                     ],
                     target: "idle",
                   },
