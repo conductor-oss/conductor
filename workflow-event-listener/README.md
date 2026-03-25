@@ -111,3 +111,58 @@ conductor.workflow-status-listener.kafka.event-topics.completed=workflow-complet
 conductor.workflow-status-listener.kafka.event-topics.terminated=workflow-terminated-events
 conductor.workflow-status-listener.kafka.event-topics.started=workflow-started-events
 ```
+
+### Composite Publisher (Multiple Listeners)
+Publish workflow events to multiple destinations simultaneously.
+
+This allows you to enable multiple workflow status listeners at once, such as publishing to both Kafka and webhooks, 
+or archiving workflows while also sending them to queues.
+
+```properties
+conductor.workflow-status-listener.type=composite
+
+# List the listeners to enable (comma-separated)
+conductor.workflow-status-listener.composite.types=kafka,workflow_publisher,queue_publisher
+
+# Each listener retains its existing configuration namespace
+
+# Kafka configuration
+conductor.workflow-status-listener.kafka.producer[bootstrap.servers]=kafka:29092
+conductor.workflow-status-listener.kafka.default-topic=workflow-events
+conductor.workflow-status-listener.kafka.event-topics.completed=workflow-completed
+conductor.workflow-status-listener.kafka.event-topics.terminated=workflow-terminated
+
+# Workflow publisher (webhook) configuration
+conductor.status-notifier.notification.url=http://webhook-endpoint:8080/workflow-events
+conductor.status-notifier.notification.subscribed-workflow-statuses=RUNNING,COMPLETED,FAILED
+
+# Queue publisher configuration
+conductor.workflow-status-listener.queue-publisher.successQueue=_callbackSuccessQueue
+conductor.workflow-status-listener.queue-publisher.failureQueue=_callbackFailureQueue
+conductor.workflow-status-listener.queue-publisher.finalizeQueue=_callbackFinalizeQueue
+```
+
+**Supported listener types:**
+- `kafka` - Publish to Kafka topics
+- `queue_publisher` - Publish to Conductor queues
+- `workflow_publisher` - Publish to HTTP webhooks
+- `archive` - Archive workflows to storage
+
+**Benefits:**
+- **Independent failure domains** - If one listener fails (e.g., Kafka is down), others continue working
+- **Different consumption patterns** - Stream to Kafka, queue for internal automations, webhook for external integrations
+- **Backward compatible** - Existing single-listener configurations continue to work unchanged
+- **Error isolation** - Exceptions in one listener don't affect others
+
+**Example use case:**
+```properties
+# Send to Kafka for analytics + Archive completed workflows
+conductor.workflow-status-listener.type=composite
+conductor.workflow-status-listener.composite.types=kafka,archive
+
+conductor.workflow-status-listener.kafka.producer[bootstrap.servers]=kafka:29092
+conductor.workflow-status-listener.kafka.default-topic=workflow-events
+
+conductor.workflow-status-listener.archival.ttlDuration=0
+conductor.workflow-status-listener.archival.delayQueueWorkerThreadCount=5
+```
