@@ -385,8 +385,7 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
 
     @Override
     public long getWorkflowCount() {
-        return queryWithTransaction(
-                "SELECT COUNT(*) FROM workflow", q -> q.executeCount());
+        return queryWithTransaction("SELECT COUNT(*) FROM workflow", q -> q.executeCount());
     }
 
     /**

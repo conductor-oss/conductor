@@ -78,7 +78,9 @@ public class AdminResource {
     }
 
     @PostMapping("/reindex")
-    @Operation(summary = "Start async reindex of all workflows and tasks from database to search index")
+    @Operation(
+            summary =
+                    "Start async reindex of all workflows and tasks from database to search index")
     public Map<String, Object> startReindex() {
         return adminService.startReindex();
     }

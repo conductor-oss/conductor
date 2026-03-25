@@ -51,7 +51,10 @@ public class AdminServiceImpl implements AdminService {
 
     // ---- reindex state ----
     private enum ReindexState {
-        IDLE, RUNNING, COMPLETED, FAILED
+        IDLE,
+        RUNNING,
+        COMPLETED,
+        FAILED
     }
 
     private final AtomicReference<ReindexState> reindexState =
@@ -183,9 +186,11 @@ public class AdminServiceImpl implements AdminService {
         } catch (UnsupportedOperationException e) {
             Map<String, Object> result = new HashMap<>();
             result.put("state", "UNSUPPORTED");
-            result.put("message",
+            result.put(
+                    "message",
                     "Reindex is not supported by the current persistence backend ("
-                            + executionDAO.getClass().getSimpleName() + ")");
+                            + executionDAO.getClass().getSimpleName()
+                            + ")");
             return result;
         }
 
@@ -208,7 +213,9 @@ public class AdminServiceImpl implements AdminService {
 
         Map<String, Object> result = new HashMap<>();
         result.put("state", "STARTED");
-        result.put("message", "Reindex job started. Use GET /api/admin/reindex/status to track progress.");
+        result.put(
+                "message",
+                "Reindex job started. Use GET /api/admin/reindex/status to track progress.");
         return result;
     }
 
@@ -262,8 +269,7 @@ public class AdminServiceImpl implements AdminService {
                 }
 
                 offset += batchSize;
-                LOGGER.info(
-                        "Reindex progress: {}/{}", reindexProcessed.get(), reindexTotal.get());
+                LOGGER.info("Reindex progress: {}/{}", reindexProcessed.get(), reindexTotal.get());
             }
 
             reindexMessage =
