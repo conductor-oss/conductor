@@ -39,14 +39,12 @@ import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
-import org.springframework.retry.support.RetryTemplate;
-
-import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
 import org.springframework.ai.vertexai.embedding.text.VertexAiTextEmbeddingModel;
 import org.springframework.ai.vertexai.embedding.text.VertexAiTextEmbeddingOptions;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
+import org.springframework.retry.support.RetryTemplate;
 
 import com.google.api.gax.core.FixedCredentialsProvider;
 import com.google.cloud.aiplatform.v1.PredictionServiceSettings;
@@ -61,6 +59,7 @@ import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.PrebuiltVoiceConfig;
 import com.google.genai.types.SpeechConfig;
 import com.google.genai.types.VoiceConfig;
+import io.micrometer.observation.ObservationRegistry;
 import lombok.SneakyThrows;
 
 public class GeminiVertex implements AIModel {
@@ -115,7 +114,10 @@ public class GeminiVertex implements AIModel {
             Client genAiClient = createGenAIClient();
             return new GoogleGenAiChatModel(
                     genAiClient,
-                    GoogleGenAiChatOptions.builder().build(),
+                    GoogleGenAiChatOptions.builder()
+                            .model("gemini-2.5-flash") // default, overridden per-call by
+                            // getChatOptions()
+                            .build(),
                     DefaultToolCallingManager.builder().build(),
                     RetryTemplate.defaultInstance(),
                     ObservationRegistry.NOOP);
@@ -255,8 +257,7 @@ public class GeminiVertex implements AIModel {
             callbacks.add(
                     new ToolCallback() {
                         @Override
-                        public ToolDefinition
-                                getToolDefinition() {
+                        public ToolDefinition getToolDefinition() {
                             return toolDef;
                         }
 

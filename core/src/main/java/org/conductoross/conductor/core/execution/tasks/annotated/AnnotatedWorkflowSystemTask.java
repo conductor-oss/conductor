@@ -127,9 +127,9 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
     }
 
     /**
-     * Walk the exception cause chain to build a message that includes the root cause.
-     * This prevents wrapper exceptions (e.g. "Failed to generate content") from hiding
-     * the actual error (e.g. "404: This model is no longer available").
+     * Walk the exception cause chain to build a message that includes the root cause. This prevents
+     * wrapper exceptions (e.g. "Failed to generate content") from hiding the actual error (e.g.
+     * "404: This model is no longer available").
      */
     private String getRootCauseMessage(Throwable t) {
         if (t == null) return "unknown error";
