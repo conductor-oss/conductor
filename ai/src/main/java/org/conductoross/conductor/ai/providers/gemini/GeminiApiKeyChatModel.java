@@ -13,12 +13,13 @@
 package org.conductoross.conductor.ai.providers.gemini;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
@@ -49,14 +50,15 @@ import com.google.genai.types.Tool;
  * generativelanguage.googleapis.com} endpoint which accepts Google AI Studio API keys directly — no
  * GCP IAM credentials or service accounts required.
  *
- * <p>Supports tool/function calling: Spring AI tool definitions are converted to GenAI
- * {@link FunctionDeclaration} objects, and GenAI {@link FunctionCall} responses are mapped back to
- * Spring AI {@link AssistantMessage.ToolCall} objects.
+ * <p>Supports tool/function calling: Spring AI tool definitions are converted to GenAI {@link
+ * FunctionDeclaration} objects, and GenAI {@link FunctionCall} responses are mapped back to Spring
+ * AI {@link AssistantMessage.ToolCall} objects.
  *
  * @see GeminiVertex#getChatModel()
  */
 class GeminiApiKeyChatModel implements ChatModel {
 
+    private static final Logger log = LoggerFactory.getLogger(GeminiApiKeyChatModel.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final Client client;
@@ -205,9 +207,7 @@ class GeminiApiKeyChatModel implements ChatModel {
         return null;
     }
 
-    /**
-     * Extract tool definitions from the prompt's options and convert to GenAI Tool format.
-     */
+    /** Extract tool definitions from the prompt's options and convert to GenAI Tool format. */
     @SuppressWarnings("unchecked")
     private List<Tool> extractTools(Prompt prompt) {
         if (prompt.getOptions() == null) return List.of();
@@ -218,9 +218,11 @@ class GeminiApiKeyChatModel implements ChatModel {
             var method = options.getClass().getMethod("getToolCallbacks");
             callbacks = (List<ToolCallback>) method.invoke(options);
         } catch (Exception e) {
+            log.warn("Failed to extract tool callbacks from options: {}", e.getMessage());
             return List.of();
         }
 
+        log.info("Extracted {} tool callbacks from prompt options", callbacks.size());
         if (callbacks == null || callbacks.isEmpty()) return List.of();
 
         List<FunctionDeclaration> declarations = new ArrayList<>();
