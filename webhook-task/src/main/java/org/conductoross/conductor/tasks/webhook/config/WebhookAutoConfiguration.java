@@ -12,34 +12,60 @@
  */
 package org.conductoross.conductor.tasks.webhook.config;
 
+import java.util.List;
+
+import org.conductoross.conductor.tasks.webhook.IncomingWebhookResource;
+import org.conductoross.conductor.tasks.webhook.IncomingWebhookService;
 import org.conductoross.conductor.tasks.webhook.WebhookConfigDAO;
 import org.conductoross.conductor.tasks.webhook.WebhookConfigService;
+import org.conductoross.conductor.tasks.webhook.WebhookHashingService;
+import org.conductoross.conductor.tasks.webhook.WebhookOrgContextProvider;
+import org.conductoross.conductor.tasks.webhook.WebhookTaskDAO;
+import org.conductoross.conductor.tasks.webhook.WebhookVerifier;
 import org.conductoross.conductor.tasks.webhook.WebhooksConfigResource;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 
+import com.netflix.conductor.core.dal.ExecutionDAOFacade;
+import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.dao.MetadataDAO;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 /**
  * Spring auto-configuration for the {@code webhook-task} module.
  *
- * <p>The in-memory DAO beans ({@code InMemoryWebhookTaskDAO}, {@code InMemoryWebhookConfigDAO}) and
- * the system task ({@code WaitForWebhookTask}) carry {@code @Component} annotations and are
- * discovered via the server's component scan of {@code org.conductoross.conductor}. This class only
- * wires the service and REST layer, which have no {@code @Component} annotation of their own.
+ * <p>The in-memory DAO beans ({@code InMemoryWebhookTaskDAO}, {@code InMemoryWebhookConfigDAO}),
+ * the system task ({@code WaitForWebhookTask}), and the verifier ({@code HeaderBasedVerifier})
+ * carry {@code @Component} annotations and are discovered via the server's component scan of {@code
+ * org.conductoross.conductor}. This class wires the service and REST layer beans, which carry no
+ * {@code @Component} annotation of their own.
  *
- * <p>Enterprise deployments replace the DAO beans with durable implementations (Postgres, Redis) as
- * Spring beans — the {@code @ConditionalOnMissingBean} guards on the in-memory implementations
- * ensure they are skipped automatically.
+ * <p>Enterprise deployments replace DAO beans or inject alternative verifiers/providers as Spring
+ * beans — the {@code @ConditionalOnMissingBean} guards ensure the defaults are skipped.
  */
 @AutoConfiguration
 public class WebhookAutoConfiguration {
 
+    /**
+     * No-op {@link WebhookOrgContextProvider} for single-tenant OSS deployments. Orkes Enterprise
+     * registers its own implementation that extracts orgId from the webhook ID and sets {@code
+     * OrkesRequestContext}.
+     */
     @Bean
     @ConditionalOnMissingBean
-    @ConditionalOnBean(WebhookConfigDAO.class)
-    public WebhookConfigService webhookConfigService(WebhookConfigDAO webhookConfigDAO) {
-        return new WebhookConfigService(webhookConfigDAO);
+    public WebhookOrgContextProvider noOpWebhookOrgContextProvider() {
+        return webhookId -> {}; // single-tenant: no org context needed
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnBean({WebhookConfigDAO.class, MetadataDAO.class})
+    public WebhookConfigService webhookConfigService(
+            WebhookConfigDAO webhookConfigDAO, MetadataDAO metadataDAO) {
+        return new WebhookConfigService(webhookConfigDAO, metadataDAO);
     }
 
     @Bean
@@ -48,5 +74,41 @@ public class WebhookAutoConfiguration {
     public WebhooksConfigResource webhooksConfigResource(
             WebhookConfigService webhookConfigService) {
         return new WebhooksConfigResource(webhookConfigService);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnBean({
+        WebhookConfigDAO.class,
+        WebhookTaskDAO.class,
+        WebhookHashingService.class,
+        ExecutionDAOFacade.class,
+        WorkflowExecutor.class
+    })
+    public IncomingWebhookService incomingWebhookService(
+            WebhookConfigDAO webhookConfigDAO,
+            WebhookTaskDAO webhookTaskDAO,
+            WebhookHashingService webhookHashingService,
+            List<WebhookVerifier> verifiers,
+            ExecutionDAOFacade executionDAOFacade,
+            WorkflowExecutor workflowExecutor,
+            ObjectMapper objectMapper) {
+        return new IncomingWebhookService(
+                webhookConfigDAO,
+                webhookTaskDAO,
+                webhookHashingService,
+                verifiers,
+                executionDAOFacade,
+                workflowExecutor,
+                objectMapper);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnBean({IncomingWebhookService.class, WebhookOrgContextProvider.class})
+    public IncomingWebhookResource incomingWebhookResource(
+            IncomingWebhookService incomingWebhookService,
+            WebhookOrgContextProvider orgContextProvider) {
+        return new IncomingWebhookResource(incomingWebhookService, orgContextProvider);
     }
 }

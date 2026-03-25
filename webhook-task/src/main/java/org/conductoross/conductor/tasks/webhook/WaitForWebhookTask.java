@@ -12,6 +12,8 @@
  */
 package org.conductoross.conductor.tasks.webhook;
 
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -55,21 +57,42 @@ public class WaitForWebhookTask extends WorkflowSystemTask {
     }
 
     /**
-     * Registers the task with {@link WebhookTaskDAO} so an inbound webhook can find and complete
-     * it. Hash computation is deferred to the REST layer; this method stores the task ID under the
-     * hash once computed.
+     * Puts the task {@code IN_PROGRESS} and registers it with {@link WebhookTaskDAO} under the
+     * routing hash computed from its resolved {@code matches} input.
      *
-     * <p>NOTE: The hash is computed externally (by {@code WebhookHashUtils}) and passed back via
-     * task input under {@code __webhookHash}. If the hash is not yet present (i.e., the REST layer
-     * hasn't been called yet), the task simply waits.
+     * <p>The hash format is {@code workflowName;version;taskRefName;value1;value2...} (values in
+     * sorted JSONPath-key order). It is also stored in the task's input data under {@code
+     * __webhookHash} so that {@link #cancel} can deregister the task without recomputing.
+     *
+     * <p>If the task has no {@code matches} input it is still parked {@code IN_PROGRESS} but
+     * nothing is registered — it will never be completed by a webhook event.
      */
     @Override
+    @SuppressWarnings("unchecked")
     public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
         task.setStatus(TaskModel.Status.IN_PROGRESS);
-        LOGGER.debug(
-                "WAIT_FOR_WEBHOOK task {} started in workflow {}",
-                task.getTaskId(),
-                workflow.getWorkflowId());
+
+        Map<String, Object> matches = (Map<String, Object>) task.getInputData().get(MATCHES_INPUT);
+        if (matches != null && !matches.isEmpty()) {
+            int version = workflow.getWorkflowDefinition().getVersion();
+            String hash =
+                    WebhookHashingService.computeTaskRegistrationHash(
+                            workflow.getWorkflowName(),
+                            version,
+                            task.getReferenceTaskName(),
+                            matches);
+            task.getInputData().put("__webhookHash", hash);
+            webhookTaskDAO.put(hash, task.getTaskId());
+            LOGGER.debug(
+                    "WAIT_FOR_WEBHOOK task {} registered with hash={} in workflow {}",
+                    task.getTaskId(),
+                    hash,
+                    workflow.getWorkflowId());
+        } else {
+            LOGGER.warn(
+                    "WAIT_FOR_WEBHOOK task {} has no 'matches' input — will never be completed by a webhook event",
+                    task.getTaskId());
+        }
     }
 
     /**

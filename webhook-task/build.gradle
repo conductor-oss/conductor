@@ -13,9 +13,12 @@
 dependencies {
     implementation project(':conductor-common')
     implementation project(':conductor-core')
+    implementation "com.jayway.jsonpath:json-path:${revJsonPath}"
+
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-web'
     compileOnly "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-web'
 }

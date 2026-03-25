@@ -14,14 +14,18 @@ package org.conductoross.conductor.tasks.webhook;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
+import com.netflix.conductor.dao.MetadataDAO;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 class WebhookConfigServiceTest {
 
@@ -31,7 +35,10 @@ class WebhookConfigServiceTest {
     @BeforeEach
     void setUp() {
         dao = new InMemoryWebhookConfigDAO();
-        service = new WebhookConfigService(dao);
+        MetadataDAO metadataDAO = mock(MetadataDAO.class);
+        // No workflow defs registered — computeMatchers skips gracefully
+        when(metadataDAO.getWorkflowDef(any(), anyInt())).thenReturn(Optional.empty());
+        service = new WebhookConfigService(dao, metadataDAO);
     }
 
     private WebhookConfig minimalConfig(String name) {

@@ -13,6 +13,7 @@
 package org.conductoross.conductor.tasks.webhook;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Storage interface for {@link WebhookConfig} objects.
@@ -58,4 +59,35 @@ public interface WebhookConfigDAO {
      * @return a list of all configs; empty list if none
      */
     List<WebhookConfig> getAll();
+
+    // -------------------------------------------------------------------------
+    // Matchers — pre-computed routing index
+    // -------------------------------------------------------------------------
+
+    /**
+     * Stores the matcher index for a webhook config. The map key is the base hash ({@code
+     * workflowName;version;taskRefName}) and the value is the {@code matches} criteria map from the
+     * corresponding {@code WAIT_FOR_WEBHOOK} task definition.
+     *
+     * <p>Replaces any previously stored matchers for the same id.
+     *
+     * @param webhookId the webhook config id
+     * @param matchers the matcher map (may be empty but not null)
+     */
+    void saveMatchers(String webhookId, Map<String, Map<String, Object>> matchers);
+
+    /**
+     * Returns the matcher index for a webhook config, or an empty map if none is stored.
+     *
+     * @param webhookId the webhook config id
+     * @return matcher map; never null
+     */
+    Map<String, Map<String, Object>> getMatchers(String webhookId);
+
+    /**
+     * Removes the matcher index for a webhook config. A no-op if none exists.
+     *
+     * @param webhookId the webhook config id
+     */
+    void removeMatchers(String webhookId);
 }

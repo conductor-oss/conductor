@@ -12,18 +12,31 @@
  */
 package org.conductoross.conductor.tasks.webhook;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.CollectionUtils;
 
+import com.netflix.conductor.common.metadata.tasks.TaskType;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
+import com.netflix.conductor.dao.MetadataDAO;
 
 /**
  * Business-logic layer for {@link WebhookConfig} lifecycle management.
+ *
+ * <p>When a webhook config is created or updated, this service pre-computes the <em>matcher
+ * index</em> — a map of {@code workflowName;version;taskRefName} → {@code matches} criteria. This
+ * index is persisted in {@link WebhookConfigDAO} and used at inbound-event time to compute routing
+ * hashes without re-scanning workflow definitions on every request.
  *
  * <p>This service is intentionally free of enterprise concerns (audit logging, tags, auth). Orkes
  * Enterprise adds those concerns at the REST layer or via decorators.
@@ -37,9 +50,11 @@ public class WebhookConfigService {
     static final String SECRET_MASK = "***";
 
     private final WebhookConfigDAO webhookConfigDAO;
+    private final MetadataDAO metadataDAO;
 
-    public WebhookConfigService(WebhookConfigDAO webhookConfigDAO) {
+    public WebhookConfigService(WebhookConfigDAO webhookConfigDAO, MetadataDAO metadataDAO) {
         this.webhookConfigDAO = webhookConfigDAO;
+        this.metadataDAO = metadataDAO;
     }
 
     /**
@@ -61,6 +76,7 @@ public class WebhookConfigService {
             config.setId(UUID.randomUUID().toString());
         }
         webhookConfigDAO.save(config.getId(), config);
+        webhookConfigDAO.saveMatchers(config.getId(), computeMatchers(config));
         LOGGER.debug("Created webhook config id={} name={}", config.getId(), config.getName());
     }
 
@@ -87,11 +103,12 @@ public class WebhookConfigService {
         config.setUrlVerified(existing.isUrlVerified());
 
         webhookConfigDAO.save(config.getId(), config);
+        webhookConfigDAO.saveMatchers(config.getId(), computeMatchers(config));
         LOGGER.debug("Updated webhook config id={} name={}", config.getId(), config.getName());
     }
 
     /**
-     * Deletes a webhook config by id.
+     * Deletes a webhook config by id, including its matcher index.
      *
      * @param id the webhook config id
      * @throws NotFoundException if no config exists for the given id
@@ -101,6 +118,7 @@ public class WebhookConfigService {
         if (existing == null) {
             throw new NotFoundException("Webhook config with id " + id + " does not exist");
         }
+        webhookConfigDAO.removeMatchers(id);
         webhookConfigDAO.remove(id);
         LOGGER.debug("Deleted webhook config id={}", id);
     }
@@ -133,5 +151,71 @@ public class WebhookConfigService {
                             return masked;
                         })
                 .collect(Collectors.toList());
+    }
+
+    // -------------------------------------------------------------------------
+    // Matcher computation
+    // -------------------------------------------------------------------------
+
+    /**
+     * Scans the workflow definitions listed in {@link
+     * WebhookConfig#getReceiverWorkflowNamesToVersions()} and builds the matcher index.
+     *
+     * <p>The key is {@code workflowName;version;taskRefName} (the base hash prefix). The value is
+     * the {@code matches} map from the task's {@code inputParameters} — the unresolved template
+     * (e.g. {@code "$['data']['orderId']": "${workflow.input.orderId}"}). At inbound event time,
+     * {@link WebhookHashingService#computeInboundHash} extracts actual values from the payload
+     * using these paths; any expected value starting with {@code "$"} is treated as a wildcard.
+     *
+     * <p>If a workflow definition does not exist yet it is silently skipped — matchers will be
+     * recomputed on the next update.
+     */
+    @SuppressWarnings("unchecked")
+    Map<String, Map<String, Object>> computeMatchers(WebhookConfig config) {
+        if (CollectionUtils.isEmpty(config.getReceiverWorkflowNamesToVersions())) {
+            return Collections.emptyMap();
+        }
+        Map<String, Map<String, Object>> matchers = new HashMap<>();
+        config.getReceiverWorkflowNamesToVersions()
+                .forEach(
+                        (workflowName, version) -> {
+                            Optional<WorkflowDef> defOpt =
+                                    metadataDAO.getWorkflowDef(workflowName, version);
+                            if (defOpt.isEmpty()) {
+                                LOGGER.warn(
+                                        "Workflow def not found for matcher computation: name={} version={} — skipping",
+                                        workflowName,
+                                        version);
+                                return;
+                            }
+                            WorkflowDef def = defOpt.get();
+                            def.collectTasks().stream()
+                                    .filter(
+                                            t ->
+                                                    TaskType.TASK_TYPE_WAIT_FOR_WEBHOOK.equals(
+                                                            t.getType()))
+                                    .forEach(
+                                            task -> {
+                                                Map<String, Object> matches =
+                                                        (Map<String, Object>)
+                                                                task.getInputParameters()
+                                                                        .get("matches");
+                                                if (!CollectionUtils.isEmpty(matches)) {
+                                                    String key =
+                                                            workflowName
+                                                                    + WebhookHashingService
+                                                                            .DELIMITER
+                                                                    + version
+                                                                    + WebhookHashingService
+                                                                            .DELIMITER
+                                                                    + WebhookHashingService
+                                                                            .stripIterationSuffix(
+                                                                                    task
+                                                                                            .getTaskReferenceName());
+                                                    matchers.put(key, matches);
+                                                }
+                                            });
+                        });
+        return matchers;
     }
 }

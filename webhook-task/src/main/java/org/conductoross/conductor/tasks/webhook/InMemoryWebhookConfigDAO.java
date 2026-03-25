@@ -13,6 +13,8 @@
 package org.conductoross.conductor.tasks.webhook;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,6 +37,10 @@ public class InMemoryWebhookConfigDAO implements WebhookConfigDAO {
 
     private final Map<String, WebhookConfig> store = new ConcurrentHashMap<>();
 
+    /** Matcher index: webhookId → (baseHashKey → matchCriteria) */
+    private final Map<String, Map<String, Map<String, Object>>> matcherStore =
+            new ConcurrentHashMap<>();
+
     @Override
     public void save(String id, WebhookConfig config) {
         store.put(id, config);
@@ -53,5 +59,21 @@ public class InMemoryWebhookConfigDAO implements WebhookConfigDAO {
     @Override
     public List<WebhookConfig> getAll() {
         return new ArrayList<>(store.values());
+    }
+
+    @Override
+    public void saveMatchers(String webhookId, Map<String, Map<String, Object>> matchers) {
+        matcherStore.put(webhookId, new HashMap<>(matchers));
+    }
+
+    @Override
+    public Map<String, Map<String, Object>> getMatchers(String webhookId) {
+        Map<String, Map<String, Object>> found = matcherStore.get(webhookId);
+        return found != null ? found : Collections.emptyMap();
+    }
+
+    @Override
+    public void removeMatchers(String webhookId) {
+        matcherStore.remove(webhookId);
     }
 }
