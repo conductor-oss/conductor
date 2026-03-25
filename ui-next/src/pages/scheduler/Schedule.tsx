@@ -2,8 +2,12 @@ import { Monaco } from "@monaco-editor/react";
 import {
   Box,
   CircularProgress,
+  FormControl,
+  FormControlLabel,
   Grid,
   Paper,
+  Radio,
+  RadioGroup,
   SxProps,
   Tab,
   Tabs,
@@ -22,13 +26,17 @@ import { Helmet } from "react-helmet";
 import { useLocation, useParams } from "react-router";
 import SectionContainer from "shared/SectionContainer";
 import { colors } from "theme/tokens/variables";
+import { ICronSchedule } from "types/Schedulers";
 import { IObject } from "types/common";
+import { cronExpressionIsValid } from "utils/cronHelpers";
 import { DOC_LINK_URL } from "utils/constants/docLink";
+import { getTimeZoneNames } from "utils/date";
 import { SCHEDULER_DEFINITION_URL } from "utils/constants/route";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { getErrors } from "utils/index";
 import { useWorkflowDefsByVersions } from "utils/query";
 import { CronExpressionSection } from "./components/CronExpressionSection";
+import { MultiCronExpressionSection } from "./components/MultiCronExpressionSection";
 import { ScheduleTimingSection } from "./components/ScheduleTimingSection";
 import { WorkflowConfigSection } from "./components/WorkflowConfigSection";
 import { useCronExpression } from "./hooks/useCronExpression";
@@ -45,6 +53,8 @@ import {
   getDateFromField,
   JSONParse,
 } from "./utils/scheduleTransformers";
+import { DEFAULT_CRON_ZONE } from "./utils/cronSchedules";
+import timezones from "./timezones.json";
 
 export type ScheduleType = {
   name: string;
@@ -66,6 +76,8 @@ export type ScheduleType = {
   scheduleEndTime: string | number;
   priority: string;
   zoneId?: string;
+  cronSchedules: ICronSchedule[];
+  cronMode: "single" | "multi";
   startWorkflowRequest?: Record<string, unknown>;
 };
 
@@ -118,6 +130,10 @@ export function Schedule() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [errors, setErrors] = useState<IObject | null>(null);
   const [couldNotParseJson, setCouldNotParseJson] = useState<boolean>(false);
+  const availableTimezones = useMemo(
+    () => new Set([...getTimeZoneNames(), ...timezones, DEFAULT_CRON_ZONE]),
+    [],
+  );
 
   const clearError = useCallback(
     (field: string) => {
@@ -128,6 +144,58 @@ export function Schedule() {
       }
     },
     [errors, setErrors],
+  );
+
+  const validateCronSchedules = useCallback(
+    (cronSchedules: ICronSchedule[]) => {
+      const nextErrors: IObject = {};
+      if (!cronSchedules.length) {
+        nextErrors.cronSchedules = "At least one cron expression is required.";
+        return nextErrors;
+      }
+
+      cronSchedules.forEach((entry, index) => {
+        if (!entry.cronExpression?.trim()) {
+          nextErrors[`cronSchedules.${index}.cronExpression`] =
+            "Cron expression is required.";
+          return;
+        }
+        const cronValidation = cronExpressionIsValid(entry.cronExpression);
+        if (!cronValidation.isValid) {
+          nextErrors[`cronSchedules.${index}.cronExpression`] = Array.isArray(
+            cronValidation.errors,
+          )
+            ? cronValidation.errors.join(", ")
+            : `${cronValidation.errors}`;
+        }
+        const zoneId = entry.zoneId || DEFAULT_CRON_ZONE;
+        if (!availableTimezones.has(zoneId)) {
+          nextErrors[`cronSchedules.${index}.zoneId`] =
+            "Timezone must be a valid zone identifier.";
+        }
+      });
+
+      const expressionToIndexes = new Map<string, number[]>();
+      cronSchedules.forEach((entry, index) => {
+        const normalized = entry.cronExpression?.trim().replace(/\s+/g, " ");
+        if (!normalized) return;
+        const indexes = expressionToIndexes.get(normalized) || [];
+        indexes.push(index);
+        expressionToIndexes.set(normalized, indexes);
+      });
+
+      expressionToIndexes.forEach((indexes) => {
+        if (indexes.length > 1) {
+          indexes.forEach((index) => {
+            nextErrors[`cronSchedules.${index}.cronExpression`] =
+              "Duplicate cron expressions are not allowed.";
+          });
+        }
+      });
+
+      return nextErrors;
+    },
+    [availableTimezones],
   );
 
   const formHandlers = useScheduleFormHandlers(
@@ -270,6 +338,99 @@ export function Schedule() {
     [formHandlers, handleCronExpressionChange, scheduleState.cronExpression],
   );
 
+  const handleCronModeChange = useCallback(
+    (value: "single" | "multi") => {
+      if (value === "multi") {
+        setScheduleState((prevState) => ({
+          ...prevState,
+          cronMode: "multi",
+          cronSchedules:
+            prevState.cronSchedules.length > 0
+              ? prevState.cronSchedules
+              : [
+                  {
+                    cronExpression: prevState.cronExpression || "",
+                    zoneId: prevState.zoneId || DEFAULT_CRON_ZONE,
+                  },
+                ],
+        }));
+      } else {
+        setScheduleState((prevState) => {
+          const firstEntry = prevState.cronSchedules[0];
+          return {
+            ...prevState,
+            cronMode: "single",
+            cronExpression:
+              firstEntry?.cronExpression || prevState.cronExpression,
+            zoneId: firstEntry?.zoneId || prevState.zoneId || DEFAULT_CRON_ZONE,
+          };
+        });
+      }
+    },
+    [setScheduleState],
+  );
+
+  const handleAddCronSchedule = useCallback(() => {
+    setScheduleState((prevState) => ({
+      ...prevState,
+      cronSchedules: [
+        ...prevState.cronSchedules,
+        { cronExpression: "", zoneId: DEFAULT_CRON_ZONE },
+      ],
+    }));
+  }, [setScheduleState]);
+
+  const handleRemoveCronSchedule = useCallback(
+    (index: number) => {
+      setScheduleState((prevState) => ({
+        ...prevState,
+        cronSchedules:
+          prevState.cronSchedules.length <= 1
+            ? prevState.cronSchedules
+            : prevState.cronSchedules.filter((_, i) => i !== index),
+      }));
+      if (errors?.[`cronSchedules.${index}.cronExpression`]) {
+        clearError(`cronSchedules.${index}.cronExpression`);
+      }
+      if (errors?.[`cronSchedules.${index}.zoneId`]) {
+        clearError(`cronSchedules.${index}.zoneId`);
+      }
+    },
+    [setScheduleState, errors, clearError],
+  );
+
+  const handleMultiCronExpressionChange = useCallback(
+    (index: number, value: string) => {
+      setScheduleState((prevState) => ({
+        ...prevState,
+        cronSchedules: prevState.cronSchedules.map((entry, i) =>
+          i === index ? { ...entry, cronExpression: value } : entry,
+        ),
+      }));
+      if (errors?.[`cronSchedules.${index}.cronExpression`]) {
+        clearError(`cronSchedules.${index}.cronExpression`);
+      }
+    },
+    [setScheduleState, errors, clearError],
+  );
+
+  const handleMultiZoneIdChange = useCallback(
+    (index: number, zoneId: string) => {
+      setScheduleState((prevState) => ({
+        ...prevState,
+        cronSchedules: prevState.cronSchedules.map((entry, i) =>
+          i === index
+            ? { ...entry, zoneId: zoneId || DEFAULT_CRON_ZONE }
+            : entry,
+        ),
+      }));
+      if (errors?.[`cronSchedules.${index}.zoneId`]) {
+        clearError(`cronSchedules.${index}.zoneId`);
+      }
+    },
+    [setScheduleState, errors, clearError],
+  );
+
   const clearErrors = useCallback(() => {
     if (timeoutHandler) {
       clearTimeout(timeoutHandler);
@@ -300,13 +461,52 @@ export function Schedule() {
       return;
     }
 
-    const body = JSON.stringify({
+    if (scheduleState.cronMode === "multi") {
+      const cronErrors = validateCronSchedules(scheduleState.cronSchedules);
+      if (Object.keys(cronErrors).length) {
+        setErrors((prevErrors: IObject | null) => ({
+          ...(prevErrors || {}),
+          ...cronErrors,
+        }));
+        setErrorMessage("Please fix the cron schedule errors before saving.");
+        return;
+      }
+    } else {
+      const singleCronValidation = cronExpressionIsValid(
+        scheduleState.cronExpression,
+      );
+      if (
+        !scheduleState.cronExpression?.trim() ||
+        !singleCronValidation.isValid
+      ) {
+        setErrors((prevErrors: IObject | null) => ({
+          ...(prevErrors || {}),
+          cronExpression: !scheduleState.cronExpression?.trim()
+            ? "Cron expression is required."
+            : Array.isArray(singleCronValidation.errors)
+              ? singleCronValidation.errors.join(", ")
+              : `${singleCronValidation.errors}`,
+        }));
+        setErrorMessage("Please fix the cron expression before saving.");
+        return;
+      }
+      const zoneId = scheduleState.zoneId || DEFAULT_CRON_ZONE;
+      if (!availableTimezones.has(zoneId)) {
+        setErrors((prevErrors: IObject | null) => ({
+          ...(prevErrors || {}),
+          zoneId: "Timezone must be a valid zone identifier.",
+        }));
+        setErrorMessage("Please provide a valid timezone.");
+        return;
+      }
+    }
+
+    const requestBody = {
       id: schedule?.id,
       paused: scheduleState.paused,
       runCatchupScheduleInstances: scheduleState.runCatchupScheduleInstances,
       name: scheduleState.name,
       description: scheduleState.description,
-      cronExpression: scheduleState.cronExpression,
       scheduleStartTime: start,
       scheduleEndTime: to,
       startWorkflowRequest: {
@@ -322,11 +522,30 @@ export function Schedule() {
           scheduleState.externalInputPayloadStoragePath,
         priority: scheduleState.priority,
       },
-      zoneId: scheduleState.zoneId,
-    });
+      ...(scheduleState.cronMode === "multi"
+        ? {
+            cronSchedules: scheduleState.cronSchedules.map((entry) => ({
+              cronExpression: entry.cronExpression,
+              zoneId: entry.zoneId || DEFAULT_CRON_ZONE,
+            })),
+          }
+        : {
+            cronExpression: scheduleState.cronExpression,
+            zoneId: scheduleState.zoneId || DEFAULT_CRON_ZONE,
+          }),
+    };
+    const body = JSON.stringify(requestBody);
 
     saveSchedule({ body } as any);
-  }, [scheduleState, schedule, clearErrors, setErrorMessage, saveSchedule]);
+  }, [
+    scheduleState,
+    schedule,
+    clearErrors,
+    setErrorMessage,
+    saveSchedule,
+    validateCronSchedules,
+    availableTimezones,
+  ]);
 
   const clearScheduleForm = useCallback(() => {
     if (schedule) {
@@ -352,7 +571,9 @@ export function Schedule() {
         scheduleStartTime: "",
         scheduleEndTime: "",
         priority: "",
-        zoneId: "UTC",
+        zoneId: DEFAULT_CRON_ZONE,
+        cronSchedules: [],
+        cronMode: "single",
       });
     }
     setIsInFormView(1);
@@ -411,7 +632,6 @@ export function Schedule() {
             scheduleState.runCatchupScheduleInstances,
           name: scheduleState.name,
           description: scheduleState.description,
-          cronExpression: scheduleState.cronExpression,
           scheduleStartTime: start,
           scheduleEndTime: to,
           startWorkflowRequest: {
@@ -426,7 +646,17 @@ export function Schedule() {
               scheduleState.externalInputPayloadStoragePath,
             priority: scheduleState.priority,
           },
-          zoneId: scheduleState.zoneId,
+          ...(scheduleState.cronMode === "multi"
+            ? {
+                cronSchedules: scheduleState.cronSchedules.map((entry) => ({
+                  cronExpression: entry.cronExpression,
+                  zoneId: entry.zoneId || DEFAULT_CRON_ZONE,
+                })),
+              }
+            : {
+                cronExpression: scheduleState.cronExpression,
+                zoneId: scheduleState.zoneId || DEFAULT_CRON_ZONE,
+              }),
         },
         null,
         2,
@@ -544,6 +774,30 @@ export function Schedule() {
     () => (interimString ? codeToFormData(interimString, scheduleState) : {}),
     [interimString, scheduleState],
   );
+
+  const zoneErrorsByIndex = useMemo(() => {
+    const acc: Record<number, string> = {};
+    if (!errors) return acc;
+    Object.keys(errors).forEach((key) => {
+      const matched = key.match(/^cronSchedules\.(\d+)\.zoneId$/);
+      if (matched) {
+        acc[Number(matched[1])] = `${errors[key]}`;
+      }
+    });
+    return acc;
+  }, [errors]);
+
+  const cronErrorsByIndex = useMemo(() => {
+    const acc: Record<number, string> = {};
+    if (!errors) return acc;
+    Object.keys(errors).forEach((key) => {
+      const matched = key.match(/^cronSchedules\.(\d+)\.cronExpression$/);
+      if (matched) {
+        acc[Number(matched[1])] = `${errors[key]}`;
+      }
+    });
+    return acc;
+  }, [errors]);
 
   return (
     <Box>
@@ -674,21 +928,59 @@ export function Schedule() {
                             placeholder="Enter description"
                           />
                         </Grid>
-                        <CronExpressionSection
-                          cronExpression={cronHook.cronExpression}
-                          setCronExpression={handleCronExpressionChange}
-                          futureMatches={cronHook.futureMatches}
-                          humanizedExpression={cronHook.humanizedExpression}
-                          highlightedPart={cronHook.highlightedPart}
-                          getHighlightedPart={formHandlers.getHighlightedPart}
-                          setHighlightedPart={cronHook.setHighlightedPart}
-                          selectedTemplate={selectedTemplate}
-                          setSelectedTemplate={setSelectedTemplate}
-                          timezone={scheduleState.zoneId || "UTC"}
-                          setZoneId={handleZoneIdChange}
-                          cronError={errors?.cronExpression}
-                          minWidthCronExpression={minWidthCronExpression}
-                        />
+                        <Grid size={12}>
+                          <FormControl>
+                            <RadioGroup
+                              row
+                              value={scheduleState.cronMode}
+                              onChange={(event) =>
+                                handleCronModeChange(
+                                  event.target.value as "single" | "multi",
+                                )
+                              }
+                            >
+                              <FormControlLabel
+                                value="single"
+                                control={<Radio />}
+                                label="Single Cron"
+                              />
+                              <FormControlLabel
+                                value="multi"
+                                control={<Radio />}
+                                label="Multiple Cron Expressions"
+                              />
+                            </RadioGroup>
+                          </FormControl>
+                        </Grid>
+                        {scheduleState.cronMode === "single" ? (
+                          <CronExpressionSection
+                            cronExpression={cronHook.cronExpression}
+                            setCronExpression={handleCronExpressionChange}
+                            futureMatches={cronHook.futureMatches}
+                            humanizedExpression={cronHook.humanizedExpression}
+                            highlightedPart={cronHook.highlightedPart}
+                            getHighlightedPart={formHandlers.getHighlightedPart}
+                            setHighlightedPart={cronHook.setHighlightedPart}
+                            selectedTemplate={selectedTemplate}
+                            setSelectedTemplate={setSelectedTemplate}
+                            timezone={scheduleState.zoneId || DEFAULT_CRON_ZONE}
+                            setZoneId={handleZoneIdChange}
+                            cronError={errors?.cronExpression}
+                            minWidthCronExpression={minWidthCronExpression}
+                          />
+                        ) : (
+                          <MultiCronExpressionSection
+                            cronSchedules={scheduleState.cronSchedules}
+                            onAdd={handleAddCronSchedule}
+                            onRemove={handleRemoveCronSchedule}
+                            onCronExpressionChange={
+                              handleMultiCronExpressionChange
+                            }
+                            onZoneIdChange={handleMultiZoneIdChange}
+                            cronErrorsByIndex={cronErrorsByIndex}
+                            zoneErrorsByIndex={zoneErrorsByIndex}
+                          />
+                        )}
                         <WorkflowConfigSection
                           workflowType={scheduleState.workflowType || null}
                           setWorkflowType={handleWorkflowTypeChange}
