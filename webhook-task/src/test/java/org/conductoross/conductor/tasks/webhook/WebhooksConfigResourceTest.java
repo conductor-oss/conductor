@@ -220,6 +220,20 @@ public class WebhooksConfigResourceTest {
     }
 
     @Test
+    public void testGetWebhook_masksSecretValue() {
+        WebhookConfig config = headerBasedConfig("secret-test");
+        config.setId("s-id");
+        config.setSecretValue("my-real-secret");
+        when(service.getWebhook("s-id")).thenReturn(config);
+
+        WebhookConfig result = resource.getWebhook("s-id");
+
+        assertEquals("***", result.getSecretValue());
+        // Original stored config must not be mutated
+        assertEquals("my-real-secret", config.getSecretValue());
+    }
+
+    @Test
     public void testGetWebhook_notFound_throwsNotFoundException() {
         when(service.getWebhook("ghost")).thenReturn(null);
 

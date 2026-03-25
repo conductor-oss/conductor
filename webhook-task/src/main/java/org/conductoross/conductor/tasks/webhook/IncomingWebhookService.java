@@ -216,6 +216,14 @@ public class IncomingWebhookService {
             String baseKey = entry.getKey();
             Map<String, Object> criteria = entry.getValue();
 
+            if (criteria == null) {
+                LOGGER.warn(
+                        "Null criteria for baseKey={} webhookId={} — skipping (misconfigured matcher)",
+                        baseKey,
+                        webhookId);
+                continue;
+            }
+
             String hash =
                     webhookHashingService.computeInboundHash(
                             baseKey, criteria, body, requestParams);

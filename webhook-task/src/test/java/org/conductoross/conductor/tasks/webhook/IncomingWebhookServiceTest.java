@@ -201,6 +201,23 @@ public class IncomingWebhookServiceTest {
     }
 
     @Test
+    public void handleWebhook_nullCriteria_skipsMatcherGracefully() {
+        saveConfig(WEBHOOK_ID);
+        // Store a matcher with null criteria (misconfigured)
+        java.util.Map<String, java.util.Map<String, Object>> matchers = new java.util.HashMap<>();
+        matchers.put(BASE_KEY, null);
+        configDAO.saveMatchers(WEBHOOK_ID, matchers);
+
+        when(mockVerifier.verify(any(), any())).thenReturn(Collections.emptyList());
+        when(mockVerifier.extractChallenge(any(), any())).thenReturn(null);
+
+        // Must not throw NPE; null criteria entry is skipped
+        assertNull(
+                service.handleWebhook(WEBHOOK_ID, "{}", Collections.emptyMap(), new HttpHeaders()));
+        verifyNoInteractions(executionDAOFacade, workflowExecutor);
+    }
+
+    @Test
     public void handleWebhook_noMatchingHash_noTaskCompletion() {
         saveConfig(WEBHOOK_ID);
         Map<String, Object> criteria = Map.of("$['event']['type']", "payment.completed");

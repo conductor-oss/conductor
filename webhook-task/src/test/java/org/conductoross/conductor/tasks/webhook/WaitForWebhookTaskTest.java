@@ -23,7 +23,6 @@ import com.netflix.conductor.model.WorkflowModel;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -131,7 +130,9 @@ public class WaitForWebhookTaskTest {
     }
 
     @Test
-    public void isAsync_returnsTrue() {
-        assertTrue(task.isAsync());
+    public void isAsync_returnsFalse() {
+        // false = no periodic polling; task is completed only via inbound webhook event.
+        // Matches Orkes Enterprise behaviour (Webhook system task does not override isAsync).
+        assertFalse(task.isAsync());
     }
 }

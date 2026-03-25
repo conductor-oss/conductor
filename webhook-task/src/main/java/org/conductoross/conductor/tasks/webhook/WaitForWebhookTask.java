@@ -70,8 +70,6 @@ public class WaitForWebhookTask extends WorkflowSystemTask {
     @Override
     @SuppressWarnings("unchecked")
     public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
-        task.setStatus(TaskModel.Status.IN_PROGRESS);
-
         Map<String, Object> matches = (Map<String, Object>) task.getInputData().get(MATCHES_INPUT);
         if (matches != null && !matches.isEmpty()) {
             int version = workflow.getWorkflowDefinition().getVersion();
@@ -82,6 +80,8 @@ public class WaitForWebhookTask extends WorkflowSystemTask {
                             task.getReferenceTaskName(),
                             matches);
             task.getInputData().put("__webhookHash", hash);
+            // Register in DAO BEFORE marking IN_PROGRESS — if the DAO call fails, the task
+            // status remains unchanged and the engine can retry.  Matches Orkes Enterprise order.
             webhookTaskDAO.put(hash, task.getTaskId());
             LOGGER.debug(
                     "WAIT_FOR_WEBHOOK task {} registered with hash={} in workflow {}",
@@ -93,6 +93,7 @@ public class WaitForWebhookTask extends WorkflowSystemTask {
                     "WAIT_FOR_WEBHOOK task {} has no 'matches' input — will never be completed by a webhook event",
                     task.getTaskId());
         }
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
     }
 
     /**
@@ -138,8 +139,14 @@ public class WaitForWebhookTask extends WorkflowSystemTask {
                 "WAIT_FOR_WEBHOOK task {} completed via webhook (hash={})", task.getTaskId(), hash);
     }
 
+    /**
+     * Returns {@code false} — the task parks itself in {@link TaskModel.Status#IN_PROGRESS} and is
+     * completed externally by an inbound webhook event. There is no work for the decider to poll.
+     * Matches Orkes Enterprise behaviour (no {@code isAsync()} override on their {@code Webhook}
+     * system task).
+     */
     @Override
     public boolean isAsync() {
-        return true;
+        return false;
     }
 }

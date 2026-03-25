@@ -79,7 +79,11 @@ public class WebhooksConfigResource {
         if (config == null) {
             throw new NotFoundException("No webhook config with id: " + id);
         }
-        return config;
+        // Mask the secret before returning — matches Orkes Enterprise behaviour.
+        // Use a shallow copy so we don't mutate the stored instance (matters for in-memory DAO).
+        WebhookConfig masked = config.shallowCopy();
+        masked.setSecretValue(WebhookConfigService.SECRET_MASK);
+        return masked;
     }
 
     @GetMapping
