@@ -259,7 +259,7 @@ public class IncomingWebhookService {
 
         TaskResult result = new TaskResult(task.toTask());
         result.setStatus(TaskResult.Status.COMPLETED);
-        result.getOutputData().put("payload", payload);
+        result.getOutputData().putAll(payload);
         workflowExecutor.updateTask(result);
         webhookTaskDAO.remove(hash, taskId);
 

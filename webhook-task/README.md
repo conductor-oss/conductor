@@ -60,8 +60,8 @@ Content-Type: application/json
 {"event": {"type": "payment.completed"}, "data": {"orderId": "ORDER-42"}}
 ```
 
-The task matching `orderId = ORDER-42` is completed immediately. The workflow continues with
-`waitForPayment.output.payload` containing the full inbound JSON body.
+The task matching `orderId = ORDER-42` is completed immediately. The workflow continues with the
+inbound JSON keys directly on `waitForPayment.output` — e.g. `${waitForPayment.output.event.type}`.
 
 ---
 
@@ -85,13 +85,17 @@ A task is only completed when **all** entries in `matches` are satisfied simulta
 
 ### Task output
 
+The inbound body (parsed as JSON) merged with any query parameters, spread directly into the task's output data:
+
 ```json
 {
-  "payload": { ... }
+  "event": { "type": "payment.completed" },
+  "data": { "orderId": "ORDER-42" }
 }
 ```
 
-`payload` is the merged inbound body + query parameters.
+Keys from the inbound payload are accessible as `${taskRef.output.<key>}` (e.g.
+`${waitForPayment.output.event.type}`). This matches Orkes Enterprise behavior.
 
 ---
 

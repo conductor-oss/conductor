@@ -159,9 +159,13 @@ public class IncomingWebhookServiceTest {
         String body = "{\"event\":{\"type\":\"payment.completed\"}}";
         service.handleWebhook(WEBHOOK_ID, body, Collections.emptyMap(), new HttpHeaders());
 
-        // WorkflowExecutor.updateTask called with COMPLETED
+        // WorkflowExecutor.updateTask called with COMPLETED and payload keys at top level
         verify(workflowExecutor)
-                .updateTask(argThat(r -> r.getStatus() == TaskResult.Status.COMPLETED));
+                .updateTask(
+                        argThat(
+                                r ->
+                                        r.getStatus() == TaskResult.Status.COMPLETED
+                                                && r.getOutputData().containsKey("event")));
         // Hash deregistered
         assertTrue(taskDAO.get(regHash).isEmpty());
     }

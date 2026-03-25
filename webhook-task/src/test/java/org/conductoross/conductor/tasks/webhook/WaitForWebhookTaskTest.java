@@ -113,7 +113,10 @@ public class WaitForWebhookTaskTest {
 
         task.complete(taskModel, payload, "hash-xyz");
 
-        assertEquals(payload, taskModel.getOutputData().get("payload"));
+        // Payload keys are spread directly into outputData (not wrapped under "payload")
+        // to match Orkes Enterprise behavior and allow ${taskRef.output.orderId} references.
+        assertEquals("ORD-001", taskModel.getOutputData().get("orderId"));
+        assertEquals(99.99, taskModel.getOutputData().get("amount"));
     }
 
     @Test

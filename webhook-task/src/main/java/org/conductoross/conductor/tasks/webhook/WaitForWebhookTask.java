@@ -122,13 +122,17 @@ public class WaitForWebhookTask extends WorkflowSystemTask {
      * Completes the task with the inbound webhook payload as output. Called by the webhook REST
      * layer after matching this task to an inbound event.
      *
+     * <p>The payload keys are written directly into the task's output data (not wrapped under a
+     * {@code "payload"} key), matching Orkes Enterprise behavior so that workflow variable
+     * references like {@code ${taskRef.output.event.type}} work as expected.
+     *
      * @param task the task to complete
-     * @param webhookPayload the parsed body of the inbound webhook request
+     * @param payload the parsed body of the inbound webhook request
      * @param hash the routing hash, used to deregister the task from the DAO
      */
-    public void complete(TaskModel task, Object webhookPayload, String hash) {
+    public void complete(TaskModel task, Map<String, Object> payload, String hash) {
         task.setStatus(TaskModel.Status.COMPLETED);
-        task.getOutputData().put("payload", webhookPayload);
+        task.getOutputData().putAll(payload);
         webhookTaskDAO.remove(hash, task.getTaskId());
         LOGGER.debug(
                 "WAIT_FOR_WEBHOOK task {} completed via webhook (hash={})", task.getTaskId(), hash);
