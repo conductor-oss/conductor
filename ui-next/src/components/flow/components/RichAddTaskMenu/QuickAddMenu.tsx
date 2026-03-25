@@ -11,14 +11,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import {
-  Check,
-  DotsThree,
-  GearIcon,
-  MagnifyingGlass,
-  Plugs,
-  X,
-} from "@phosphor-icons/react";
+import { DotsThree, MagnifyingGlass, Plugs, X } from "@phosphor-icons/react";
 import { useSelector } from "@xstate/react";
 import { WorkflowEditContext } from "pages/definition/state";
 import { buildDataForOperation } from "pages/definition/state/taskModifier/taskModifier";
@@ -401,15 +394,35 @@ const QuickAddMenu = ({
     [subWorkflowMenuItems, handleAddTaskBelow, getSequentialTask],
   );
 
-  const options = useMemo(
-    () =>
-      [
-        ...taskOptions,
-        ...workerOptions,
-        ...workflowDefinitionsOptions,
-      ] as TaskMenuItem[],
-    [taskOptions, workerOptions, workflowDefinitionsOptions],
-  );
+  const options = useMemo(() => {
+    const showIntegrationsPanelShortcut =
+      pluginRegistry.getNewIntegrationModal() != null;
+    const integrationsPanelItem = showIntegrationsPanelShortcut
+      ? [
+          {
+            name: "Connected Apps",
+            description:
+              "Browse integration-backed tasks in the Add Task panel.",
+            category: RichAddMenuTabs.INTEGRATIONS_TAB,
+            type: QUICK_ADD_INTEGRATIONS_PANEL as unknown as TaskType,
+            quickAddRowId: "quick-add-integrations-panel",
+            onClick: openIntegrationsAddTaskPanel,
+            icon: <Plugs size={24} />,
+          },
+        ]
+      : [];
+    return [
+      ...integrationsPanelItem,
+      ...taskOptions,
+      ...workerOptions,
+      ...workflowDefinitionsOptions,
+    ] as TaskMenuItem[];
+  }, [
+    taskOptions,
+    workerOptions,
+    workflowDefinitionsOptions,
+    openIntegrationsAddTaskPanel,
+  ]);
 
   const { coreQuickAddTasks, agenticQuickAddTasks } = useMemo(() => {
     const showIntegrationsPanelShortcut =
@@ -438,14 +451,14 @@ const QuickAddMenu = ({
       .map((taskType) => {
         if (taskType === QUICK_ADD_INTEGRATIONS_PANEL) {
           const item: TaskMenuItem = {
-            name: "Integrations",
+            name: "Connected Apps",
             description:
               "Browse integration-backed tasks in the Add Task panel.",
             category: RichAddMenuTabs.INTEGRATIONS_TAB,
             type: TaskType.SIMPLE,
             quickAddRowId: "quick-add-integrations-panel",
             onClick: openIntegrationsAddTaskPanel,
-            icon: <Plugs size={24} weight="bold" />,
+            icon: <Plugs size={24} />,
           };
           return item;
         }
@@ -790,10 +803,10 @@ const QuickAddMenu = ({
                   <>
                     {filteredOptions.slice(0, 3).map((item, index) => (
                       <Box
-                        {...optionPropsForItem(item)}
                         key={`option-${index}-${item.name}-${item.category}${
                           item.version ? item.version : ""
                         }`}
+                        {...optionPropsForItem(item)}
                         onClick={() => handleTaskClick(item)}
                         sx={{
                           p: 2,
@@ -890,39 +903,6 @@ const QuickAddMenu = ({
                             >
                               {item.description}
                             </Typography>
-                            {item.category ===
-                              RichAddMenuTabs.INTEGRATIONS_TAB && (
-                              <Box
-                                sx={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: 0.75,
-                                  color:
-                                    item.status === "active"
-                                      ? "#059669"
-                                      : "#D97706",
-                                  fontSize: "0.75rem",
-                                  fontWeight: 500,
-                                  mt: 1.5,
-                                  py: 0.5,
-                                  px: 1.5,
-                                  borderRadius: "1rem",
-                                  backgroundColor:
-                                    item.status === "active"
-                                      ? "rgba(5, 150, 105, 0.1)"
-                                      : "rgba(217, 119, 6, 0.1)",
-                                }}
-                              >
-                                {item.status === "active" ? (
-                                  <Check size={14} weight="bold" />
-                                ) : (
-                                  <GearIcon size={14} weight="bold" />
-                                )}
-                                {item.status === "active"
-                                  ? "Ready to use"
-                                  : "Setup required"}
-                              </Box>
-                            )}
                           </Box>
                         </Box>
                       </Box>
