@@ -217,4 +217,28 @@ public class WebhookConfig {
     public void setEvaluatorType(String evaluatorType) {
         this.evaluatorType = evaluatorType;
     }
+
+    /**
+     * Returns a shallow copy of this config with all scalar fields copied. Map references are
+     * shared, not deep-copied. Intended for use when the caller needs to mutate a field (e.g. mask
+     * {@link #secretValue}) without affecting the stored instance.
+     */
+    WebhookConfig shallowCopy() {
+        WebhookConfig copy = new WebhookConfig();
+        copy.name = this.name;
+        copy.id = this.id;
+        copy.receiverWorkflowNamesToVersions = this.receiverWorkflowNamesToVersions;
+        copy.workflowsToStart = this.workflowsToStart;
+        copy.urlVerified = this.urlVerified;
+        copy.sourcePlatform = this.sourcePlatform;
+        copy.verifier = this.verifier;
+        copy.headers = this.headers;
+        copy.headerKey = this.headerKey;
+        copy.secretKey = this.secretKey;
+        copy.secretValue = this.secretValue;
+        copy.createdBy = this.createdBy;
+        copy.expression = this.expression;
+        copy.evaluatorType = this.evaluatorType;
+        return copy;
+    }
 }

@@ -14,10 +14,12 @@ package org.conductoross.conductor.tasks.webhook;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 
 /**
@@ -42,17 +44,17 @@ public class WebhookConfigService {
 
     /**
      * Creates a new webhook config. If the config already has an id and one already exists under
-     * that id, an {@link IllegalArgumentException} is thrown. If no id is supplied, a random UUID
-     * is assigned.
+     * that id, a {@link ConflictException} is thrown (→ HTTP 409). If no id is supplied, a random
+     * UUID is assigned.
      *
      * @param config the config to create
-     * @throws IllegalArgumentException if a config with the supplied id already exists
+     * @throws ConflictException if a config with the supplied id already exists
      */
     public void createWebhook(WebhookConfig config) {
         if (config.getId() != null) {
             WebhookConfig existing = webhookConfigDAO.get(config.getId());
             if (existing != null) {
-                throw new IllegalArgumentException(
+                throw new ConflictException(
                         "Webhook config with id " + config.getId() + " already exists");
             }
         } else {
@@ -116,11 +118,20 @@ public class WebhookConfigService {
     /**
      * Returns all webhook configs with secret values masked.
      *
-     * @return list of all configs; empty list if none
+     * <p>Each returned config is a shallow copy so that masking the {@code secretValue} field does
+     * not mutate the stored instance. This matters for in-memory DAO implementations where {@code
+     * getAll()} returns references to the live stored objects.
+     *
+     * @return list of all configs with secrets replaced by {@link #SECRET_MASK}; empty list if none
      */
     public List<WebhookConfig> getAllWebhooks() {
-        List<WebhookConfig> configs = webhookConfigDAO.getAll();
-        configs.forEach(c -> c.setSecretValue(SECRET_MASK));
-        return configs;
+        return webhookConfigDAO.getAll().stream()
+                .map(
+                        c -> {
+                            WebhookConfig masked = c.shallowCopy();
+                            masked.setSecretValue(SECRET_MASK);
+                            return masked;
+                        })
+                .collect(Collectors.toList());
     }
 }

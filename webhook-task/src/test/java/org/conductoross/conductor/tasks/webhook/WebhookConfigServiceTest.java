@@ -18,6 +18,7 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -61,14 +62,15 @@ class WebhookConfigServiceTest {
     }
 
     @Test
-    void createWebhook_throws_if_id_already_exists() {
+    void createWebhook_throws_conflict_if_id_already_exists() {
         WebhookConfig first = minimalConfig("first");
         first.setId("dup-id");
         service.createWebhook(first);
 
         WebhookConfig second = minimalConfig("second");
         second.setId("dup-id");
-        assertThrows(IllegalArgumentException.class, () -> service.createWebhook(second));
+        // Duplicate ID is a conflict (409), not a bad request (400)
+        assertThrows(ConflictException.class, () -> service.createWebhook(second));
     }
 
     @Test
@@ -198,5 +200,26 @@ class WebhookConfigServiceTest {
         service.createWebhook(minimalConfig("a"));
         service.createWebhook(minimalConfig("b"));
         assertEquals(2, service.getAllWebhooks().size());
+    }
+
+    @Test
+    void getAllWebhooks_does_not_corrupt_stored_secret() {
+        // Regression: getAllWebhooks() used to mutate the stored object directly.
+        // After calling it, getWebhook() must still return the real secret.
+        WebhookConfig config = minimalConfig("secret-guard");
+        config.setSecretValue("real-secret");
+        service.createWebhook(config);
+
+        // First call masks the returned copy
+        List<WebhookConfig> listed = service.getAllWebhooks();
+        assertEquals(WebhookConfigService.SECRET_MASK, listed.get(0).getSecretValue());
+
+        // The stored object must still hold the real secret
+        WebhookConfig stored = service.getWebhook(config.getId());
+        assertEquals("real-secret", stored.getSecretValue());
+
+        // A second list call must also return the mask (not the real value, not null)
+        List<WebhookConfig> listed2 = service.getAllWebhooks();
+        assertEquals(WebhookConfigService.SECRET_MASK, listed2.get(0).getSecretValue());
     }
 }

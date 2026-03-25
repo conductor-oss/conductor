@@ -99,7 +99,7 @@ The default implementation (`HeaderBasedVerifier`) checks that configured header
 | PR | Scope | Status |
 |----|-------|--------|
 | PR 1 | Task type, mapper, system task, DAO interface + in-memory impl | ✅ merged |
-| PR 2 (#889) | `WebhookConfig` model + CRUD API | pending |
+| PR 2 (#889) | `WebhookConfig` model + CRUD API | ✅ merged |
 | PR 3 (#890) | Hash computation + `WebhookVerifier` / `HeaderBasedVerifier` | pending |
 | PR 4 (#892) | Inbound endpoint + task completion | pending |
 | PR 5 (#891) | `workflowsToStart` — trigger new workflows from webhooks | pending |
