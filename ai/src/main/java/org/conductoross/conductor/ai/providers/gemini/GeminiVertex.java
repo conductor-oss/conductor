@@ -33,9 +33,15 @@ import org.conductoross.conductor.ai.video.VideoPrompt;
 import org.conductoross.conductor.ai.video.VideoResponse;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.ai.image.ImageModel;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.retry.support.RetryTemplate;
+
+import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
 import org.springframework.ai.vertexai.embedding.text.VertexAiTextEmbeddingModel;
 import org.springframework.ai.vertexai.embedding.text.VertexAiTextEmbeddingOptions;
@@ -107,14 +113,12 @@ public class GeminiVertex implements AIModel {
                 && !config.getApiKey().isBlank()
                 && config.getGoogleCredentials() == null) {
             Client genAiClient = createGenAIClient();
-            return new org.springframework.ai.google.genai.GoogleGenAiChatModel(
+            return new GoogleGenAiChatModel(
                     genAiClient,
-                    org.springframework.ai.google.genai.GoogleGenAiChatOptions.builder()
-                            .model("gemini-2.5-flash")
-                            .build(),
-                    org.springframework.ai.model.tool.DefaultToolCallingManager.builder().build(),
-                    org.springframework.retry.support.RetryTemplate.defaultInstance(),
-                    io.micrometer.observation.ObservationRegistry.NOOP);
+                    GoogleGenAiChatOptions.builder().build(),
+                    DefaultToolCallingManager.builder().build(),
+                    RetryTemplate.defaultInstance(),
+                    ObservationRegistry.NOOP);
         }
         // Vertex AI path: use gRPC with GCP IAM credentials
         VertexAI vertexAI = getVertexAI();
@@ -238,7 +242,7 @@ public class GeminiVertex implements AIModel {
             }
 
             var toolDef =
-                    org.springframework.ai.tool.definition.ToolDefinition.builder()
+                    ToolDefinition.builder()
                             .name(toolSpec.getName())
                             .description(
                                     toolSpec.getDescription() != null
@@ -251,7 +255,7 @@ public class GeminiVertex implements AIModel {
             callbacks.add(
                     new ToolCallback() {
                         @Override
-                        public org.springframework.ai.tool.definition.ToolDefinition
+                        public ToolDefinition
                                 getToolDefinition() {
                             return toolDef;
                         }
