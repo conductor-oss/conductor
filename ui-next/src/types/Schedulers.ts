@@ -9,16 +9,9 @@ export interface IStartWorkflowRequest {
   priority?: number;
 }
 
-export interface ICronSchedule {
-  cronExpression: string;
-  zoneId?: string;
-}
-
 export interface IScheduleDto {
   name: string;
-  cronExpression?: string;
-  zoneId?: string;
-  cronSchedules?: ICronSchedule[];
+  cronExpression: string;
   runCatchupScheduleInstances?: boolean;
   paused?: boolean;
   pausedReason?: string;
