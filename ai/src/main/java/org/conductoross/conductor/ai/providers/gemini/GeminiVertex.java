@@ -100,6 +100,12 @@ public class GeminiVertex implements AIModel {
 
     @Override
     public ChatModel getChatModel() {
+        // API key path: use Google GenAI REST client (works with AI Studio keys)
+        if (config.getApiKey() != null && !config.getApiKey().isBlank()
+                && config.getGoogleCredentials() == null) {
+            return new GeminiApiKeyChatModel(createGenAIClient());
+        }
+        // Vertex AI path: use gRPC with GCP IAM credentials
         VertexAI vertextAI = getVertexAI();
         return VertexAiGeminiChatModel.builder().vertexAI(vertextAI).build();
     }
