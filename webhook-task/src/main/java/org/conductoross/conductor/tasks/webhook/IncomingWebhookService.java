@@ -27,6 +27,7 @@ import org.springframework.http.HttpHeaders;
 
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
+import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
 
@@ -48,6 +49,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *   <li>Handle challenge/response handshakes (e.g. Slack URL verification).
  *   <li>For each stored matcher (baseHashKey → criteria): compute hash from the payload and
  *       complete any {@code WAIT_FOR_WEBHOOK} tasks registered under that hash.
+ *   <li>Start any workflows listed in {@link WebhookConfig#getWorkflowsToStart()} with the inbound
+ *       payload as input.
  * </ol>
  *
  * <p>Ported from Orkes Enterprise; org context is applied by {@link WebhookOrgContextProvider}
@@ -128,8 +131,11 @@ public class IncomingWebhookService {
             return challenge;
         }
 
-        dispatchToWaitingTasks(
-                id, bodyStr, requestParams != null ? requestParams : Collections.emptyMap());
+        Map<String, Object> safeParams =
+                requestParams != null ? requestParams : Collections.emptyMap();
+        Map<String, Object> payload = parsePayload(bodyStr, safeParams);
+        dispatchToWaitingTasks(id, bodyStr, safeParams, payload);
+        startWorkflowsToStart(config, payload, event.getId());
         return null;
     }
 
@@ -196,14 +202,15 @@ public class IncomingWebhookService {
      * payload and complete any registered {@code WAIT_FOR_WEBHOOK} tasks that match.
      */
     private void dispatchToWaitingTasks(
-            String webhookId, String body, Map<String, Object> requestParams) {
+            String webhookId,
+            String body,
+            Map<String, Object> requestParams,
+            Map<String, Object> payload) {
         Map<String, Map<String, Object>> matchers = webhookConfigDAO.getMatchers(webhookId);
         if (matchers.isEmpty()) {
             LOGGER.debug("No matchers stored for webhook id={}", webhookId);
             return;
         }
-
-        Map<String, Object> payload = parsePayload(body, requestParams);
 
         for (Map.Entry<String, Map<String, Object>> entry : matchers.entrySet()) {
             String baseKey = entry.getKey();
@@ -260,6 +267,72 @@ public class IncomingWebhookService {
                 "Completed WAIT_FOR_WEBHOOK task {} in workflow {}",
                 taskId,
                 task.getWorkflowInstanceId());
+    }
+
+    /**
+     * Starts any workflows declared in {@link WebhookConfig#getWorkflowsToStart()}.
+     *
+     * <p>The map format mirrors Orkes's convention: {@code workflowName → version} for regular
+     * entries, with two optional special keys extracted and then discarded before iterating:
+     *
+     * <ul>
+     *   <li>{@code idempotencyKey} — idempotency key string (ignored in OSS; no OSS support yet)
+     *   <li>{@code idempotencyStrategy} — deduplication strategy (ignored in OSS)
+     * </ul>
+     *
+     * <p>Each workflow is started with the inbound payload as its input and the webhook name +
+     * event id as its triggering event. Failures to start one workflow do not prevent others from
+     * starting.
+     */
+    @SuppressWarnings("unchecked")
+    private void startWorkflowsToStart(
+            WebhookConfig config, Map<String, Object> payload, String eventId) {
+        Map<String, Object> workflowsToStart = config.getWorkflowsToStart();
+        if (workflowsToStart == null || workflowsToStart.isEmpty()) {
+            return;
+        }
+
+        // Work on a copy so we can pop reserved keys without mutating the stored config
+        Map<String, Object> wfsToStart = new HashMap<>(workflowsToStart);
+        wfsToStart.remove("idempotencyKey");
+        wfsToStart.remove("idempotencyStrategy");
+
+        String eventName = config.getName() + ":" + eventId;
+
+        for (Map.Entry<String, Object> entry : wfsToStart.entrySet()) {
+            String workflowName = entry.getKey();
+            Object versionObj = entry.getValue();
+            if (!(versionObj instanceof Integer)) {
+                LOGGER.warn(
+                        "workflowsToStart entry '{}' has non-integer version '{}' — skipping",
+                        workflowName,
+                        versionObj);
+                continue;
+            }
+            int version = (Integer) versionObj;
+            try {
+                StartWorkflowInput input = new StartWorkflowInput();
+                input.setName(workflowName);
+                input.setVersion(version);
+                input.setWorkflowInput(payload);
+                input.setEvent(eventName);
+                String workflowId = workflowExecutor.startWorkflow(input);
+                LOGGER.debug(
+                        "Started workflow '{}' v{} id={} from webhook '{}'",
+                        workflowName,
+                        version,
+                        workflowId,
+                        config.getName());
+            } catch (Exception e) {
+                LOGGER.error(
+                        "Failed to start workflow '{}' v{} from webhook '{}': {}",
+                        workflowName,
+                        version,
+                        config.getName(),
+                        e.getMessage(),
+                        e);
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")

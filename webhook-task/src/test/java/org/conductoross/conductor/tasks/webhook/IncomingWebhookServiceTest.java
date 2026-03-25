@@ -216,6 +216,88 @@ public class IncomingWebhookServiceTest {
     }
 
     // -------------------------------------------------------------------------
+    // handleWebhook — workflowsToStart
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void handleWebhook_startsWorkflowsToStart() {
+        WebhookConfig config = saveConfig(WEBHOOK_ID);
+        config.setWorkflowsToStart(Map.of("payment_workflow", 1));
+        configDAO.save(WEBHOOK_ID, config);
+
+        when(mockVerifier.verify(any(), any())).thenReturn(Collections.emptyList());
+        when(mockVerifier.extractChallenge(any(), any())).thenReturn(null);
+        when(workflowExecutor.startWorkflow(any())).thenReturn("wf-started-id");
+
+        service.handleWebhook(
+                WEBHOOK_ID,
+                "{\"event\":\"payment.completed\"}",
+                Collections.emptyMap(),
+                new HttpHeaders());
+
+        verify(workflowExecutor)
+                .startWorkflow(
+                        argThat(
+                                input ->
+                                        "payment_workflow".equals(input.getName())
+                                                && Integer.valueOf(1).equals(input.getVersion())));
+    }
+
+    @Test
+    public void handleWebhook_workflowsToStart_popsIdempotencyKeys() {
+        WebhookConfig config = saveConfig(WEBHOOK_ID);
+        Map<String, Object> wfsToStart = new java.util.HashMap<>();
+        wfsToStart.put("notify_workflow", 2);
+        wfsToStart.put("idempotencyKey", "some-key");
+        wfsToStart.put("idempotencyStrategy", "FAIL");
+        config.setWorkflowsToStart(wfsToStart);
+        configDAO.save(WEBHOOK_ID, config);
+
+        when(mockVerifier.verify(any(), any())).thenReturn(Collections.emptyList());
+        when(mockVerifier.extractChallenge(any(), any())).thenReturn(null);
+        when(workflowExecutor.startWorkflow(any())).thenReturn("wf-id");
+
+        service.handleWebhook(WEBHOOK_ID, "{}", Collections.emptyMap(), new HttpHeaders());
+
+        // Only one workflow started — idempotencyKey/Strategy entries were skipped
+        verify(workflowExecutor, times(1)).startWorkflow(any());
+        verify(workflowExecutor)
+                .startWorkflow(argThat(input -> "notify_workflow".equals(input.getName())));
+    }
+
+    @Test
+    public void handleWebhook_workflowStartFailure_doesNotPreventOtherWorkflows() {
+        WebhookConfig config = saveConfig(WEBHOOK_ID);
+        config.setWorkflowsToStart(Map.of("wf_ok", 1, "wf_bad", 2));
+        configDAO.save(WEBHOOK_ID, config);
+
+        when(mockVerifier.verify(any(), any())).thenReturn(Collections.emptyList());
+        when(mockVerifier.extractChallenge(any(), any())).thenReturn(null);
+        // First call throws, second succeeds
+        when(workflowExecutor.startWorkflow(any()))
+                .thenThrow(new RuntimeException("boom"))
+                .thenReturn("wf-good-id");
+
+        // Should NOT throw despite failure
+        assertNull(
+                service.handleWebhook(WEBHOOK_ID, "{}", Collections.emptyMap(), new HttpHeaders()));
+        verify(workflowExecutor, times(2)).startWorkflow(any());
+    }
+
+    @Test
+    public void handleWebhook_noWorkflowsToStart_noStartCalls() {
+        saveConfig(WEBHOOK_ID); // config has no workflowsToStart
+
+        when(mockVerifier.verify(any(), any())).thenReturn(Collections.emptyList());
+        when(mockVerifier.extractChallenge(any(), any())).thenReturn(null);
+
+        service.handleWebhook(WEBHOOK_ID, "{}", Collections.emptyMap(), new HttpHeaders());
+
+        // WorkflowExecutor never called for starting (only updateTask if tasks matched — none here)
+        verify(workflowExecutor, never()).startWorkflow(any());
+    }
+
+    // -------------------------------------------------------------------------
     // handlePing
     // -------------------------------------------------------------------------
 
