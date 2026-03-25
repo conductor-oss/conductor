@@ -13,8 +13,12 @@
 package org.conductoross.conductor.ai.providers.gemini;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
+import org.jetbrains.annotations.NotNull;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
@@ -24,28 +28,36 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.tool.ToolCallback;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.genai.Client;
+import com.google.genai.types.Candidate;
 import com.google.genai.types.Content;
+import com.google.genai.types.FunctionCall;
+import com.google.genai.types.FunctionDeclaration;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.Part;
+import com.google.genai.types.Schema;
+import com.google.genai.types.Tool;
 
 /**
  * Spring AI {@link ChatModel} backed by the Google GenAI Java SDK ({@link Client}).
  *
- * <p>This is the <b>API-key path</b> for Gemini. It uses the REST-based
- * {@code generativelanguage.googleapis.com} endpoint which accepts Google AI Studio
- * API keys directly — no GCP IAM credentials or service accounts required.</p>
+ * <p>This is the <b>API-key path</b> for Gemini. It uses the REST-based {@code
+ * generativelanguage.googleapis.com} endpoint which accepts Google AI Studio API keys directly — no
+ * GCP IAM credentials or service accounts required.
  *
- * <p>The standard {@link org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel}
- * always uses the Vertex AI gRPC endpoint which requires {@code GOOGLE_APPLICATION_CREDENTIALS}
- * or equivalent IAM auth. This class provides a lightweight alternative for users who
- * only have an API key.</p>
+ * <p>Supports tool/function calling: Spring AI tool definitions are converted to GenAI
+ * {@link FunctionDeclaration} objects, and GenAI {@link FunctionCall} responses are mapped back to
+ * Spring AI {@link AssistantMessage.ToolCall} objects.
  *
  * @see GeminiVertex#getChatModel()
  */
 class GeminiApiKeyChatModel implements ChatModel {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final Client client;
 
@@ -54,7 +66,7 @@ class GeminiApiKeyChatModel implements ChatModel {
     }
 
     @Override
-    public ChatResponse call(Prompt prompt) {
+    public @NotNull ChatResponse call(Prompt prompt) {
         List<Content> contents = new ArrayList<>();
         String systemInstruction = null;
 
@@ -62,11 +74,50 @@ class GeminiApiKeyChatModel implements ChatModel {
             switch (message.getMessageType()) {
                 case SYSTEM -> systemInstruction = message.getText();
                 case USER -> contents.add(Content.fromParts(Part.fromText(message.getText())));
-                case ASSISTANT -> contents.add(
-                        Content.fromParts(Part.fromText(message.getText()))
-                                .toBuilder()
-                                .role("model")
-                                .build());
+                case ASSISTANT -> {
+                    var assistantMsg = (AssistantMessage) message;
+                    // Check if assistant message has tool calls (for multi-turn tool conversations)
+                    if (assistantMsg.getToolCalls() != null
+                            && !assistantMsg.getToolCalls().isEmpty()) {
+                        List<Part> parts = new ArrayList<>();
+                        for (var tc : assistantMsg.getToolCalls()) {
+                            try {
+                                @SuppressWarnings("unchecked")
+                                Map<String, Object> args =
+                                        MAPPER.readValue(tc.arguments(), Map.class);
+                                parts.add(Part.fromFunctionCall(tc.name(), args));
+                            } catch (Exception e) {
+                                parts.add(Part.fromText(tc.arguments()));
+                            }
+                        }
+                        contents.add(
+                                Content.fromParts(parts.toArray(new Part[0])).toBuilder()
+                                        .role("model")
+                                        .build());
+                    } else {
+                        contents.add(
+                                Content.fromParts(Part.fromText(message.getText())).toBuilder()
+                                        .role("model")
+                                        .build());
+                    }
+                }
+                case TOOL -> {
+                    // Tool result message: convert to function response
+                    String toolName =
+                            message.getMetadata().getOrDefault("toolName", "unknown").toString();
+                    try {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> resultMap =
+                                MAPPER.readValue(message.getText(), Map.class);
+                        contents.add(
+                                Content.fromParts(Part.fromFunctionResponse(toolName, resultMap)));
+                    } catch (Exception e) {
+                        contents.add(
+                                Content.fromParts(
+                                        Part.fromFunctionResponse(
+                                                toolName, Map.of("result", message.getText()))));
+                    }
+                }
                 default -> contents.add(Content.fromParts(Part.fromText(message.getText())));
             }
         }
@@ -82,10 +133,48 @@ class GeminiApiKeyChatModel implements ChatModel {
             configBuilder.systemInstruction(Content.fromParts(Part.fromText(systemInstruction)));
         }
 
+        // Convert Spring AI tool callbacks to GenAI tool declarations
+        List<Tool> tools = extractTools(prompt);
+        if (!tools.isEmpty()) {
+            configBuilder.tools(tools);
+        }
+
         GenerateContentResponse response =
                 client.models.generateContent(modelName, contents, configBuilder.build());
 
-        String text = response.text() != null ? response.text() : "";
+        // Extract text and tool calls from response
+        String text = "";
+        List<AssistantMessage.ToolCall> toolCalls = new ArrayList<>();
+        String finishReason = "STOP";
+
+        if (response.candidates().isPresent()) {
+            for (Candidate candidate : response.candidates().get()) {
+                if (candidate.content().isPresent()
+                        && candidate.content().get().parts().isPresent()) {
+                    for (Part part : candidate.content().get().parts().get()) {
+                        if (part.text().isPresent()) {
+                            text += part.text().get();
+                        }
+                        if (part.functionCall().isPresent()) {
+                            FunctionCall fc = part.functionCall().get();
+                            String name = fc.name().orElse("unknown");
+                            String args = "{}";
+                            if (fc.args().isPresent()) {
+                                try {
+                                    args = MAPPER.writeValueAsString(fc.args().get());
+                                } catch (Exception e) {
+                                    args = fc.args().get().toString();
+                                }
+                            }
+                            String id = fc.id().orElse(UUID.randomUUID().toString());
+                            toolCalls.add(
+                                    new AssistantMessage.ToolCall(id, "function", name, args));
+                            finishReason = "TOOL_CALLS";
+                        }
+                    }
+                }
+            }
+        }
 
         // Token usage
         int promptTokens = 0, completionTokens = 0, totalTokens = 0;
@@ -96,8 +185,13 @@ class GeminiApiKeyChatModel implements ChatModel {
             totalTokens = usage.totalTokenCount().orElse(promptTokens + completionTokens);
         }
 
-        var genMetadata = ChatGenerationMetadata.builder().finishReason("STOP").build();
-        var generation = new Generation(new AssistantMessage(text), genMetadata);
+        var genMetadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
+        var assistantMessageBuilder = AssistantMessage.builder().content(text);
+        if (!toolCalls.isEmpty()) {
+            assistantMessageBuilder.toolCalls(toolCalls);
+        }
+        var assistantMessage = assistantMessageBuilder.build();
+        var generation = new Generation(assistantMessage, genMetadata);
 
         var responseUsage = new DefaultUsage(promptTokens, completionTokens, totalTokens);
         var responseMetadata =
@@ -109,5 +203,48 @@ class GeminiApiKeyChatModel implements ChatModel {
     @Override
     public ChatOptions getDefaultOptions() {
         return null;
+    }
+
+    /**
+     * Extract tool definitions from the prompt's options and convert to GenAI Tool format.
+     */
+    @SuppressWarnings("unchecked")
+    private List<Tool> extractTools(Prompt prompt) {
+        if (prompt.getOptions() == null) return List.of();
+
+        List<ToolCallback> callbacks = List.of();
+        try {
+            var options = prompt.getOptions();
+            var method = options.getClass().getMethod("getToolCallbacks");
+            callbacks = (List<ToolCallback>) method.invoke(options);
+        } catch (Exception e) {
+            return List.of();
+        }
+
+        if (callbacks == null || callbacks.isEmpty()) return List.of();
+
+        List<FunctionDeclaration> declarations = new ArrayList<>();
+        for (ToolCallback cb : callbacks) {
+            var toolDef = cb.getToolDefinition();
+            FunctionDeclaration.Builder fdBuilder =
+                    FunctionDeclaration.builder()
+                            .name(toolDef.name())
+                            .description(toolDef.description());
+
+            // Convert JSON Schema string to GenAI Schema
+            String inputSchema = toolDef.inputSchema();
+            if (inputSchema != null && !inputSchema.isBlank()) {
+                try {
+                    Map<String, Object> schemaMap = MAPPER.readValue(inputSchema, Map.class);
+                    fdBuilder.parameters(Schema.fromJson(MAPPER.writeValueAsString(schemaMap)));
+                } catch (Exception e) {
+                    // Skip schema if parsing fails
+                }
+            }
+
+            declarations.add(fdBuilder.build());
+        }
+
+        return List.of(Tool.builder().functionDeclarations(declarations).build());
     }
 }

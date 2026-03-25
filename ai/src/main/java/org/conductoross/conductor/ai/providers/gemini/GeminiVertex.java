@@ -101,7 +101,8 @@ public class GeminiVertex implements AIModel {
     @Override
     public ChatModel getChatModel() {
         // API key path: use Google GenAI REST client (works with AI Studio keys)
-        if (config.getApiKey() != null && !config.getApiKey().isBlank()
+        if (config.getApiKey() != null
+                && !config.getApiKey().isBlank()
                 && config.getGoogleCredentials() == null) {
             return new GeminiApiKeyChatModel(createGenAIClient());
         }
