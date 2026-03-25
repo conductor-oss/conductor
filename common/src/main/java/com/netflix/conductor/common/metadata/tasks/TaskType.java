@@ -41,7 +41,10 @@ public enum TaskType {
     KAFKA_PUBLISH,
     JSON_JQ_TRANSFORM,
     SET_VARIABLE,
-    NOOP;
+    NOOP,
+    HTTP_SYNC,
+    CUSTOM_CODE,
+    CONDITIONAL_FORK;
 
     /**
      * TaskType constants representing each of the possible enumeration values. Motivation: to not
@@ -71,6 +74,9 @@ public enum TaskType {
     public static final String TASK_TYPE_SET_VARIABLE = "SET_VARIABLE";
     public static final String TASK_TYPE_FORK = "FORK";
     public static final String TASK_TYPE_NOOP = "NOOP";
+    public static final String TASK_TYPE_HTTP_SYNC = "HTTP_SYNC";
+    public static final String TASK_TYPE_CUSTOM_CODE = "CUSTOM_CODE";
+    public static final String TASK_TYPE_CONDITIONAL_FORK = "CONDITIONAL_FORK";
 
     private static final Set<String> BUILT_IN_TASKS = new HashSet<>();
 

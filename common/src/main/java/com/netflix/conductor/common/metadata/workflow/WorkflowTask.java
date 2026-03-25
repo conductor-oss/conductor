@@ -70,6 +70,10 @@ public class WorkflowTask {
     @ProtoField(id = 22)
     private String scriptExpression;
 
+    public List<ConditionalBranch> getConditionalBranches() {
+        return conditionalBranches;
+    }
+
     @ProtoMessage(wrapper = true)
     public static class WorkflowTaskList {
 
@@ -175,6 +179,9 @@ public class WorkflowTask {
 
     @ProtoField(id = 34)
     private JoinMode joinMode;
+
+    /** Conditional branches for CONDITIONAL_FORK task type. */
+    private List<@Valid ConditionalBranch> conditionalBranches = new LinkedList<>();
 
     /**
      * @return the name
