@@ -33,6 +33,7 @@ import org.conductoross.conductor.ai.video.VideoPrompt;
 import org.conductoross.conductor.ai.video.VideoResponse;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
@@ -80,6 +81,7 @@ public class GeminiVertex implements AIModel {
 
     @Override
     public List<Float> generateEmbeddings(EmbeddingGenRequest embeddingGenRequest) {
+
         VertexAiTextEmbeddingOptions options =
                 VertexAiTextEmbeddingOptions.builder()
                         .model(embeddingGenRequest.getModel())
@@ -100,22 +102,29 @@ public class GeminiVertex implements AIModel {
 
     @Override
     public ChatModel getChatModel() {
-        // API key path: use Google GenAI REST client (works with AI Studio keys)
+        // API key path: use GoogleGenAiChatModel (REST, works with AI Studio keys)
         if (config.getApiKey() != null
                 && !config.getApiKey().isBlank()
                 && config.getGoogleCredentials() == null) {
-            return new GeminiApiKeyChatModel(createGenAIClient());
+            Client genAiClient = createGenAIClient();
+            return new org.springframework.ai.google.genai.GoogleGenAiChatModel(
+                    genAiClient,
+                    org.springframework.ai.google.genai.GoogleGenAiChatOptions.builder()
+                            .model("gemini-2.5-flash")
+                            .build(),
+                    org.springframework.ai.model.tool.DefaultToolCallingManager.builder().build(),
+                    org.springframework.retry.support.RetryTemplate.defaultInstance(),
+                    io.micrometer.observation.ObservationRegistry.NOOP);
         }
         // Vertex AI path: use gRPC with GCP IAM credentials
-        VertexAI vertextAI = getVertexAI();
-        return VertexAiGeminiChatModel.builder().vertexAI(vertextAI).build();
+        VertexAI vertexAI = getVertexAI();
+        return VertexAiGeminiChatModel.builder().vertexAI(vertexAI).build();
     }
 
     @SneakyThrows
     private VertexAI getVertexAI() {
         VertexAI.Builder builder = new VertexAI.Builder();
         if (config.getGoogleCredentials() != null) {
-            // Scope credentials for Vertex AI
             var scopedCredentials =
                     config.getGoogleCredentials()
                             .createScoped("https://www.googleapis.com/auth/cloud-platform");
@@ -160,6 +169,35 @@ public class GeminiVertex implements AIModel {
                         .map(tc -> tc.getToolDefinition().name())
                         .collect(Collectors.toSet());
 
+        // For API key path: use GoogleGenAiChatOptions
+        // Build tool callbacks with proper schemas from ChatCompletion.getTools()
+        if (config.getApiKey() != null
+                && !config.getApiKey().isBlank()
+                && config.getGoogleCredentials() == null) {
+
+            List<ToolCallback> genaiCallbacks = buildGenAiToolCallbacks(input);
+            Set<String> genaiToolNames =
+                    genaiCallbacks.stream()
+                            .map(tc -> tc.getToolDefinition().name())
+                            .collect(Collectors.toSet());
+
+            return GoogleGenAiChatOptions.builder()
+                    .model(input.getModel())
+                    .temperature(input.getTemperature())
+                    .maxOutputTokens(input.getMaxTokens())
+                    .frequencyPenalty(input.getFrequencyPenalty())
+                    .internalToolExecutionEnabled(false)
+                    .presencePenalty(input.getPresencePenalty())
+                    .stopSequences(input.getStopWords())
+                    .toolCallbacks(genaiCallbacks)
+                    .toolNames(genaiToolNames)
+                    .topK(input.getTopK())
+                    .topP(input.getTopP())
+                    .googleSearchRetrieval(input.isGoogleSearchRetrieval())
+                    .build();
+        }
+
+        // Vertex AI path: use VertexAiGeminiChatOptions
         return VertexAiGeminiChatOptions.builder()
                 .model(input.getModel())
                 .temperature(input.getTemperature())
@@ -174,6 +212,58 @@ public class GeminiVertex implements AIModel {
                 .topP(input.getTopP())
                 .googleSearchRetrieval(input.isGoogleSearchRetrieval())
                 .build();
+    }
+
+    /**
+     * Build ToolCallbacks with proper inputSchema from ChatCompletion.getTools(). Conductor's
+     * default getToolCallback() creates callbacks with null inputSchema, which causes
+     * GoogleGenAiToolCallingManager to crash.
+     */
+    private List<ToolCallback> buildGenAiToolCallbacks(ChatCompletion input) {
+        if (input.getTools() == null || input.getTools().isEmpty()) {
+            return List.of();
+        }
+
+        List<ToolCallback> callbacks = new ArrayList<>();
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+
+        for (var toolSpec : input.getTools()) {
+            String schemaJson = "{}";
+            if (toolSpec.getInputSchema() != null && !toolSpec.getInputSchema().isEmpty()) {
+                try {
+                    schemaJson = mapper.writeValueAsString(toolSpec.getInputSchema());
+                } catch (Exception e) {
+                    // fallback
+                }
+            }
+
+            var toolDef =
+                    org.springframework.ai.tool.definition.ToolDefinition.builder()
+                            .name(toolSpec.getName())
+                            .description(
+                                    toolSpec.getDescription() != null
+                                            ? toolSpec.getDescription()
+                                            : "")
+                            .inputSchema(schemaJson)
+                            .build();
+
+            // Create a no-op callback — Conductor manages tool execution externally
+            callbacks.add(
+                    new ToolCallback() {
+                        @Override
+                        public org.springframework.ai.tool.definition.ToolDefinition
+                                getToolDefinition() {
+                            return toolDef;
+                        }
+
+                        @Override
+                        public String call(String toolInput) {
+                            return "{}";
+                        }
+                    });
+        }
+
+        return callbacks;
     }
 
     @Override
