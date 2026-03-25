@@ -106,6 +106,18 @@ export const SidebarItem = ({
   const isParentWithActiveChild =
     hasChildren && hasActiveChild && !isRouteActive && !isActive;
 
+  const opensInNewTab = useMemo(
+    () =>
+      Boolean(
+        item.isOpenNewTab ||
+        (item.linkTo &&
+          (item.linkTo.startsWith("//") ||
+            item.linkTo.startsWith("http://") ||
+            item.linkTo.startsWith("https://"))),
+      ),
+    [item.isOpenNewTab, item.linkTo],
+  );
+
   const handleClick = useCallback(() => {
     if (hasChildren) {
       setIsExpanded((prev) => !prev);
@@ -146,37 +158,19 @@ export const SidebarItem = ({
   const badgeCount = (item.useBadgeCount ?? (() => 0))();
   const showBadge = badgeCount > 0;
 
-  // Check if link should open in new tab (isOpenNewTab flag or absolute URL)
-  const isExternalLink =
-    item.isOpenNewTab ||
-    (item.linkTo &&
-      (item.linkTo.startsWith("//") ||
-        item.linkTo.startsWith("http://") ||
-        item.linkTo.startsWith("https://")));
+  const isLeafLink = Boolean(item.linkTo) && item.linkTo !== "" && !hasChildren;
+  // New-tab leaf: omit custom onClick so Link/anchor default is the only navigation
+  // (ListItemButton + component="a" + onClick races with target="_blank" otherwise).
+  const leafLinkClicksOpenNewTab = isLeafLink && opensInNewTab;
 
   const itemContent = (
     <ListItemButton
       id={item.id}
-      component={
-        item.linkTo && !hasChildren && item.linkTo !== "" && !isExternalLink
-          ? Link
-          : isExternalLink && item.linkTo && !hasChildren && item.linkTo !== ""
-            ? "a"
-            : "div"
-      }
-      to={
-        item.linkTo && !hasChildren && item.linkTo !== "" && !isExternalLink
-          ? item.linkTo
-          : undefined
-      }
-      href={
-        isExternalLink && item.linkTo && !hasChildren && item.linkTo !== ""
-          ? item.linkTo
-          : undefined
-      }
-      target={isExternalLink ? "_blank" : undefined}
-      rel={isExternalLink ? "noopener noreferrer" : undefined}
-      onClick={handleClick}
+      component={isLeafLink ? Link : "div"}
+      to={isLeafLink ? item.linkTo : undefined}
+      target={opensInNewTab ? "_blank" : undefined}
+      rel={opensInNewTab ? "noopener noreferrer" : undefined}
+      onClick={leafLinkClicksOpenNewTab ? undefined : handleClick}
       onMouseEnter={
         !open && hasChildren && level === 0 ? onMouseEnter : undefined
       }
