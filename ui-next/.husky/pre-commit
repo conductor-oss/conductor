@@ -1,0 +1,3 @@
+cd ui-next
+pnpm lint-staged
+pnpm test
