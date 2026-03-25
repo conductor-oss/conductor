@@ -1,3 +1,6 @@
+---
+description: "Inline Task — execute JavaScript expressions inside Conductor workflows for data transformation and conditional logic."
+---
 # Inline Task
 ```json
 "type": "INLINE"
@@ -13,8 +16,8 @@ Use these parameters inside `inputParameters` in the Inline task configuration.
 
 | Parameter          | Type                | Description                                       | Required / Optional  |
 | ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
-| inputParameters.evaluatorType | String | The type of evaluator used. Supported types: `javascript`                             | Required. |
-| inputParameters.expression    | String | The expression to be evaluated by the evaluator. The expression must return a value. <br/><br/> The JavaScript evaluator accepts code written to the ECMAScript 5.1(ES5) standard. <br/><br/>  **Note:** To use ES6 instead, set the environment variable `CONDUCTOR_NASHORN_ES6_ENABLED` to `true`. | Required. |
+| evaluatorType | String | The type of evaluator used. Supported types: `javascript`                             | Required. |
+| expression    | String | The expression to be evaluated by the evaluator. The expression must return a value. <br/><br/> The JavaScript evaluator accepts code written to the ECMAScript 5.1(ES5) standard. <br/><br/>  **Note:** To use ES6 instead, set the environment variable `CONDUCTOR_NASHORN_ES6_ENABLED` to `true`. | Required. |
 | inputParameters    | Map[String, Any] | Any other input parameters for the Inline task. You can include any other input values required for evaluation here, which can be referenced in `expression` as `$.value`. | Optional. |
 
 ## JSON configuration
