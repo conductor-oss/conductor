@@ -76,9 +76,13 @@ public class IncomingWebhookServiceTest {
     // handleWebhook — config not found
     // -------------------------------------------------------------------------
 
-    @Test(expected = IllegalArgumentException.class)
-    public void handleWebhook_throwsWhenConfigNotFound() {
-        service.handleWebhook("unknown-id", "{}", Collections.emptyMap(), new HttpHeaders());
+    @Test
+    public void handleWebhook_returnsNullWhenConfigNotFound() {
+        // Should return null (HTTP 200) rather than throwing — avoids retry storms when a
+        // webhook config is deleted while the provider still has the URL registered.
+        assertNull(
+                service.handleWebhook(
+                        "unknown-id", "{}", Collections.emptyMap(), new HttpHeaders()));
     }
 
     // -------------------------------------------------------------------------
@@ -340,13 +344,19 @@ public class IncomingWebhookServiceTest {
     }
 
     @Test
-    public void handlePing_nullResponse_doesNotMarkVerified() {
-        WebhookConfig config = saveConfig(WEBHOOK_ID);
+    public void handlePing_nullResponse_treatedAsRealEvent() {
+        // When the verifier returns null (not a recognised ping challenge), the GET request is
+        // treated as a real webhook event — dispatched inline. URL is NOT marked verified.
+        saveConfig(WEBHOOK_ID);
         when(mockVerifier.handlePing(any(), any())).thenReturn(null);
 
-        service.handlePing(WEBHOOK_ID, Collections.emptyMap());
+        String result = service.handlePing(WEBHOOK_ID, Map.of("type", "order.created"));
 
+        assertNull(result); // null propagated to caller
         assertFalse(configDAO.get(WEBHOOK_ID).isUrlVerified());
+        // No waiting tasks registered, so executionDAOFacade.getTaskModel() never called,
+        // but the dispatch path was exercised without error.
+        verifyNoInteractions(executionDAOFacade, workflowExecutor);
     }
 
     // -------------------------------------------------------------------------

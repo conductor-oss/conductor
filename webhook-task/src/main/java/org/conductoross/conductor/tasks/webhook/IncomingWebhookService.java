@@ -104,8 +104,12 @@ public class IncomingWebhookService {
 
         WebhookConfig config = webhookConfigDAO.get(id);
         if (config == null) {
-            LOGGER.warn("Inbound event received for unknown webhook config id={}", id);
-            throw new IllegalArgumentException("Webhook config not found: " + id);
+            // Return null (HTTP 200) rather than throwing — Orkes behaviour. Throwing causes most
+            // webhook providers to retry with exponential backoff; a 200 silently discards the
+            // event, which is preferable when a config is deleted while the provider still has the
+            // URL registered (avoids retry storms).
+            LOGGER.warn("Inbound event for unknown webhook config id={} — discarding", id);
+            return null;
         }
 
         WebhookVerifier verifier = resolveVerifier(config);
@@ -154,15 +158,24 @@ public class IncomingWebhookService {
         }
 
         WebhookVerifier verifier = resolveVerifier(config);
-        String response =
-                verifier.handlePing(
-                        config, requestParams != null ? requestParams : Collections.emptyMap());
+        Map<String, Object> safeParams =
+                requestParams != null ? requestParams : Collections.emptyMap();
+        String response = verifier.handlePing(config, safeParams);
 
         if (response != null) {
-            // Ping confirmed — mark URL as verified
+            // Ping/challenge confirmed — mark URL as verified
             config.setUrlVerified(true);
             webhookConfigDAO.save(id, config);
             LOGGER.debug("Webhook id={} URL verified via ping", id);
+        } else {
+            // Not a recognised ping — treat as a real event arriving via GET. Some providers
+            // (e.g. certain GitHub event types) deliver payloads as GET query parameters.
+            // Dispatch inline with an empty JSON body and the query params as the payload.
+            // Matches Orkes behaviour: when handlePing returns null, Orkes queues the event
+            // for full processing.
+            Map<String, Object> payload = parsePayload("{}", safeParams);
+            dispatchToWaitingTasks(id, "{}", safeParams, payload);
+            startWorkflowsToStart(config, payload, UUID.randomUUID().toString());
         }
 
         return response;
