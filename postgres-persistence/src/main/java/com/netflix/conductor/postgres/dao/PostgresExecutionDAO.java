@@ -383,6 +383,12 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
                 q -> q.addParameter(limit).addParameter(offset).executeScalarList(String.class));
     }
 
+    @Override
+    public long getWorkflowCount() {
+        return queryWithTransaction(
+                "SELECT COUNT(*) FROM workflow", q -> q.executeCount());
+    }
+
     /**
      * @param workflowName name of the workflow
      * @param version the workflow version

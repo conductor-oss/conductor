@@ -374,6 +374,19 @@ public class SqliteExecutionDAO extends SqliteBaseDAO
         return workflow;
     }
 
+    @Override
+    public List<String> getAllWorkflowIds(int offset, int limit) {
+        return queryWithTransaction(
+                "SELECT workflow_id FROM workflow ORDER BY workflow_id LIMIT ? OFFSET ?",
+                q -> q.addParameter(limit).addParameter(offset).executeScalarList(String.class));
+    }
+
+    @Override
+    public long getWorkflowCount() {
+        return queryWithTransaction(
+                "SELECT COUNT(*) FROM workflow", q -> q.executeCount());
+    }
+
     /**
      * @param workflowName name of the workflow
      * @param version the workflow version

@@ -207,6 +207,16 @@ public interface ExecutionDAO {
                 getClass().getSimpleName() + " does not support getAllWorkflowIds");
     }
 
+    /**
+     * Get the total count of workflows. Used for reindex progress tracking.
+     *
+     * @return total number of workflows
+     */
+    default long getWorkflowCount() {
+        throw new UnsupportedOperationException(
+                getClass().getSimpleName() + " does not support getWorkflowCount");
+    }
+
     // Events
 
     /**

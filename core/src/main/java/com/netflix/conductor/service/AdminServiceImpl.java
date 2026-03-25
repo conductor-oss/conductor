@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
@@ -56,9 +56,9 @@ public class AdminServiceImpl implements AdminService {
 
     private final AtomicReference<ReindexState> reindexState =
             new AtomicReference<>(ReindexState.IDLE);
-    private final AtomicInteger reindexProcessed = new AtomicInteger(0);
-    private final AtomicInteger reindexErrors = new AtomicInteger(0);
-    private final AtomicInteger reindexTotal = new AtomicInteger(0);
+    private final AtomicLong reindexProcessed = new AtomicLong(0);
+    private final AtomicLong reindexErrors = new AtomicLong(0);
+    private final AtomicLong reindexTotal = new AtomicLong(0);
     private volatile String reindexMessage = "";
     private final ExecutorService reindexExecutor =
             Executors.newSingleThreadExecutor(
@@ -177,6 +177,18 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public Map<String, Object> startReindex() {
+        // Fail fast if the DAO doesn't support reindexing
+        try {
+            executionDAO.getWorkflowCount();
+        } catch (UnsupportedOperationException e) {
+            Map<String, Object> result = new HashMap<>();
+            result.put("state", "UNSUPPORTED");
+            result.put("message",
+                    "Reindex is not supported by the current persistence backend ("
+                            + executionDAO.getClass().getSimpleName() + ")");
+            return result;
+        }
+
         if (!reindexState.compareAndSet(ReindexState.IDLE, ReindexState.RUNNING)
                 && !reindexState.compareAndSet(ReindexState.COMPLETED, ReindexState.RUNNING)
                 && !reindexState.compareAndSet(ReindexState.FAILED, ReindexState.RUNNING)) {
@@ -217,8 +229,8 @@ public class AdminServiceImpl implements AdminService {
         int offset = 0;
 
         try {
-            // First pass: count total
-            int total = executionDAO.getAllWorkflowIds(0, Integer.MAX_VALUE).size();
+            // Count total using lightweight COUNT query (no heap allocation)
+            long total = executionDAO.getWorkflowCount();
             reindexTotal.set(total);
             reindexMessage = "Indexing 0 / " + total;
             LOGGER.info("Reindex: {} workflows to process", total);
@@ -241,7 +253,7 @@ public class AdminServiceImpl implements AdminService {
                         for (TaskModel task : wfModel.getTasks()) {
                             indexDAO.indexTask(new TaskSummary(task.toTask()));
                         }
-                        int done = reindexProcessed.incrementAndGet();
+                        long done = reindexProcessed.incrementAndGet();
                         reindexMessage = "Indexing " + done + " / " + reindexTotal.get();
                     } catch (Exception e) {
                         reindexErrors.incrementAndGet();
