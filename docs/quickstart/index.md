@@ -10,6 +10,8 @@ You need [Node.js](https://nodejs.org/) (v16+) and [Java](https://adoptium.net/)
 
 ## Phase 1: See it work
 
+> **Prerequisite:** Java 21+ is required to run the Conductor server. Run `java --version` to check. [Install Java 21](https://adoptium.net/)
+
 ### Start Conductor
 
 ```bash
@@ -183,6 +185,8 @@ curl -X POST http://localhost:8080/api/metadata/taskdefs \
 Save `worker.py`:
 
 ```python
+import time
+
 from conductor.client.automator.task_handler import TaskHandler
 from conductor.client.configuration.configuration import Configuration
 from conductor.client.worker.worker_task import worker_task
@@ -211,7 +215,7 @@ def main():
 
     try:
         while True:
-            pass
+            time.sleep(0.1)  # avoid busy-waiting; yield CPU between poll cycles
     except KeyboardInterrupt:
         handler.stop_processes()
 
@@ -314,8 +318,12 @@ Conductor picks up from the failed task, reusing the outputs of all previously c
 
     === "JavaScript"
 
+        ```bash
+        npm install conductor-javascript-sdk
+        ```
+
         ```javascript
-        const { ConductorWorker } = require("@conductor-oss/conductor-client");
+        const { ConductorWorker } = require("conductor-javascript-sdk");
 
         const worker = new ConductorWorker({
           url: "http://localhost:8080/api",
@@ -384,7 +392,7 @@ All the workflow commands above work the same — just replace the CLI commands 
 | CLI | cURL |
 |-----|------|
 | `conductor workflow create workflow.json` | `curl -X POST http://localhost:8080/api/metadata/workflow -H 'Content-Type: application/json' -d @workflow.json` |
-| `conductor workflow start -w hello_workflow --sync` | `curl -s -X POST http://localhost:8080/api/workflow/hello_workflow -H 'Content-Type: application/json'` |
+| `conductor workflow start -w hello_workflow --sync` | `curl -s -X POST "http://localhost:8080/api/workflow/hello_workflow/run" -H 'Content-Type: application/json' -d '{}'` |
 | `conductor server stop` | `docker rm -f conductor` |
 
 For production deployment options, see [Running with Docker](../devguide/running/deploy.md).
