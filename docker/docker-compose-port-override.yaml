@@ -1,7 +1,7 @@
 services:
   conductor-server:
     ports:
-      - "7001:8080"
+      - "8000:8080"
       - "8127:5000"
   conductor-postgres:
     image: postgres:16

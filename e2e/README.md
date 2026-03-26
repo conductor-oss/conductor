@@ -27,7 +27,7 @@ From the **repo root**:
 ./e2e/run_tests-mysql.sh            # MySQL
 ```
 
-The server listens on `http://localhost:8080` by default. Override with:
+The server listens on `http://localhost:8000` by default. Override with:
 
 ```bash
 SERVER_ROOT_URI=http://localhost:9090 ./e2e/run_tests-postgres.sh
@@ -42,7 +42,7 @@ If you already have a Conductor server running, skip the scripts and run Gradle 
 RUN_E2E=true SERVER_ROOT_URI=http://localhost:6000 ./gradlew :conductor-e2e:test
 
 # Or using Gradle properties
-./gradlew :conductor-e2e:test -PrunE2E -DSERVER_ROOT_URI=http://localhost:8080
+./gradlew :conductor-e2e:test -PrunE2E -DSERVER_ROOT_URI=http://localhost:8000
 ```
 
 > Tests are **skipped by default** during a normal `./gradlew build` to avoid requiring a running server. The `RUN_E2E=true` env var or `-PrunE2E` flag is required to enable them.

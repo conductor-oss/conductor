@@ -14,7 +14,7 @@ services:
     networks:
       - internal
     ports:
-      - 7001:8080
+      - 8000:8080
       - 8127:5000
     healthcheck:
       test: [ "CMD", "curl","-I" ,"-XGET", "http://localhost:8080/health" ]
@@ -41,8 +41,6 @@ services:
       - pgdata-conductor:/var/lib/postgresql/data
     networks:
       - internal
-    ports:
-      - 6432:5432
     healthcheck:
       test: timeout 5 bash -c 'cat < /dev/null > /dev/tcp/localhost/5432'
       interval: 5s
