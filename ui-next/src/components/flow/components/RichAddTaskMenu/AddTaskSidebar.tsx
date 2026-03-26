@@ -104,7 +104,7 @@ const SIDEBAR_ITEMS = [
     icon: Users,
   },
   {
-    label: "Integrations",
+    label: "Connected Apps",
     tab: RichAddMenuTabs.INTEGRATIONS_TAB,
     icon: Gear,
   },
@@ -433,7 +433,7 @@ const AddTaskSidebar = ({
   return open ? (
     <Box
       sx={{
-        width: 450,
+        width: 550,
         flexShrink: 0,
         height: "100%",
         boxShadow: [
