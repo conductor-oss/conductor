@@ -22,6 +22,8 @@ import org.springframework.context.annotation.Configuration;
 
 import com.netflix.conductor.core.config.ConductorProperties;
 
+import lombok.Data;
+
 @Configuration
 @ConfigurationProperties("conductor.redis")
 public class RedisProperties {
@@ -39,6 +41,9 @@ public class RedisProperties {
      */
     private String dataCenterRegion = "us-east-1";
 
+    private Duration maxTotalRetriesDuration =
+            Duration.ofMillis(5 * 2000); // socket timeout * default attempts
+
     /**
      * Local rack / availability zone. For AWS deployments, the value is something like us-east-1a,
      * etc.
@@ -50,6 +55,18 @@ public class RedisProperties {
 
     /** Dynomite Cluster details. Format is host:port:rack separated by semicolon */
     private String hosts = null;
+
+    private String user;
+
+    /**
+     * Sentinel master name. Required when conductor.db.type=redis_sentinel. This is the name of the
+     * master as configured in the Sentinel nodes.
+     */
+    private String sentinelMasterName = "mymaster";
+
+    /** The time to live in seconds for which the event execution will be persisted */
+    @DurationUnit(ChronoUnit.SECONDS)
+    private Duration eventExecutionPersistenceTTL = Duration.ofSeconds(60);
 
     /** The prefix used to prepend workflow data in redis */
     private String workflowNamespacePrefix = null;
@@ -69,6 +86,9 @@ public class RedisProperties {
      */
     private int maxConnectionsPerHost = 10;
 
+    /** Database number. Defaults to a 0. Can be anywhere from 0 to 15 */
+    private int database = 0;
+
     /**
      * The maximum amount of time to wait for a connection to become available from the connection
      * pool
@@ -85,9 +105,9 @@ public class RedisProperties {
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration taskDefCacheRefreshInterval = Duration.ofSeconds(60);
 
-    /** The time to live in seconds for which the event execution will be persisted */
+    /** The time in seconds after which the in-memory metadata cache will be refreshed */
     @DurationUnit(ChronoUnit.SECONDS)
-    private Duration eventExecutionPersistenceTTL = Duration.ofSeconds(60);
+    private Duration metadataCacheRefreshInterval = Duration.ofSeconds(60);
 
     // Maximum number of idle connections to be maintained
     private int maxIdleConnections = 8;
@@ -95,21 +115,45 @@ public class RedisProperties {
     // Minimum number of idle connections to be maintained
     private int minIdleConnections = 5;
 
-    private long minEvictableIdleTimeMillis = 1800000;
+    private long minEvictableIdleTimeMillis = 180000;
 
-    private long timeBetweenEvictionRunsMillis = -1L;
+    private long timeBetweenEvictionRunsMillis = 60000;
 
-    private boolean testWhileIdle = false;
+    private boolean testWhileIdle = true;
+
+    private boolean fairness = true;
 
     private int numTestsPerEvictionRun = 3;
 
-    private int database = 0;
+    private boolean ssl;
 
-    private String username = null;
+    private boolean ignoreSsl;
 
-    private boolean ssl = false;
+    private int replicasToSync = 1;
 
-    private String clientName = null;
+    private int replicaSyncWaitTime = 5_000;
+
+    private long queueCacheExpireAfterAccessSeconds = 3600;
+
+    private long queueCacheMaxSize = 4000;
+
+    private ExecutionDAOProperties executionProperties = new ExecutionDAOProperties();
+
+    public int getReplicasToSync() {
+        return replicasToSync;
+    }
+
+    public void setReplicasToSync(int replicasToSync) {
+        this.replicasToSync = replicasToSync;
+    }
+
+    public int getReplicaSyncWaitTime() {
+        return replicaSyncWaitTime;
+    }
+
+    public void setReplicaSyncWaitTime(int replicaSyncWaitTime) {
+        this.replicaSyncWaitTime = replicaSyncWaitTime;
+    }
 
     public int getNumTestsPerEvictionRun() {
         return numTestsPerEvictionRun;
@@ -117,6 +161,14 @@ public class RedisProperties {
 
     public void setNumTestsPerEvictionRun(int numTestsPerEvictionRun) {
         this.numTestsPerEvictionRun = numTestsPerEvictionRun;
+    }
+
+    public boolean isFairness() {
+        return fairness;
+    }
+
+    public void setFairness(boolean fairness) {
+        this.fairness = fairness;
     }
 
     public boolean isTestWhileIdle() {
@@ -255,12 +307,12 @@ public class RedisProperties {
         this.taskDefCacheRefreshInterval = taskDefCacheRefreshInterval;
     }
 
-    public Duration getEventExecutionPersistenceTTL() {
-        return eventExecutionPersistenceTTL;
+    public int getDatabase() {
+        return database;
     }
 
-    public void setEventExecutionPersistenceTTL(Duration eventExecutionPersistenceTTL) {
-        this.eventExecutionPersistenceTTL = eventExecutionPersistenceTTL;
+    public void setDatabase(int database) {
+        this.database = database;
     }
 
     public String getQueuePrefix() {
@@ -271,20 +323,12 @@ public class RedisProperties {
         return prefix;
     }
 
-    public int getDatabase() {
-        return database;
+    public Duration getMetadataCacheRefreshInterval() {
+        return metadataCacheRefreshInterval;
     }
 
-    public void setDatabase(int database) {
-        this.database = database;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
+    public void setMetadataCacheRefreshInterval(Duration metadataCacheRefreshInterval) {
+        this.metadataCacheRefreshInterval = metadataCacheRefreshInterval;
     }
 
     public boolean isSsl() {
@@ -295,11 +339,74 @@ public class RedisProperties {
         this.ssl = ssl;
     }
 
-    public String getClientName() {
-        return clientName;
+    public void setIgnoreSsl(boolean ignoreSsl) {
+        this.ignoreSsl = ignoreSsl;
     }
 
-    public void setClientName(String clientName) {
-        this.clientName = clientName;
+    public boolean isIgnoreSsl() {
+        return ignoreSsl;
+    }
+
+    public Duration getMaxTotalRetriesDuration() {
+        return maxTotalRetriesDuration;
+    }
+
+    public void setMaxTotalRetriesDuration(Duration maxTotalRetriesDuration) {
+        this.maxTotalRetriesDuration = maxTotalRetriesDuration;
+    }
+
+    public long getQueueCacheExpireAfterAccessSeconds() {
+        return queueCacheExpireAfterAccessSeconds;
+    }
+
+    public void setQueueCacheExpireAfterAccessSeconds(long queueCacheExpireAfterAccessSeconds) {
+        this.queueCacheExpireAfterAccessSeconds = queueCacheExpireAfterAccessSeconds;
+    }
+
+    public long getQueueCacheMaxSize() {
+        return queueCacheMaxSize;
+    }
+
+    public void setQueueCacheMaxSize(long queueCacheMaxSize) {
+        this.queueCacheMaxSize = queueCacheMaxSize;
+    }
+
+    public void setExecutionProperties(ExecutionDAOProperties executionProperties) {
+        this.executionProperties = executionProperties;
+    }
+
+    public ExecutionDAOProperties getExecutionProperties() {
+        return this.executionProperties;
+    }
+
+    @Data
+    public static class ExecutionDAOProperties {
+        private int workflowDefCacheMaxSize = 10_000;
+        private int taskCacheMaxSize = 1000;
+        private int taskCacheExpireAfterWriteSeconds = 10;
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
+    }
+
+    public String getSentinelMasterName() {
+        return sentinelMasterName;
+    }
+
+    public void setSentinelMasterName(String sentinelMasterName) {
+        this.sentinelMasterName = sentinelMasterName;
+    }
+
+    public Duration getEventExecutionPersistenceTTL() {
+        return eventExecutionPersistenceTTL;
+    }
+
+    public void setEventExecutionPersistenceTTL(Duration eventExecutionPersistenceTTL) {
+        this.eventExecutionPersistenceTTL = eventExecutionPersistenceTTL;
     }
 }

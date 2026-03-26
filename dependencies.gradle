@@ -36,7 +36,7 @@ ext {
     revJakartaAnnotation = '2.1.1'
     revJAXB = '4.0.1'
     revJAXRS = '4.0.0'
-    revJedis = '3.3.0'
+    revJedis = '6.0.0'
     revJersey = '3.1.7'
     revJerseyCommon = '3.1.7'
     revJsonPath = '2.4.0'
@@ -77,4 +77,5 @@ ext {
     revCommonsCompress = '1.26.1'
     pinecone = '3.0.0'
     revFlexmark = '0.64.8'
+    awsSDK = '2.33.2'
 }

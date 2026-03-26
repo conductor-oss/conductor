@@ -15,24 +15,20 @@ package com.netflix.conductor.redis.config;
 import org.springframework.boot.autoconfigure.condition.AnyNestedCondition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
-public class AnyRedisCondition extends AnyNestedCondition {
+/**
+ * Condition that matches when Redis Cluster is needed for EITHER persistence (db.type) OR queuing
+ * (queue.type). Use this for Redis Cluster connection infrastructure (connection pool,
+ * JedisCommands) that must be available whenever Redis Cluster is in use, regardless of purpose.
+ */
+public class RedisClusterCondition extends AnyNestedCondition {
 
-    public AnyRedisCondition() {
+    public RedisClusterCondition() {
         super(ConfigurationPhase.PARSE_CONFIGURATION);
     }
 
-    @ConditionalOnProperty(name = "conductor.db.type", havingValue = "dynomite")
-    static class DynomiteClusterCondition {}
-
-    @ConditionalOnProperty(name = "conductor.db.type", havingValue = "memory")
-    static class InMemoryRedisCondition {}
-
     @ConditionalOnProperty(name = "conductor.db.type", havingValue = "redis_cluster")
-    static class RedisClusterConfiguration {}
+    static class DbRedisCluster {}
 
-    @ConditionalOnProperty(name = "conductor.db.type", havingValue = "redis_sentinel")
-    static class RedisSentinelConfiguration {}
-
-    @ConditionalOnProperty(name = "conductor.db.type", havingValue = "redis_standalone")
-    static class RedisStandaloneConfiguration {}
+    @ConditionalOnProperty(name = "conductor.queue.type", havingValue = "redis_cluster")
+    static class QueueRedisCluster {}
 }

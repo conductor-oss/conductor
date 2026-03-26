@@ -10,23 +10,23 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.redis.dynoqueue;
+package com.netflix.conductor.redis.config;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
-import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.HostBuilder;
 import com.netflix.dyno.connectionpool.HostSupplier;
 
-public class ConfigurationHostSupplier implements HostSupplier {
+import lombok.extern.slf4j.Slf4j;
 
-    private static final Logger log = LoggerFactory.getLogger(ConfigurationHostSupplier.class);
+@Component
+@Slf4j
+public class ConfigurationHostSupplier implements HostSupplier {
 
     private final RedisProperties properties;
 
@@ -34,7 +34,6 @@ public class ConfigurationHostSupplier implements HostSupplier {
         this.properties = properties;
     }
 
-    @Override
     public List<Host> getHosts() {
         return parseHostsFromConfig();
     }
@@ -42,8 +41,9 @@ public class ConfigurationHostSupplier implements HostSupplier {
     private List<Host> parseHostsFromConfig() {
         String hosts = properties.getHosts();
         if (hosts == null) {
+            // FIXME This type of validation probably doesn't belong here.
             String message =
-                    "Missing dynomite/redis hosts. Ensure 'conductor.redis.hosts' has been set in the supplied configuration.";
+                    "Missing dynomite/redis hosts. Ensure 'workflow.dynomite.cluster.hosts' has been set in the supplied configuration.";
             log.error(message);
             throw new RuntimeException(message);
         }

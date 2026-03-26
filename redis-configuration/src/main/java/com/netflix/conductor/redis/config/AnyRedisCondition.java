@@ -12,25 +12,21 @@
  */
 package com.netflix.conductor.redis.config;
 
+import org.springframework.boot.autoconfigure.condition.AnyNestedCondition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
-import com.netflix.conductor.redis.dynoqueue.LocalhostHostSupplier;
-import com.netflix.conductor.redis.jedis.JedisMock;
-import com.netflix.dyno.connectionpool.HostSupplier;
+public class AnyRedisCondition extends AnyNestedCondition {
 
-@Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(name = "conductor.db.type", havingValue = "memory")
-public class InMemoryRedisConfiguration {
-
-    @Bean
-    public HostSupplier hostSupplier(RedisProperties properties) {
-        return new LocalhostHostSupplier(properties);
+    public AnyRedisCondition() {
+        super(ConfigurationPhase.PARSE_CONFIGURATION);
     }
 
-    @Bean
-    public JedisMock jedisMock() {
-        return new JedisMock();
-    }
+    @ConditionalOnProperty(name = "conductor.db.type", havingValue = "redis_cluster")
+    static class RedisClusterConfiguration {}
+
+    @ConditionalOnProperty(name = "conductor.db.type", havingValue = "redis_sentinel")
+    static class RedisSentinelConfiguration {}
+
+    @ConditionalOnProperty(name = "conductor.db.type", havingValue = "redis_standalone")
+    static class RedisStandaloneConfiguration {}
 }
