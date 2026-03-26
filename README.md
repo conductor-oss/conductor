@@ -33,6 +33,8 @@ npm install -g @conductor-oss/conductor-cli
 conductor server start
 ```
 
+> **Note:** First start downloads ~600 MB (the server JAR). This is a one-time download.
+
 Open [http://localhost:8080](http://localhost:8080) — your server is running with the built-in UI.
 
 **Run your first workflow:**
@@ -41,6 +43,11 @@ Open [http://localhost:8080](http://localhost:8080) — your server is running w
 # Create a workflow that calls an API and parses the response — no workers needed
 curl -s https://raw.githubusercontent.com/conductor-oss/conductor/main/docs/quickstart/workflow.json -o workflow.json
 conductor workflow create workflow.json
+```
+
+> **Note:** Running this command twice will return an error on the second call — the workflow already exists. This is expected behavior. Use `conductor workflow update` to modify an existing workflow.
+
+```shell
 conductor workflow start -w hello_workflow --sync
 ```
 
