@@ -1,0 +1,606 @@
+[{
+  "createTime": 1697213475858,
+  "updateTime": 1697813767122,
+  "name": "DoWhileEarlyEvalScript",
+  "description": "asd",
+  "version": 5,
+  "tasks": [
+    {
+      "name": "platform_reserve_token",
+      "taskReferenceName": "reserve_token_ref",
+      "inputParameters": {
+        "resource_pool_name": "predictionspipelinespool",
+        "sublimit_id": "none"
+      },
+      "type": "SIMPLE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "taskDefinition": {
+        "name": "platform_reserve_token",
+        "description": "asd",
+        "retryCount": 3,
+        "timeoutSeconds": 3600,
+        "inputKeys": [
+          "resource_pool_name",
+          "sublimit_id"
+        ],
+        "outputKeys": [
+          "token_id"
+        ],
+        "timeoutPolicy": "TIME_OUT_WF",
+        "retryLogic": "FIXED",
+        "retryDelaySeconds": 60,
+        "responseTimeoutSeconds": 600,
+        "inputTemplate": {},
+        "rateLimitPerFrequency": 0,
+        "rateLimitFrequencyInSeconds": 1,
+        "ownerEmail": "test@orkes.io",
+        "backoffScaleFactor": 1
+      },
+      "rateLimited": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {}
+    },
+    {
+      "name": "platform_acquire_token",
+      "taskReferenceName": "acquire_token_ref",
+      "inputParameters": {
+        "resource_pool_name": "predictionspipelinespool",
+        "token_id": "${reserve_token_ref.output.token_id}"
+      },
+      "type": "SIMPLE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "taskDefinition": {
+        "name": "platform_acquire_token",
+        "description": "asd",
+        "retryCount": 5,
+        "timeoutSeconds": 0,
+        "inputKeys": [
+          "resource_pool_name",
+          "token_id"
+        ],
+        "outputKeys": [
+          "acquired_at"
+        ],
+        "timeoutPolicy": "RETRY",
+        "retryLogic": "FIXED",
+        "retryDelaySeconds": 60,
+        "responseTimeoutSeconds": 600,
+        "inputTemplate": {},
+        "rateLimitPerFrequency": 0,
+        "rateLimitFrequencyInSeconds": 1,
+        "ownerEmail": "test@orkes.io",
+        "backoffScaleFactor": 1
+      },
+      "rateLimited": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {}
+    },
+    {
+      "name": "predictions_daily_bq_export_pipeline_loop",
+      "taskReferenceName": "predictions_daily_bq_export_pipeline_loop",
+      "description": "asd",
+      "inputParameters": {},
+      "type": "DO_WHILE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "rateLimited": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "evaluatorType": "graaljs",
+      "loopCondition": "const a = 1; if ($.predictions_process_daily_bq_export_pipeline_results.is_pipeline_failure === true && $.predictions_daily_bq_export_pipeline_loop['iteration'] < 3) { true; } else { false; }",
+      "loopOver": [
+        {
+          "name": "predictions_start_daily_bq_export_pipeline",
+          "taskReferenceName": "predictions_start_daily_bq_export_pipeline",
+          "description": "asd",
+          "inputParameters": {
+            "namespace_id": "${workflow.input.namespace_id}"
+          },
+          "type": "SIMPLE",
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "taskDefinition": {
+            "name": "predictions_start_daily_bq_export_pipeline",
+            "description": "asd",
+            "retryCount": 5,
+            "timeoutSeconds": 360,
+            "inputKeys": [
+              "namespace_id"
+            ],
+            "outputKeys": [
+              "pipeline_uid",
+              "query_end_time",
+              "pipeline_started_at_rfc",
+              "namespace_enabled"
+            ],
+            "timeoutPolicy": "TIME_OUT_WF",
+            "retryLogic": "FIXED",
+            "retryDelaySeconds": 360,
+            "responseTimeoutSeconds": 360,
+            "inputTemplate": {},
+            "rateLimitPerFrequency": 0,
+            "rateLimitFrequencyInSeconds": 1,
+            "ownerEmail": "test@orkes.io",
+            "backoffScaleFactor": 1
+          },
+          "rateLimited": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": [],
+          "onStateChange": {}
+        },
+        {
+          "name": "if_terminate_condition",
+          "taskReferenceName": "if_terminate_condition",
+          "inputParameters": {
+            "switchCaseValue": "${predictions_start_daily_bq_export_pipeline.output.namespace_enabled}"
+          },
+          "type": "SWITCH",
+          "decisionCases": {
+            "false": [
+              {
+                "name": "platform_return_token",
+                "taskReferenceName": "return_token_namespace_not_enabled",
+                "inputParameters": {
+                  "resource_pool_name": "predictionspipelinespool",
+                  "token_id": "${reserve_token_ref.output.token_id}"
+                },
+                "type": "SIMPLE",
+                "decisionCases": {},
+                "defaultCase": [],
+                "forkTasks": [],
+                "startDelay": 0,
+                "joinOn": [],
+                "optional": false,
+                "taskDefinition": {
+                  "name": "platform_return_token",
+                  "description": "asd",
+                  "retryCount": 3,
+                  "timeoutSeconds": 3600,
+                  "inputKeys": [
+                    "resource_pool_name",
+                    "token_id"
+                  ],
+                  "outputKeys": [
+                    "is_token_returned",
+                    "returned_at",
+                    "previously_returned"
+                  ],
+                  "timeoutPolicy": "TIME_OUT_WF",
+                  "retryLogic": "FIXED",
+                  "retryDelaySeconds": 60,
+                  "responseTimeoutSeconds": 600,
+                  "inputTemplate": {},
+                  "rateLimitPerFrequency": 0,
+                  "rateLimitFrequencyInSeconds": 1,
+                  "ownerEmail": "test@orkes.io",
+                  "backoffScaleFactor": 1
+                },
+                "rateLimited": false,
+                "defaultExclusiveJoinTask": [],
+                "asyncComplete": false,
+                "loopOver": [],
+                "onStateChange": {}
+              },
+              {
+                "name": "platform_workflow_complete",
+                "taskReferenceName": "workflow_complete_namespace_not_enabled",
+                "inputParameters": {
+                  "external_key": "${workflow.input.external_key}",
+                  "workflow_id": "${workflow.workflowId}",
+                  "start_at": "${workflow.createTime}",
+                  "status": "COMPLETED"
+                },
+                "type": "SIMPLE",
+                "decisionCases": {},
+                "defaultCase": [],
+                "forkTasks": [],
+                "startDelay": 0,
+                "joinOn": [],
+                "optional": false,
+                "taskDefinition": {
+                  "name": "platform_workflow_complete",
+                  "description": "asd",
+                  "retryCount": 50000,
+                  "timeoutSeconds": 3600,
+                  "inputKeys": [
+                    "workflow_id",
+                    "status",
+                    "start_at",
+                    "end_at",
+                    "external_key",
+                    "message"
+                  ],
+                  "outputKeys": [],
+                  "timeoutPolicy": "RETRY",
+                  "retryLogic": "LINEAR_BACKOFF",
+                  "retryDelaySeconds": 15,
+                  "responseTimeoutSeconds": 600,
+                  "inputTemplate": {},
+                  "rateLimitPerFrequency": 0,
+                  "rateLimitFrequencyInSeconds": 1,
+                  "ownerEmail": "test@orkes.io",
+                  "backoffScaleFactor": 5
+                },
+                "rateLimited": false,
+                "defaultExclusiveJoinTask": [],
+                "asyncComplete": false,
+                "loopOver": [],
+                "onStateChange": {}
+              },
+              {
+                "name": "terminate_condition_is_true",
+                "taskReferenceName": "terminate_condition_is_true",
+                "inputParameters": {
+                  "terminationStatus": "COMPLETED",
+                  "terminationReason": "asd."
+                },
+                "type": "TERMINATE",
+                "decisionCases": {},
+                "defaultCase": [],
+                "forkTasks": [],
+                "startDelay": 0,
+                "joinOn": [],
+                "optional": false,
+                "rateLimited": false,
+                "defaultExclusiveJoinTask": [],
+                "asyncComplete": false,
+                "loopOver": [],
+                "onStateChange": {}
+              }
+            ]
+          },
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "rateLimited": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": [],
+          "evaluatorType": "value-param",
+          "expression": "switchCaseValue",
+          "onStateChange": {}
+        },
+        {
+          "name": "predictions_get_sagemaker_pipeline_execution_status_long_running",
+          "taskReferenceName": "predictions_get_daily_bq_export_pipeline_status_long_running",
+          "description": "asd",
+          "inputParameters": {
+            "pipeline_started_at_rfc": "${predictions_start_daily_bq_export_pipeline.output.pipeline_started_at_rfc}",
+            "pipeline_uid": "${predictions_start_daily_bq_export_pipeline.output.pipeline_uid}",
+            "pipeline_timeout_duration": "24h",
+            "wait_duration": "2m"
+          },
+          "type": "SIMPLE",
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "taskDefinition": {
+            "name": "predictions_get_sagemaker_pipeline_execution_status_long_running",
+            "description": "asd",
+            "retryCount": 6,
+            "timeoutSeconds": 0,
+            "inputKeys": [
+              "pipeline_uid",
+              "pipeline_started_at_rfc",
+              "wait_duration",
+              "pipeline_timeout_duration"
+            ],
+            "outputKeys": [
+              "pipeline_status"
+            ],
+            "timeoutPolicy": "TIME_OUT_WF",
+            "retryLogic": "FIXED",
+            "retryDelaySeconds": 30,
+            "responseTimeoutSeconds": 100,
+            "inputTemplate": {},
+            "rateLimitPerFrequency": 0,
+            "rateLimitFrequencyInSeconds": 1,
+            "ownerEmail": "test@orkes.io",
+            "backoffScaleFactor": 1
+          },
+          "rateLimited": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": [],
+          "onStateChange": {}
+        },
+        {
+          "name": "predictions_process_daily_bq_export_pipeline_results",
+          "taskReferenceName": "predictions_process_daily_bq_export_pipeline_results",
+          "description": "asd",
+          "inputParameters": {
+            "namespace_id": "${workflow.input.namespace_id}",
+            "pipeline_uid": "${predictions_start_daily_bq_export_pipeline.output.pipeline_uid}"
+          },
+          "type": "SIMPLE",
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "taskDefinition": {
+            "name": "predictions_process_daily_bq_export_pipeline_results",
+            "description": "asd",
+            "retryCount": 3,
+            "timeoutSeconds": 100,
+            "inputKeys": [
+              "namespace_id",
+              "pipeline_uid"
+            ],
+            "outputKeys": [
+              "pipeline_status",
+              "is_pipeline_failure"
+            ],
+            "timeoutPolicy": "TIME_OUT_WF",
+            "retryLogic": "FIXED",
+            "retryDelaySeconds": 300,
+            "responseTimeoutSeconds": 100,
+            "inputTemplate": {},
+            "rateLimitPerFrequency": 0,
+            "rateLimitFrequencyInSeconds": 1,
+            "ownerEmail": "test@orkes.io",
+            "backoffScaleFactor": 1
+          },
+          "rateLimited": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": [],
+          "onStateChange": {}
+        }
+      ],
+      "onStateChange": {}
+    },
+    {
+      "name": "platform_return_token",
+      "taskReferenceName": "return_token_ref",
+      "inputParameters": {
+        "resource_pool_name": "predictionspipelinespool",
+        "token_id": "${reserve_token_ref.output.token_id}"
+      },
+      "type": "SIMPLE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "taskDefinition": {
+        "name": "platform_return_token",
+        "description": "asd",
+        "retryCount": 3,
+        "timeoutSeconds": 3600,
+        "inputKeys": [
+          "resource_pool_name",
+          "token_id"
+        ],
+        "outputKeys": [
+          "is_token_returned",
+          "returned_at",
+          "previously_returned"
+        ],
+        "timeoutPolicy": "TIME_OUT_WF",
+        "retryLogic": "FIXED",
+        "retryDelaySeconds": 60,
+        "responseTimeoutSeconds": 600,
+        "inputTemplate": {},
+        "rateLimitPerFrequency": 0,
+        "rateLimitFrequencyInSeconds": 1,
+        "ownerEmail": "test@orkes.io",
+        "backoffScaleFactor": 1
+      },
+      "rateLimited": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {}
+    }
+  ],
+  "inputParameters": [
+    "namespace_id"
+  ],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "ownerEmail": "test@orkes.io",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {},
+  "inputTemplate": {},
+  "onStateChange": {}
+},
+  {
+    "createTime": 1751358927741,
+    "updateTime": 1751362970177,
+    "name": "do-while-set-variable-fix",
+    "description": "do-while-set-variable-fix",
+    "version": 1,
+    "tasks": [
+      {
+        "name": "set_variable",
+        "taskReferenceName": "set_initial_variable_ref",
+        "inputParameters": {
+          "isApproved": false,
+          "isSkipApproval": false
+        },
+        "type": "SET_VARIABLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {},
+        "permissive": false
+      },
+      {
+        "name": "do_while",
+        "taskReferenceName": "do_while_ref",
+        "inputParameters": {
+          "isApproved": "${workflow.variables.isApproved}"
+        },
+        "type": "DO_WHILE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopCondition": "(function () {\r\n  return !$.isApproved;\r\n})();",
+        "loopOver": [
+          {
+            "name": "switch",
+            "taskReferenceName": "switch_is_skip_approval_ref",
+            "inputParameters": {
+              "isSkipApproval": "${workflow.variables.isSkipApproval}"
+            },
+            "type": "SWITCH",
+            "decisionCases": {
+              "true": [
+                {
+                  "name": "set_variable",
+                  "taskReferenceName": "set_is_approved",
+                  "inputParameters": {
+                    "isApproved": true
+                  },
+                  "type": "SET_VARIABLE",
+                  "decisionCases": {},
+                  "defaultCase": [],
+                  "forkTasks": [],
+                  "startDelay": 0,
+                  "joinOn": [],
+                  "optional": false,
+                  "defaultExclusiveJoinTask": [],
+                  "asyncComplete": false,
+                  "loopOver": [],
+                  "onStateChange": {},
+                  "permissive": false
+                }
+              ],
+              "false": [
+                {
+                  "name": "wait_2",
+                  "taskReferenceName": "wait_ref_2",
+                  "inputParameters": {
+                    "duration": "2 seconds"
+                  },
+                  "type": "WAIT",
+                  "decisionCases": {},
+                  "defaultCase": [],
+                  "forkTasks": [],
+                  "startDelay": 0,
+                  "joinOn": [],
+                  "optional": false,
+                  "defaultExclusiveJoinTask": [],
+                  "asyncComplete": false,
+                  "loopOver": [],
+                  "onStateChange": {},
+                  "permissive": false
+                },
+                {
+                  "name": "set_variable",
+                  "taskReferenceName": "wait_ref_bug_from_here_down_below",
+                  "inputParameters": {
+                    "isSkipApproval": true
+                  },
+                  "type": "SET_VARIABLE",
+                  "decisionCases": {},
+                  "defaultCase": [],
+                  "forkTasks": [],
+                  "startDelay": 0,
+                  "joinOn": [],
+                  "optional": false,
+                  "defaultExclusiveJoinTask": [],
+                  "asyncComplete": false,
+                  "loopOver": [],
+                  "onStateChange": {},
+                  "permissive": false
+                },
+                {
+                  "name": "wait_1",
+                  "taskReferenceName": "wait_ref_1",
+                  "inputParameters": {
+                    "duration": "2 seconds"
+                  },
+                  "type": "WAIT",
+                  "decisionCases": {},
+                  "defaultCase": [],
+                  "forkTasks": [],
+                  "startDelay": 0,
+                  "joinOn": [],
+                  "optional": false,
+                  "defaultExclusiveJoinTask": [],
+                  "asyncComplete": false,
+                  "loopOver": [],
+                  "onStateChange": {},
+                  "permissive": false
+                }
+              ]
+            },
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": [],
+            "evaluatorType": "value-param",
+            "expression": "isSkipApproval",
+            "onStateChange": {},
+            "permissive": false
+          }
+        ],
+        "evaluatorType": "graaljs",
+        "onStateChange": {},
+        "permissive": false
+      }
+    ],
+    "inputParameters": [],
+    "outputParameters": {},
+    "failureWorkflow": "",
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": false,
+    "ownerEmail": "test@orkes.io",
+    "timeoutPolicy": "ALERT_ONLY",
+    "timeoutSeconds": 0,
+    "variables": {},
+    "inputTemplate": {},
+    "enforceSchema": true,
+    "metadata": {}
+  }]

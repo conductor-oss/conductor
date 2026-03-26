@@ -1,0 +1,1067 @@
+[
+  {
+    "createTime": 1683107983049,
+    "updateTime": 1682358589819,
+    "name": "sync_workflow_no_poller",
+    "description": "Edit or extend this sample workflow. Set the workflow name to get started",
+    "version": 1,
+    "tasks": [
+      {
+        "name": "simple_task_pia0h_ref",
+        "taskReferenceName": "simple_task_pia0h_ref",
+        "inputParameters": {},
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {}
+      }
+    ],
+    "inputParameters": [],
+    "outputParameters": {},
+    "failureWorkflow": "",
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": false,
+    "ownerEmail": "test@orkes.io",
+    "timeoutPolicy": "ALERT_ONLY",
+    "timeoutSeconds": 0,
+    "variables": {},
+    "inputTemplate": {},
+    "onStateChange": {}
+  },
+  {
+    "createTime": 1683107970948,
+    "updateTime": 1684439813332,
+    "name": "sync_workflow_failed_case",
+    "description": "Edit or extend this sample workflow. Set the workflow name to get started",
+    "version": 1,
+    "tasks": [
+      {
+        "name": "http_no_fail",
+        "taskReferenceName": "http_no_fail",
+        "inputParameters": {
+          "http_request": {
+            "uri": "https://orkes-api-tester.orkesconductor.com/get",
+            "method": "GET",
+            "connectionTimeOut": 3000,
+            "readTimeOut": 3000,
+            "accept": "application/json",
+            "contentType": "application/json"
+          }
+        },
+        "type": "HTTP",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {}
+      },
+      {
+        "name": "http_fail",
+        "taskReferenceName": "http_fail",
+        "inputParameters": {
+          "http_request": {
+            "uri": "https://cdatfact.ninja/fact",
+            "method": "GET",
+            "connectionTimeOut": 3000,
+            "readTimeOut": 3000,
+            "accept": "application/json",
+            "contentType": "application/json"
+          }
+        },
+        "type": "HTTP",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {}
+      }
+    ],
+    "inputParameters": [],
+    "outputParameters": {},
+    "failureWorkflow": "",
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": false,
+    "ownerEmail": "test@orkes.io",
+    "timeoutPolicy": "ALERT_ONLY",
+    "timeoutSeconds": 0,
+    "variables": {},
+    "inputTemplate": {},
+    "onStateChange": {}
+  },
+  {
+    "createTime": 1683108777738,
+    "updateTime": 1683108838153,
+    "name": "load_test_perf_sync_workflow",
+    "version": 1,
+    "tasks": [
+      {
+        "name": "x_test_worker_0",
+        "taskReferenceName": "simple_task_0",
+        "inputParameters": {},
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {}
+      },
+      {
+        "name": "jq",
+        "taskReferenceName": "jq",
+        "inputParameters": {
+          "key1": {
+            "value1": [
+              "a",
+              "b"
+            ]
+          },
+          "queryExpression": "{ key3: (.key1.value1 + .key2.value2) }",
+          "value2": [
+            "d",
+            "e"
+          ]
+        },
+        "type": "JSON_JQ_TRANSFORM",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {}
+      },
+      {
+        "name": "http_task_5saz2",
+        "taskReferenceName": "http_task_5saz2_ref",
+        "inputParameters": {
+          "http_request": {
+            "uri": "https://orkes-api-tester.orkesconductor.com/api",
+            "method": "GET",
+            "connectionTimeOut": 3000,
+            "readTimeOut": "3000",
+            "accept": "application/json",
+            "contentType": "application/json"
+          }
+        },
+        "type": "HTTP",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {}
+      },
+      {
+        "name": "wait",
+        "taskReferenceName": "wait",
+        "inputParameters": {
+          "duration": "1 seconds"
+        },
+        "type": "WAIT",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {}
+      },
+      {
+        "name": "set_state",
+        "taskReferenceName": "set_state",
+        "inputParameters": {
+          "call_made": true,
+          "number": "${simple_task_0.output.number}"
+        },
+        "type": "SET_VARIABLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {}
+      },
+      {
+        "name": "fork_task_t7nhng",
+        "taskReferenceName": "fork_task_t7nhng_ref",
+        "inputParameters": {},
+        "type": "FORK_JOIN",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [
+          [
+            {
+              "name": "x_test_worker_1",
+              "taskReferenceName": "simple_task_hap09_ref",
+              "inputParameters": {},
+              "type": "SIMPLE",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": [],
+              "onStateChange": {}
+            }
+          ],
+          [
+            {
+              "name": "x_test_worker_0",
+              "taskReferenceName": "simple_task_2nwrl_ref",
+              "inputParameters": {},
+              "type": "SIMPLE",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": [],
+              "onStateChange": {}
+            }
+          ],
+          [
+            {
+              "name": "x_test_worker_2",
+              "taskReferenceName": "simple_task_jgi39g_ref",
+              "inputParameters": {},
+              "type": "SIMPLE",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": [],
+              "onStateChange": {}
+            }
+          ]
+        ],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {}
+      },
+      {
+        "name": "join_task_y6nux",
+        "taskReferenceName": "join_task_y6nux_ref",
+        "inputParameters": {},
+        "type": "JOIN",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [
+          "simple_task_hap09_ref",
+          "simple_task_jgi39g_ref",
+          "simple_task_2nwrl_ref"
+        ],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {}
+      },
+      {
+        "name": "sub_flow",
+        "taskReferenceName": "sub_flow",
+        "inputParameters": {},
+        "type": "SUB_WORKFLOW",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "subWorkflowParam": {
+          "name": "PopulationMinMax"
+        },
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {}
+      },
+      {
+        "name": "dynamic_fork",
+        "taskReferenceName": "dynamic_fork",
+        "inputParameters": {
+          "forkTaskName": "x_test_worker_0",
+          "forkTaskInputs": [
+            1,
+            2,
+            3
+          ]
+        },
+        "type": "FORK_JOIN_DYNAMIC",
+        "decisionCases": {},
+        "dynamicForkTasksParam": "forkedTasks",
+        "dynamicForkTasksInputParamName": "forkedTasksInputs",
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {}
+      },
+      {
+        "name": "dynamic_fork_join",
+        "taskReferenceName": "dynamic_fork_join",
+        "inputParameters": {},
+        "type": "JOIN",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {}
+      },
+      {
+        "name": "fork",
+        "taskReferenceName": "fork",
+        "inputParameters": {},
+        "type": "FORK_JOIN",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [
+          [
+            {
+              "name": "loop_until_success",
+              "taskReferenceName": "loop_until_success",
+              "inputParameters": {
+                "loop_count": 2
+              },
+              "type": "DO_WHILE",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": true,
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopCondition": "if ( $.loop_count['iteration'] < $.loop_until_success ) { true; } else { false; }",
+              "loopOver": [
+                {
+                  "name": "fact_length",
+                  "taskReferenceName": "fact_length",
+                  "description": "Fail if the fact is too short",
+                  "inputParameters": {
+                    "number": "${get_data.output.number}"
+                  },
+                  "type": "SWITCH",
+                  "decisionCases": {
+                    "LONG": [
+                      {
+                        "name": "x_test_worker_1",
+                        "taskReferenceName": "simple_task_1",
+                        "inputParameters": {},
+                        "type": "SIMPLE",
+                        "decisionCases": {},
+                        "defaultCase": [],
+                        "forkTasks": [],
+                        "startDelay": 0,
+                        "joinOn": [],
+                        "optional": false,
+                        "defaultExclusiveJoinTask": [],
+                        "asyncComplete": false,
+                        "loopOver": [],
+                        "onStateChange": {}
+                      }
+                    ],
+                    "SHORT": [
+                      {
+                        "name": "too_short",
+                        "taskReferenceName": "too_short",
+                        "inputParameters": {
+                          "terminationReason": "value too short",
+                          "terminationStatus": "FAILED"
+                        },
+                        "type": "TERMINATE",
+                        "decisionCases": {},
+                        "defaultCase": [],
+                        "forkTasks": [],
+                        "startDelay": 0,
+                        "joinOn": [],
+                        "optional": false,
+                        "defaultExclusiveJoinTask": [],
+                        "asyncComplete": false,
+                        "loopOver": [],
+                        "onStateChange": {}
+                      }
+                    ]
+                  },
+                  "defaultCase": [],
+                  "forkTasks": [],
+                  "startDelay": 0,
+                  "joinOn": [],
+                  "optional": false,
+                  "defaultExclusiveJoinTask": [],
+                  "asyncComplete": false,
+                  "loopOver": [],
+                  "evaluatorType": "javascript",
+                  "expression": "$.number < 15 ? 'LONG':'LONG'",
+                  "onStateChange": {}
+                }
+              ],
+              "onStateChange": {}
+            },
+            {
+              "name": "sub_flow_inline",
+              "taskReferenceName": "sub_flow_inline",
+              "inputParameters": {},
+              "type": "SUB_WORKFLOW",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "subWorkflowParam": {
+                "name": "inline_sub",
+                "version": 1,
+                "workflowDefinition": {
+                  "name": "inline_sub",
+                  "version": 1,
+                  "tasks": [
+                    {
+                      "name": "x_test_worker_2",
+                      "taskReferenceName": "simple_task_0",
+                      "inputParameters": {},
+                      "type": "SIMPLE",
+                      "decisionCases": {},
+                      "defaultCase": [],
+                      "forkTasks": [],
+                      "startDelay": 0,
+                      "joinOn": [],
+                      "optional": false,
+                      "defaultExclusiveJoinTask": [],
+                      "asyncComplete": false,
+                      "loopOver": [],
+                      "onStateChange": {}
+                    },
+                    {
+                      "name": "fact_length2",
+                      "taskReferenceName": "fact_length2",
+                      "description": "Fail if the fact is too short",
+                      "inputParameters": {
+                        "number": "${get_data.output.number}"
+                      },
+                      "type": "SWITCH",
+                      "decisionCases": {
+                        "LONG": [
+                          {
+                            "name": "x_test_worker_1",
+                            "taskReferenceName": "simple_task_1",
+                            "inputParameters": {},
+                            "type": "SIMPLE",
+                            "decisionCases": {},
+                            "defaultCase": [],
+                            "forkTasks": [],
+                            "startDelay": 0,
+                            "joinOn": [],
+                            "optional": false,
+                            "defaultExclusiveJoinTask": [],
+                            "asyncComplete": false,
+                            "loopOver": [],
+                            "onStateChange": {}
+                          }
+                        ],
+                        "SHORT": [
+                          {
+                            "name": "too_short",
+                            "taskReferenceName": "too_short",
+                            "inputParameters": {
+                              "terminationReason": "value too short",
+                              "terminationStatus": "FAILED"
+                            },
+                            "type": "TERMINATE",
+                            "decisionCases": {},
+                            "defaultCase": [],
+                            "forkTasks": [],
+                            "startDelay": 0,
+                            "joinOn": [],
+                            "optional": false,
+                            "defaultExclusiveJoinTask": [],
+                            "asyncComplete": false,
+                            "loopOver": [],
+                            "onStateChange": {}
+                          }
+                        ]
+                      },
+                      "defaultCase": [],
+                      "forkTasks": [],
+                      "startDelay": 0,
+                      "joinOn": [],
+                      "optional": false,
+                      "defaultExclusiveJoinTask": [],
+                      "asyncComplete": false,
+                      "loopOver": [],
+                      "evaluatorType": "javascript",
+                      "expression": "$.number < 15 ? 'LONG':'LONG'",
+                      "onStateChange": {}
+                    },
+                    {
+                      "name": "sub_flow_inline_lvl2",
+                      "taskReferenceName": "sub_flow_inline_lvl2",
+                      "inputParameters": {},
+                      "type": "SUB_WORKFLOW",
+                      "decisionCases": {},
+                      "defaultCase": [],
+                      "forkTasks": [],
+                      "startDelay": 0,
+                      "subWorkflowParam": {
+                        "name": "inline_sub",
+                        "version": 1,
+                        "workflowDefinition": {
+                          "name": "inline_sub",
+                          "version": 1,
+                          "tasks": [
+                            {
+                              "name": "x_test_worker_2",
+                              "taskReferenceName": "simple_task_0",
+                              "inputParameters": {},
+                              "type": "SIMPLE",
+                              "decisionCases": {},
+                              "defaultCase": [],
+                              "forkTasks": [],
+                              "startDelay": 0,
+                              "joinOn": [],
+                              "optional": false,
+                              "defaultExclusiveJoinTask": [],
+                              "asyncComplete": false,
+                              "loopOver": [],
+                              "onStateChange": {}
+                            }
+                          ],
+                          "inputParameters": [],
+                          "outputParameters": {},
+                          "schemaVersion": 2,
+                          "restartable": true,
+                          "workflowStatusListenerEnabled": false,
+                          "timeoutPolicy": "ALERT_ONLY",
+                          "timeoutSeconds": 0,
+                          "variables": {},
+                          "inputTemplate": {},
+                          "onStateChange": {}
+                        }
+                      },
+                      "joinOn": [],
+                      "optional": false,
+                      "taskDefinition": {
+                        "name": "sub_flow_inline",
+                        "description": "sub_flow_inline",
+                        "retryCount": 0,
+                        "timeoutSeconds": 3000,
+                        "inputKeys": [],
+                        "outputKeys": [],
+                        "timeoutPolicy": "TIME_OUT_WF",
+                        "retryLogic": "FIXED",
+                        "retryDelaySeconds": 60,
+                        "responseTimeoutSeconds": 20,
+                        "inputTemplate": {},
+                        "rateLimitPerFrequency": 0,
+                        "rateLimitFrequencyInSeconds": 1,
+                        "pollTimeoutSeconds": 3600,
+                        "backoffScaleFactor": 1
+                      },
+                      "defaultExclusiveJoinTask": [],
+                      "asyncComplete": false,
+                      "loopOver": [],
+                      "onStateChange": {}
+                    }
+                  ],
+                  "inputParameters": [],
+                  "outputParameters": {},
+                  "schemaVersion": 2,
+                  "restartable": true,
+                  "workflowStatusListenerEnabled": false,
+                  "timeoutPolicy": "ALERT_ONLY",
+                  "timeoutSeconds": 0,
+                  "variables": {},
+                  "inputTemplate": {},
+                  "onStateChange": {}
+                }
+              },
+              "joinOn": [],
+              "optional": false,
+              "taskDefinition": {
+                "name": "sub_flow_inline",
+                "description": "sub_flow_inline",
+                "retryCount": 0,
+                "timeoutSeconds": 3000,
+                "inputKeys": [],
+                "outputKeys": [],
+                "timeoutPolicy": "TIME_OUT_WF",
+                "retryLogic": "FIXED",
+                "retryDelaySeconds": 60,
+                "responseTimeoutSeconds": 20,
+                "inputTemplate": {},
+                "rateLimitPerFrequency": 0,
+                "rateLimitFrequencyInSeconds": 1,
+                "pollTimeoutSeconds": 3600,
+                "backoffScaleFactor": 1
+              },
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": [],
+              "onStateChange": {}
+            }
+          ],
+          [
+            {
+              "name": "x_test_worker_2",
+              "taskReferenceName": "simple_task_2",
+              "inputParameters": {},
+              "type": "SIMPLE",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": [],
+              "onStateChange": {}
+            },
+            {
+              "name": "x_test_worker_1",
+              "taskReferenceName": "simple_task_5",
+              "inputParameters": {},
+              "type": "SIMPLE",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": [],
+              "onStateChange": {}
+            }
+          ]
+        ],
+        "startDelay": 0,
+        "joinOn": [
+          "sub_flow_inline",
+          "simple_task_5"
+        ],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {}
+      },
+      {
+        "name": "fork_join",
+        "taskReferenceName": "fork_join",
+        "inputParameters": {},
+        "type": "JOIN",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [
+          "simple_task_5",
+          "sub_flow_inline"
+        ],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {}
+      }
+    ],
+    "inputParameters": [],
+    "outputParameters": {
+      "task1": "${simple_task_0.output}",
+      "jq": "${jq.output}",
+      "inner_task": "${x_test_worker_1.output}"
+    },
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": false,
+    "ownerEmail": "test@orkes.io",
+    "timeoutPolicy": "ALERT_ONLY",
+    "timeoutSeconds": 0,
+    "variables": {},
+    "inputTemplate": {},
+    "onStateChange": {}
+  },
+  {
+    "createTime": 1683107857859,
+    "updateTime": 1685241924046,
+    "name": "sync_workflow_end_with_simple_task",
+    "description": "Edit or extend this sample workflow. Set the workflow name to get started",
+    "version": 1,
+    "tasks": [
+      {
+        "name": "x_test_worker_00",
+        "taskReferenceName": "simple_task_rka0w_ref",
+        "inputParameters": {},
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {}
+      }
+    ],
+    "inputParameters": [],
+    "outputParameters": {},
+    "failureWorkflow": "",
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": false,
+    "ownerEmail": "test@orkes.io",
+    "timeoutPolicy": "ALERT_ONLY",
+    "timeoutSeconds": 0,
+    "variables": {},
+    "inputTemplate": {},
+    "onStateChange": {}
+  },
+  {
+    "createTime": 1683107925149,
+    "updateTime": 1684744921838,
+    "name": "sync_workflow_end_with_set_variable_task",
+    "description": "Edit or extend this sample workflow. Set the workflow name to get started",
+    "version": 1,
+    "tasks": [
+      {
+        "name": "set_variable_task_1fi09_ref",
+        "taskReferenceName": "set_variable_task_1fi09_ref",
+        "inputParameters": {
+          "name": "Orkes"
+        },
+        "type": "SET_VARIABLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {}
+      }
+    ],
+    "inputParameters": [],
+    "outputParameters": {},
+    "failureWorkflow": "",
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": false,
+    "ownerEmail": "test@orkes.io",
+    "timeoutPolicy": "ALERT_ONLY",
+    "timeoutSeconds": 0,
+    "variables": {},
+    "inputTemplate": {},
+    "onStateChange": {}
+  },
+  {
+    "createTime": 1683107945966,
+    "updateTime": 1685309635473,
+    "name": "sync_workflow_end_with_jq_task",
+    "description": "Edit or extend this sample workflow. Set the workflow name to get started",
+    "version": 1,
+    "tasks": [
+      {
+        "name": "json_transform_task_10i8a",
+        "taskReferenceName": "json_transform_task_10i8a_ref",
+        "inputParameters": {
+          "persons": [
+            {
+              "name": "some",
+              "last": "name",
+              "email": "mail@mail.com",
+              "id": 1
+            },
+            {
+              "name": "some2",
+              "last": "name2",
+              "email": "mail2@mail.com",
+              "id": 2
+            }
+          ],
+          "queryExpression": ".persons | map({user:{email,id}})"
+        },
+        "type": "JSON_JQ_TRANSFORM",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {}
+      }
+    ],
+    "inputParameters": [],
+    "outputParameters": {},
+    "failureWorkflow": "",
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": false,
+    "ownerEmail": "test@orkes.io",
+    "timeoutPolicy": "ALERT_ONLY",
+    "timeoutSeconds": 0,
+    "variables": {},
+    "inputTemplate": {},
+    "onStateChange": {}
+  },
+  {
+    "createTime": 1683107958888,
+    "updateTime": 1682357144047,
+    "name": "sync_workflow_end_with_subworkflow_task",
+    "description": "Edit or extend this sample workflow. Set the workflow name to get started",
+    "version": 1,
+    "tasks": [
+      {
+        "name": "http",
+        "taskReferenceName": "http_sync",
+        "inputParameters": {},
+        "type": "SUB_WORKFLOW",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "subWorkflowParam": {
+          "name": "http"
+        },
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {}
+      }
+    ],
+    "inputParameters": [],
+    "outputParameters": {},
+    "failureWorkflow": "",
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": false,
+    "ownerEmail": "test@orkes.io",
+    "timeoutPolicy": "ALERT_ONLY",
+    "timeoutSeconds": 0,
+    "variables": {},
+    "inputTemplate": {},
+    "onStateChange": {}
+  },
+  {
+    "createTime": 1675358077891,
+    "updateTime": 1683650500645,
+    "name": "http",
+    "description": "Edit or extend this sample workflow. Set the workflow name to get started",
+    "version": 1,
+    "tasks": [
+      {
+        "name": "simple_task_in8x5",
+        "taskReferenceName": "simple_task_in8x5_ref",
+        "inputParameters": {},
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {}
+      }
+    ],
+    "inputParameters": [],
+    "outputParameters": {},
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": false,
+    "ownerEmail": "test@orkes.io",
+    "timeoutPolicy": "ALERT_ONLY",
+    "timeoutSeconds": 0,
+    "variables": {},
+    "inputTemplate": {},
+    "onStateChange": {}
+  },
+  {
+    "createTime": 1670136356629,
+    "updateTime": 1676101816481,
+    "name": "PopulationMinMax",
+    "description": "Edit or extend this sample workflow. Set the workflow name to get started",
+    "version": 1,
+    "tasks": [
+      {
+        "name": "set_variable_task_jqc56h_ref",
+        "taskReferenceName": "set_variable_task_jqc56h_ref",
+        "inputParameters": {
+          "name": "Orkes"
+        },
+        "type": "SET_VARIABLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {}
+      }
+    ],
+    "inputParameters": [],
+    "outputParameters": {},
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": false,
+    "ownerEmail": "test@orkes.io",
+    "timeoutPolicy": "ALERT_ONLY",
+    "timeoutSeconds": 0,
+    "variables": {},
+    "inputTemplate": {},
+    "onStateChange": {}
+  },
+  {
+    "name": "sync_workflow_with_inline_wait_and_simple_task",
+    "description": "Workflow with inline task, wait task (5 seconds) and simple task for testing waitUntilTaskRef",
+    "version": 1,
+    "tasks": [
+      {
+        "name": "inline",
+        "taskReferenceName": "inline_ref",
+        "inputParameters": {
+          "expression": "(function () {\n  return $.value1 + $.value2;\n})();",
+          "evaluatorType": "graaljs",
+          "value1": 1,
+          "value2": 2
+        },
+        "type": "INLINE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {},
+        "permissive": false
+      },
+      {
+        "name": "wait",
+        "taskReferenceName": "wait_ref",
+        "inputParameters": {
+          "duration": "5 seconds"
+        },
+        "type": "WAIT",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {},
+        "permissive": false
+      },
+      {
+        "name": "simple",
+        "taskReferenceName": "simple_ref",
+        "inputParameters": {},
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {},
+        "permissive": false
+      }
+    ],
+    "inputParameters": [],
+    "outputParameters": {},
+    "failureWorkflow": "",
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": false,
+    "ownerEmail": "test@orkes.io",
+    "timeoutPolicy": "ALERT_ONLY",
+    "timeoutSeconds": 0,
+    "variables": {},
+    "inputTemplate": {},
+    "enforceSchema": true,
+    "metadata": {},
+    "maskedFields": []
+  }
+]

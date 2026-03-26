@@ -1,0 +1,32 @@
+{
+  "name": "stackoverflower",
+  "description": ".",
+  "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "loop",
+      "taskReferenceName": "loop_ref",
+      "inputParameters": {
+        "n": "${workflow.input.n}"
+      },
+      "type": "DO_WHILE",
+      "startDelay": 0,
+      "loopCondition": "$.loop_ref['iteration'] < $.n",
+      "evaluatorType": "graaljs",
+      "loopOver": [
+        {
+          "name": "dummy",
+          "taskReferenceName": "dummy_ref",
+          "inputParameters": {
+            "expression": "\"stackoverflowing are you?\"",
+            "evaluatorType": "graaljs"
+          },
+          "type": "INLINE"
+        }
+      ]
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {}
+}

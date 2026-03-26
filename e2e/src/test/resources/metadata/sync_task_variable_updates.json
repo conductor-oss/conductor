@@ -1,0 +1,153 @@
+{
+  "createTime": 1744873676612,
+  "updateTime": 1744910019076,
+  "name": "sync_task_variable_updates",
+  "description": "sync_task_variable_updates",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "inline",
+      "taskReferenceName": "inline_ref",
+      "inputParameters": {
+        "expression": "(function () {\n  return $.value1 + $.value2;\n})();",
+        "evaluatorType": "graaljs",
+        "value1": 1,
+        "value2": 2
+      },
+      "type": "INLINE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {},
+      "permissive": false
+    },
+    {
+      "name": "wait_task",
+      "taskReferenceName": "wait_task_ref",
+      "inputParameters": {},
+      "type": "WAIT",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {},
+      "permissive": false
+    },
+    {
+      "name": "switch_task",
+      "taskReferenceName": "switch_task_ref",
+      "inputParameters": {
+        "switchCaseValue": "${workflow.variables.case}"
+      },
+      "type": "SWITCH",
+      "decisionCases": {
+        "case1": [
+          {
+            "name": "wait_task_2",
+            "taskReferenceName": "wait_task_ref_2",
+            "inputParameters": {},
+            "type": "WAIT",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": [],
+            "onStateChange": {},
+            "permissive": false
+          }
+        ],
+        "case2": [
+          {
+            "name": "wait_task_1",
+            "taskReferenceName": "wait_task_ref_1",
+            "inputParameters": {},
+            "type": "WAIT",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": [],
+            "onStateChange": {},
+            "permissive": false
+          }
+        ]
+      },
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "evaluatorType": "value-param",
+      "expression": "switchCaseValue",
+      "onStateChange": {},
+      "permissive": false
+    },
+    {
+      "name": "json_transform",
+      "taskReferenceName": "json_transform_ref",
+      "inputParameters": {
+        "persons": [
+          {
+            "name": "some",
+            "last": "name",
+            "email": "mail@mail.com",
+            "id": 1
+          },
+          {
+            "name": "some2",
+            "last": "name2",
+            "email": "mail2@mail.com",
+            "id": 2
+          }
+        ],
+        "queryExpression": ".persons | map({user:{email,id}})"
+      },
+      "type": "JSON_JQ_TRANSFORM",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {},
+      "permissive": false
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "failureWorkflow": "",
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "ownerEmail": "test@orkes.io",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {},
+  "inputTemplate": {},
+  "enforceSchema": true
+}

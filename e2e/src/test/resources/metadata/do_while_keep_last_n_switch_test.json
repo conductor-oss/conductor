@@ -1,0 +1,286 @@
+{
+  "createTime": 1758994238260,
+  "updateTime": 1758994489818,
+  "name": "do_while_keep_last_n_switch_test",
+  "description": "DO_WHILE with keepLastN=3, nested SWITCH, and max iteration control",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "do_while",
+      "taskReferenceName": "do_while_ref",
+      "inputParameters": {
+        "status": "${workflow.variables.status}",
+        "keepLastN": 3
+      },
+      "type": "DO_WHILE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopCondition": "$.status != 'Completed'",
+      "loopOver": [
+        {
+          "name": "switch",
+          "taskReferenceName": "switch_ref",
+          "inputParameters": {
+            "switchCaseValue": "b"
+          },
+          "type": "SWITCH",
+          "decisionCases": {
+            "a": [
+              {
+                "name": "eval_c_or_d",
+                "taskReferenceName": "eval_c_or_d_ref",
+                "inputParameters": {
+                  "expression": "(function () {\n  let r = Math.floor(Math.random() * 10) + 1;\n  return r > 3 ? \"c\": \"d\";\n})();",
+                  "evaluatorType": "graaljs",
+                  "value1": 1,
+                  "value2": 2
+                },
+                "type": "INLINE",
+                "decisionCases": {},
+                "defaultCase": [],
+                "forkTasks": [],
+                "startDelay": 0,
+                "joinOn": [],
+                "optional": false,
+                "defaultExclusiveJoinTask": [],
+                "asyncComplete": false,
+                "loopOver": [],
+                "onStateChange": {},
+                "permissive": false
+              },
+              {
+                "name": "switch_1",
+                "taskReferenceName": "switch_ref_1",
+                "inputParameters": {
+                  "switchCaseValue": "${eval_c_or_d_ref.output.result}"
+                },
+                "type": "SWITCH",
+                "decisionCases": {
+                  "c": [
+                    {
+                      "name": "inline_2",
+                      "taskReferenceName": "inline_ref_2",
+                      "inputParameters": {
+                        "expression": "(function () {\n  return $.value1 + $.value2;\n})();",
+                        "evaluatorType": "graaljs",
+                        "value1": 1,
+                        "value2": 2
+                      },
+                      "type": "INLINE",
+                      "decisionCases": {},
+                      "defaultCase": [],
+                      "forkTasks": [],
+                      "startDelay": 0,
+                      "joinOn": [],
+                      "optional": false,
+                      "defaultExclusiveJoinTask": [],
+                      "asyncComplete": false,
+                      "loopOver": [],
+                      "onStateChange": {},
+                      "permissive": false
+                    }
+                  ],
+                  "d": [
+                    {
+                      "name": "set_variable",
+                      "taskReferenceName": "set_variable_ref",
+                      "inputParameters": {
+                        "status": "Completed"
+                      },
+                      "type": "SET_VARIABLE",
+                      "decisionCases": {},
+                      "defaultCase": [],
+                      "forkTasks": [],
+                      "startDelay": 0,
+                      "joinOn": [],
+                      "optional": false,
+                      "defaultExclusiveJoinTask": [],
+                      "asyncComplete": false,
+                      "loopOver": [],
+                      "onStateChange": {},
+                      "permissive": false
+                    }
+                  ]
+                },
+                "defaultCase": [
+                  {
+                    "name": "wait",
+                    "taskReferenceName": "wait_ref",
+                    "inputParameters": {
+                      "duration": "1 seconds"
+                    },
+                    "type": "WAIT",
+                    "decisionCases": {},
+                    "defaultCase": [],
+                    "forkTasks": [],
+                    "startDelay": 0,
+                    "joinOn": [],
+                    "optional": false,
+                    "defaultExclusiveJoinTask": [],
+                    "asyncComplete": false,
+                    "loopOver": [],
+                    "onStateChange": {},
+                    "permissive": false
+                  }
+                ],
+                "forkTasks": [],
+                "startDelay": 0,
+                "joinOn": [],
+                "optional": false,
+                "defaultExclusiveJoinTask": [],
+                "asyncComplete": false,
+                "loopOver": [],
+                "evaluatorType": "value-param",
+                "expression": "switchCaseValue",
+                "onStateChange": {},
+                "permissive": false
+              }
+            ],
+            "b": [
+              {
+                "name": "inline",
+                "taskReferenceName": "inline_ref",
+                "inputParameters": {
+                  "expression": "(function () {\n  return $.value1 + $.value2;\n})();",
+                  "evaluatorType": "graaljs",
+                  "value1": 1,
+                  "value2": 2
+                },
+                "type": "INLINE",
+                "decisionCases": {},
+                "defaultCase": [],
+                "forkTasks": [],
+                "startDelay": 0,
+                "joinOn": [],
+                "optional": false,
+                "defaultExclusiveJoinTask": [],
+                "asyncComplete": false,
+                "loopOver": [],
+                "onStateChange": {},
+                "permissive": false
+              },
+              {
+                "name": "set_variable_1",
+                "taskReferenceName": "set_variable_ref_1",
+                "inputParameters": {
+                  "status": "RUNNING"
+                },
+                "type": "SET_VARIABLE",
+                "decisionCases": {},
+                "defaultCase": [],
+                "forkTasks": [],
+                "startDelay": 0,
+                "joinOn": [],
+                "optional": false,
+                "defaultExclusiveJoinTask": [],
+                "asyncComplete": false,
+                "loopOver": [],
+                "onStateChange": {},
+                "permissive": false
+              }
+            ]
+          },
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": [],
+          "evaluatorType": "value-param",
+          "expression": "switchCaseValue",
+          "onStateChange": {},
+          "permissive": false
+        },
+        {
+          "name": "max_loop_ctrl",
+          "taskReferenceName": "max_loop_ctrl_ref",
+          "inputParameters": {
+            "expression": "(function () {\n  return $.iteration > 25 ? \"stop\": \"continue\";\n})();",
+            "evaluatorType": "graaljs",
+            "iteration": "${do_while_ref.output.iteration}"
+          },
+          "type": "INLINE",
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": [],
+          "onStateChange": {},
+          "permissive": false
+        },
+        {
+          "name": "switch_2",
+          "taskReferenceName": "switch_ref_2",
+          "inputParameters": {
+            "switchCaseValue": "${max_loop_ctrl_ref.output.result}"
+          },
+          "type": "SWITCH",
+          "decisionCases": {
+            "stop": [
+              {
+                "name": "set_variable_2",
+                "taskReferenceName": "set_variable_ref_2",
+                "inputParameters": {
+                  "status": "Completed"
+                },
+                "type": "SET_VARIABLE",
+                "decisionCases": {},
+                "defaultCase": [],
+                "forkTasks": [],
+                "startDelay": 0,
+                "joinOn": [],
+                "optional": false,
+                "defaultExclusiveJoinTask": [],
+                "asyncComplete": false,
+                "loopOver": [],
+                "onStateChange": {},
+                "permissive": false
+              }
+            ]
+          },
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": [],
+          "evaluatorType": "value-param",
+          "expression": "switchCaseValue",
+          "onStateChange": {},
+          "permissive": false
+        }
+      ],
+      "evaluatorType": "graaljs",
+      "onStateChange": {},
+      "permissive": false
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "failureWorkflow": "",
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "ownerEmail": "test@orkes.io",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {},
+  "inputTemplate": {},
+  "enforceSchema": true,
+  "metadata": {},
+  "maskedFields": []
+}

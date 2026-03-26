@@ -121,10 +121,16 @@ public class MetadataMapperService {
         Utils.checkNotNull(workflowTask, "WorkflowTask cannot be null");
         if (shouldPopulateTaskDefinition(workflowTask)) {
             workflowTask.setTaskDefinition(metadataDAO.getTaskDef(workflowTask.getName()));
-            if (workflowTask.getTaskDefinition() == null
-                    && workflowTask.getType().equals(TaskType.SIMPLE.name())) {
-                // ad-hoc task def
-                workflowTask.setTaskDefinition(new TaskDef(workflowTask.getName()));
+            if (workflowTask.getTaskDefinition() == null) {
+                // ad-hoc task def — for non-SIMPLE tasks (system tasks like WAIT,
+                // SET_VARIABLE, etc.) disable retries and response-timeout so they are
+                // not inadvertently timed-out or retried by the decider
+                TaskDef adHocDef = new TaskDef(workflowTask.getName());
+                if (!workflowTask.getType().equals(TaskType.SIMPLE.name())) {
+                    adHocDef.setRetryCount(0);
+                    adHocDef.setResponseTimeoutSeconds(0);
+                }
+                workflowTask.setTaskDefinition(adHocDef);
             }
         }
         if (workflowTask.getType().equals(TaskType.SUB_WORKFLOW.name())) {
