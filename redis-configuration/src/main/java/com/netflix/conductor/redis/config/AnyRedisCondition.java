@@ -21,6 +21,9 @@ public class AnyRedisCondition extends AnyNestedCondition {
         super(ConfigurationPhase.PARSE_CONFIGURATION);
     }
 
+    @ConditionalOnProperty(name = "conductor.db.type", havingValue = "memory")
+    static class InMemoryRedisCondition {}
+
     @ConditionalOnProperty(name = "conductor.db.type", havingValue = "redis_cluster")
     static class RedisClusterConfiguration {}
 

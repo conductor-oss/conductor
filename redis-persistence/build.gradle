@@ -17,10 +17,12 @@ dependencies {
     implementation project(':conductor-redis-configuration')
     compileOnly 'org.springframework.boot:spring-boot-starter'
 
+    implementation "io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}"
     implementation "redis.clients:jedis:${revJedis}"
     implementation('com.thoughtworks.xstream:xstream:1.4.21')
     implementation "org.apache.commons:commons-lang3:"
     implementation "com.google.guava:guava:${revGuava}"
+    implementation "com.github.ben-manes.caffeine:caffeine"
 
     testImplementation "org.testcontainers:testcontainers:${revTestContainer}"
     testImplementation project(':conductor-core').sourceSets.test.output

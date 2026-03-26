@@ -33,6 +33,9 @@ public class AnyRedisConnectionCondition extends AnyNestedCondition {
 
     // --- conductor.db.type checks ---
 
+    @ConditionalOnProperty(name = "conductor.db.type", havingValue = "memory")
+    static class DbInMemory {}
+
     @ConditionalOnProperty(name = "conductor.db.type", havingValue = "redis_cluster")
     static class DbRedisCluster {}
 

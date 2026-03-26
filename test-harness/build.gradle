@@ -27,9 +27,7 @@ dependencies {
     testImplementation "org.springframework:spring-web"
 
     testImplementation "redis.clients:jedis:${revJedis}"
-    implementation ("io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}") {
-        exclude group: 'com.netflix.conductor', module: 'conductor-core'
-    }
+    implementation "io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}"
 
     testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
     testImplementation "org.spockframework:spock-core:${revSpock}"
