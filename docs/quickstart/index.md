@@ -86,7 +86,18 @@ conductor workflow create workflow.json
 conductor workflow start -w hello_workflow --sync
 ```
 
-The `--sync` flag waits for completion and prints the result directly. Expected output:
+The `--sync` flag waits for completion and prints the full workflow execution JSON to stdout. The CLI also prints a server detection line first, so actual output looks like:
+
+```
+Auto-detected server: http://localhost:8080
+{"workflowId":"3e2a1c9d-...","status":"COMPLETED","tasks":[{...},{...}],"outputParameters":{"summary":"Host orkes-api-sampler-... responded in 0 ms with random value 1141","apiResponse":{...}},...}
+```
+
+To extract just the output in a readable form, pipe through `jq`:
+
+```bash
+conductor workflow start -w hello_workflow --sync 2>/dev/null | tail -1 | jq '.outputParameters'
+```
 
 ```json
 {
@@ -102,6 +113,8 @@ The `--sync` flag waits for completion and prints the result directly. Expected 
   }
 }
 ```
+
+> **Note:** The `Auto-detected server:` line is written to stdout (not stderr). Use `tail -1` to skip it before piping to `jq`, and `2>/dev/null` to suppress any stderr.
 
 Open [http://localhost:8080](http://localhost:8080) to see the execution visually — the task timeline, inputs/outputs, and status of each step.
 
@@ -274,8 +287,9 @@ Every Conductor workflow execution is fully replayable — restart from the begi
 Take any workflow execution ID from Phase 1 or Phase 2 and restart it:
 
 ```bash
-# Get the workflow execution ID from a previous run
-WORKFLOW_ID=$(conductor workflow start -w hello_workflow --version 2 --sync | jq -r '.workflowId // empty' 2>/dev/null)
+# The CLI writes "Auto-detected server: ..." to stdout before the JSON.
+# Use tail -1 to skip that line; 2>/dev/null silences stderr.
+WORKFLOW_ID=$(conductor workflow start -w hello_workflow --version 2 --sync 2>/dev/null | tail -1 | jq -r '.workflowId // empty')
 
 # Restart the entire workflow from the beginning
 curl -X POST "http://localhost:8080/api/workflow/$WORKFLOW_ID/restart"
