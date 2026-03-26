@@ -47,6 +47,11 @@ public class TaskLog extends TaskSummary {
         }
 
         LinkedHashMap fusionMeta = (LinkedHashMap) task.getInputData().get("_ioMeta");
+        // check if fusionMeta is null, and if it is, return
+        if (fusionMeta == null) {
+            return;
+        }
+
         domainGroupMoId =
                 fusionMeta.containsKey("DomainGroupMoId")
                         ? fusionMeta.get("DomainGroupMoId").toString()
