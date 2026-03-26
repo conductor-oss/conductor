@@ -60,7 +60,8 @@ public class DoWhileEdgeCasesTests {
         taskClient = ApiUtil.TASK_CLIENT;
 
         InputStream resource =
-                DoWhileEdgeCasesTests.class.getResourceAsStream("/metadata/do_while_wait_switch_iteration_test.json");
+                DoWhileEdgeCasesTests.class.getResourceAsStream(
+                        "/metadata/do_while_wait_switch_iteration_test.json");
         assert resource != null;
         WorkflowDef workflowDef =
                 objectMapper.readValue(new InputStreamReader(resource), WORKFLOW_DEF);
@@ -68,7 +69,8 @@ public class DoWhileEdgeCasesTests {
         log.info("Registered workflow definition: {}", workflowDef.getName());
 
         resource =
-                DoWhileEdgeCasesTests.class.getResourceAsStream("/metadata/do_while_keep_last_n_switch_test.json");
+                DoWhileEdgeCasesTests.class.getResourceAsStream(
+                        "/metadata/do_while_keep_last_n_switch_test.json");
         assert resource != null;
         workflowDef = objectMapper.readValue(new InputStreamReader(resource), WORKFLOW_DEF);
         metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
