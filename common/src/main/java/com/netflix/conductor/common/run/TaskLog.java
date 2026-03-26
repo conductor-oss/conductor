@@ -41,6 +41,8 @@ public class TaskLog extends TaskSummary {
 
     public TaskLog(Task task) {
         super(task);
+        // print what do we have for key "workflowInput" and key "_ioMeta"
+        LOGGER.info("Task input data: {}", task.getInputData());
         boolean isFusionMetaPresent = task.getInputData().containsKey("_ioMeta");
         if (!isFusionMetaPresent) {
             return;
