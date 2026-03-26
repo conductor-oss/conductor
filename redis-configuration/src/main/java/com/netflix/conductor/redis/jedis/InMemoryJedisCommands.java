@@ -166,8 +166,7 @@ public class InMemoryJedisCommands implements JedisCommands {
                         key,
                         k -> {
                             String existing = strings.get(k);
-                            return new AtomicLong(
-                                    existing != null ? Long.parseLong(existing) : 0);
+                            return new AtomicLong(existing != null ? Long.parseLong(existing) : 0);
                         });
         long newVal = counter.addAndGet(increment);
         strings.put(key, String.valueOf(newVal));
@@ -279,8 +278,7 @@ public class InMemoryJedisCommands implements JedisCommands {
 
     @Override
     public Long sadd(String key, String... members) {
-        Set<String> set =
-                sets.computeIfAbsent(key, k -> ConcurrentHashMap.newKeySet());
+        Set<String> set = sets.computeIfAbsent(key, k -> ConcurrentHashMap.newKeySet());
         long added = 0;
         for (String m : members) {
             if (set.add(m)) added++;
@@ -373,7 +371,9 @@ public class InMemoryJedisCommands implements JedisCommands {
         int from = (int) (start < 0 ? Math.max(0, size + start) : Math.min(start, size));
         int to = (int) (stop < 0 ? size + stop + 1 : Math.min(stop + 1, size));
         if (from >= to) return new ArrayList<>();
-        return list.subList(from, to).stream().map(ScoredMember::member).collect(Collectors.toList());
+        return list.subList(from, to).stream()
+                .map(ScoredMember::member)
+                .collect(Collectors.toList());
     }
 
     @Override

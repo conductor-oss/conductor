@@ -19,8 +19,6 @@ import org.springframework.context.annotation.Configuration;
 import com.netflix.conductor.redis.jedis.InMemoryJedisCommands;
 import com.netflix.conductor.redis.jedis.JedisCommands;
 
-import redis.clients.jedis.UnifiedJedis;
-
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(name = "conductor.db.type", havingValue = "memory")
 public class InMemoryRedisConfiguration {
