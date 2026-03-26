@@ -2619,8 +2619,10 @@ public class TestWorkflowExecutor {
         task.setStatus(TaskModel.Status.COMPLETED);
 
         // when:
+        // Dynamic tasks (not in static def, e.g. FORK_JOIN_DYNAMIC forked tasks) now always
+        // trigger decide to avoid workflow stalls caused by the sweeper's 30+ second delay.
         task.setReferenceTaskName("dynamic");
-        assertTrue(workflowExecutor.isLazyEvaluateWorkflow(workflowDef, task));
+        assertFalse(workflowExecutor.isLazyEvaluateWorkflow(workflowDef, task));
 
         task.setReferenceTaskName("branchTask1");
         assertFalse(workflowExecutor.isLazyEvaluateWorkflow(workflowDef, task));

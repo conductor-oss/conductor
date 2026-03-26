@@ -1,0 +1,33 @@
+{
+  "createTime": 1732289485210,
+  "updateTime": 1732269106535,
+  "name": "concurrency-check-workflow-wait",
+  "description": "Test Rate Limit via WAIT task",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "wait",
+      "taskReferenceName": "wait_ref",
+      "type": "WAIT",
+      "inputParameters": {
+        "duration": "30 seconds"
+      }
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "failureWorkflow": "",
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "ownerEmail": "test@orkes.io",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {},
+  "inputTemplate": {},
+  "rateLimitConfig": {
+    "rateLimitKey": "concurrency-check-workflow-wait",
+    "concurrentExecLimit": 41
+  },
+  "enforceSchema": true
+}

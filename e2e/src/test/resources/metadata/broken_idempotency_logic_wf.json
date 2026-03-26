@@ -1,0 +1,27 @@
+{
+  "name": "broken_idempotency_logic_wf",
+  "description": "This workflow is used in a test that shows that idempotency logic is broken due to deletion. The wf does nothing.",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "terminate",
+      "taskReferenceName": "terminate_ref",
+      "inputParameters": {
+        "terminationStatus": "COMPLETED",
+        "terminationReason": "Done!"
+      },
+      "type": "TERMINATE",
+      "startDelay": 0,
+      "optional": false
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "ownerEmail": "test@orkes.io",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "failureWorkflow": ""
+}

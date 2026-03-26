@@ -15,7 +15,7 @@ services:
     networks:
       - internal
     ports:
-      - 8080:8080
+      - 8000:8080
       - 8127:5000
     healthcheck:
       test: [ "CMD", "curl","-I" ,"-XGET", "http://localhost:8080/health" ]
@@ -52,8 +52,6 @@ services:
         target: /var/lib/mysql
     networks:
       - internal
-    ports:
-      - 3306:3306
     healthcheck:
       test: timeout 5 bash -c 'cat < /dev/null > /dev/tcp/localhost/3306'
       interval: 5s
@@ -66,8 +64,6 @@ services:
       - ./redis.conf:/usr/local/etc/redis/redis.conf
     networks:
       - internal
-    ports:
-      - 7379:6379
     healthcheck:
       test: [ "CMD", "redis-cli","ping" ]
 
@@ -81,8 +77,6 @@ services:
       - esdata-conductor:/usr/share/elasticsearch/data
     networks:
       - internal
-    ports:
-      - 9201:9200
     healthcheck:
       test: curl http://localhost:9200/_cluster/health -o /dev/null
       interval: 5s

@@ -1,0 +1,34 @@
+{
+  "name": "timed_out_task",
+  "description": "An issue was found in ahr5 - Tasks that (poll) timed out were not removed from queue",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "let_it_poll_timeout",
+      "taskReferenceName": "ref_1",
+      "inputParameters": {},
+      "type": "SIMPLE",
+      "optional": true,
+      "taskDefinition" : {
+        "description": "meant to poll timeout",
+        "retryCount": 2,
+        "timeoutSeconds": 90,
+        "timeoutPolicy": "RETRY",
+        "retryLogic": "LINEAR_BACKOFF",
+        "retryDelaySeconds": 1,
+        "responseTimeoutSeconds": 30,
+        "inputTemplate": {},
+        "rateLimitPerFrequency": 0,
+        "rateLimitFrequencyInSeconds": 1,
+        "pollTimeoutSeconds": 1,
+        "backoffScaleFactor": 1,
+        "totalTimeoutSeconds": 0
+      }
+    }
+  ],
+  "inputParameters": [],
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "ownerEmail": "e2e@orkes.io"
+}

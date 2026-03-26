@@ -1,0 +1,561 @@
+[{
+  "createTime": 1741164587336,
+  "updateTime": 1741169042134,
+  "name": "keep_last_n_example",
+  "description": "keep_last_n_example ",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "do_while_batch_creation",
+      "taskReferenceName": "do_while_batch_creation_ref",
+      "inputParameters": {
+        "items": "${workflow.input.batch}",
+        "keepLastN": 2
+      },
+      "type": "DO_WHILE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopCondition": "",
+      "loopOver": [
+        {
+          "name": "dynamic_fork_prep",
+          "taskReferenceName": "dynamic_fork_prep_ref",
+          "inputParameters": {
+            "expression": "(function () {\n  let obj = [];\n  \n  for (var i = 0; i < $.urls.length; i++) {\n    obj.push({\n     \"value\": $.urls[i],\n  });\n  }\n  return obj;\n})();\n",
+            "evaluatorType": "graaljs",
+            "urls": "${do_while_batch_creation_ref.output.item}"
+          },
+          "type": "INLINE",
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": [],
+          "onStateChange": {},
+          "permissive": false
+        },
+        {
+          "name": "fork_join_dynamic",
+          "taskReferenceName": "fork_join_dynamic_ref",
+          "inputParameters": {
+            "forkTaskWorkflow": "wait",
+            "forkTaskInputs": "${dynamic_fork_prep_ref.output.result}",
+            "forkTaskWorkflowVersion": "1"
+          },
+          "type": "FORK_JOIN_DYNAMIC",
+          "decisionCases": {},
+          "dynamicForkTasksParam": "dynamicTasks",
+          "dynamicForkTasksInputParamName": "dynamicTasksInput",
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": true,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": [],
+          "onStateChange": {},
+          "permissive": false
+        },
+        {
+          "name": "join",
+          "taskReferenceName": "join_ref",
+          "inputParameters": {},
+          "type": "JOIN",
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": [],
+          "onStateChange": {},
+          "permissive": false
+        }
+      ],
+      "evaluatorType": "value-param",
+      "onStateChange": {},
+      "permissive": false
+    }
+  ],
+  "inputParameters": [
+    "values",
+    "batchSize"
+  ],
+  "outputParameters": {},
+  "failureWorkflow": "",
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "ownerEmail": "test@orkes.io",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {},
+  "inputTemplate": {},
+  "enforceSchema": true
+},
+  {
+    "createTime": 1741164927683,
+    "updateTime": 0,
+    "name": "wait",
+    "description": "wait",
+    "version": 1,
+    "tasks": [
+      {
+        "name": "wait",
+        "taskReferenceName": "wait_ref",
+        "inputParameters": {
+          "duration": "1 seconds"
+        },
+        "type": "WAIT",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {},
+        "permissive": false
+      }
+    ],
+    "inputParameters": [],
+    "outputParameters": {},
+    "failureWorkflow": "",
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": false,
+    "ownerEmail": "example@email.com",
+    "timeoutPolicy": "ALERT_ONLY",
+    "timeoutSeconds": 0,
+    "variables": {},
+    "inputTemplate": {},
+    "enforceSchema": true
+  },
+  {
+    "createTime": 1741164587336,
+    "updateTime": 1741169042134,
+    "name": "keep_last_n_example_2",
+    "description": "keep_last_n_example_2 ",
+    "version": 1,
+    "tasks": [
+      {
+        "name": "do_while_batch_creation",
+        "taskReferenceName": "do_while_batch_creation_ref",
+        "inputParameters": {
+          "items": "${workflow.input.batch}",
+          "keepLastN": 4
+        },
+        "type": "DO_WHILE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopCondition": "",
+        "loopOver": [
+          {
+            "name": "dynamic_fork_prep",
+            "taskReferenceName": "dynamic_fork_prep_ref",
+            "inputParameters": {
+              "expression": "(function () {\n  let obj = [];\n  \n  for (var i = 0; i < $.urls.length; i++) {\n    obj.push({\n     \"value\": $.urls[i],\n  });\n  }\n  return obj;\n})();\n",
+              "evaluatorType": "graaljs",
+              "urls": "${do_while_batch_creation_ref.output.item}"
+            },
+            "type": "INLINE",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": [],
+            "onStateChange": {},
+            "permissive": false
+          },
+          {
+            "name": "fork_join_dynamic",
+            "taskReferenceName": "fork_join_dynamic_ref",
+            "inputParameters": {
+              "forkTaskWorkflow": "wait",
+              "forkTaskInputs": "${dynamic_fork_prep_ref.output.result}",
+              "forkTaskWorkflowVersion": "1"
+            },
+            "type": "FORK_JOIN_DYNAMIC",
+            "decisionCases": {},
+            "dynamicForkTasksParam": "dynamicTasks",
+            "dynamicForkTasksInputParamName": "dynamicTasksInput",
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": true,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": [],
+            "onStateChange": {},
+            "permissive": false
+          },
+          {
+            "name": "join",
+            "taskReferenceName": "join_ref",
+            "inputParameters": {},
+            "type": "JOIN",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": [],
+            "onStateChange": {},
+            "permissive": false
+          }
+        ],
+        "evaluatorType": "value-param",
+        "onStateChange": {},
+        "permissive": false
+      },
+      {
+        "name": "do_while_batch_creation",
+        "taskReferenceName": "do_while_batch_creation_ref_2",
+        "inputParameters": {
+          "items": "${workflow.input.batch}",
+          "keepLastN": 2
+        },
+        "type": "DO_WHILE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopCondition": "",
+        "loopOver": [
+          {
+            "name": "dynamic_fork_prep",
+            "taskReferenceName": "dynamic_fork_prep_ref_2",
+            "inputParameters": {
+              "expression": "(function () {\n  let obj = [];\n  \n  for (var i = 0; i < $.urls.length; i++) {\n    obj.push({\n     \"value\": $.urls[i],\n  });\n  }\n  return obj;\n})();\n",
+              "evaluatorType": "graaljs",
+              "urls": "${do_while_batch_creation_ref.output.item}"
+            },
+            "type": "INLINE",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": [],
+            "onStateChange": {},
+            "permissive": false
+          },
+          {
+            "name": "fork_join_dynamic",
+            "taskReferenceName": "fork_join_dynamic_ref_2",
+            "inputParameters": {
+              "forkTaskWorkflow": "wait",
+              "forkTaskInputs": "${dynamic_fork_prep_ref.output.result}",
+              "forkTaskWorkflowVersion": "1"
+            },
+            "type": "FORK_JOIN_DYNAMIC",
+            "decisionCases": {},
+            "dynamicForkTasksParam": "dynamicTasks",
+            "dynamicForkTasksInputParamName": "dynamicTasksInput",
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": true,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": [],
+            "onStateChange": {},
+            "permissive": false
+          },
+          {
+            "name": "join",
+            "taskReferenceName": "join_ref_2",
+            "inputParameters": {},
+            "type": "JOIN",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": [],
+            "onStateChange": {},
+            "permissive": false
+          }
+        ],
+        "evaluatorType": "value-param",
+        "onStateChange": {},
+        "permissive": false
+      }
+    ],
+    "inputParameters": [
+      "values",
+      "batchSize"
+    ],
+    "outputParameters": {},
+    "failureWorkflow": "",
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": false,
+    "ownerEmail": "test@orkes.io",
+    "timeoutPolicy": "ALERT_ONLY",
+    "timeoutSeconds": 0,
+    "variables": {},
+    "inputTemplate": {},
+    "enforceSchema": true
+  },
+  {
+    "createTime": 1741356706086,
+    "updateTime": 1741356053405,
+    "name": "keep_last_n_example_3",
+    "description": "keep_last_n_example_3",
+    "version": 1,
+    "tasks": [
+      {
+        "name": "fork",
+        "taskReferenceName": "fork_ref",
+        "inputParameters": {},
+        "type": "FORK_JOIN",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [
+          [
+            {
+              "name": "inline",
+              "taskReferenceName": "inline_ref",
+              "inputParameters": {
+                "expression": "(function () {\n  return $.value1 + $.value2;\n})();",
+                "evaluatorType": "graaljs",
+                "value1": 1,
+                "value2": 2
+              },
+              "type": "INLINE",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": [],
+              "onStateChange": {},
+              "permissive": false
+            },
+            {
+              "name": "do_while_1",
+              "taskReferenceName": "do_while_ref_1",
+              "inputParameters": {
+                "number": 5,
+                "keepLastN": 4
+              },
+              "type": "DO_WHILE",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopCondition": "(function () {\n  if ($.do_while_ref_1['iteration'] < $.number) {\n    return true;\n  }\n  return false;\n})();",
+              "loopOver": [
+                {
+                  "name": "set_variable_1",
+                  "taskReferenceName": "set_variable_ref_1",
+                  "inputParameters": {
+                    "name": "Orkes"
+                  },
+                  "type": "SET_VARIABLE",
+                  "decisionCases": {},
+                  "defaultCase": [],
+                  "forkTasks": [],
+                  "startDelay": 0,
+                  "joinOn": [],
+                  "optional": false,
+                  "defaultExclusiveJoinTask": [],
+                  "asyncComplete": false,
+                  "loopOver": [],
+                  "onStateChange": {},
+                  "permissive": false
+                },
+                {
+                  "name": "simple",
+                  "taskReferenceName": "simple_ref",
+                  "inputParameters": {},
+                  "type": "SIMPLE",
+                  "decisionCases": {},
+                  "defaultCase": [],
+                  "forkTasks": [],
+                  "startDelay": 0,
+                  "joinOn": [],
+                  "optional": false,
+                  "defaultExclusiveJoinTask": [],
+                  "asyncComplete": false,
+                  "loopOver": [],
+                  "onStateChange": {},
+                  "permissive": false
+                }
+              ],
+              "evaluatorType": "graaljs",
+              "onStateChange": {},
+              "permissive": false
+            }
+          ],
+          [
+            {
+              "name": "set_variable",
+              "taskReferenceName": "set_variable_ref",
+              "inputParameters": {
+                "name": "Orkes"
+              },
+              "type": "SET_VARIABLE",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": [],
+              "onStateChange": {},
+              "permissive": false
+            },
+            {
+              "name": "do_while",
+              "taskReferenceName": "do_while_ref",
+              "inputParameters": {
+                "number": 5,
+                "keepLastN": 2
+              },
+              "type": "DO_WHILE",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopCondition": "(function () {\n  if ($.do_while_ref['iteration'] < $.number) {\n    return true;\n  }\n  return false;\n})();",
+              "loopOver": [
+                {
+                  "name": "simple_1",
+                  "taskReferenceName": "simple_ref_1",
+                  "inputParameters": {},
+                  "type": "SIMPLE",
+                  "decisionCases": {},
+                  "defaultCase": [],
+                  "forkTasks": [],
+                  "startDelay": 0,
+                  "joinOn": [],
+                  "optional": false,
+                  "defaultExclusiveJoinTask": [],
+                  "asyncComplete": false,
+                  "loopOver": [],
+                  "onStateChange": {},
+                  "permissive": false
+                },
+                {
+                  "name": "simple_2",
+                  "taskReferenceName": "simple_ref_2",
+                  "inputParameters": {},
+                  "type": "SIMPLE",
+                  "decisionCases": {},
+                  "defaultCase": [],
+                  "forkTasks": [],
+                  "startDelay": 0,
+                  "joinOn": [],
+                  "optional": false,
+                  "defaultExclusiveJoinTask": [],
+                  "asyncComplete": false,
+                  "loopOver": [],
+                  "onStateChange": {},
+                  "permissive": false
+                }
+              ],
+              "evaluatorType": "graaljs",
+              "onStateChange": {},
+              "permissive": false
+            }
+          ]
+        ],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {},
+        "permissive": false
+      },
+      {
+        "name": "join",
+        "taskReferenceName": "join_ref",
+        "inputParameters": {},
+        "type": "JOIN",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {},
+        "permissive": false
+      }
+    ],
+    "inputParameters": [
+      "values",
+      "batchSize"
+    ],
+    "outputParameters": {},
+    "failureWorkflow": "",
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": false,
+    "ownerEmail": "test@orkes.io",
+    "timeoutPolicy": "ALERT_ONLY",
+    "timeoutSeconds": 0,
+    "variables": {},
+    "inputTemplate": {},
+    "enforceSchema": true
+  }
+]
