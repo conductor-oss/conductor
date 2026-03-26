@@ -60,14 +60,25 @@ export const SidebarItem = ({
 
   const hasChildren = item.items && item.items.length > 0;
   const isRouteActive = useMemo(() => {
-    if (item.linkTo && location.pathname === item.linkTo) return true;
+    if (item.linkTo) {
+      const [linkPath, linkSearch] = item.linkTo.split("?");
+      if (linkSearch) {
+        const linkParams = new URLSearchParams(linkSearch);
+        const locationParams = new URLSearchParams(location.search);
+        const paramsMatch = [...linkParams.entries()].every(
+          ([key, val]) => locationParams.get(key) === val,
+        );
+        return location.pathname === linkPath && paramsMatch;
+      }
+      if (location.pathname === linkPath) return true;
+    }
     if (item.activeRoutes) {
       return item.activeRoutes.some((route) =>
         matchPath({ path: route, end: true }, location.pathname),
       );
     }
     return false;
-  }, [item.linkTo, item.activeRoutes, location.pathname]);
+  }, [item.linkTo, item.activeRoutes, location.pathname, location.search]);
 
   const visibleChildren = useMemo(
     () => item.items?.filter((child) => !child.hidden) || [],
@@ -77,7 +88,18 @@ export const SidebarItem = ({
   // Auto-expand if any child is active
   const hasActiveChild = useMemo(() => {
     return visibleChildren.some((child) => {
-      if (child.linkTo && location.pathname === child.linkTo) return true;
+      if (child.linkTo) {
+        const [linkPath, linkSearch] = child.linkTo.split("?");
+        if (linkSearch) {
+          const linkParams = new URLSearchParams(linkSearch);
+          const locationParams = new URLSearchParams(location.search);
+          const paramsMatch = [...linkParams.entries()].every(
+            ([key, val]) => locationParams.get(key) === val,
+          );
+          return location.pathname === linkPath && paramsMatch;
+        }
+        if (location.pathname === linkPath) return true;
+      }
       if (child.activeRoutes) {
         return child.activeRoutes.some((route) =>
           matchPath({ path: route, end: true }, location.pathname),
@@ -85,7 +107,7 @@ export const SidebarItem = ({
       }
       return false;
     });
-  }, [visibleChildren, location.pathname]);
+  }, [visibleChildren, location.pathname, location.search]);
 
   // Initialize expanded state - all menus default expanded
   const [isExpanded, setIsExpanded] = useState(true);
