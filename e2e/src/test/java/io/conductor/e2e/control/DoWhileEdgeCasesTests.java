@@ -60,7 +60,7 @@ public class DoWhileEdgeCasesTests {
         taskClient = ApiUtil.TASK_CLIENT;
 
         InputStream resource =
-                DoWhileEdgeCasesTests.class.getResourceAsStream("/metadata/vialtodoowhile.json");
+                DoWhileEdgeCasesTests.class.getResourceAsStream("/metadata/do_while_wait_switch_iteration_test.json");
         assert resource != null;
         WorkflowDef workflowDef =
                 objectMapper.readValue(new InputStreamReader(resource), WORKFLOW_DEF);
@@ -68,7 +68,7 @@ public class DoWhileEdgeCasesTests {
         log.info("Registered workflow definition: {}", workflowDef.getName());
 
         resource =
-                DoWhileEdgeCasesTests.class.getResourceAsStream("/metadata/vialtodoowhile3.json");
+                DoWhileEdgeCasesTests.class.getResourceAsStream("/metadata/do_while_keep_last_n_switch_test.json");
         assert resource != null;
         workflowDef = objectMapper.readValue(new InputStreamReader(resource), WORKFLOW_DEF);
         metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
@@ -105,9 +105,9 @@ public class DoWhileEdgeCasesTests {
     }
 
     @Test
-    public void testVialtoDoWhile() {
+    public void testDoWhileWaitSwitchIteration() {
         StartWorkflowRequest request = new StartWorkflowRequest();
-        request.setName("vialtodoowhile");
+        request.setName("do_while_wait_switch_iteration_test");
         String workflowId = workflowClient.startWorkflow(request);
         log.info("Started workflow {}", workflowId);
         workflowIdsToTerminate.add(workflowId);
@@ -198,9 +198,9 @@ public class DoWhileEdgeCasesTests {
     }
 
     @Test
-    public void testVialtoDoWhile3() {
+    public void testDoWhileKeepLastNSwitch() {
         StartWorkflowRequest request = new StartWorkflowRequest();
-        request.setName("vialtodoowhile3");
+        request.setName("do_while_keep_last_n_switch_test");
         String workflowId = workflowClient.startWorkflow(request);
         log.info("Started workflow {}", workflowId);
         workflowIdsToTerminate.add(workflowId);

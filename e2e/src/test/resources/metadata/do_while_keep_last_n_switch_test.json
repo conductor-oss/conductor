@@ -1,8 +1,8 @@
 {
   "createTime": 1758994238260,
   "updateTime": 1758994489818,
-  "name": "vialtodoowhile3",
-  "description": "vialtodoowhile3",
+  "name": "do_while_keep_last_n_switch_test",
+  "description": "DO_WHILE with keepLastN=3, nested SWITCH, and max iteration control",
   "version": 1,
   "tasks": [
     {
@@ -275,7 +275,7 @@
   "schemaVersion": 2,
   "restartable": true,
   "workflowStatusListenerEnabled": false,
-  "ownerEmail": "viren@orkes.io",
+  "ownerEmail": "test@orkes.io",
   "timeoutPolicy": "ALERT_ONLY",
   "timeoutSeconds": 0,
   "variables": {},

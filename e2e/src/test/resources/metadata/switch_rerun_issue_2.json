@@ -1,6 +1,6 @@
 {
   "name": "switch_rerun_issue_2",
-  "description": "Used to reproduce an issue reported by Vialto",
+  "description": "Tests rerun with nested SWITCH inside DO_WHILE loop",
   "version": 1,
   "schemaVersion": 2,
   "inputParameters": [],

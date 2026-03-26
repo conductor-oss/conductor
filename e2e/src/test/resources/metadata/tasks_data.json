@@ -1,7 +1,7 @@
 [
   {
     "createTime": 1680695746698,
-    "createdBy": "8a8446d2-1364-407b-abc5-8c9b4e5e3b4a@apps.orkes.io",
+    "createdBy": "test@orkes.io",
     "name": "rate-limit-task-by-correlationId",
     "retryCount": 0,
     "timeoutSeconds": 0,
@@ -14,12 +14,12 @@
     "inputTemplate": {},
     "rateLimitPerFrequency": 1,
     "rateLimitFrequencyInSeconds": 10,
-    "ownerEmail": "8a8446d2-1364-407b-abc5-8c9b4e5e3b4a@apps.orkes.io",
+    "ownerEmail": "test@orkes.io",
     "backoffScaleFactor": 1
   },
   {
     "createTime": 1680695772911,
-    "createdBy": "8a8446d2-1364-407b-abc5-8c9b4e5e3b4a@apps.orkes.io",
+    "createdBy": "test@orkes.io",
     "name": "task-concurrency-limit-test",
     "retryCount": 0,
     "timeoutSeconds": 0,
@@ -33,12 +33,12 @@
     "inputTemplate": {},
     "rateLimitPerFrequency": 0,
     "rateLimitFrequencyInSeconds": 1,
-    "ownerEmail": "8a8446d2-1364-407b-abc5-8c9b4e5e3b4a@apps.orkes.io",
+    "ownerEmail": "test@orkes.io",
     "backoffScaleFactor": 1
   },
   {
     "createTime": 1680695983031,
-    "createdBy": "8a8446d2-1364-407b-abc5-8c9b4e5e3b4a@apps.orkes.io",
+    "createdBy": "test@orkes.io",
     "name": "rate-limited-task",
     "retryCount": 0,
     "timeoutSeconds": 0,
@@ -51,7 +51,7 @@
     "inputTemplate": {},
     "rateLimitPerFrequency": 1,
     "rateLimitFrequencyInSeconds": 10,
-    "ownerEmail": "8a8446d2-1364-407b-abc5-8c9b4e5e3b4a@apps.orkes.io",
+    "ownerEmail": "test@orkes.io",
     "backoffScaleFactor": 1
   }
 ]

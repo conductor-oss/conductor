@@ -1,6 +1,6 @@
 {
   "name": "end_time_issue_wf",
-  "description": "Workflow used to reproduce an issue reported by Twilio",
+  "description": "Tests endTime field propagation across task outputs",
   "version": 1,
   "tasks": [
     {

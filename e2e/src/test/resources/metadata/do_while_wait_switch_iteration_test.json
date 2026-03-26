@@ -1,8 +1,8 @@
 {
   "createTime": 1758559575365,
   "updateTime": 1758910968583,
-  "name": "vialtodoowhile",
-  "description": "vialtodoowhile",
+  "name": "do_while_wait_switch_iteration_test",
+  "description": "DO_WHILE with WAIT and SWITCH tasks testing manual iteration control",
   "version": 1,
   "tasks": [
     {
@@ -228,7 +228,7 @@
   "schemaVersion": 2,
   "restartable": true,
   "workflowStatusListenerEnabled": false,
-  "ownerEmail": "viren@orkes.io",
+  "ownerEmail": "test@orkes.io",
   "timeoutPolicy": "ALERT_ONLY",
   "timeoutSeconds": 0,
   "variables": {},

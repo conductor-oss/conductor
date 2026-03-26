@@ -1,7 +1,7 @@
 {
   "createTime": 1717446484815,
   "updateTime": 1717457738607,
-  "name": "Vasilii_state_change_test",
+  "name": "task_state_change_event_test",
   "description": "Edit or extend this sample workflow. Set the workflow name to get started",
   "version": 1,
   "tasks": [
@@ -89,7 +89,7 @@
   "schemaVersion": 2,
   "restartable": true,
   "workflowStatusListenerEnabled": false,
-  "ownerEmail": "vasiliy.pankov@orkes.io",
+  "ownerEmail": "test@orkes.io",
   "timeoutPolicy": "ALERT_ONLY",
   "timeoutSeconds": 0,
   "variables": {},
