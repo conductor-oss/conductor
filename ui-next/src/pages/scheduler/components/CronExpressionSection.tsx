@@ -1,15 +1,58 @@
-import { Box, Grid, Paper, SxProps, Theme, useMediaQuery } from "@mui/material";
+import {
+  Box,
+  Grid,
+  MenuItem,
+  Paper,
+  SxProps,
+  Theme,
+  useMediaQuery,
+} from "@mui/material";
 import { Text } from "components";
 import MuiTypography from "components/MuiTypography";
 import ConductorInput from "components/v1/ConductorInput";
+import ConductorSelect from "components/v1/ConductorSelect";
+import cronstrue from "cronstrue";
 import {
   formatInTimeZone,
   guessUserTimeZone,
   parseDateInTimeZone,
 } from "utils/date";
+import { CRON_COLORS_BY_POSITION } from "../constants";
 import CronExpressionHelp from "../CronExpressionHelp";
-import { CronTemplateSelector } from "./CronTemplateSelector";
 import { TimezonePicker } from "../TimezonePicker";
+
+const cronSamples = [
+  "* * * ? * *",
+  "0 * * ? * *",
+  "0 */2 * ? * *",
+  "0 1/2 * ? * *",
+  "0 */30 * ? * *",
+  "0 15,30,45 * ? * *",
+  "0 0 * ? * *",
+  "0 0 */2 ? * *",
+  "0 0 0/2 ? * *",
+  "0 0 1/2 ? * *",
+  "0 0 0 * * ?",
+  "0 0 1 * * ?",
+  "0 0 6 * * ?",
+  "0 0 12 ? * SUN",
+  "0 0 12 ? * MON-FRI",
+  "0 0 12 ? * SUN,SAT",
+  "0 0 12 */7 * ?",
+  "0 0 12 1 * ?",
+  "0 0 12 15 * ?",
+  "0 0 12 1/4 * ?",
+  "0 0 12 L * ?",
+  "0 0 12 L-2 * ?",
+  "0 0 12 1W * ?",
+  "0 0 12 15W * ?",
+  "0 0 12 ? * 2#1",
+  "0 0 12 ? * 6#2",
+  "0 0 12 ? JAN *",
+  "0 0 12 ? JAN,JUN *",
+  "0 0 12 ? JAN,FEB,APR *",
+  "0 0 12 ? 9-12 *",
+];
 
 const utcWinWidth = "180px";
 const browserTimeMinWidth = "230px";
@@ -68,13 +111,81 @@ export function CronExpressionSection({
             </MuiTypography>
             <CronExpressionHelp highlightedPart={highlightedPart} />
           </Box>
-          <CronTemplateSelector
-            selectedTemplate={selectedTemplate}
-            onSelectTemplate={(template) => {
-              setCronExpression(template, timezone);
-              setSelectedTemplate(template);
+          <ConductorSelect
+            fullWidth
+            label="Choose a template to get started"
+            SelectProps={{
+              displayEmpty: true,
             }}
-          />
+            onChange={(e) => {
+              setCronExpression(e.target.value, timezone);
+              setSelectedTemplate(e.target.value);
+            }}
+            value={selectedTemplate}
+            sx={{
+              ".MuiInputBase-root": {
+                ".MuiSelect-select": {
+                  minHeight: "2.7em",
+                },
+              },
+            }}
+          >
+            {cronSamples &&
+              cronSamples.map((cs, i) => {
+                return (
+                  <MenuItem
+                    key={`key-item-${cs ? cs : i}`}
+                    value={cs}
+                    sx={{
+                      borderBottom: "1px solid rgba(0,0,0,.25)",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: "column",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          paddingRight: 2,
+                          fontWeight: "bold",
+                          fontSize: "1rem",
+                          display: "flex",
+                        }}
+                      >
+                        {cs.split(" ").map((cronExpressionFragment, index) => {
+                          return (
+                            <Box
+                              key={`key-item-${cs}-${index}`}
+                              sx={{
+                                color:
+                                  selectedTemplate === cs
+                                    ? CRON_COLORS_BY_POSITION[index]
+                                    : "gray.800",
+                                paddingRight: 2,
+                              }}
+                            >
+                              {cronExpressionFragment}
+                            </Box>
+                          );
+                        })}
+                      </Box>
+                      <Box
+                        sx={{
+                          overflow: "hidden",
+                          whiteSpace: "pre-wrap",
+                          textOverflow: "ellipsis",
+                          opacity: 0.7,
+                        }}
+                      >
+                        {cronstrue.toString(cs)}
+                      </Box>
+                    </Box>
+                  </MenuItem>
+                );
+              })}
+          </ConductorSelect>
         </Grid>
         <Grid
           container

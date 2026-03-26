@@ -1,4 +1,4 @@
-import { Box, Paper, Typography, Chip, ButtonBase } from "@mui/material";
+import { Box, Paper, Typography, Chip } from "@mui/material";
 import { ArrowClockwise as RefreshIcon } from "@phosphor-icons/react";
 import { DataTable } from "components";
 import Button from "components/MuiButton";
@@ -10,7 +10,6 @@ import Header from "components/Header";
 import { useBatchedTagsData } from "utils/hooks";
 import NoDataComponent from "components/NoDataComponent";
 import { colors } from "theme/tokens/variables";
-import TagResourcesModal from "./TagResourcesModal";
 
 interface TagAggregation {
   tag: string;
@@ -27,45 +26,32 @@ interface TagAggregation {
   total: number;
 }
 
-interface DrillDownState {
-  tag: string;
-  resourceType: string;
-  resourceLabel: string;
-}
-
-const RESOURCE_TYPE_MAP: Record<
-  string,
-  keyof Omit<TagAggregation, "tag" | "total">
-> = {
-  WORKFLOW_DEF: "workflows",
-  TASK_DEF: "tasks",
-  WEBHOOK: "webhooks",
-  EVENT_HANDLER: "events",
-  USER_FORM_TEMPLATE: "templates",
-  WORKFLOW_SCHEDULE: "schedules",
-  SECRET_NAME: "secrets",
-  PROMPT: "prompts",
-  ENV_VARIABLE: "environments",
-  INTEGRATION_PROVIDER: "integrations",
-};
-
-// Reverse map: aggregation key → resourceType
-const AGGREGATION_KEY_TO_RESOURCE_TYPE: Record<
-  keyof Omit<TagAggregation, "tag" | "total">,
-  string
-> = Object.fromEntries(
-  Object.entries(RESOURCE_TYPE_MAP).map(([k, v]) => [v, k]),
-) as Record<keyof Omit<TagAggregation, "tag" | "total">, string>;
-
 export default function TagsDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [drillDown, setDrillDown] = useState<DrillDownState | null>(null);
 
+  // Use the batched API hook instead of multiple individual calls
   const {
     data: batchedData,
     refetch: refetchBatchedData,
     isLoading: isFetching,
   } = useBatchedTagsData();
+
+  // Resource type to entity type mapping
+  const resourceTypeMap: Record<
+    string,
+    keyof Omit<TagAggregation, "tag" | "total">
+  > = {
+    WORKFLOW_DEF: "workflows",
+    TASK_DEF: "tasks",
+    WEBHOOK: "webhooks",
+    EVENT_HANDLER: "events",
+    USER_FORM_TEMPLATE: "templates",
+    WORKFLOW_SCHEDULE: "schedules",
+    SECRET_NAME: "secrets",
+    PROMPT: "prompts",
+    ENV_VARIABLE: "environments",
+    INTEGRATION_PROVIDER: "integrations",
+  };
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
@@ -76,14 +62,18 @@ export default function TagsDashboard() {
     }
   }, [refetchBatchedData]);
 
+  // Process batched data to create tag aggregations
   const tagAggregations = useMemo((): TagAggregation[] => {
+    // Create a map to track tag usage across different entity types
     const tagMap = new Map<string, TagAggregation>();
 
+    // Process the batched data array
     if (Array.isArray(batchedData)) {
       batchedData?.forEach((item) => {
         const { tagKey, tagValue, resourceType, countPerResourceType } = item;
         const tagkeyValue = `${tagKey}:${tagValue}`;
 
+        // Initialize the aggregation if it doesn't exist
         if (!tagMap.has(tagkeyValue)) {
           tagMap.set(tagkeyValue, {
             tag: tagkeyValue,
@@ -102,8 +92,9 @@ export default function TagsDashboard() {
         }
 
         const aggregation = tagMap.get(tagkeyValue)!;
-        const entityType = RESOURCE_TYPE_MAP[resourceType];
+        const entityType = resourceTypeMap[resourceType];
 
+        // If the resource type is mapped, add the count
         if (entityType) {
           aggregation[entityType] += countPerResourceType || 0;
           aggregation.total += countPerResourceType || 0;
@@ -111,6 +102,7 @@ export default function TagsDashboard() {
       });
     }
 
+    // Convert map to array and sort by total count (descending), then by tag name (ascending)
     return Array.from(tagMap.values()).sort((a, b) => {
       if (b.total !== a.total) {
         return b.total - a.total;
@@ -119,54 +111,7 @@ export default function TagsDashboard() {
     });
   }, [batchedData]);
 
-  const makeCountRenderer = useCallback(
-    (
-      aggregationKey: keyof Omit<TagAggregation, "tag" | "total">,
-      label: string,
-    ) =>
-      (count: number, row: TagAggregation) => {
-        if (!count) {
-          return (
-            <Typography variant="body2" sx={{ textAlign: "right" }}>
-              0
-            </Typography>
-          );
-        }
-        return (
-          <ButtonBase
-            onClick={() =>
-              setDrillDown({
-                tag: row.tag,
-                resourceType: AGGREGATION_KEY_TO_RESOURCE_TYPE[aggregationKey],
-                resourceLabel: label,
-              })
-            }
-            sx={{
-              width: "100%",
-              justifyContent: "flex-end",
-              borderRadius: 1,
-              px: 0.5,
-              "&:hover": { backgroundColor: "action.hover" },
-            }}
-          >
-            <Typography
-              variant="body2"
-              sx={{
-                color: "primary.main",
-                fontWeight: 500,
-                cursor: "pointer",
-                textDecoration: "underline",
-                textDecorationStyle: "dotted",
-                textUnderlineOffset: "3px",
-              }}
-            >
-              {count}
-            </Typography>
-          </ButtonBase>
-        );
-      },
-    [],
-  );
+  console.log("tagAggregations", tagAggregations);
 
   const columns = useMemo(
     () => [
@@ -196,70 +141,110 @@ export default function TagsDashboard() {
         id: "workflows",
         name: "workflows",
         label: "Workflows",
-        renderer: makeCountRenderer("workflows", "Workflows"),
+        renderer: (count: number) => (
+          <Typography variant="body2" sx={{ textAlign: "right" }}>
+            {count}
+          </Typography>
+        ),
         tooltip: "Number of workflows with this tag",
       },
       {
         id: "tasks",
         name: "tasks",
         label: "Tasks",
-        renderer: makeCountRenderer("tasks", "Tasks"),
+        renderer: (count: number) => (
+          <Typography variant="body2" sx={{ textAlign: "right" }}>
+            {count}
+          </Typography>
+        ),
         tooltip: "Number of task definitions with this tag",
       },
       {
         id: "webhooks",
         name: "webhooks",
         label: "Webhooks",
-        renderer: makeCountRenderer("webhooks", "Webhooks"),
+        renderer: (count: number) => (
+          <Typography variant="body2" sx={{ textAlign: "right" }}>
+            {count}
+          </Typography>
+        ),
         tooltip: "Number of webhooks with this tag",
       },
       {
         id: "events",
         name: "events",
         label: "Events",
-        renderer: makeCountRenderer("events", "Events"),
+        renderer: (count: number) => (
+          <Typography variant="body2" sx={{ textAlign: "right" }}>
+            {count}
+          </Typography>
+        ),
         tooltip: "Number of event handlers with this tag",
       },
       {
         id: "templates",
         name: "templates",
         label: "Templates",
-        renderer: makeCountRenderer("templates", "Templates"),
+        renderer: (count: number) => (
+          <Typography variant="body2" sx={{ textAlign: "right" }}>
+            {count}
+          </Typography>
+        ),
         tooltip: "Number of templates with this tag",
       },
       {
         id: "schedules",
         name: "schedules",
         label: "Schedules",
-        renderer: makeCountRenderer("schedules", "Schedules"),
+        renderer: (count: number) => (
+          <Typography variant="body2" sx={{ textAlign: "right" }}>
+            {count}
+          </Typography>
+        ),
         tooltip: "Number of schedules with this tag",
       },
       {
         id: "secrets",
         name: "secrets",
         label: "Secrets",
-        renderer: makeCountRenderer("secrets", "Secrets"),
+        renderer: (count: number) => (
+          <Typography variant="body2" sx={{ textAlign: "right" }}>
+            {count}
+          </Typography>
+        ),
         tooltip: "Number of secrets with this tag",
       },
       {
         id: "prompts",
         name: "prompts",
         label: "Prompts",
-        renderer: makeCountRenderer("prompts", "Prompts"),
+        renderer: (count: number) => (
+          <Typography variant="body2" sx={{ textAlign: "right" }}>
+            {count}
+          </Typography>
+        ),
         tooltip: "Number of prompts with this tag",
       },
       {
         id: "environments",
         name: "environments",
         label: "Environments",
-        renderer: makeCountRenderer("environments", "Environments"),
+        renderer: (count: number) => (
+          <Typography variant="body2" sx={{ textAlign: "right" }}>
+            {count}
+          </Typography>
+        ),
         tooltip: "Number of environment variables with this tag",
       },
       {
         id: "integrations",
         name: "integrations",
         label: "Integrations",
-        renderer: makeCountRenderer("integrations", "Integrations"),
+        renderer: (count: number) => (
+          <Typography variant="body2" sx={{ textAlign: "right" }}>
+            {count}
+          </Typography>
+        ),
         tooltip: "Number of integrations with this tag",
       },
       {
@@ -277,7 +262,7 @@ export default function TagsDashboard() {
         tooltip: "Total number of definitions with this tag",
       },
     ],
-    [makeCountRenderer],
+    [],
   );
 
   return (
@@ -374,16 +359,6 @@ export default function TagsDashboard() {
           )}
         </Paper>
       </SectionContainer>
-
-      {drillDown && (
-        <TagResourcesModal
-          open={drillDown !== null}
-          onClose={() => setDrillDown(null)}
-          tag={drillDown.tag}
-          resourceType={drillDown.resourceType}
-          resourceLabel={drillDown.resourceLabel}
-        />
-      )}
     </>
   );
 }
