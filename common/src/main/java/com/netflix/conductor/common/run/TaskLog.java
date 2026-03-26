@@ -12,7 +12,7 @@
  */
 package com.netflix.conductor.common.run;
 
-import java.util.LinkedHashMap;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,9 +46,8 @@ public class TaskLog extends TaskSummary {
             return;
         }
 
-        LinkedHashMap fusionMeta = (LinkedHashMap) task.getInputData().get("_ioMeta");
-        // check if fusionMeta is null, and if it is, return
-        if (fusionMeta == null) {
+        Object ioMeta = task.getInputData().get("_ioMeta");
+        if (!(ioMeta instanceof Map<?, ?> fusionMeta)) {
             return;
         }
 
