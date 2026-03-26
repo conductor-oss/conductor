@@ -206,6 +206,7 @@ conductor.elasticsearch.version=0
 
 ```properties
 conductor.indexing.enabled=true
+conductor.indexing.type=elasticsearch
 conductor.elasticsearch.url=http://es-host:9200
 conductor.elasticsearch.version=7
 conductor.elasticsearch.indexName=conductor
