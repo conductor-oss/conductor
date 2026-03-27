@@ -34,7 +34,7 @@ public class ClusteredRedisQueueDAO extends BaseRedisQueueDAO implements QueueDA
             RedisProperties redisProperties,
             ConductorProperties conductorProperties) {
 
-        super(redisProperties, conductorProperties);
+        super(jedisCommands, redisProperties, conductorProperties);
         this.jedisCommands = jedisCommands;
         log.info("Queues initialized using {}", ClusteredRedisQueueDAO.class.getName());
     }
@@ -42,16 +42,5 @@ public class ClusteredRedisQueueDAO extends BaseRedisQueueDAO implements QueueDA
     @Override
     protected ConductorQueue getConductorQueue(String queueKey, ExecutorService executorService) {
         return new ConductorRedisClusterQueue(queueKey, jedisCommands, executorService);
-    }
-
-    @Override
-    public void updateScore(String queueName) {
-        String key =
-                redisProperties.getQueueNamespacePrefix()
-                        + "."
-                        + conductorProperties.getStack()
-                        + "."
-                        + CDC_BUFFER_QUEUES_KEY;
-        jedisCommands.zadd(key, -(System.currentTimeMillis()), queueName);
     }
 }

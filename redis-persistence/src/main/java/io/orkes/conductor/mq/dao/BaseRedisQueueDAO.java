@@ -15,9 +15,12 @@ package io.orkes.conductor.mq.dao;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -29,6 +32,7 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.redis.config.RedisProperties;
+import com.netflix.conductor.redis.jedis.JedisCommands;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -51,10 +55,16 @@ public abstract class BaseRedisQueueDAO implements QueueDAO {
 
     protected final ExecutorService queueMonitorExecutor;
 
-    protected static final String CDC_BUFFER_QUEUES_KEY = "CDC_BUFFER_QUEUES";
+    protected final JedisCommands jedisCommands;
+
+    private final Set<String> queuesWithPayload =
+            Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     public BaseRedisQueueDAO(
-            RedisProperties redisProperties, ConductorProperties conductorProperties) {
+            JedisCommands jedisCommands,
+            RedisProperties redisProperties,
+            ConductorProperties conductorProperties) {
+        this.jedisCommands = jedisCommands;
         this.redisProperties = redisProperties;
         this.conductorProperties = conductorProperties;
 
@@ -79,6 +89,10 @@ public abstract class BaseRedisQueueDAO implements QueueDAO {
                                 .build());
     }
 
+    private String getPayloadKey(String queueName) {
+        return queueNamespace + ".QUEUE." + queueName + "." + queueShard + ".PAYLOAD";
+    }
+
     protected abstract ConductorQueue getConductorQueue(
             String queueKey, ExecutorService executorService);
 
@@ -88,19 +102,6 @@ public abstract class BaseRedisQueueDAO implements QueueDAO {
         String queueKey = queueNamespace + ".QUEUE." + queueName + "." + queueShard;
         return queues.get(queueName, key -> getConductorQueue(queueKey, queueMonitorExecutor));
     }
-
-    protected ConductorQueue getCDCBufferQueue(String queueName) {
-        // This is still not great but this way there will be no scan needed for this
-        String queueKey = queueNamespace + ".QUEUE." + queueName + "." + queueShard;
-        return queues.get(
-                queueName,
-                key -> {
-                    updateScore(queueName);
-                    return getConductorQueue(queueKey, queueMonitorExecutor);
-                });
-    }
-
-    public abstract void updateScore(String queueName);
 
     @Override
     public final void push(String queueName, String id, long offsetTimeInSecond) {
@@ -130,6 +131,10 @@ public abstract class BaseRedisQueueDAO implements QueueDAO {
                             message.getPayload(),
                             message.getTimeout() * 1000L,
                             message.getPriority()));
+            if (message.getPayload() != null && !message.getPayload().isEmpty()) {
+                jedisCommands.hset(getPayloadKey(queueName), message.getId(), message.getPayload());
+                queuesWithPayload.add(queueName);
+            }
         }
         get(queueName).push(queueMessages);
     }
@@ -163,20 +168,38 @@ public abstract class BaseRedisQueueDAO implements QueueDAO {
     public final List<Message> pollMessages(String queueName, int count, int timeout) {
         List<QueueMessage> queueMessages =
                 get(queueName).pop(count, timeout, TimeUnit.MILLISECONDS);
+        boolean hasPayloads = queuesWithPayload.contains(queueName);
+        if (!hasPayloads) {
+            return queueMessages.stream()
+                    .map(
+                            msg ->
+                                    new Message(
+                                            msg.getId(),
+                                            msg.getPayload(),
+                                            msg.getId(),
+                                            msg.getPriority()))
+                    .collect(Collectors.toList());
+        }
+        String payloadKey = getPayloadKey(queueName);
         return queueMessages.stream()
                 .map(
-                        msg ->
-                                new Message(
-                                        msg.getId(),
-                                        msg.getPayload(),
-                                        msg.getId(),
-                                        msg.getPriority()))
+                        msg -> {
+                            String payload = jedisCommands.hget(payloadKey, msg.getId());
+                            return new Message(
+                                    msg.getId(),
+                                    payload != null ? payload : msg.getPayload(),
+                                    msg.getId(),
+                                    msg.getPriority());
+                        })
                 .collect(Collectors.toList());
     }
 
     @Override
     public final void remove(String queueName, String messageId) {
         get(queueName).remove(messageId);
+        if (queuesWithPayload.contains(queueName)) {
+            jedisCommands.hdel(getPayloadKey(queueName), messageId);
+        }
     }
 
     @Override
@@ -187,6 +210,9 @@ public abstract class BaseRedisQueueDAO implements QueueDAO {
     @Override
     public final boolean ack(String queueName, String messageId) {
         get(queueName).ack(messageId);
+        if (queuesWithPayload.contains(queueName)) {
+            jedisCommands.hdel(getPayloadKey(queueName), messageId);
+        }
         return true;
     }
 
@@ -198,6 +224,9 @@ public abstract class BaseRedisQueueDAO implements QueueDAO {
     @Override
     public final void flush(String queueName) {
         get(queueName).flush();
+        if (queuesWithPayload.remove(queueName)) {
+            jedisCommands.del(getPayloadKey(queueName));
+        }
     }
 
     @Override

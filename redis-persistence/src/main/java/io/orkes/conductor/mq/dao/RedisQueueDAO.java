@@ -34,7 +34,7 @@ public class RedisQueueDAO extends BaseRedisQueueDAO implements QueueDAO {
             RedisProperties redisProperties,
             ConductorProperties conductorProperties) {
 
-        super(redisProperties, conductorProperties);
+        super(jedisPool, redisProperties, conductorProperties);
         this.jedisPool = jedisPool;
         log.info("Queues initialized using {}", RedisQueueDAO.class.getName());
     }
@@ -42,16 +42,5 @@ public class RedisQueueDAO extends BaseRedisQueueDAO implements QueueDAO {
     @Override
     protected ConductorQueue getConductorQueue(String queueKey, ExecutorService executorService) {
         return new ConductorRedisQueue(queueKey, jedisPool, executorService);
-    }
-
-    @Override
-    public void updateScore(String queueName) {
-        String key =
-                redisProperties.getQueueNamespacePrefix()
-                        + "."
-                        + conductorProperties.getStack()
-                        + "."
-                        + CDC_BUFFER_QUEUES_KEY;
-        jedisPool.zadd(key, -(System.currentTimeMillis()), queueName);
     }
 }
