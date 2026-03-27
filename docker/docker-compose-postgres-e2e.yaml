@@ -1,0 +1,47 @@
+services:
+  conductor-server:
+    environment:
+      - CONFIG_PROP=config-postgres.properties
+    image: conductor:server
+    container_name: conductor-server-e2e
+    networks:
+      - internal
+    ports:
+      - "8000:8080"
+    healthcheck:
+      test: [ "CMD", "curl", "-I", "-XGET", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+    links:
+      - conductor-postgres:postgresdb
+    depends_on:
+      conductor-postgres:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10k"
+        max-file: "3"
+
+  conductor-postgres:
+    image: postgres:16
+    container_name: conductor-postgres-e2e
+    environment:
+      - POSTGRES_USER=conductor
+      - POSTGRES_PASSWORD=conductor
+    networks:
+      - internal
+    healthcheck:
+      test: timeout 5 bash -c 'cat < /dev/null > /dev/tcp/localhost/5432'
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"
+
+networks:
+  internal:

@@ -1,0 +1,25 @@
+{
+  "name": "e2e_on_state_change_tests_sub",
+  "description": "Workflow to debug on state change issues - missing events for subworkflow task",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "set_variable",
+      "taskReferenceName": "set_variable_ref",
+      "type": "SET_VARIABLE",
+      "inputParameters": {
+        "name": "Orkes"
+      }
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "failureWorkflow": "",
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {},
+  "inputTemplate": {}
+}

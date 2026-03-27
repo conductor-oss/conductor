@@ -1,0 +1,87 @@
+{
+  "name": "switch_rerun_issue_2",
+  "description": "Tests rerun with nested SWITCH inside DO_WHILE loop",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": [],
+  "outputParameters": {},
+  "tasks": [
+    {
+      "name": "do_while",
+      "taskReferenceName": "do_while_ref",
+      "inputParameters": {
+        "number": 3
+      },
+      "type": "DO_WHILE",
+      "loopCondition": "$.do_while_ref['iteration'] < $.number",
+      "loopOver": [
+        {
+          "name": "inline_1",
+          "taskReferenceName": "inline_ref_1",
+          "inputParameters": {
+            "expression": "new Date().toISOString()",
+            "evaluatorType": "graaljs"
+          },
+          "type": "INLINE"
+        },
+        {
+          "name": "wait",
+          "taskReferenceName": "wait_ref",
+          "type": "WAIT",
+          "inputParameters": {
+            "duration": "1 seconds"
+          }
+        },
+        {
+          "name": "switch",
+          "taskReferenceName": "switch_ref",
+          "inputParameters": {
+            "case": "${workflow.input.case}"
+          },
+          "type": "SWITCH",
+          "decisionCases": {
+            "yes": [
+              {
+                "name": "switch_1",
+                "taskReferenceName": "switch_ref_1",
+                "inputParameters": {
+                  "case": "${workflow.input.case}"
+                },
+                "type": "SWITCH",
+                "decisionCases": {
+                  "yes": [
+                    {
+                      "name": "inline_2",
+                      "taskReferenceName": "inline_ref_2",
+                      "inputParameters": {
+                        "expression": "$.timestamp",
+                        "evaluatorType": "graaljs",
+                        "timestamp": "${inline_ref_1.output.result}"
+                      },
+                      "type": "INLINE"
+                    }
+                  ]
+                },
+                "evaluatorType": "value-param",
+                "expression": "case"
+              },
+              {
+                "name": "inline_3",
+                "taskReferenceName": "inline_ref_3",
+                "inputParameters": {
+                  "expression": "$.timestamp",
+                  "evaluatorType": "graaljs",
+                  "timestamp": "${inline_ref_1.output.result}"
+                },
+                "type": "INLINE"
+              }
+            ]
+          },
+          "evaluatorType": "value-param",
+          "expression": "case"
+        }
+      ],
+      "evaluatorType": "graaljs"
+    }
+  ]
+}

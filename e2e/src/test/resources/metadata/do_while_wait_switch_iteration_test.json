@@ -1,0 +1,239 @@
+{
+  "createTime": 1758559575365,
+  "updateTime": 1758910968583,
+  "name": "do_while_wait_switch_iteration_test",
+  "description": "DO_WHILE with WAIT and SWITCH tasks testing manual iteration control",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "do_while",
+      "taskReferenceName": "do_while_ref",
+      "inputParameters": {
+        "status": "${workflow.variables.status}"
+      },
+      "type": "DO_WHILE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopCondition": "$.status != 'Completed'",
+      "loopOver": [
+        {
+          "name": "inline_sample",
+          "taskReferenceName": "inline_sample_ref",
+          "inputParameters": {
+            "expression": "(function () { \n  const current = $.iteration;\n  return current;\n})();",
+            "evaluatorType": "graaljs",
+            "iteration": "${do_while_ref.output}"
+          },
+          "type": "INLINE",
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": [],
+          "onStateChange": {},
+          "permissive": false
+        },
+        {
+          "name": "http",
+          "taskReferenceName": "http_ref",
+          "inputParameters": {
+            "uri": "https://orkes-api-tester.orkesconductor.com/api",
+            "method": "GET",
+            "accept": "application/json",
+            "contentType": "application/json",
+            "encode": true
+          },
+          "type": "HTTP",
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": [],
+          "onStateChange": {},
+          "permissive": false
+        },
+        {
+          "name": "wait",
+          "taskReferenceName": "wait_ref",
+          "inputParameters": {},
+          "type": "WAIT",
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": [],
+          "onStateChange": {},
+          "permissive": false
+        },
+        {
+          "name": "switch",
+          "taskReferenceName": "switch_ref",
+          "inputParameters": {
+            "switchCaseValue": "${wait_ref.output.result}"
+          },
+          "type": "SWITCH",
+          "decisionCases": {
+            "a": [
+              {
+                "name": "http_1",
+                "taskReferenceName": "http_ref_1",
+                "inputParameters": {
+                  "uri": "https://orkes-api-tester.orkesconductor.com/api",
+                  "method": "GET",
+                  "accept": "application/json",
+                  "contentType": "application/json",
+                  "encode": true
+                },
+                "type": "HTTP",
+                "decisionCases": {},
+                "defaultCase": [],
+                "forkTasks": [],
+                "startDelay": 0,
+                "joinOn": [],
+                "optional": false,
+                "defaultExclusiveJoinTask": [],
+                "asyncComplete": false,
+                "loopOver": [],
+                "onStateChange": {},
+                "permissive": false
+              },
+              {
+                "name": "set_variable",
+                "taskReferenceName": "set_variable_ref",
+                "inputParameters": {
+                  "status": "Completed"
+                },
+                "type": "SET_VARIABLE",
+                "decisionCases": {},
+                "defaultCase": [],
+                "forkTasks": [],
+                "startDelay": 0,
+                "joinOn": [],
+                "optional": false,
+                "defaultExclusiveJoinTask": [],
+                "asyncComplete": false,
+                "loopOver": [],
+                "onStateChange": {},
+                "permissive": false
+              }
+            ],
+            "b": [
+              {
+                "name": "http_2",
+                "taskReferenceName": "http_ref_2",
+                "inputParameters": {
+                  "uri": "https://orkes-api-tester.orkesconductor.com/api",
+                  "method": "GET",
+                  "accept": "application/json",
+                  "contentType": "application/json",
+                  "encode": true
+                },
+                "type": "HTTP",
+                "decisionCases": {},
+                "defaultCase": [],
+                "forkTasks": [],
+                "startDelay": 0,
+                "joinOn": [],
+                "optional": false,
+                "defaultExclusiveJoinTask": [],
+                "asyncComplete": false,
+                "loopOver": [],
+                "onStateChange": {},
+                "permissive": false
+              },
+              {
+                "name": "set_variable_1",
+                "taskReferenceName": "set_variable_ref_1",
+                "inputParameters": {
+                  "status": "RUNNING"
+                },
+                "type": "SET_VARIABLE",
+                "decisionCases": {},
+                "defaultCase": [],
+                "forkTasks": [],
+                "startDelay": 0,
+                "joinOn": [],
+                "optional": false,
+                "defaultExclusiveJoinTask": [],
+                "asyncComplete": false,
+                "loopOver": [],
+                "onStateChange": {},
+                "permissive": false
+              }
+            ]
+          },
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": [],
+          "evaluatorType": "value-param",
+          "expression": "switchCaseValue",
+          "onStateChange": {},
+          "permissive": false
+        }
+      ],
+      "evaluatorType": "graaljs",
+      "onStateChange": {},
+      "permissive": false
+    },
+    {
+      "name": "http_3",
+      "taskReferenceName": "http_ref_3",
+      "inputParameters": {
+        "uri": "https://orkes-api-tester.orkesconductor.com/api",
+        "method": "GET",
+        "accept": "application/json",
+        "contentType": "application/json",
+        "encode": true
+      },
+      "type": "HTTP",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {},
+      "permissive": false
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "failureWorkflow": "",
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "ownerEmail": "test@orkes.io",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {},
+  "inputTemplate": {},
+  "enforceSchema": true,
+  "metadata": {},
+  "maskedFields": []
+}
