@@ -11,19 +11,13 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import {
-  Check,
-  DotsThree,
-  GearIcon,
-  MagnifyingGlass,
-  X,
-} from "@phosphor-icons/react";
+import { DotsThree, MagnifyingGlass, Plugs, X } from "@phosphor-icons/react";
 import { useSelector } from "@xstate/react";
 import { WorkflowEditContext } from "pages/definition/state";
 import { buildDataForOperation } from "pages/definition/state/taskModifier/taskModifier";
 import { usePerformOperationOnDefinition } from "pages/definition/state/usePerformOperationOnDefintion";
 import { pluginRegistry } from "plugins/registry";
-import React, {
+import {
   cloneElement,
   ReactElement,
   useCallback,
@@ -74,10 +68,12 @@ const OSS_QUICK_ADD_TYPES: TaskType[] = [
   TaskType.INLINE,
 ];
 
+/** Placeholder in core quick-add type list → opens Add Task side panel (Integrations tab). */
+const QUICK_ADD_INTEGRATIONS_PANEL = "QUICK_ADD_INTEGRATIONS_PANEL" as const;
+
 // AI/LLM task types for the Agentic Orchestration section
 const AI_QUICK_ADD_TYPES: TaskType[] = [
   TaskType.LLM_CHAT_COMPLETE,
-  TaskType.LLM_TEXT_COMPLETE,
   TaskType.LLM_GENERATE_EMBEDDINGS,
   TaskType.LLM_GET_EMBEDDINGS,
   TaskType.LLM_INDEX_DOCUMENT,
@@ -98,7 +94,85 @@ type TaskMenuItem = BaseTaskMenuItem & {
   status?: string;
   onClick?: () => void;
   icon?: ReactElement<any>;
+  /** Stable React key when `type` duplicates another quick-add row (e.g. Integrations opener). */
+  quickAddRowId?: string;
 };
+
+function QuickAddGridItem({ item }: { item: TaskMenuItem }) {
+  return (
+    <Grid size={12 / 5}>
+      <Tooltip
+        title={item.name}
+        arrow
+        placement="top"
+        PopperProps={{
+          modifiers: [
+            {
+              name: "preventOverflow",
+              enabled: true,
+              options: {
+                altAxis: true,
+                altBoundary: true,
+                rootBoundary: "document",
+                padding: 8,
+              },
+            },
+          ],
+        }}
+      >
+        <Box
+          onClick={item.onClick}
+          sx={{
+            cursor: "pointer",
+            transition: "all 0.2s ease",
+          }}
+        >
+          <Box
+            className="quick-add-icon"
+            sx={{
+              width: "100%",
+              aspectRatio: "1",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: 2,
+              backgroundColor: alpha("#F1F5F9", 0.6),
+              border: "2px solid",
+              borderColor: "transparent",
+              color: "#64748B",
+              transition: "all 0.2s ease",
+              "&:hover": {
+                backgroundColor: alpha("#3B82F6", 0.08),
+                color: "#3B82F6",
+                borderColor: alpha("#3B82F6", 0.2),
+                transform: "translateY(-2px)",
+              },
+            }}
+          >
+            {item.icon}
+            <Typography
+              sx={{
+                fontSize: "0.675rem",
+                textAlign: "center",
+                width: "100%",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                lineHeight: 1.2,
+                mt: 0.5,
+              }}
+            >
+              {item.name}
+            </Typography>
+          </Box>
+        </Box>
+      </Tooltip>
+    </Grid>
+  );
+}
 
 const popperStyle = {
   width: "360px",
@@ -223,7 +297,13 @@ const QuickAddMenu = ({
     [onPerformOperation, operationContext],
   );
 
-  const taskOptions = useMemo(
+  const openIntegrationsAddTaskPanel = useCallback(() => {
+    richAddTaskMenuActor.send({
+      type: RichAddTaskMenuEventTypes.SWITCH_TO_INTEGRATIONS,
+    });
+  }, [richAddTaskMenuActor]);
+
+  const taskOptions: TaskMenuItem[] = useMemo(
     () =>
       getALL_TASKS().map((bt: BaseTaskMenuItem) => {
         const IconComponent = iconForTaskTypeMap[bt.type];
@@ -314,50 +394,87 @@ const QuickAddMenu = ({
     [subWorkflowMenuItems, handleAddTaskBelow, getSequentialTask],
   );
 
-  const options = useMemo(
-    () =>
-      [
-        ...taskOptions,
-        ...workerOptions,
-        ...workflowDefinitionsOptions,
-      ] as TaskMenuItem[],
-    [taskOptions, workerOptions, workflowDefinitionsOptions],
-  );
+  const options = useMemo(() => {
+    const showIntegrationsPanelShortcut =
+      pluginRegistry.getNewIntegrationModal() != null;
+    const integrationsPanelItem = showIntegrationsPanelShortcut
+      ? [
+          {
+            name: "Connected Apps",
+            description:
+              "Browse integration-backed tasks in the Add Task panel.",
+            category: RichAddMenuTabs.INTEGRATIONS_TAB,
+            type: QUICK_ADD_INTEGRATIONS_PANEL as unknown as TaskType,
+            quickAddRowId: "quick-add-integrations-panel",
+            onClick: openIntegrationsAddTaskPanel,
+            icon: <Plugs size={24} />,
+          },
+        ]
+      : [];
+    return [
+      ...integrationsPanelItem,
+      ...taskOptions,
+      ...workerOptions,
+      ...workflowDefinitionsOptions,
+    ] as TaskMenuItem[];
+  }, [
+    taskOptions,
+    workerOptions,
+    workflowDefinitionsOptions,
+    openIntegrationsAddTaskPanel,
+  ]);
 
-  const quickTasksOptions = useMemo(() => {
-    // Build quick-add types: OSS core types + plugin-registered types with quickAdd: true
+  const { coreQuickAddTasks, agenticQuickAddTasks } = useMemo(() => {
+    const showIntegrationsPanelShortcut =
+      pluginRegistry.getNewIntegrationModal() != null;
+
     const pluginQuickAddTypes = pluginRegistry
       .getTaskMenuItems()
       .filter((item) => item.quickAdd)
-      .map((item) => item.type as TaskType);
+      .map((item) => item.type as TaskType)
+      .filter(
+        (type) => !(showIntegrationsPanelShortcut && type === TaskType.MCP),
+      );
 
-    // Combine OSS and plugin types, but exclude AI tasks (they go in Agentic Orchestration)
     const aiTaskTypesSet = new Set(AI_QUICK_ADD_TYPES as string[]);
     const coreTaskTypes = [
       ...OSS_QUICK_ADD_TYPES,
+      ...(showIntegrationsPanelShortcut ? [QUICK_ADD_INTEGRATIONS_PANEL] : []),
       ...pluginQuickAddTypes,
-    ].filter((type) => !aiTaskTypesSet.has(type));
+    ].filter((type) =>
+      type === QUICK_ADD_INTEGRATIONS_PANEL
+        ? true
+        : !aiTaskTypesSet.has(type as TaskType),
+    );
 
-    // Map through coreTaskTypes to preserve order and find matching tasks
     const coreTasks = coreTaskTypes
-      ?.map((taskType) => taskOptions.find((task) => task.type === taskType))
-      ?.filter((task): task is NonNullable<typeof task> => task !== undefined);
+      .map((taskType) => {
+        if (taskType === QUICK_ADD_INTEGRATIONS_PANEL) {
+          const item: TaskMenuItem = {
+            name: "Connected Apps",
+            description:
+              "Browse integration-backed tasks in the Add Task panel.",
+            category: RichAddMenuTabs.INTEGRATIONS_TAB,
+            type: TaskType.SIMPLE,
+            quickAddRowId: "quick-add-integrations-panel",
+            onClick: openIntegrationsAddTaskPanel,
+            icon: <Plugs size={24} />,
+          };
+          return item;
+        }
+        return taskOptions.find((task) => task.type === taskType);
+      })
+      .filter((task): task is NonNullable<typeof task> => task !== undefined);
 
-    // Map AI tasks for the Agentic Orchestration section
     const aiTasks = AI_QUICK_ADD_TYPES.map((taskType) =>
       taskOptions.find((task) => task.type === taskType),
     )?.filter((task): task is NonNullable<typeof task> => task !== undefined);
 
-    // Build final list:
-    // - Core tasks (no section title)
-    // - AI tasks with "Agentic Orchestration" divider
-    const result = [...coreTasks, ...aiTasks];
-
-    // Store AI section start index for divider rendering
-    (result as any).__aiStartIndex = coreTasks.length;
-
-    return result;
-  }, [taskOptions]);
+    return {
+      coreQuickAddTasks: coreTasks.slice(0, 15),
+      agenticQuickAddTasks: aiTasks,
+    };
+  }, [taskOptions, openIntegrationsAddTaskPanel]);
 
   const filteredOptions = useMemo(() => {
     if (options) {
@@ -378,7 +495,9 @@ const QuickAddMenu = ({
 
   const handleTaskClick = (task: TaskMenuItem) => {
     if (task.category === RichAddMenuTabs.INTEGRATIONS_TAB) {
-      handleChangeMenuType("advanced");
+      richAddTaskMenuActor.send({
+        type: RichAddTaskMenuEventTypes.SWITCH_TO_INTEGRATIONS,
+      });
     } else if (task.onClick) {
       task.onClick();
     }
@@ -539,125 +658,55 @@ const QuickAddMenu = ({
                 </Button>
               </Box>
 
-              {/* Grid Layout: 5 columns × 3 rows = 15 items max */}
+              {/* Core quick add: 5 columns × 3 rows = 15 cells max */}
               <Grid container spacing={1.5} sx={{ width: "100%" }}>
-                {quickTasksOptions.slice(0, 15).map((item, index) => {
-                  const aiStartIndex =
-                    (quickTasksOptions as any).__aiStartIndex ?? 15;
-                  const showDivider =
-                    index === aiStartIndex && aiStartIndex < 15;
-
-                  return (
-                    <React.Fragment key={index}>
-                      {showDivider && (
-                        <Grid size={12} sx={{ mt: 2, mb: 1.5 }}>
-                          <Box
-                            sx={{
-                              position: "relative",
-                              width: "100%",
-                              textAlign: "center",
-                              borderBottom: "2px dotted",
-                              borderColor: "rgba(226, 232, 240, 0.8)",
-                              height: 10,
-                            }}
-                          >
-                            <Typography
-                              sx={{
-                                position: "absolute",
-                                top: "50%",
-                                left: "50%",
-                                transform: "translate(-50%, -50%)",
-                                background: "#FFFFFF",
-                                fontSize: "0.6875rem",
-                                fontWeight: 600,
-                                letterSpacing: "0.05em",
-                                color: "#64748B",
-                                textTransform: "uppercase",
-                                whiteSpace: "nowrap",
-                                px: 1,
-                              }}
-                            >
-                              Agentic Orchestration
-                            </Typography>
-                          </Box>
-                        </Grid>
-                      )}
-
-                      <Grid size={12 / 5} key={index}>
-                        <Tooltip
-                          title={item.name}
-                          arrow
-                          placement="top"
-                          PopperProps={{
-                            modifiers: [
-                              {
-                                name: "preventOverflow",
-                                enabled: true,
-                                options: {
-                                  altAxis: true,
-                                  altBoundary: true,
-                                  rootBoundary: "document",
-                                  padding: 8,
-                                },
-                              },
-                            ],
-                          }}
-                        >
-                          <Box
-                            onClick={item.onClick}
-                            sx={{
-                              cursor: "pointer",
-                              transition: "all 0.2s ease",
-                            }}
-                          >
-                            <Box
-                              className="quick-add-icon"
-                              sx={{
-                                width: "100%",
-                                aspectRatio: "1",
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                borderRadius: 2,
-                                backgroundColor: alpha("#F1F5F9", 0.6),
-                                border: "2px solid",
-                                borderColor: "transparent",
-                                color: "#64748B",
-                                transition: "all 0.2s ease",
-                                "&:hover": {
-                                  backgroundColor: alpha("#3B82F6", 0.08),
-                                  color: "#3B82F6",
-                                  borderColor: alpha("#3B82F6", 0.2),
-                                  transform: "translateY(-2px)",
-                                },
-                              }}
-                            >
-                              {item.icon}
-                              <Typography
-                                sx={{
-                                  fontSize: "0.675rem",
-                                  textAlign: "center",
-                                  width: "100%",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  display: "-webkit-box",
-                                  WebkitLineClamp: 2,
-                                  WebkitBoxOrient: "vertical",
-                                  lineHeight: 1.2,
-                                  mt: 0.5,
-                                }}
-                              >
-                                {item.name}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </Tooltip>
-                      </Grid>
-                    </React.Fragment>
-                  );
-                })}
+                {coreQuickAddTasks.map((item) => (
+                  <QuickAddGridItem
+                    key={item.quickAddRowId ?? String(item.type)}
+                    item={item}
+                  />
+                ))}
               </Grid>
+
+              {agenticQuickAddTasks.length > 0 ? (
+                <Box sx={{ mt: 2.5 }}>
+                  <Box
+                    sx={{
+                      position: "relative",
+                      width: "100%",
+                      textAlign: "center",
+                      borderBottom: "2px dotted",
+                      borderColor: "rgba(226, 232, 240, 0.8)",
+                      height: 10,
+                      mb: 2,
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        background: "#FFFFFF",
+                        fontSize: "0.6875rem",
+                        fontWeight: 600,
+                        letterSpacing: "0.05em",
+                        color: "#64748B",
+                        textTransform: "uppercase",
+                        whiteSpace: "nowrap",
+                        px: 1,
+                      }}
+                    >
+                      Agentic Orchestration
+                    </Typography>
+                  </Box>
+                  <Grid container spacing={1.5} sx={{ width: "100%" }}>
+                    {agenticQuickAddTasks.map((item) => (
+                      <QuickAddGridItem key={item.type} item={item} />
+                    ))}
+                  </Grid>
+                </Box>
+              ) : null}
             </Box>
           ) : (
             // Search Results Section
@@ -754,10 +803,10 @@ const QuickAddMenu = ({
                   <>
                     {filteredOptions.slice(0, 3).map((item, index) => (
                       <Box
-                        {...optionPropsForItem(item)}
                         key={`option-${index}-${item.name}-${item.category}${
                           item.version ? item.version : ""
                         }`}
+                        {...optionPropsForItem(item)}
                         onClick={() => handleTaskClick(item)}
                         sx={{
                           p: 2,
@@ -854,39 +903,6 @@ const QuickAddMenu = ({
                             >
                               {item.description}
                             </Typography>
-                            {item.category ===
-                              RichAddMenuTabs.INTEGRATIONS_TAB && (
-                              <Box
-                                sx={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: 0.75,
-                                  color:
-                                    item.status === "active"
-                                      ? "#059669"
-                                      : "#D97706",
-                                  fontSize: "0.75rem",
-                                  fontWeight: 500,
-                                  mt: 1.5,
-                                  py: 0.5,
-                                  px: 1.5,
-                                  borderRadius: "1rem",
-                                  backgroundColor:
-                                    item.status === "active"
-                                      ? "rgba(5, 150, 105, 0.1)"
-                                      : "rgba(217, 119, 6, 0.1)",
-                                }}
-                              >
-                                {item.status === "active" ? (
-                                  <Check size={14} weight="bold" />
-                                ) : (
-                                  <GearIcon size={14} weight="bold" />
-                                )}
-                                {item.status === "active"
-                                  ? "Ready to use"
-                                  : "Setup required"}
-                              </Box>
-                            )}
                           </Box>
                         </Box>
                       </Box>

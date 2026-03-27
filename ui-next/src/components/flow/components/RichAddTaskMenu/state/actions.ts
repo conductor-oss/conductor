@@ -37,6 +37,10 @@ export const persistSearchQuery = assign<
   searchQuery: (context, event) => event.text,
 });
 
+export const clearSearchQuery = assign<RichAddTaskMenuMachineContext>({
+  searchQuery: "",
+});
+
 export const persistTaskDefinitions = assign<
   RichAddTaskMenuMachineContext,
   DoneInvokeEvent<TaskDefinition[]>

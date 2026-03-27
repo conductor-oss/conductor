@@ -1,0 +1,40 @@
+{
+  "name": "end_time_issue_wf",
+  "description": "Tests endTime field propagation across task outputs",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "end_time_simple",
+      "taskReferenceName": "simple_ref",
+      "inputParameters": {},
+      "type": "SIMPLE"
+    },
+    {
+      "name": "inline",
+      "taskReferenceName": "inline_ref",
+      "inputParameters": {
+        "expression": "$.endTime",
+        "evaluatorType": "graaljs",
+        "endTime": "${simple_ref.endTime}"
+      },
+      "type": "INLINE"
+    },
+    {
+      "name": "end_time_simple_2",
+      "taskReferenceName": "simple_2_ref",
+      "inputParameters": {
+        "endTime": "${simple_ref.endTime}"
+      },
+      "type": "SIMPLE"
+    },
+    {
+      "name": "end_time_simple_3",
+      "taskReferenceName": "simple_ref_3",
+      "inputParameters": {
+        "endTime": "${simple_ref.endTime}"
+      },
+      "type": "SIMPLE"
+    }
+  ],
+  "schemaVersion": 2
+}

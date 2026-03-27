@@ -1,0 +1,52 @@
+{
+  "name": "switch_rerun_issue",
+  "description": "Tests rerun with SWITCH task evaluating input after WAIT",
+  "version": 2,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "inline_1",
+      "taskReferenceName": "inline_ref_1",
+      "inputParameters": {
+        "expression": "new Date().toISOString()",
+        "evaluatorType": "graaljs"
+      },
+      "type": "INLINE"
+    },
+    {
+      "name": "wait",
+      "taskReferenceName": "wait_ref",
+      "inputParameters": {
+        "duration": "2 seconds"
+      },
+      "type": "WAIT"
+    },
+    {
+      "name": "switch",
+      "taskReferenceName": "switch_ref",
+      "inputParameters": {
+        "case": "${workflow.input.case}"
+      },
+      "type": "SWITCH",
+      "decisionCases": {
+        "yes": [
+          {
+            "name": "inline_2",
+            "taskReferenceName": "inline_ref_2",
+            "inputParameters": {
+              "expression": "$.timestamp",
+              "evaluatorType": "graaljs",
+              "timestamp": "${inline_ref_1.output.result}"
+            },
+            "type": "INLINE"
+          }
+        ]
+      },
+      "defaultCase": [],
+      "evaluatorType": "value-param",
+      "expression": "case"
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {}
+}

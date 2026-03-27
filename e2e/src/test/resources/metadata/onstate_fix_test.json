@@ -1,0 +1,97 @@
+{
+  "createTime": 1717446484815,
+  "updateTime": 1717457738607,
+  "name": "task_state_change_event_test",
+  "description": "Edit or extend this sample workflow. Set the workflow name to get started",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "test_task_on_change",
+      "taskReferenceName": "test_task_on_change",
+      "inputParameters": {},
+      "type": "SIMPLE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {
+        "onSuccess,onFailed,onScheduled,onCancelled,onStart": [
+          {
+            "type": "test_123_abc",
+            "payload": {
+              "00status00": "${test_task_on_change.status}"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "wait",
+      "taskReferenceName": "wait_ref",
+      "inputParameters": {},
+      "type": "WAIT",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {
+        "onSuccess,onFailed,onScheduled,onCancelled,onStart": [
+          {
+            "type": "test_123_abc",
+            "payload": {
+              "00status00": "${wait_ref.status}"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "wait_1",
+      "taskReferenceName": "wait_ref_1",
+      "inputParameters": {
+        "duration": "3 seconds"
+      },
+      "type": "WAIT",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {
+        "onSuccess,onFailed,onScheduled,onCancelled,onStart": [
+          {
+            "type": "test_123_abc",
+            "payload": {
+              "00status00": "${wait_ref_1.status}"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "failureWorkflow": "",
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "ownerEmail": "test@orkes.io",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {},
+  "inputTemplate": {}
+}

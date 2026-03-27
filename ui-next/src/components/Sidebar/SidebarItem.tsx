@@ -60,14 +60,25 @@ export const SidebarItem = ({
 
   const hasChildren = item.items && item.items.length > 0;
   const isRouteActive = useMemo(() => {
-    if (item.linkTo && location.pathname === item.linkTo) return true;
+    if (item.linkTo) {
+      const [linkPath, linkSearch] = item.linkTo.split("?");
+      if (linkSearch) {
+        const linkParams = new URLSearchParams(linkSearch);
+        const locationParams = new URLSearchParams(location.search);
+        const paramsMatch = [...linkParams.entries()].every(
+          ([key, val]) => locationParams.get(key) === val,
+        );
+        return location.pathname === linkPath && paramsMatch;
+      }
+      if (location.pathname === linkPath) return true;
+    }
     if (item.activeRoutes) {
       return item.activeRoutes.some((route) =>
         matchPath({ path: route, end: true }, location.pathname),
       );
     }
     return false;
-  }, [item.linkTo, item.activeRoutes, location.pathname]);
+  }, [item.linkTo, item.activeRoutes, location.pathname, location.search]);
 
   const visibleChildren = useMemo(
     () => item.items?.filter((child) => !child.hidden) || [],
@@ -77,7 +88,18 @@ export const SidebarItem = ({
   // Auto-expand if any child is active
   const hasActiveChild = useMemo(() => {
     return visibleChildren.some((child) => {
-      if (child.linkTo && location.pathname === child.linkTo) return true;
+      if (child.linkTo) {
+        const [linkPath, linkSearch] = child.linkTo.split("?");
+        if (linkSearch) {
+          const linkParams = new URLSearchParams(linkSearch);
+          const locationParams = new URLSearchParams(location.search);
+          const paramsMatch = [...linkParams.entries()].every(
+            ([key, val]) => locationParams.get(key) === val,
+          );
+          return location.pathname === linkPath && paramsMatch;
+        }
+        if (location.pathname === linkPath) return true;
+      }
       if (child.activeRoutes) {
         return child.activeRoutes.some((route) =>
           matchPath({ path: route, end: true }, location.pathname),
@@ -85,7 +107,7 @@ export const SidebarItem = ({
       }
       return false;
     });
-  }, [visibleChildren, location.pathname]);
+  }, [visibleChildren, location.pathname, location.search]);
 
   // Initialize expanded state - all menus default expanded
   const [isExpanded, setIsExpanded] = useState(true);
@@ -105,6 +127,18 @@ export const SidebarItem = ({
   // Check if this is a parent with an active child (not directly active)
   const isParentWithActiveChild =
     hasChildren && hasActiveChild && !isRouteActive && !isActive;
+
+  const opensInNewTab = useMemo(
+    () =>
+      Boolean(
+        item.isOpenNewTab ||
+        (item.linkTo &&
+          (item.linkTo.startsWith("//") ||
+            item.linkTo.startsWith("http://") ||
+            item.linkTo.startsWith("https://"))),
+      ),
+    [item.isOpenNewTab, item.linkTo],
+  );
 
   const handleClick = useCallback(() => {
     if (hasChildren) {
@@ -146,37 +180,19 @@ export const SidebarItem = ({
   const badgeCount = (item.useBadgeCount ?? (() => 0))();
   const showBadge = badgeCount > 0;
 
-  // Check if link should open in new tab (isOpenNewTab flag or absolute URL)
-  const isExternalLink =
-    item.isOpenNewTab ||
-    (item.linkTo &&
-      (item.linkTo.startsWith("//") ||
-        item.linkTo.startsWith("http://") ||
-        item.linkTo.startsWith("https://")));
+  const isLeafLink = Boolean(item.linkTo) && item.linkTo !== "" && !hasChildren;
+  // New-tab leaf: omit custom onClick so Link/anchor default is the only navigation
+  // (ListItemButton + component="a" + onClick races with target="_blank" otherwise).
+  const leafLinkClicksOpenNewTab = isLeafLink && opensInNewTab;
 
   const itemContent = (
     <ListItemButton
       id={item.id}
-      component={
-        item.linkTo && !hasChildren && item.linkTo !== "" && !isExternalLink
-          ? Link
-          : isExternalLink && item.linkTo && !hasChildren && item.linkTo !== ""
-            ? "a"
-            : "div"
-      }
-      to={
-        item.linkTo && !hasChildren && item.linkTo !== "" && !isExternalLink
-          ? item.linkTo
-          : undefined
-      }
-      href={
-        isExternalLink && item.linkTo && !hasChildren && item.linkTo !== ""
-          ? item.linkTo
-          : undefined
-      }
-      target={isExternalLink ? "_blank" : undefined}
-      rel={isExternalLink ? "noopener noreferrer" : undefined}
-      onClick={handleClick}
+      component={isLeafLink ? Link : "div"}
+      to={isLeafLink ? item.linkTo : undefined}
+      target={opensInNewTab ? "_blank" : undefined}
+      rel={opensInNewTab ? "noopener noreferrer" : undefined}
+      onClick={leafLinkClicksOpenNewTab ? undefined : handleClick}
       onMouseEnter={
         !open && hasChildren && level === 0 ? onMouseEnter : undefined
       }
