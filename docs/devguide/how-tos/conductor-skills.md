@@ -280,4 +280,4 @@ curl -sSL https://conductor-oss.github.io/conductor-skills/install.sh | bash -s 
 - **[conductor-skills repository](https://github.com/conductor-oss/conductor-skills)** &mdash; Full documentation, more examples, and source code.
 - **[Quickstart](../../quickstart/index.md)** &mdash; Get a Conductor server running to use with your agent.
 - **[AI & Agents](../ai/index.md)** &mdash; Build durable AI agent workflows on Conductor.
-- **[Client SDKs](../sdk/index.md)** &mdash; Language SDKs for writing workers and programmatic access.
+- **[Client SDKs](../../documentation/clientsdks/index.md)** &mdash; Language SDKs for writing workers and programmatic access.

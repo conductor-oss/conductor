@@ -51,6 +51,7 @@ Pre-built compose files for other backend combinations:
 | Compose file | Database | Queue | Index |
 |:--|:--|:--|:--|
 | `docker-compose.yaml` | Redis | Redis | Elasticsearch 7 |
+| `docker-compose-es8.yaml` | Redis | Redis | Elasticsearch 8 |
 | `docker-compose-postgres.yaml` | PostgreSQL | PostgreSQL | PostgreSQL |
 | `docker-compose-postgres-es7.yaml` | PostgreSQL | PostgreSQL | Elasticsearch 7 |
 | `docker-compose-mysql.yaml` | MySQL | Redis | Elasticsearch 7 |
@@ -61,9 +62,15 @@ Pre-built compose files for other backend combinations:
 # Example: PostgreSQL for everything
 docker compose -f docker/docker-compose-postgres.yaml up
 
+# Example: Redis + Elasticsearch 8
+docker compose -f docker/docker-compose-es8.yaml up
+
 # Example: Redis + OpenSearch 3
 docker compose -f docker/docker-compose-redis-os3.yaml up
 ```
+
+For Elasticsearch 8, set `conductor.indexing.type=elasticsearch8` and use
+`config-redis-es8.properties` or an equivalent custom config.
 
 ---
 
@@ -180,6 +187,7 @@ conductor.indexing.type=postgres
 |:--|:--|:--|:--|
 | PostgreSQL | `postgres` | Simplest stack when database is also PostgreSQL. | Set `conductor.elasticsearch.version=0` to disable ES client. |
 | Elasticsearch 7 | `elasticsearch` | Best search performance at scale. Full-text search. | Set `conductor.elasticsearch.version=7`. |
+| Elasticsearch 8 | `elasticsearch8` | Use when running the ES8 persistence module. | Set `conductor.elasticsearch.version=8`. |
 | OpenSearch 2 | `opensearch2` | Open-source ES alternative. | Compatible with ES 7 queries. |
 | OpenSearch 3 | `opensearch3` | Latest OpenSearch. | |
 | SQLite | `sqlite` | Local development only. | |
@@ -214,6 +222,17 @@ conductor.elasticsearch.indexReplicasCount=1
 # Auth (if using security)
 conductor.elasticsearch.username=elastic
 conductor.elasticsearch.password=<password>
+```
+
+#### Elasticsearch 8
+
+```properties
+conductor.indexing.enabled=true
+conductor.indexing.type=elasticsearch8
+conductor.elasticsearch.url=http://es-host:9200
+conductor.elasticsearch.version=8
+conductor.elasticsearch.indexName=conductor
+conductor.elasticsearch.clusterHealthColor=yellow
 ```
 
 #### OpenSearch
@@ -425,7 +444,7 @@ conductor.app.maxTaskOutputPayloadSizeThreshold=10240KB
 conductor.app.maxWorkflowVariablesPayloadSizeThreshold=256KB
 ```
 
-For external payload storage configuration, see [External Payload Storage](../advanced/externalpayloadstorage.md).
+For external payload storage configuration, see [External Payload Storage](../../documentation/advanced/externalpayloadstorage.md).
 
 ---
 
@@ -442,7 +461,7 @@ management.endpoint.health.show-details=always
 
 Scrape `http://<conductor-host>:8080/actuator/prometheus` with Prometheus.
 
-For details on available metrics, see [Server Metrics](../metrics/server.md) and [Client Metrics](../metrics/client.md).
+For details on available metrics, see [Server Metrics](../../documentation/metrics/server.md) and [Client Metrics](../../documentation/metrics/client.md).
 
 ---
 

@@ -1,0 +1,42 @@
+{
+  "createTime": 1744192592312,
+  "updateTime": 0,
+  "name": "signal_subworkflow",
+  "description": "signal_subworkflow",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "sub_workflow",
+      "taskReferenceName": "sub_workflow_ref",
+      "inputParameters": {},
+      "type": "SUB_WORKFLOW",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "subWorkflowParam": {
+        "name": "wait_signal_test",
+        "version": 1
+      },
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {},
+      "permissive": false
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "failureWorkflow": "",
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "ownerEmail": "test.user@orkes.io",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {},
+  "inputTemplate": {},
+  "enforceSchema": true
+}

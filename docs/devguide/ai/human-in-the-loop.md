@@ -181,4 +181,4 @@ Because each review step is a separate persisted task, no upstream work is repea
 
 - **[Durable Agents](durable-agents.md)** &mdash; What persists, what gets retried, error handling, and multi-agent composition.
 - **[Dynamic Workflows](dynamic-workflows.md)** &mdash; Agent loops, dynamic workflow generation, and tool use examples.
-- **[HUMAN task reference](../configuration/workflowdef/systemtasks/human-task.md)** &mdash; Full configuration options for the HUMAN system task.
+- **[HUMAN task reference](../../documentation/configuration/workflowdef/systemtasks/human-task.md)** &mdash; Full configuration options for the HUMAN system task.

@@ -294,7 +294,7 @@ The `HUMAN` task pauses the workflow indefinitely. The pause survives server res
 
 ### Retry is automatic and configurable
 
-Every tool call (`CALL_MCP_TOOL`, `HTTP`, `SIMPLE`) inherits retry behavior from its [task definition](../configuration/taskdef.md):
+Every tool call (`CALL_MCP_TOOL`, `HTTP`, `SIMPLE`) inherits retry behavior from its [task definition](../../documentation/configuration/taskdef.md):
 
 ```json
 {

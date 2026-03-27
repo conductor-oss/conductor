@@ -1,0 +1,106 @@
+{
+  "name": "context_concurrency_issue",
+  "description": "context propagation issue",
+  "version": 1,
+  "schemaVersion": 2,
+  "timeoutPolicy": "ALERT_ONLY",
+  "tasks": [
+    {
+      "name": "fork",
+      "taskReferenceName": "fork_ref",
+      "inputParameters": {},
+      "type": "FORK_JOIN",
+      "forkTasks": [
+        [
+          {
+            "name": "concurrency_issue",
+            "taskReferenceName": "concurrency_issue_0",
+            "inputParameters": {},
+            "type": "SIMPLE"
+          }
+        ],
+        [
+          {
+            "name": "concurrency_issue",
+            "taskReferenceName": "concurrency_issue_1",
+            "inputParameters": {},
+            "type": "SIMPLE"
+          }
+        ],
+        [
+          {
+            "name": "concurrency_issue",
+            "taskReferenceName": "concurrency_issue_2",
+            "inputParameters": {},
+            "type": "SIMPLE"
+          }
+        ],
+        [
+          {
+            "name": "concurrency_issue",
+            "taskReferenceName": "concurrency_issue_3",
+            "inputParameters": {},
+            "type": "SIMPLE"
+          }
+        ],
+        [
+          {
+            "name": "concurrency_issue",
+            "taskReferenceName": "concurrency_issue_4",
+            "inputParameters": {},
+            "type": "SIMPLE"
+          }
+        ],
+        [
+          {
+            "name": "concurrency_issue",
+            "taskReferenceName": "concurrency_issue_5",
+            "inputParameters": {},
+            "type": "SIMPLE"
+          }
+        ],
+        [
+          {
+            "name": "concurrency_issue",
+            "taskReferenceName": "concurrency_issue_6",
+            "inputParameters": {},
+            "type": "SIMPLE"
+          }
+        ],
+        [
+          {
+            "name": "concurrency_issue",
+            "taskReferenceName": "concurrency_issue_7",
+            "inputParameters": {},
+            "type": "SIMPLE"
+          }
+        ]
+      ],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {},
+      "permissive": false
+    },
+    {
+      "name": "join",
+      "taskReferenceName": "join_ref",
+      "inputParameters": {},
+      "type": "JOIN",
+      "joinOn": [
+        "concurrency_issue_0",
+        "concurrency_issue_1",
+        "concurrency_issue_2",
+        "concurrency_issue_3",
+        "concurrency_issue_4",
+        "concurrency_issue_5",
+        "concurrency_issue_6",
+        "concurrency_issue_7"
+      ],
+      "permissive": false
+    }
+  ]
+}

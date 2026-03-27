@@ -42,6 +42,7 @@ export enum IntegrationCategory {
   MESSAGE_BROKER = "MESSAGE_BROKER",
   EMAIL = "EMAIL",
   EVENT_SOURCE = "EVENT_SOURCE",
+  MCP = "MCP",
 }
 
 export type BaseIntegration = {

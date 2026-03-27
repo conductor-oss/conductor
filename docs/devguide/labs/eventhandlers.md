@@ -1,3 +1,6 @@
+---
+description: "Event Handlers Lab — hands-on tutorial for publishing events and triggering Conductor workflows with event handlers."
+---
 # Events and Event Handlers
 
 In this exercise, we shall:
@@ -9,8 +12,8 @@ In this exercise, we shall:
 
 Conductor supports eventing with two Interfaces:
 
-* [Event Task](../configuration/workflowdef/systemtasks/event-task.md)
-* [Event Handlers](../configuration/eventhandlers.md)
+* [Event Task](../../documentation/configuration/workflowdef/systemtasks/event-task.md)
+* [Event Handlers](../../documentation/configuration/eventhandlers.md)
 
 ## Create Workflow Definitions
 
@@ -110,7 +113,7 @@ Event Handler can perform a list of actions defined in `actions` array parameter
 }
 ```
 
-Let's define `start_workflow` action. We shall pass the name of workflow we would like to start. The `start_workflow` parameter can use any of the values from the general [Start Workflow Request](../api/startworkflow.md). Here we are passing in the workflowId, so that the Complete Task Event Handler can use it.
+Let's define `start_workflow` action. We shall pass the name of workflow we would like to start. The `start_workflow` parameter can use any of the values from the general [Start Workflow Request](../../documentation/api/startworkflow.md). Here we are passing in the workflowId, so that the Complete Task Event Handler can use it.
 
 ```json
 {

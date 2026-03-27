@@ -158,7 +158,7 @@ Conductor's JSON definitions can be:
 
 - **Generated at runtime** — an LLM or planner service produces a workflow definition as JSON and Conductor executes it immediately, no compilation or deployment step.
 - **Modified per-execution** — pass a complete `workflowDef` in the start request to customize any execution on the fly.
-- **Dynamically branched** — [DYNAMIC tasks](../devguide/configuration/workflowdef/operators/dynamic-task.md) resolve which task to execute based on runtime output. [DYNAMIC_FORK](../devguide/configuration/workflowdef/operators/dynamic-fork-task.md) creates an arbitrary number of parallel branches determined by a previous task's output. [Sub-workflows](../devguide/configuration/workflowdef/operators/sub-workflow-task.md) can be selected and parameterized dynamically.
+- **Dynamically branched** — [DYNAMIC tasks](../documentation/configuration/workflowdef/operators/dynamic-task.md) resolve which task to execute based on runtime output. [DYNAMIC_FORK](../documentation/configuration/workflowdef/operators/dynamic-fork-task.md) creates an arbitrary number of parallel branches determined by a previous task's output. [Sub-workflows](../documentation/configuration/workflowdef/operators/sub-workflow-task.md) can be selected and parameterized dynamically.
 
 Combined, these primitives make Conductor the most dynamic workflow engine available — not despite using JSON, but because of it. A JSON definition is data, and data is easy to generate, transform, and compose programmatically. Code is not.
 
@@ -200,5 +200,5 @@ For MCP integration, a Conductor workflow can be registered as an MCP tool, allo
 - **[Durable Execution Semantics](durable-execution.md)** &mdash; What persists, what gets retried, failure matrix.
 - **[Why Conductor for Agents](../devguide/ai/index.md)** &mdash; How Conductor's primitives map to agent patterns.
 - **[Quickstart](../quickstart/index.md)** &mdash; Get running in 5 minutes.
-- **[Workflow Definition Reference](../devguide/configuration/workflowdef/index.md)** &mdash; Full JSON schema for workflow definitions.
-- **[Dynamic Fork](../devguide/configuration/workflowdef/operators/dynamic-fork-task.md)** &mdash; Runtime-determined parallel execution.
+- **[Workflow Definition Reference](../documentation/configuration/workflowdef/index.md)** &mdash; Full JSON schema for workflow definitions.
+- **[Dynamic Fork](../documentation/configuration/workflowdef/operators/dynamic-fork-task.md)** &mdash; Runtime-determined parallel execution.

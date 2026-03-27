@@ -1,0 +1,49 @@
+{
+  "createTime": 1732289485210,
+  "updateTime": 1732269106535,
+  "name": "concurrency-check-workflow-http",
+  "description": "Test Rate Limit via HTTP task",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "http",
+      "taskReferenceName": "http_ref",
+      "inputParameters": {
+        "uri": "https://orkes-api-tester.orkesconductor.com/api",
+        "method": "GET",
+        "connectionTimeOut": 3000,
+        "readTimeOut": "3000",
+        "accept": "application/json",
+        "contentType": "application/json"
+      },
+      "type": "HTTP",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {},
+      "permissive": false
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "failureWorkflow": "",
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "ownerEmail": "test@orkes.io",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {},
+  "inputTemplate": {},
+  "rateLimitConfig": {
+    "rateLimitKey": "concurrency-check-workflow-http",
+    "concurrentExecLimit": 2
+  },
+  "enforceSchema": true
+}

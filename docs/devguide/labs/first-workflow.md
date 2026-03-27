@@ -1,10 +1,13 @@
+---
+description: "First Workflow Lab — step-by-step tutorial to create and run your first Conductor workflow using built-in HTTP tasks."
+---
 # A First Workflow
 
 In this article we will explore how we can run a really simple workflow that runs without deploying any new microservice. 
 
 Conductor can orchestrate HTTP services out of the box without implementing any code.  We will use that to create and run the first workflow.
 
-See [System Task](../configuration/workflowdef/systemtasks/index.md) for the list of such built-in tasks.
+See [System Task](../../documentation/configuration/workflowdef/systemtasks/index.md) for the list of such built-in tasks.
 Using system tasks is a great way to run a lot of our code in production.
 
 ## Configuring our First Workflow

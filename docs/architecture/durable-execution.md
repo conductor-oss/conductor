@@ -71,7 +71,7 @@ Each transition is persisted before any subsequent action is taken.
 
 ## Timeout and retry configuration
 
-Durability is configurable per task via the [task definition](../devguide/configuration/taskdef.md):
+Durability is configurable per task via the [task definition](../documentation/configuration/taskdef.md):
 
 | Parameter | What it controls |
 |---|---|

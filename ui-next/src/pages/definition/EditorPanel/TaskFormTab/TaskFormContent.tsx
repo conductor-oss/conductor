@@ -50,6 +50,7 @@ import { FormTaskType, TaskDef, TaskType } from "types";
 import { updateField } from "utils/fieldHelpers";
 import { FEATURES, featureFlags } from "utils/flags";
 import { TaskStats } from "./TaskStats/TaskStats";
+import BoundaryTimerSection from "./forms/BoundaryTimerSection";
 import { ConductorCacheOutput } from "./forms/ConductorCacheOutputForm";
 import { MCPTaskForm } from "./forms/MCPTaskForm";
 import { MaybeVariable } from "./forms/MaybeVariable";
@@ -513,6 +514,7 @@ const TaskFormContent: FunctionComponent = () => {
           )}
         </Box>
         {ENABLE_TASK_STATS && <TaskStats />}
+        <BoundaryTimerSection />
         {/*<TaskFormFooter {...{ selectedNode, onChange }} />*/}
       </Box>
     </Box>

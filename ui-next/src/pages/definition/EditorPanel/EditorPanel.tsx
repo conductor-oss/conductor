@@ -3,6 +3,7 @@ import { useSelector } from "@xstate/react";
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -248,10 +249,20 @@ const EditorPanel = ({ definitionActor }: EditorPanelProps) => {
       state.context.errorInspectorMachine,
   );
 
-  // Calculate effective height - use default when auto-expanding to prevent top positioning
+  // When auto-expanded (e.g. new workflow) with no height set, measure container and set full height
+  useLayoutEffect(() => {
+    if (!isAgentExpanded || agentPanelHeight !== null) return;
+    if (!editorPanelContainerRef.current) return;
+    const containerRect =
+      editorPanelContainerRef.current.getBoundingClientRect();
+    const maxHeight =
+      containerRect.height - tabsHeight - (errorInspectorActor ? 50 : 0);
+    if (maxHeight > 0) setAgentPanelHeight(maxHeight);
+  }, [isAgentExpanded, agentPanelHeight, tabsHeight, errorInspectorActor]);
+
+  // Effective height: use measured value when expanded, or explicit agentPanelHeight
   const effectiveAgentPanelHeight = useMemo(() => {
     if (isAgentExpanded && agentPanelHeight === null) {
-      // Auto-expanding without a set height - use default 430px
       return SHRINKED_HEIGHT;
     }
     return agentPanelHeight;
