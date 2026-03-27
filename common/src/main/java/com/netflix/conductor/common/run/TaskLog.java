@@ -41,8 +41,6 @@ public class TaskLog extends TaskSummary {
 
     public TaskLog(Task task) {
         super(task);
-        // print what do we have for key "workflowInput" and key "_ioMeta"
-        LOGGER.info("Task input data: {}", task.getInputData());
         boolean isFusionMetaPresent = task.getInputData().containsKey("_ioMeta");
         if (!isFusionMetaPresent) {
             return;
@@ -50,6 +48,7 @@ public class TaskLog extends TaskSummary {
 
         Object ioMeta = task.getInputData().get("_ioMeta");
         if (!(ioMeta instanceof Map<?, ?> fusionMeta)) {
+            LOGGER.warn("Task {} with task def name {} has invalid _ioMeta", task.getTaskId(), task.getTaskDefName());
             return;
         }
 
