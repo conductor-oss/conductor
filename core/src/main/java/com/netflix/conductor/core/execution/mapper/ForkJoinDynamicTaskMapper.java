@@ -204,6 +204,7 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
                     if (forkedTaskInput == null) {
                         forkedTaskInput = new HashMap<>();
                     }
+                    forkedTaskInput = unwrapPreWrappedWorkflowInput(dynForkTask, forkedTaskInput);
                     dynForkTask.getInputParameters().putAll(forkedTaskInput);
                 } catch (Exception e) {
                     String reason =
@@ -528,11 +529,35 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
             Map<? extends String, ?> forkTaskInputMap = (Map<? extends String, ?>) forkTaskInput;
             subWorkflowParams.setTaskToDomain(
                     (Map<String, String>) forkTaskInputMap.get("taskToDomain"));
+            inputParameters.remove("workflowInput");
+            inputParameters.putAll(unwrapPreWrappedWorkflowInput(forkTask, forkTaskInputMap));
         } else {
             inputParameters.put("input", forkTaskInput);
         }
         forkTask.setInputParameters(inputParameters);
         return forkTask;
+    }
+
+    private Map<String, Object> unwrapPreWrappedWorkflowInput(
+            WorkflowTask workflowTask, Map<? extends String, ?> taskInput) {
+        Map<String, Object> normalizedInput = new HashMap<>(taskInput);
+        if (!TaskType.SUB_WORKFLOW.name().equals(workflowTask.getType())) {
+            return normalizedInput;
+        }
+
+        Object workflowInput = taskInput.get("workflowInput");
+        if (!(workflowInput instanceof Map<?, ?> workflowInputMap)) {
+            return normalizedInput;
+        }
+
+        // Backward compatibility for dynamic fork payloads that already include "workflowInput".
+        // SubWorkflowTaskMapper wraps task input under "workflowInput", so keeping this key here
+        // would result in nested path workflowInput.workflowInput.* and break lookups like
+        // ${workflow.input._ioMeta} in child StartTask.
+        normalizedInput.remove("workflowInput");
+        workflowInputMap.forEach(
+                (key, value) -> normalizedInput.putIfAbsent(String.valueOf(key), value));
+        return normalizedInput;
     }
 
     /**

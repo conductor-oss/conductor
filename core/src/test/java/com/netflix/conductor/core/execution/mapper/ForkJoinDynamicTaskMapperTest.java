@@ -19,6 +19,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
@@ -48,6 +49,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings("unchecked")
@@ -555,6 +557,120 @@ public class ForkJoinDynamicTaskMapperTest {
                 "value1", result.getRight().get(firstTask.getTaskReferenceName()).get("param1"));
         assertEquals(
                 "value2", result.getRight().get(secondTask.getTaskReferenceName()).get("param1"));
+    }
+
+    @Test
+    public void dynamicSubWorkflowInputUnwrapsPreWrappedWorkflowInput() {
+        ObjectMapper realObjectMapper = new ObjectMapperProvider().getObjectMapper();
+        ForkJoinDynamicTaskMapper mapper =
+                new ForkJoinDynamicTaskMapper(
+                        idGenerator,
+                        parametersUtils,
+                        realObjectMapper,
+                        metadataDAO,
+                        systemTaskRegistry);
+
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setTaskReferenceName("fork_join_dynamic");
+        workflowTask.setType(TaskType.FORK_JOIN_DYNAMIC.name());
+
+        Map<String, Object> wrappedWorkflowInput = new HashMap<>();
+        wrappedWorkflowInput.put("_ioMeta", Map.of("traceId", "abc"));
+        wrappedWorkflowInput.put("payload", "value1");
+
+        Map<String, Object> forkInput = new HashMap<>();
+        forkInput.put("workflowInput", wrappedWorkflowInput);
+        forkInput.put("requestId", "req-1");
+
+        Map<String, Object> mapperInput = new HashMap<>();
+        mapperInput.put("forkTaskWorkflow", "sub_workflow_definition_name");
+        mapperInput.put("forkTaskWorkflowVersion", "1");
+        mapperInput.put("forkTaskInputs", List.of(forkInput));
+
+        Pair<List<WorkflowTask>, Map<String, Map<String, Object>>> result =
+                mapper.getDynamicTasksSimple(
+                        workflowTask, mapperInput, workflowTask.getTaskReferenceName(), false);
+
+        assertNotNull(result);
+        WorkflowTask firstTask = result.getLeft().get(0);
+        Map<String, Object> firstTaskInput = firstTask.getInputParameters();
+        assertFalse(firstTaskInput.containsKey("workflowInput"));
+        assertEquals("req-1", firstTaskInput.get("requestId"));
+        assertEquals("value1", firstTaskInput.get("payload"));
+        assertEquals(Map.of("traceId", "abc"), firstTaskInput.get("_ioMeta"));
+    }
+
+    @Test
+    public void dynamicForkTasksInputUnwrapsSubworkflowWorkflowInput() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("DYNAMIC_FORK_JOIN_WF");
+        def.setVersion(1);
+
+        WorkflowModel workflowModel = new WorkflowModel();
+        workflowModel.setWorkflowDefinition(def);
+
+        WorkflowTask dynamicForkJoinToSchedule = new WorkflowTask();
+        dynamicForkJoinToSchedule.setType(TaskType.FORK_JOIN_DYNAMIC.name());
+        dynamicForkJoinToSchedule.setTaskReferenceName("dynamicfork");
+        dynamicForkJoinToSchedule.setDynamicForkTasksParam("dynamicTasks");
+        dynamicForkJoinToSchedule.setDynamicForkTasksInputParamName("dynamicTasksInput");
+
+        WorkflowTask join = new WorkflowTask();
+        join.setType(TaskType.JOIN.name());
+        join.setTaskReferenceName("dynamictask_join");
+
+        def.getTasks().add(dynamicForkJoinToSchedule);
+        def.getTasks().add(join);
+
+        WorkflowTask childSubworkflow = new WorkflowTask();
+        childSubworkflow.setName("child_wf");
+        childSubworkflow.setType(TaskType.SUB_WORKFLOW.name());
+        childSubworkflow.setTaskReferenceName("childwf1__1");
+
+        Map<String, Object> wrappedWorkflowInput = new HashMap<>();
+        wrappedWorkflowInput.put("_ioMeta", Map.of("traceId", "abc"));
+        wrappedWorkflowInput.put("_iteration", 1);
+
+        Map<String, Object> childInput = new HashMap<>();
+        childInput.put("workflowInput", wrappedWorkflowInput);
+
+        HashMap<String, Object> dynamicTasksInput = new HashMap<>();
+        dynamicTasksInput.put("dynamicTasks", Collections.singletonList(childSubworkflow));
+        dynamicTasksInput.put(
+                "dynamicTasksInput", Map.of(childSubworkflow.getTaskReferenceName(), childInput));
+
+        when(parametersUtils.getTaskInput(anyMap(), any(WorkflowModel.class), any(), any()))
+                .thenReturn(dynamicTasksInput);
+        when(objectMapper.convertValue(any(), any(TypeReference.class)))
+                .thenReturn(Collections.singletonList(childSubworkflow));
+
+        TaskModel mappedSubworkflowTask = new TaskModel();
+        mappedSubworkflowTask.setReferenceTaskName(childSubworkflow.getTaskReferenceName());
+        when(deciderService.getTasksToBeScheduled(
+                        eq(workflowModel), any(WorkflowTask.class), eq(0)))
+                .thenReturn(Collections.singletonList(mappedSubworkflowTask));
+
+        String taskId = idGenerator.generate();
+        TaskMapperContext taskMapperContext =
+                TaskMapperContext.newBuilder()
+                        .withWorkflowModel(workflowModel)
+                        .withWorkflowTask(dynamicForkJoinToSchedule)
+                        .withRetryCount(0)
+                        .withTaskInput(Map.of())
+                        .withTaskId(taskId)
+                        .withDeciderService(deciderService)
+                        .build();
+
+        forkJoinDynamicTaskMapper.getMappedTasks(taskMapperContext);
+
+        ArgumentCaptor<WorkflowTask> captor = ArgumentCaptor.forClass(WorkflowTask.class);
+        Mockito.verify(deciderService)
+                .getTasksToBeScheduled(eq(workflowModel), captor.capture(), eq(0));
+
+        WorkflowTask scheduled = captor.getValue();
+        assertFalse(scheduled.getInputParameters().containsKey("workflowInput"));
+        assertEquals(Map.of("traceId", "abc"), scheduled.getInputParameters().get("_ioMeta"));
+        assertEquals(1, scheduled.getInputParameters().get("_iteration"));
     }
 
     @Test
