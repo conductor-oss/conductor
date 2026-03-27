@@ -48,10 +48,18 @@ public class PostgresProperties {
 
     public boolean allowJsonQueries = true;
 
-    /** Auto-repair Flyway schema history on checksum mismatch during migrate */
+    /**
+     * Auto-repair Flyway schema history on checksum mismatch during migrate.
+     * Note: repair runs on every startup while enabled, not just once.
+     * Disable after the upgrade is complete.
+     */
     private boolean flywayRepairOnMigrate = false;
 
-    /** Validate migration checksums before running migrate */
+    /**
+     * Validate migration checksums before running migrate.
+     * WARNING: setting to false bypasses Flyway's checksum safety entirely.
+     * Use as a last resort only.
+     */
     private boolean flywayValidateOnMigrate = true;
 
     /** The maximum number of threads allowed in the async pool */
