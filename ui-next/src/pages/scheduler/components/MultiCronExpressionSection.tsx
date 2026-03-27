@@ -132,8 +132,8 @@ function MultiCronScheduleEntry({
         {!cron.futureMatches.length && (
           <Text sx={{ opacity: 0.8, mt: 1 }}>No schedules possible</Text>
         )}
-        {localTimes.map((item) => (
-          <Box key={`${item.inZone}-${item.inBrowser}`} sx={{ mt: 1 }}>
+        {localTimes.map((item, index) => (
+          <Box key={`${item.inZone}-${item.inBrowser}-${index}`} sx={{ mt: 1 }}>
             <Text sx={{}}>{item.inZone}</Text>
             <Text sx={{ opacity: 0.7 }}>{item.inBrowser}</Text>
           </Box>
@@ -170,7 +170,7 @@ export function MultiCronExpressionSection({
         </Box>
         {cronSchedules.map((entry, index) => (
           <MultiCronScheduleEntry
-            key={`multi-cron-entry-${entry.cronExpression}-${entry.zoneId || DEFAULT_CRON_ZONE}-${index === 0 ? "first" : "next"}`}
+            key={`multi-cron-entry-${entry.cronExpression}-${index}-${entry.zoneId || DEFAULT_CRON_ZONE}-${index === 0 ? "first" : "next"}`}
             index={index}
             entry={entry}
             onRemove={onRemove}

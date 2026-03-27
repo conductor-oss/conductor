@@ -52,9 +52,9 @@ export function CronTemplateSelector({
                 display: "flex",
               }}
             >
-              {cs.split(" ").map((cronExpressionFragment) => (
+              {cs.split(" ").map((cronExpressionFragment, index) => (
                 <Box
-                  key={`key-item-${cs}-${cronExpressionFragment}`}
+                  key={`key-item-${cs}-${cronExpressionFragment}-${index}`}
                   sx={{
                     color:
                       selectedTemplate === cs
