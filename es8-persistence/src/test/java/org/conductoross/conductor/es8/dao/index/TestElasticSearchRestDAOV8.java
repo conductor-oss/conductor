@@ -34,8 +34,8 @@ import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.events.queue.Message;
 
-import com.google.common.collect.ImmutableMap;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableMap;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -162,7 +162,9 @@ public class TestElasticSearchRestDAOV8 extends ElasticSearchRestDaoBaseTest {
         }
 
         JsonNode bootstrapAlias = aliasJson.path(workflowAlias + "-000001").path("aliases");
-        assertTrue("Bootstrap write index should retain the write alias", bootstrapAlias.has(workflowAlias));
+        assertTrue(
+                "Bootstrap write index should retain the write alias",
+                bootstrapAlias.has(workflowAlias));
         assertTrue(
                 "Bootstrap write index should be marked as the write index",
                 bootstrapAlias.path(workflowAlias).path("is_write_index").asBoolean(false));
