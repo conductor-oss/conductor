@@ -63,9 +63,7 @@ dependencies {
     implementation "org.postgresql:postgresql:${revPostgres}"
 
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation ("io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}") {
-    	exclude group: 'com.netflix.conductor', module: 'conductor-core'
-    }
+    implementation "io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}"
 
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
 

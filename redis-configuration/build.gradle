@@ -1,0 +1,28 @@
+dependencies {
+    implementation project(':conductor-core')
+    implementation project(':conductor-metrics')
+
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-autoconfigure'
+
+    //Jedis
+    implementation "redis.clients:jedis:${revJedis}"
+
+    //Micrometer
+    implementation "io.micrometer:micrometer-core:${revMicrometer}"
+
+    //Commons
+    implementation "org.apache.commons:commons-lang3:"
+    implementation "org.apache.commons:commons-pool2:"
+
+    //Apache HTTP Client 5 (SSL support for Redis Cluster)
+    implementation "org.apache.httpcomponents.client5:httpclient5:${revApacheHttpComponentsClient5}"
+
+    //Jakarta
+    //implementation "jakarta.annotation:jakarta.annotation-api:${revJakartaAnnotation}"
+
+    //Test
+    testCompileOnly 'org.projectlombok:lombok:1.18.42'
+    testImplementation "org.testcontainers:testcontainers:${revTestContainer}"
+    testImplementation "com.google.guava:guava:${revGuava}"
+}

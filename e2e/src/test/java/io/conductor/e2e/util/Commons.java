@@ -26,6 +26,7 @@ public class Commons {
     public static TaskDef getTaskDef() {
         TaskDef taskDef = new TaskDef();
         taskDef.setName(Commons.TASK_NAME);
+        taskDef.setOwnerEmail(Commons.OWNER_EMAIL);
         return taskDef;
     }
 

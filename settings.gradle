@@ -23,6 +23,7 @@ include 'common'
 include 'core'
 
 include 'cassandra-persistence'
+include 'redis-configuration'
 include 'redis-persistence'
 
 include 'es6-persistence'

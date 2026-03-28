@@ -28,5 +28,6 @@
     }
   ],
   "inputParameters": [],
-  "outputParameters": {}
+  "outputParameters": {},
+  "ownerEmail": "test@conductor.io"
 }

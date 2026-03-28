@@ -72,6 +72,7 @@ public class BackoffTests {
         for (TaskDef.RetryLogic value : TaskDef.RetryLogic.values()) {
             TaskDef taskDef = new TaskDef();
             taskDef.setName("retry_" + i++);
+            taskDef.setOwnerEmail("test@conductor.io");
             taskDef.setRetryLogic(value);
             taskDef.setBackoffScaleFactor(2);
             taskDef.setRetryDelaySeconds(2);
@@ -82,7 +83,9 @@ public class BackoffTests {
         }
 
         metadataClient.registerTaskDefs(taskDefs);
-        metadataClient.updateWorkflowDefs(Arrays.asList(workflow.toWorkflowDef()));
+        var workflowDef = workflow.toWorkflowDef();
+        workflowDef.setOwnerEmail("test@conductor.io");
+        metadataClient.updateWorkflowDefs(Arrays.asList(workflowDef));
         startWorkers(taskDefs);
     }
 

@@ -58,6 +58,7 @@ public class TaskTimeoutTests {
         // Define TaskDef with pollTimeout and timeoutSeconds
         TaskDef taskDef = new TaskDef();
         taskDef.setName(TASK_NAME);
+        taskDef.setOwnerEmail("test@conductor.io");
         taskDef.setPollTimeoutSeconds(25); // Task will be timed out if not polled in 5s
         taskDef.setTimeoutSeconds(100); // Task execution timeout
         taskDef.setResponseTimeoutSeconds(40);
@@ -70,6 +71,7 @@ public class TaskTimeoutTests {
         // Define Workflow
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName(WORKFLOW_NAME);
+        workflowDef.setOwnerEmail("test@conductor.io");
         workflowDef.setDescription("Workflow to test pollTimeoutSeconds and timeoutSeconds");
         workflowDef.setVersion(1);
 
@@ -85,6 +87,7 @@ public class TaskTimeoutTests {
 
         TaskDef taskDefResponseTimeout = new TaskDef();
         taskDefResponseTimeout.setName(TASK_NAME_RESPONSE_TIMEOUT);
+        taskDefResponseTimeout.setOwnerEmail("test@conductor.io");
         taskDefResponseTimeout.setPollTimeoutSeconds(6); // Ensure poll doesn't interfere
         taskDefResponseTimeout.setTimeoutSeconds(120); // Total timeout (should not trigger)
         taskDefResponseTimeout.setResponseTimeoutSeconds(
@@ -98,6 +101,7 @@ public class TaskTimeoutTests {
         // Define Workflow
         WorkflowDef workflowDefResponseTimeout = new WorkflowDef();
         workflowDefResponseTimeout.setName(WORKFLOW_NAME_RESPONSE_TIMEOUT);
+        workflowDefResponseTimeout.setOwnerEmail("test@conductor.io");
         workflowDefResponseTimeout.setDescription("Workflow to test responseTimeoutSeconds");
         workflowDefResponseTimeout.setVersion(1);
 
@@ -114,6 +118,7 @@ public class TaskTimeoutTests {
         // Define TaskDef with overall timeoutSeconds
         TaskDef taskDefOverallTimeout = new TaskDef();
         taskDefOverallTimeout.setName(TASK_NAME_OVERALL_TIMEOUT);
+        taskDefOverallTimeout.setOwnerEmail("test@conductor.io");
         taskDefOverallTimeout.setPollTimeoutSeconds(10); // Ensure poll timeout is not interfering
         taskDefOverallTimeout.setTimeoutSeconds(25); // Task must be completed within 45 seconds
         taskDefOverallTimeout.setRetryCount(0);
@@ -126,6 +131,7 @@ public class TaskTimeoutTests {
         // Define Workflow
         WorkflowDef workflowDefOverallTimeout = new WorkflowDef();
         workflowDefOverallTimeout.setName(WORKFLOW_NAME_OVERALL_TIMEOUT);
+        workflowDefOverallTimeout.setOwnerEmail("test@conductor.io");
         workflowDefOverallTimeout.setDescription("Workflow to test overall task timeout");
         workflowDefOverallTimeout.setVersion(1);
 

@@ -16,6 +16,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
 
@@ -43,6 +44,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.*;
 
 @ContextConfiguration(
@@ -104,19 +106,18 @@ public class PostgresPollDataDAOCacheTest {
         }
     }
 
-    private void waitForCacheFlush() throws InterruptedException {
-        long startTime = System.currentTimeMillis();
+    private void waitForCacheFlush() {
         long lastFlushTime = ((PostgresPollDataDAO) pollDataDAO).getLastFlushTime();
-
-        while (System.currentTimeMillis() - startTime < 1000
-                && lastFlushTime <= ((PostgresPollDataDAO) pollDataDAO).getLastFlushTime()) {
-            Thread.sleep(10);
-        }
+        await().atMost(1, TimeUnit.SECONDS)
+                .pollInterval(10, TimeUnit.MILLISECONDS)
+                .until(
+                        () ->
+                                lastFlushTime
+                                        < ((PostgresPollDataDAO) pollDataDAO).getLastFlushTime());
     }
 
     @Test
-    public void cacheFlushTest()
-            throws SQLException, JsonProcessingException, InterruptedException {
+    public void cacheFlushTest() throws SQLException, JsonProcessingException {
         waitForCacheFlush();
         pollDataDAO.updateLastPollData("dummy-task", "dummy-domain", "dummy-worker-id");
 
@@ -137,7 +138,7 @@ public class PostgresPollDataDAOCacheTest {
     }
 
     @Test
-    public void getCachedPollDataByDomainTest() throws InterruptedException, SQLException {
+    public void getCachedPollDataByDomainTest() throws SQLException {
         waitForCacheFlush();
         pollDataDAO.updateLastPollData("dummy-task2", "dummy-domain2", "dummy-worker-id2");
 

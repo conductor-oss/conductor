@@ -1,5 +1,6 @@
 {
   "name": "e2e_on_state_change_tests",
+  "ownerEmail": "test@conductor.io",
   "description": "Workflow to debug on state change issues - missing events for subworkflow task",
   "version": 1,
   "tasks": [

@@ -59,7 +59,7 @@ public class JavaSDKTests {
         ConductorWorkflow<Map<String, Object>> workflow = new ConductorWorkflow<>(executor);
         workflow.setName("sdk_integration_test");
         workflow.setVersion(1);
-        workflow.setOwnerEmail("test@orkes.io");
+        workflow.setOwnerEmail("test@conductor.io");
         workflow.setVariables(new HashMap<>());
         workflow.add(new SimpleTask("task1", "task1").input("name", "orkes"));
 
