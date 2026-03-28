@@ -77,5 +77,4 @@ ext {
     revCommonsCompress = '1.26.1'
     pinecone = '3.0.0'
     revFlexmark = '0.64.8'
-    awsSDK = '2.33.2'
 }
