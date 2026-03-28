@@ -174,7 +174,7 @@ public class SwitchTests {
                 + "]";
     }
 
-    class WorkflowInput {
+    public static class WorkflowInput {
         private String userId;
 
         public String getNotificationPreference() {
@@ -231,6 +231,7 @@ public class SwitchTests {
         ConductorWorkflow<WorkflowInput> workflow = new ConductorWorkflow<>(executor);
         workflow.setName("sdk_switch_test");
         workflow.setVersion(1);
+        workflow.setOwnerEmail("test@conductor.io");
 
         SimpleTask getUserDetails = new SimpleTask("get_user_details", "get_user_details");
         getUserDetails.input("userId", "${workflow.input.name}");

@@ -3,6 +3,7 @@
   "description": "context propagation issue",
   "version": 1,
   "schemaVersion": 2,
+  "ownerEmail": "test@conductor.io",
   "timeoutPolicy": "ALERT_ONLY",
   "tasks": [
     {

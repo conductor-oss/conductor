@@ -38,7 +38,7 @@
         "inputTemplate": {},
         "rateLimitPerFrequency": 0,
         "rateLimitFrequencyInSeconds": 1,
-        "ownerEmail": "test@orkes.io",
+        "ownerEmail": "test@conductor.io",
         "backoffScaleFactor": 1
       },
       "rateLimited": false,
@@ -80,7 +80,7 @@
         "inputTemplate": {},
         "rateLimitPerFrequency": 0,
         "rateLimitFrequencyInSeconds": 1,
-        "ownerEmail": "test@orkes.io",
+        "ownerEmail": "test@conductor.io",
         "backoffScaleFactor": 1
       },
       "rateLimited": false,
@@ -142,7 +142,7 @@
             "inputTemplate": {},
             "rateLimitPerFrequency": 0,
             "rateLimitFrequencyInSeconds": 1,
-            "ownerEmail": "test@orkes.io",
+            "ownerEmail": "test@conductor.io",
             "backoffScaleFactor": 1
           },
           "rateLimited": false,
@@ -195,7 +195,7 @@
                   "inputTemplate": {},
                   "rateLimitPerFrequency": 0,
                   "rateLimitFrequencyInSeconds": 1,
-                  "ownerEmail": "test@orkes.io",
+                  "ownerEmail": "test@conductor.io",
                   "backoffScaleFactor": 1
                 },
                 "rateLimited": false,
@@ -241,7 +241,7 @@
                   "inputTemplate": {},
                   "rateLimitPerFrequency": 0,
                   "rateLimitFrequencyInSeconds": 1,
-                  "ownerEmail": "test@orkes.io",
+                  "ownerEmail": "test@conductor.io",
                   "backoffScaleFactor": 5
                 },
                 "rateLimited": false,
@@ -323,7 +323,7 @@
             "inputTemplate": {},
             "rateLimitPerFrequency": 0,
             "rateLimitFrequencyInSeconds": 1,
-            "ownerEmail": "test@orkes.io",
+            "ownerEmail": "test@conductor.io",
             "backoffScaleFactor": 1
           },
           "rateLimited": false,
@@ -367,7 +367,7 @@
             "inputTemplate": {},
             "rateLimitPerFrequency": 0,
             "rateLimitFrequencyInSeconds": 1,
-            "ownerEmail": "test@orkes.io",
+            "ownerEmail": "test@conductor.io",
             "backoffScaleFactor": 1
           },
           "rateLimited": false,
@@ -414,7 +414,7 @@
         "inputTemplate": {},
         "rateLimitPerFrequency": 0,
         "rateLimitFrequencyInSeconds": 1,
-        "ownerEmail": "test@orkes.io",
+        "ownerEmail": "test@conductor.io",
         "backoffScaleFactor": 1
       },
       "rateLimited": false,
@@ -431,7 +431,7 @@
   "schemaVersion": 2,
   "restartable": true,
   "workflowStatusListenerEnabled": false,
-  "ownerEmail": "test@orkes.io",
+  "ownerEmail": "test@conductor.io",
   "timeoutPolicy": "ALERT_ONLY",
   "timeoutSeconds": 0,
   "variables": {},
@@ -596,7 +596,7 @@
     "schemaVersion": 2,
     "restartable": true,
     "workflowStatusListenerEnabled": false,
-    "ownerEmail": "test@orkes.io",
+    "ownerEmail": "test@conductor.io",
     "timeoutPolicy": "ALERT_ONLY",
     "timeoutSeconds": 0,
     "variables": {},

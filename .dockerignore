@@ -24,6 +24,7 @@
 
 # Build outputs (keep source in docker build)
 **/build
+!ui/build
 **/out
 **/target
 **/dist
@@ -43,5 +44,3 @@ venv
 **/.parcel-cache
 **/.next
 
-# UI build artifacts (explicit)
-ui/build

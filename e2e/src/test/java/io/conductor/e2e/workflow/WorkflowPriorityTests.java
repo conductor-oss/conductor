@@ -85,7 +85,7 @@ public class WorkflowPriorityTests {
     private static void registerWorkflowDef(
             String workflowName, String taskName, MetadataClient metadataClient) {
         TaskDef taskDef = new TaskDef(taskName);
-        taskDef.setOwnerEmail("test@orkes.io");
+        taskDef.setOwnerEmail("test@conductor.io");
         taskDef.setRetryCount(0);
 
         WorkflowTask simpleTask = new WorkflowTask();
@@ -105,7 +105,7 @@ public class WorkflowPriorityTests {
 
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName(workflowName);
-        workflowDef.setOwnerEmail("test@orkes.io");
+        workflowDef.setOwnerEmail("test@conductor.io");
         workflowDef.setInputParameters(Arrays.asList("value", "inlineValue"));
         workflowDef.setDescription("Workflow to monitor order state");
         workflowDef.setTimeoutSeconds(600);

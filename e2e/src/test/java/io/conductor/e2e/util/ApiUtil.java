@@ -22,8 +22,11 @@ public class ApiUtil {
 
     // The conductor-client SDK appends paths like /metadata/workflow to the basePath,
     // so we must point basePath to the API root (/api), not the server root.
+    // Check system property first (set by test-harness functional tests), then env var.
     private static final String SERVER_HOST =
-            System.getenv().getOrDefault("SERVER_ROOT_URI", "http://localhost:8000");
+            System.getProperty(
+                    "SERVER_ROOT_URI",
+                    System.getenv().getOrDefault("SERVER_ROOT_URI", "http://localhost:8000"));
 
     public static final String SERVER_ROOT_URI =
             SERVER_HOST.endsWith("/api") ? SERVER_HOST : SERVER_HOST + "/api";
