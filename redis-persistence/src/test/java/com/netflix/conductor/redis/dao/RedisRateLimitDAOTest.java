@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.redis.dao;
 
-import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -33,11 +32,11 @@ import com.netflix.conductor.redis.jedis.JedisProxy;
 import com.netflix.conductor.redis.jedis.JedisStandalone;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.util.concurrent.Uninterruptibles;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -130,11 +129,12 @@ class RedisRateLimitDAOTest {
         assertTrue(rateLimitingDao.exceedsRateLimitPerFrequency(task, taskDef));
         assertTrue(rateLimitingDao.exceedsRateLimitPerFrequency(task, taskDef));
 
-        // Wait for window to expire
-        Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(4));
+        // Wait for window to expire (the successful await check consumes 1 of 3 allowed)
+        await().atMost(6, TimeUnit.SECONDS)
+                .pollInterval(500, TimeUnit.MILLISECONDS)
+                .until(() -> !rateLimitingDao.exceedsRateLimitPerFrequency(task, taskDef));
 
-        // Should be within limit again
-        assertFalse(rateLimitingDao.exceedsRateLimitPerFrequency(task, taskDef));
+        // Should be within limit again (2 remaining after await consumed 1)
         assertFalse(rateLimitingDao.exceedsRateLimitPerFrequency(task, taskDef));
         assertFalse(rateLimitingDao.exceedsRateLimitPerFrequency(task, taskDef));
         assertTrue(rateLimitingDao.exceedsRateLimitPerFrequency(task, taskDef));
@@ -209,7 +209,9 @@ class RedisRateLimitDAOTest {
         task.setTaskId(UUID.randomUUID().toString());
         task.setTaskDefName(taskDef.getName());
         assertFalse(rateLimitingDao.exceedsRateLimitPerFrequency(task, taskDef));
-        Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
+        await().atMost(5, TimeUnit.SECONDS)
+                .pollInterval(500, TimeUnit.MILLISECONDS)
+                .until(() -> rateLimitingDao.exceedsRateLimitPerFrequency(task, taskDef));
         assertTrue(rateLimitingDao.exceedsRateLimitPerFrequency(task, taskDef));
     }
 }

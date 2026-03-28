@@ -24,6 +24,7 @@ dependencies {
     implementation "com.google.guava:guava:${revGuava}"
     implementation "com.github.ben-manes.caffeine:caffeine"
 
+    testImplementation "org.awaitility:awaitility:${revAwaitility}"
     testImplementation "org.testcontainers:testcontainers:${revTestContainer}"
     testImplementation project(':conductor-core').sourceSets.test.output
     testImplementation project(':conductor-common').sourceSets.test.output

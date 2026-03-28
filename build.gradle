@@ -41,6 +41,7 @@ allprojects {
     apply plugin: 'io.spring.dependency-management'
     apply plugin: 'java-library'
     apply plugin: 'project-report'
+    apply plugin: 'jacoco'
 
     java {
         toolchain {
@@ -152,6 +153,14 @@ allprojects {
             showStandardStreams = false
         }
     }
+    jacocoTestReport {
+        reports {
+            xml.required = true
+            html.required = true
+        }
+    }
+    test.finalizedBy jacocoTestReport
+
     bootJar {
         enabled = false
     }
@@ -163,6 +172,32 @@ allprojects {
         compileJava {
             options.release = 21
         }
+    }
+}
+
+// Aggregated coverage report across all subprojects.
+// Run AFTER tests: ./gradlew build jacocoAggregatedReport
+// This task does NOT trigger test execution — it only aggregates existing .exec files.
+// Aggregated coverage report across all subprojects.
+// Run AFTER tests: ./gradlew build jacocoAggregatedReport
+// This task does NOT trigger test execution — it only aggregates existing .exec files.
+task jacocoAggregatedReport(type: JacocoReport) {
+    description = 'Generates an aggregated code coverage report from existing test execution data'
+    group = 'verification'
+
+    // Need compiled classes for the report, but not test execution
+    dependsOn subprojects.collect { it.tasks.named('classes') }
+
+    def javaSubprojects = subprojects.findAll { it.plugins.hasPlugin('java') }
+    additionalSourceDirs.from(javaSubprojects.collect { it.sourceSets.main.allJava })
+    sourceDirectories.from(javaSubprojects.collect { it.sourceSets.main.allJava })
+    classDirectories.from(javaSubprojects.collect { it.sourceSets.main.output.classesDirs })
+    executionData.setFrom(fileTree(dir: rootDir, includes: ['**/build/jacoco/*.exec']))
+
+    reports {
+        xml.required = true
+        html.required = true
+        html.outputLocation = layout.buildDirectory.dir('reports/jacoco/aggregated')
     }
 }
 

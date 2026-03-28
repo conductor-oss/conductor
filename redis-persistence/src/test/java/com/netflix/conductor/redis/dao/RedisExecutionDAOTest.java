@@ -18,6 +18,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -40,11 +41,11 @@ import com.netflix.conductor.redis.jedis.JedisProxy;
 import com.netflix.conductor.redis.jedis.JedisStandalone;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.util.concurrent.Uninterruptibles;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.*;
 
 public class RedisExecutionDAOTest extends ExecutionDAOTest {
@@ -251,7 +252,9 @@ public class RedisExecutionDAOTest extends ExecutionDAOTest {
 
         // Workflow should still exist briefly (TTL not expired yet)
         // Wait for expiry
-        Uninterruptibles.sleepUninterruptibly(2, java.util.concurrent.TimeUnit.SECONDS);
+        await().atMost(3, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
+                .until(() -> executionDAO.getWorkflow(workflow.getWorkflowId(), false) == null);
 
         // After TTL, workflow should be gone
         assertNull(executionDAO.getWorkflow(workflow.getWorkflowId(), false));
