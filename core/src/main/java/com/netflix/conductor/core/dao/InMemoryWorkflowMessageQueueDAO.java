@@ -25,8 +25,8 @@ import com.netflix.conductor.core.config.WorkflowMessageQueueProperties;
 import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
 
 /**
- * In-memory implementation of {@link WorkflowMessageQueueDAO} backed by a {@link HashMap}
- * of bounded {@link LinkedList} queues, with all access serialized via {@code synchronized}.
+ * In-memory implementation of {@link WorkflowMessageQueueDAO} backed by a {@link HashMap} of
+ * bounded {@link LinkedList} queues, with all access serialized via {@code synchronized}.
  *
  * <p>Used as the default DAO when no Redis-backed implementation is available (e.g. when {@code
  * conductor.db.type} is not a Redis variant). Not durable across server restarts.
