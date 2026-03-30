@@ -20,6 +20,7 @@ import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.service.MetadataService;
 
 import static org.junit.Assert.assertEquals;
@@ -102,7 +103,76 @@ public class MetadataResourceTest {
         listOfWorkflowDef.add(workflowDef);
 
         when(mockMetadataService.getWorkflowDefsLatestVersions()).thenReturn(listOfWorkflowDef);
-        assertEquals(listOfWorkflowDef, metadataResource.getAllWorkflowsWithLatestVersions());
+        SearchResult<WorkflowDef> result =
+                metadataResource.getAllWorkflowsWithLatestVersions(null, null);
+
+        assertEquals(1, result.getTotalHits());
+        assertEquals(listOfWorkflowDef, result.getResults());
+        verify(mockMetadataService, times(1)).getWorkflowDefsLatestVersions();
+    }
+
+    @Test
+    public void testGetAllWorkflowDefLatestVersionsWithPagination() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("test");
+        workflowDef.setVersion(1);
+        workflowDef.setDescription("test");
+
+        List<WorkflowDef> listOfWorkflowDef = new ArrayList<>();
+        listOfWorkflowDef.add(workflowDef);
+
+        SearchResult<WorkflowDef> expectedResult = new SearchResult<>(100, listOfWorkflowDef);
+
+        when(mockMetadataService.searchWorkflowDefsLatestVersions(0, 10))
+                .thenReturn(expectedResult);
+        SearchResult<WorkflowDef> result =
+                metadataResource.getAllWorkflowsWithLatestVersions(0, 10);
+
+        assertEquals(100, result.getTotalHits());
+        assertEquals(listOfWorkflowDef, result.getResults());
+        verify(mockMetadataService, times(1)).searchWorkflowDefsLatestVersions(0, 10);
+    }
+
+    @Test
+    public void testGetAllWorkflowDefLatestVersionsWithOnlyStartParam() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("test");
+        workflowDef.setVersion(1);
+
+        List<WorkflowDef> listOfWorkflowDef = new ArrayList<>();
+        listOfWorkflowDef.add(workflowDef);
+
+        SearchResult<WorkflowDef> expectedResult = new SearchResult<>(50, listOfWorkflowDef);
+
+        when(mockMetadataService.searchWorkflowDefsLatestVersions(20, 100))
+                .thenReturn(expectedResult);
+        SearchResult<WorkflowDef> result =
+                metadataResource.getAllWorkflowsWithLatestVersions(20, null);
+
+        assertEquals(50, result.getTotalHits());
+        assertEquals(1, result.getResults().size());
+        verify(mockMetadataService, times(1)).searchWorkflowDefsLatestVersions(20, 100);
+    }
+
+    @Test
+    public void testGetAllWorkflowDefLatestVersionsWithOnlySizeParam() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("test");
+        workflowDef.setVersion(1);
+
+        List<WorkflowDef> listOfWorkflowDef = new ArrayList<>();
+        listOfWorkflowDef.add(workflowDef);
+
+        SearchResult<WorkflowDef> expectedResult = new SearchResult<>(50, listOfWorkflowDef);
+
+        when(mockMetadataService.searchWorkflowDefsLatestVersions(0, 50))
+                .thenReturn(expectedResult);
+        SearchResult<WorkflowDef> result =
+                metadataResource.getAllWorkflowsWithLatestVersions(null, 50);
+
+        assertEquals(50, result.getTotalHits());
+        assertEquals(1, result.getResults().size());
+        verify(mockMetadataService, times(1)).searchWorkflowDefsLatestVersions(0, 50);
     }
 
     @Test

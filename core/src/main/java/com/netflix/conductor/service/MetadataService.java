@@ -23,6 +23,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.common.model.BulkResponse;
+import com.netflix.conductor.common.run.SearchResult;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
@@ -156,4 +157,13 @@ public interface MetadataService {
             boolean activeOnly);
 
     List<WorkflowDef> getWorkflowDefsLatestVersions();
+
+    /**
+     * Search for the latest versions of workflow definitions with pagination support.
+     *
+     * @param start Starting index for pagination (0-based)
+     * @param size Number of results to return per page
+     * @return SearchResult containing total count and paginated list of latest workflow definitions
+     */
+    SearchResult<WorkflowDef> searchWorkflowDefsLatestVersions(int start, int size);
 }

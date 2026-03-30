@@ -30,10 +30,12 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.model.BulkResponse;
+import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dao.PaginatedMetadataDAO;
 
 import jakarta.validation.ConstraintViolationException;
 
@@ -543,5 +545,99 @@ public class MetadataServiceTest {
             assertNotNull(ver.getCreateTime());
             assertEquals("test_workflow_def", ver.getName());
         }
+    }
+
+    @Test
+    public void testSearchWorkflowDefsLatestVersionsWithPaginatedDAO() {
+        // Create a mock that implements both MetadataDAO and PaginatedMetadataDAO,
+        // simulating a DAO like PostgresMetadataDAO that supports native pagination.
+        MetadataDAO paginatedDAO =
+                mock(
+                        MetadataDAO.class,
+                        org.mockito.Mockito.withSettings()
+                                .extraInterfaces(PaginatedMetadataDAO.class));
+        EventHandlerDAO eventHandlerDAO = mock(EventHandlerDAO.class);
+        ConductorProperties properties = mock(ConductorProperties.class);
+        when(properties.isOwnerEmailMandatory()).thenReturn(true);
+
+        List<WorkflowDef> workflowDefs = new ArrayList<>();
+        for (int i = 1; i <= 5; i++) {
+            WorkflowDef def = new WorkflowDef();
+            def.setName("workflow_" + i);
+            def.setVersion(1);
+            workflowDefs.add(def);
+        }
+
+        SearchResult<WorkflowDef> expectedResult = new SearchResult<>(100, workflowDefs);
+        when(((PaginatedMetadataDAO) paginatedDAO).searchWorkflowDefsLatestVersions(0, 5))
+                .thenReturn(expectedResult);
+
+        MetadataService service =
+                new MetadataServiceImpl(paginatedDAO, eventHandlerDAO, properties);
+        SearchResult<WorkflowDef> result = service.searchWorkflowDefsLatestVersions(0, 5);
+
+        assertNotNull(result);
+        assertEquals(100, result.getTotalHits());
+        assertEquals(5, result.getResults().size());
+        verify((PaginatedMetadataDAO) paginatedDAO, times(1))
+                .searchWorkflowDefsLatestVersions(0, 5);
+    }
+
+    @Test
+    public void testSearchWorkflowDefsLatestVersionsWithFallback() {
+        // The Spring-injected metadataDAO is a plain MetadataDAO mock (not PaginatedMetadataDAO),
+        // so the service will use the in-memory fallback pagination path.
+        List<WorkflowDef> allWorkflowDefs = new ArrayList<>();
+        for (int i = 1; i <= 25; i++) {
+            WorkflowDef def = new WorkflowDef();
+            def.setName("workflow_" + i);
+            def.setVersion(1);
+            allWorkflowDefs.add(def);
+        }
+
+        when(metadataDAO.getAllWorkflowDefsLatestVersions()).thenReturn(allWorkflowDefs);
+
+        SearchResult<WorkflowDef> firstPage =
+                metadataService.searchWorkflowDefsLatestVersions(0, 10);
+        assertNotNull(firstPage);
+        assertEquals(25, firstPage.getTotalHits());
+        assertEquals(10, firstPage.getResults().size());
+        assertEquals("workflow_1", firstPage.getResults().get(0).getName());
+
+        SearchResult<WorkflowDef> secondPage =
+                metadataService.searchWorkflowDefsLatestVersions(10, 10);
+        assertNotNull(secondPage);
+        assertEquals(25, secondPage.getTotalHits());
+        assertEquals(10, secondPage.getResults().size());
+        assertEquals("workflow_11", secondPage.getResults().get(0).getName());
+
+        SearchResult<WorkflowDef> lastPage =
+                metadataService.searchWorkflowDefsLatestVersions(20, 10);
+        assertNotNull(lastPage);
+        assertEquals(25, lastPage.getTotalHits());
+        assertEquals(5, lastPage.getResults().size());
+        assertEquals("workflow_21", lastPage.getResults().get(0).getName());
+
+        verify(metadataDAO, times(3)).getAllWorkflowDefsLatestVersions();
+    }
+
+    @Test
+    public void testSearchWorkflowDefsLatestVersionsFallbackOutOfBounds() {
+        List<WorkflowDef> allWorkflowDefs = new ArrayList<>();
+        for (int i = 1; i <= 10; i++) {
+            WorkflowDef def = new WorkflowDef();
+            def.setName("workflow_" + i);
+            def.setVersion(1);
+            allWorkflowDefs.add(def);
+        }
+
+        when(metadataDAO.getAllWorkflowDefsLatestVersions()).thenReturn(allWorkflowDefs);
+
+        SearchResult<WorkflowDef> result =
+                metadataService.searchWorkflowDefsLatestVersions(100, 10);
+
+        assertNotNull(result);
+        assertEquals(10, result.getTotalHits());
+        assertEquals(0, result.getResults().size());
     }
 }
