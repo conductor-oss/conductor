@@ -30,7 +30,14 @@ public class WorkflowMessage {
     /** The workflow instance that owns this message. */
     private String workflowId;
 
-    /** Arbitrary caller-supplied data. Conductor does not interpret or validate this structure. */
+    /**
+     * Arbitrary caller-supplied data. Conductor does not interpret or validate this structure.
+     *
+     * <p>Stored as a shallow unmodifiable copy: the top-level map cannot be mutated, but nested
+     * {@code Map} or {@code List} values within the payload remain mutable. Immutability is
+     * enforced via {@link #setPayload}; any future {@code @JsonCreator} constructor must apply the
+     * same defensive copy.
+     */
     private Map<String, Object> payload;
 
     /** ISO-8601 UTC timestamp recorded at ingestion time. */
@@ -42,7 +49,8 @@ public class WorkflowMessage {
             String id, String workflowId, Map<String, Object> payload, String receivedAt) {
         this.id = id;
         this.workflowId = workflowId;
-        this.payload = payload == null ? null : Collections.unmodifiableMap(new LinkedHashMap<>(payload));
+        this.payload =
+                payload == null ? null : Collections.unmodifiableMap(new LinkedHashMap<>(payload));
         this.receivedAt = receivedAt;
     }
 
@@ -67,7 +75,8 @@ public class WorkflowMessage {
     }
 
     public void setPayload(Map<String, Object> payload) {
-        this.payload = payload == null ? null : Collections.unmodifiableMap(new LinkedHashMap<>(payload));
+        this.payload =
+                payload == null ? null : Collections.unmodifiableMap(new LinkedHashMap<>(payload));
     }
 
     public String getReceivedAt() {
