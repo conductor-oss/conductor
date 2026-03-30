@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.common.model;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -40,7 +42,7 @@ public class WorkflowMessage {
             String id, String workflowId, Map<String, Object> payload, String receivedAt) {
         this.id = id;
         this.workflowId = workflowId;
-        this.payload = payload;
+        this.payload = payload == null ? null : Collections.unmodifiableMap(new LinkedHashMap<>(payload));
         this.receivedAt = receivedAt;
     }
 
@@ -65,7 +67,7 @@ public class WorkflowMessage {
     }
 
     public void setPayload(Map<String, Object> payload) {
-        this.payload = payload;
+        this.payload = payload == null ? null : Collections.unmodifiableMap(new LinkedHashMap<>(payload));
     }
 
     public String getReceivedAt() {
