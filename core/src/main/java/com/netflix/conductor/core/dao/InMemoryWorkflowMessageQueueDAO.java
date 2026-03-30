@@ -14,26 +14,26 @@ package com.netflix.conductor.core.dao;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.conductor.common.model.WorkflowMessage;
 import com.netflix.conductor.core.config.WorkflowMessageQueueProperties;
 import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
 
 /**
- * In-memory implementation of {@link WorkflowMessageQueueDAO} backed by a {@link ConcurrentHashMap}
- * of bounded {@link LinkedList} queues.
+ * In-memory implementation of {@link WorkflowMessageQueueDAO} backed by a {@link HashMap}
+ * of bounded {@link LinkedList} queues, with all access serialized via {@code synchronized}.
  *
  * <p>Used as the default DAO when no Redis-backed implementation is available (e.g. when {@code
  * conductor.db.type} is not a Redis variant). Not durable across server restarts.
  */
 public class InMemoryWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
 
-    private final ConcurrentHashMap<String, Queue<WorkflowMessage>> queues =
-            new ConcurrentHashMap<>();
+    private final Map<String, Queue<WorkflowMessage>> queues = new HashMap<>();
 
     private final int maxQueueSize;
 
