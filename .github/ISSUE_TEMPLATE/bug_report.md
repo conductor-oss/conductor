@@ -27,6 +27,11 @@ Steps to reproduce the behavior:
 3. Scroll down to '....'
 4. See error
 
+**Code to reproduce (paste relevant snippet):**
+```
+[paste the minimal code that triggers the bug]
+```
+
 **Expected behavior**
 A clear and concise description of what you expected to happen.
 

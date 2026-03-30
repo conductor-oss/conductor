@@ -6,9 +6,11 @@ description: Run your first Conductor workflow in 2 minutes. Call an API, parse 
 
 **See a workflow execute in 2 minutes. Build your own in 5.**
 
-You need [Node.js](https://nodejs.org/) (v16+) installed. That's it.
+You need [Node.js](https://nodejs.org/) (v16+) and [Java](https://adoptium.net/) (21+) installed. That's it.
 
 ## Phase 1: See it work
+
+> **Prerequisite:** Java 21+ is required to run the Conductor server. Run `java --version` to check. [Install Java 21](https://adoptium.net/)
 
 ### Start Conductor
 
@@ -18,6 +20,11 @@ conductor server start
 ```
 
 Wait for the server to start, then open the UI at [http://localhost:8080](http://localhost:8080).
+
+!!! note "Troubleshooting"
+    - **"Java not found" or server won't start?** Install Java 21+ from [Adoptium](https://adoptium.net/) and make sure `java -version` shows 21 or higher.
+    - **Port 8080 already in use?** Start on a different port: `conductor server start --port 9090`
+    - **Prefer Docker?** Skip the CLI server and run: `docker run -p 8080:8080 conductoross/conductor:latest`
 
 ### Define the workflow
 
@@ -79,7 +86,18 @@ conductor workflow create workflow.json
 conductor workflow start -w hello_workflow --sync
 ```
 
-The `--sync` flag waits for completion and prints the result directly. Expected output:
+The `--sync` flag waits for completion and prints the full workflow execution JSON to stdout. The CLI also prints a server detection line first, so actual output looks like:
+
+```
+Auto-detected server: http://localhost:8080
+{"workflowId":"3e2a1c9d-...","status":"COMPLETED","tasks":[{...},{...}],"outputParameters":{"summary":"Host orkes-api-sampler-... responded in 0 ms with random value 1141","apiResponse":{...}},...}
+```
+
+To extract just the output in a readable form, pipe through `jq`:
+
+```bash
+conductor workflow start -w hello_workflow --sync 2>/dev/null | tail -1 | jq '.outputParameters'
+```
 
 ```json
 {
@@ -95,6 +113,8 @@ The `--sync` flag waits for completion and prints the result directly. Expected 
   }
 }
 ```
+
+> **Note:** The `Auto-detected server:` line is written to stdout (not stderr). Use `tail -1` to skip it before piping to `jq`, and `2>/dev/null` to suppress any stderr.
 
 Open [http://localhost:8080](http://localhost:8080) to see the execution visually — the task timeline, inputs/outputs, and status of each step.
 
@@ -178,6 +198,8 @@ curl -X POST http://localhost:8080/api/metadata/taskdefs \
 Save `worker.py`:
 
 ```python
+import time
+
 from conductor.client.automator.task_handler import TaskHandler
 from conductor.client.configuration.configuration import Configuration
 from conductor.client.worker.worker_task import worker_task
@@ -206,7 +228,7 @@ def main():
 
     try:
         while True:
-            pass
+            time.sleep(0.1)  # avoid busy-waiting; yield CPU between poll cycles
     except KeyboardInterrupt:
         handler.stop_processes()
 
@@ -265,8 +287,9 @@ Every Conductor workflow execution is fully replayable — restart from the begi
 Take any workflow execution ID from Phase 1 or Phase 2 and restart it:
 
 ```bash
-# Get the workflow execution ID from a previous run
-WORKFLOW_ID=$(conductor workflow start -w hello_workflow --version 2 --sync | jq -r '.workflowId // empty' 2>/dev/null)
+# The CLI writes "Auto-detected server: ..." to stdout before the JSON.
+# Use tail -1 to skip that line; 2>/dev/null silences stderr.
+WORKFLOW_ID=$(conductor workflow start -w hello_workflow --version 2 --sync 2>/dev/null | tail -1 | jq -r '.workflowId // empty')
 
 # Restart the entire workflow from the beginning
 curl -X POST "http://localhost:8080/api/workflow/$WORKFLOW_ID/restart"
@@ -309,8 +332,12 @@ Conductor picks up from the failed task, reusing the outputs of all previously c
 
     === "JavaScript"
 
+        ```bash
+        npm install conductor-javascript-sdk
+        ```
+
         ```javascript
-        const { ConductorWorker } = require("@conductor-oss/conductor-client");
+        const { ConductorWorker } = require("conductor-javascript-sdk");
 
         const worker = new ConductorWorker({
           url: "http://localhost:8080/api",
@@ -379,7 +406,7 @@ All the workflow commands above work the same — just replace the CLI commands 
 | CLI | cURL |
 |-----|------|
 | `conductor workflow create workflow.json` | `curl -X POST http://localhost:8080/api/metadata/workflow -H 'Content-Type: application/json' -d @workflow.json` |
-| `conductor workflow start -w hello_workflow --sync` | `curl -s -X POST http://localhost:8080/api/workflow/hello_workflow -H 'Content-Type: application/json'` |
+| `conductor workflow start -w hello_workflow --sync` | `curl -s -X POST "http://localhost:8080/api/workflow/hello_workflow/run" -H 'Content-Type: application/json' -d '{}'` |
 | `conductor server stop` | `docker rm -f conductor` |
 
 For production deployment options, see [Running with Docker](../devguide/running/deploy.md).
