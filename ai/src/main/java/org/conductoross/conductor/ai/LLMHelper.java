@@ -346,8 +346,7 @@ public class LLMHelper {
         }
 
         List<Message> messages =
-                new ArrayList<>(
-                        input.getMessages().stream().map(this::constructMessage).toList());
+                new ArrayList<>(input.getMessages().stream().map(this::constructMessage).toList());
 
         ensureLastMessageIsFromUser(messages);
 
@@ -827,10 +826,10 @@ public class LLMHelper {
     /**
      * Ensures the conversation ends with a user message. Some providers (e.g. Anthropic/Claude)
      * reject requests where the last message has an assistant or tool_call role ("assistant message
-     * prefill"). This typically happens when the prior iteration ended with
-     * finishReason=MAX_TOKENS and the DO_WHILE loop continues with the partial assistant response
-     * as the last message in the history. Appending a user continuation prompt is safe for all
-     * providers — OpenAI and others simply treat it as the next user turn.
+     * prefill"). This typically happens when the prior iteration ended with finishReason=MAX_TOKENS
+     * and the DO_WHILE loop continues with the partial assistant response as the last message in
+     * the history. Appending a user continuation prompt is safe for all providers — OpenAI and
+     * others simply treat it as the next user turn.
      *
      * @param messages The mutable list of messages to check and potentially modify
      */
@@ -846,9 +845,12 @@ public class LLMHelper {
             // This avoids the "assistant message prefill" error from Claude.
             String partialText = assistantMsg.getText();
             messages.removeLast();
-            String continuation = partialText != null && !partialText.isBlank()
-                    ? "You were saying:\n\n" + partialText + "\n\nPlease continue where you left off."
-                    : "Please continue where you left off.";
+            String continuation =
+                    partialText != null && !partialText.isBlank()
+                            ? "You were saying:\n\n"
+                                    + partialText
+                                    + "\n\nPlease continue where you left off."
+                            : "Please continue where you left off.";
             messages.add(new UserMessage(continuation));
         } else {
             // For any other non-user message type (tool_call, system, etc.)
