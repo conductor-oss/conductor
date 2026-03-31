@@ -27,9 +27,7 @@ dependencies {
     testImplementation "org.springframework:spring-web"
 
     testImplementation "redis.clients:jedis:${revJedis}"
-    implementation ("io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}") {
-        exclude group: 'com.netflix.conductor', module: 'conductor-core'
-    }
+    implementation "io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}"
 
     testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
     testImplementation "org.spockframework:spock-core:${revSpock}"
@@ -47,7 +45,7 @@ dependencies {
     testImplementation "org.glassfish.jersey.core:jersey-common:${revJerseyCommon}"
     testImplementation "org.awaitility:awaitility:${revAwaitility}"
     testImplementation "io.projectreactor.netty:reactor-netty-http:${revReactor}"
-    
+
     // S3 and AWS dependencies for LocalStack testing
     testImplementation project(':conductor-awss3-storage')
     testImplementation project(':conductor-awssqs-event-queue')
@@ -57,6 +55,143 @@ dependencies {
     testImplementation "software.amazon.awssdk:sqs:${revAwsSdk}"
     testImplementation "commons-io:commons-io:${revCommonsIo}"
 }
+
 tasks.withType(Test)  {
     maxParallelForks = 1
+}
+
+// Spotless cannot format files outside the project dir. The functionalTest source set
+// references e2e sources directly, so restrict Spotless to project-local sources only.
+afterEvaluate {
+    spotless {
+        java {
+            target sourceSets
+                .matching { it.name != 'functionalTest' }
+                .collect { it.java }
+                .flatten()
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Functional test source set — compiles and runs the e2e tests against an
+// embedded Conductor server (Spring Boot + TestContainers for Redis & ES).
+//
+// The conductor-client:5.0.1 is a fat JAR that bundles com.netflix.conductor.common.*
+// classes which shadow the project's own conductor-common module and cause
+// NoSuchMethodError at runtime. We solve this by creating a "stripped" JAR that
+// removes the conflicting com/netflix/conductor/common/ classes, keeping the
+// client API, SDK, and org.conductoross model classes intact.
+// ---------------------------------------------------------------------------
+
+// Resolve conductor-client:5.0.1 in isolation (non-transitive, bypass Spring dep mgmt)
+configurations {
+    conductorClientRaw {
+        resolutionStrategy.eachDependency { details ->
+            if (details.requested.group == 'org.conductoross'
+                    && details.requested.name == 'conductor-client') {
+                details.useVersion '5.0.1'
+            }
+        }
+    }
+}
+
+dependencies {
+    conductorClientRaw('org.conductoross:conductor-client:5.0.1') { transitive = false }
+}
+
+// Strip bundled com.netflix.conductor.common.* classes from the fat JAR.
+// These conflict with the project's own conductor-common module.
+task stripConductorClient(type: Jar) {
+    archiveBaseName = 'conductor-client-5.0.1-stripped'
+    destinationDirectory = layout.buildDirectory.dir('stripped-libs')
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from(zipTree(configurations.conductorClientRaw.singleFile)) {
+        exclude 'com/netflix/conductor/common/**'
+    }
+}
+
+sourceSets {
+    functionalTest {
+        java {
+            srcDirs = [
+                project(':conductor-e2e').file('src/test/java'),
+                'src/functionalTest/java'
+            ]
+        }
+        resources {
+            srcDirs = [
+                project(':conductor-e2e').file('src/test/resources'),
+                'src/functionalTest/resources'
+            ]
+        }
+        compileClasspath += sourceSets.main.output + sourceSets.test.output
+        runtimeClasspath += sourceSets.main.output + sourceSets.test.output
+    }
+}
+
+configurations {
+    functionalTestImplementation.extendsFrom testImplementation
+    functionalTestRuntimeOnly.extendsFrom testRuntimeOnly
+
+    // Remove the original conductor-client (fat JAR) from the functionalTest classpath.
+    // The stripped version (file dependency below) replaces it.
+    functionalTestCompileClasspath {
+        exclude group: 'org.conductoross', module: 'conductor-client'
+    }
+    functionalTestRuntimeClasspath {
+        exclude group: 'org.conductoross', module: 'conductor-client'
+    }
+
+    // e2e tests use Awaitility 4.x API (pollInterval(Duration))
+    [functionalTestCompileClasspath, functionalTestRuntimeClasspath].each { cfg ->
+        cfg.resolutionStrategy.eachDependency { details ->
+            if (details.requested.group == 'org.awaitility'
+                    && details.requested.name == 'awaitility') {
+                details.useVersion '4.2.0'
+                details.because 'e2e tests use pollInterval(Duration) added in 4.x'
+            }
+        }
+    }
+}
+
+dependencies {
+    // Stripped conductor-client:5.0.1 (without bundled common classes)
+    functionalTestImplementation files(stripConductorClient)
+
+    // JUnit 5 (e2e tests are Jupiter-based)
+    functionalTestImplementation 'org.junit.jupiter:junit-jupiter-api'
+    functionalTestRuntimeOnly  'org.junit.jupiter:junit-jupiter-engine'
+    functionalTestImplementation 'org.junit.jupiter:junit-jupiter-params'
+
+    // Lombok (used by e2e test classes)
+    functionalTestCompileOnly 'org.projectlombok:lombok:1.18.30'
+    functionalTestAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
+
+    // Awaitility 4.x (e2e uses 4.2.0; test-harness has 3.x)
+    functionalTestImplementation 'org.awaitility:awaitility:4.2.0'
+
+    // Commons used by e2e utilities
+    functionalTestImplementation 'org.apache.commons:commons-lang3:3.14.0'
+    functionalTestImplementation 'org.apache.commons:commons-compress:1.26.1'
+}
+
+task functionalTest(type: Test) {
+    description = 'Runs e2e functional tests against an embedded Conductor server with Redis + ES'
+    group = 'verification'
+    testClassesDirs = sourceSets.functionalTest.output.classesDirs
+    classpath = sourceSets.functionalTest.runtimeClasspath
+    useJUnitPlatform()
+    maxParallelForks = 1
+    minHeapSize = '512m'
+    maxHeapSize = '2g'
+    testLogging {
+        events = ['SKIPPED', 'FAILED']
+        exceptionFormat = 'short'
+        showStandardStreams = true
+    }
+    // Exclude load/stress tests that are too heavy for the embedded server
+    filter {
+        excludeTestsMatching 'io.conductor.e2e.processing.SetVariableTests.testAllFast'
+    }
 }

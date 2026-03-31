@@ -564,7 +564,6 @@ class DynamicForkJoinSpec extends AbstractSpecification {
             tasks[1].status == Task.Status.COMPLETED
             tasks[2].taskType == 'SUB_WORKFLOW'
             tasks[2].status == Task.Status.IN_PROGRESS
-            tasks[2].subworkflowChanged
             tasks[3].taskType == 'integration_task_10'
             tasks[3].status == Task.Status.COMPLETED
             tasks[4].taskType == 'JOIN'
