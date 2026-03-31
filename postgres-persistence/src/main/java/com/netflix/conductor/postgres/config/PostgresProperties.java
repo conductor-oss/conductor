@@ -55,9 +55,8 @@ public class PostgresProperties {
     private boolean flywayRepairOnMigrate = false;
 
     /**
-     * Validate migration checksums before running migrate.
-     * WARNING: setting to false bypasses Flyway's checksum safety entirely.
-     * Use as a last resort only.
+     * Validate migration checksums before running migrate. WARNING: setting to false bypasses
+     * Flyway's checksum safety entirely. Use as a last resort only.
      */
     private boolean flywayValidateOnMigrate = true;
 
