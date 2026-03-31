@@ -350,6 +350,8 @@ public class LLMHelper {
                         input.getMessages().stream().map(this::constructMessage).toList());
 
         ensureLastMessageIsFromUser(messages);
+        log.info("LLMHelper: {} messages, last type: {}", messages.size(),
+                messages.isEmpty() ? "empty" : messages.getLast().getClass().getSimpleName());
 
         Prompt prompt = new Prompt(messages, chatOptions);
         ChatResponse chatResponse = chatClient.prompt(prompt).call().chatResponse();
@@ -836,7 +838,22 @@ public class LLMHelper {
      */
     @VisibleForTesting
     void ensureLastMessageIsFromUser(List<Message> messages) {
-        if (!messages.isEmpty() && !(messages.getLast() instanceof UserMessage)) {
+        if (messages.isEmpty()) return;
+        Message last = messages.getLast();
+        if (last instanceof UserMessage) return;
+
+        if (last instanceof AssistantMessage assistantMsg) {
+            // Replace trailing assistant message with a user message that includes
+            // the partial text as context + continuation instruction.
+            // This avoids the "assistant message prefill" error from Claude.
+            String partialText = assistantMsg.getText();
+            messages.removeLast();
+            String continuation = partialText != null && !partialText.isBlank()
+                    ? "You were saying:\n\n" + partialText + "\n\nPlease continue where you left off."
+                    : "Please continue where you left off.";
+            messages.add(new UserMessage(continuation));
+        } else {
+            // For any other non-user message type (tool_call, system, etc.)
             messages.add(new UserMessage("Please continue where you left off."));
         }
     }

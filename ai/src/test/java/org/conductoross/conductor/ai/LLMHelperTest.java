@@ -364,16 +364,18 @@ public class LLMHelperTest {
     }
 
     @Test
-    void testEnsureLastMessageIsFromUser_appendsWhenLastIsAssistant() {
+    void testEnsureLastMessageIsFromUser_replacesWhenLastIsAssistant() {
         List<Message> messages = new ArrayList<>();
         messages.add(new UserMessage("Hello"));
         messages.add(new AssistantMessage("I will help you with"));
 
         llm.ensureLastMessageIsFromUser(messages);
 
-        assertEquals(3, messages.size());
+        // Assistant message replaced with user message containing partial text
+        assertEquals(2, messages.size());
         assertInstanceOf(UserMessage.class, messages.getLast());
-        assertEquals("Please continue where you left off.", messages.getLast().getText());
+        assertTrue(messages.getLast().getText().contains("I will help you with"));
+        assertTrue(messages.getLast().getText().contains("continue where you left off"));
     }
 
     @Test
@@ -419,7 +421,9 @@ public class LLMHelperTest {
 
         llm.ensureLastMessageIsFromUser(messages);
 
-        assertEquals(4, messages.size());
+        // Last assistant message replaced, middle one stays
+        assertEquals(3, messages.size());
         assertInstanceOf(UserMessage.class, messages.getLast());
+        assertTrue(messages.getLast().getText().contains("continuing from where I left off"));
     }
 }
