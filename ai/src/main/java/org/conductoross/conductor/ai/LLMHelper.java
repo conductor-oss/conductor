@@ -350,8 +350,6 @@ public class LLMHelper {
                         input.getMessages().stream().map(this::constructMessage).toList());
 
         ensureLastMessageIsFromUser(messages);
-        log.info("LLMHelper: {} messages, last type: {}", messages.size(),
-                messages.isEmpty() ? "empty" : messages.getLast().getClass().getSimpleName());
 
         Prompt prompt = new Prompt(messages, chatOptions);
         ChatResponse chatResponse = chatClient.prompt(prompt).call().chatResponse();
