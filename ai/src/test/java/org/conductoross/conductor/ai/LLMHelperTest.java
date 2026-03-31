@@ -12,12 +12,17 @@
  */
 package org.conductoross.conductor.ai;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -356,5 +361,65 @@ public class LLMHelperTest {
         // Should return the first method found (order may vary, but should return one of them)
         assertNotNull(method);
         assertTrue(method.equals("first-method") || method.equals("second-method"));
+    }
+
+    @Test
+    void testEnsureLastMessageIsFromUser_appendsWhenLastIsAssistant() {
+        List<Message> messages = new ArrayList<>();
+        messages.add(new UserMessage("Hello"));
+        messages.add(new AssistantMessage("I will help you with"));
+
+        llm.ensureLastMessageIsFromUser(messages);
+
+        assertEquals(3, messages.size());
+        assertInstanceOf(UserMessage.class, messages.getLast());
+        assertEquals("Please continue where you left off.", messages.getLast().getText());
+    }
+
+    @Test
+    void testEnsureLastMessageIsFromUser_appendsWhenLastIsSystem() {
+        List<Message> messages = new ArrayList<>();
+        messages.add(new SystemMessage("You are a helpful assistant"));
+
+        llm.ensureLastMessageIsFromUser(messages);
+
+        assertEquals(2, messages.size());
+        assertInstanceOf(UserMessage.class, messages.getLast());
+        assertEquals("Please continue where you left off.", messages.getLast().getText());
+    }
+
+    @Test
+    void testEnsureLastMessageIsFromUser_noChangeWhenLastIsUser() {
+        List<Message> messages = new ArrayList<>();
+        messages.add(new SystemMessage("You are a helpful assistant"));
+        messages.add(new UserMessage("Hello"));
+
+        llm.ensureLastMessageIsFromUser(messages);
+
+        assertEquals(2, messages.size());
+        assertInstanceOf(UserMessage.class, messages.getLast());
+        assertEquals("Hello", messages.getLast().getText());
+    }
+
+    @Test
+    void testEnsureLastMessageIsFromUser_noChangeWhenEmpty() {
+        List<Message> messages = new ArrayList<>();
+
+        llm.ensureLastMessageIsFromUser(messages);
+
+        assertTrue(messages.isEmpty());
+    }
+
+    @Test
+    void testEnsureLastMessageIsFromUser_multipleAssistantMessages() {
+        List<Message> messages = new ArrayList<>();
+        messages.add(new UserMessage("Summarize this document"));
+        messages.add(new AssistantMessage("The document discusses"));
+        messages.add(new AssistantMessage("continuing from where I left off"));
+
+        llm.ensureLastMessageIsFromUser(messages);
+
+        assertEquals(4, messages.size());
+        assertInstanceOf(UserMessage.class, messages.getLast());
     }
 }

@@ -345,7 +345,11 @@ public class LLMHelper {
                     .addFirst(new ChatMessage(ChatMessage.Role.system, input.getInstructions()));
         }
 
-        List<Message> messages = input.getMessages().stream().map(this::constructMessage).toList();
+        List<Message> messages =
+                new ArrayList<>(
+                        input.getMessages().stream().map(this::constructMessage).toList());
+
+        ensureLastMessageIsFromUser(messages);
 
         Prompt prompt = new Prompt(messages, chatOptions);
         ChatResponse chatResponse = chatClient.prompt(prompt).call().chatResponse();
@@ -818,6 +822,23 @@ public class LLMHelper {
         }
 
         return result;
+    }
+
+    /**
+     * Ensures the conversation ends with a user message. Some providers (e.g. Anthropic/Claude)
+     * reject requests where the last message has an assistant or tool_call role ("assistant message
+     * prefill"). This typically happens when the prior iteration ended with
+     * finishReason=MAX_TOKENS and the DO_WHILE loop continues with the partial assistant response
+     * as the last message in the history. Appending a user continuation prompt is safe for all
+     * providers — OpenAI and others simply treat it as the next user turn.
+     *
+     * @param messages The mutable list of messages to check and potentially modify
+     */
+    @VisibleForTesting
+    void ensureLastMessageIsFromUser(List<Message> messages) {
+        if (!messages.isEmpty() && !(messages.getLast() instanceof UserMessage)) {
+            messages.add(new UserMessage("Please continue where you left off."));
+        }
     }
 
     /** Checks if a string looks like JSON */
