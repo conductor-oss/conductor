@@ -30,12 +30,10 @@ function getAccessToken(): string | null {
 }
 import { WorkflowDef } from "types/WorkflowDef";
 import { AuthHeaders, IObject } from "types/common";
-import {
-  getUniqueWorkflows,
-  getUniqueWorkflowsWithVersions,
-} from "utils/workflow";
+import { getUniqueWorkflowsWithVersions } from "utils/workflow";
 import {
   TASK_EXECUTIONS_SEARCH_URL,
+  WORKFLOW_METADATA_LATEST_VERSIONS_URL,
   WORKFLOW_METADATA_SHORT_URL,
 } from "./constants/api";
 import { HttpStatusCode } from "./constants/httpStatusCode";
@@ -409,21 +407,31 @@ export function useWorkflowDefs(
   });
 }
 
+export function useLatestWorkflowDefs(
+  pagination?: { start: number; size: number },
+  optionsOverride: Partial<
+    UseQueryOptions<SearchResult<WorkflowDef>, FetchError>
+  > = {},
+): UseQueryResult<SearchResult<WorkflowDef>, FetchError> {
+  const url = pagination
+    ? `${WORKFLOW_METADATA_LATEST_VERSIONS_URL}?${qs.stringify(pagination)}`
+    : WORKFLOW_METADATA_LATEST_VERSIONS_URL;
+
+  return useFetch<SearchResult<WorkflowDef>>(url, {
+    staleTime: DEFAULT_STALE_TIME,
+    keepPreviousData: true,
+    ...optionsOverride,
+  });
+}
+
 export function useWorkflowNames(
   optionsOverride: Partial<UseQueryOptions<WorkflowDef[], FetchError>> = {},
 ): string[] {
-  const { data } = useWorkflowDefs(optionsOverride);
-
-  // Filter latest versions only
-  const workflows = useMemo(() => {
-    if (data) {
-      return getUniqueWorkflows(data);
-    }
-  }, [data]);
+  const { data } = useLatestWorkflowDefs(undefined, optionsOverride as any);
 
   return useMemo(
-    () => (workflows ? workflows.map((def) => def.name) : []),
-    [workflows],
+    () => (data?.results ? data.results.map((def) => def.name) : []),
+    [data],
   );
 }
 
