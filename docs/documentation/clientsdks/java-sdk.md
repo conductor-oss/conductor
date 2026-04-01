@@ -305,7 +305,7 @@ workflow.registerWorkflow(true, true);
 ```java
 ApiClient apiClient = ApiClient.builder().build();
 OrkesClients clients = new OrkesClients(apiClient);
-var workflowClient = clients.getWorkflowClient();
+WorkflowClient workflowClient = clients.getWorkflowClient();
 
 // Synchronous (start and poll for completion)
 CompletableFuture<Workflow> future = workflow.execute(input);
