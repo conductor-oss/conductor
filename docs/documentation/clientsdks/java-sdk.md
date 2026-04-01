@@ -223,9 +223,11 @@ public class Workers {
 
 ```java
 // Option 1: Using TaskRunnerConfigurer
-TaskClient taskClient = new TaskClient(client);
+ApiClient apiClient = ApiClient.builder().build();
+OrkesClients clients = new OrkesClients(apiClient);
+
 TaskRunnerConfigurer configurer = new TaskRunnerConfigurer.Builder(
-    taskClient,
+    clients.getTaskClient(),
     List.of(new MyWorker(), new AnotherWorker())
 )
 .withThreadCount(10)
@@ -233,7 +235,7 @@ TaskRunnerConfigurer configurer = new TaskRunnerConfigurer.Builder(
 configurer.init();
 
 // Option 2: Using WorkflowExecutor (auto-discovers @WorkerTask annotations)
-WorkflowExecutor executor = new WorkflowExecutor(client, 10);
+WorkflowExecutor executor = new WorkflowExecutor(apiClient, 10);
 executor.initWorkers("com.mycompany.workers");  // Package to scan for @WorkerTask
 ```
 
@@ -301,7 +303,9 @@ workflow.registerWorkflow(true, true);
 **Execute workflows:**
 
 ```java
-WorkflowClient workflowClient = new WorkflowClient(client);
+ApiClient apiClient = ApiClient.builder().build();
+OrkesClients clients = new OrkesClients(apiClient);
+var workflowClient = clients.getWorkflowClient();
 
 // Synchronous (start and poll for completion)
 CompletableFuture<Workflow> future = workflow.execute(input);
@@ -309,7 +313,11 @@ Workflow result = future.get(30, TimeUnit.SECONDS);
 System.out.println("Output: " + result.getOutput());
 
 // Asynchronous (returns workflow ID immediately)
-String workflowId = workflowClient.startWorkflow("my_workflow", 1, "", Map.of("key", "value"));
+StartWorkflowRequest request = new StartWorkflowRequest();
+request.setName("my_workflow");
+request.setVersion(1);
+request.setInput(Map.of("key", "value"));
+String workflowId = workflowClient.startWorkflow(request);
 
 // Dynamic execution (sends workflow definition with request)
 CompletableFuture<Workflow> dynamicRun = workflow.executeDynamic(input);
@@ -318,8 +326,6 @@ CompletableFuture<Workflow> dynamicRun = workflow.executeDynamic(input);
 **Manage running workflows:**
 
 ```java
-WorkflowClient workflowClient = new WorkflowClient(client);
-
 // Get workflow status
 Workflow wf = workflowClient.getWorkflow(workflowId, true);
 System.out.println("Status: " + wf.getStatus());
