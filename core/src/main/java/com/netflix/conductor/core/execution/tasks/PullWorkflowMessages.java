@@ -35,6 +35,8 @@ import com.netflix.conductor.model.WorkflowModel;
  *
  * <ul>
  *   <li>{@code batchSize} (int, default 1) — maximum number of messages to pull per invocation
+ *   <li>{@code blocking} (boolean, default true) — when {@code false}, completes immediately with
+ *       an empty list if no messages are available instead of waiting
  * </ul>
  *
  * <p>Output:
@@ -50,6 +52,7 @@ public class PullWorkflowMessages extends WorkflowSystemTask {
 
     public static final String TASK_TYPE = "PULL_WORKFLOW_MESSAGES";
     static final String INPUT_BATCH_SIZE = "batchSize";
+    static final String INPUT_BLOCKING = "blocking";
     static final String OUTPUT_MESSAGES = "messages";
     static final String OUTPUT_COUNT = "count";
 
@@ -73,8 +76,11 @@ public class PullWorkflowMessages extends WorkflowSystemTask {
         int batchSize = getBatchSize(task);
         List<WorkflowMessage> messages = dao.pop(workflow.getWorkflowId(), batchSize);
         if (messages.isEmpty()) {
-            // No messages yet — stay IN_PROGRESS; SystemTaskWorker will re-poll
-            return false;
+            if (isBlocking(task)) {
+                // No messages yet — stay IN_PROGRESS; SystemTaskWorker will re-poll
+                return false;
+            }
+            // Non-blocking: complete immediately with empty output
         }
         task.addOutput(OUTPUT_MESSAGES, messages);
         task.addOutput(OUTPUT_COUNT, messages.size());
@@ -91,6 +97,14 @@ public class PullWorkflowMessages extends WorkflowSystemTask {
     public Optional<Long> getEvaluationOffset(TaskModel taskModel, long maxOffset) {
         // Poll every 1 second while waiting for messages.
         return Optional.of(1L);
+    }
+
+    private boolean isBlocking(TaskModel task) {
+        Object raw = task.getInputData().get(INPUT_BLOCKING);
+        if (raw instanceof Boolean) {
+            return (Boolean) raw;
+        }
+        return true; // default: blocking
     }
 
     private int getBatchSize(TaskModel task) {
