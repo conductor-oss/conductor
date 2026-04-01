@@ -101,6 +101,14 @@ public interface JedisCommands {
 
     Long del(String key);
 
+    Long llen(String key);
+
+    Long rpush(String key, String... values);
+
+    List<String> lrange(String key, long start, long end);
+
+    String ltrim(String key, long start, long end);
+
     ScanResult<Map.Entry<String, String>> hscan(String key, String cursor);
 
     ScanResult<Map.Entry<String, String>> hscan(String key, String cursor, ScanParams params);
