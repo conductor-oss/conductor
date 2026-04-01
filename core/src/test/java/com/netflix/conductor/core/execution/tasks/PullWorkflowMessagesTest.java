@@ -61,13 +61,17 @@ public class PullWorkflowMessagesTest {
 
         assertTrue(progressed);
         assertEquals(TaskModel.Status.COMPLETED, taskModel.getStatus());
-        assertEquals(Collections.emptyList(), taskModel.getOutputData().get(PullWorkflowMessages.OUTPUT_MESSAGES));
+        assertEquals(
+                Collections.emptyList(),
+                taskModel.getOutputData().get(PullWorkflowMessages.OUTPUT_MESSAGES));
         assertEquals(0, taskModel.getOutputData().get(PullWorkflowMessages.OUTPUT_COUNT));
     }
 
     @Test
     public void nonBlocking_withMessages_completesWithMessages() {
-        WorkflowMessage msg = new WorkflowMessage("msg-id", WORKFLOW_ID, Map.of("key", "value"), "2024-01-01T00:00:00Z");
+        WorkflowMessage msg =
+                new WorkflowMessage(
+                        "msg-id", WORKFLOW_ID, Map.of("key", "value"), "2024-01-01T00:00:00Z");
         when(dao.pop(WORKFLOW_ID, 1)).thenReturn(List.of(msg));
 
         TaskModel taskModel = taskWithInput(Map.of(PullWorkflowMessages.INPUT_BLOCKING, false));
@@ -75,7 +79,9 @@ public class PullWorkflowMessagesTest {
 
         assertTrue(progressed);
         assertEquals(TaskModel.Status.COMPLETED, taskModel.getStatus());
-        assertEquals(List.of(msg), taskModel.getOutputData().get(PullWorkflowMessages.OUTPUT_MESSAGES));
+        assertEquals(
+                List.of(msg),
+                taskModel.getOutputData().get(PullWorkflowMessages.OUTPUT_MESSAGES));
         assertEquals(1, taskModel.getOutputData().get(PullWorkflowMessages.OUTPUT_COUNT));
     }
 
