@@ -23,6 +23,8 @@ include 'common'
 include 'core'
 
 include 'cassandra-persistence'
+include 'redis-configuration'
+include 'redis-api'
 include 'redis-persistence'
 
 include 'es6-persistence'
@@ -69,5 +71,7 @@ include 'test-harness'
 include 'scheduler'
 include 'scheduler-postgres-persistence'
 include 'scheduler-mysql-persistence'
+
+include 'e2e'
 
 rootProject.children.each {it.name="conductor-${it.name}"}

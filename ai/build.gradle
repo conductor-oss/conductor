@@ -23,6 +23,7 @@ dependencies {
     api "org.springframework.ai:spring-ai-huggingface:${revSpringAI}"
     api "org.springframework.ai:spring-ai-coherence-store:${revSpringAI}"
     api "org.springframework.ai:spring-ai-vertex-ai-gemini:${revSpringAI}"
+    api "org.springframework.ai:spring-ai-google-genai:${revSpringAI}"
     api "org.springframework.ai:spring-ai-bedrock-converse:${revSpringAI}"
     api "org.springframework.ai:spring-ai-vertex-ai-embedding:${revSpringAI}"
     api "org.springframework.ai:spring-ai-azure-openai:${revSpringAI}"
@@ -57,6 +58,6 @@ dependencies {
     testImplementation "org.testcontainers:postgresql:${revTestContainer}"
     testImplementation "org.postgresql:postgresql:${revPostgres}"
     testImplementation "org.apache.commons:commons-compress:${revCommonsCompress}"
-    testImplementation "com.h2database:h2:2.2.224"
+    testImplementation "com.h2database:h2:2.4.240"
 
 }

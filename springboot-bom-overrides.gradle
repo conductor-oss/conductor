@@ -32,3 +32,8 @@ ext['groovy.version'] = revGroovy
 
 // Keep Testcontainers aligned across modules instead of Spring Boot BOM defaults.
 ext['testcontainers.version'] = revTestContainer
+
+// Prevent Spring Boot BOM from downgrading Jedis. Modules that need jedis depend on
+// conductor-redis-api (which declares jedis as 'api'), and without this override the
+// dependency-management plugin would resolve the BOM version instead of 6.0.0.
+ext['jedis.version'] = revJedis

@@ -14,19 +14,19 @@
 dependencies {
     implementation project(':conductor-common')
     implementation project(':conductor-core')
+    implementation project(':conductor-redis-configuration')
+    implementation project(':conductor-redis-api')
     compileOnly 'org.springframework.boot:spring-boot-starter'
 
+    implementation "io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}"
     implementation "redis.clients:jedis:${revJedis}"
-    implementation ("io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}") {
-        exclude group: 'com.netflix.conductor', module: 'conductor-core'
-    }
     implementation('com.thoughtworks.xstream:xstream:1.4.21')
     implementation "org.apache.commons:commons-lang3:"
     implementation "com.google.guava:guava:${revGuava}"
+    implementation "com.github.ben-manes.caffeine:caffeine"
 
-    //In memory
-    implementation "org.rarefiedredis.redis:redis-java:${revRarefiedRedis}"
-
+    testImplementation "org.awaitility:awaitility:${revAwaitility}"
+    testImplementation "org.testcontainers:testcontainers:${revTestContainer}"
     testImplementation project(':conductor-core').sourceSets.test.output
     testImplementation project(':conductor-common').sourceSets.test.output
 }

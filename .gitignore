@@ -1,3 +1,6 @@
+# Worktrees
+.worktrees/
+
 # Java Build
 .gradle
 .classpath
@@ -52,3 +55,7 @@ server-lite/conductorosstest.db-wal
 *.factorypath
 server/*.db*
 /site
+*.db
+*.db-shm
+*.db-wal
+docs/superpowers
