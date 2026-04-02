@@ -333,6 +333,46 @@ public class PostgresIndexDAOTest {
     }
 
     @Test
+    public void testSearchWorkflowSummaryWithSingleQuotes() {
+        WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-single-quote");
+
+        indexDAO.indexWorkflow(wfs);
+
+        String query = String.format("workflowId='%s'", wfs.getWorkflowId());
+        SearchResult<WorkflowSummary> results =
+                indexDAO.searchWorkflowSummary(query, "*", 0, 15, new ArrayList<>());
+        assertEquals("No results returned", 1, results.getResults().size());
+        assertEquals(
+                "Wrong workflow returned",
+                wfs.getWorkflowId(),
+                results.getResults().get(0).getWorkflowId());
+
+        indexDAO.removeWorkflow(wfs.getWorkflowId());
+    }
+
+    @Test
+    public void testSearchWorkflowSummaryWithSingleQuotedMultiCondition() {
+        WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-multi-cond");
+        wfs.setCorrelationId("test-correlation-id");
+
+        indexDAO.indexWorkflow(wfs);
+
+        String query =
+                String.format(
+                        "correlationId='%s' AND workflowType='%s'",
+                        wfs.getCorrelationId(), wfs.getWorkflowType());
+        SearchResult<WorkflowSummary> results =
+                indexDAO.searchWorkflowSummary(query, "*", 0, 15, new ArrayList<>());
+        assertEquals("No results returned", 1, results.getResults().size());
+        assertEquals(
+                "Wrong workflow returned",
+                wfs.getWorkflowId(),
+                results.getResults().get(0).getWorkflowId());
+
+        indexDAO.removeWorkflow(wfs.getWorkflowId());
+    }
+
+    @Test
     public void testFullTextSearchWorkflowSummary() {
         WorkflowSummary wfs = getMockWorkflowSummary("workflow-id");
 
