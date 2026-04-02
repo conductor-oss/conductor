@@ -49,7 +49,7 @@ dependencies {
     implementation "com.google.guava:guava:${revGuava}"
 
     //GraalVM dependencies for executing JavaScript and Python
-    implementation("org.graalvm.polyglot:polyglot4:25.0.2")
+    implementation("org.graalvm.polyglot:polyglot:25.0.2")
     implementation("org.graalvm.js:js:25.0.2")
     implementation("org.graalvm.js:js-scriptengine:25.0.2")
     implementation("org.graalvm.polyglot:python:25.0.2")
