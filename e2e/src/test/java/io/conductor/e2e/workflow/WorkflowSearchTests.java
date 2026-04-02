@@ -144,8 +144,7 @@ public class WorkflowSearchTests {
                 .untilAsserted(
                         () -> {
                             SearchResult<WorkflowSummary> result =
-                                    workflowClient.search(
-                                            "workflowId=\"" + workflowId + "\"");
+                                    workflowClient.search("workflowId=\"" + workflowId + "\"");
                             assertEquals(
                                     1,
                                     result.getResults().size(),
@@ -177,8 +176,7 @@ public class WorkflowSearchTests {
                 .untilAsserted(
                         () -> {
                             SearchResult<WorkflowSummary> result =
-                                    workflowClient.search(
-                                            "workflowId='" + workflowId + "'");
+                                    workflowClient.search("workflowId='" + workflowId + "'");
                             assertEquals(
                                     1,
                                     result.getResults().size(),
@@ -211,8 +209,7 @@ public class WorkflowSearchTests {
                 .untilAsserted(
                         () -> {
                             SearchResult<WorkflowSummary> result =
-                                    workflowClient.search(
-                                            "workflowType='" + workflowName + "'");
+                                    workflowClient.search("workflowType='" + workflowName + "'");
                             assertEquals(
                                     2,
                                     result.getResults().size(),
@@ -223,7 +220,8 @@ public class WorkflowSearchTests {
         SearchResult<WorkflowSummary> all =
                 workflowClient.search("workflowType='" + workflowName + "'");
         all.getResults()
-                .forEach(wf -> workflowClient.terminateWorkflow(wf.getWorkflowId(), "test cleanup"));
+                .forEach(
+                        wf -> workflowClient.terminateWorkflow(wf.getWorkflowId(), "test cleanup"));
         metadataClient.unregisterWorkflowDef(workflowName, 1);
     }
 
@@ -296,36 +294,29 @@ public class WorkflowSearchTests {
                 .untilAsserted(
                         () -> {
                             SearchResult<WorkflowSummary> result =
-                                    workflowClient.search(
-                                            "workflowType='" + workflowName + "'");
+                                    workflowClient.search("workflowType='" + workflowName + "'");
                             assertEquals(3, result.getResults().size());
                         });
 
         // Search with pagination: page size 2, starting at 0
         SearchResult<WorkflowSummary> page1 =
                 workflowClient.search(
-                        0, 2, "workflowId:ASC", "*",
-                        "workflowType='" + workflowName + "'");
+                        0, 2, "workflowId:ASC", "*", "workflowType='" + workflowName + "'");
         assertEquals(3, page1.getTotalHits(), "Total hits should be 3");
         assertEquals(2, page1.getResults().size(), "Page 1 should have 2 results");
 
         // Page 2
         SearchResult<WorkflowSummary> page2 =
                 workflowClient.search(
-                        2, 2, "workflowId:ASC", "*",
-                        "workflowType='" + workflowName + "'");
+                        2, 2, "workflowId:ASC", "*", "workflowType='" + workflowName + "'");
         assertEquals(3, page2.getTotalHits(), "Total hits should still be 3");
         assertEquals(1, page2.getResults().size(), "Page 2 should have 1 result");
 
         // Verify no overlap between pages
         List<String> page1Ids =
-                page1.getResults().stream()
-                        .map(WorkflowSummary::getWorkflowId)
-                        .toList();
+                page1.getResults().stream().map(WorkflowSummary::getWorkflowId).toList();
         List<String> page2Ids =
-                page2.getResults().stream()
-                        .map(WorkflowSummary::getWorkflowId)
-                        .toList();
+                page2.getResults().stream().map(WorkflowSummary::getWorkflowId).toList();
         page2Ids.forEach(
                 id ->
                         assertFalse(
@@ -336,7 +327,8 @@ public class WorkflowSearchTests {
         SearchResult<WorkflowSummary> all =
                 workflowClient.search("workflowType='" + workflowName + "'");
         all.getResults()
-                .forEach(wf -> workflowClient.terminateWorkflow(wf.getWorkflowId(), "test cleanup"));
+                .forEach(
+                        wf -> workflowClient.terminateWorkflow(wf.getWorkflowId(), "test cleanup"));
         metadataClient.unregisterWorkflowDef(workflowName, 1);
     }
 
