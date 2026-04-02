@@ -49,10 +49,10 @@ dependencies {
     implementation "com.google.guava:guava:${revGuava}"
 
     //GraalVM dependencies for executing JavaScript and Python
-    implementation("org.graalvm.polyglot:polyglot:24.1.0")
+    implementation("org.graalvm.polyglot:polyglot:25.0.2")
     implementation("org.graalvm.js:js:25.0.2")
     implementation("org.graalvm.js:js-scriptengine:25.0.2")
-    implementation("org.graalvm.polyglot:python:24.1.0")
+    implementation("org.graalvm.polyglot:python:25.0.2")
     implementation "org.graalvm.sdk:graal-sdk:25.0.2"
 
     // JAXB is not bundled with Java 11, dependencies added explicitly
