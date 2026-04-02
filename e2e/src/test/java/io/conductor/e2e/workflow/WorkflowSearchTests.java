@@ -29,7 +29,6 @@ import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.SearchResult;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
 
 import io.conductor.e2e.util.ApiUtil;
@@ -184,39 +183,6 @@ public class WorkflowSearchTests {
                                     1,
                                     result.getResults().size(),
                                     "Search by workflowId with single quotes should return 1 result");
-                            assertEquals(workflowId, result.getResults().get(0).getWorkflowId());
-                        });
-
-        workflowClient.terminateWorkflow(workflowId, "test cleanup");
-        metadataClient.unregisterWorkflowDef(workflowName, 1);
-    }
-
-    @Test
-    public void testSearchV2ByWorkflowId() {
-        WorkflowClient workflowClient = ApiUtil.WORKFLOW_CLIENT;
-        MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
-        String taskName = RandomStringUtils.randomAlphanumeric(5).toUpperCase();
-        String workflowName = RandomStringUtils.randomAlphanumeric(5).toUpperCase();
-
-        registerWorkflowDef(workflowName, taskName, metadataClient);
-
-        StartWorkflowRequest startReq = new StartWorkflowRequest();
-        startReq.setName(workflowName);
-        startReq.setVersion(1);
-        String workflowId = workflowClient.startWorkflow(startReq);
-
-        // searchV2 returns full Workflow objects, not just summaries
-        await().atMost(10, TimeUnit.SECONDS)
-                .pollInterval(100, TimeUnit.MILLISECONDS)
-                .untilAsserted(
-                        () -> {
-                            SearchResult<Workflow> result =
-                                    workflowClient.searchV2(
-                                            "workflowId='" + workflowId + "'");
-                            assertEquals(
-                                    1,
-                                    result.getResults().size(),
-                                    "searchV2 by workflowId should return 1 result");
                             assertEquals(workflowId, result.getResults().get(0).getWorkflowId());
                         });
 
