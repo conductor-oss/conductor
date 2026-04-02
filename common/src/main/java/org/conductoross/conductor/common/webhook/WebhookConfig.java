@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.tasks.webhook;
+package org.conductoross.conductor.common.webhook;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -89,6 +89,12 @@ public class WebhookConfig {
     private String evaluatorType;
 
     public enum Verifier {
+        /**
+         * No-op verifier — accepts all requests without checking headers or signatures. Intended
+         * for development, testing, and demos where credential setup is not required. Do not use in
+         * production.
+         */
+        NONE,
         HEADER_BASED,
         HMAC_BASED,
         SIGNATURE_BASED,
@@ -223,7 +229,7 @@ public class WebhookConfig {
      * shared, not deep-copied. Intended for use when the caller needs to mutate a field (e.g. mask
      * {@link #secretValue}) without affecting the stored instance.
      */
-    WebhookConfig shallowCopy() {
+    public WebhookConfig shallowCopy() {
         WebhookConfig copy = new WebhookConfig();
         copy.name = this.name;
         copy.id = this.id;

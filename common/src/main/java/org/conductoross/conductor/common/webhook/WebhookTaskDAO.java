@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.tasks.webhook;
+package org.conductoross.conductor.common.webhook;
 
 import java.util.List;
 
@@ -18,7 +18,7 @@ import java.util.List;
  * Stores the mapping from a webhook routing hash to the set of task IDs that are waiting for a
  * matching inbound webhook event.
  *
- * <p>The default implementation ({@link InMemoryWebhookTaskDAO}) is suitable for single-node
+ * <p>The default implementation ({@code InMemoryWebhookTaskDAO}) is suitable for single-node
  * deployments. Alternative implementations backed by durable storage (e.g., Postgres, Redis) can be
  * registered as Spring beans to replace the default.
  */
@@ -33,7 +33,7 @@ public interface WebhookTaskDAO {
     void put(String hash, String taskId);
 
     /**
-     * Return all task IDs registered for the given hash.
+     * Return all task IDs registered for the given hash without removing them.
      *
      * @param hash the routing hash computed from an inbound webhook event
      * @return list of task IDs that should be completed; empty list if none
@@ -47,4 +47,27 @@ public interface WebhookTaskDAO {
      * @param taskId the task ID to deregister
      */
     void remove(String hash, String taskId);
+
+    /**
+     * Atomically claim and remove all task IDs registered for the given hash.
+     *
+     * <p>Unlike {@link #get}, the returned IDs are removed from the store as part of this call so
+     * that no concurrent caller can receive the same IDs. This prevents a race condition where two
+     * simultaneous inbound events with identical hashes both attempt to complete the same waiting
+     * task.
+     *
+     * <p>The default implementation is <em>not</em> atomic — it calls {@link #get} followed by
+     * individual {@link #remove} calls. Durable-storage implementations (Redis SPOP, Postgres
+     * DELETE RETURNING, etc.) should override this method for true atomicity.
+     *
+     * @param hash the routing hash
+     * @return the task IDs that were registered (now removed); empty list if none
+     */
+    default List<String> popAll(String hash) {
+        List<String> ids = get(hash);
+        for (String id : ids) {
+            remove(hash, id);
+        }
+        return ids;
+    }
 }

@@ -62,7 +62,7 @@ public class IncomingWebhookResource {
         this.orgContextProvider = orgContextProvider;
     }
 
-    @PostMapping(value = "/{id}", consumes = MediaType.ALL_VALUE)
+    @PostMapping(value = "/{id}")
     @Operation(summary = "Receive an inbound webhook event")
     public String handleWebhook(
             @PathVariable("id") String id,

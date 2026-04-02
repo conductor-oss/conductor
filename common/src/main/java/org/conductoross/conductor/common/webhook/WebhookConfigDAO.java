@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.tasks.webhook;
+package org.conductoross.conductor.common.webhook;
 
 import java.util.List;
 import java.util.Map;
@@ -18,7 +18,7 @@ import java.util.Map;
 /**
  * Storage interface for {@link WebhookConfig} objects.
  *
- * <p>The default implementation ({@link InMemoryWebhookConfigDAO}) holds configs in memory and
+ * <p>The default implementation ({@code InMemoryWebhookConfigDAO}) holds configs in memory and
  * loses them on restart. Production deployments should register a durable implementation (Postgres,
  * Redis, etc.) as a Spring bean — the {@code @ConditionalOnMissingBean} on the in-memory
  * implementation ensures it will be skipped automatically.

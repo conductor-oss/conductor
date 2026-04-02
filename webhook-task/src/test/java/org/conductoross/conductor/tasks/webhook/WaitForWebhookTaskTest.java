@@ -15,6 +15,7 @@ package org.conductoross.conductor.tasks.webhook;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.conductoross.conductor.common.webhook.WebhookTaskDAO;
 import org.junit.Before;
 import org.junit.Test;
 

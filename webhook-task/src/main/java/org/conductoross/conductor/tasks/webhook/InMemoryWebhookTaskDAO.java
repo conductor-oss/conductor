@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.conductoross.conductor.common.webhook.WebhookTaskDAO;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Component;
 
@@ -52,5 +53,15 @@ public class InMemoryWebhookTaskDAO implements WebhookTaskDAO {
                     ids.remove(taskId);
                     return ids.isEmpty() ? null : ids;
                 });
+    }
+
+    /**
+     * Atomically removes and returns all task IDs for the given hash in a single {@link
+     * ConcurrentHashMap#remove} call, preventing any concurrent caller from receiving the same IDs.
+     */
+    @Override
+    public List<String> popAll(String hash) {
+        Set<String> ids = store.remove(hash);
+        return ids == null ? List.of() : new ArrayList<>(ids);
     }
 }

@@ -14,13 +14,13 @@ package org.conductoross.conductor.tasks.webhook.config;
 
 import java.util.List;
 
+import org.conductoross.conductor.common.webhook.WebhookConfigDAO;
+import org.conductoross.conductor.common.webhook.WebhookTaskDAO;
 import org.conductoross.conductor.tasks.webhook.IncomingWebhookResource;
 import org.conductoross.conductor.tasks.webhook.IncomingWebhookService;
-import org.conductoross.conductor.tasks.webhook.WebhookConfigDAO;
 import org.conductoross.conductor.tasks.webhook.WebhookConfigService;
 import org.conductoross.conductor.tasks.webhook.WebhookHashingService;
 import org.conductoross.conductor.tasks.webhook.WebhookOrgContextProvider;
-import org.conductoross.conductor.tasks.webhook.WebhookTaskDAO;
 import org.conductoross.conductor.tasks.webhook.WebhookVerifier;
 import org.conductoross.conductor.tasks.webhook.WebhooksConfigResource;
 import org.springframework.boot.autoconfigure.AutoConfiguration;

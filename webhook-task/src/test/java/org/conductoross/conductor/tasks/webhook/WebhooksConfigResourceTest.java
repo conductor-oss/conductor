@@ -15,6 +15,7 @@ package org.conductoross.conductor.tasks.webhook;
 import java.util.List;
 import java.util.Map;
 
+import org.conductoross.conductor.common.webhook.WebhookConfig;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -101,23 +102,27 @@ public class WebhooksConfigResourceTest {
     }
 
     @Test
-    public void testCreateWebhook_validation_nullVerifier_noHeaderCheck() {
-        // If verifier is null the HEADER_BASED check is skipped (null != HEADER_BASED)
+    public void testCreateWebhook_validation_nullVerifier_throws() {
+        // verifier must always be specified; null is rejected at the REST layer
         WebhookConfig config = new WebhookConfig();
         config.setReceiverWorkflowNamesToVersions(Map.of("wf", 1));
-        // verifier is null, headers are null — validation should pass
+        // verifier is null — should throw with a helpful message pointing to NONE
 
-        resource.createWebhook(config);
-
-        verify(service).createWebhook(config);
+        try {
+            resource.createWebhook(config);
+            fail("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            assertTrue(e.getMessage().contains("verifier"));
+            verify(service, never()).createWebhook(any());
+        }
     }
 
     @Test
     public void testCreateWebhook_validation_expressionAloneIsValid() {
         WebhookConfig config = new WebhookConfig();
+        config.setVerifier(WebhookConfig.Verifier.NONE);
         config.setExpression("payload.type == 'payment'");
         config.setEvaluatorType("javascript");
-        // no verifier, no receiver workflows — expression alone is sufficient
 
         resource.createWebhook(config);
 
@@ -127,6 +132,7 @@ public class WebhooksConfigResourceTest {
     @Test
     public void testCreateWebhook_validation_workflowsToStartAloneIsValid() {
         WebhookConfig config = new WebhookConfig();
+        config.setVerifier(WebhookConfig.Verifier.NONE);
         config.setWorkflowsToStart(Map.of("myWorkflow", Map.of("version", 1)));
 
         resource.createWebhook(config);

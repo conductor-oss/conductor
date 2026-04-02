@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.conductoross.conductor.common.webhook.WebhookConfig;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.http.HttpHeaders;
@@ -77,10 +78,11 @@ public class IncomingWebhookServiceTest {
     // -------------------------------------------------------------------------
 
     @Test
-    public void handleWebhook_returnsNullWhenConfigNotFound() {
-        // Should return null (HTTP 200) rather than throwing — avoids retry storms when a
+    public void handleWebhook_returnsEmptyStringWhenConfigNotFound() {
+        // Should return "" (HTTP 200, empty body) rather than throwing — avoids retry storms when a
         // webhook config is deleted while the provider still has the URL registered.
-        assertNull(
+        assertEquals(
+                "",
                 service.handleWebhook(
                         "unknown-id", "{}", Collections.emptyMap(), new HttpHeaders()));
     }
@@ -216,7 +218,8 @@ public class IncomingWebhookServiceTest {
         when(mockVerifier.extractChallenge(any(), any())).thenReturn(null);
 
         // Must not throw NPE; null criteria entry is skipped
-        assertNull(
+        assertEquals(
+                "",
                 service.handleWebhook(WEBHOOK_ID, "{}", Collections.emptyMap(), new HttpHeaders()));
         verifyNoInteractions(executionDAOFacade, workflowExecutor);
     }
@@ -304,7 +307,8 @@ public class IncomingWebhookServiceTest {
                 .thenReturn("wf-good-id");
 
         // Should NOT throw despite failure
-        assertNull(
+        assertEquals(
+                "",
                 service.handleWebhook(WEBHOOK_ID, "{}", Collections.emptyMap(), new HttpHeaders()));
         verify(workflowExecutor, times(2)).startWorkflow(any());
     }
@@ -327,9 +331,9 @@ public class IncomingWebhookServiceTest {
     // -------------------------------------------------------------------------
 
     @Test
-    public void handlePing_returnsNullWhenConfigNotFound() {
+    public void handlePing_returnsEmptyStringWhenConfigNotFound() {
         String result = service.handlePing("unknown", Collections.emptyMap());
-        assertNull(result);
+        assertEquals("", result);
     }
 
     @Test
@@ -352,7 +356,7 @@ public class IncomingWebhookServiceTest {
 
         String result = service.handlePing(WEBHOOK_ID, Map.of("type", "order.created"));
 
-        assertNull(result); // null propagated to caller
+        assertEquals("", result); // empty string (no challenge body) propagated to caller
         assertFalse(configDAO.get(WEBHOOK_ID).isUrlVerified());
         // No waiting tasks registered, so executionDAOFacade.getTaskModel() never called,
         // but the dispatch path was exercised without error.
@@ -374,7 +378,8 @@ public class IncomingWebhookServiceTest {
         when(mockVerifier.extractChallenge(any(), any())).thenReturn(null);
 
         // Just verify it runs without NPE and doesn't touch any orgId-aware class
-        assertNull(
+        assertEquals(
+                "",
                 service.handleWebhook(WEBHOOK_ID, "{}", Collections.emptyMap(), new HttpHeaders()));
     }
 

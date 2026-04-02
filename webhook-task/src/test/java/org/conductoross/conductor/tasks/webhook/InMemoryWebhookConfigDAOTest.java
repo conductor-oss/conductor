@@ -15,6 +15,7 @@ package org.conductoross.conductor.tasks.webhook;
 import java.util.List;
 import java.util.Map;
 
+import org.conductoross.conductor.common.webhook.WebhookConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

@@ -15,6 +15,8 @@ package org.conductoross.conductor.tasks.webhook;
 import java.util.List;
 import java.util.Map;
 
+import org.conductoross.conductor.common.webhook.WebhookConfig;
+
 /**
  * Strategy interface for authenticating inbound webhook requests.
  *

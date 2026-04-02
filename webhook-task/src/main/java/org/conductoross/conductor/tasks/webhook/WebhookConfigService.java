@@ -20,6 +20,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.conductoross.conductor.common.webhook.WebhookConfig;
+import org.conductoross.conductor.common.webhook.WebhookConfigDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
@@ -171,7 +173,7 @@ public class WebhookConfigService {
      * recomputed on the next update.
      */
     @SuppressWarnings("unchecked")
-    Map<String, Map<String, Object>> computeMatchers(WebhookConfig config) {
+    protected Map<String, Map<String, Object>> computeMatchers(WebhookConfig config) {
         if (CollectionUtils.isEmpty(config.getReceiverWorkflowNamesToVersions())) {
             return Collections.emptyMap();
         }

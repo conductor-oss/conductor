@@ -14,6 +14,7 @@ package org.conductoross.conductor.tasks.webhook;
 
 import java.util.List;
 
+import org.conductoross.conductor.common.webhook.WebhookConfig;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -93,6 +94,10 @@ public class WebhooksConfigResource {
     }
 
     private void validateWebhookConfig(WebhookConfig config) {
+        if (config.getVerifier() == null) {
+            throw new IllegalArgumentException(
+                    "verifier must be specified (use NONE for no-auth development/test webhooks)");
+        }
         if (config.getExpression() == null
                 && config.getReceiverWorkflowNamesToVersions() == null
                 && config.getWorkflowsToStart() == null) {
