@@ -86,7 +86,7 @@
     "fuse.js": "^6.6.2",
     "highlight.js": "^11.11.1",
     "jotai": "^2.15.0",
-    "lodash": "^4.17.20",
+    "lodash": "^4.18.1",
     "mock-json-schema": "^1.1.1",
     "monaco-languages-jq": "^1.0.0",
     "path-to-regexp": "^8.4.0",
