@@ -44,7 +44,7 @@ conductor workflow create workflow.json
 conductor workflow start -w hello_workflow --sync
 ```
 
-See the [Quickstart guide](https://conductor-oss.org/quickstart) for the full walkthrough, including writing workers and replaying workflows.
+See the [Quickstart guide](https://conductor-oss.github.io/conductor/quickstart/index.html) for the full walkthrough, including writing workers and replaying workflows.
 
 <details>
 <summary><strong>Prefer Docker?</strong></summary>
@@ -53,7 +53,7 @@ See the [Quickstart guide](https://conductor-oss.org/quickstart) for the full wa
 docker run -p 8080:8080 conductoross/conductor:latest
 ```
 
-All CLI commands have equivalent cURL/API calls. See the [Quickstart](https://conductor-oss.org/quickstart) for details.
+All CLI commands have equivalent cURL/API calls. See the [Quickstart](https://conductor-oss.github.io/conductor/quickstart/index.html) for details.
 </details>
 
 ---
