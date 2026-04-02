@@ -346,6 +346,8 @@ public class PostgresIndexDAOTest {
                 "Wrong workflow returned",
                 wfs.getWorkflowId(),
                 results.getResults().get(0).getWorkflowId());
+
+        indexDAO.removeWorkflow(wfs.getWorkflowId());
     }
 
     @Test
@@ -366,6 +368,8 @@ public class PostgresIndexDAOTest {
                 "Wrong workflow returned",
                 wfs.getWorkflowId(),
                 results.getResults().get(0).getWorkflowId());
+
+        indexDAO.removeWorkflow(wfs.getWorkflowId());
     }
 
     @Test
