@@ -352,7 +352,9 @@ public abstract class AbstractProtoMapper {
             to.setOutputMessage( fromProto( from.getOutputMessage() ) );
         }
         to.setTaskId( from.getTaskId() );
-        to.setReasonForIncompletion( from.getReasonForIncompletion() );
+        if (!from.getReasonForIncompletion().isEmpty()) {
+            to.setReasonForIncompletion( from.getReasonForIncompletion() );
+        }
         return to;
     }
 

@@ -94,7 +94,7 @@ public class IncomingWebhookService {
      * @param bodyStr the raw request body
      * @param requestParams query parameters
      * @param headers HTTP request headers
-     * @return a challenge string to echo back, or {@code null} if no challenge is required
+     * @return a challenge string to echo back, or {@code ""} if no challenge is required
      * @throws IllegalArgumentException if the webhook config does not exist, no verifier is
      *     registered for the config's type, or verification fails
      */
@@ -104,12 +104,12 @@ public class IncomingWebhookService {
 
         WebhookConfig config = webhookConfigDAO.get(id);
         if (config == null) {
-            // Return null (HTTP 200) rather than throwing — Orkes behaviour. Throwing causes most
-            // webhook providers to retry with exponential backoff; a 200 silently discards the
-            // event, which is preferable when a config is deleted while the provider still has the
-            // URL registered (avoids retry storms).
+            // Return empty string (HTTP 200) rather than throwing — Orkes behaviour. Throwing
+            // causes most webhook providers to retry with exponential backoff; a 200 silently
+            // discards the event, which is preferable when a config is deleted while the provider
+            // still has the URL registered (avoids retry storms).
             LOGGER.warn("Inbound event for unknown webhook config id={} — discarding", id);
-            return null;
+            return "";
         }
 
         WebhookVerifier verifier = resolveVerifier(config);
@@ -140,7 +140,7 @@ public class IncomingWebhookService {
         Map<String, Object> payload = parsePayload(bodyStr, safeParams);
         dispatchToWaitingTasks(id, bodyStr, safeParams, payload);
         startWorkflowsToStart(config, payload, event.getId());
-        return null;
+        return "";
     }
 
     /**
@@ -148,13 +148,13 @@ public class IncomingWebhookService {
      *
      * @param id the webhook config id
      * @param requestParams query parameters (may contain challenge value)
-     * @return the ping response to echo back, or {@code null}
+     * @return the ping response to echo back, or {@code ""} if no response is required
      */
     public String handlePing(String id, Map<String, Object> requestParams) {
         WebhookConfig config = webhookConfigDAO.get(id);
         if (config == null) {
             LOGGER.warn("Ping received for unknown webhook config id={}", id);
-            return null;
+            return "";
         }
 
         WebhookVerifier verifier = resolveVerifier(config);
@@ -178,7 +178,7 @@ public class IncomingWebhookService {
             startWorkflowsToStart(config, payload, UUID.randomUUID().toString());
         }
 
-        return response;
+        return response != null ? response : "";
     }
 
     // -------------------------------------------------------------------------
@@ -248,17 +248,33 @@ public class IncomingWebhookService {
                 continue;
             }
 
-            List<String> taskIds = webhookTaskDAO.get(hash);
+            // popAll claims and removes all waiting task IDs in one call — helps prevent two
+            // concurrent inbound events with the same hash from completing the same task,
+            // provided the DAO implementation is atomic (see WebhookTaskDAO.popAll Javadoc).
+            List<String> taskIds = webhookTaskDAO.popAll(hash);
             if (taskIds.isEmpty()) {
                 LOGGER.debug("No waiting tasks found for hash={}", hash);
                 continue;
             }
 
-            LOGGER.debug(
-                    "Completing {} task(s) for hash={} webhookId={}",
-                    taskIds.size(),
-                    hash,
-                    webhookId);
+            if (taskIds.size() > 50) {
+                // Large fan-out: completing many tasks synchronously in the HTTP handler will
+                // delay the response to the webhook provider, potentially triggering retries.
+                // For deployments with large fan-out, replace InMemoryWebhookTaskDAO with a
+                // durable implementation and process completions off-thread.
+                LOGGER.warn(
+                        "Large fan-out: completing {} tasks synchronously for hash={} webhookId={} — "
+                                + "consider async dispatch for fan-out of this magnitude",
+                        taskIds.size(),
+                        hash,
+                        webhookId);
+            } else {
+                LOGGER.debug(
+                        "Completing {} task(s) for hash={} webhookId={}",
+                        taskIds.size(),
+                        hash,
+                        webhookId);
+            }
             for (String taskId : taskIds) {
                 completeTask(taskId, hash, payload);
             }
