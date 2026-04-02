@@ -13,6 +13,7 @@
 package io.conductor.e2e.workflow;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -121,6 +122,214 @@ public class WorkflowSearchTests {
 
         metadataAdminClient.unregisterWorkflowDef(workflowName1, 1);
         metadataAdminClient.unregisterWorkflowDef(workflowName2, 1);
+    }
+
+    @Test
+    public void testSearchByWorkflowIdWithDoubleQuotes() {
+        WorkflowClient workflowClient = ApiUtil.WORKFLOW_CLIENT;
+        MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
+        String taskName = RandomStringUtils.randomAlphanumeric(5).toUpperCase();
+        String workflowName = RandomStringUtils.randomAlphanumeric(5).toUpperCase();
+
+        registerWorkflowDef(workflowName, taskName, metadataClient);
+
+        StartWorkflowRequest startReq = new StartWorkflowRequest();
+        startReq.setName(workflowName);
+        startReq.setVersion(1);
+        String workflowId = workflowClient.startWorkflow(startReq);
+
+        // Search by workflowId with double quotes
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
+                .untilAsserted(
+                        () -> {
+                            SearchResult<WorkflowSummary> result =
+                                    workflowClient.search("workflowId=\"" + workflowId + "\"");
+                            assertEquals(
+                                    1,
+                                    result.getResults().size(),
+                                    "Search by workflowId with double quotes should return 1 result");
+                            assertEquals(workflowId, result.getResults().get(0).getWorkflowId());
+                        });
+
+        workflowClient.terminateWorkflow(workflowId, "test cleanup");
+        metadataClient.unregisterWorkflowDef(workflowName, 1);
+    }
+
+    @Test
+    public void testSearchByWorkflowIdWithSingleQuotes() {
+        WorkflowClient workflowClient = ApiUtil.WORKFLOW_CLIENT;
+        MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
+        String taskName = RandomStringUtils.randomAlphanumeric(5).toUpperCase();
+        String workflowName = RandomStringUtils.randomAlphanumeric(5).toUpperCase();
+
+        registerWorkflowDef(workflowName, taskName, metadataClient);
+
+        StartWorkflowRequest startReq = new StartWorkflowRequest();
+        startReq.setName(workflowName);
+        startReq.setVersion(1);
+        String workflowId = workflowClient.startWorkflow(startReq);
+
+        // Search by workflowId with single quotes — this was broken before the fix
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
+                .untilAsserted(
+                        () -> {
+                            SearchResult<WorkflowSummary> result =
+                                    workflowClient.search("workflowId='" + workflowId + "'");
+                            assertEquals(
+                                    1,
+                                    result.getResults().size(),
+                                    "Search by workflowId with single quotes should return 1 result");
+                            assertEquals(workflowId, result.getResults().get(0).getWorkflowId());
+                        });
+
+        workflowClient.terminateWorkflow(workflowId, "test cleanup");
+        metadataClient.unregisterWorkflowDef(workflowName, 1);
+    }
+
+    @Test
+    public void testSearchByWorkflowTypeWithSingleQuotes() {
+        WorkflowClient workflowClient = ApiUtil.WORKFLOW_CLIENT;
+        MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
+        String taskName = RandomStringUtils.randomAlphanumeric(5).toUpperCase();
+        String workflowName = RandomStringUtils.randomAlphanumeric(5).toUpperCase();
+
+        registerWorkflowDef(workflowName, taskName, metadataClient);
+
+        StartWorkflowRequest startReq = new StartWorkflowRequest();
+        startReq.setName(workflowName);
+        startReq.setVersion(1);
+        workflowClient.startWorkflow(startReq);
+        workflowClient.startWorkflow(startReq);
+
+        // Search by workflowType with single quotes
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
+                .untilAsserted(
+                        () -> {
+                            SearchResult<WorkflowSummary> result =
+                                    workflowClient.search("workflowType='" + workflowName + "'");
+                            assertEquals(
+                                    2,
+                                    result.getResults().size(),
+                                    "Search by workflowType with single quotes should return 2 results");
+                        });
+
+        // Cleanup
+        SearchResult<WorkflowSummary> all =
+                workflowClient.search("workflowType='" + workflowName + "'");
+        all.getResults()
+                .forEach(
+                        wf -> workflowClient.terminateWorkflow(wf.getWorkflowId(), "test cleanup"));
+        metadataClient.unregisterWorkflowDef(workflowName, 1);
+    }
+
+    @Test
+    public void testSearchWithMultipleConditionsAndSingleQuotes() {
+        WorkflowClient workflowClient = ApiUtil.WORKFLOW_CLIENT;
+        MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
+        String taskName = RandomStringUtils.randomAlphanumeric(5).toUpperCase();
+        String workflowName = RandomStringUtils.randomAlphanumeric(5).toUpperCase();
+        String correlationId = "corr-" + RandomStringUtils.randomAlphanumeric(10);
+
+        registerWorkflowDef(workflowName, taskName, metadataClient);
+
+        StartWorkflowRequest startReq = new StartWorkflowRequest();
+        startReq.setName(workflowName);
+        startReq.setVersion(1);
+        startReq.setCorrelationId(correlationId);
+        String workflowId = workflowClient.startWorkflow(startReq);
+
+        // Start another workflow without the correlationId to ensure filtering works
+        StartWorkflowRequest otherReq = new StartWorkflowRequest();
+        otherReq.setName(workflowName);
+        otherReq.setVersion(1);
+        String otherWorkflowId = workflowClient.startWorkflow(otherReq);
+
+        // Search with multiple single-quoted conditions — mimics getWorkflowsByCorrelationId
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
+                .untilAsserted(
+                        () -> {
+                            SearchResult<WorkflowSummary> result =
+                                    workflowClient.search(
+                                            "correlationId='"
+                                                    + correlationId
+                                                    + "' AND workflowType='"
+                                                    + workflowName
+                                                    + "'");
+                            assertEquals(
+                                    1,
+                                    result.getResults().size(),
+                                    "Multi-condition search with single quotes should return 1 result");
+                            assertEquals(workflowId, result.getResults().get(0).getWorkflowId());
+                        });
+
+        workflowClient.terminateWorkflow(workflowId, "test cleanup");
+        workflowClient.terminateWorkflow(otherWorkflowId, "test cleanup");
+        metadataClient.unregisterWorkflowDef(workflowName, 1);
+    }
+
+    @Test
+    public void testSearchWithPaginationAndSort() {
+        WorkflowClient workflowClient = ApiUtil.WORKFLOW_CLIENT;
+        MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
+        String taskName = RandomStringUtils.randomAlphanumeric(5).toUpperCase();
+        String workflowName = RandomStringUtils.randomAlphanumeric(5).toUpperCase();
+
+        registerWorkflowDef(workflowName, taskName, metadataClient);
+
+        // Start 3 workflows
+        for (int i = 0; i < 3; i++) {
+            StartWorkflowRequest startReq = new StartWorkflowRequest();
+            startReq.setName(workflowName);
+            startReq.setVersion(1);
+            workflowClient.startWorkflow(startReq);
+        }
+
+        // Wait for all 3 to be indexed
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
+                .untilAsserted(
+                        () -> {
+                            SearchResult<WorkflowSummary> result =
+                                    workflowClient.search("workflowType='" + workflowName + "'");
+                            assertEquals(3, result.getResults().size());
+                        });
+
+        // Search with pagination: page size 2, starting at 0
+        SearchResult<WorkflowSummary> page1 =
+                workflowClient.search(
+                        0, 2, "workflowId:ASC", "*", "workflowType='" + workflowName + "'");
+        assertEquals(3, page1.getTotalHits(), "Total hits should be 3");
+        assertEquals(2, page1.getResults().size(), "Page 1 should have 2 results");
+
+        // Page 2
+        SearchResult<WorkflowSummary> page2 =
+                workflowClient.search(
+                        2, 2, "workflowId:ASC", "*", "workflowType='" + workflowName + "'");
+        assertEquals(3, page2.getTotalHits(), "Total hits should still be 3");
+        assertEquals(1, page2.getResults().size(), "Page 2 should have 1 result");
+
+        // Verify no overlap between pages
+        List<String> page1Ids =
+                page1.getResults().stream().map(WorkflowSummary::getWorkflowId).toList();
+        List<String> page2Ids =
+                page2.getResults().stream().map(WorkflowSummary::getWorkflowId).toList();
+        page2Ids.forEach(
+                id ->
+                        assertFalse(
+                                page1Ids.contains(id),
+                                "Pages should not have overlapping results"));
+
+        // Cleanup
+        SearchResult<WorkflowSummary> all =
+                workflowClient.search("workflowType='" + workflowName + "'");
+        all.getResults()
+                .forEach(
+                        wf -> workflowClient.terminateWorkflow(wf.getWorkflowId(), "test cleanup"));
+        metadataClient.unregisterWorkflowDef(workflowName, 1);
     }
 
     private void registerWorkflowDef(
