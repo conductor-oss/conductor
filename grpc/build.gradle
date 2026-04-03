@@ -42,8 +42,7 @@ dependencies {
 
 }
 
-// Use protoc 3.25.5 for code generation to maintain compatibility with protobuf-java 4.x runtime
-// See: https://github.com/grpc/grpc-java/issues/12246
+// Use protoc matching the protobuf-java version from grpc dependencies
 def artifactName = 'com.google.protobuf:protoc:3.25.5'
 switch (org.gradle.internal.os.OperatingSystem.current()) {
     case org.gradle.internal.os.OperatingSystem.LINUX:
