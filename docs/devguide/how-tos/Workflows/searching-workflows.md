@@ -1,41 +1,50 @@
 # Searching Workflows
 
-In this article we will learn how to search through workflow executions via the UI.
+The Conductor UI provides a convenient interface for searching workflow executions. There are two modes of searching:
 
-## UI Workflows View
+* **Workflows** tab — Search using workflow parameters.
+* **Tasks** tab — Search workflows by tasks.
 
-Open the home page of the UI installation. It will take you to the `Workflow Executions` view. This is where we can look
-at available workflow executions.
+**To search workflow executions:**
 
-### Basic Search
+1. Go to **[Executions](http://localhost:8127/executions)** in the Conductor UI.
+2. Configure the [search parameters](#search-parameters).
+3. Select **Search**.
 
-The following fields are available for searching for workflows.
+Once the search results are displayed, you can sort the results by different column values and select additional columns to display.
+
+
+## Search parameters
+
+Here are the search parameters for each search mode.
+
+### Search by workflows
+The following fields are available for searching workflows in the **Workflows** tab.
 
 | Search Field Name | Description                                                                                             |
 |-------------------|---------------------------------------------------------------------------------------------------------|
-| Workflow Name     | Use this field to filter workflows by the configured name                                               |
-| Workflow ID       | Use this field to filter to a specific workflow by its id                                               |
-| Status            | Use this field to filter by status - available options are presented as a multi-select option           |
-| Start Time - From | Use this field to filter workflows that started on or after the time specified                          |
-| Start Time - To   | Use this field to filter workflows that started on or before the time specified                         |
-| Lookback (days)   | Use this field to filter workflows that ran in the last given number of days                            |
-| Free Text Query   | If you have indexing enabled, you can query by values that was part of your workflow inputs and outputs |
+| Workflow Name     | Filters workflow executions by its name.                                   |
+| Workflow ID       | Filters to a specific workflow execution by its execution ID.                                               |
+| Status            | Filters workflow executions by its status (RUNNING, COMPLETED, FAILED, TIMED_OUT, TERMINATED, PAUSED).      |
+| Start Time - From | Filters workflow executions that started on or after the specified time.                          |
+| Start Time - To   | Filters workflow executions that started on or before the specified time.                         |
+| Lookback (days)   | Filters workflow executions that ran in the last given number of days.                            |
+| Lucene-syntax Query (Double-quote strings for Free Text)  | (If indexing is enabled) Filters workflow executions by querying workflow input and output values. |
 
-The table listing has options to
-1. Select columns for display
-2. Sort by column value
 
-At the bottom of the table, there are options to
-1. Select number of rows per page
-2. Navigating through pages
+### Search workflows by tasks
 
-### Find by Tasks
-
-In addition to the options listed in **Basic Search** view, we have the following options in the **Find by Tasks** view.
+The following fields are available for searching workflows by its tasks in the **Tasks** tab.
 
 | Search Field Name  | Description                                                                                                  |
 |--------------------|--------------------------------------------------------------------------------------------------------------|
-| Include Task ID    | Use this field to filter workflows that contains a task with this id                                         |
-| Include Task Name  | Use this field to filter workflows that contains a task with name                                            |
-| Free Text in Tasks | If you have indexing enabled, you can query by values that was part of your workflow task inputs and outputs |
+| Task Name  | Filters workflow executions by its task name.                                        |
+| Task ID    | Filters to a specific workflow execution that contains this task execution ID.                                |
+| Task Status | Filters workflow executions by its task status (IN_PROGRESS, CANCELED, FAILED, FAILED_WITH_TERMINAL_ERROR, COMPLETED, COMPLETED_WITH_ERRORS, SCHEDULED, TIMED_OUT, SKIPPED).  |
+| Task Type  | Filters workflow executions by its task type. |
+| Workflow Name | Filters workflow executions by its workflow name.       |
+| Update Time - From   | Filters workflow executions by tasks that started on or after the specified time.                         |
+| Update Time - To   | Filters workflow executions by tasks that started on or before the specified time.                         |
+| Lookback (days)   | Filters workflow executions by tasks that ran in the last given number of days.                          |
+| Lucene-syntax Query (Double-quote strings for Free Text) | (If indexing is enabled) Filters workflow executions by querying task input and output values. |
 

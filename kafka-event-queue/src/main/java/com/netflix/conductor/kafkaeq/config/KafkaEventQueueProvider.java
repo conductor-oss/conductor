@@ -42,6 +42,6 @@ public class KafkaEventQueueProvider implements EventQueueProvider {
     public ObservableQueue getQueue(String queueURI) {
         LOGGER.info("Creating KafkaObservableQueue for topic: {}", queueURI);
 
-        return queues.computeIfAbsent(queueURI, q -> new Builder(properties).build(queueURI));
+        return queues.computeIfAbsent(queueURI, q -> new Builder(properties).build(queueURI, null));
     }
 }

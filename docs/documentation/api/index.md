@@ -10,4 +10,5 @@ See the following sections for API endpoint documentation.
 [Task Domains](taskdomains.md) can be used to address tasks to specific pools of workers at runtime.
 
 ## Swagger UI
-As an alternative resource, the [Swagger UI]({{ server_host }}/swagger_ui/index.html) will always have the definitive interface description.
+As an alternative resource, the Swagger UI
+`{{ server_host }}/swagger_ui/index.html` will always have the definitive interface description.

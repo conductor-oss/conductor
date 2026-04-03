@@ -70,14 +70,14 @@ Worker's core implementation logic goes in the `execute` method. Upon completion
 
 The `getTaskDefName()` method returns the name of the task for which this worker provides the execution logic.
 
-See [SampleWorker.java](https://github.com/conductor-oss/conductor/blob/main/client/src/test/java/com/netflix/conductor/client/sample/SampleWorker.java) for the complete example.
+See [SampleWorker.java](https://github.com/conductor-oss/java-sdk/blob/main/conductor-client/src/test/java/com/netflix/conductor/client/sample/SampleWorker.java) for the complete example.
 
 ## Configuring polling using TaskRunnerConfigurer
 
 The `TaskRunnerConfigurer` can be used to register the worker(s) and initialize the polling loop.
 It manages the task workers thread pool and server communication (poll and task update).
 
-Use the [Builder](https://github.com/conductor-oss/conductor/blob/main/client/src/main/java/com/netflix/conductor/client/automator/TaskRunnerConfigurer.java#L64) to create an instance of the `TaskRunnerConfigurer`. The builder accepts the following parameters:
+Use the [Builder](https://github.com/conductor-oss/java-sdk/blob/main/conductor-client/src/main/java/com/netflix/conductor/client/automator/TaskRunnerConfigurer.java#L62) to create an instance of the `TaskRunnerConfigurer`. The builder accepts the following parameters:
 
 ```java
  TaskClient taskClient = new TaskClient();
@@ -97,7 +97,7 @@ Use the [Builder](https://github.com/conductor-oss/conductor/blob/main/client/sr
         configurer.init();
 ```
 
-See [Sample](https://github.com/conductor-oss/conductor/blob/main/client/src/test/java/com/netflix/conductor/client/sample/Main.java) for full example.
+See [Sample](https://github.com/conductor-oss/java-sdk/blob/main/conductor-client/src/test/java/com/netflix/conductor/client/sample/Main.java) for full example.
 
 ### Configuration Details
 

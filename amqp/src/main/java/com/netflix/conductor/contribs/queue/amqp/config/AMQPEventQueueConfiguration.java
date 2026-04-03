@@ -77,7 +77,9 @@ public class AMQPEventQueueConfiguration {
 
             String queueName = queuePrefix + status.name();
 
-            final ObservableQueue queue = new Builder(properties).build(useExchange, queueName);
+            final ObservableQueue queue =
+                    new Builder(properties)
+                            .build(useExchange, queueName, QUEUE_TYPE.AMQP_QUEUE.getType());
             queues.put(status, queue);
         }
 

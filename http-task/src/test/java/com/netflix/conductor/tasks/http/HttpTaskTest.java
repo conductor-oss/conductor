@@ -378,6 +378,7 @@ public class HttpTaskTest {
                         mockTaskStatusListener,
                         mockExecutionDAOFacade,
                         Collections.emptyMap(),
+                        Collections.emptyMap(),
                         Duration.ofMinutes(60))
                 .decide(workflow);
     }

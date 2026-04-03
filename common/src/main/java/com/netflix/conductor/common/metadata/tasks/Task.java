@@ -206,13 +206,17 @@ public class Task {
     private long firstStartTime;
 
     @ProtoField(id = 44)
-    private int publishCount;
-
-    @ProtoField(id = 45)
-    private long lastPublishTime;
+    private ExecutionMetadata executionMetadata;
 
     // If the task is an event associated with a parent task, the id of the parent task
+    @ProtoField(id = 45)
     private String parentTaskId;
+
+    @ProtoField(id = 46)
+    private int publishCount;
+
+    @ProtoField(id = 47)
+    private long lastPublishTime;
 
     public Task() {}
 
@@ -784,6 +788,56 @@ public class Task {
         this.firstStartTime = firstStartTime;
     }
 
+    /**
+     * @return the execution metadata containing timing, worker context, and other operational data.
+     *     Returns null if no execution metadata has been explicitly set or used.
+     */
+    public ExecutionMetadata getExecutionMetadata() {
+        if (executionMetadata == null) {
+            executionMetadata = new ExecutionMetadata();
+        }
+        // Only return ExecutionMetadata if it exists and has data
+        if (executionMetadata != null && executionMetadata.hasData()) {
+            return executionMetadata;
+        }
+        return executionMetadata;
+    }
+
+    /**
+     * @return the execution metadata, creating it if it doesn't exist (for setting timing data)
+     */
+    public ExecutionMetadata getOrCreateExecutionMetadata() {
+        if (executionMetadata == null) {
+            executionMetadata = new ExecutionMetadata();
+        }
+        return executionMetadata;
+    }
+
+    /**
+     * @return the execution metadata only if it has data, null otherwise (for protobuf
+     *     serialization)
+     */
+    public ExecutionMetadata getExecutionMetadataIfHasData() {
+        if (executionMetadata != null && executionMetadata.hasData()) {
+            return executionMetadata;
+        }
+        return null;
+    }
+
+    /**
+     * @return true if the task has execution metadata (without creating it)
+     */
+    public boolean hasExecutionMetadata() {
+        return executionMetadata != null;
+    }
+
+    /**
+     * @param executionMetadata the execution metadata to set
+     */
+    public void setExecutionMetadata(ExecutionMetadata executionMetadata) {
+        this.executionMetadata = executionMetadata;
+    }
+
     public int getPublishCount() {
         return publishCount;
     }
@@ -834,6 +888,7 @@ public class Task {
         copy.setSubworkflowChanged(subworkflowChanged);
         copy.setParentTaskId(parentTaskId);
         copy.setFirstStartTime(firstStartTime);
+        copy.setExecutionMetadata(executionMetadata);
         copy.setPublishCount(publishCount);
         copy.setLastPublishTime(lastPublishTime);
         return copy;

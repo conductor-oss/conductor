@@ -2,44 +2,76 @@
 ```json
 "type" : "SUB_WORKFLOW"
 ```
-Sub Workflow task allows for nesting a workflow within another workflow. Nested workflows contain a reference to their parent.
 
-## Use Cases
+The Sub Workflow task executes another workflow within the current workflow. This allows you to nest and reuse common workflows across multiple workflows. 
 
-Suppose we want to include another workflow inside our current workflow. In that
-case, Sub Workflow Task would be used.
 
-## Configuration
-`subWorkflowParam` is provided at the top level of the task configuration.
+Unlike the [Start Workflow](start-workflow-task.md) task, the Sub Workflow task provides synchronous execution and the executed sub-workflow will contain a reference to its parent workflow.
 
-| name             | type             | description |
-| ---------------- | ---------------- | ----------- |
-| subWorkflowParam | Map[String, Any] | See below   |
+The Sub Workflow task can also be used to overcome the limitations of other tasks:
 
-`inputParameters` will be passed down to the invoked sub-workflow.
+- Use it in a [Do While](do-while-task.md) task to achieve nested Do While loops.
+- Use it in a [Dynamic Fork](dynamic-fork-task.md) task to execute more than one task in each fork.
 
-### subWorkflowParam
 
-| name               | type                              | description                                                                                                                                                                   |
-| ------------------ | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| name               | String                            | Name of the workflow to execute                                                                                                                                               |
-| version            | Integer                           | Version of the workflow to execute                                                                                                                                            |
-| taskToDomain       | Map[String, String]               | Allows scheduling the sub workflow's tasks per given mappings. <br/> See [Task Domains](../../../api/taskdomains.md) for instructions to configure taskDomains. |
-| workflowDefinition | [WorkflowDefinition](../index.md) | Allows starting a subworkflow with a dynamic workflow definition.                                                                                                             |
+## Task parameters
+
+Use these parameters inside `subWorkflowParam` in the Sub Workflow task configuration.
+
+| Parameter          | Type                | Description                                       | Required / Optional  |
+| ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
+| subWorkflowParam.name               | String              | Name of the workflow to be executed. This workflow should have a pre-existing definition in Conductor.                                                                      | Required. |
+| subWorkflowParam.version            | Integer              | The version of the workflow to be executed. If unspecified, the latest version will be used.                                     | Required. |
+| subWorkflowParam.taskToDomain       | Map[String, String]               | Allows scheduling the sub-workflow's tasks to specific domain mappings. <br/> Refer to [Task Domains](../../../api/taskdomains.md) for how to configure `taskToDomain`. | Optional. |
+| inputParameters | Map[String, Any] | Contains the sub-workflow's input parameters, if any. | Optional. |
+
+## Task configuration
+Here is the task configuration for a Start Workflow task.​
+
+```json
+{
+  "name": "start_workflow",
+  "taskReferenceName": "start_workflow_ref",
+  "inputParameters": {
+    "startWorkflow": {
+      "name": "someName",
+      "input": {
+        "someParameter": "someValue",
+        "anotherParameter": "anotherValue"
+      },
+      "version": 1,
+      "correlationId": ""
+    }
+  },
+  "type": "START_WORKFLOW"
+}
+```
 
 ## Output
 
-| name          | type   | description                                                       |
-| ------------- | ------ | ----------------------------------------------------------------- |
-| subWorkflowId | String | Sub-workflow execution Id generated when running the sub-workflow |
+The Sub Workflow task will return the following parameters.
+
+| Name             | Type         | Description                                                   |
+| ---------------- | ------------ | ------------------------------------------------------------- |
+| subWorkflowId | String | The workflow execution ID of the sub-workflow. |
+
+In addition, the task output will also contain the sub-workflow's outputs.
+
+
+## Execution
+
+During execution, the Sub Workflow task will be marked as COMPLETED only upon the completion of the spawned workflow. If the sub-workflow fails or terminates, the Sub Workflow task will be marked as FAILED and retried if configured. 
+
+If the Sub Workflow task is defined as optional in the parent workflow definition, the Sub Workflow task will not be retried if sub-workflow fails or terminates. In addition, even if the sub-workflow is retried/rerun/restarted after reaching to a terminal status, the parent workflow task status will remain as it is.
 
 
 ## Examples
-Imagine we have a workflow that has a fork in it. In the example below, we input one image, but using a fork to create 2 images simultaneously:
+
+In this example workflow, a Fork task containing two tasks is used to simultaneously create two images from one image:
 
 ![workflow with fork](workflow_fork.png)
 
-The left fork will create a JPG, and the right fork a WEBP image. Maintaining this workflow might be difficult, as changes made to one side of the fork do not automatically propagate the other.  Rather than using 2 tasks, we can define a ```image_convert_resize``` workflow that we can call for both forks as a sub-workflow:
+The left fork will create a JPG file, and the right fork a WEBP file. Maintaining this workflow might be cumbersome, as changes made to one of the fork tasks do not automatically propagate the other.  Rather than using two tasks, we can define a single, reuseable `image_convert_resize` workflow that can be called as a sub-workflow in both forks:
 
 
 ```json
@@ -133,41 +165,9 @@ The left fork will create a JPG, and the right fork a WEBP image. Maintaining th
 }
 ```
 
-Now our diagram will appear as:
+Here is the corresponding workflow diagram:
+
 ![workflow with 2 subworkflows](subworkflow_diagram.png)
 
 
-
-The inputs to both sides of the workflow are identical before and after - but we've abstracted the tasks into the sub-workflow. Any change to the sub-workflow will automatically occur in bth sides of the fork.
-
-
-Looking at the subworkflow (the WEBP version):
-
-```
-{
-	"name": "image_convert_resize_sub",
-	"taskReferenceName": "subworkflow_webp_ref",
-	"inputParameters": {
-		"fileLocation": "${workflow.input.fileLocation}",
-		"recipeParameters": {
-			"outputSize": {
-				"width": "${workflow.input.recipeParameters.outputSize.width}",
-				"height": "${workflow.input.recipeParameters.outputSize.height}"
-			},
-			"outputFormat": "webp"
-		}
-	},
-	"type": "SUB_WORKFLOW",
-	"subWorkflowParam": {
-		"name": "image_convert_resize",
-		"version": 1
-	}
-}
-```
-
-The ```subWorkflowParam``` tells conductor which workflow to call. The task is marked as completed upon the completion of the spawned workflow. 
-If the sub-workflow is terminated or fails the task is marked as failure and retried if configured. 
-
-### Optional Sub Workflow Task
-If the Sub Workflow task is defined as optional in the parent workflow task definition, the parent workflow task will not be retried if sub-workflow is terminated or failed.
-In addition, even if the sub-workflow is retried/rerun/restarted after reaching to a terminal status, the parent workflow task status will remain as it is.
+Now that the tasks are abstracted into a sub-workflow, any changes to the sub-workflow will automatically apply to both forks.

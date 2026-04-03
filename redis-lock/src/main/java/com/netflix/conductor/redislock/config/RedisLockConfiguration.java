@@ -49,6 +49,7 @@ public class RedisLockConfiguration {
             throw new RuntimeException(message, ie);
         }
         String redisServerAddress = properties.getServerAddress();
+        String redisServerUsername = properties.getServerUsername();
         String redisServerPassword = properties.getServerPassword();
         String masterName = properties.getServerMasterName();
 
@@ -64,8 +65,10 @@ public class RedisLockConfiguration {
                 redisConfig
                         .useSingleServer()
                         .setAddress(redisServerAddress)
+                        .setUsername(redisServerUsername)
                         .setPassword(redisServerPassword)
-                        .setTimeout(connectionTimeout);
+                        .setTimeout(connectionTimeout)
+                        .setDnsMonitoringInterval(properties.getDnsMonitoringInterval());
                 break;
             case CLUSTER:
                 LOGGER.info("Setting up Redis Cluster for RedisLockConfiguration");
@@ -73,6 +76,7 @@ public class RedisLockConfiguration {
                         .useClusterServers()
                         .setScanInterval(2000) // cluster state scan interval in milliseconds
                         .addNodeAddress(redisServerAddress.split(","))
+                        .setUsername(redisServerUsername)
                         .setPassword(redisServerPassword)
                         .setTimeout(connectionTimeout)
                         .setSlaveConnectionMinimumIdleSize(
@@ -82,7 +86,8 @@ public class RedisLockConfiguration {
                         .setMasterConnectionMinimumIdleSize(
                                 properties.getClusterPrimaryConnectionMinIdleSize())
                         .setMasterConnectionPoolSize(
-                                properties.getClusterPrimaryConnectionPoolSize());
+                                properties.getClusterPrimaryConnectionPoolSize())
+                        .setDnsMonitoringInterval(properties.getDnsMonitoringInterval());
                 break;
             case SENTINEL:
                 LOGGER.info("Setting up Redis Sentinel Servers for RedisLockConfiguration");
@@ -91,8 +96,10 @@ public class RedisLockConfiguration {
                         .setScanInterval(2000)
                         .setMasterName(masterName)
                         .addSentinelAddress(redisServerAddress)
+                        .setUsername(redisServerUsername)
                         .setPassword(redisServerPassword)
-                        .setTimeout(connectionTimeout);
+                        .setTimeout(connectionTimeout)
+                        .setDnsMonitoringInterval(properties.getDnsMonitoringInterval());
                 break;
         }
 

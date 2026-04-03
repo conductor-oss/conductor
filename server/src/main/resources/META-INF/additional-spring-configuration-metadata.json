@@ -8,12 +8,82 @@
     {
       "name": "conductor.indexing.enabled",
       "type": "java.lang.Boolean",
-      "description": "Enable indexing to elasticsearch. If set to false, a no-op implementation will be used."
+      "description": "Enable indexing to elasticsearch/opensearch. If set to false, a no-op implementation will be used."
+    },
+    {
+      "name": "conductor.indexing.type",
+      "type": "java.lang.String",
+      "description": "The type of indexing backend to use. Supported values: elasticsearch, opensearch, postgres, sqlite."
     },
     {
       "name": "conductor.grpc-server.enabled",
       "type": "java.lang.Boolean",
       "description": "Enable the gRPC server."
+    },
+    {
+      "name": "conductor.opensearch.url",
+      "type": "java.lang.String",
+      "description": "The comma separated list of urls for the OpenSearch cluster. Format: host1:port1,host2:port2"
+    },
+    {
+      "name": "conductor.opensearch.version",
+      "type": "java.lang.Integer",
+      "description": "The OpenSearch version (1, 2, etc.) for version-specific API handling."
+    },
+    {
+      "name": "conductor.opensearch.indexPrefix",
+      "type": "java.lang.String",
+      "description": "The index prefix to be used when creating indices in OpenSearch."
+    },
+    {
+      "name": "conductor.opensearch.clusterHealthColor",
+      "type": "java.lang.String",
+      "description": "The color of the OpenSearch cluster health to wait for."
+    },
+    {
+      "name": "conductor.opensearch.indexShardCount",
+      "type": "java.lang.Integer",
+      "description": "The number of shards that the OpenSearch index will be created with."
+    },
+    {
+      "name": "conductor.opensearch.indexReplicasCount",
+      "type": "java.lang.Integer",
+      "description": "The number of replicas that the OpenSearch index will be configured to have."
+    },
+    {
+      "name": "conductor.opensearch.username",
+      "type": "java.lang.String",
+      "description": "OpenSearch basic auth username."
+    },
+    {
+      "name": "conductor.opensearch.password",
+      "type": "java.lang.String",
+      "description": "OpenSearch basic auth password."
+    },
+    {
+      "name": "conductor.opensearch.autoIndexManagementEnabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether automatic index management is enabled for OpenSearch."
+    },
+    {
+      "name": "conductor.opensearch.taskLogResultLimit",
+      "type": "java.lang.Integer",
+      "description": "The number of task log results that will be returned in the response."
+    },
+    {
+      "name": "conductor.opensearch.asyncMaxPoolSize",
+      "type": "java.lang.Integer",
+      "description": "The maximum number of threads allowed in the async pool for OpenSearch operations."
+    },
+    {
+      "name": "conductor.opensearch.asyncWorkerQueueSize",
+      "type": "java.lang.Integer",
+      "description": "The size of the queue used for holding async OpenSearch indexing tasks."
+    },
+    {
+      "name": "conductor.opensearch.indexBatchSize",
+      "type": "java.lang.Integer",
+      "description": "The size of the batch to be used for bulk indexing in async mode."
     }
   ],
   "hints": [
@@ -51,6 +121,57 @@
         {
           "value": "redis_standalone",
           "description": "Use Redis Standalone configuration as the database implementation."
+        }
+      ]
+    },
+    {
+      "name": "conductor.indexing.type",
+      "values": [
+        {
+          "value": "elasticsearch",
+          "description": "Use Elasticsearch as the indexing backend."
+        },
+        {
+          "value": "opensearch",
+          "description": "Use OpenSearch as the indexing backend. Requires conductor.elasticsearch.version=0 to disable ES7 auto-configuration."
+        },
+        {
+          "value": "postgres",
+          "description": "Use Postgres as the indexing backend."
+        },
+        {
+          "value": "sqlite",
+          "description": "Use SQLite as the indexing backend."
+        }
+      ]
+    },
+    {
+      "name": "conductor.opensearch.version",
+      "values": [
+        {
+          "value": 1,
+          "description": "OpenSearch 1.x"
+        },
+        {
+          "value": 2,
+          "description": "OpenSearch 2.x (default)"
+        }
+      ]
+    },
+    {
+      "name": "conductor.opensearch.clusterHealthColor",
+      "values": [
+        {
+          "value": "green",
+          "description": "Wait for green cluster health status."
+        },
+        {
+          "value": "yellow",
+          "description": "Wait for yellow cluster health status."
+        },
+        {
+          "value": "red",
+          "description": "Wait for red cluster health status (not recommended)."
         }
       ]
     }

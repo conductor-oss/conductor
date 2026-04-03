@@ -318,7 +318,7 @@ public class ExecutionDAOFacade {
             } else {
                 indexDAO.asyncIndexWorkflow(new WorkflowSummary(workflowModel.toWorkflow()));
             }
-            if (workflowModel.getStatus().isTerminal()) {
+            if (workflowModel.getStatus().isTerminal() && properties.isTaskIndexingEnabled()) {
                 workflowModel
                         .getTasks()
                         .forEach(
@@ -341,23 +341,41 @@ public class ExecutionDAOFacade {
      *
      * @param workflowId the id of the workflow to be removed
      * @param archiveWorkflow if true, the workflow and associated tasks will be archived in the
-     *     {@link IndexDAO} after removal from {@link ExecutionDAO}.
+     *     {@link IndexDAO} before removal from {@link ExecutionDAO}.
      */
     public void removeWorkflow(String workflowId, boolean archiveWorkflow) {
         WorkflowModel workflow = getWorkflowModelFromDataStore(workflowId, true);
 
-        executionDAO.removeWorkflow(workflowId);
+        // Index operations happen before DAO removal to prevent data loss on index failures.
         try {
             removeWorkflowIndex(workflow, archiveWorkflow);
+        } catch (NotFoundException e) {
+            if (archiveWorkflow) {
+                throw e;
+            }
+            // Idempotent deletion: missing index records should not block DAO removal.
+            LOGGER.info("Workflow {} not found in index during removal, continuing", workflowId, e);
         } catch (JsonProcessingException e) {
             throw new TransientException("Workflow can not be serialized to json", e);
         }
 
+        // Task index removals run before DAO deletion for the same consistency guarantees.
         workflow.getTasks()
                 .forEach(
                         task -> {
                             try {
                                 removeTaskIndex(workflow, task, archiveWorkflow);
+                            } catch (NotFoundException e) {
+                                if (archiveWorkflow) {
+                                    throw e;
+                                }
+                                // Idempotent deletion: missing index records should not block DAO
+                                // removal.
+                                LOGGER.info(
+                                        "Task {} of workflow {} not found in index during removal, continuing",
+                                        task.getTaskId(),
+                                        workflowId,
+                                        e);
                             } catch (JsonProcessingException e) {
                                 throw new TransientException(
                                         String.format(
@@ -365,7 +383,15 @@ public class ExecutionDAOFacade {
                                                 task.getTaskId(), workflow.getWorkflowId()),
                                         e);
                             }
+                        });
 
+        // Only remove from the source of truth after index operations succeed.
+        executionDAO.removeWorkflow(workflowId);
+
+        // finally remove from queues
+        workflow.getTasks()
+                .forEach(
+                        task -> {
                             try {
                                 queueDAO.remove(QueueUtils.getQueueName(task), task.getTaskId());
                             } catch (Exception e) {
@@ -412,7 +438,16 @@ public class ExecutionDAOFacade {
         try {
             WorkflowModel workflow = getWorkflowModelFromDataStore(workflowId, true);
 
-            removeWorkflowIndex(workflow, archiveWorkflow);
+            try {
+                removeWorkflowIndex(workflow, archiveWorkflow);
+            } catch (NotFoundException e) {
+                if (archiveWorkflow) {
+                    throw e;
+                }
+                // Idempotent deletion: missing index records should not block DAO removal.
+                LOGGER.info(
+                        "Workflow {} not found in index during removal, continuing", workflowId, e);
+            }
             // remove workflow from DAO with TTL
             executionDAO.removeWorkflowWithExpiry(workflowId, ttlSeconds);
         } catch (Exception e) {
@@ -547,6 +582,9 @@ public class ExecutionDAOFacade {
 
     private void removeTaskIndex(WorkflowModel workflow, TaskModel task, boolean archiveTask)
             throws JsonProcessingException {
+        if (!properties.isTaskIndexingEnabled()) {
+            return;
+        }
         if (archiveTask) {
             if (task.getStatus().isTerminal()) {
                 // Only allow archival if task is in terminal state
@@ -556,11 +594,22 @@ public class ExecutionDAOFacade {
                         task.getTaskId(),
                         new String[] {ARCHIVED_FIELD},
                         new Object[] {true});
+            } else if (task.getStatus() == TaskModel.Status.SCHEDULED) {
+                // SCHEDULED tasks may not have been canceled yet (e.g. if cancelNonTerminalTasks
+                // failed for this task). Skip archival to allow the rest of the workflow removal
+                // to proceed rather than blocking on a task that was never started.
+                LOGGER.warn(
+                        "Skipping archival of task: {} of workflow: {} with SCHEDULED status",
+                        task.getTaskId(),
+                        workflow.getWorkflowId());
             } else {
                 throw new IllegalArgumentException(
-                        String.format(
-                                "Cannot archive task: %s of workflow: %s with status: %s",
-                                task.getTaskId(), workflow.getWorkflowId(), task.getStatus()));
+                        "Cannot archive task: "
+                                + task.getTaskId()
+                                + " of workflow: "
+                                + workflow.getWorkflowId()
+                                + " with non-terminal status: "
+                                + task.getStatus());
             }
         } else {
             // Not archiving, remove task from index

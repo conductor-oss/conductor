@@ -76,8 +76,17 @@ public class PostgresPollDataDAOCacheTest {
     @Before
     public void before() {
         try (Connection conn = dataSource.getConnection()) {
-            conn.setAutoCommit(true);
-            conn.prepareStatement("truncate table poll_data").executeUpdate();
+            // Explicitly disable autoCommit to match HikariCP pool configuration
+            // and ensure we can control transaction boundaries
+            conn.setAutoCommit(false);
+
+            // Use RESTART IDENTITY to reset sequences and CASCADE for foreign keys
+            conn.prepareStatement("truncate table poll_data restart identity cascade")
+                    .executeUpdate();
+
+            // Explicitly commit the truncation in a separate transaction
+            // This ensures the truncation is visible to all subsequent connections
+            conn.commit();
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);

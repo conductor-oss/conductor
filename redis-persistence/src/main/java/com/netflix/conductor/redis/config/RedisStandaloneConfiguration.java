@@ -21,7 +21,6 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.redis.jedis.JedisStandalone;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.HostSupplier;
-import com.netflix.dyno.connectionpool.TokenMapSupplier;
 
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
@@ -38,8 +37,7 @@ public class RedisStandaloneConfiguration extends JedisCommandsConfigurer {
     protected JedisCommands createJedisCommands(
             RedisProperties properties,
             ConductorProperties conductorProperties,
-            HostSupplier hostSupplier,
-            TokenMapSupplier tokenMapSupplier) {
+            HostSupplier hostSupplier) {
         JedisPoolConfig config = new JedisPoolConfig();
         config.setMinIdle(2);
         config.setMaxTotal(properties.getMaxConnectionsPerHost());
@@ -58,7 +56,8 @@ public class RedisStandaloneConfiguration extends JedisCommandsConfigurer {
                     Protocol.DEFAULT_TIMEOUT,
                     properties.getUsername(),
                     host.getPassword(),
-                    properties.getDatabase());
+                    properties.getDatabase(),
+                    properties.isSsl());
         } else if (host.getPassword() != null) {
             log.info("Connecting to Redis Standalone with AUTH");
             return new JedisPool(
@@ -67,9 +66,10 @@ public class RedisStandaloneConfiguration extends JedisCommandsConfigurer {
                     host.getPort(),
                     Protocol.DEFAULT_TIMEOUT,
                     host.getPassword(),
-                    properties.getDatabase());
+                    properties.getDatabase(),
+                    properties.isSsl());
         } else {
-            return new JedisPool(config, host.getHostName(), host.getPort());
+            return new JedisPool(config, host.getHostName(), host.getPort(), properties.isSsl());
         }
     }
 }

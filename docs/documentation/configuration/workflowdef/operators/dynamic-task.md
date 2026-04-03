@@ -2,114 +2,89 @@
 ```json
 "type" : "DYNAMIC"
 ```
-The `DYNAMIC` task allows one to execute a task whose name is resolved dynamically at run-time.
-The task name to execute is specified as `taskToExecute` in `inputParameters`.
 
-## Use Cases 
+The Dynamic task (`DYNAMIC`) is used to execute a registered task dynamically at run-time. It is similar to a function pointer in programming, and can be used for when the decision to execute which task will only be made after the workflow has begun.
 
-Consider a scenario, when we have to make decision of executing a task dynamically i.e. while the workflow is still
-running. In such cases, Dynamic Task would be useful.
-
-## Configuration
-To use the `DYNAMIC` task, you need to provide `dynamicTaskNameParam` at the top level of the task configuration, **as well as** an attribute in `inputParameters` matching the value you selected for `dynamicTaskNameParam`.
-
-| name                 | description                                                                                                   |
-| -------------------- | ------------------------------------------------------------------------------------------------------------- |
-| dynamicTaskNameParam | Name of the parameter from `inputParameters` whose value is used to schedule the task. e.g. `"taskToExecute"` |
-
-### inputParameters
-| name                                      | description              |
-| ----------------------------------------- | ------------------------ |
-| *dynamicTaskNameParam e.g. `taskToExecute` | Name of task to execute. |
+The Dynamic task accepts as input the name of a task, which can be a system task or a Worker task (`SIMPLE`) registered on Conductor.
 
 
-## Example
+## Task parameters
 
-Suppose in a workflow, we have to take decision to ship the courier with the shipping
-service providers on the basis of Post Code.
+To configure the Dynamic task, provide a `dynamicTaskNameParam` at the top level of the task configuration, as well as a matching parameter in `inputParameters` based on the `dynamicTaskNameParam`.
 
-Consider the following 3 task definitions.
+For example, if `dynamicTaskNameParam` is "taskToExecute", the task name to execute is specified in `taskToExecute` in `inputParameters`.
 
-The following task `shipping_info` generates an output on the basis of which decision would be
-taken to run the next task.
+| Parameter          | Type                | Description                                       | Required / Optional  |
+| ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
+| dynamicTaskNameParam | String | The parameter name for `inputParameters` whose value is used to schedule the task. For example, "taskToExecute". | Required. |
+| inputParameters.taskToExecute | String | The name of the task that will be executed. | Required.
+| 
+
+You can also pass any other input for the Dynamic task into `inputParameters`.
+
+## JSON configuration
+
+Here is the task configuration for a Dynamic task.
 
 ```json
 {
-  "name": "shipping_info",
-  "retryCount": 3,
-  "timeoutSeconds": 600,
-  "pollTimeoutSeconds": 1200,
-  "timeoutPolicy": "TIME_OUT_WF",
-  "retryLogic": "FIXED",
-  "retryDelaySeconds": 300,
-  "responseTimeoutSeconds": 300,
-  "concurrentExecLimit": 100,
-  "rateLimitFrequencyInSeconds": 60,
-  "ownerEmail":"abc@example.com",
-  "rateLimitPerFrequency": 1
+  "name": "dynamic",
+  "taskReferenceName": "dynamic_ref",
+  "inputParameters": {
+    "taskToExecute": "${workflow.input.dynamicTaskName}" // name of the task to execute
+  },
+  "type": "DYNAMIC",
+  "dynamicTaskNameParam": "taskToExecute" // input parameter key that will contain the task name to execute
 }
 ```
 
-The following are the two worker tasks, one among them would execute on the basis of output generated
-by the `shipping_info` task :
+# Output
 
-```json
-{
-  "name": "ship_via_fedex",
-  "retryCount": 3,
-  "timeoutSeconds": 600,
-  "pollTimeoutSeconds": 1200,
-  "timeoutPolicy": "TIME_OUT_WF",
-  "retryLogic": "FIXED",
-  "retryDelaySeconds": 300,
-  "responseTimeoutSeconds": 300,
-  "concurrentExecLimit": 100,
-  "rateLimitFrequencyInSeconds": 60,
-  "ownerEmail":"abc@example.com",
-  "rateLimitPerFrequency": 2
-},
-{
-  "name": "ship_via_ups",
-  "retryCount": 3,
-  "timeoutSeconds": 600,
-  "pollTimeoutSeconds": 1200,
-  "timeoutPolicy": "TIME_OUT_WF",
-  "retryLogic": "FIXED",
-  "retryDelaySeconds": 300,
-  "responseTimeoutSeconds": 300,
-  "concurrentExecLimit": 100,
-  "rateLimitFrequencyInSeconds": 60,
-  "ownerEmail":"abc@example.com",
-  "rateLimitPerFrequency": 2
-}
-```
+During execution, the Dynamic task is replaced with whatever task that is called at runtime. The output of the Dynamic task will be whatever the output of the called task is.
 
-We will create a workflow with the following definition :
+
+## Execution
+
+At runtime, if an incorrect task name is provided and the task does not exist, the workflow will fail with the error "Invalid task specified. Cannot find task by name in the task definitions."
+
+Likewise, if null reference is provided for the task name, the workflow will fail with the
+error "Cannot map a dynamic task based on the parameter and input. Parameter= taskToExecute, input= {taskToExecute=null}".
+
+
+## Examples
+
+In this example workflow, shipments are made with different couriers depending on the shipping address. 
+
+The decision can only be made during runtime when the address is received, and the subsequent shipping task could be either `ship_via_fedex` or `ship_via_ups`. A Dynamic task can be used in this workflow so that the shipping task can be decided in real time.
+
+A preceding `shipping_info` generates an output to decide what task to run in the Dynamic task.
+
+Here is the workflow definition:
 
 ```json
 {
   "name": "Shipping_Flow",
-  "description": "Ships smartly on the basis of Shipping info",
+  "description": "Ships smartly based on the shipping address",
   "version": 1,
   "tasks": [
     {
       "name": "shipping_info",
-      "taskReferenceName": "shipping_info",
-      "inputParameters": {
-      },
+      "taskReferenceName": "shipping_info_ref",
+      "inputParameters": {},
       "type": "SIMPLE"
     },
     {
       "name": "shipping_task",
-      "taskReferenceName": "shipping_task",
+      "taskReferenceName": "shipping_task_ref",
       "inputParameters": {
         "taskToExecute": "${shipping_info.output.shipping_service}"
       },
       "type": "DYNAMIC",
       "dynamicTaskNameParam": "taskToExecute"
     }
-
   ],
+  "inputParameters": [],
+	"outputParameters": {},
   "restartable": true,
   "ownerEmail":"abc@example.com",
   "workflowStatusListenerEnabled": true,
@@ -117,39 +92,14 @@ We will create a workflow with the following definition :
 }
 ```
 
-The workflow created is shown in the below diagram.
+Here is the corresponding workflow diagram:
 
+![Workflow diagram containing a Dynamic task.](ShippingWorkflow.png)
 
-![Conductor UI - Workflow Diagram](ShippingWorkflow.png)
-
-
-Note : `shipping_task` is a `DYNAMIC` task and the `taskToExecute` parameter can be set
-with input value provided while running the workflow or with the output of previous tasks.
-Here, it is set to the output provided by the previous task i.e.
-`${shipping_info.output.shipping_service}`.
-
-If the input value is provided while running the workflow it can be accessed by
-`${workflow.input.shipping_service}`.
-
-```json
-{
-  "shipping_service": "ship_via_fedex"
-}
-```
-
-We can see in the below example that on the basis of Post Code the shipping service is being
-decided.
-
-Based on given set of inputs i.e. Post Code starts with '9' hence, `ship_via_fedex` is executed -
+The shipping service is decided based on the postal code. If the postal code starts with 9, `ship_via_fedex` is executed:
 
 ![Conductor UI - Workflow Run](ShippingWorkflowRunning.png)
 
-If the Post Code started with anything other than 9 `ship_via_ups` is executed -
+If the postal code starts with any other number, `ship_via_ups` is executed:
 
 ![Conductor UI - Workflow Run](ShippingWorkflowUPS.png)
-
-If the incorrect task name or the task that doesn't exist is provided then the workflow fails and
-we get the error `"Invalid task specified. Cannot find task by name in the task definitions."`
-
-If the null reference is provided in the task name then also the workflow fails and we get the
-error `"Cannot map a dynamic task based on the parameter and input. Parameter= taskToExecute, input= {taskToExecute=null}"`

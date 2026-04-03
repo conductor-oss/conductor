@@ -387,7 +387,11 @@ public class AMQPObservableQueue implements ObservableQueue {
             chn =
                     amqpConnection.getOrCreateChannel(
                             ConnectionType.SUBSCRIBER, getSettings().getQueueOrExchangeName());
-            return chn.messageCount(settings.getQueueOrExchangeName());
+
+            return switch (settings.getType()) {
+                case EXCHANGE -> chn.messageCount(settings.getExchangeBoundQueueName());
+                case QUEUE -> chn.messageCount(settings.getQueueOrExchangeName());
+            };
         } catch (final Exception e) {
             throw new RuntimeException(e);
         } finally {
@@ -395,8 +399,8 @@ public class AMQPObservableQueue implements ObservableQueue {
                 try {
                     amqpConnection.returnChannel(ConnectionType.SUBSCRIBER, chn);
                 } catch (Exception e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
+                    LOGGER.error(
+                            "Failed to return the channel of {}. {}", ConnectionType.SUBSCRIBER, e);
                 }
             }
         }
@@ -509,8 +513,9 @@ public class AMQPObservableQueue implements ObservableQueue {
             return factory;
         }
 
-        public AMQPObservableQueue build(final boolean useExchange, final String queueURI) {
-            final AMQPSettings settings = new AMQPSettings(properties).fromURI(queueURI);
+        public AMQPObservableQueue build(
+                final boolean useExchange, final String queueURI, final String queueType) {
+            final AMQPSettings settings = new AMQPSettings(properties, queueType).fromURI(queueURI);
             final AMQPRetryPattern retrySettings =
                     new AMQPRetryPattern(
                             properties.getLimit(), properties.getDuration(), properties.getType());

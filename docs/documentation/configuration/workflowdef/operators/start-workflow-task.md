@@ -3,27 +3,50 @@
 "type" : "START_WORKFLOW"
 ```
 
-The `START_WORKFLOW` task starts another workflow. Unlike `SUB_WORKFLOW`, `START_WORKFLOW` does
-not create a relationship between starter and the started workflow. It also does not wait for the started workflow to complete. A `START_WORKFLOW` is 
-considered successful once the requested workflow is started successfully. In other words, `START_WORKFLOW` is marked as `COMPLETED` once the started 
-workflow is in `RUNNING` state.
+The Start Workflow task (`START_WORKFLOW`) starts another workflow from the current workflow. Unlike the [Sub Workflow](sub-workflow-task.md) task, the workflow triggered by the Start Workflow task will execute asynchronously. That means the current workflow proceeds to its next task without waiting for the started workflow to complete.
 
-There is no ability to access the `output` of the started workflow.
+A Start Workflow task is marked as COMPLETED when the requested workflow enters the RUNNING state, regardless of its final state.
 
-## Use Cases
-When another workflow needs to be started from the current workflow, `START_WORKFLOW` can be used. 
+## Task parameters
 
-## Configuration
-The workflow invocation payload is passed into `startWorkflow` under `inputParameters`.
+Use these parameters inside `inputParameters` in the Start Workflow task configuration.
 
-### inputParameters
-| name          | type             | description                                                                                                         |
-|---------------|------------------|---------------------------------------------------------------------------------------------------------------------|
-| startWorkflow | Map[String, Any] | The value of this parameter is [Start Workflow Request](../../../api/startworkflow.md#start-workflow-request). |
+| Parameter          | Type                | Description                                       | Required / Optional  |
+| ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
+| inputParameters.startWorkflow | Map[String, Any] | A map that includes the requested workflow’s configuration, such as the name and version. Refer to [Start Workflow Request](../../../api/startworkflow.md#start-workflow-request) for what to include in this parameter. | Required. |
+
+## Task configuration
+Here is the task configuration for a Start Workflow task.​
+
+```json
+{
+  "name": "start_workflow",
+  "taskReferenceName": "start_workflow_ref",
+  "inputParameters": {
+    "startWorkflow": {
+      "name": "someName",
+      "input": {
+        "someParameter": "someValue",
+        "anotherParameter": "anotherValue"
+      },
+      "version": 1,
+      "correlationId": ""
+    }
+  },
+  "type": "START_WORKFLOW"
+}
+```
 
 ## Output
-| name       | type   | description                    |
-|------------|--------|--------------------------------|
-| workflowId | String | The id of the started workflow |
 
-Note: `START_WORKFLOW` will neither wait for the completion of, nor pass back the `output` of the spawned workflow.
+
+The Start Workflow task will return the following parameters.
+
+| Name             | Type         | Description                                                   |
+| ---------------- | ------------ | ------------------------------------------------------------- |
+| workflowId | String | The workflow execution ID of the started workflow. |
+
+
+## Limitations
+
+Because the Start Workflow task will neither wait for the completion of the started workflow nor pass back its output, it is not possible to access the output of the started workflow from the current workflow. If required, you can use the [Sub Workflow](sub-workflow-task.md) task instead.

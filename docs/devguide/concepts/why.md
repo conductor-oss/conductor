@@ -1,30 +1,39 @@
-# Why Conductor?
-Conductor was built to help orchestrate microservices based process flows.
+# Introducing Conductor
+
+Conductor enables developers to build highly reliable applications and workflows. As an orchestration engine, Conductor:
+
+* Keeps track of your application’s execution flow and state;  
+* Calls modular, stateless tasks in its defined order;  
+* Handles failure scenarios and retries gracefully; and  
+* Stores all final and intermediate results.
+
+![Workflow screnshot](../../home/devex.png)
+
+By using Conductor to build application flows, developers can focus on their core work: writing application code in the language of the choice, rather than orchestration or plumbing logic. Conductor does the heavy lifting associated with ensuring reliability, transactional consistency, and durability of the execution flow. No matter where your application code lives, you can build a workflow in Conductor to govern its execution.
 
 ## Features
 
-* A distributed server ecosystem, which stores workflow state information efficiently.
-* Allow creation of process / business flows in which each individual task can be implemented by the same / different microservices.
-* A DAG (Directed Acyclic Graph) based workflow definition.
-* Workflow definitions are decoupled from the service implementations.
-* Provide visibility and traceability into these process flows.
-* Simple interface to connect workers, which execute the tasks in workflows.
-* Workers are language agnostic, allowing each microservice to be written in the language most suited for the service.
-* Full operational control over workflows with the ability to pause, resume, restart, retry and terminate.
-* Allow greater reuse of existing microservices providing an easier path for onboarding.
-* User interface to visualize, replay and search the process flows.
-* Ability to scale to millions of concurrently running process flows.
-* Backed by a queuing service abstracted from the clients.
-* Be able to operate on HTTP or other transports e.g. gRPC.
-* Event handlers to control workflows via external actions.
-* Client implementations in Java, Python and other languages.
-* Various configurable properties with sensible defaults to fine tune workflow and task executions like rate limiting, concurrent execution limits etc.
+Here are the key features available in Conductor OSS:
 
-## Why not peer to peer choreography?
+* A distributed server ecosystem, which stores workflow state information efficiently.  
+* DAG- (Directed Acyclic Graph) based JSON workflow definitions, decoupled from its service implementations.  
+* Reusable, built-in tasks and operators for quick workflow creation.  
+* Visual diagrams for depicting workflow definitions and their runtime execution paths.  
+* Logs, timelines, and execution data that provide visibility and traceability into the workflows.  
+* Simple interface to connect Conductor server to workers that execute the tasks in workflows.  
+* Language-agnostic workers, enabling each task to be written in the language most suited for the service.  
+* Configurable properties with sensible defaults for rate limits, retries, timeouts, and concurrent execution limits.  
+* User interface to build, search, run, and visualize workflows.  
+* Full operational control over workflow execution (pause, resume, restart, retry and terminate).  
+* Event handlers to control workflows via external actions.  
+* Client implementations in Java, Python and other languages.  
+* Backed by a queuing service abstracted from the clients.  
+* Ability to scale to millions of concurrently-running process flows.
 
-With peer to peer task choreography, we found it was harder to scale with growing business needs and complexities.
-Pub/sub model worked for simplest of the flows, but quickly highlighted some of the issues associated with the approach:
+## Why not peer-to-peer choreography?
 
-* Process flows are "embedded" within the code of multiple application.
-* Often, there is tight coupling and assumptions around input/output, SLAs etc, making it harder to adapt to changing needs.
-* Almost no way to systematically answer "How much are we done with process X"?
+Using peer-to-peer task choreography, we found it harder to scale processes with evolving business needs and complexities. Even using a pub/sub model for the simplest flows, some of the issues associated with the approach quickly became evident:
+
+* High-level process flows are "embedded" and implicit within the code of multiple applications.
+* Often, there are many assumptions around inputs/outputs, SLAs, and so on, and the tight coupling makes it harder to adapt processes to changing needs.
+* There is almost no way to systematically answer: "How far along are with in Process X?"

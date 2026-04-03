@@ -1,0 +1,19 @@
+syntax = "proto3";
+package conductor.proto;
+
+import "google/protobuf/struct.proto";
+
+option java_package = "com.netflix.conductor.proto";
+option java_outer_classname = "ExecutionMetadataPb";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
+
+message ExecutionMetadata {
+    int64 server_send_time = 1;
+    int64 client_receive_time = 2;
+    int64 execution_start_time = 3;
+    int64 execution_end_time = 4;
+    int64 client_send_time = 5;
+    int64 poll_network_latency = 6;
+    int64 update_network_latency = 7;
+    map<string, google.protobuf.Value> additional_context = 8;
+}

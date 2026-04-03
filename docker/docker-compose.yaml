@@ -5,6 +5,7 @@ services:
     environment:
       - CONFIG_PROP=config-redis.properties
       - JAVA_OPTS=-Dpolyglot.engine.WarnInterpreterOnly=false
+      - conductor.app.ownerEmailMandatory=false
     image: conductor:server
     container_name: conductor-server
     build:

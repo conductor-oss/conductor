@@ -230,7 +230,27 @@ export default class WorkflowDAG {
     const forkedTasks = _.get(dfTaskResult, "inputData.forkedTaskDefs");
     const forkedTasksCount = _.get(forkedTasks, "length");
 
+    // If no tasks found, attempt to aggregate from DO_WHILE iterations
     if (!forkedTasksCount) {
+      const matchingKeys = Array.from(this.taskResultsByRef.keys()).filter(key =>
+        key.startsWith(dfTask.taskReferenceName + "__")
+      );
+      let aggregatedForkedTasks = [];
+      for (const key of matchingKeys) {
+        const results = this.taskResultsByRef.get(key);
+        if (results && results.length > 0) {
+          for (const result of results) {
+            const dtasks = _.get(result, "inputData.forkedTaskDefs", []);
+            aggregatedForkedTasks = aggregatedForkedTasks.concat(dtasks);
+          }
+        }
+      }
+      if (aggregatedForkedTasks.length > 0) {
+        aggregatedForkedTasks.forEach((task) => this.addVertex(task, [dfTask]));
+        return aggregatedForkedTasks;
+      }
+
+      // No forked tasks found: add a placeholder
       const placeholderRef = dfTask.taskReferenceName + "_DF_EMPTY_PLACEHOLDER";
 
       const placeholderTask = {
@@ -270,9 +290,27 @@ export default class WorkflowDAG {
         const forkedTasks = _.get(dfTaskResult, "inputData.forkedTaskDefs");
         const forkedTasksCount = _.get(forkedTasks, "length");
 
+        // If nothing found, try to aggregate results from DO_WHILE iterations
         if (!forkedTasksCount) {
-          const placeholderRef =
-            task.taskReferenceName + "_DF_EMPTY_PLACEHOLDER";
+          const matchingKeys = Array.from(this.taskResultsByRef.keys()).filter(key =>
+            key.startsWith(task.taskReferenceName + "__")
+          );
+          let aggregatedForkedTasks = [];
+          for (const key of matchingKeys) {
+            const results = this.taskResultsByRef.get(key);
+            if (results && results.length > 0) {
+              for (const result of results) {
+                const dtasks = _.get(result, "inputData.forkedTaskDefs", []);
+                aggregatedForkedTasks = aggregatedForkedTasks.concat(dtasks);
+              }
+            }
+          }
+          if (aggregatedForkedTasks.length > 0) {
+            return aggregatedForkedTasks;
+          }
+
+          // If still nothing, return a placeholder node
+          const placeholderRef = task.taskReferenceName + "_DF_EMPTY_PLACEHOLDER";
           const placeholderTask = {
             name: placeholderRef, // will be overwritten if results available
             taskReferenceName: placeholderRef, // will be overwritten if results available
@@ -288,7 +326,8 @@ export default class WorkflowDAG {
       case "SWITCH": {
         const retval = [];
         if (!_.isEmpty(task.defaultCase)) {
-          retval.push(...this.getRefTask(task.defaultCase));
+          // NOTE: fixed SWITCH default case in DO_WHILE loop
+          retval.push(..._.flatten(task.defaultCase.map((t) => this.getRefTask(t))));
         }
         retval.push(
           ..._.flatten(

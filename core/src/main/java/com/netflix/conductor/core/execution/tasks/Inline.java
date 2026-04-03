@@ -27,30 +27,22 @@ import com.netflix.conductor.model.WorkflowModel;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_INLINE;
 
+// @formatter:off
 /**
  * @author X-Ultra
- *     <p>Task that enables execute inline script at workflow execution. For example,
- *     <pre>
- * ...
- * {
- *  "tasks": [
- *      {
- *          "name": "INLINE",
- *          "taskReferenceName": "inline_test",
- *          "type": "INLINE",
- *          "inputParameters": {
- *              "input": "${workflow.input}",
- *              "evaluatorType": "javascript"
- *              "expression": "if ($.input.a==1){return {testvalue: true}} else{return {testvalue: false} }"
- *          }
- *      }
- *  ]
- * }
- * ...
- * </pre>
- *     then to use task output, e.g. <code>script_test.output.testvalue</code> {@link Inline} is a
- *     replacement for deprecated {@link Lambda}
+ *     <p>Task that enables execute inline script at workflow execution.
+ *     <p>Example: { "tasks": [ { "name": "INLINE", "taskReferenceName": "inline_test", "type":
+ *     "INLINE", "inputParameters": { "input": "${workflow.input}", "evaluatorType": "javascript",
+ *     "expression": "if ($.input.a==1){return {testvalue: true}} else{return {testvalue: false} }"
+ *     } } ] }
+ *     <p>The evaluatorType parameter is optional and defaults to "javascript" for backward
+ *     compatibility. Supported values include: - "javascript" - JavaScript evaluation using GraalJS
+ *     engine (default) - "graaljs" - Explicit GraalJS evaluation (same as "javascript") - "python"
+ *     - Python evaluation using GraalVM Python
+ *     <p>To use task output, reference it as script_test.output.testvalue This is a replacement for
+ *     the deprecated Lambda task.
  */
+// @formatter:on
 @Component(TASK_TYPE_INLINE)
 public class Inline extends WorkflowSystemTask {
 
@@ -70,7 +62,11 @@ public class Inline extends WorkflowSystemTask {
     public boolean execute(
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         Map<String, Object> taskInput = task.getInputData();
+        // Get evaluatorType, default to "javascript" for backward compatibility if missing
         String evaluatorType = (String) taskInput.get(QUERY_EVALUATOR_TYPE);
+        if (evaluatorType == null) {
+            evaluatorType = "javascript";
+        }
         String expression = (String) taskInput.get(QUERY_EXPRESSION_PARAMETER);
 
         try {
@@ -101,6 +97,8 @@ public class Inline extends WorkflowSystemTask {
     }
 
     private void checkEvaluatorType(String evaluatorType) {
+        // evaluatorType is now optional with "javascript" as default, but must not be blank if
+        // provided
         if (StringUtils.isBlank(evaluatorType)) {
             LOGGER.error("Empty {} in INLINE task. ", QUERY_EVALUATOR_TYPE);
             throw new TerminateWorkflowException(

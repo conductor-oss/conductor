@@ -1,15 +1,14 @@
 # Go SDK
 
-The code for the Golang SDk is available on [Github](https://github.com/conductor-sdk/conductor-go). Please feel free to file PRs, issues, etc. there.
+The code for the Golang SDk is available on [Github](https://github.com/conductor-oss/go-sdk). Please feel free to file PRs, issues, etc. there.
 
 
 ## Quick Start
 
 1. [Setup conductor-go package](#Setup-conductor-go-package)
-2. [Create and run Task Workers](https://github.com/conductor-sdk/conductor-go/blob/main/workers_sdk.md)
-3. [Create workflows using Code](https://github.com/conductor-sdk/conductor-go/blob/main/workflow_sdk.md)
-4. [API Documentation](https://github.com/conductor-sdk/conductor-go/blob/main/docs/)
-   
+2. [Create and run Task Workers](https://github.com/conductor-oss/go-sdk/blob/main/docs/workers_sdk.md)
+3. [Create workflows using Code](https://github.com/conductor-oss/go-sdk/blob/main/docs/workflow_sdk.md)
+
 ### Setup conductor go package
 
 Create a folder to build your package:
@@ -22,7 +21,7 @@ go mod init quickstart
 Get Conductor Go SDK
 
 ```shell
-go get github.com/conductor-sdk/conductor-go
+go get github.com/conductor-oss/go-sdk
 ```
 ## Configuration
 
@@ -50,13 +49,13 @@ apiClient := client.NewAPIClient(
         SECRET,
     ),
     settings.NewHttpSettings(
-        "https://play.orkes.io",
+        "https://developer.orkescloud.com/",
     ),
 )
 	
 ```
 
-### Setup Logging
+### Set up Logging
 SDK uses [logrus](https://github.com/sirupsen/logrus) for the logging.
 
 ```go
@@ -67,4 +66,4 @@ func init() {
 }
 ```
 
-### Next: [Create and run Task Workers](https://github.com/conductor-sdk/conductor-go/blob/main/workers_sdk.md)
+### Next: [Create and run Task Workers](https://github.com/conductor-oss/go-sdk/blob/main/docs/workers_sdk.md)

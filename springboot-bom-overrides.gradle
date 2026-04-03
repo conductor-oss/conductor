@@ -17,5 +17,13 @@
 // Conductor's default is ES6, but SB brings in ES7
 ext['elasticsearch.version'] = revElasticSearch7
 
+ext['json-smart.version'] = revJsonSmart
+
+ext['kafka.version'] = revKafka
+
+ext['micrometer.version'] = revMicrometer
+
+ext['netty.version'] = revNetty
+
 // SB brings groovy 3.0.x which is not compatible with Spock
 ext['groovy.version'] = revGroovy

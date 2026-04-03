@@ -1,13 +1,20 @@
 # System Tasks
 
-System Tasks (Workers) are built-in tasks that are general purpose and re-usable. They run on the Conductor servers.
-Such tasks allow you to get started without having to write custom workers.
+System tasks are built-in tasks that are general purpose and reusable. These tasks run on the Conductor servers and are executed by Conductor workers, allowing you to get started without having to write custom workers.
 
-| Task                  | Description                          | Use Case                                                                |
-| :-------------------- | :----------------------------------- | :---------------------------------------------------------------------- |
-| Event Publishing      | [Event Task](event-task.md)          | External eventing system integration. e.g. amqp, sqs, nats              |
-| HTTP                  | [HTTP Task](http-task.md)            | Invoke any HTTP(S) endpoints                                            |
-| Inline Code Execution | [Inline Task](inline-task.md)        | Execute arbitrary lightweight javascript code                           |
-| JQ Transform          | [JQ Task](json-jq-transform-task.md) | Use [JQ](https://github.com/stedolan/jq) to transform task input/output |
-| Kafka Publish         | [Kafka Task](kafka-publish-task.md)  | Publish messages to Kafka                                               |
-| Wait                  | [Wait Task](wait-task.md)            | Block until resolved                                                    |
+Here are the system tasks available in Conductor OSS: 
+
+| System Task                  | Description                                               |
+| :--------------------------- | :-------------------------------------------------------- |
+| [Event](event-task.md)       | Publish events to an external eventing system (AMQP, SQS, Kafka, and so on).              |
+| [HTTP](http-task.md)         | Call an API or HTTP endpoint.                             |
+| [Human](human-task.md)       | Wait for an external signal.                              |
+| [Inline](inline-task.md)     | Execute lightweight JavaScript code inline.               |
+| [No Op](noop-task.md)            | Do nothing.                                           |
+| [JSON JQ Transform](json-jq-transform-task.md) | Clean or transform JSON data using jq.  |
+| [Kafka Publish](kafka-publish-task.md)  | Publish messages to Kafka.                     |
+| [Wait](wait-task.md)         | Wait until a set time or duration has passed.             |
+
+The following tasks are deprecated:
+
+- Lambda

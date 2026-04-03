@@ -31,12 +31,12 @@ Refer to the table below for various supported backend and required configuratio
 > | cassandra  | conductor.db.type=cassandra        |    
 >
 
-Conductor is using Elasticsearch or OpenSearch for indexing the workflow data.  
-Currently, Elasticsearch 6, 7 and OpenSearch 2.18 are supported.
+Conductor is using Elasticsearch or OpenSearch for indexing the workflow data.
+Currently, Elasticsearch 7 and OpenSearch 2.x/3.x are supported.
 
 We welcome community contributions for other indexing backends.
 
-**Note:** Docker images use Elasticsearch 7.
+**Note:** Docker images use Elasticsearch 7 by default. Elasticsearch 6 and OpenSearch 1.x are deprecated.
 
 ## Helm Charts
 TODO: Link to the helm charts
@@ -49,7 +49,9 @@ TODO: Link to the helm charts
 | [docker-compose.yaml](docker-compose.yaml)                   | Redis + Elasticsearch 7    |
 | [docker-compose-postgres.yaml](docker-compose-postgres.yaml) | Postgres + Elasticsearch 7 |
 | [docker-compose-mysql.yaml](docker-compose-mysql.yaml)    | Mysql + Elasticsearch 7    |
-| [docker-compose-redis-os.yaml](docker-compose-redis-os.yaml)    | Redis + OpenSearch 2.18    |
+| [docker-compose-redis-os.yaml](docker-compose-redis-os.yaml) | Redis + OpenSearch 2.x (legacy - use os2) |
+| [docker-compose-redis-os2.yaml](docker-compose-redis-os2.yaml) | Redis + OpenSearch 2.x    |
+| [docker-compose-redis-os3.yaml](docker-compose-redis-os3.yaml) | Redis + OpenSearch 3.x    |
 
 ### Network errors during UI build with yarn
 

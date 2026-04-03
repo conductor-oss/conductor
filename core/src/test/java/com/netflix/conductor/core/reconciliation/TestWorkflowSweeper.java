@@ -59,6 +59,8 @@ public class TestWorkflowSweeper {
         workflowRepairService = mock(WorkflowRepairService.class);
         executionDAOFacade = mock(ExecutionDAOFacade.class);
         executionLockService = mock(ExecutionLockService.class);
+        when(properties.getMaxPostponeDurationSeconds())
+                .thenReturn(Duration.ofSeconds(defaulMmaxPostponeDurationSeconds));
         workflowSweeper =
                 new WorkflowSweeper(
                         workflowExecutor,
@@ -360,6 +362,57 @@ public class TestWorkflowSweeper {
         verify(queueDAO)
                 .setUnackTimeout(
                         DECIDER_QUEUE, workflowModel.getWorkflowId(), (pollTimeout + 1) * 1000);
+    }
+
+    @Test
+    public void testPostponeDurationChoosesMinimumAcrossTasks() {
+        long responseTimeout = 500;
+        int pollTimeout = 120;
+        WorkflowModel workflowModel = new WorkflowModel();
+        workflowModel.setWorkflowId("1");
+        TaskModel inProgressTask = new TaskModel();
+        inProgressTask.setTaskId("task1");
+        inProgressTask.setTaskType(TaskType.TASK_TYPE_SIMPLE);
+        inProgressTask.setStatus(Status.IN_PROGRESS);
+        inProgressTask.setResponseTimeoutSeconds(responseTimeout);
+        TaskDef taskDef = new TaskDef();
+        taskDef.setPollTimeoutSeconds(pollTimeout);
+        TaskModel scheduledTask = mock(TaskModel.class);
+        when(scheduledTask.getStatus()).thenReturn(Status.SCHEDULED);
+        when(scheduledTask.getTaskDefinition()).thenReturn(Optional.of(taskDef));
+        workflowModel.setTasks(List.of(inProgressTask, scheduledTask));
+        when(properties.getWorkflowOffsetTimeout())
+                .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
+
+        workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
+
+        verify(queueDAO)
+                .setUnackTimeout(
+                        DECIDER_QUEUE, workflowModel.getWorkflowId(), (pollTimeout + 1) * 1000L);
+    }
+
+    @Test
+    public void testPostponeDurationForScheduledTaskCappedByMaxPostpone() {
+        int pollTimeout = 1000;
+        int maxPostponeSeconds = 100;
+        WorkflowModel workflowModel = new WorkflowModel();
+        workflowModel.setWorkflowId("1");
+        TaskDef taskDef = new TaskDef();
+        taskDef.setPollTimeoutSeconds(pollTimeout);
+        TaskModel taskModel = mock(TaskModel.class);
+        when(taskModel.getStatus()).thenReturn(Status.SCHEDULED);
+        when(taskModel.getTaskDefinition()).thenReturn(Optional.of(taskDef));
+        workflowModel.setTasks(List.of(taskModel));
+        when(properties.getWorkflowOffsetTimeout())
+                .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
+        when(properties.getMaxPostponeDurationSeconds())
+                .thenReturn(Duration.ofSeconds(maxPostponeSeconds));
+
+        workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
+
+        verify(queueDAO)
+                .setUnackTimeout(
+                        DECIDER_QUEUE, workflowModel.getWorkflowId(), maxPostponeSeconds * 1000L);
     }
 
     @Test

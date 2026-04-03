@@ -12,7 +12,7 @@
  */
 package com.netflix.conductor.common.run;
 
-import java.util.LinkedHashMap;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +46,15 @@ public class TaskLog extends TaskSummary {
             return;
         }
 
-        LinkedHashMap fusionMeta = (LinkedHashMap) task.getInputData().get("_ioMeta");
+        Object ioMeta = task.getInputData().get("_ioMeta");
+        if (!(ioMeta instanceof Map<?, ?> fusionMeta)) {
+            LOGGER.warn(
+                    "Task {} with task def name {} has invalid _ioMeta",
+                    task.getTaskId(),
+                    task.getTaskDefName());
+            return;
+        }
+
         domainGroupMoId =
                 fusionMeta.containsKey("DomainGroupMoId")
                         ? fusionMeta.get("DomainGroupMoId").toString()

@@ -1,4 +1,10 @@
 # Security Policy
+- [Reporting a vulnerability](#reporting-a-vulnerability)
+- [Supported Conductor versions](#supported-versions)
+
+## Reporting a vulnerability
+
+Please report security issues for Conductor using https://github.com/conductor-oss/conductor/security/advisories/new
 
 ## Supported Versions
 
@@ -7,7 +13,3 @@
 | 3.x.x   | :white_check_mark: |
 | 2.x.x   | :x:                |
 | 1.x.x   | :x:                |
-
-## Reporting a Vulnerability
-
-Please email oss@orkes.com to report vulnerabilities.

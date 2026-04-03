@@ -4,59 +4,80 @@
 "type" : "SET_VARIABLE"
 ```
 
-The `SET_VARIABLE` task allows users to create global workflow variables, and update them with new values.
+The Set Variable task (`SET_VARIABLE`) allows you to construct shared variables at the workflow level across tasks. 
 
-Variables can be initialized in the workflow definition as well as during the workflow run. Once a variable is initialized
-it can be read using the *expression* `${workflow.variables.NAME}` by any other task.
+These variables can be initialized, accessed, or overwritten at any point in the workflow:
 
-It can be overwritten by a subsequent `SET_VARIABLE` task.
+* Once initialized, the variable can be referenced in any subsequent task using "${workflow.variables._someName_}" (replacing _someName_ with the actual variable name).
+* Initialized values can be overwritten by a subsequent Set Variable task.
 
-!!!warning
-	There is a hard barrier for variables payload size in KB defined in the JVM system properties (`conductor.max.workflow.variables.payload.threshold.kb`) the default value is `256`. Passing this barrier will fail the task and the workflow.
+## Task parameters
 
-## Use Cases
-For example, you might want to track shared state at the workflow level, and have the state be accessible by any task executed as part of the workflow.
+To configure the Set Variable task, set your desired variable names and their respective values in `inputParameters`. The values can be set in two ways:
 
-## Configuration
-Global variables can be set in `inputParameters` using the desired variable names and their respective values.
+* Hard-coded in the workflow definition, or
+* A dynamic reference.
 
-## Example
-Suppose in a workflow, we have to store a value in a variable and then later in
-workflow reuse the value stored in the variable just as we do in programming, in such
-scenarios `Set Variable` task can be used.
+## JSON configuration
 
-Following is the workflow definition with `SET_VARIABLE` task.
+This is the task configuration for a Set Variable task.
 
 ```json
 {
-  "name": "Set_Variable_Workflow",
-  "description": "Set a value to a variable and then reuse it later in the workflow",
-  "version": 1,
-  "tasks": [
-    {
-      "name": "Set_Name",
-      "taskReferenceName": "Set_Name",
-      "type": "SET_VARIABLE",
-      "inputParameters": {
-        "name": "Foo"
-      }
-    },
-    {
-      "name": "Read_Name",
-      "taskReferenceName": "Read_Name",
-      "inputParameters": {
-        "saved_name" : "${workflow.variables.name}"
-      },
-      "type": "SIMPLE"
-    }
-  ],
-  "restartable": true,
-  "ownerEmail":"abc@example.com",
-  "workflowStatusListenerEnabled": true,
-  "schemaVersion": 2
+  "name": "set_variable",
+  "taskReferenceName": "set_variable_ref",
+  "type": "SET_VARIABLE",
+  "inputParameters": {
+    "variableName": "value",
+    "variableName2": "${workflow.input.someKey}"
+    "variableName3": 5,
+  }
 }
 ```
 
-In the above example, it can be seen that the task `Set_Name` is a Set Variable Task and
-the variable `name` is set to `Foo` and later in the workflow it is referenced by
-`"${workflow.variables.name}"` in another task.
+## Examples
+
+In this example workflow, a username is stored as a variable so that it can be reused in other tasks that require the username.
+
+```json
+{
+  "name": "Welcome_User_Workflow",
+  "description": "Designate a user to be welcomed",
+  "tasks": [
+    {
+      "name": "set_name",
+      "taskReferenceName": "set_name_ref",
+      "type": "SET_VARIABLE",
+      "inputParameters": {
+        "name": "${workflow.input.userName}"
+      }
+    },
+    {
+      "name": "greet_user",
+      "taskReferenceName": "greet_user_ref",
+      "inputParameters": {
+        "var_name": "${workflow.variables.name}"
+      },
+      "type": "SIMPLE"
+    },
+    {
+      "name": "send_reminder_email",
+      "taskReferenceName": "send_reminder_email_ref",
+      "inputParameters": {
+        "var_name": "${workflow.variables.name}"
+      },
+      "type": "SIMPLE"
+    }
+  ]
+}
+```
+
+In the example above, `set_name` is a Set Variable task that initializes a variable `name` using a workflow input reference. In subsequent tasks, the variable is later referenced using "${workflow.variables.name}".
+
+
+## Limitations
+
+Here are some limitation when using the Set Variable task:
+
+* **Payload limit**—By default, there is a hard limit for the payload size of variables defined in the JVM system properties (`conductor.max.workflow.variables.payload.threshold.kb`) of 256KB. Exceeding this limit will cause the Set Variable task to fail.
+* **Variable scope**—The scope of the Set Variable task is limited to its workflow. An initialized variable in one workflow will not carry over to another workflow or sub-workflow and will have to be re-initialized using another Set Variable task. 

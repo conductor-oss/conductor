@@ -51,6 +51,7 @@ public class HumanTaskMapper implements TaskMapper {
 
     @Override
     public List<TaskModel> getMappedTasks(TaskMapperContext taskMapperContext) {
+        LOGGER.debug("TaskMapperContext {} in HumanTaskMapper", taskMapperContext);
 
         WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         String taskId = taskMapperContext.getTaskId();

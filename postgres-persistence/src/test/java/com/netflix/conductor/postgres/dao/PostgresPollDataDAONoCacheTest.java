@@ -21,12 +21,16 @@ import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
 import org.junit.Before;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.MethodSorters;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.annotation.DirtiesContext.ClassMode;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -43,6 +47,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.*;
 
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @ContextConfiguration(
         classes = {
             TestObjectMapperConfiguration.class,
@@ -60,6 +65,7 @@ import static org.junit.Assert.*;
             "spring.flyway.clean-disabled=false"
         })
 @SpringBootTest
+@DirtiesContext(classMode = ClassMode.AFTER_EACH_TEST_METHOD)
 public class PostgresPollDataDAONoCacheTest {
 
     @Autowired private PollDataDAO pollDataDAO;
@@ -76,11 +82,34 @@ public class PostgresPollDataDAONoCacheTest {
     @Before
     public void before() {
         try (Connection conn = dataSource.getConnection()) {
-            conn.setAutoCommit(true);
-            conn.prepareStatement("truncate table poll_data").executeUpdate();
+            // Explicitly disable autoCommit to match HikariCP pool configuration
+            // and ensure we can control transaction boundaries
+            conn.setAutoCommit(false);
+
+            // Use RESTART IDENTITY to reset sequences and CASCADE for foreign keys
+            conn.prepareStatement("truncate table poll_data restart identity cascade")
+                    .executeUpdate();
+
+            // Explicitly commit the truncation in a separate transaction
+            // This ensures the truncation is visible to all subsequent connections
+            conn.commit();
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
+        }
+
+        // Verify the table is actually empty after truncation
+        // This helps catch isolation issues in CI environments
+        try {
+            List<Map<String, Object>> remainingRecords = queryDb("SELECT * FROM poll_data");
+            if (!remainingRecords.isEmpty()) {
+                throw new IllegalStateException(
+                        "poll_data table still has "
+                                + remainingRecords.size()
+                                + " records after truncation");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to verify poll_data table is empty", e);
         }
     }
 

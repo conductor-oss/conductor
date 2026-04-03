@@ -62,7 +62,7 @@ export default function TimelineComponent({
           className: `status_${task.status}`,
         };
 
-        if (dfParent || task.type === "FORK_JOIN_DYNAMIC") {
+        if (dfParent) {
           //retval.subgroup=task.referenceTaskName
           const gp = groupMap.get(dfParent.ref);
           if (!gp.nestedGroups) {

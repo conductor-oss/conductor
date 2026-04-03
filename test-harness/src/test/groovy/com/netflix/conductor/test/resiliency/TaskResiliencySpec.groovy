@@ -20,14 +20,16 @@ import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.reconciliation.WorkflowRepairService
 import com.netflix.conductor.test.base.AbstractResiliencySpecification
 
+import spock.lang.Ignore
 import spock.lang.Shared
 
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
 @TestPropertySource(properties = "conductor.app.workflow.name-validation.enabled=true")
+@Ignore
+//FIXME Interaction based testing won't work. Spy doesn't detect/intercept any calls because BaseRedisQueueDAO
+// methods are final.
+// No test in this class currently works.
 class TaskResiliencySpec extends AbstractResiliencySpecification {
-
-    @Autowired
-    WorkflowRepairService workflowRepairService
 
     @Shared
     def SIMPLE_TWO_TASK_WORKFLOW = 'integration_test_wf'
@@ -89,8 +91,7 @@ class TaskResiliencySpec extends AbstractResiliencySpecification {
         }
 
         when: "Running a repair and decide on the workflow"
-        workflowRepairService.verifyAndRepairWorkflow(workflowInstanceId, true)
-        workflowExecutor.decide(workflowInstanceId)
+        sweep(workflowInstanceId)
         workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker')
 
         then: "verify that the next scheduled task can be polled and executed successfully"

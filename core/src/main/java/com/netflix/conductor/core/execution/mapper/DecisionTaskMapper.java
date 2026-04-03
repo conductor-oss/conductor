@@ -17,8 +17,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import javax.script.ScriptException;
-
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,10 +134,10 @@ public class DecisionTaskMapper implements TaskMapper {
         if (StringUtils.isNotBlank(expression)) {
             LOGGER.debug("Case being evaluated using decision expression: {}", expression);
             try {
-                // Evaluate the expression by using the Nashhorn based script evaluator
+                // Evaluate the expression by using the GraalJS based script evaluator
                 Object returnValue = ScriptEvaluator.eval(expression, taskInput);
                 caseValue = (returnValue == null) ? "null" : returnValue.toString();
-            } catch (ScriptException e) {
+            } catch (Exception e) {
                 String errorMsg = String.format("Error while evaluating script: %s", expression);
                 LOGGER.error(errorMsg, e);
                 throw new TerminateWorkflowException(errorMsg);

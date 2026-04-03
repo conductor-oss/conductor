@@ -20,9 +20,6 @@ import com.netflix.conductor.redis.dynoqueue.LocalhostHostSupplier;
 import com.netflix.conductor.redis.jedis.JedisMock;
 import com.netflix.dyno.connectionpool.HostSupplier;
 
-import static com.netflix.conductor.redis.config.RedisCommonConfiguration.DEFAULT_CLIENT_INJECTION_NAME;
-import static com.netflix.conductor.redis.config.RedisCommonConfiguration.READ_CLIENT_INJECTION_NAME;
-
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(name = "conductor.db.type", havingValue = "memory")
 public class InMemoryRedisConfiguration {
@@ -32,7 +29,7 @@ public class InMemoryRedisConfiguration {
         return new LocalhostHostSupplier(properties);
     }
 
-    @Bean(name = {DEFAULT_CLIENT_INJECTION_NAME, READ_CLIENT_INJECTION_NAME})
+    @Bean
     public JedisMock jedisMock() {
         return new JedisMock();
     }

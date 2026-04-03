@@ -159,7 +159,7 @@ We can configure these two tasks in the `tasks` array of our Workflow Definition
     }
   ],
   "outputParameters": {
-    "trackingNumber": "${shipping_task_ref.output.trackinNumber}"
+    "trackingNumber": "${shipping_task_ref.output.trackingNumber}"
   },
   "failureWorkflow": "shipping_issues",
   "restartable": true,

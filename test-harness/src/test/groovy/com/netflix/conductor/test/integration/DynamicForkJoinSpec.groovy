@@ -24,7 +24,6 @@ import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.execution.StartWorkflowInput
 import com.netflix.conductor.core.execution.tasks.Join
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
-import com.netflix.conductor.core.operation.StartWorkflowOperation
 import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
 
@@ -40,9 +39,6 @@ class DynamicForkJoinSpec extends AbstractSpecification {
 
     @Autowired
     SubWorkflow subWorkflowTask
-
-    @Autowired
-    StartWorkflowOperation startWorkflowOperation;
 
     @Shared
     def DYNAMIC_FORK_JOIN_WF = "DynamicFanInOutTest"
@@ -870,7 +866,7 @@ class DynamicForkJoinSpec extends AbstractSpecification {
         workflowDef.ownerEmail = 'test@harness.com'
 
         def startWorkflowInput = new StartWorkflowInput(name: workflowDef.name, version: workflowDef.version, workflowInput: workflowInput, workflowDefinition: workflowDef)
-        def workflowInstanceId = startWorkflowOperation.execute(startWorkflowInput)
+        def workflowInstanceId = workflowExecutor.startWorkflow(startWorkflowInput)
 
         then: "verify that workflow failed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

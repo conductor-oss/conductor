@@ -1,0 +1,28 @@
+{
+  "name": "chat_workflow",
+  "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "chat_task",
+      "taskReferenceName": "chat",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "gpt-4o-mini",
+        "messages": [
+          {
+            "role": "system",
+            "message": "You are a helpful assistant."
+          },
+          {
+            "role": "user",
+            "message": "What is the capital of France?"
+          }
+        ],
+        "temperature": 0.7,
+        "maxTokens": 500
+      }
+    }
+  ]
+}

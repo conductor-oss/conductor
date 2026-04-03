@@ -7,7 +7,7 @@ dependencies {
     // SBMTODO: remove guava dep
     implementation "com.google.guava:guava:${revGuava}"
 
-    implementation "com.amazonaws:aws-java-sdk-sqs:${revAwsSdk}"
+    implementation "software.amazon.awssdk:sqs:${revAwsSdk}"
 
     implementation "io.reactivex:rxjava:${revRxJava}"
 

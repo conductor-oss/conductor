@@ -2,7 +2,7 @@
 
 `conductor-csharp` repository provides the client SDKs to build Task Workers and Clients in C#
 
-The code for the C# SDk is available on [Github](https://github.com/conductor-sdk/conductor-csharp). Please feel free to file PRs, issues, etc. there.
+The code for the C# SDk is available on [Github](https://github.com/conductor-oss/clojure-sdk). Please feel free to file PRs, issues, etc. there.
 
 
 ## Quick Start
@@ -112,9 +112,9 @@ namespace TestOrkesSDK
 ```
 
 ####Note:
-Replace KEY and SECRET by obtaining a new key and secret from [Orkes Playground](https://play.orkes.io/)
+Replace KEY and SECRET by obtaining a new key and secret from [Orkes Playground](https://developer.orkescloud.com/)
 
-See [Generating Access Keys for Programmatic Access](https://orkes.io/content/docs/getting-started/concepts/access-control#access-keys) for details./
+Refer to [Authentication](https://orkes.io/content/sdks/authentication) for details.
 
 ```
     internal class WorkflowsWorkerService : BackgroundService
@@ -147,7 +147,7 @@ See [Generating Access Keys for Programmatic Access](https://orkes.io/content/do
 Worker configuration is handled via Configuration object passed when initializing TaskHandler.
 ```
 Configuration configuration = 
-    new Configuration(new ConcurrentDictionary<string, string>(), "KEY", "SECRET", "https://play.orkes.io/");
+    new Configuration(new ConcurrentDictionary<string, string>(), "KEY", "SECRET", "https://developer.orkescloud.com/");
 ```
 
 ### Registering and starting the workflow using SDK.
@@ -187,4 +187,3 @@ Dictionary<string, Object> input = new Dictionary<string, Object>();
 workflowResourceApi.StartWorkflow("test_workflow", input, 1);
 Console.ReadLine();
 ```
-Please see [Conductor.Api](https://github.com/conductor-sdk/conductor-csharp/tree/main/Api) for the APIs.

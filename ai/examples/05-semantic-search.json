@@ -1,0 +1,35 @@
+{
+  "name": "semantic_search_workflow",
+  "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "index_documents",
+      "taskReferenceName": "index",
+      "type": "LLM_INDEX_TEXT",
+      "inputParameters": {
+        "vectorDB": "postgres-prod",
+        "namespace": "documentation",
+        "index": "tech_docs",
+        "embeddingModelProvider": "openai",
+        "embeddingModel": "text-embedding-3-small",
+        "text": "Conductor is a workflow orchestration platform",
+        "docId": "doc_001"
+      }
+    },
+    {
+      "name": "search_documents",
+      "taskReferenceName": "search",
+      "type": "LLM_SEARCH_INDEX",
+      "inputParameters": {
+        "vectorDB": "postgres-prod",
+        "namespace": "documentation",
+        "index": "tech_docs",
+        "embeddingModelProvider": "openai",
+        "embeddingModel": "text-embedding-3-small",
+        "query": "workflow orchestration",
+        "llmMaxResults": 5
+      }
+    }
+  ]
+}

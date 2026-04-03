@@ -87,13 +87,22 @@ public class TaskServiceImpl implements TaskService {
      */
     public List<Task> batchPoll(
             String taskType, String workerId, String domain, Integer count, Integer timeout) {
+        LOGGER.debug(
+                "Tasks being batch polled: /tasks/poll/batch/{}?{}&{}&{}&{}",
+                taskType,
+                workerId,
+                domain,
+                count,
+                timeout);
         List<Task> polledTasks = executionService.poll(taskType, workerId, domain, count, timeout);
         LOGGER.debug(
-                "The Tasks {} being returned for /tasks/poll/{}?{}&{}",
+                "The Tasks {} being returned for /tasks/poll/batch/{}?{}&{}&{}&{}",
                 polledTasks.stream().map(Task::getTaskId).collect(Collectors.toList()),
                 taskType,
                 workerId,
-                domain);
+                domain,
+                count,
+                timeout);
         Monitors.recordTaskPollCount(taskType, domain, polledTasks.size());
         return polledTasks;
     }

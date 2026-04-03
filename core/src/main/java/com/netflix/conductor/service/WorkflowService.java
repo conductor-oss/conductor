@@ -25,6 +25,7 @@ import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
+import com.netflix.conductor.model.WorkflowModel;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -131,6 +132,15 @@ public interface WorkflowService {
             boolean includeTasks);
 
     /**
+     * Gets the workflow model by workflow Id.
+     *
+     * @param workflowId Id of the workflow.
+     * @param includeTasks Includes tasks associated with workflow.
+     * @return an instance of {@link Workflow}
+     */
+    WorkflowModel getWorkflowModel(String workflowId, boolean includeTasks);
+
+    /**
      * Removes the workflow from the system.
      *
      * @param workflowId WorkflowID of the workflow you want to remove from system.
@@ -164,7 +174,7 @@ public interface WorkflowService {
             @NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId);
 
     /**
-     * Pauses the workflow given a worklfowId.
+     * Pauses the workflow given a workflowId.
      *
      * @param workflowId WorkflowId of the workflow.
      */

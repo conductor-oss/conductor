@@ -1,0 +1,41 @@
+{
+  "name": "rag_workflow",
+  "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "search_knowledge_base",
+      "taskReferenceName": "search",
+      "type": "LLM_SEARCH_INDEX",
+      "inputParameters": {
+        "vectorDB": "postgres-prod",
+        "namespace": "kb",
+        "index": "articles",
+        "embeddingModelProvider": "openai",
+        "embeddingModel": "text-embedding-3-small",
+        "query": "${workflow.input.question}",
+        "llmMaxResults": 3
+      }
+    },
+    {
+      "name": "generate_answer",
+      "taskReferenceName": "answer",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "anthropic",
+        "model": "claude-3-5-sonnet-20241022",
+        "messages": [
+          {
+            "role": "system",
+            "message": "Answer based on the following context: ${search.output.result}"
+          },
+          {
+            "role": "user",
+            "message": "${workflow.input.question}"
+          }
+        ],
+        "temperature": 0.3
+      }
+    }
+  ]
+}

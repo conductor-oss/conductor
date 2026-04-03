@@ -1,0 +1,18 @@
+{
+  "name": "mcp_weather_workflow",
+  "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "get_weather",
+      "taskReferenceName": "weather",
+      "type": "CALL_MCP_TOOL",
+      "inputParameters": {
+        "mcpServer": "http://localhost:3001/mcp",
+        "method": "get_weather",
+        "location": "New York",
+        "units": "fahrenheit"
+      }
+    }
+  ]
+}
