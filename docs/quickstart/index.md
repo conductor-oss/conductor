@@ -205,8 +205,9 @@ def main():
     handler.start_processes()
 
     try:
+        import time
         while True:
-            pass
+            time.sleep(1)
     except KeyboardInterrupt:
         handler.stop_processes()
 
