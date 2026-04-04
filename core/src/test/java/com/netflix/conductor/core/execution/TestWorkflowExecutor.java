@@ -846,6 +846,28 @@ public class TestWorkflowExecutor {
         verify(executionLockService).releaseLock("existing-workflow-id");
     }
 
+    @Test
+    public void testStartWorkflowIdempotentCreatesWorkflowWhenExistingWorkflowIsNotFound() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("new-workflow");
+        workflowDef.setVersion(1);
+
+        StartWorkflowInput input = new StartWorkflowInput();
+        input.setWorkflowDefinition(workflowDef);
+        input.setName(workflowDef.getName());
+        input.setVersion(workflowDef.getVersion());
+        input.setWorkflowInput(Collections.emptyMap());
+        input.setWorkflowId("new-workflow-id");
+
+        when(executionLockService.acquireLock("new-workflow-id")).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModel("new-workflow-id", false))
+                .thenThrow(new NotFoundException("missing"));
+
+        assertEquals("new-workflow-id", workflowExecutor.startWorkflowIdempotent(input));
+        verify(executionDAOFacade).createWorkflow(any());
+        verify(executionLockService, atLeastOnce()).releaseLock("new-workflow-id");
+    }
+
     @Test(expected = NotFoundException.class)
     public void testRetryNonTerminalWorkflow() {
         WorkflowModel workflow = new WorkflowModel();

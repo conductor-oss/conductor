@@ -347,13 +347,20 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
         Preconditions.checkNotNull(parentWorkflowTaskId, "parentWorkflowTaskId cannot be null");
         Preconditions.checkNotNull(subWorkflowId, "subWorkflowId cannot be null");
 
-        return getWithRetriedTransactions(
+        String reservedSubWorkflowId =
+                getWithRetriedTransactions(
                 connection -> {
                     addSubWorkflowIdReservation(
                             connection, parentWorkflowId, parentWorkflowTaskId, subWorkflowId);
                     return getSubWorkflowIdReservation(
                             connection, parentWorkflowId, parentWorkflowTaskId);
                 });
+        logger.debug(
+                "Resolved sub-workflow reservation for workflow {} task {} to child workflow {} in MySQL",
+                parentWorkflowId,
+                parentWorkflowTaskId,
+                reservedSubWorkflowId);
+        return reservedSubWorkflowId;
     }
 
     @Override
@@ -361,6 +368,10 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
         Preconditions.checkNotNull(workflowId, "workflowId cannot be null");
         Preconditions.checkNotNull(taskId, "taskId cannot be null");
 
+        logger.debug(
+                "Removing owned sub-workflow reservation for workflow {} task {} from MySQL",
+                workflowId,
+                taskId);
         getWithRetriedTransactions(
                 connection -> {
                     removeSubWorkflowIdReservation(connection, workflowId, taskId);
@@ -372,6 +383,9 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
     public void removeSubWorkflowIdReservations(String workflowId) {
         Preconditions.checkNotNull(workflowId, "workflowId cannot be null");
 
+        logger.debug(
+                "Removing all owned sub-workflow reservations for workflow {} from MySQL",
+                workflowId);
         getWithRetriedTransactions(
                 connection -> {
                     removeSubWorkflowIdReservations(connection, workflowId);

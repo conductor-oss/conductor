@@ -590,7 +590,13 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                                     selectSubWorkflowIdReservationStatement.bind(
                                             parentWorkflowUUID, parentWorkflowTaskUUID))
                             .one();
-            return row.getUUID(SUB_WORKFLOW_ID_KEY).toString();
+            String reservedSubWorkflowId = row.getUUID(SUB_WORKFLOW_ID_KEY).toString();
+            LOGGER.debug(
+                    "Resolved sub-workflow reservation for workflow {} task {} to child workflow {} in Cassandra",
+                    parentWorkflowId,
+                    parentWorkflowTaskId,
+                    reservedSubWorkflowId);
+            return reservedSubWorkflowId;
         } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "reserveSubWorkflowId");
             String errorMsg =
@@ -608,6 +614,10 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
         UUID taskUUID = toUUID(taskId, "Invalid task id");
 
         try {
+            LOGGER.debug(
+                    "Removing owned sub-workflow reservation for workflow {} task {} from Cassandra",
+                    workflowId,
+                    taskId);
             session.execute(deleteSubWorkflowIdReservationStatement.bind(workflowUUID, taskUUID));
         } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "removeSubWorkflowIdReservation");
@@ -625,6 +635,9 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
         UUID workflowUUID = toUUID(workflowId, "Invalid workflow id");
 
         try {
+            LOGGER.debug(
+                    "Removing all owned sub-workflow reservations for workflow {} from Cassandra",
+                    workflowId);
             session.execute(deleteSubWorkflowIdReservationsStatement.bind(workflowUUID));
         } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "removeSubWorkflowIdReservations");

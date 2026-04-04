@@ -592,6 +592,10 @@ public class ExecutionDAOFacade {
                 || StringUtils.isBlank(task.getTaskId())) {
             return;
         }
+        LOGGER.debug(
+                "Removing owned sub-workflow reservation for task {} in workflow {} during task deletion",
+                task.getTaskId(),
+                task.getWorkflowInstanceId());
         try {
             executionDAO.removeSubWorkflowIdReservation(
                     task.getWorkflowInstanceId(), task.getTaskId());

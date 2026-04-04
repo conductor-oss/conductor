@@ -519,9 +519,22 @@ public class RedisExecutionDAO extends BaseDynoDAO
         String key = nsKey(SUB_WORKFLOW_ID_RESERVATIONS, parentWorkflowId);
         recordRedisDaoRequests("reserveSubWorkflowId");
         if (jedisProxy.hsetnx(key, parentWorkflowTaskId, subWorkflowId) == 1L) {
+            LOGGER.debug(
+                    "Reserved sub-workflow id {} for workflow {} task {} in Redis hash {}",
+                    subWorkflowId,
+                    parentWorkflowId,
+                    parentWorkflowTaskId,
+                    key);
             return subWorkflowId;
         }
-        return jedisProxy.hget(key, parentWorkflowTaskId);
+        String reservedSubWorkflowId = jedisProxy.hget(key, parentWorkflowTaskId);
+        LOGGER.debug(
+                "Reused reserved sub-workflow id {} for workflow {} task {} from Redis hash {}",
+                reservedSubWorkflowId,
+                parentWorkflowId,
+                parentWorkflowTaskId,
+                key);
+        return reservedSubWorkflowId;
     }
 
     @Override
@@ -530,6 +543,10 @@ public class RedisExecutionDAO extends BaseDynoDAO
         Preconditions.checkNotNull(taskId, "taskId cannot be null");
 
         recordRedisDaoRequests("removeSubWorkflowIdReservation");
+        LOGGER.debug(
+                "Removing owned sub-workflow reservation for workflow {} task {} from Redis",
+                workflowId,
+                taskId);
         jedisProxy.hdel(nsKey(SUB_WORKFLOW_ID_RESERVATIONS, workflowId), taskId);
     }
 
@@ -538,6 +555,9 @@ public class RedisExecutionDAO extends BaseDynoDAO
         Preconditions.checkNotNull(workflowId, "workflowId cannot be null");
 
         recordRedisDaoRequests("removeSubWorkflowIdReservations");
+        LOGGER.debug(
+                "Removing all owned sub-workflow reservations for workflow {} from Redis",
+                workflowId);
         jedisProxy.del(nsKey(SUB_WORKFLOW_ID_RESERVATIONS, workflowId));
     }
 

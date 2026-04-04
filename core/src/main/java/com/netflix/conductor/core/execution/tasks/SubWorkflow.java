@@ -80,6 +80,11 @@ public class SubWorkflow extends WorkflowSystemTask {
                             task.getSubWorkflowId(),
                             workflowExecutor.reserveSubWorkflowId(
                                     workflow.getWorkflowId(), task.getTaskId()));
+            LOGGER.debug(
+                    "Launching sub-workflow task {} in parent workflow {} with reserved child workflow id {}",
+                    task.getTaskId(),
+                    workflow.getWorkflowId(),
+                    subWorkflowId);
 
             StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
             startWorkflowInput.setWorkflowDefinition(workflowDefinition);
@@ -128,6 +133,10 @@ public class SubWorkflow extends WorkflowSystemTask {
         String workflowId = task.getSubWorkflowId();
         if (StringUtils.isEmpty(workflowId)) {
             if (task.getStatus() == TaskModel.Status.SCHEDULED) {
+                LOGGER.info(
+                        "Retrying sub-workflow launch for task {} in parent workflow {} because it is scheduled without an attached child workflow id",
+                        task.getTaskId(),
+                        workflow.getWorkflowId());
                 start(workflow, task, workflowExecutor);
                 return StringUtils.isNotEmpty(task.getSubWorkflowId())
                         || task.getStatus().isTerminal();
@@ -149,6 +158,10 @@ public class SubWorkflow extends WorkflowSystemTask {
     public void cancel(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         String workflowId = task.getSubWorkflowId();
         if (StringUtils.isEmpty(workflowId)) {
+            LOGGER.info(
+                    "Removing unattached sub-workflow reservation for task {} in parent workflow {} during cancel",
+                    task.getTaskId(),
+                    workflow.getWorkflowId());
             workflowExecutor.removeSubWorkflowIdReservation(
                     workflow.getWorkflowId(), task.getTaskId());
             return;
@@ -233,6 +246,12 @@ public class SubWorkflow extends WorkflowSystemTask {
     }
 
     private void attachToSubWorkflow(TaskModel task, WorkflowModel subWorkflow) {
+        LOGGER.info(
+                "Attached sub-workflow task {} in parent workflow {} to child workflow {} with status {}",
+                task.getTaskId(),
+                task.getWorkflowInstanceId(),
+                subWorkflow.getWorkflowId(),
+                subWorkflow.getStatus());
         task.setReasonForIncompletion(null);
         task.setSubWorkflowId(subWorkflow.getWorkflowId());
         task.addOutput(SUB_WORKFLOW_ID, subWorkflow.getWorkflowId());
