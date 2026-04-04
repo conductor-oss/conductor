@@ -1,0 +1,8 @@
+{
+  "_comment": "WebhookConfig fixture for the workflowsToStart pattern (wait_for_webhook_workflowstostart_target_test.json). Unlike receiverWorkflowNamesToVersions (which routes events to waiting tasks in running workflows), workflowsToStart launches a NEW workflow instance on each event. The inbound payload becomes the new workflow's input. No WAIT_FOR_WEBHOOK tasks needed in the target workflow. POST any JSON body to /webhook/{id} to start a new 'wait_for_webhook_started_by_event_demo' instance.",
+  "name": "event-triggered-workflow-webhook",
+  "verifier": "NONE",
+  "workflowsToStart": {
+    "wait_for_webhook_started_by_event_demo": 1
+  }
+}

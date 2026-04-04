@@ -1,0 +1,8 @@
+{
+  "_comment": "WebhookConfig fixture for per-instance routing (wait_for_webhook_per_instance_routing_test.json). The wildcard value '${workflow.input.orderId}' in the task's matches map means each running instance registers a different hash, keyed by its specific orderId. Sending {\"event\": {\"orderId\": \"order-123\"}} routes to exactly the instance started with orderId=order-123.",
+  "name": "order-event-webhook",
+  "verifier": "NONE",
+  "receiverWorkflowNamesToVersions": {
+    "wait_for_webhook_routing_demo": 1
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "name": "wait_for_webhook_in_do_while_demo",
+  "description": "Demonstrates WAIT_FOR_WEBHOOK inside a DO_WHILE loop. Each loop iteration parks on a webhook event. The hash computation strips the DO_WHILE iteration suffix (__1, __2, ...) from the task reference name so that the WebhookConfig's matcher (computed from 'waitForItem' without suffix) resolves to the correct hash on each iteration. POST {\"item\": {\"batchId\": \"<id>\", \"status\": \"processed\"}} once per iteration to advance the loop.",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "processItemsLoop",
+      "taskReferenceName": "processItemsLoop",
+      "type": "DO_WHILE",
+      "inputParameters": {
+        "itemCount": "${workflow.input.itemCount}"
+      },
+      "loopCondition": "if ($.processItemsLoop['iteration'] < $.itemCount) { true; } else { false; }",
+      "loopOver": [
+        {
+          "name": "WAIT_FOR_WEBHOOK",
+          "taskReferenceName": "waitForItem",
+          "type": "WAIT_FOR_WEBHOOK",
+          "inputParameters": {
+            "matches": {
+              "$['item']['batchId']": "${workflow.input.batchId}",
+              "$['item']['status']": "processed"
+            }
+          },
+          "optional": false,
+          "startDelay": 0,
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "joinOn": [],
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": []
+        }
+      ],
+      "optional": false,
+      "startDelay": 0,
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "joinOn": [],
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false
+    }
+  ],
+  "inputParameters": [
+    "batchId",
+    "itemCount"
+  ],
+  "outputParameters": {
+    "batchId": "${workflow.input.batchId}",
+    "iterations": "${processItemsLoop.output.iteration}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}

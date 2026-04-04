@@ -1,0 +1,59 @@
+{
+  "name": "wait_for_webhook_sequential_demo",
+  "description": "Demonstrates sequential WAIT_FOR_WEBHOOK tasks. A purchase-approval workflow that requires manager approval, then director approval — each delivered as a separate webhook event. Both tasks route per-instance on purchaseId so that approval events are delivered to the correct workflow instance. Step 1: POST {\"approval\": {\"purchaseId\": \"<id>\", \"level\": \"manager\", \"decision\": \"approved\"}}. Step 2: POST {\"approval\": {\"purchaseId\": \"<id>\", \"level\": \"director\", \"decision\": \"approved\"}}.",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "WAIT_FOR_WEBHOOK",
+      "taskReferenceName": "waitForManagerApproval",
+      "type": "WAIT_FOR_WEBHOOK",
+      "inputParameters": {
+        "matches": {
+          "$['approval']['purchaseId']": "${workflow.input.purchaseId}",
+          "$['approval']['level']": "manager"
+        }
+      },
+      "optional": false,
+      "startDelay": 0
+    },
+    {
+      "name": "WAIT_FOR_WEBHOOK",
+      "taskReferenceName": "waitForDirectorApproval",
+      "type": "WAIT_FOR_WEBHOOK",
+      "inputParameters": {
+        "matches": {
+          "$['approval']['purchaseId']": "${workflow.input.purchaseId}",
+          "$['approval']['level']": "director"
+        }
+      },
+      "optional": false,
+      "startDelay": 0
+    },
+    {
+      "name": "finalize_purchase",
+      "taskReferenceName": "finalizePurchase",
+      "type": "SIMPLE",
+      "inputParameters": {
+        "purchaseId": "${workflow.input.purchaseId}",
+        "managerApproval": "${waitForManagerApproval.output}",
+        "directorApproval": "${waitForDirectorApproval.output}"
+      },
+      "optional": false,
+      "startDelay": 0
+    }
+  ],
+  "inputParameters": [
+    "purchaseId"
+  ],
+  "outputParameters": {
+    "purchaseId": "${workflow.input.purchaseId}",
+    "managerApproval": "${waitForManagerApproval.output}",
+    "directorApproval": "${waitForDirectorApproval.output}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}

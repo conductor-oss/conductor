@@ -1,0 +1,43 @@
+{
+  "name": "wait_for_webhook_routing_demo",
+  "description": "Demonstrates per-instance webhook routing. Many parallel instances of this workflow run simultaneously, each waiting for a webhook event that carries their specific orderId. The wildcard match '${workflow.input.orderId}' ensures each instance is completed only by the event addressed to it. POST to /webhook/{id} with body {\"event\": {\"orderId\": \"<orderId>\"}} to route to the matching instance.",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "WAIT_FOR_WEBHOOK",
+      "taskReferenceName": "waitForMyOrder",
+      "type": "WAIT_FOR_WEBHOOK",
+      "inputParameters": {
+        "matches": {
+          "$['event']['orderId']": "${workflow.input.orderId}"
+        }
+      },
+      "optional": false,
+      "startDelay": 0
+    },
+    {
+      "name": "process_order_event",
+      "taskReferenceName": "processOrderEvent",
+      "type": "SIMPLE",
+      "inputParameters": {
+        "orderId": "${workflow.input.orderId}",
+        "eventPayload": "${waitForMyOrder.output}"
+      },
+      "optional": false,
+      "startDelay": 0
+    }
+  ],
+  "inputParameters": [
+    "orderId"
+  ],
+  "outputParameters": {
+    "orderId": "${workflow.input.orderId}",
+    "eventPayload": "${waitForMyOrder.output}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}

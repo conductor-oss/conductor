@@ -1,0 +1,8 @@
+{
+  "_comment": "WebhookConfig fixture for the sequential-approvals demo (wait_for_webhook_sequential_test.json). The workflow has two WAIT_FOR_WEBHOOK tasks, each matching on a different 'level' value. The WebhookConfig routes all events to the workflow; the hash routing inside the task separates manager vs director events. Step 1: POST {\"approval\": {\"purchaseId\": \"pu-42\", \"level\": \"manager\", \"decision\": \"approved\"}}. Step 2: POST {\"approval\": {\"purchaseId\": \"pu-42\", \"level\": \"director\", \"decision\": \"approved\"}}.",
+  "name": "purchase-approval-webhook",
+  "verifier": "NONE",
+  "receiverWorkflowNamesToVersions": {
+    "wait_for_webhook_sequential_demo": 1
+  }
+}

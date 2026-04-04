@@ -1,0 +1,43 @@
+{
+  "name": "wait_for_webhook_basic_demo",
+  "description": "Demonstrates the simplest WAIT_FOR_WEBHOOK pattern: a workflow that parks on a single task until an inbound webhook event with a specific literal field value arrives. POST to /webhook/{id} with body {\"event\": {\"type\": \"order_fulfilled\"}} to unblock it.",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "WAIT_FOR_WEBHOOK",
+      "taskReferenceName": "waitForOrderFulfilled",
+      "type": "WAIT_FOR_WEBHOOK",
+      "inputParameters": {
+        "matches": {
+          "$['event']['type']": "order_fulfilled"
+        }
+      },
+      "optional": false,
+      "startDelay": 0
+    },
+    {
+      "name": "notify_fulfillment",
+      "taskReferenceName": "notify",
+      "type": "SIMPLE",
+      "inputParameters": {
+        "orderId": "${workflow.input.orderId}",
+        "webhookPayload": "${waitForOrderFulfilled.output}"
+      },
+      "optional": false,
+      "startDelay": 0
+    }
+  ],
+  "inputParameters": [
+    "orderId"
+  ],
+  "outputParameters": {
+    "orderId": "${workflow.input.orderId}",
+    "webhookPayload": "${waitForOrderFulfilled.output}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}

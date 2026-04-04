@@ -1,0 +1,29 @@
+{
+  "name": "wait_for_webhook_started_by_event_demo",
+  "description": "Demonstrates the workflowsToStart pattern. This workflow is started automatically when a webhook event arrives at a WebhookConfig that lists this workflow in its workflowsToStart map. No WAIT_FOR_WEBHOOK tasks are needed — the inbound payload is passed as the workflow's input directly. Configure your WebhookConfig with: {\"workflowsToStart\": {\"wait_for_webhook_started_by_event_demo\": 1}}.",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "handle_incoming_event",
+      "taskReferenceName": "handleEvent",
+      "type": "SIMPLE",
+      "inputParameters": {
+        "eventType": "${workflow.input.event.type}",
+        "rawPayload": "${workflow.input}"
+      },
+      "optional": false,
+      "startDelay": 0
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {
+    "eventType": "${handleEvent.output.eventType}",
+    "rawPayload": "${workflow.input}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}
