@@ -380,7 +380,7 @@ All the workflow commands above work the same — just replace the CLI commands 
 | CLI | cURL |
 |-----|------|
 | `conductor workflow create workflow.json` | `curl -X POST http://localhost:8080/api/metadata/workflow -H 'Content-Type: application/json' -d @workflow.json` |
-| `conductor workflow start -w hello_workflow --sync` | `curl -s -X POST "http://localhost:8080/api/workflow/execute/hello_workflow/1" -H 'Content-Type: application/json' -d '{}'` |
+| `conductor workflow start -w hello_workflow --sync` | `curl -s -X POST http://localhost:8080/api/workflow/hello_workflow -H 'Content-Type: application/json'` |
 | `conductor server stop` | `docker rm -f conductor` |
 
 For production deployment options, see [Running with Docker](../devguide/running/deploy.md).
