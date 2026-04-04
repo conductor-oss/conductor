@@ -367,4 +367,43 @@ class RedisMetadataDAOTest {
         List<String> names = redisMetadataDAO.findAll();
         assertEquals(3, names.size());
     }
+
+    @Test
+    void testWorkflowDefCacheReflectsCreateAndRemove() {
+        assertEquals(0, redisMetadataDAO.getAllWorkflowDefs().size());
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName("cachedWf");
+        def.setVersion(1);
+        redisMetadataDAO.createWorkflowDef(def);
+
+        List<WorkflowDef> all = redisMetadataDAO.getAllWorkflowDefs();
+        assertEquals(1, all.size());
+        assertEquals("cachedWf", all.get(0).getName());
+
+        redisMetadataDAO.removeWorkflowDef("cachedWf", 1);
+        assertEquals(0, redisMetadataDAO.getAllWorkflowDefs().size());
+    }
+
+    @Test
+    void testGetAllWorkflowDefsLatestVersionsFromCache() {
+        for (int version = 1; version <= 3; version++) {
+            WorkflowDef def = new WorkflowDef();
+            def.setName("wfA");
+            def.setVersion(version);
+            redisMetadataDAO.createWorkflowDef(def);
+        }
+        WorkflowDef defB = new WorkflowDef();
+        defB.setName("wfB");
+        defB.setVersion(1);
+        redisMetadataDAO.createWorkflowDef(defB);
+
+        Map<String, WorkflowDef> latestByName =
+                redisMetadataDAO.getAllWorkflowDefsLatestVersions().stream()
+                        .collect(Collectors.toMap(WorkflowDef::getName, d -> d));
+
+        assertEquals(2, latestByName.size());
+        assertEquals(3, latestByName.get("wfA").getVersion());
+        assertEquals(1, latestByName.get("wfB").getVersion());
+    }
 }
