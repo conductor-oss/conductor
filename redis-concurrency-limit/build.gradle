@@ -8,7 +8,8 @@ dependencies {
 
     implementation project(':conductor-common')
     implementation project(':conductor-core')
-    implementation "redis.clients:jedis:3.6.0" // Jedis version "revJedis=3.3.0" does not play well with Spring Data Redis
+    // PINNED (#964): revJedis (6.0.0) does not work with Spring Data Redis in this module.
+    implementation "redis.clients:jedis:3.6.0"
     implementation "org.apache.commons:commons-lang3"
 
     testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
