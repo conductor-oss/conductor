@@ -2198,6 +2198,37 @@ public class TestWorkflowExecutor {
     }
 
     @Test
+    public void testScheduleTaskQueuesAsyncSubWorkflowWithoutInlineStart() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("parent-workflow");
+        workflow.setWorkflowDefinition(new WorkflowDef());
+
+        TaskModel subWorkflowTask = new TaskModel();
+        subWorkflowTask.setTaskId("sub-workflow-task");
+        subWorkflowTask.setTaskType(TaskType.SUB_WORKFLOW.name());
+        subWorkflowTask.setTaskDefName(TaskType.SUB_WORKFLOW.name());
+        subWorkflowTask.setReferenceTaskName("sub_workflow_ref");
+        subWorkflowTask.setWorkflowInstanceId(workflow.getWorkflowId());
+        subWorkflowTask.setStatus(TaskModel.Status.SCHEDULED);
+        subWorkflowTask.setInputData(new HashMap<>());
+
+        boolean stateChanged =
+                workflowExecutor.scheduleTask(workflow, Collections.singletonList(subWorkflowTask));
+
+        assertFalse(stateChanged);
+        verify(executionDAOFacade).createTasks(Collections.singletonList(subWorkflowTask));
+        verify(queueDAO)
+                .push(
+                        eq(TaskType.SUB_WORKFLOW.name()),
+                        eq(subWorkflowTask.getTaskId()),
+                        eq(subWorkflowTask.getWorkflowPriority()),
+                        eq(0L));
+        verify(executionDAOFacade, never()).updateTask(subWorkflowTask);
+        verify(executionDAOFacade, never())
+                .reserveSubWorkflowId(anyString(), anyString(), anyString());
+    }
+
+    @Test
     public void testResumeWorkflow() {
         String workflowId = "testResumeWorkflowId";
         WorkflowModel workflow = new WorkflowModel();

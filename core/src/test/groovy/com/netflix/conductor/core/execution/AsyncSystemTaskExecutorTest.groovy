@@ -66,15 +66,15 @@ class AsyncSystemTaskExecutorTest extends Specification {
         given:
         String workflowId = "workflowId"
         String subWorkflowId = "subWorkflowId"
+        String parentTaskId = new IDGenerator().generate()
         SubWorkflow subWorkflowTask = new SubWorkflow(new ObjectMapper())
 
-        String task1Id = new IDGenerator().generate()
         TaskModel task1 = new TaskModel()
         task1.setTaskType(SUB_WORKFLOW.name())
         task1.setReferenceTaskName("waitTask")
         task1.setWorkflowInstanceId(workflowId)
         task1.setScheduledTime(System.currentTimeMillis())
-        task1.setTaskId(task1Id)
+        task1.setTaskId(parentTaskId)
         task1.getInputData().put("asyncComplete", true)
         task1.getInputData().put("subWorkflowName", "junit1")
         task1.getInputData().put("subWorkflowVersion", 1)
@@ -85,16 +85,17 @@ class AsyncSystemTaskExecutorTest extends Specification {
         WorkflowModel subWorkflow = new WorkflowModel(workflowId: subWorkflowId, status: WorkflowModel.Status.RUNNING)
 
         when:
-        executor.execute(subWorkflowTask, task1Id)
+        executor.execute(subWorkflowTask, parentTaskId)
 
         then:
-        1 * executionDAOFacade.getTaskModel(task1Id) >> task1
+        1 * executionDAOFacade.getTaskModel(parentTaskId) >> task1
         1 * executionDAOFacade.getWorkflowModel(workflowId, subWorkflowTask.isTaskRetrievalRequired()) >> workflow
-        1 * workflowExecutor.startWorkflow(*_) >> subWorkflowId
+        1 * workflowExecutor.reserveSubWorkflowId(workflowId, parentTaskId) >> subWorkflowId
+        1 * workflowExecutor.startWorkflowIdempotent(*_) >> subWorkflowId
         1 * workflowExecutor.getWorkflow(subWorkflowId, false) >> subWorkflow
 
         // SUB_WORKFLOW is asyncComplete so its removed from the queue
-        1 * queueDAO.remove(queueName, task1Id)
+        1 * queueDAO.remove(queueName, parentTaskId)
 
         task1.status == TaskModel.Status.IN_PROGRESS
         task1.subWorkflowId == subWorkflowId

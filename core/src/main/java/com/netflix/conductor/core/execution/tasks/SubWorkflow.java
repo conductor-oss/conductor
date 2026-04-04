@@ -174,6 +174,11 @@ public class SubWorkflow extends WorkflowSystemTask {
         return true;
     }
 
+    @Override
+    public boolean isAsync() {
+        return true;
+    }
+
     private void updateTaskStatus(WorkflowModel subworkflow, TaskModel task) {
         WorkflowModel.Status status = subworkflow.getStatus();
         switch (status) {
