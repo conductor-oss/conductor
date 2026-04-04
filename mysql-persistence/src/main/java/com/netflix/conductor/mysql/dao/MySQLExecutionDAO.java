@@ -291,6 +291,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
             withTransaction(
                     connection -> {
                         removeWorkflowDefToWorkflowMapping(connection, workflow);
+                        removeSubWorkflowIdReservation(connection, workflow);
                         removeWorkflow(connection, workflowId);
                         removePendingWorkflow(connection, workflow.getWorkflowName(), workflowId);
                     });
@@ -336,6 +337,22 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
             }
         }
         return workflow;
+    }
+
+    @Override
+    public String reserveSubWorkflowId(
+            String parentWorkflowId, String parentWorkflowTaskId, String subWorkflowId) {
+        Preconditions.checkNotNull(parentWorkflowId, "parentWorkflowId cannot be null");
+        Preconditions.checkNotNull(parentWorkflowTaskId, "parentWorkflowTaskId cannot be null");
+        Preconditions.checkNotNull(subWorkflowId, "subWorkflowId cannot be null");
+
+        return getWithRetriedTransactions(
+                connection -> {
+                    addSubWorkflowIdReservation(
+                            connection, parentWorkflowId, parentWorkflowTaskId, subWorkflowId);
+                    return getSubWorkflowIdReservation(
+                            connection, parentWorkflowId, parentWorkflowTaskId);
+                });
     }
 
     /**
@@ -798,6 +815,58 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
                                 .addParameter(dateStr(workflow.getCreateTime()))
                                 .addParameter(workflow.getWorkflowId())
                                 .executeUpdate());
+    }
+
+    private void addSubWorkflowIdReservation(
+            Connection connection,
+            String parentWorkflowId,
+            String parentWorkflowTaskId,
+            String subWorkflowId) {
+        String INSERT_SUB_WORKFLOW_RESERVATION =
+                "INSERT IGNORE INTO sub_workflow_id_reservation "
+                        + "(parent_workflow_id, parent_workflow_task_id, sub_workflow_id) VALUES (?, ?, ?)";
+
+        execute(
+                connection,
+                INSERT_SUB_WORKFLOW_RESERVATION,
+                q ->
+                        q.addParameter(parentWorkflowId)
+                                .addParameter(parentWorkflowTaskId)
+                                .addParameter(subWorkflowId)
+                                .executeUpdate());
+    }
+
+    private String getSubWorkflowIdReservation(
+            Connection connection, String parentWorkflowId, String parentWorkflowTaskId) {
+        String GET_SUB_WORKFLOW_RESERVATION =
+                "SELECT sub_workflow_id FROM sub_workflow_id_reservation "
+                        + "WHERE parent_workflow_id = ? AND parent_workflow_task_id = ?";
+
+        return query(
+                connection,
+                GET_SUB_WORKFLOW_RESERVATION,
+                q ->
+                        q.addParameter(parentWorkflowId)
+                                .addParameter(parentWorkflowTaskId)
+                                .executeScalar(String.class));
+    }
+
+    private void removeSubWorkflowIdReservation(Connection connection, WorkflowModel workflow) {
+        if (workflow.getParentWorkflowId() == null || workflow.getParentWorkflowTaskId() == null) {
+            return;
+        }
+
+        String REMOVE_SUB_WORKFLOW_RESERVATION =
+                "DELETE FROM sub_workflow_id_reservation "
+                        + "WHERE parent_workflow_id = ? AND parent_workflow_task_id = ?";
+
+        execute(
+                connection,
+                REMOVE_SUB_WORKFLOW_RESERVATION,
+                q ->
+                        q.addParameter(workflow.getParentWorkflowId())
+                                .addParameter(workflow.getParentWorkflowTaskId())
+                                .executeDelete());
     }
 
     @VisibleForTesting

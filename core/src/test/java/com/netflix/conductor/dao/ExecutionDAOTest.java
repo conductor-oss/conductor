@@ -81,6 +81,28 @@ public abstract class ExecutionDAOTest {
     }
 
     @Test
+    public void testReserveSubWorkflowIdIsStable() {
+        String parentWorkflowId = UUID.randomUUID().toString();
+        String parentWorkflowTaskId = UUID.randomUUID().toString();
+
+        String reservedWorkflowId =
+                getExecutionDAO()
+                        .reserveSubWorkflowId(
+                                parentWorkflowId,
+                                parentWorkflowTaskId,
+                                UUID.randomUUID().toString());
+
+        String secondReservation =
+                getExecutionDAO()
+                        .reserveSubWorkflowId(
+                                parentWorkflowId,
+                                parentWorkflowTaskId,
+                                UUID.randomUUID().toString());
+
+        assertEquals(reservedWorkflowId, secondReservation);
+    }
+
+    @Test
     public void testCreateTaskException() {
         TaskModel task = new TaskModel();
         task.setScheduledTime(1L);

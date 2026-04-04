@@ -146,6 +146,18 @@ public interface ExecutionDAO {
     WorkflowModel getWorkflow(String workflowId, boolean includeTasks);
 
     /**
+     * Reserves a sub-workflow id for a parent workflow task. Repeated calls for the same parent
+     * workflow/task pair must return the original reserved id.
+     *
+     * @param parentWorkflowId parent workflow id
+     * @param parentWorkflowTaskId parent workflow task id
+     * @param subWorkflowId candidate sub-workflow id to reserve
+     * @return the reserved sub-workflow id, either the candidate or an existing reservation
+     */
+    String reserveSubWorkflowId(
+            String parentWorkflowId, String parentWorkflowTaskId, String subWorkflowId);
+
+    /**
      * @param workflowName name of the workflow
      * @param version the workflow version
      * @return List of workflow ids which are running

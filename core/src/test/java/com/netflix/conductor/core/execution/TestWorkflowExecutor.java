@@ -812,6 +812,40 @@ public class TestWorkflowExecutor {
         assertEquals(workflowDef, argumentCaptor.getAllValues().get(1).getWorkflowDefinition());
     }
 
+    @Test
+    public void testReserveSubWorkflowId() {
+        when(executionDAOFacade.reserveSubWorkflowId(eq("parent"), eq("task"), anyString()))
+                .thenReturn("reserved-sub-workflow");
+
+        assertEquals(
+                "reserved-sub-workflow", workflowExecutor.reserveSubWorkflowId("parent", "task"));
+    }
+
+    @Test
+    public void testStartWorkflowIdempotentReturnsExistingWorkflow() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("existing-workflow");
+        workflowDef.setVersion(1);
+
+        StartWorkflowInput input = new StartWorkflowInput();
+        input.setWorkflowDefinition(workflowDef);
+        input.setName(workflowDef.getName());
+        input.setVersion(workflowDef.getVersion());
+        input.setWorkflowInput(Collections.emptyMap());
+        input.setWorkflowId("existing-workflow-id");
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("existing-workflow-id");
+
+        when(executionLockService.acquireLock("existing-workflow-id")).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModel("existing-workflow-id", false))
+                .thenReturn(workflow);
+
+        assertEquals("existing-workflow-id", workflowExecutor.startWorkflowIdempotent(input));
+        verify(executionDAOFacade, never()).createWorkflow(any());
+        verify(executionLockService).releaseLock("existing-workflow-id");
+    }
+
     @Test(expected = NotFoundException.class)
     public void testRetryNonTerminalWorkflow() {
         WorkflowModel workflow = new WorkflowModel();

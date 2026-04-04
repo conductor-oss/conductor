@@ -264,6 +264,12 @@ public class ExecutionDAOFacade {
         return workflowModel.getWorkflowId();
     }
 
+    public String reserveSubWorkflowId(
+            String parentWorkflowId, String parentWorkflowTaskId, String subWorkflowId) {
+        return executionDAO.reserveSubWorkflowId(
+                parentWorkflowId, parentWorkflowTaskId, subWorkflowId);
+    }
+
     private void externalizeTaskData(TaskModel taskModel) {
         externalPayloadStorageUtils.verifyAndUpload(
                 taskModel, ExternalPayloadStorage.PayloadType.TASK_INPUT);

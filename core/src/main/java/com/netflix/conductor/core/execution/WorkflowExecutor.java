@@ -165,4 +165,22 @@ public interface WorkflowExecutor {
      * @return id of the workflow
      */
     String startWorkflow(StartWorkflowInput input);
+
+    /**
+     * Starts a new workflow execution for a reserved workflow id, or returns the existing workflow
+     * if that id has already been created.
+     *
+     * @param input starts a workflow execution with a pre-reserved workflow id
+     * @return id of the workflow
+     */
+    String startWorkflowIdempotent(StartWorkflowInput input);
+
+    /**
+     * Reserves a stable sub-workflow id for a parent workflow task.
+     *
+     * @param parentWorkflowId parent workflow id
+     * @param parentWorkflowTaskId parent workflow task id
+     * @return reserved sub-workflow id
+     */
+    String reserveSubWorkflowId(String parentWorkflowId, String parentWorkflowTaskId);
 }

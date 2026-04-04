@@ -75,6 +75,12 @@ public class SubWorkflow extends WorkflowSystemTask {
         String correlationId = workflow.getCorrelationId();
 
         try {
+            String subWorkflowId =
+                    StringUtils.defaultIfBlank(
+                            task.getSubWorkflowId(),
+                            workflowExecutor.reserveSubWorkflowId(
+                                    workflow.getWorkflowId(), task.getTaskId()));
+
             StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
             startWorkflowInput.setWorkflowDefinition(workflowDefinition);
             startWorkflowInput.setName(name);
@@ -84,19 +90,14 @@ public class SubWorkflow extends WorkflowSystemTask {
             startWorkflowInput.setParentWorkflowId(workflow.getWorkflowId());
             startWorkflowInput.setParentWorkflowTaskId(task.getTaskId());
             startWorkflowInput.setTaskToDomain(taskToDomain);
-
-            String subWorkflowId = workflowExecutor.startWorkflow(startWorkflowInput);
-
-            task.setReasonForIncompletion(null);
-            task.setSubWorkflowId(subWorkflowId);
-            // For backwards compatibility
-            task.addOutput(SUB_WORKFLOW_ID, subWorkflowId);
-            task.getOutputData().remove(SUB_WORKFLOW_LAUNCH_ERROR);
+            startWorkflowInput.setWorkflowId(subWorkflowId);
 
             // Set task status based on current sub-workflow status, as the status can change in
             // recursion by the time we update here.
-            WorkflowModel subWorkflow = workflowExecutor.getWorkflow(subWorkflowId, false);
-            updateTaskStatus(subWorkflow, task);
+            WorkflowModel subWorkflow =
+                    workflowExecutor.getWorkflow(
+                            workflowExecutor.startWorkflowIdempotent(startWorkflowInput), false);
+            attachToSubWorkflow(task, subWorkflow);
         } catch (TransientException te) {
             task.setStatus(TaskModel.Status.SCHEDULED);
             task.setReasonForIncompletion(
@@ -222,5 +223,13 @@ public class SubWorkflow extends WorkflowSystemTask {
     @Override
     public boolean isTaskRetrievalRequired() {
         return false;
+    }
+
+    private void attachToSubWorkflow(TaskModel task, WorkflowModel subWorkflow) {
+        task.setReasonForIncompletion(null);
+        task.setSubWorkflowId(subWorkflow.getWorkflowId());
+        task.addOutput(SUB_WORKFLOW_ID, subWorkflow.getWorkflowId());
+        task.getOutputData().remove(SUB_WORKFLOW_LAUNCH_ERROR);
+        updateTaskStatus(subWorkflow, task);
     }
 }

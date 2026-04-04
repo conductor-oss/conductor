@@ -36,10 +36,14 @@ import static com.netflix.conductor.cassandra.util.Constants.EVENT_HANDLER_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.EVENT_HANDLER_NAME_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.HANDLERS_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.MESSAGE_ID_KEY;
+import static com.netflix.conductor.cassandra.util.Constants.PARENT_WORKFLOW_ID_KEY;
+import static com.netflix.conductor.cassandra.util.Constants.PARENT_WORKFLOW_TASK_ID_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.PAYLOAD_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.SHARD_ID_KEY;
+import static com.netflix.conductor.cassandra.util.Constants.SUB_WORKFLOW_ID_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_EVENT_EXECUTIONS;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_EVENT_HANDLERS;
+import static com.netflix.conductor.cassandra.util.Constants.TABLE_SUB_WORKFLOW_ID_RESERVATIONS;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_DEFS;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_DEF_LIMIT;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_LOOKUP;
@@ -127,6 +131,7 @@ public abstract class CassandraBaseDAO {
                 session.execute(getCreateWorkflowsTableStatement());
                 session.execute(getCreateTaskLookupTableStatement());
                 session.execute(getCreateTaskDefLimitTableStatement());
+                session.execute(getCreateSubWorkflowIdReservationsTableStatement());
                 session.execute(getCreateWorkflowDefsTableStatement());
                 session.execute(getCreateWorkflowDefsIndexTableStatement());
                 session.execute(getCreateTaskDefsTableStatement());
@@ -183,6 +188,16 @@ public abstract class CassandraBaseDAO {
                 .addPartitionKey(TASK_DEF_NAME_KEY, DataType.text())
                 .addClusteringColumn(TASK_ID_KEY, DataType.uuid())
                 .addColumn(WORKFLOW_ID_KEY, DataType.uuid())
+                .getQueryString();
+    }
+
+    private String getCreateSubWorkflowIdReservationsTableStatement() {
+        return SchemaBuilder.createTable(
+                        properties.getKeyspace(), TABLE_SUB_WORKFLOW_ID_RESERVATIONS)
+                .ifNotExists()
+                .addPartitionKey(PARENT_WORKFLOW_ID_KEY, DataType.uuid())
+                .addClusteringColumn(PARENT_WORKFLOW_TASK_ID_KEY, DataType.uuid())
+                .addColumn(SUB_WORKFLOW_ID_KEY, DataType.uuid())
                 .getQueryString();
     }
 

@@ -57,6 +57,7 @@ public class RedisExecutionDAO extends BaseDynoDAO
     private static final String PENDING_WORKFLOWS = "PENDING_WORKFLOWS";
     private static final String WORKFLOW_DEF_TO_WORKFLOWS = "WORKFLOW_DEF_TO_WORKFLOWS";
     private static final String CORR_ID_TO_WORKFLOWS = "CORR_ID_TO_WORKFLOWS";
+    private static final String SUB_WORKFLOW_ID_RESERVATIONS = "SUB_WORKFLOW_ID_RESERVATIONS";
     private static final String EVENT_EXECUTION = "EVENT_EXECUTION";
     private final int ttlEventExecutionSeconds;
 
@@ -439,6 +440,7 @@ public class RedisExecutionDAO extends BaseDynoDAO
 
             // Remove the object
             jedisProxy.del(nsKey(WORKFLOW, workflowId));
+            removeSubWorkflowIdReservation(workflow);
             for (TaskModel task : workflow.getTasks()) {
                 removeTask(task.getTaskId());
             }
@@ -464,6 +466,7 @@ public class RedisExecutionDAO extends BaseDynoDAO
 
             // Remove the object
             jedisProxy.expire(nsKey(WORKFLOW, workflowId), ttlSeconds);
+            removeSubWorkflowIdReservation(workflow);
             for (TaskModel task : workflow.getTasks()) {
                 removeTaskWithExpiry(task.getTaskId(), ttlSeconds);
             }
@@ -503,6 +506,21 @@ public class RedisExecutionDAO extends BaseDynoDAO
             }
         }
         return workflow;
+    }
+
+    @Override
+    public String reserveSubWorkflowId(
+            String parentWorkflowId, String parentWorkflowTaskId, String subWorkflowId) {
+        Preconditions.checkNotNull(parentWorkflowId, "parentWorkflowId cannot be null");
+        Preconditions.checkNotNull(parentWorkflowTaskId, "parentWorkflowTaskId cannot be null");
+        Preconditions.checkNotNull(subWorkflowId, "subWorkflowId cannot be null");
+
+        String key = nsKey(SUB_WORKFLOW_ID_RESERVATIONS, parentWorkflowId, parentWorkflowTaskId);
+        recordRedisDaoRequests("reserveSubWorkflowId");
+        if (jedisProxy.setnx(key, subWorkflowId) == 1L) {
+            return subWorkflowId;
+        }
+        return jedisProxy.get(key);
     }
 
     /**
@@ -763,5 +781,16 @@ public class RedisExecutionDAO extends BaseDynoDAO
         } catch (NullPointerException npe) {
             throw new IllegalArgumentException(npe.getMessage(), npe);
         }
+    }
+
+    private void removeSubWorkflowIdReservation(WorkflowModel workflow) {
+        if (workflow.getParentWorkflowId() == null || workflow.getParentWorkflowTaskId() == null) {
+            return;
+        }
+        jedisProxy.del(
+                nsKey(
+                        SUB_WORKFLOW_ID_RESERVATIONS,
+                        workflow.getParentWorkflowId(),
+                        workflow.getParentWorkflowTaskId()));
     }
 }
