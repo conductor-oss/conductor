@@ -1,0 +1,4774 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Build Conductor workers in Python with decorator-based task definitions, async support, and workflow management.">
+      
+      
+      
+        <link rel="canonical" href="https://conductor-oss.github.io/conductor/documentation/clientsdks/python-sdk.html">
+      
+      
+        <link rel="prev" href="java-sdk.html">
+      
+      
+        <link rel="next" href="go-sdk.html">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.17">
+    
+    
+      
+        <title>Python - Durable Execution for workflows and agents</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.bcfcd587.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../../css/custom.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  <!-- Preconnect for faster font loading -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  
+  
+  
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Durable Execution for workflows and agents" />
+  <meta property="og:url" content="https://conductor-oss.github.io/conductor/documentation/clientsdks/python-sdk.html" />
+  <meta property="og:title" content="Python — Durable Execution for workflows and agents" />
+  <meta property="og:description" content="Build Conductor workers in Python with decorator-based task definitions, async support, and workflow management." />
+  <meta property="og:image" content="https://conductor-oss.github.io/conductor/img/og-conductor.png" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Python — Durable Execution for workflows and agents" />
+  <meta name="twitter:description" content="Build Conductor workers in Python with decorator-based task definitions, async support, and workflow management." />
+  <meta name="twitter:image" content="https://conductor-oss.github.io/conductor/img/og-conductor.png" />
+
+  <!-- SEO -->
+  <meta name="description" content="Build Conductor workers in Python with decorator-based task definitions, async support, and workflow management." />
+  <link rel="canonical" href="https://conductor-oss.github.io/conductor/documentation/clientsdks/python-sdk.html" />
+
+  <!-- Structured Data: SoftwareApplication -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Conductor",
+    "alternateName": ["Conductor OSS", "Netflix Conductor"],
+    "applicationCategory": "DeveloperApplication",
+    "applicationSubCategory": "Workflow Engine",
+    "operatingSystem": "Cross-platform (Docker, JVM, Kubernetes)",
+    "description": "Conductor is an open-source durable code execution engine and agentic workflow engine. Orchestrate distributed workflows with saga pattern compensation, at-least-once task delivery, and polyglot workers in Java, Python, Go, and more.",
+    "url": "https://conductor-oss.github.io/conductor",
+    "downloadUrl": "https://github.com/conductor-oss/conductor/releases",
+    "license": "https://www.apache.org/licenses/LICENSE-2.0",
+    "isAccessibleForFree": true,
+    "codeRepository": "https://github.com/conductor-oss/conductor",
+    "programmingLanguage": ["Java", "Python", "Go", "JavaScript", "C#", "Ruby", "Rust"],
+    "keywords": ["workflow engine", "durable execution", "AI agent orchestration", "LLM orchestration", "microservice orchestration", "saga pattern", "MCP", "open source"],
+    "author": {
+      "@type": "Organization",
+      "name": "Conductor OSS",
+      "url": "https://github.com/conductor-oss"
+    },
+    "maintainer": {
+      "@type": "Organization",
+      "name": "Orkes",
+      "url": "https://orkes.io"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
+
+  <!-- Structured Data: BreadcrumbList -->
+  
+  
+  
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://conductor-oss.github.io/conductor/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Documentation",
+        "item": "https://conductor-oss.github.io/conductor/documentation/documentation"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": "Clientsdks",
+        "item": "https://conductor-oss.github.io/conductor/documentation/clientsdks/clientsdks"
+      },
+      {
+        "@type": "ListItem",
+        "position": 4,
+        "name": "Python sdk",
+        "item": "https://conductor-oss.github.io/conductor/documentation/clientsdks/python-sdk.html/python-sdk.html"
+      }
+    ]
+  }
+  </script>
+  
+  
+
+  <!-- Structured Data: FAQPage (homepage only) -->
+  
+  <!-- Header social icons -->
+  <style>
+    .md-header__social {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-left: 1rem;
+    }
+    .md-header__social a {
+      display: flex;
+      align-items: center;
+      transition: opacity 0.2s;
+      opacity: 0.85;
+    }
+    .md-header__social a:hover {
+      opacity: 1;
+    }
+    .md-header__social svg {
+      width: 1.3rem;
+      height: 1.3rem;
+    }
+  </style>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      var source = document.querySelector(".md-header__source");
+      if (!source) return;
+      var container = document.createElement("div");
+      container.className = "md-header__social";
+      container.innerHTML =
+        '<a href="https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA" target="_blank" rel="noopener" title="Join Slack" aria-label="Join Slack">' +
+          '<svg viewBox="0 0 448 512" role="img" aria-hidden="true">' +
+            '<path fill="#E01E5A" d="M94.12 315.1c0 25.9-21.16 47.06-47.06 47.06S0 341 0 315.1c0-25.9 21.16-47.06 47.06-47.06h47.06v47.06zm23.72 0c0-25.9 21.16-47.06 47.06-47.06s47.06 21.16 47.06 47.06v117.84c0 25.9-21.16 47.06-47.06 47.06s-47.06-21.16-47.06-47.06V315.1z"/>' +
+            '<path fill="#36C5F0" d="M164.9 126.12c-25.9 0-47.06-21.16-47.06-47.06S139 32 164.9 32s47.06 21.16 47.06 47.06v47.06H164.9zm0 23.72c25.9 0 47.06 21.16 47.06 47.06s-21.16 47.06-47.06 47.06H47.06C21.16 244.96 0 223.8 0 197.9s21.16-47.06 47.06-47.06H164.9z"/>' +
+            '<path fill="#2EB67D" d="M353.88 197.9c0-25.9 21.16-47.06 47.06-47.06 25.9 0 47.06 21.16 47.06 47.06s-21.16 47.06-47.06 47.06h-47.06V197.9zm-23.72 0c0 25.9-21.16 47.06-47.06 47.06-25.9 0-47.06-21.16-47.06-47.06V79.06c0-25.9 21.16-47.06 47.06-47.06 25.9 0 47.06 21.16 47.06 47.06V197.9z"/>' +
+            '<path fill="#ECB22E" d="M283.1 386.88c25.9 0 47.06 21.16 47.06 47.06 0 25.9-21.16 47.06-47.06 47.06-25.9 0-47.06-21.16-47.06-47.06v-47.06h47.06zm0-23.72c-25.9 0-47.06-21.16-47.06-47.06 0-25.9 21.16-47.06 47.06-47.06h117.84c25.9 0 47.06 21.16 47.06 47.06 0 25.9-21.16 47.06-47.06 47.06H283.1z"/>' +
+          '</svg>' +
+        '</a>' +
+        '<a href="https://www.youtube.com/@orkesio" target="_blank" rel="noopener" title="YouTube" aria-label="YouTube">' +
+          '<svg viewBox="0 0 576 512" role="img" aria-hidden="true">' +
+            '<path fill="#FF0000" d="M549.655 124.083c-6.281-23.65-24.787-42.276-48.284-48.597C458.781 64 288 64 288 64S117.22 64 74.629 75.486c-23.497 6.322-42.003 24.947-48.284 48.597-11.412 42.867-11.412 132.305-11.412 132.305s0 89.438 11.412 132.305c6.281 23.65 24.787 41.5 48.284 47.821C117.22 448 288 448 288 448s170.78 0 213.371-11.486c23.497-6.321 42.003-24.171 48.284-47.821 11.412-42.867 11.412-132.305 11.412-132.305s0-89.438-11.412-132.305z"/>' +
+            '<path fill="#FFFFFF" d="M232.145 337.591V175.185l142.739 81.205-142.739 81.201z"/>' +
+          '</svg>' +
+        '</a>';
+      source.parentNode.insertBefore(container, source.nextSibling);
+    });
+  </script>
+
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#python-sdk" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../index.html" title="Durable Execution for workflows and agents" class="md-header__button md-logo" aria-label="Durable Execution for workflows and agents" data-md-component="logo">
+      
+  <a href="https://conductor-oss.org/" class="md-header__button md-logo" aria-label="Durable Execution for workflows and agents">
+    <img src="../../img/logo.svg" alt="logo">
+  </a>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Durable Execution for workflows and agents
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Python
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12c0-2.42-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/conductor-oss/conductor" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../index.html" class="md-tabs__link">
+        
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../quickstart/index.html" class="md-tabs__link">
+          
+  
+    
+  
+  Quickstart
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../devguide/how-tos/conductor-skills.html" class="md-tabs__link">
+          
+  
+    
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../devguide/cookbook/index.html" class="md-tabs__link">
+          
+  
+    
+  
+  Cookbook
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../devguide/ai/index.html" class="md-tabs__link">
+          
+  
+    
+  
+  AI Cookbook
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="index.html" class="md-tabs__link">
+          
+  
+    
+  
+  SDKs
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/index.html" class="md-tabs__link">
+          
+  
+    
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../devguide/running/deploy.html" class="md-tabs__link">
+          
+  
+    
+  
+  Deploy
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../index.html" title="Durable Execution for workflows and agents" class="md-nav__button md-logo" aria-label="Durable Execution for workflows and agents" data-md-component="logo">
+      
+  <a href="https://conductor-oss.org/" class="md-header__button md-logo" aria-label="Durable Execution for workflows and agents">
+    <img src="../../img/logo.svg" alt="logo">
+  </a>
+
+    </a>
+    Durable Execution for workflows and agents
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/conductor-oss/conductor" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../index.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../quickstart/index.html" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Quickstart
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Quickstart
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/concepts/index.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Concepts
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/concepts/workflows.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Workflows
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/concepts/tasks.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Tasks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/concepts/workers.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Workers
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/durable-execution.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Durable Execution
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/json-native.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    JSON + Code Native
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/architecture/tasklifecycle.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Task Lifecycle
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Guides
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Guides
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/how-tos/conductor-skills.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Build with AI Agents
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/concepts/conductor.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Why Conductor
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Workflows
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            Workflows
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/how-tos/Workflows/creating-workflows.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Creating / Updating Workflows
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/how-tos/Workflows/starting-workflows.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Starting Workflows
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/how-tos/Workflows/handling-errors.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Handling Workflow Errors
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/how-tos/Workflows/debugging-workflows.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Debugging Workflows
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/how-tos/Workflows/versioning-workflows.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Versioning Workflows
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/how-tos/Workflows/searching-workflows.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Searching Workflows
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/how-tos/Workflows/viewing-workflow-executions.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Viewing Workflow Executions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Tasks
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            Tasks
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/how-tos/Tasks/creating-tasks.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Creating / Updating Task Definitions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/how-tos/Tasks/task-inputs.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Wiring Task Inputs
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/how-tos/Tasks/choosing-tasks.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Choosing Tasks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/how-tos/Workers/scaling-workers.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Scaling Task Workers
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/how-tos/event-bus.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Event Bus Orchestration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/bestpractices.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Best Practices
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/faq.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../devguide/cookbook/index.html" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Cookbook
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Cookbook
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/cookbook/microservice-orchestration.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Microservice Orchestration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/cookbook/dynamic-parallelism.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dynamic Parallelism
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/cookbook/wait-and-timers.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Wait & Timer Patterns
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/cookbook/event-driven.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Event-Driven Recipes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/cookbook/ai-llm.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AI & LLM Recipes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/cookbook/dynamic-workflows.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dynamic Workflows in Code
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../devguide/ai/index.html" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    AI Cookbook
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            AI Cookbook
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/ai/first-ai-agent.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Build Your First AI Agent
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/ai/production-agent-architecture.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Production Agent Architecture
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/ai/failure-semantics.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Failure Semantics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/ai/why-conductor.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Why Conductor for Agents
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/ai/mcp-guide.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    MCP Integration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/ai/durable-agents.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Durable Agents
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/ai/human-in-the-loop.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Human-in-the-Loop
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/ai/dynamic-workflows.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dynamic Workflows
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/ai/llm-orchestration.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    LLM Orchestration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/ai/token-efficiency.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Token Efficiency
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="index.html" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    SDKs
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            SDKs
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="java-sdk.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Java
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Python
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="python-sdk.html" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Python
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#start-conductor-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      Start Conductor Server
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-the-sdk" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install the SDK
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#60-second-quickstart" class="md-nav__link">
+    <span class="md-ellipsis">
+      60-Second Quickstart
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="60-Second Quickstart">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#using-orkes-conductor-remote-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using Orkes Conductor / Remote Server?
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feature-showcase" class="md-nav__link">
+    <span class="md-ellipsis">
+      Feature Showcase
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Feature Showcase">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#workers-sync-and-async" class="md-nav__link">
+    <span class="md-ellipsis">
+      Workers: Sync and Async
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workflows-with-http-calls-and-waits" class="md-nav__link">
+    <span class="md-ellipsis">
+      Workflows with HTTP Calls and Waits
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#long-running-tasks-with-taskcontext" class="md-nav__link">
+    <span class="md-ellipsis">
+      Long-Running Tasks with TaskContext
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monitoring-with-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Monitoring with Metrics
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#managing-workflow-executions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Managing Workflow Executions
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ai-llm-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      AI &amp; LLM Workflows
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-conductor" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why Conductor?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Examples
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Documentation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#frequently-asked-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Frequently Asked Questions
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#support" class="md-nav__link">
+    <span class="md-ellipsis">
+      Support
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#license" class="md-nav__link">
+    <span class="md-ellipsis">
+      License
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Examples
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="go-sdk.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Go
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="js-sdk.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    JavaScript
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="csharp-sdk.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    C#
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ruby-sdk.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Ruby
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="rust-sdk.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Rust
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Reference
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7_1" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../api/index.html" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    API
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7_1" id="__nav_7_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_1">
+            <span class="md-nav__icon md-icon"></span>
+            API
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/metadata.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Metadata API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/startworkflow.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Start Workflow API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/workflow.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Workflow API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/task.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Task API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/bulk.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Bulk Operations API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/eventhandlers.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Event Handlers API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/taskdomains.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Task Domains
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7_2" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../configuration/workflowdef/index.html" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Workflow Definition
+  </span>
+  
+
+            </a>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            Workflow Definition
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7_3" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../configuration/workflowdef/systemtasks/index.html" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    System Tasks
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7_3" id="__nav_7_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_3">
+            <span class="md-nav__icon md-icon"></span>
+            System Tasks
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/workflowdef/systemtasks/http-task.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    HTTP Task
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/workflowdef/systemtasks/inline-task.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Inline Task
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/workflowdef/systemtasks/event-task.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Event Task
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/workflowdef/systemtasks/human-task.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Human Task
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/workflowdef/systemtasks/json-jq-transform-task.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    JSON JQ Transform Task
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/workflowdef/systemtasks/kafka-publish-task.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Kafka Publish Task
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/workflowdef/systemtasks/noop-task.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    No Op Task
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/workflowdef/systemtasks/jdbc-task.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    JDBC Task
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/workflowdef/systemtasks/wait-task.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Wait Task
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7_4" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../configuration/workflowdef/operators/index.html" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Operators
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7_4" id="__nav_7_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_4">
+            <span class="md-nav__icon md-icon"></span>
+            Operators
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/workflowdef/operators/fork-task.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Fork
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/workflowdef/operators/join-task.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Join
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/workflowdef/operators/switch-task.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Switch
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/workflowdef/operators/do-while-task.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Do While
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/workflowdef/operators/dynamic-task.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dynamic
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/workflowdef/operators/dynamic-fork-task.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dynamic Fork
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/workflowdef/operators/sub-workflow-task.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sub Workflow
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/workflowdef/operators/start-workflow-task.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Start Workflow
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/workflowdef/operators/set-variable-task.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Set Variable
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/workflowdef/operators/terminate-task.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Terminate
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/taskdef.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Task Definition
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/eventhandlers.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Event Handlers
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/appconf.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_8" id="__nav_7_8_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Metrics
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_8">
+            <span class="md-nav__icon md-icon"></span>
+            Metrics
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metrics/server.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Server Metrics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metrics/client.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Client Metrics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+          
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../devguide/architecture/index.html" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Deploy
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_8" id="__nav_8_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            Deploy
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/running/deploy.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Docker
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/running/source.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    From Source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../devguide/running/hosted.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Hosted
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_5" id="__nav_8_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Advanced
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_5">
+            <span class="md-nav__icon md-icon"></span>
+            Advanced
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/extend.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Extending Conductor
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/isolationgroups.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Isolation Groups
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/archival-of-workflows.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Archiving Workflows
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/externalpayloadstorage.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    External Payload Storage
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/redis.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Redis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/postgresql.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PostgreSQL
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/opensearch.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    OpenSearch
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#start-conductor-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      Start Conductor Server
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-the-sdk" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install the SDK
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#60-second-quickstart" class="md-nav__link">
+    <span class="md-ellipsis">
+      60-Second Quickstart
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="60-Second Quickstart">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#using-orkes-conductor-remote-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using Orkes Conductor / Remote Server?
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feature-showcase" class="md-nav__link">
+    <span class="md-ellipsis">
+      Feature Showcase
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Feature Showcase">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#workers-sync-and-async" class="md-nav__link">
+    <span class="md-ellipsis">
+      Workers: Sync and Async
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workflows-with-http-calls-and-waits" class="md-nav__link">
+    <span class="md-ellipsis">
+      Workflows with HTTP Calls and Waits
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#long-running-tasks-with-taskcontext" class="md-nav__link">
+    <span class="md-ellipsis">
+      Long-Running Tasks with TaskContext
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monitoring-with-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Monitoring with Metrics
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#managing-workflow-executions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Managing Workflow Executions
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ai-llm-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      AI &amp; LLM Workflows
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-conductor" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why Conductor?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Examples
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Documentation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#frequently-asked-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Frequently Asked Questions
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#support" class="md-nav__link">
+    <span class="md-ellipsis">
+      Support
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#license" class="md-nav__link">
+    <span class="md-ellipsis">
+      License
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Examples
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<h1 id="python-sdk">Python SDK</h1>
+<div class="admonition info">
+<p class="admonition-title">Source</p>
+<p>GitHub: <a href="https://github.com/conductor-oss/python-sdk">conductor-oss/python-sdk</a> | Report issues and contribute on GitHub.</p>
+</div>
+<h2 id="start-conductor-server">Start Conductor Server</h2>
+<p>If you don't already have a Conductor server running, pick one:</p>
+<p><strong>Docker Compose (recommended, includes UI):</strong></p>
+<p><div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>docker<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span><span class="m">8080</span>:8080<span class="w"> </span>conductoross/conductor:latest
+</code></pre></div>
+The UI will be available at <code>http://localhost:8080</code> and the API at <code>http://localhost:8080/api</code></p>
+<p><strong>MacOS / Linux (one-liner):</strong> (If you don't want to use docker, you can install and run the binary directly)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>curl<span class="w"> </span>-sSL<span class="w"> </span>https://raw.githubusercontent.com/conductor-oss/conductor/main/conductor_server.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh
+</code></pre></div></p>
+<p><strong>Conductor CLI</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Installs conductor cli</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>npm<span class="w"> </span>install<span class="w"> </span>-g<span class="w"> </span>@conductor-oss/conductor-cli
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Start the open source conductor server</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>conductor<span class="w"> </span>server<span class="w"> </span>start
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># see conductor server --help for all the available commands</span>
+</code></pre></div></p>
+<h2 id="install-the-sdk">Install the SDK</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>pip<span class="w"> </span>install<span class="w"> </span>conductor-python
+</code></pre></div>
+<h2 id="60-second-quickstart">60-Second Quickstart</h2>
+<p><strong>Step 1: Create a workflow</strong></p>
+<p>Workflows are definitions that reference task types (e.g. a SIMPLE task called <code>greet</code>). We'll build a workflow called
+<code>greetings</code> that runs one task and returns its output.</p>
+<p>Assuming you have a <code>WorkflowExecutor</code> (<code>executor</code>) and a worker task (<code>greet</code>):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span> <span class="nn">conductor.client.workflow.conductor_workflow</span> <span class="kn">import</span> <span class="n">ConductorWorkflow</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">workflow</span> <span class="o">=</span> <span class="n">ConductorWorkflow</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;greetings&#39;</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">executor</span><span class="o">=</span><span class="n">executor</span><span class="p">)</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">greet_task</span> <span class="o">=</span> <span class="n">greet</span><span class="p">(</span><span class="n">task_ref_name</span><span class="o">=</span><span class="s1">&#39;greet_ref&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">workflow</span><span class="o">.</span><span class="n">input</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">))</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">workflow</span> <span class="o">&gt;&gt;</span> <span class="n">greet_task</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="n">workflow</span><span class="o">.</span><span class="n">output_parameters</span><span class="p">({</span><span class="s1">&#39;result&#39;</span><span class="p">:</span> <span class="n">greet_task</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="s1">&#39;result&#39;</span><span class="p">)})</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">workflow</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Step 2: Write a worker</strong></p>
+<p>Workers are just Python functions decorated with <code>@worker_task</code> that poll Conductor for tasks and execute them.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span> <span class="nn">conductor.client.worker.worker_task</span> <span class="kn">import</span> <span class="n">worker_task</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># register_task_def=True is convenient for local dev quickstarts; in production, manage task definitions separately.</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="nd">@worker_task</span><span class="p">(</span><span class="n">task_definition_name</span><span class="o">=</span><span class="s1">&#39;greet&#39;</span><span class="p">,</span> <span class="n">register_task_def</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">def</span> <span class="nf">greet</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;Hello </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">&#39;</span>
+</code></pre></div>
+<p><strong>Step 3: Run your first workflow app</strong></p>
+<p>Create a <code>quickstart.py</code> with the following:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span> <span class="nn">conductor.client.automator.task_handler</span> <span class="kn">import</span> <span class="n">TaskHandler</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span> <span class="nn">conductor.client.configuration.configuration</span> <span class="kn">import</span> <span class="n">Configuration</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="kn">from</span> <span class="nn">conductor.client.orkes_clients</span> <span class="kn">import</span> <span class="n">OrkesClients</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="kn">from</span> <span class="nn">conductor.client.workflow.conductor_workflow</span> <span class="kn">import</span> <span class="n">ConductorWorkflow</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="kn">from</span> <span class="nn">conductor.client.worker.worker_task</span> <span class="kn">import</span> <span class="n">worker_task</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="c1"># A worker is any Python function.</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="nd">@worker_task</span><span class="p">(</span><span class="n">task_definition_name</span><span class="o">=</span><span class="s1">&#39;greet&#39;</span><span class="p">,</span> <span class="n">register_task_def</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="k">def</span> <span class="nf">greet</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;Hello </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">&#39;</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>    <span class="c1"># Configure the SDK (reads CONDUCTOR_SERVER_URL / CONDUCTOR_AUTH_* from env).</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>    <span class="n">config</span> <span class="o">=</span> <span class="n">Configuration</span><span class="p">()</span>
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>    <span class="n">clients</span> <span class="o">=</span> <span class="n">OrkesClients</span><span class="p">(</span><span class="n">configuration</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>    <span class="n">executor</span> <span class="o">=</span> <span class="n">clients</span><span class="o">.</span><span class="n">get_workflow_executor</span><span class="p">()</span>
+<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>
+<a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a>    <span class="c1"># Build a workflow with the &gt;&gt; operator.</span>
+<a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a>    <span class="n">workflow</span> <span class="o">=</span> <span class="n">ConductorWorkflow</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;greetings&#39;</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">executor</span><span class="o">=</span><span class="n">executor</span><span class="p">)</span>
+<a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a>    <span class="n">greet_task</span> <span class="o">=</span> <span class="n">greet</span><span class="p">(</span><span class="n">task_ref_name</span><span class="o">=</span><span class="s1">&#39;greet_ref&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">workflow</span><span class="o">.</span><span class="n">input</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">))</span>
+<a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a>    <span class="n">workflow</span> <span class="o">&gt;&gt;</span> <span class="n">greet_task</span>
+<a id="__codelineno-6-25" name="__codelineno-6-25" href="#__codelineno-6-25"></a>    <span class="n">workflow</span><span class="o">.</span><span class="n">output_parameters</span><span class="p">({</span><span class="s1">&#39;result&#39;</span><span class="p">:</span> <span class="n">greet_task</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="s1">&#39;result&#39;</span><span class="p">)})</span>
+<a id="__codelineno-6-26" name="__codelineno-6-26" href="#__codelineno-6-26"></a>    <span class="n">workflow</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-6-27" name="__codelineno-6-27" href="#__codelineno-6-27"></a>
+<a id="__codelineno-6-28" name="__codelineno-6-28" href="#__codelineno-6-28"></a>    <span class="c1"># Start polling for tasks (one worker subprocess per worker function).</span>
+<a id="__codelineno-6-29" name="__codelineno-6-29" href="#__codelineno-6-29"></a>    <span class="k">with</span> <span class="n">TaskHandler</span><span class="p">(</span><span class="n">configuration</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">scan_for_annotated_workers</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">task_handler</span><span class="p">:</span>
+<a id="__codelineno-6-30" name="__codelineno-6-30" href="#__codelineno-6-30"></a>        <span class="n">task_handler</span><span class="o">.</span><span class="n">start_processes</span><span class="p">()</span>
+<a id="__codelineno-6-31" name="__codelineno-6-31" href="#__codelineno-6-31"></a>
+<a id="__codelineno-6-32" name="__codelineno-6-32" href="#__codelineno-6-32"></a>        <span class="c1"># Run the workflow and get the result.</span>
+<a id="__codelineno-6-33" name="__codelineno-6-33" href="#__codelineno-6-33"></a>        <span class="n">run</span> <span class="o">=</span> <span class="n">executor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;greetings&#39;</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">workflow_input</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;Conductor&#39;</span><span class="p">})</span>
+<a id="__codelineno-6-34" name="__codelineno-6-34" href="#__codelineno-6-34"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;result: </span><span class="si">{</span><span class="n">run</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s2">&quot;result&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+<a id="__codelineno-6-35" name="__codelineno-6-35" href="#__codelineno-6-35"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;execution: </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">ui_host</span><span class="si">}</span><span class="s1">/execution/</span><span class="si">{</span><span class="n">run</span><span class="o">.</span><span class="n">workflow_id</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+<a id="__codelineno-6-36" name="__codelineno-6-36" href="#__codelineno-6-36"></a>
+<a id="__codelineno-6-37" name="__codelineno-6-37" href="#__codelineno-6-37"></a>
+<a id="__codelineno-6-38" name="__codelineno-6-38" href="#__codelineno-6-38"></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+<a id="__codelineno-6-39" name="__codelineno-6-39" href="#__codelineno-6-39"></a>    <span class="n">main</span><span class="p">()</span>
+</code></pre></div>
+<p>Run it:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>python<span class="w"> </span>quickstart.py
+</code></pre></div>
+<blockquote>
+<h3 id="using-orkes-conductor-remote-server">Using Orkes Conductor / Remote Server?</h3>
+<p>Export your authentication credentials as well:</p>
+<p><div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">CONDUCTOR_SERVER_URL</span><span class="o">=</span><span class="s2">&quot;https://your-cluster.orkesconductor.io/api&quot;</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1"># If using Orkes Conductor that requires auth key/secret</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="nb">export</span><span class="w"> </span><span class="nv">CONDUCTOR_AUTH_KEY</span><span class="o">=</span><span class="s2">&quot;your-key&quot;</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="nb">export</span><span class="w"> </span><span class="nv">CONDUCTOR_AUTH_SECRET</span><span class="o">=</span><span class="s2">&quot;your-secret&quot;</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="c1"># Optional — set to false to force HTTP/1.1 if your network environment has unstable long-lived HTTP/2 connections (default: true)</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="c1"># export CONDUCTOR_HTTP2_ENABLED=false</span>
+</code></pre></div>
+See the <a href="https://github.com/conductor-oss/python-sdk/blob/main/WORKER_CONFIGURATION.md">Worker Configuration</a> guide for details.</p>
+</blockquote>
+<p>That's it — you just defined a worker, built a workflow, and executed it. Open the Conductor UI (default:
+<a href="http://localhost:8127">http://localhost:8127</a>) to see the execution.</p>
+<hr />
+<h2 id="feature-showcase">Feature Showcase</h2>
+<h3 id="workers-sync-and-async">Workers: Sync and Async</h3>
+<p>The SDK automatically selects the right runner based on your function signature — <code>TaskRunner</code> (thread pool) for sync functions, <code>AsyncTaskRunner</code> (event loop) for async.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span> <span class="nn">conductor.client.worker.worker_task</span> <span class="kn">import</span> <span class="n">worker_task</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="c1"># Sync worker — for CPU-bound work (uses ThreadPoolExecutor)</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="nd">@worker_task</span><span class="p">(</span><span class="n">task_definition_name</span><span class="o">=</span><span class="s1">&#39;process_image&#39;</span><span class="p">,</span> <span class="n">thread_count</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="k">def</span> <span class="nf">process_image</span><span class="p">(</span><span class="n">image_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="kn">import</span> <span class="nn">PIL.Image</span><span class="o">,</span> <span class="nn">io</span><span class="o">,</span> <span class="nn">requests</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="n">img</span> <span class="o">=</span> <span class="n">PIL</span><span class="o">.</span><span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">image_url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">))</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="n">img</span><span class="o">.</span><span class="n">thumbnail</span><span class="p">((</span><span class="mi">256</span><span class="p">,</span> <span class="mi">256</span><span class="p">))</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="n">img</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="n">img</span><span class="o">.</span><span class="n">height</span><span class="p">}</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="c1"># Async worker — for I/O-bound work (uses AsyncTaskRunner, no thread overhead)</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="nd">@worker_task</span><span class="p">(</span><span class="n">task_definition_name</span><span class="o">=</span><span class="s1">&#39;fetch_data&#39;</span><span class="p">,</span> <span class="n">thread_count</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">fetch_data</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>    <span class="kn">import</span> <span class="nn">httpx</span>
+<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>    <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">()</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>        <span class="n">resp</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+<a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a>    <span class="k">return</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+</code></pre></div>
+<p>Start workers with <code>TaskHandler</code> — it auto-discovers <code>@worker_task</code> functions and spawns one subprocess per worker:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span> <span class="nn">conductor.client.automator.task_handler</span> <span class="kn">import</span> <span class="n">TaskHandler</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="kn">from</span> <span class="nn">conductor.client.configuration.configuration</span> <span class="kn">import</span> <span class="n">Configuration</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">config</span> <span class="o">=</span> <span class="n">Configuration</span><span class="p">()</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="k">with</span> <span class="n">TaskHandler</span><span class="p">(</span><span class="n">configuration</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">scan_for_annotated_workers</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">task_handler</span><span class="p">:</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    <span class="n">task_handler</span><span class="o">.</span><span class="n">start_processes</span><span class="p">()</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    <span class="n">task_handler</span><span class="o">.</span><span class="n">join_processes</span><span class="p">()</span>  <span class="c1"># blocks forever (workers poll continuously)</span>
+</code></pre></div>
+<p>See <a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/worker_example.py">examples/worker_example.py</a> and <a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/workers_e2e.py">examples/workers_e2e.py</a> for complete examples.</p>
+<h3 id="workflows-with-http-calls-and-waits">Workflows with HTTP Calls and Waits</h3>
+<p>Chain custom workers with built-in system tasks — HTTP calls, waits, JavaScript, JQ transforms — all in one workflow:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span> <span class="nn">conductor.client.workflow.conductor_workflow</span> <span class="kn">import</span> <span class="n">ConductorWorkflow</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="kn">from</span> <span class="nn">conductor.client.workflow.task.http_task</span> <span class="kn">import</span> <span class="n">HttpTask</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="kn">from</span> <span class="nn">conductor.client.workflow.task.wait_task</span> <span class="kn">import</span> <span class="n">WaitTask</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="n">workflow</span> <span class="o">=</span> <span class="n">ConductorWorkflow</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;order_pipeline&#39;</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">executor</span><span class="o">=</span><span class="n">executor</span><span class="p">)</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="c1"># Custom worker task</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="n">validate</span> <span class="o">=</span> <span class="n">validate_order</span><span class="p">(</span><span class="n">task_ref_name</span><span class="o">=</span><span class="s1">&#39;validate&#39;</span><span class="p">,</span> <span class="n">order_id</span><span class="o">=</span><span class="n">workflow</span><span class="o">.</span><span class="n">input</span><span class="p">(</span><span class="s1">&#39;order_id&#39;</span><span class="p">))</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="c1"># Built-in HTTP task — call any API, no worker needed</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="n">charge_payment</span> <span class="o">=</span> <span class="n">HttpTask</span><span class="p">(</span><span class="n">task_ref_name</span><span class="o">=</span><span class="s1">&#39;charge_payment&#39;</span><span class="p">,</span> <span class="n">http_input</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>    <span class="s1">&#39;uri&#39;</span><span class="p">:</span> <span class="s1">&#39;https://api.stripe.com/v1/charges&#39;</span><span class="p">,</span>
+<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>    <span class="s1">&#39;method&#39;</span><span class="p">:</span> <span class="s1">&#39;POST&#39;</span><span class="p">,</span>
+<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a>    <span class="s1">&#39;headers&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;Authorization&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;Bearer $</span><span class="si">{workflow.input.stripe_key}</span><span class="s1">&#39;</span><span class="p">]},</span>
+<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a>    <span class="s1">&#39;body&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;amount&#39;</span><span class="p">:</span> <span class="s1">&#39;$</span><span class="si">{validate.output.amount}</span><span class="s1">&#39;</span><span class="p">}</span>
+<a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a><span class="p">})</span>
+<a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a>
+<a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="c1"># Built-in Wait task — pause the workflow for 10 seconds</span>
+<a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a><span class="n">cool_down</span> <span class="o">=</span> <span class="n">WaitTask</span><span class="p">(</span><span class="n">task_ref_name</span><span class="o">=</span><span class="s1">&#39;cool_down&#39;</span><span class="p">,</span> <span class="n">wait_for_seconds</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a>
+<a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a><span class="c1"># Another custom worker task</span>
+<a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a><span class="n">notify</span> <span class="o">=</span> <span class="n">send_notification</span><span class="p">(</span><span class="n">task_ref_name</span><span class="o">=</span><span class="s1">&#39;notify&#39;</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s1">&#39;Order complete&#39;</span><span class="p">)</span>
+<a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a>
+<a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a><span class="c1"># Chain with &gt;&gt; operator</span>
+<a id="__codelineno-11-25" name="__codelineno-11-25" href="#__codelineno-11-25"></a><span class="n">workflow</span> <span class="o">&gt;&gt;</span> <span class="n">validate</span> <span class="o">&gt;&gt;</span> <span class="n">charge_payment</span> <span class="o">&gt;&gt;</span> <span class="n">cool_down</span> <span class="o">&gt;&gt;</span> <span class="n">notify</span>
+<a id="__codelineno-11-26" name="__codelineno-11-26" href="#__codelineno-11-26"></a>
+<a id="__codelineno-11-27" name="__codelineno-11-27" href="#__codelineno-11-27"></a><span class="c1"># Execute synchronously and wait for the result</span>
+<a id="__codelineno-11-28" name="__codelineno-11-28" href="#__codelineno-11-28"></a><span class="n">result</span> <span class="o">=</span> <span class="n">workflow</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">workflow_input</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;order_id&#39;</span><span class="p">:</span> <span class="s1">&#39;ORD-123&#39;</span><span class="p">,</span> <span class="s1">&#39;stripe_key&#39;</span><span class="p">:</span> <span class="s1">&#39;sk_test_...&#39;</span><span class="p">})</span>
+<a id="__codelineno-11-29" name="__codelineno-11-29" href="#__codelineno-11-29"></a><span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">output</span><span class="p">)</span>
+</code></pre></div>
+<p>See <a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/kitchensink.py">examples/kitchensink.py</a> for all task types (HTTP, JavaScript, JQ, Switch, Terminate) and <a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/workflow_ops.py">examples/workflow_ops.py</a> for lifecycle operations.</p>
+<h3 id="long-running-tasks-with-taskcontext">Long-Running Tasks with TaskContext</h3>
+<p>For tasks that take minutes or hours (batch processing, ML training, external approvals), use <code>TaskContext</code> to report progress and poll incrementally:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="kn">from</span> <span class="nn">conductor.client.worker.worker_task</span> <span class="kn">import</span> <span class="n">worker_task</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="kn">from</span> <span class="nn">conductor.client.context.task_context</span> <span class="kn">import</span> <span class="n">get_task_context</span><span class="p">,</span> <span class="n">TaskInProgress</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="nd">@worker_task</span><span class="p">(</span><span class="n">task_definition_name</span><span class="o">=</span><span class="s1">&#39;batch_job&#39;</span><span class="p">)</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="k">def</span> <span class="nf">batch_job</span><span class="p">(</span><span class="n">batch_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">TaskInProgress</span><span class="p">]:</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="n">ctx</span> <span class="o">=</span> <span class="n">get_task_context</span><span class="p">()</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>    <span class="n">ctx</span><span class="o">.</span><span class="n">add_log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing batch </span><span class="si">{</span><span class="n">batch_id</span><span class="si">}</span><span class="s2">, poll #</span><span class="si">{</span><span class="n">ctx</span><span class="o">.</span><span class="n">get_poll_count</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>    <span class="k">if</span> <span class="n">ctx</span><span class="o">.</span><span class="n">get_poll_count</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>        <span class="c1"># Not done yet — re-queue and check again in 30 seconds</span>
+<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a>        <span class="k">return</span> <span class="n">TaskInProgress</span><span class="p">(</span><span class="n">callback_after_seconds</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;progress&#39;</span><span class="p">:</span> <span class="n">ctx</span><span class="o">.</span><span class="n">get_poll_count</span><span class="p">()</span> <span class="o">*</span> <span class="mi">33</span><span class="p">})</span>
+<a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a>
+<a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a>    <span class="c1"># Done after 3 polls</span>
+<a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a>    <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="s1">&#39;completed&#39;</span><span class="p">,</span> <span class="s1">&#39;batch_id&#39;</span><span class="p">:</span> <span class="n">batch_id</span><span class="p">}</span>
+</code></pre></div>
+<p><code>TaskContext</code> also provides access to task metadata, retry counts, workflow IDs, and the ability to add logs visible in the Conductor UI.</p>
+<p>See <a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/task_context_example.py">examples/task_context_example.py</a> for all patterns (polling, retry-aware logic, async context, input access).</p>
+<h3 id="monitoring-with-metrics">Monitoring with Metrics</h3>
+<p>Enable Prometheus metrics with a single setting — the SDK exposes poll counts, execution times, error rates, and HTTP latency:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span> <span class="nn">conductor.client.automator.task_handler</span> <span class="kn">import</span> <span class="n">TaskHandler</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="kn">from</span> <span class="nn">conductor.client.configuration.configuration</span> <span class="kn">import</span> <span class="n">Configuration</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="kn">from</span> <span class="nn">conductor.client.configuration.settings.metrics_settings</span> <span class="kn">import</span> <span class="n">MetricsSettings</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="n">config</span> <span class="o">=</span> <span class="n">Configuration</span><span class="p">()</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="n">metrics</span> <span class="o">=</span> <span class="n">MetricsSettings</span><span class="p">(</span><span class="n">directory</span><span class="o">=</span><span class="s1">&#39;/tmp/conductor-metrics&#39;</span><span class="p">,</span> <span class="n">http_port</span><span class="o">=</span><span class="mi">8000</span><span class="p">)</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="k">with</span> <span class="n">TaskHandler</span><span class="p">(</span><span class="n">configuration</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">metrics_settings</span><span class="o">=</span><span class="n">metrics</span><span class="p">,</span> <span class="n">scan_for_annotated_workers</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">task_handler</span><span class="p">:</span>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>    <span class="n">task_handler</span><span class="o">.</span><span class="n">start_processes</span><span class="p">()</span>
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>    <span class="n">task_handler</span><span class="o">.</span><span class="n">join_processes</span><span class="p">()</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># Prometheus-compatible endpoint</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>curl<span class="w"> </span>http://localhost:8000/metrics
+</code></pre></div>
+<p>See <a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/metrics_example.py">examples/metrics_example.py</a> and <a href="https://github.com/conductor-oss/python-sdk/blob/main/METRICS.md">METRICS.md</a> for details on all tracked metrics.</p>
+<h3 id="managing-workflow-executions">Managing Workflow Executions</h3>
+<p>Full lifecycle control — start, execute, pause, resume, terminate, retry, restart, rerun, signal, and search:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">from</span> <span class="nn">conductor.client.configuration.configuration</span> <span class="kn">import</span> <span class="n">Configuration</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="kn">from</span> <span class="nn">conductor.client.http.models</span> <span class="kn">import</span> <span class="n">StartWorkflowRequest</span><span class="p">,</span> <span class="n">RerunWorkflowRequest</span><span class="p">,</span> <span class="n">TaskResult</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="kn">from</span> <span class="nn">conductor.client.orkes_clients</span> <span class="kn">import</span> <span class="n">OrkesClients</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="n">config</span> <span class="o">=</span> <span class="n">Configuration</span><span class="p">()</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="n">clients</span> <span class="o">=</span> <span class="n">OrkesClients</span><span class="p">(</span><span class="n">configuration</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="n">workflow_client</span> <span class="o">=</span> <span class="n">clients</span><span class="o">.</span><span class="n">get_workflow_client</span><span class="p">()</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="n">task_client</span> <span class="o">=</span> <span class="n">clients</span><span class="o">.</span><span class="n">get_task_client</span><span class="p">()</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="n">executor</span> <span class="o">=</span> <span class="n">clients</span><span class="o">.</span><span class="n">get_workflow_executor</span><span class="p">()</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="c1"># Start async (returns workflow ID immediately)</span>
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="n">workflow_id</span> <span class="o">=</span> <span class="n">executor</span><span class="o">.</span><span class="n">start_workflow</span><span class="p">(</span><span class="n">StartWorkflowRequest</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;my_workflow&#39;</span><span class="p">,</span> <span class="nb">input</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;key&#39;</span><span class="p">:</span> <span class="s1">&#39;value&#39;</span><span class="p">}))</span>
+<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a>
+<a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="c1"># Execute sync (blocks until workflow completes)</span>
+<a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a><span class="n">result</span> <span class="o">=</span> <span class="n">executor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;my_workflow&#39;</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">workflow_input</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;key&#39;</span><span class="p">:</span> <span class="s1">&#39;value&#39;</span><span class="p">})</span>
+<a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a>
+<a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a><span class="c1"># Lifecycle management</span>
+<a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a><span class="n">workflow_client</span><span class="o">.</span><span class="n">pause_workflow</span><span class="p">(</span><span class="n">workflow_id</span><span class="p">)</span>
+<a id="__codelineno-15-19" name="__codelineno-15-19" href="#__codelineno-15-19"></a><span class="n">workflow_client</span><span class="o">.</span><span class="n">resume_workflow</span><span class="p">(</span><span class="n">workflow_id</span><span class="p">)</span>
+<a id="__codelineno-15-20" name="__codelineno-15-20" href="#__codelineno-15-20"></a><span class="n">workflow_client</span><span class="o">.</span><span class="n">terminate_workflow</span><span class="p">(</span><span class="n">workflow_id</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s1">&#39;no longer needed&#39;</span><span class="p">)</span>
+<a id="__codelineno-15-21" name="__codelineno-15-21" href="#__codelineno-15-21"></a><span class="n">workflow_client</span><span class="o">.</span><span class="n">retry_workflow</span><span class="p">(</span><span class="n">workflow_id</span><span class="p">)</span>          <span class="c1"># retry from last failed task</span>
+<a id="__codelineno-15-22" name="__codelineno-15-22" href="#__codelineno-15-22"></a><span class="n">workflow_client</span><span class="o">.</span><span class="n">restart_workflow</span><span class="p">(</span><span class="n">workflow_id</span><span class="p">)</span>         <span class="c1"># restart from the beginning</span>
+<a id="__codelineno-15-23" name="__codelineno-15-23" href="#__codelineno-15-23"></a><span class="n">workflow_client</span><span class="o">.</span><span class="n">rerun_workflow</span><span class="p">(</span><span class="n">workflow_id</span><span class="p">,</span>           <span class="c1"># rerun from a specific task</span>
+<a id="__codelineno-15-24" name="__codelineno-15-24" href="#__codelineno-15-24"></a>    <span class="n">RerunWorkflowRequest</span><span class="p">(</span><span class="n">re_run_from_task_id</span><span class="o">=</span><span class="n">task_id</span><span class="p">))</span>
+<a id="__codelineno-15-25" name="__codelineno-15-25" href="#__codelineno-15-25"></a>
+<a id="__codelineno-15-26" name="__codelineno-15-26" href="#__codelineno-15-26"></a><span class="c1"># Send a signal to a waiting workflow (complete a WAIT task externally)</span>
+<a id="__codelineno-15-27" name="__codelineno-15-27" href="#__codelineno-15-27"></a><span class="n">task_client</span><span class="o">.</span><span class="n">update_task</span><span class="p">(</span><span class="n">TaskResult</span><span class="p">(</span>
+<a id="__codelineno-15-28" name="__codelineno-15-28" href="#__codelineno-15-28"></a>    <span class="n">workflow_instance_id</span><span class="o">=</span><span class="n">workflow_id</span><span class="p">,</span>
+<a id="__codelineno-15-29" name="__codelineno-15-29" href="#__codelineno-15-29"></a>    <span class="n">task_id</span><span class="o">=</span><span class="n">wait_task_id</span><span class="p">,</span>
+<a id="__codelineno-15-30" name="__codelineno-15-30" href="#__codelineno-15-30"></a>    <span class="n">status</span><span class="o">=</span><span class="s1">&#39;COMPLETED&#39;</span><span class="p">,</span>
+<a id="__codelineno-15-31" name="__codelineno-15-31" href="#__codelineno-15-31"></a>    <span class="n">output_data</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;approved&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+<a id="__codelineno-15-32" name="__codelineno-15-32" href="#__codelineno-15-32"></a><span class="p">))</span>
+<a id="__codelineno-15-33" name="__codelineno-15-33" href="#__codelineno-15-33"></a>
+<a id="__codelineno-15-34" name="__codelineno-15-34" href="#__codelineno-15-34"></a><span class="c1"># Search workflows</span>
+<a id="__codelineno-15-35" name="__codelineno-15-35" href="#__codelineno-15-35"></a><span class="n">results</span> <span class="o">=</span> <span class="n">workflow_client</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="s1">&#39;status IN (RUNNING) AND correlationId = &quot;order-123&quot;&#39;</span><span class="p">)</span>
+</code></pre></div>
+<p>See <a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/workflow_ops.py">examples/workflow_ops.py</a> for a complete walkthrough of every operation.</p>
+<hr />
+<h2 id="ai-llm-workflows">AI &amp; LLM Workflows</h2>
+<p>Conductor supports AI-native workflows including agentic tool calling, RAG pipelines, and multi-agent orchestration.</p>
+<p><strong>Agentic Workflows</strong></p>
+<p>Build AI agents where LLMs dynamically select and call Python workers as tools. See <a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/agentic_workflows/">examples/agentic_workflows/</a> for all examples.</p>
+<table>
+<thead>
+<tr>
+<th>Example</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/agentic_workflows/llm_chat.py">llm_chat.py</a></td>
+<td>Automated multi-turn science Q&amp;A between two LLMs</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/agentic_workflows/llm_chat_human_in_loop.py">llm_chat_human_in_loop.py</a></td>
+<td>Interactive chat with WAIT task pauses for user input</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/agentic_workflows/multiagent_chat.py">multiagent_chat.py</a></td>
+<td>Multi-agent debate with moderator routing between panelists</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/agentic_workflows/function_calling_example.py">function_calling_example.py</a></td>
+<td>LLM picks which Python function to call based on user queries</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/agentic_workflows/mcp_weather_agent.py">mcp_weather_agent.py</a></td>
+<td>AI agent using MCP tools for weather queries</td>
+</tr>
+</tbody>
+</table>
+<p><strong>LLM and RAG Workflows</strong></p>
+<table>
+<thead>
+<tr>
+<th>Example</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/rag_workflow.py">rag_workflow.py</a></td>
+<td>End-to-end RAG: document conversion (PDF/Word/Excel), pgvector indexing, semantic search, answer generation</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/orkes/vector_db_helloworld.py">vector_db_helloworld.py</a></td>
+<td>Vector database operations: text indexing, embedding generation, and semantic search with Pinecone</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># Automated multi-turn chat</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>python<span class="w"> </span>examples/agentic_workflows/llm_chat.py
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="c1"># Multi-agent debate</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>python<span class="w"> </span>examples/agentic_workflows/multiagent_chat.py<span class="w"> </span>--topic<span class="w"> </span><span class="s2">&quot;renewable energy&quot;</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="c1"># RAG pipeline</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;markitdown[pdf]&quot;</span>
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>python<span class="w"> </span>examples/rag_workflow.py<span class="w"> </span>document.pdf<span class="w"> </span><span class="s2">&quot;What are the key findings?&quot;</span>
+</code></pre></div>
+<hr />
+<h2 id="why-conductor">Why Conductor?</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Language agnostic</strong></td>
+<td>Workers in Python, Java, Go, JS, C# — all in one workflow</td>
+</tr>
+<tr>
+<td><strong>Durable execution</strong></td>
+<td>Survives crashes, retries automatically, never loses state</td>
+</tr>
+<tr>
+<td><strong>Built-in HTTP/Wait/JS tasks</strong></td>
+<td>No code needed for common operations</td>
+</tr>
+<tr>
+<td><strong>Horizontal scaling</strong></td>
+<td>Built at Netflix for millions of workflows</td>
+</tr>
+<tr>
+<td><strong>Full visibility</strong></td>
+<td>UI shows every execution, every task, every retry</td>
+</tr>
+<tr>
+<td><strong>Sync + Async execution</strong></td>
+<td>Start-and-forget OR wait-for-result</td>
+</tr>
+<tr>
+<td><strong>Human-in-the-loop</strong></td>
+<td>WAIT tasks pause until an external signal</td>
+</tr>
+<tr>
+<td><strong>AI-native</strong></td>
+<td>LLM chat, RAG pipelines, function calling, MCP tools built-in</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="examples">Examples</h2>
+<p>See the <a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/README.md">Examples Guide</a> for the full catalog. Key examples:</p>
+<table>
+<thead>
+<tr>
+<th>Example</th>
+<th>Description</th>
+<th>Run</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/workers_e2e.py">workers_e2e.py</a></td>
+<td>End-to-end: sync + async workers, metrics</td>
+<td><code>python examples/workers_e2e.py</code></td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/kitchensink.py">kitchensink.py</a></td>
+<td>All task types (HTTP, JS, JQ, Switch)</td>
+<td><code>python examples/kitchensink.py</code></td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/workflow_ops.py">workflow_ops.py</a></td>
+<td>Pause, resume, terminate, retry, restart, rerun, signal</td>
+<td><code>python examples/workflow_ops.py</code></td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/task_context_example.py">task_context_example.py</a></td>
+<td>Long-running tasks with TaskInProgress</td>
+<td><code>python examples/task_context_example.py</code></td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/metrics_example.py">metrics_example.py</a></td>
+<td>Prometheus metrics collection</td>
+<td><code>python examples/metrics_example.py</code></td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/fastapi_worker_service.py">fastapi_worker_service.py</a></td>
+<td>FastAPI: expose a workflow as an API (+ workers)</td>
+<td><code>uvicorn examples.fastapi_worker_service:app --port 8081 --workers 1</code></td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/helloworld/helloworld.py">helloworld.py</a></td>
+<td>Minimal hello world</td>
+<td><code>python examples/helloworld/helloworld.py</code></td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/dynamic_workflow.py">dynamic_workflow.py</a></td>
+<td>Build workflows programmatically</td>
+<td><code>python examples/dynamic_workflow.py</code></td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/test_workflows.py">test_workflows.py</a></td>
+<td>Unit testing workflows</td>
+<td><code>python -m unittest examples.test_workflows</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>API Journey Examples</strong></p>
+<p>End-to-end examples covering all APIs for each domain:</p>
+<table>
+<thead>
+<tr>
+<th>Example</th>
+<th>APIs</th>
+<th>Run</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/authorization_journey.py">authorization_journey.py</a></td>
+<td>Authorization APIs</td>
+<td><code>python examples/authorization_journey.py</code></td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/metadata_journey.py">metadata_journey.py</a></td>
+<td>Metadata APIs</td>
+<td><code>python examples/metadata_journey.py</code></td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/schedule_journey.py">schedule_journey.py</a></td>
+<td>Schedule APIs</td>
+<td><code>python examples/schedule_journey.py</code></td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/prompt_journey.py">prompt_journey.py</a></td>
+<td>Prompt APIs</td>
+<td><code>python examples/prompt_journey.py</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="documentation">Documentation</h2>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/docs/design/WORKER_DESIGN.md">Worker Design</a></td>
+<td>Architecture: AsyncTaskRunner vs TaskRunner, discovery, lifecycle</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/docs/WORKER.md">Worker Guide</a></td>
+<td>All worker patterns (function, class, annotation, async)</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/WORKER_CONFIGURATION.md">Worker Configuration</a></td>
+<td>Hierarchical environment variable configuration</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/docs/WORKFLOW.md">Workflow Management</a></td>
+<td>Start, pause, resume, terminate, retry, search</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/docs/WORKFLOW_TESTING.md">Workflow Testing</a></td>
+<td>Unit testing with mock outputs</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/docs/TASK_MANAGEMENT.md">Task Management</a></td>
+<td>Task operations</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/docs/METADATA.md">Metadata</a></td>
+<td>Task &amp; workflow definitions</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/docs/AUTHORIZATION.md">Authorization</a></td>
+<td>Users, groups, applications, permissions</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/docs/SCHEDULE.md">Schedules</a></td>
+<td>Workflow scheduling</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/docs/SECRET_MANAGEMENT.md">Secrets</a></td>
+<td>Secret storage</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/docs/PROMPT.md">Prompts</a></td>
+<td>AI/LLM prompt templates</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/docs/INTEGRATION.md">Integrations</a></td>
+<td>AI/LLM provider integrations</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/METRICS.md">Metrics</a></td>
+<td>Prometheus metrics collection</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/README.md">Examples</a></td>
+<td>Complete examples catalog</td>
+</tr>
+</tbody>
+</table>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<p><strong>Is this the same as Netflix Conductor?</strong></p>
+<p>Yes. Conductor OSS is the continuation of the original <a href="https://github.com/Netflix/conductor">Netflix Conductor</a> repository after Netflix contributed the project to the open-source foundation.</p>
+<p><strong>Is this project actively maintained?</strong></p>
+<p>Yes. <a href="https://orkes.io">Orkes</a> is the primary maintainer and offers an enterprise SaaS platform for Conductor across all major cloud providers.</p>
+<p><strong>Can Conductor scale to handle my workload?</strong></p>
+<p>Conductor was built at Netflix to handle massive scale and has been battle-tested in production environments processing millions of workflows. It scales horizontally to meet virtually any demand.</p>
+<p><strong>Does Conductor support durable code execution?</strong></p>
+<p>Yes. Conductor ensures workflows complete reliably even in the face of infrastructure failures, process crashes, or network issues.</p>
+<p><strong>Are workflows always asynchronous?</strong></p>
+<p>No. While Conductor excels at asynchronous orchestration, it also supports synchronous workflow execution when immediate results are required.</p>
+<p><strong>Do I need to use a Conductor-specific framework?</strong></p>
+<p>No. Conductor is language and framework agnostic. Use your preferred language and framework — the <a href="https://github.com/conductor-oss/conductor#conductor-sdks">SDKs</a> provide native integration for Python, Java, JavaScript, Go, C#, and more.</p>
+<p><strong>Can I mix workers written in different languages?</strong></p>
+<p>Yes. A single workflow can have workers written in Python, Java, Go, or any other supported language. Workers communicate through the Conductor server, not directly with each other.</p>
+<p><strong>What Python versions are supported?</strong></p>
+<p>Python 3.9 and above.</p>
+<p><strong>Should I use <code>def</code> or <code>async def</code> for my workers?</strong></p>
+<p>Use <code>async def</code> for I/O-bound tasks (API calls, database queries) — the SDK uses <code>AsyncTaskRunner</code> with a single event loop for high concurrency with low overhead. Use regular <code>def</code> for CPU-bound or blocking work — the SDK uses <code>TaskRunner</code> with a thread pool. The SDK selects the right runner automatically based on your function signature.</p>
+<p><strong>How do I run workers in production?</strong></p>
+<p>Workers are standard Python processes. Deploy them as you would any Python application — in containers, VMs, or bare metal. Workers poll the Conductor server for tasks, so no inbound ports need to be opened. See <a href="https://github.com/conductor-oss/python-sdk/blob/main/docs/design/WORKER_DESIGN.md">Worker Design</a> for architecture details.</p>
+<p><strong>How do I test workflows without running a full Conductor server?</strong></p>
+<p>The SDK provides a test framework that uses Conductor's <code>POST /api/workflow/test</code> endpoint to evaluate workflows with mock task outputs. See <a href="https://github.com/conductor-oss/python-sdk/blob/main/docs/WORKFLOW_TESTING.md">Workflow Testing</a> for details.</p>
+<h2 id="support">Support</h2>
+<ul>
+<li><a href="https://github.com/conductor-sdk/conductor-python/issues">Open an issue (SDK)</a> for SDK bugs, questions, and feature requests</li>
+<li><a href="https://github.com/conductor-oss/conductor/issues">Open an issue (Conductor server)</a> for Conductor OSS server issues</li>
+<li><a href="https://join.slack.com/t/orkes-conductor/shared_invite/zt-2vdbx239s-Eacdyqya9giNLHfrCavfaA">Join the Conductor Slack</a> for community discussion and help</li>
+<li><a href="https://community.orkes.io/">Orkes Community Forum</a> for Q&amp;A</li>
+</ul>
+<h2 id="license">License</h2>
+<p>Apache 2.0</p>
+<h2 id="examples_1">Examples</h2>
+<p>Browse all examples on GitHub: <a href="https://github.com/conductor-oss/python-sdk/tree/main/examples">conductor-oss/python-sdk/examples</a></p>
+<table>
+<thead>
+<tr>
+<th>Example</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/README.md">Readme</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/agentic_workflow.py">Agentic Workflow</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/tree/main/examples/agentic_workflows">Agentic Workflows</a></td>
+<td>directory</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/authorization_journey.py">Authorization Journey</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/dynamic_workflow.py">Dynamic Workflow</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/event_listener_examples.py">Event Listener Examples</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/fastapi_worker_service.py">Fastapi Worker Service</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/tree/main/examples/helloworld">Helloworld</a></td>
+<td>directory</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/kitchensink.py">Kitchensink</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/metadata_journey.py">Metadata Journey</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/metadata_journey_oss.py">Metadata Journey Oss</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/metrics_example.py">Metrics Example</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/tree/main/examples/orkes">Orkes</a></td>
+<td>directory</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/prompt_journey.py">Prompt Journey</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/rag_workflow.py">Rag Workflow</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/schedule_journey.py">Schedule Journey</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/shell_worker.py">Shell Worker</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/task_configure.py">Task Configure</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/task_context_example.py">Task Context Example</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/task_listener_example.py">Task Listener Example</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/task_workers.py">Task Workers</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/test_ai_examples.py">Test Ai Examples</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/test_workflows.py">Test Workflows</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/untrusted_host.py">Untrusted Host</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/tree/main/examples/user_example">User Example</a></td>
+<td>directory</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/worker_configuration_example.py">Worker Configuration Example</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/tree/main/examples/worker_discovery">Worker Discovery</a></td>
+<td>directory</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/worker_example.py">Worker Example</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/workers_e2e.py">Workers E2E</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/workers_e2e_workflow.json">Workers E2E Workflow</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/workflow_ops.py">Workflow Ops</a></td>
+<td>file</td>
+</tr>
+<tr>
+<td><a href="https://github.com/conductor-oss/python-sdk/blob/main/examples/workflow_status_listner.py">Workflow Status Listner</a></td>
+<td>file</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="java-sdk.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Java">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Java
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="go-sdk.html" class="md-footer__link md-footer__link--next" aria-label="Next: Go">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Go
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Conductor authors
+    </div>
+  
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/conductor-oss/conductor" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA" target="_blank" rel="noopener" title="join.slack.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M94.12 315.1c0 25.9-21.16 47.06-47.06 47.06S0 341 0 315.1c0-25.9 21.16-47.06 47.06-47.06h47.06v47.06zm23.72 0c0-25.9 21.16-47.06 47.06-47.06s47.06 21.16 47.06 47.06v117.84c0 25.9-21.16 47.06-47.06 47.06s-47.06-21.16-47.06-47.06V315.1zm47.06-188.98c-25.9 0-47.06-21.16-47.06-47.06S139 32 164.9 32s47.06 21.16 47.06 47.06v47.06H164.9zm0 23.72c25.9 0 47.06 21.16 47.06 47.06s-21.16 47.06-47.06 47.06H47.06C21.16 243.96 0 222.8 0 196.9s21.16-47.06 47.06-47.06H164.9zm188.98 47.06c0-25.9 21.16-47.06 47.06-47.06 25.9 0 47.06 21.16 47.06 47.06s-21.16 47.06-47.06 47.06h-47.06V196.9zm-23.72 0c0 25.9-21.16 47.06-47.06 47.06-25.9 0-47.06-21.16-47.06-47.06V79.06c0-25.9 21.16-47.06 47.06-47.06 25.9 0 47.06 21.16 47.06 47.06V196.9zM283.1 385.88c25.9 0 47.06 21.16 47.06 47.06 0 25.9-21.16 47.06-47.06 47.06-25.9 0-47.06-21.16-47.06-47.06v-47.06h47.06zm0-23.72c-25.9 0-47.06-21.16-47.06-47.06 0-25.9 21.16-47.06 47.06-47.06h117.84c25.9 0 47.06 21.16 47.06 47.06 0 25.9-21.16 47.06-47.06 47.06H283.1z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://www.youtube.com/@orkesio" target="_blank" rel="noopener" title="www.youtube.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M549.655 124.083c-6.281-23.65-24.787-42.276-48.284-48.597C458.781 64 288 64 288 64S117.22 64 74.629 75.486c-23.497 6.322-42.003 24.947-48.284 48.597-11.412 42.867-11.412 132.305-11.412 132.305s0 89.438 11.412 132.305c6.281 23.65 24.787 41.5 48.284 47.821C117.22 448 288 448 288 448s170.78 0 213.371-11.486c23.497-6.321 42.003-24.171 48.284-47.821 11.412-42.867 11.412-132.305 11.412-132.305s0-89.438-11.412-132.305zm-317.51 213.508V175.185l142.739 81.205-142.739 81.201z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.footer", "navigation.sections", "navigation.expand", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.code.annotate", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.1e8ae164.min.js"></script>
+      
+    
+  </body>
+</html>
