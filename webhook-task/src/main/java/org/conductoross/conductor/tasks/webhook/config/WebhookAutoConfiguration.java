@@ -72,8 +72,8 @@ public class WebhookAutoConfiguration {
     @ConditionalOnMissingBean
     @ConditionalOnBean(WebhookConfigService.class)
     public WebhooksConfigResource webhooksConfigResource(
-            WebhookConfigService webhookConfigService) {
-        return new WebhooksConfigResource(webhookConfigService);
+            WebhookConfigService webhookConfigService, List<WebhookVerifier> verifiers) {
+        return new WebhooksConfigResource(webhookConfigService, verifiers);
     }
 
     @Bean

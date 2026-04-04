@@ -176,6 +176,21 @@ public class IncomingWebhookService {
             // Dispatch inline with an empty JSON body and the query params as the payload.
             // Matches Orkes behaviour: when handlePing returns null, Orkes queues the event
             // for full processing.
+            //
+            // Still verify the GET request — HEADER_BASED and HMAC verifiers may use headers
+            // or query params for authentication. Skipping verify here would allow unauthenticated
+            // GET requests to trigger workflow dispatch.
+            IncomingWebhookEvent getEvent = buildEvent(id, "{}", new HttpHeaders(), safeParams);
+            List<String> getErrors = verifier.verify(config, getEvent);
+            if (!getErrors.isEmpty()) {
+                String msg =
+                        "Webhook GET verification failed for id="
+                                + id
+                                + ": "
+                                + String.join(", ", getErrors);
+                LOGGER.error(msg);
+                throw new IllegalArgumentException(msg);
+            }
             Map<String, Object> payload = parsePayload("{}", safeParams);
             dispatchToWaitingTasks(id, "{}", safeParams, payload);
             startWorkflowsToStart(config, payload, UUID.randomUUID().toString());
@@ -287,26 +302,26 @@ public class IncomingWebhookService {
     private void completeTask(String taskId, String hash, Map<String, Object> payload) {
         TaskModel task = executionDAOFacade.getTaskModel(taskId);
         if (task == null) {
-            LOGGER.warn("Task not found for taskId={} — removing stale hash entry", taskId);
-            webhookTaskDAO.remove(hash, taskId);
+            // popAll already removed the task ID from the DAO; nothing left to clean up.
+            LOGGER.warn("Task not found for taskId={} — stale entry discarded by popAll", taskId);
             return;
         }
         if (task.getStatus().isTerminal()) {
+            // Task was already completed/failed by another path (e.g. timeout). popAll already
+            // removed the ID; no DAO cleanup needed.
             LOGGER.debug("Task {} is already terminal ({}), skipping", taskId, task.getStatus());
-            webhookTaskDAO.remove(hash, taskId);
             return;
         }
 
         TaskResult result = new TaskResult(task.toTask());
         result.setStatus(TaskResult.Status.COMPLETED);
         result.getOutputData().putAll(payload);
-        workflowExecutor.updateTask(result);
-        webhookTaskDAO.remove(hash, taskId);
 
         LOGGER.debug(
-                "Completed WAIT_FOR_WEBHOOK task {} in workflow {}",
+                "Completing WAIT_FOR_WEBHOOK task {} in workflow {}",
                 taskId,
                 task.getWorkflowInstanceId());
+        workflowExecutor.updateTask(result);
     }
 
     /**
@@ -390,6 +405,13 @@ public class IncomingWebhookService {
             payload.put("body", body);
         }
         if (requestParams != null) {
+            for (Map.Entry<String, Object> entry : requestParams.entrySet()) {
+                if (payload.containsKey(entry.getKey())) {
+                    LOGGER.warn(
+                            "Query parameter '{}' overwrites body field of same name in webhook payload",
+                            entry.getKey());
+                }
+            }
             payload.putAll(requestParams);
         }
         return payload;

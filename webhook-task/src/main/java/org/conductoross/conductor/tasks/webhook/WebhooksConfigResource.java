@@ -13,6 +13,8 @@
 package org.conductoross.conductor.tasks.webhook;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.conductoross.conductor.common.webhook.WebhookConfig;
 import org.springframework.http.MediaType;
@@ -44,9 +46,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class WebhooksConfigResource {
 
     private final WebhookConfigService webhookConfigService;
+    private final Set<String> registeredVerifierTypes;
 
-    public WebhooksConfigResource(WebhookConfigService webhookConfigService) {
+    public WebhooksConfigResource(
+            WebhookConfigService webhookConfigService, List<WebhookVerifier> verifiers) {
         this.webhookConfigService = webhookConfigService;
+        this.registeredVerifierTypes =
+                verifiers.stream().map(WebhookVerifier::getType).collect(Collectors.toSet());
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -97,6 +103,13 @@ public class WebhooksConfigResource {
         if (config.getVerifier() == null) {
             throw new IllegalArgumentException(
                     "verifier must be specified (use NONE for no-auth development/test webhooks)");
+        }
+        if (!registeredVerifierTypes.contains(config.getVerifier().toString())) {
+            throw new IllegalArgumentException(
+                    "No verifier implementation registered for type: "
+                            + config.getVerifier()
+                            + ". Available types: "
+                            + registeredVerifierTypes);
         }
         if (config.getExpression() == null
                 && config.getReceiverWorkflowNamesToVersions() == null

@@ -13,6 +13,7 @@
 package com.netflix.conductor.redis.dao;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.conductoross.conductor.common.webhook.WebhookTaskDAO;
@@ -72,5 +73,30 @@ public class RedisWebhookTaskDAO extends BaseDynoDAO implements WebhookTaskDAO {
     @Override
     public void remove(String hash, String taskId) {
         jedisProxy.srem(nsKey(WEBHOOK_TASKS, hash), taskId);
+    }
+
+    /**
+     * Atomically claims all waiting task IDs for a routing hash using SMEMBERS + DEL.
+     *
+     * <p>DEL is atomic in Redis — it removes the entire key in one round-trip. The race window
+     * between SMEMBERS and DEL is narrow (two sequential commands) vs. the default implementation
+     * (SMEMBERS + N individual SREMs). For true single-command atomicity, replace with a Lua {@code
+     * SMEMBERS+DEL} script via {@code jedisProxy.evalsha()} once a {@code SCRIPT LOAD} hook is
+     * available.
+     *
+     * <p>If the set was already deleted between SMEMBERS and DEL (concurrent inbound event), DEL is
+     * a no-op and the same task IDs may be returned twice. {@link
+     * IncomingWebhookService#completeTask} handles this gracefully — it checks terminal status
+     * before completing.
+     */
+    @Override
+    public List<String> popAll(String hash) {
+        String key = nsKey(WEBHOOK_TASKS, hash);
+        List<String> members = new ArrayList<>(jedisProxy.smembers(key));
+        if (members.isEmpty()) {
+            return Collections.emptyList();
+        }
+        jedisProxy.del(key);
+        return members;
     }
 }

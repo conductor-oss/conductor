@@ -39,7 +39,11 @@ public class WebhooksConfigResourceTest {
     @Before
     public void setUp() {
         service = mock(WebhookConfigService.class);
-        resource = new WebhooksConfigResource(service);
+        WebhookVerifier headerVerifier = mock(WebhookVerifier.class);
+        when(headerVerifier.getType()).thenReturn("HEADER_BASED");
+        WebhookVerifier noneVerifier = mock(WebhookVerifier.class);
+        when(noneVerifier.getType()).thenReturn("NONE");
+        resource = new WebhooksConfigResource(service, List.of(headerVerifier, noneVerifier));
     }
 
     // -------------------------------------------------------------------------
