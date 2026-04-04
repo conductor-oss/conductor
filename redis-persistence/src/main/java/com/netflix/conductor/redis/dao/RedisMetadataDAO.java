@@ -300,7 +300,6 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
         }
 
         recordRedisDaoRequests("removeWorkflowDef");
-        refreshWorkflowDefs();
     }
 
     public List<String> findAll() {
@@ -310,7 +309,8 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 
     @Override
     public List<WorkflowDef> getAllWorkflowDefs() {
-        return new ArrayList<>(workflowDefCache);
+        // List.copyOf returns an unmodifiable snapshot; callers must not mutate returned objects.
+        return List.copyOf(workflowDefCache);
     }
 
     private List<WorkflowDef> loadAllWorkflowDefsFromDB() {
@@ -346,7 +346,10 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
                     (existing, candidate) ->
                             candidate.getVersion() > existing.getVersion() ? candidate : existing);
         }
-        return new ArrayList<>(latestByName.values());
+        List<WorkflowDef> result = List.copyOf(latestByName.values());
+        // Record count as payload-size proxy; no network payload since result is served from cache.
+        recordRedisDaoPayloadSize("getAllWorkflowLatestVersionsDefs", result.size(), "n/a", "n/a");
+        return result;
     }
 
     private void _createOrUpdate(WorkflowDef workflowDef) {
@@ -358,6 +361,5 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 
         jedisProxy.sadd(nsKey(WORKFLOW_DEF_NAMES), workflowDef.getName());
         recordRedisDaoRequests("storeWorkflowDef", "n/a", workflowDef.getName());
-        refreshWorkflowDefs();
     }
 }

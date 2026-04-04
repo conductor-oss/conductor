@@ -20,6 +20,7 @@ dependencies {
 
     implementation "io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}"
     implementation "redis.clients:jedis:${revJedis}"
+    // TODO: CVE-2024-47072 (DoS via crafted input stream) affects 1.4.21; bump to 1.4.22+ once released.
     implementation('com.thoughtworks.xstream:xstream:1.4.21')
     implementation "org.apache.commons:commons-lang3:"
     implementation "com.google.guava:guava:${revGuava}"
