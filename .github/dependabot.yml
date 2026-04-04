@@ -8,6 +8,37 @@ updates:
       - "v1r3n"
       - "boney9"
       - "c4lm"
+
+    # -----------------------------------------------------------------------
+    # PINNED DEPENDENCIES — Dependabot must not auto-bump these.
+    # See dependencies.gradle and https://github.com/conductor-oss/conductor/issues/964
+    # -----------------------------------------------------------------------
+    ignore:
+      # protoc must stay at 3.x — matches the protobuf-java version expected
+      # by grpc-protobuf:1.73.0. Using protoc 4.x generates code incompatible
+      # with the 3.x runtime, and protobuf-java 4.x triggers a GraalVM
+      # polyglot4 capability-resolution failure.
+      # See: https://github.com/grpc/grpc-java/issues/12246
+      - dependency-name: "com.google.protobuf:protoc"
+        versions: [">= 4.0"]
+
+      # protobuf-java 4.x combined with GraalVM polyglot 25.x causes Gradle to
+      # require org.graalvm.polyglot:polyglot4, which does not exist on Maven
+      # Central, breaking compilation. Pin at 3.x until resolved.
+      - dependency-name: "com.google.protobuf:protobuf-java"
+        versions: [">= 4.0"]
+
+    # -----------------------------------------------------------------------
+    # GROUPED UPGRADES — these families must be bumped together in one PR.
+    # -----------------------------------------------------------------------
+    groups:
+      # All GraalVM polyglot artifacts must share the same version.
+      # Mixing versions (e.g. polyglot:24.x with js:25.x) causes a runtime
+      # "polyglot version X is not compatible with Truffle Y" failure.
+      graalvm:
+        patterns:
+          - "org.graalvm.*"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

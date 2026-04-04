@@ -77,7 +77,8 @@ afterEvaluate {
 // Functional test source set — compiles and runs the e2e tests against an
 // embedded Conductor server (Spring Boot + TestContainers for Redis & ES).
 //
-// The conductor-client:5.0.1 is a fat JAR that bundles com.netflix.conductor.common.*
+// PINNED (#964): conductor-client must stay at 5.0.1 for the functional tests.
+// conductor-client:5.0.1 is a fat JAR that bundles com.netflix.conductor.common.*
 // classes which shadow the project's own conductor-common module and cause
 // NoSuchMethodError at runtime. We solve this by creating a "stripped" JAR that
 // removes the conflicting com/netflix/conductor/common/ classes, keeping the
@@ -143,7 +144,9 @@ configurations {
         exclude group: 'org.conductoross', module: 'conductor-client'
     }
 
-    // e2e tests use Awaitility 4.x API (pollInterval(Duration))
+    // PINNED (#964): e2e tests require Awaitility 4.x — they call pollInterval(Duration)
+    // which was added in 4.0. The main test-harness uses revAwaitility (3.x). This override
+    // applies only to the functionalTest classpath.
     [functionalTestCompileClasspath, functionalTestRuntimeClasspath].each { cfg ->
         cfg.resolutionStrategy.eachDependency { details ->
             if (details.requested.group == 'org.awaitility'
