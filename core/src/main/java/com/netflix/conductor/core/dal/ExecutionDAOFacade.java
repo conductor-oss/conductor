@@ -348,7 +348,6 @@ public class ExecutionDAOFacade {
      */
     public void removeWorkflow(String workflowId, boolean archiveWorkflow) {
         WorkflowModel workflow = getWorkflowModelFromDataStore(workflowId, true);
-        cleanupOwnedSubWorkflowReservations(workflow);
 
         // Index operations happen before DAO removal to prevent data loss on index failures.
         try {
@@ -441,7 +440,6 @@ public class ExecutionDAOFacade {
             String workflowId, boolean archiveWorkflow, int ttlSeconds) {
         try {
             WorkflowModel workflow = getWorkflowModelFromDataStore(workflowId, true);
-            cleanupOwnedSubWorkflowReservations(workflow);
 
             try {
                 removeWorkflowIndex(workflow, archiveWorkflow);
@@ -587,13 +585,6 @@ public class ExecutionDAOFacade {
         executionDAO.removeTask(taskId);
     }
 
-    private void cleanupOwnedSubWorkflowReservations(WorkflowModel workflow) {
-        if (workflow == null || workflow.getTasks() == null) {
-            return;
-        }
-        workflow.getTasks().forEach(this::cleanupOwnedSubWorkflowReservation);
-    }
-
     private void cleanupOwnedSubWorkflowReservation(TaskModel task) {
         if (task == null
                 || !TaskType.TASK_TYPE_SUB_WORKFLOW.equals(task.getTaskType())
@@ -602,7 +593,8 @@ public class ExecutionDAOFacade {
             return;
         }
         try {
-            executionDAO.removeSubWorkflowIdReservation(task.getWorkflowInstanceId(), task.getTaskId());
+            executionDAO.removeSubWorkflowIdReservation(
+                    task.getWorkflowInstanceId(), task.getTaskId());
         } catch (Exception e) {
             LOGGER.warn(
                     "Unable to remove sub-workflow reservation owned by workflow {} task {}",

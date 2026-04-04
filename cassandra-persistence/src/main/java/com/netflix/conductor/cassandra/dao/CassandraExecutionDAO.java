@@ -75,6 +75,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
     protected final PreparedStatement deleteTaskDefLimitStatement;
     protected final PreparedStatement deleteEventExecutionStatement;
     protected final PreparedStatement deleteSubWorkflowIdReservationStatement;
+    protected final PreparedStatement deleteSubWorkflowIdReservationsStatement;
 
     protected final int eventExecutionsTTL;
 
@@ -163,6 +164,9 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                         .setConsistencyLevel(properties.getWriteConsistencyLevel());
         this.deleteSubWorkflowIdReservationStatement =
                 session.prepare(statements.getDeleteSubWorkflowIdReservationStatement())
+                        .setConsistencyLevel(properties.getWriteConsistencyLevel());
+        this.deleteSubWorkflowIdReservationsStatement =
+                session.prepare(statements.getDeleteSubWorkflowIdReservationsStatement())
                         .setConsistencyLevel(properties.getWriteConsistencyLevel());
     }
 
@@ -616,6 +620,23 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
         }
     }
 
+    @Override
+    public void removeSubWorkflowIdReservations(String workflowId) {
+        UUID workflowUUID = toUUID(workflowId, "Invalid workflow id");
+
+        try {
+            session.execute(deleteSubWorkflowIdReservationsStatement.bind(workflowUUID));
+        } catch (DriverException e) {
+            Monitors.error(CLASS_NAME, "removeSubWorkflowIdReservations");
+            String errorMsg =
+                    String.format(
+                            "Failed to remove sub workflow id reservations for workflow: %s",
+                            workflowId);
+            LOGGER.error(errorMsg, e);
+            throw new TransientException(errorMsg);
+        }
+    }
+
     /**
      * This is a dummy implementation and this feature is not implemented for Cassandra backed
      * Conductor
@@ -869,15 +890,15 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
     }
 
     private void removeOwnedSubWorkflowIdReservations(WorkflowModel workflow) {
-        if (workflow.getTasks() == null) {
+        if (workflow.getTasks() == null
+                || workflow.getTasks().stream()
+                        .noneMatch(
+                                task ->
+                                        TaskType.TASK_TYPE_SUB_WORKFLOW.equals(
+                                                task.getTaskType()))) {
             return;
         }
-        workflow.getTasks().stream()
-                .filter(task -> TaskType.TASK_TYPE_SUB_WORKFLOW.equals(task.getTaskType()))
-                .forEach(
-                        task ->
-                                removeSubWorkflowIdReservation(
-                                        task.getWorkflowInstanceId(), task.getTaskId()));
+        removeSubWorkflowIdReservations(workflow.getWorkflowId());
     }
 
     @VisibleForTesting

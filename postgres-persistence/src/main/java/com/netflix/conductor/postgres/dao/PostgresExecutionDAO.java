@@ -404,6 +404,17 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
                 });
     }
 
+    @Override
+    public void removeSubWorkflowIdReservations(String workflowId) {
+        Preconditions.checkNotNull(workflowId, "workflowId cannot be null");
+
+        getWithRetriedTransactions(
+                connection -> {
+                    removeSubWorkflowIdReservations(connection, workflowId);
+                    return null;
+                });
+    }
+
     /**
      * @param workflowName name of the workflow
      * @param version the workflow version
@@ -863,17 +874,15 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
 
     private void removeOwnedSubWorkflowIdReservations(
             Connection connection, WorkflowModel workflow) {
-        if (workflow.getTasks() == null) {
+        if (workflow.getTasks() == null
+                || workflow.getTasks().stream()
+                        .noneMatch(
+                                task ->
+                                        TaskType.TASK_TYPE_SUB_WORKFLOW.equals(
+                                                task.getTaskType()))) {
             return;
         }
-        workflow.getTasks().stream()
-                .filter(task -> TaskType.TASK_TYPE_SUB_WORKFLOW.equals(task.getTaskType()))
-                .forEach(
-                        task ->
-                                removeSubWorkflowIdReservation(
-                                        connection,
-                                        task.getWorkflowInstanceId(),
-                                        task.getTaskId()));
+        removeSubWorkflowIdReservations(connection, workflow.getWorkflowId());
     }
 
     private void removeSubWorkflowIdReservation(
@@ -885,10 +894,17 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
         execute(
                 connection,
                 REMOVE_SUB_WORKFLOW_RESERVATION,
-                q ->
-                        q.addParameter(workflowId)
-                                .addParameter(taskId)
-                                .executeDelete());
+                q -> q.addParameter(workflowId).addParameter(taskId).executeDelete());
+    }
+
+    private void removeSubWorkflowIdReservations(Connection connection, String workflowId) {
+        String REMOVE_SUB_WORKFLOW_RESERVATIONS =
+                "DELETE FROM sub_workflow_id_reservation WHERE parent_workflow_id = ?";
+
+        execute(
+                connection,
+                REMOVE_SUB_WORKFLOW_RESERVATIONS,
+                q -> q.addParameter(workflowId).executeDelete());
     }
 
     @VisibleForTesting

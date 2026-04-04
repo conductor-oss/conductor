@@ -516,12 +516,12 @@ public class RedisExecutionDAO extends BaseDynoDAO
         Preconditions.checkNotNull(parentWorkflowTaskId, "parentWorkflowTaskId cannot be null");
         Preconditions.checkNotNull(subWorkflowId, "subWorkflowId cannot be null");
 
-        String key = nsKey(SUB_WORKFLOW_ID_RESERVATIONS, parentWorkflowId, parentWorkflowTaskId);
+        String key = nsKey(SUB_WORKFLOW_ID_RESERVATIONS, parentWorkflowId);
         recordRedisDaoRequests("reserveSubWorkflowId");
-        if (jedisProxy.setnx(key, subWorkflowId) == 1L) {
+        if (jedisProxy.hsetnx(key, parentWorkflowTaskId, subWorkflowId) == 1L) {
             return subWorkflowId;
         }
-        return jedisProxy.get(key);
+        return jedisProxy.hget(key, parentWorkflowTaskId);
     }
 
     @Override
@@ -530,7 +530,15 @@ public class RedisExecutionDAO extends BaseDynoDAO
         Preconditions.checkNotNull(taskId, "taskId cannot be null");
 
         recordRedisDaoRequests("removeSubWorkflowIdReservation");
-        jedisProxy.del(nsKey(SUB_WORKFLOW_ID_RESERVATIONS, workflowId, taskId));
+        jedisProxy.hdel(nsKey(SUB_WORKFLOW_ID_RESERVATIONS, workflowId), taskId);
+    }
+
+    @Override
+    public void removeSubWorkflowIdReservations(String workflowId) {
+        Preconditions.checkNotNull(workflowId, "workflowId cannot be null");
+
+        recordRedisDaoRequests("removeSubWorkflowIdReservations");
+        jedisProxy.del(nsKey(SUB_WORKFLOW_ID_RESERVATIONS, workflowId));
     }
 
     /**
@@ -794,14 +802,14 @@ public class RedisExecutionDAO extends BaseDynoDAO
     }
 
     private void removeOwnedSubWorkflowIdReservations(WorkflowModel workflow) {
-        if (workflow.getTasks() == null) {
+        if (workflow.getTasks() == null
+                || workflow.getTasks().stream()
+                        .noneMatch(
+                                task ->
+                                        TaskType.TASK_TYPE_SUB_WORKFLOW.equals(
+                                                task.getTaskType()))) {
             return;
         }
-        workflow.getTasks().stream()
-                .filter(task -> TaskType.TASK_TYPE_SUB_WORKFLOW.equals(task.getTaskType()))
-                .forEach(
-                        task ->
-                                removeSubWorkflowIdReservation(
-                                        task.getWorkflowInstanceId(), task.getTaskId()));
+        removeSubWorkflowIdReservations(workflow.getWorkflowId());
     }
 }

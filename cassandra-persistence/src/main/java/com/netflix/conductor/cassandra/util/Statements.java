@@ -554,6 +554,13 @@ public class Statements {
                 .getQueryString();
     }
 
+    public String getDeleteSubWorkflowIdReservationsStatement() {
+        return QueryBuilder.delete()
+                .from(keyspace, TABLE_SUB_WORKFLOW_ID_RESERVATIONS)
+                .where(eq(PARENT_WORKFLOW_ID_KEY, bindMarker()))
+                .getQueryString();
+    }
+
     /**
      * @return cql query statement to delete a task from the "workflows" table
      */

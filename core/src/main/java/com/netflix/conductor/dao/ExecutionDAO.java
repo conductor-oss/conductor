@@ -166,6 +166,13 @@ public interface ExecutionDAO {
     void removeSubWorkflowIdReservation(String workflowId, String taskId);
 
     /**
+     * Removes all reserved sub-workflow ids owned by the workflow.
+     *
+     * @param workflowId workflow id that owns the reservations
+     */
+    void removeSubWorkflowIdReservations(String workflowId);
+
+    /**
      * @param workflowName name of the workflow
      * @param version the workflow version
      * @return List of workflow ids which are running

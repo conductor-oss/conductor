@@ -163,7 +163,7 @@ public class ExecutionDAOFacadeTest {
     }
 
     @Test
-    public void testRemoveWorkflowClearsParentSubWorkflowReservations() {
+    public void testRemoveWorkflowLeavesOwnedReservationCleanupToExecutionDAO() {
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowId("workflowId");
         workflow.setStatus(WorkflowModel.Status.COMPLETED);
@@ -186,8 +186,8 @@ public class ExecutionDAOFacadeTest {
 
         executionDAOFacade.removeWorkflow("workflowId", false);
 
-        verify(executionDAO).removeSubWorkflowIdReservation("workflowId", "subTaskId");
-        verify(executionDAO, never()).removeSubWorkflowIdReservation("workflowId", "otherTaskId");
+        verify(executionDAO, never()).removeSubWorkflowIdReservations(anyString());
+        verify(executionDAO, never()).removeSubWorkflowIdReservation(anyString(), anyString());
     }
 
     @Test
@@ -293,7 +293,7 @@ public class ExecutionDAOFacadeTest {
     }
 
     @Test
-    public void testRemoveWorkflowWithExpiryClearsParentSubWorkflowReservations() {
+    public void testRemoveWorkflowWithExpiryLeavesOwnedReservationCleanupToExecutionDAO() {
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowId("workflowId");
         workflow.setStatus(WorkflowModel.Status.COMPLETED);
@@ -309,8 +309,28 @@ public class ExecutionDAOFacadeTest {
 
         executionDAOFacade.removeWorkflowWithExpiry("workflowId", false, 60);
 
-        verify(executionDAO).removeSubWorkflowIdReservation("workflowId", "subTaskId");
+        verify(executionDAO, never()).removeSubWorkflowIdReservations(anyString());
         verify(executionDAO).removeWorkflowWithExpiry("workflowId", 60);
+    }
+
+    @Test
+    public void testRemoveWorkflowWithoutSubWorkflowTasksDoesNotClearReservationsInFacade() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("workflowId");
+        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+
+        TaskModel simpleTask = new TaskModel();
+        simpleTask.setTaskId("taskId");
+        simpleTask.setTaskType(TaskType.TASK_TYPE_SIMPLE);
+        simpleTask.setWorkflowInstanceId(workflow.getWorkflowId());
+        simpleTask.setStatus(TaskModel.Status.COMPLETED);
+        workflow.setTasks(List.of(simpleTask));
+
+        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
+
+        executionDAOFacade.removeWorkflow("workflowId", false);
+
+        verify(executionDAO, never()).removeSubWorkflowIdReservations(anyString());
     }
 
     @Test

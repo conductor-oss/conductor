@@ -2059,8 +2059,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     public void removeSubWorkflowIdReservation(String workflowId, String taskId) {
         Preconditions.checkArgument(
                 StringUtils.isNotBlank(workflowId), "workflowId cannot be blank");
-        Preconditions.checkArgument(
-                StringUtils.isNotBlank(taskId), "taskId cannot be blank");
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "taskId cannot be blank");
         executionDAOFacade.removeSubWorkflowIdReservation(workflowId, taskId);
     }
 
