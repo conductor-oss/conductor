@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
@@ -57,6 +58,7 @@ public class RedisExecutionDAO extends BaseDynoDAO
     private static final String PENDING_WORKFLOWS = "PENDING_WORKFLOWS";
     private static final String WORKFLOW_DEF_TO_WORKFLOWS = "WORKFLOW_DEF_TO_WORKFLOWS";
     private static final String CORR_ID_TO_WORKFLOWS = "CORR_ID_TO_WORKFLOWS";
+    private static final String SUB_WORKFLOW_ID_RESERVATIONS = "SUB_WORKFLOW_ID_RESERVATIONS";
     private static final String EVENT_EXECUTION = "EVENT_EXECUTION";
     private final int ttlEventExecutionSeconds;
 
@@ -439,6 +441,7 @@ public class RedisExecutionDAO extends BaseDynoDAO
 
             // Remove the object
             jedisProxy.del(nsKey(WORKFLOW, workflowId));
+            removeOwnedSubWorkflowIdReservations(workflow);
             for (TaskModel task : workflow.getTasks()) {
                 removeTask(task.getTaskId());
             }
@@ -464,6 +467,7 @@ public class RedisExecutionDAO extends BaseDynoDAO
 
             // Remove the object
             jedisProxy.expire(nsKey(WORKFLOW, workflowId), ttlSeconds);
+            removeOwnedSubWorkflowIdReservations(workflow);
             for (TaskModel task : workflow.getTasks()) {
                 removeTaskWithExpiry(task.getTaskId(), ttlSeconds);
             }
@@ -503,6 +507,58 @@ public class RedisExecutionDAO extends BaseDynoDAO
             }
         }
         return workflow;
+    }
+
+    @Override
+    public String reserveSubWorkflowId(
+            String parentWorkflowId, String parentWorkflowTaskId, String subWorkflowId) {
+        Preconditions.checkNotNull(parentWorkflowId, "parentWorkflowId cannot be null");
+        Preconditions.checkNotNull(parentWorkflowTaskId, "parentWorkflowTaskId cannot be null");
+        Preconditions.checkNotNull(subWorkflowId, "subWorkflowId cannot be null");
+
+        String key = nsKey(SUB_WORKFLOW_ID_RESERVATIONS, parentWorkflowId);
+        recordRedisDaoRequests("reserveSubWorkflowId");
+        if (jedisProxy.hsetnx(key, parentWorkflowTaskId, subWorkflowId) == 1L) {
+            LOGGER.debug(
+                    "Reserved sub-workflow id {} for workflow {} task {} in Redis hash {}",
+                    subWorkflowId,
+                    parentWorkflowId,
+                    parentWorkflowTaskId,
+                    key);
+            return subWorkflowId;
+        }
+        String reservedSubWorkflowId = jedisProxy.hget(key, parentWorkflowTaskId);
+        LOGGER.debug(
+                "Reused reserved sub-workflow id {} for workflow {} task {} from Redis hash {}",
+                reservedSubWorkflowId,
+                parentWorkflowId,
+                parentWorkflowTaskId,
+                key);
+        return reservedSubWorkflowId;
+    }
+
+    @Override
+    public void removeSubWorkflowIdReservation(String workflowId, String taskId) {
+        Preconditions.checkNotNull(workflowId, "workflowId cannot be null");
+        Preconditions.checkNotNull(taskId, "taskId cannot be null");
+
+        recordRedisDaoRequests("removeSubWorkflowIdReservation");
+        LOGGER.debug(
+                "Removing owned sub-workflow reservation for workflow {} task {} from Redis",
+                workflowId,
+                taskId);
+        jedisProxy.hdel(nsKey(SUB_WORKFLOW_ID_RESERVATIONS, workflowId), taskId);
+    }
+
+    @Override
+    public void removeSubWorkflowIdReservations(String workflowId) {
+        Preconditions.checkNotNull(workflowId, "workflowId cannot be null");
+
+        recordRedisDaoRequests("removeSubWorkflowIdReservations");
+        LOGGER.debug(
+                "Removing all owned sub-workflow reservations for workflow {} from Redis",
+                workflowId);
+        jedisProxy.del(nsKey(SUB_WORKFLOW_ID_RESERVATIONS, workflowId));
     }
 
     /**
@@ -763,5 +819,17 @@ public class RedisExecutionDAO extends BaseDynoDAO
         } catch (NullPointerException npe) {
             throw new IllegalArgumentException(npe.getMessage(), npe);
         }
+    }
+
+    private void removeOwnedSubWorkflowIdReservations(WorkflowModel workflow) {
+        if (workflow.getTasks() == null
+                || workflow.getTasks().stream()
+                        .noneMatch(
+                                task ->
+                                        TaskType.TASK_TYPE_SUB_WORKFLOW.equals(
+                                                task.getTaskType()))) {
+            return;
+        }
+        removeSubWorkflowIdReservations(workflow.getWorkflowId());
     }
 }

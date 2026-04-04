@@ -84,6 +84,8 @@ class HierarchicalForkJoinSubworkflowRestartSpec extends AbstractSpecification {
                 correlationId, input, null)
 
         then: "verify that the workflow is in a RUNNING state"
+        List<String> polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -103,10 +105,6 @@ class HierarchicalForkJoinSubworkflowRestartSpec extends AbstractSpecification {
         then: "verify that the 'integration_task_1' was polled and acknowledged"
         verifyPolledAndAcknowledgedTask(pollAndCompleteTask)
 
-        when: "the subworkflow task should be in SCHEDULED state and is started by issuing a system task call"
-        List<String> polledTaskIds = queueDAO.pop("SUB_WORKFLOW", 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
-
         then: "verify that the 'sub_workflow_task' is in a IN_PROGRESS state"
         def rootWorkflowInstance = workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
         with(rootWorkflowInstance) {
@@ -122,6 +120,9 @@ class HierarchicalForkJoinSubworkflowRestartSpec extends AbstractSpecification {
 
         and: "verify that the mid-level workflow is RUNNING, and first task is in SCHEDULED state"
         midLevelWorkflowId = rootWorkflowInstance.tasks[1].subWorkflowId
+        sweep(midLevelWorkflowId)
+        polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -138,13 +139,12 @@ class HierarchicalForkJoinSubworkflowRestartSpec extends AbstractSpecification {
         and: "poll and complete the integration_task_1 task in the mid-level workflow"
         workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker', ['op': 'task2.done'])
 
-        when: "the subworkflow task should be in SCHEDULED state and is started by issuing a system task call"
-        polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
+        when: "get mid-level workflow state and sweep the leaf child"
         def midLevelWorkflowInstance = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
+        leafWorkflowId = midLevelWorkflowInstance.tasks[1].subWorkflowId
+        sweep(leafWorkflowId)
 
         then: "verify that the leaf workflow is RUNNING, and first task is in SCHEDULED state"
-        leafWorkflowId = midLevelWorkflowInstance.tasks[1].subWorkflowId
         def leafWorkflowInstance = workflowExecutionService.getExecutionStatus(leafWorkflowId, true)
         with(leafWorkflowInstance) {
             status == Workflow.WorkflowStatus.RUNNING

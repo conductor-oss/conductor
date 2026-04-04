@@ -23,6 +23,7 @@ import com.netflix.conductor.cassandra.config.CassandraProperties;
 import com.netflix.conductor.cassandra.util.Statements;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TransientException;
@@ -50,6 +51,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
     protected final PreparedStatement insertWorkflowStatement;
     protected final PreparedStatement insertTaskStatement;
     protected final PreparedStatement insertEventExecutionStatement;
+    protected final PreparedStatement insertSubWorkflowIdReservationStatement;
 
     protected final PreparedStatement selectTotalStatement;
     protected final PreparedStatement selectTaskStatement;
@@ -58,6 +60,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
     protected final PreparedStatement selectTaskLookupStatement;
     protected final PreparedStatement selectTasksFromTaskDefLimitStatement;
     protected final PreparedStatement selectEventExecutionsStatement;
+    protected final PreparedStatement selectSubWorkflowIdReservationStatement;
 
     protected final PreparedStatement updateWorkflowStatement;
     protected final PreparedStatement updateTotalTasksStatement;
@@ -71,6 +74,8 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
     protected final PreparedStatement deleteTaskLookupStatement;
     protected final PreparedStatement deleteTaskDefLimitStatement;
     protected final PreparedStatement deleteEventExecutionStatement;
+    protected final PreparedStatement deleteSubWorkflowIdReservationStatement;
+    protected final PreparedStatement deleteSubWorkflowIdReservationsStatement;
 
     protected final int eventExecutionsTTL;
 
@@ -91,6 +96,9 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                         .setConsistencyLevel(properties.getWriteConsistencyLevel());
         this.insertEventExecutionStatement =
                 session.prepare(statements.getInsertEventExecutionStatement())
+                        .setConsistencyLevel(properties.getWriteConsistencyLevel());
+        this.insertSubWorkflowIdReservationStatement =
+                session.prepare(statements.getInsertSubWorkflowIdReservationStatement())
                         .setConsistencyLevel(properties.getWriteConsistencyLevel());
 
         this.selectTotalStatement =
@@ -115,6 +123,9 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                 session.prepare(
                                 statements
                                         .getSelectAllEventExecutionsForMessageFromEventExecutionsStatement())
+                        .setConsistencyLevel(properties.getReadConsistencyLevel());
+        this.selectSubWorkflowIdReservationStatement =
+                session.prepare(statements.getSelectSubWorkflowIdReservationStatement())
                         .setConsistencyLevel(properties.getReadConsistencyLevel());
 
         this.updateWorkflowStatement =
@@ -150,6 +161,12 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                         .setConsistencyLevel(properties.getWriteConsistencyLevel());
         this.deleteEventExecutionStatement =
                 session.prepare(statements.getDeleteEventExecutionsStatement())
+                        .setConsistencyLevel(properties.getWriteConsistencyLevel());
+        this.deleteSubWorkflowIdReservationStatement =
+                session.prepare(statements.getDeleteSubWorkflowIdReservationStatement())
+                        .setConsistencyLevel(properties.getWriteConsistencyLevel());
+        this.deleteSubWorkflowIdReservationsStatement =
+                session.prepare(statements.getDeleteSubWorkflowIdReservationsStatement())
                         .setConsistencyLevel(properties.getWriteConsistencyLevel());
     }
 
@@ -456,6 +473,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                                 deleteWorkflowStatement.bind(
                                         UUID.fromString(workflowId), DEFAULT_SHARD_ID));
                 removed = resultSet.wasApplied();
+                removeOwnedSubWorkflowIdReservations(workflow);
             } catch (DriverException e) {
                 Monitors.error(CLASS_NAME, "removeWorkflow");
                 String errorMsg = String.format("Failed to remove workflow: %s", workflowId);
@@ -550,6 +568,83 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
         } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "getWorkflow");
             String errorMsg = String.format("Failed to get workflow: %s", workflowId);
+            LOGGER.error(errorMsg, e);
+            throw new TransientException(errorMsg);
+        }
+    }
+
+    @Override
+    public String reserveSubWorkflowId(
+            String parentWorkflowId, String parentWorkflowTaskId, String subWorkflowId) {
+        UUID parentWorkflowUUID = toUUID(parentWorkflowId, "Invalid parent workflow id");
+        UUID parentWorkflowTaskUUID =
+                toUUID(parentWorkflowTaskId, "Invalid parent workflow task id");
+        UUID subWorkflowUUID = toUUID(subWorkflowId, "Invalid sub workflow id");
+
+        try {
+            session.execute(
+                    insertSubWorkflowIdReservationStatement.bind(
+                            parentWorkflowUUID, parentWorkflowTaskUUID, subWorkflowUUID));
+            Row row =
+                    session.execute(
+                                    selectSubWorkflowIdReservationStatement.bind(
+                                            parentWorkflowUUID, parentWorkflowTaskUUID))
+                            .one();
+            String reservedSubWorkflowId = row.getUUID(SUB_WORKFLOW_ID_KEY).toString();
+            LOGGER.debug(
+                    "Resolved sub-workflow reservation for workflow {} task {} to child workflow {} in Cassandra",
+                    parentWorkflowId,
+                    parentWorkflowTaskId,
+                    reservedSubWorkflowId);
+            return reservedSubWorkflowId;
+        } catch (DriverException e) {
+            Monitors.error(CLASS_NAME, "reserveSubWorkflowId");
+            String errorMsg =
+                    String.format(
+                            "Failed to reserve sub workflow id for parent workflow task: %s",
+                            parentWorkflowTaskId);
+            LOGGER.error(errorMsg, e);
+            throw new TransientException(errorMsg);
+        }
+    }
+
+    @Override
+    public void removeSubWorkflowIdReservation(String workflowId, String taskId) {
+        UUID workflowUUID = toUUID(workflowId, "Invalid workflow id");
+        UUID taskUUID = toUUID(taskId, "Invalid task id");
+
+        try {
+            LOGGER.debug(
+                    "Removing owned sub-workflow reservation for workflow {} task {} from Cassandra",
+                    workflowId,
+                    taskId);
+            session.execute(deleteSubWorkflowIdReservationStatement.bind(workflowUUID, taskUUID));
+        } catch (DriverException e) {
+            Monitors.error(CLASS_NAME, "removeSubWorkflowIdReservation");
+            String errorMsg =
+                    String.format(
+                            "Failed to remove sub workflow id reservation for workflow task: %s",
+                            taskId);
+            LOGGER.error(errorMsg, e);
+            throw new TransientException(errorMsg);
+        }
+    }
+
+    @Override
+    public void removeSubWorkflowIdReservations(String workflowId) {
+        UUID workflowUUID = toUUID(workflowId, "Invalid workflow id");
+
+        try {
+            LOGGER.debug(
+                    "Removing all owned sub-workflow reservations for workflow {} from Cassandra",
+                    workflowId);
+            session.execute(deleteSubWorkflowIdReservationsStatement.bind(workflowUUID));
+        } catch (DriverException e) {
+            Monitors.error(CLASS_NAME, "removeSubWorkflowIdReservations");
+            String errorMsg =
+                    String.format(
+                            "Failed to remove sub workflow id reservations for workflow: %s",
+                            workflowId);
             LOGGER.error(errorMsg, e);
             throw new TransientException(errorMsg);
         }
@@ -805,6 +900,18 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
             LOGGER.error(errorMsg, e);
             throw new TransientException(errorMsg);
         }
+    }
+
+    private void removeOwnedSubWorkflowIdReservations(WorkflowModel workflow) {
+        if (workflow.getTasks() == null
+                || workflow.getTasks().stream()
+                        .noneMatch(
+                                task ->
+                                        TaskType.TASK_TYPE_SUB_WORKFLOW.equals(
+                                                task.getTaskType()))) {
+            return;
+        }
+        removeSubWorkflowIdReservations(workflow.getWorkflowId());
     }
 
     @VisibleForTesting

@@ -25,6 +25,7 @@ import org.springframework.retry.support.RetryTemplate;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
@@ -291,6 +292,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
             withTransaction(
                     connection -> {
                         removeWorkflowDefToWorkflowMapping(connection, workflow);
+                        removeOwnedSubWorkflowIdReservations(connection, workflow);
                         removeWorkflow(connection, workflowId);
                         removePendingWorkflow(connection, workflow.getWorkflowName(), workflowId);
                     });
@@ -336,6 +338,62 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
             }
         }
         return workflow;
+    }
+
+    @Override
+    public String reserveSubWorkflowId(
+            String parentWorkflowId, String parentWorkflowTaskId, String subWorkflowId) {
+        Preconditions.checkNotNull(parentWorkflowId, "parentWorkflowId cannot be null");
+        Preconditions.checkNotNull(parentWorkflowTaskId, "parentWorkflowTaskId cannot be null");
+        Preconditions.checkNotNull(subWorkflowId, "subWorkflowId cannot be null");
+
+        String reservedSubWorkflowId =
+                getWithRetriedTransactions(
+                        connection -> {
+                            addSubWorkflowIdReservation(
+                                    connection,
+                                    parentWorkflowId,
+                                    parentWorkflowTaskId,
+                                    subWorkflowId);
+                            return getSubWorkflowIdReservation(
+                                    connection, parentWorkflowId, parentWorkflowTaskId);
+                        });
+        logger.debug(
+                "Resolved sub-workflow reservation for workflow {} task {} to child workflow {} in MySQL",
+                parentWorkflowId,
+                parentWorkflowTaskId,
+                reservedSubWorkflowId);
+        return reservedSubWorkflowId;
+    }
+
+    @Override
+    public void removeSubWorkflowIdReservation(String workflowId, String taskId) {
+        Preconditions.checkNotNull(workflowId, "workflowId cannot be null");
+        Preconditions.checkNotNull(taskId, "taskId cannot be null");
+
+        logger.debug(
+                "Removing owned sub-workflow reservation for workflow {} task {} from MySQL",
+                workflowId,
+                taskId);
+        getWithRetriedTransactions(
+                connection -> {
+                    removeSubWorkflowIdReservation(connection, workflowId, taskId);
+                    return null;
+                });
+    }
+
+    @Override
+    public void removeSubWorkflowIdReservations(String workflowId) {
+        Preconditions.checkNotNull(workflowId, "workflowId cannot be null");
+
+        logger.debug(
+                "Removing all owned sub-workflow reservations for workflow {} from MySQL",
+                workflowId);
+        getWithRetriedTransactions(
+                connection -> {
+                    removeSubWorkflowIdReservations(connection, workflowId);
+                    return null;
+                });
     }
 
     /**
@@ -798,6 +856,75 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
                                 .addParameter(dateStr(workflow.getCreateTime()))
                                 .addParameter(workflow.getWorkflowId())
                                 .executeUpdate());
+    }
+
+    private void addSubWorkflowIdReservation(
+            Connection connection,
+            String parentWorkflowId,
+            String parentWorkflowTaskId,
+            String subWorkflowId) {
+        String INSERT_SUB_WORKFLOW_RESERVATION =
+                "INSERT IGNORE INTO sub_workflow_id_reservation "
+                        + "(parent_workflow_id, parent_workflow_task_id, sub_workflow_id) VALUES (?, ?, ?)";
+
+        execute(
+                connection,
+                INSERT_SUB_WORKFLOW_RESERVATION,
+                q ->
+                        q.addParameter(parentWorkflowId)
+                                .addParameter(parentWorkflowTaskId)
+                                .addParameter(subWorkflowId)
+                                .executeUpdate());
+    }
+
+    private String getSubWorkflowIdReservation(
+            Connection connection, String parentWorkflowId, String parentWorkflowTaskId) {
+        String GET_SUB_WORKFLOW_RESERVATION =
+                "SELECT sub_workflow_id FROM sub_workflow_id_reservation "
+                        + "WHERE parent_workflow_id = ? AND parent_workflow_task_id = ?";
+
+        return query(
+                connection,
+                GET_SUB_WORKFLOW_RESERVATION,
+                q ->
+                        q.addParameter(parentWorkflowId)
+                                .addParameter(parentWorkflowTaskId)
+                                .executeScalar(String.class));
+    }
+
+    private void removeOwnedSubWorkflowIdReservations(
+            Connection connection, WorkflowModel workflow) {
+        if (workflow.getTasks() == null
+                || workflow.getTasks().stream()
+                        .noneMatch(
+                                task ->
+                                        TaskType.TASK_TYPE_SUB_WORKFLOW.equals(
+                                                task.getTaskType()))) {
+            return;
+        }
+        removeSubWorkflowIdReservations(connection, workflow.getWorkflowId());
+    }
+
+    private void removeSubWorkflowIdReservation(
+            Connection connection, String workflowId, String taskId) {
+        String REMOVE_SUB_WORKFLOW_RESERVATION =
+                "DELETE FROM sub_workflow_id_reservation "
+                        + "WHERE parent_workflow_id = ? AND parent_workflow_task_id = ?";
+
+        execute(
+                connection,
+                REMOVE_SUB_WORKFLOW_RESERVATION,
+                q -> q.addParameter(workflowId).addParameter(taskId).executeDelete());
+    }
+
+    private void removeSubWorkflowIdReservations(Connection connection, String workflowId) {
+        String REMOVE_SUB_WORKFLOW_RESERVATIONS =
+                "DELETE FROM sub_workflow_id_reservation WHERE parent_workflow_id = ?";
+
+        execute(
+                connection,
+                REMOVE_SUB_WORKFLOW_RESERVATIONS,
+                q -> q.addParameter(workflowId).executeDelete());
     }
 
     @VisibleForTesting

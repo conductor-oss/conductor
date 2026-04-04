@@ -18,10 +18,12 @@ import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskResult
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
+import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
 
 import spock.lang.Shared
 
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
 
 class LambdaAndTerminateTaskSpec extends AbstractSpecification {
@@ -43,6 +45,9 @@ class LambdaAndTerminateTaskSpec extends AbstractSpecification {
 
     @Autowired
     SubWorkflow subWorkflowTask
+
+    @Autowired
+    QueueDAO queueDAO
 
     def setup() {
         workflowTestUtil.registerWorkflows(
@@ -121,6 +126,10 @@ class LambdaAndTerminateTaskSpec extends AbstractSpecification {
         def workflowInstanceId = startWorkflow(PARENT_WORKFLOW_WITH_TERMINATE_TASK, 1,
                 '', workflowInput, null)
 
+        and: "the sub workflow system task is executed"
+        List<String> polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
+
         then: "verify that the workflow has started and the tasks are as expected"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
@@ -151,6 +160,7 @@ class LambdaAndTerminateTaskSpec extends AbstractSpecification {
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowId = workflow.getTaskByRefName("test_terminate_subworkflow").subWorkflowId
+        sweep(subWorkflowId)
 
         then: "verify that the sub workflow is RUNNING, and the task within is in SCHEDULED state"
         with(workflowExecutionService.getExecutionStatus(subWorkflowId, true)) {

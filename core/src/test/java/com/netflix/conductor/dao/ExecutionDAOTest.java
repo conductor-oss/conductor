@@ -28,6 +28,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.model.TaskModel;
@@ -78,6 +79,115 @@ public abstract class ExecutionDAOTest {
         for (TaskModel task : tasks) {
             assertTrue(getConcurrentExecutionLimitDAO().exceedsLimit(task));
         }
+    }
+
+    @Test
+    public void testReserveSubWorkflowIdIsStable() {
+        String parentWorkflowId = UUID.randomUUID().toString();
+        String parentWorkflowTaskId = UUID.randomUUID().toString();
+
+        String reservedWorkflowId =
+                getExecutionDAO()
+                        .reserveSubWorkflowId(
+                                parentWorkflowId,
+                                parentWorkflowTaskId,
+                                UUID.randomUUID().toString());
+
+        String secondReservation =
+                getExecutionDAO()
+                        .reserveSubWorkflowId(
+                                parentWorkflowId,
+                                parentWorkflowTaskId,
+                                UUID.randomUUID().toString());
+
+        assertEquals(reservedWorkflowId, secondReservation);
+    }
+
+    @Test
+    public void testRemoveSubWorkflowIdReservationRemovesMapping() {
+        String parentWorkflowId = UUID.randomUUID().toString();
+        String parentWorkflowTaskId = UUID.randomUUID().toString();
+        String originalReservation = UUID.randomUUID().toString();
+
+        String reservedWorkflowId =
+                getExecutionDAO()
+                        .reserveSubWorkflowId(
+                                parentWorkflowId, parentWorkflowTaskId, originalReservation);
+
+        assertEquals(originalReservation, reservedWorkflowId);
+
+        getExecutionDAO().removeSubWorkflowIdReservation(parentWorkflowId, parentWorkflowTaskId);
+
+        String nextCandidate = UUID.randomUUID().toString();
+        String newReservation =
+                getExecutionDAO()
+                        .reserveSubWorkflowId(
+                                parentWorkflowId, parentWorkflowTaskId, nextCandidate);
+
+        assertEquals(nextCandidate, newReservation);
+    }
+
+    @Test
+    public void testRemoveSubWorkflowIdReservationsRemovesAllMappingsForWorkflow() {
+        String workflowId = UUID.randomUUID().toString();
+        String firstTaskId = UUID.randomUUID().toString();
+        String secondTaskId = UUID.randomUUID().toString();
+
+        String firstReservation =
+                getExecutionDAO()
+                        .reserveSubWorkflowId(
+                                workflowId, firstTaskId, UUID.randomUUID().toString());
+        String secondReservation =
+                getExecutionDAO()
+                        .reserveSubWorkflowId(
+                                workflowId, secondTaskId, UUID.randomUUID().toString());
+
+        assertNotEquals(firstReservation, secondReservation);
+
+        getExecutionDAO().removeSubWorkflowIdReservations(workflowId);
+
+        String nextFirstCandidate = UUID.randomUUID().toString();
+        String nextSecondCandidate = UUID.randomUUID().toString();
+
+        assertEquals(
+                nextFirstCandidate,
+                getExecutionDAO()
+                        .reserveSubWorkflowId(workflowId, firstTaskId, nextFirstCandidate));
+        assertEquals(
+                nextSecondCandidate,
+                getExecutionDAO()
+                        .reserveSubWorkflowId(workflowId, secondTaskId, nextSecondCandidate));
+    }
+
+    @Test
+    public void testRemoveWorkflowRemovesOwnedSubWorkflowReservations() {
+        WorkflowModel workflow = createTestWorkflow();
+        TaskModel subWorkflowTask = workflow.getTasks().get(0);
+        subWorkflowTask.setTaskType(TaskType.TASK_TYPE_SUB_WORKFLOW);
+        subWorkflowTask.setStatus(TaskModel.Status.SCHEDULED);
+
+        getExecutionDAO().createWorkflow(workflow);
+        getExecutionDAO().createTasks(workflow.getTasks());
+
+        String originalReservation = UUID.randomUUID().toString();
+        assertEquals(
+                originalReservation,
+                getExecutionDAO()
+                        .reserveSubWorkflowId(
+                                workflow.getWorkflowId(),
+                                subWorkflowTask.getTaskId(),
+                                originalReservation));
+
+        assertTrue(getExecutionDAO().removeWorkflow(workflow.getWorkflowId()));
+
+        String nextCandidate = UUID.randomUUID().toString();
+        assertEquals(
+                nextCandidate,
+                getExecutionDAO()
+                        .reserveSubWorkflowId(
+                                workflow.getWorkflowId(),
+                                subWorkflowTask.getTaskId(),
+                                nextCandidate));
     }
 
     @Test

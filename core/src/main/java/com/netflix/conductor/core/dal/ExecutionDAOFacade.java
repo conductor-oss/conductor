@@ -31,6 +31,7 @@ import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.Workflow;
@@ -137,6 +138,26 @@ public class ExecutionDAOFacade {
         WorkflowModel workflowModel = getWorkflowModelFromDataStore(workflowId, includeTasks);
         populateWorkflowAndTaskPayloadData(workflowModel);
         return workflowModel;
+    }
+
+    /**
+     * Fetches the {@link WorkflowModel} from the primary execution store only.
+     *
+     * <p>Unlike {@link #getWorkflowModel(String, boolean)}, this method does not fall back to
+     * {@link IndexDAO}. Use it for control-flow decisions that must rely on the source of truth.
+     *
+     * @param workflowId the id of the workflow to be fetched
+     * @param includeTasks if true, fetches the {@link Task} data in the workflow.
+     * @return the {@link WorkflowModel} object from {@link ExecutionDAO}
+     * @throws NotFoundException no such {@link WorkflowModel} is found in {@link ExecutionDAO}.
+     */
+    public WorkflowModel getWorkflowModelFromExecutionDAO(String workflowId, boolean includeTasks) {
+        WorkflowModel workflow = executionDAO.getWorkflow(workflowId, includeTasks);
+        if (workflow == null) {
+            throw new NotFoundException("No such workflow found by id: %s", workflowId);
+        }
+        populateWorkflowAndTaskPayloadData(workflow);
+        return workflow;
     }
 
     /**
@@ -262,6 +283,16 @@ public class ExecutionDAOFacade {
             indexDAO.indexWorkflow(new WorkflowSummary(workflowModel.toWorkflow()));
         }
         return workflowModel.getWorkflowId();
+    }
+
+    public String reserveSubWorkflowId(
+            String parentWorkflowId, String parentWorkflowTaskId, String subWorkflowId) {
+        return executionDAO.reserveSubWorkflowId(
+                parentWorkflowId, parentWorkflowTaskId, subWorkflowId);
+    }
+
+    public void removeSubWorkflowIdReservation(String workflowId, String taskId) {
+        executionDAO.removeSubWorkflowIdReservation(workflowId, taskId);
     }
 
     private void externalizeTaskData(TaskModel taskModel) {
@@ -569,7 +600,38 @@ public class ExecutionDAOFacade {
     }
 
     public void removeTask(String taskId) {
-        executionDAO.removeTask(taskId);
+        TaskModel taskModel = executionDAO.getTask(taskId);
+        boolean removed = executionDAO.removeTask(taskId);
+        if (!removed) {
+            LOGGER.warn(
+                    "Task {} was not removed; skipping owned sub-workflow reservation cleanup",
+                    taskId);
+            return;
+        }
+        cleanupOwnedSubWorkflowReservation(taskModel);
+    }
+
+    private void cleanupOwnedSubWorkflowReservation(TaskModel task) {
+        if (task == null
+                || !TaskType.TASK_TYPE_SUB_WORKFLOW.equals(task.getTaskType())
+                || StringUtils.isBlank(task.getWorkflowInstanceId())
+                || StringUtils.isBlank(task.getTaskId())) {
+            return;
+        }
+        LOGGER.debug(
+                "Removing owned sub-workflow reservation for task {} in workflow {} during task deletion",
+                task.getTaskId(),
+                task.getWorkflowInstanceId());
+        try {
+            executionDAO.removeSubWorkflowIdReservation(
+                    task.getWorkflowInstanceId(), task.getTaskId());
+        } catch (Exception e) {
+            LOGGER.warn(
+                    "Unable to remove sub-workflow reservation owned by workflow {} task {}",
+                    task.getWorkflowInstanceId(),
+                    task.getTaskId(),
+                    e);
+        }
     }
 
     private void removeTaskIndex(WorkflowModel workflow, TaskModel task, boolean archiveTask)

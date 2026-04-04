@@ -165,4 +165,35 @@ public interface WorkflowExecutor {
      * @return id of the workflow
      */
     String startWorkflow(StartWorkflowInput input);
+
+    /**
+     * Starts a new workflow execution for a reserved workflow id, or returns the existing workflow
+     * if that id has already been created, without running the child workflow's initial decide
+     * inline.
+     *
+     * <p>This is intended for parent/child orchestration flows such as {@code SUB_WORKFLOW}, where
+     * the parent needs to attach to the created child quickly and the child can be evaluated
+     * asynchronously through the normal decider queue.
+     *
+     * @param input starts a workflow execution with a pre-reserved workflow id
+     * @return created or existing workflow model
+     */
+    WorkflowModel startWorkflowIdempotent(StartWorkflowInput input);
+
+    /**
+     * Reserves a stable sub-workflow id for a parent workflow task.
+     *
+     * @param parentWorkflowId parent workflow id
+     * @param parentWorkflowTaskId parent workflow task id
+     * @return reserved sub-workflow id
+     */
+    String reserveSubWorkflowId(String parentWorkflowId, String parentWorkflowTaskId);
+
+    /**
+     * Removes the reserved sub-workflow id for the workflow task that owns the reservation.
+     *
+     * @param workflowId workflow id that owns the reservation
+     * @param taskId task id that owns the reservation
+     */
+    void removeSubWorkflowIdReservation(String workflowId, String taskId);
 }

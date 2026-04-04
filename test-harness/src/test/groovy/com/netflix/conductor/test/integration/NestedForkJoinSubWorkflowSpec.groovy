@@ -78,6 +78,8 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
                 correlationId, input, null)
 
         then: "verify that the workflow is in a RUNNING state"
+        List<String> polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
         with(workflowExecutionService.getExecutionStatus(parentWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 7
@@ -124,6 +126,7 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
 
         and: "verify that the mid-level workflow is RUNNING, and first task is in SCHEDULED state"
         subworkflowId = parentWorkflowInstance.tasks[2].subWorkflowId
+        sweep(subworkflowId)
         with(workflowExecutionService.getExecutionStatus(subworkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 1

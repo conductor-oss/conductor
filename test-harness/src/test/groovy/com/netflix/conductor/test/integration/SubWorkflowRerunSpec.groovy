@@ -102,8 +102,11 @@ class SubWorkflowRerunSpec extends AbstractSpecification {
             tasks[1].status == Task.Status.IN_PROGRESS
         }
 
-        and: "verify that the mid-level workflow is RUNNING, and first task is in SCHEDULED state"
+        and: "the mid-level subworkflow is decided so its first task is scheduled"
         midLevelWorkflowId = rootWorkflowInstance.tasks[1].subWorkflowId
+        sweep(midLevelWorkflowId)
+
+        and: "verify that the mid-level workflow is RUNNING, and first task is in SCHEDULED state"
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 1
@@ -118,9 +121,10 @@ class SubWorkflowRerunSpec extends AbstractSpecification {
         polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
         asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
         def midLevelWorkflowInstance = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
+        leafWorkflowId = midLevelWorkflowInstance.tasks[1].subWorkflowId
+        sweep(leafWorkflowId)
 
         then: "verify that the leaf-level workflow is RUNNING, and first task is in SCHEDULED state"
-        leafWorkflowId = midLevelWorkflowInstance.tasks[1].subWorkflowId
         def leafWorkflowInstance = workflowExecutionService.getExecutionStatus(leafWorkflowId, true)
         with(leafWorkflowInstance) {
             status == Workflow.WorkflowStatus.RUNNING
