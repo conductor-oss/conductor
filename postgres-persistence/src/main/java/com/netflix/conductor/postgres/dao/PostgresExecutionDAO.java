@@ -27,6 +27,7 @@ import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
@@ -319,7 +320,7 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
             withTransaction(
                     connection -> {
                         removeWorkflowDefToWorkflowMapping(connection, workflow);
-                        removeSubWorkflowIdReservation(connection, workflow);
+                        removeOwnedSubWorkflowIdReservations(connection, workflow);
                         removeWorkflow(connection, workflowId);
                         removePendingWorkflow(connection, workflow.getWorkflowName(), workflowId);
                     });
@@ -388,6 +389,18 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
                             connection, parentWorkflowId, parentWorkflowTaskId, subWorkflowId);
                     return getSubWorkflowIdReservation(
                             connection, parentWorkflowId, parentWorkflowTaskId);
+                });
+    }
+
+    @Override
+    public void removeSubWorkflowIdReservation(String workflowId, String taskId) {
+        Preconditions.checkNotNull(workflowId, "workflowId cannot be null");
+        Preconditions.checkNotNull(taskId, "taskId cannot be null");
+
+        getWithRetriedTransactions(
+                connection -> {
+                    removeSubWorkflowIdReservation(connection, workflowId, taskId);
+                    return null;
                 });
     }
 
@@ -848,11 +861,23 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
                                 .executeScalar(String.class));
     }
 
-    private void removeSubWorkflowIdReservation(Connection connection, WorkflowModel workflow) {
-        if (workflow.getParentWorkflowId() == null || workflow.getParentWorkflowTaskId() == null) {
+    private void removeOwnedSubWorkflowIdReservations(
+            Connection connection, WorkflowModel workflow) {
+        if (workflow.getTasks() == null) {
             return;
         }
+        workflow.getTasks().stream()
+                .filter(task -> TaskType.TASK_TYPE_SUB_WORKFLOW.equals(task.getTaskType()))
+                .forEach(
+                        task ->
+                                removeSubWorkflowIdReservation(
+                                        connection,
+                                        task.getWorkflowInstanceId(),
+                                        task.getTaskId()));
+    }
 
+    private void removeSubWorkflowIdReservation(
+            Connection connection, String workflowId, String taskId) {
         String REMOVE_SUB_WORKFLOW_RESERVATION =
                 "DELETE FROM sub_workflow_id_reservation "
                         + "WHERE parent_workflow_id = ? AND parent_workflow_task_id = ?";
@@ -861,8 +886,8 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
                 connection,
                 REMOVE_SUB_WORKFLOW_RESERVATION,
                 q ->
-                        q.addParameter(workflow.getParentWorkflowId())
-                                .addParameter(workflow.getParentWorkflowTaskId())
+                        q.addParameter(workflowId)
+                                .addParameter(taskId)
                                 .executeDelete());
     }
 

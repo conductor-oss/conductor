@@ -103,6 +103,29 @@ public abstract class ExecutionDAOTest {
     }
 
     @Test
+    public void testRemoveSubWorkflowIdReservationRemovesMapping() {
+        String parentWorkflowId = UUID.randomUUID().toString();
+        String parentWorkflowTaskId = UUID.randomUUID().toString();
+        String originalReservation = UUID.randomUUID().toString();
+
+        String reservedWorkflowId =
+                getExecutionDAO()
+                        .reserveSubWorkflowId(
+                                parentWorkflowId, parentWorkflowTaskId, originalReservation);
+
+        assertEquals(originalReservation, reservedWorkflowId);
+
+        getExecutionDAO().removeSubWorkflowIdReservation(parentWorkflowId, parentWorkflowTaskId);
+
+        String nextCandidate = UUID.randomUUID().toString();
+        String newReservation =
+                getExecutionDAO()
+                        .reserveSubWorkflowId(parentWorkflowId, parentWorkflowTaskId, nextCandidate);
+
+        assertEquals(nextCandidate, newReservation);
+    }
+
+    @Test
     public void testCreateTaskException() {
         TaskModel task = new TaskModel();
         task.setScheduledTime(1L);

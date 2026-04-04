@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
@@ -440,7 +441,7 @@ public class RedisExecutionDAO extends BaseDynoDAO
 
             // Remove the object
             jedisProxy.del(nsKey(WORKFLOW, workflowId));
-            removeSubWorkflowIdReservation(workflow);
+            removeOwnedSubWorkflowIdReservations(workflow);
             for (TaskModel task : workflow.getTasks()) {
                 removeTask(task.getTaskId());
             }
@@ -466,7 +467,7 @@ public class RedisExecutionDAO extends BaseDynoDAO
 
             // Remove the object
             jedisProxy.expire(nsKey(WORKFLOW, workflowId), ttlSeconds);
-            removeSubWorkflowIdReservation(workflow);
+            removeOwnedSubWorkflowIdReservations(workflow);
             for (TaskModel task : workflow.getTasks()) {
                 removeTaskWithExpiry(task.getTaskId(), ttlSeconds);
             }
@@ -521,6 +522,15 @@ public class RedisExecutionDAO extends BaseDynoDAO
             return subWorkflowId;
         }
         return jedisProxy.get(key);
+    }
+
+    @Override
+    public void removeSubWorkflowIdReservation(String workflowId, String taskId) {
+        Preconditions.checkNotNull(workflowId, "workflowId cannot be null");
+        Preconditions.checkNotNull(taskId, "taskId cannot be null");
+
+        recordRedisDaoRequests("removeSubWorkflowIdReservation");
+        jedisProxy.del(nsKey(SUB_WORKFLOW_ID_RESERVATIONS, workflowId, taskId));
     }
 
     /**
@@ -783,14 +793,15 @@ public class RedisExecutionDAO extends BaseDynoDAO
         }
     }
 
-    private void removeSubWorkflowIdReservation(WorkflowModel workflow) {
-        if (workflow.getParentWorkflowId() == null || workflow.getParentWorkflowTaskId() == null) {
+    private void removeOwnedSubWorkflowIdReservations(WorkflowModel workflow) {
+        if (workflow.getTasks() == null) {
             return;
         }
-        jedisProxy.del(
-                nsKey(
-                        SUB_WORKFLOW_ID_RESERVATIONS,
-                        workflow.getParentWorkflowId(),
-                        workflow.getParentWorkflowTaskId()));
+        workflow.getTasks().stream()
+                .filter(task -> TaskType.TASK_TYPE_SUB_WORKFLOW.equals(task.getTaskType()))
+                .forEach(
+                        task ->
+                                removeSubWorkflowIdReservation(
+                                        task.getWorkflowInstanceId(), task.getTaskId()));
     }
 }

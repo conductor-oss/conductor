@@ -23,6 +23,7 @@ import com.netflix.conductor.cassandra.config.CassandraProperties;
 import com.netflix.conductor.cassandra.util.Statements;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TransientException;
@@ -468,7 +469,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                                 deleteWorkflowStatement.bind(
                                         UUID.fromString(workflowId), DEFAULT_SHARD_ID));
                 removed = resultSet.wasApplied();
-                removeSubWorkflowIdReservation(workflow);
+                removeOwnedSubWorkflowIdReservations(workflow);
             } catch (DriverException e) {
                 Monitors.error(CLASS_NAME, "removeWorkflow");
                 String errorMsg = String.format("Failed to remove workflow: %s", workflowId);
@@ -592,6 +593,24 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                     String.format(
                             "Failed to reserve sub workflow id for parent workflow task: %s",
                             parentWorkflowTaskId);
+            LOGGER.error(errorMsg, e);
+            throw new TransientException(errorMsg);
+        }
+    }
+
+    @Override
+    public void removeSubWorkflowIdReservation(String workflowId, String taskId) {
+        UUID workflowUUID = toUUID(workflowId, "Invalid workflow id");
+        UUID taskUUID = toUUID(taskId, "Invalid task id");
+
+        try {
+            session.execute(deleteSubWorkflowIdReservationStatement.bind(workflowUUID, taskUUID));
+        } catch (DriverException e) {
+            Monitors.error(CLASS_NAME, "removeSubWorkflowIdReservation");
+            String errorMsg =
+                    String.format(
+                            "Failed to remove sub workflow id reservation for workflow task: %s",
+                            taskId);
             LOGGER.error(errorMsg, e);
             throw new TransientException(errorMsg);
         }
@@ -849,15 +868,16 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
         }
     }
 
-    private void removeSubWorkflowIdReservation(WorkflowModel workflow) {
-        if (workflow.getParentWorkflowId() == null || workflow.getParentWorkflowTaskId() == null) {
+    private void removeOwnedSubWorkflowIdReservations(WorkflowModel workflow) {
+        if (workflow.getTasks() == null) {
             return;
         }
-
-        session.execute(
-                deleteSubWorkflowIdReservationStatement.bind(
-                        UUID.fromString(workflow.getParentWorkflowId()),
-                        UUID.fromString(workflow.getParentWorkflowTaskId())));
+        workflow.getTasks().stream()
+                .filter(task -> TaskType.TASK_TYPE_SUB_WORKFLOW.equals(task.getTaskType()))
+                .forEach(
+                        task ->
+                                removeSubWorkflowIdReservation(
+                                        task.getWorkflowInstanceId(), task.getTaskId()));
     }
 
     @VisibleForTesting

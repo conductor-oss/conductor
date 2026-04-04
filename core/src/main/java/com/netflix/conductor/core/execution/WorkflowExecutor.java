@@ -183,4 +183,12 @@ public interface WorkflowExecutor {
      * @return reserved sub-workflow id
      */
     String reserveSubWorkflowId(String parentWorkflowId, String parentWorkflowTaskId);
+
+    /**
+     * Removes the reserved sub-workflow id for the workflow task that owns the reservation.
+     *
+     * @param workflowId workflow id that owns the reservation
+     * @param taskId task id that owns the reservation
+     */
+    void removeSubWorkflowIdReservation(String workflowId, String taskId);
 }

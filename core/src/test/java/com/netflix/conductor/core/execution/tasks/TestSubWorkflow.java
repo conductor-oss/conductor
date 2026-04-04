@@ -314,6 +314,8 @@ public class TestSubWorkflow {
         subWorkflow.cancel(workflowInstance, task, workflowExecutor);
 
         assertEquals(WorkflowModel.Status.RUNNING, subWorkflowInstance.getStatus());
+        verify(workflowExecutor)
+                .removeSubWorkflowIdReservation(PARENT_WORKFLOW_ID, PARENT_TASK_ID);
     }
 
     @Test

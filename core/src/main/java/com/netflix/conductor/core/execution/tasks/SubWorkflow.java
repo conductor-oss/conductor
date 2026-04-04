@@ -149,6 +149,8 @@ public class SubWorkflow extends WorkflowSystemTask {
     public void cancel(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         String workflowId = task.getSubWorkflowId();
         if (StringUtils.isEmpty(workflowId)) {
+            workflowExecutor.removeSubWorkflowIdReservation(
+                    workflow.getWorkflowId(), task.getTaskId());
             return;
         }
         WorkflowModel subWorkflow = workflowExecutor.getWorkflow(workflowId, true);

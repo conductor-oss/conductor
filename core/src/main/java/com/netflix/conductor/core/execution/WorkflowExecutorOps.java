@@ -2055,6 +2055,15 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 parentWorkflowId, parentWorkflowTaskId, idGenerator.generate());
     }
 
+    @Override
+    public void removeSubWorkflowIdReservation(String workflowId, String taskId) {
+        Preconditions.checkArgument(
+                StringUtils.isNotBlank(workflowId), "workflowId cannot be blank");
+        Preconditions.checkArgument(
+                StringUtils.isNotBlank(taskId), "taskId cannot be blank");
+        executionDAOFacade.removeSubWorkflowIdReservation(workflowId, taskId);
+    }
+
     private void createAndEvaluate(WorkflowModel workflow) {
         if (!executionLockService.acquireLock(workflow.getWorkflowId())) {
             throw new TransientException("Error acquiring lock when creating workflow: {}");
