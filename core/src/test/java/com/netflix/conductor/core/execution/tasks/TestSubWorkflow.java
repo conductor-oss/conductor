@@ -128,7 +128,10 @@ public class TestSubWorkflow {
         subWorkflow.start(workflowInstance, task, workflowExecutor);
         assertNull("subWorkflowId should be null", task.getSubWorkflowId());
         assertEquals(TaskModel.Status.SCHEDULED, task.getStatus());
-        assertTrue("Output data should be empty", task.getOutputData().isEmpty());
+        assertEquals(
+                "Transient error starting sub workflow UnitWorkFlow: QueueDAO failure",
+                task.getReasonForIncompletion());
+        assertEquals("QueueDAO failure", task.getOutputData().get("subWorkflowLaunchError"));
     }
 
     @Test
@@ -278,6 +281,41 @@ public class TestSubWorkflow {
         when(workflowExecutor.startWorkflow(startWorkflowInput)).thenReturn("workflow_1");
 
         assertFalse(subWorkflow.execute(workflowInstance, task, workflowExecutor));
+    }
+
+    @Test
+    public void testExecuteScheduledSubWorkflowWithoutIdRetriesStart() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        WorkflowModel workflowInstance = new WorkflowModel();
+        workflowInstance.setWorkflowDefinition(workflowDef);
+
+        TaskModel task = new TaskModel();
+        task.setOutputData(new HashMap<>());
+        task.setStatus(TaskModel.Status.SCHEDULED);
+
+        Map<String, Object> inputData = new HashMap<>();
+        inputData.put("subWorkflowName", "UnitWorkFlow");
+        inputData.put("subWorkflowVersion", 2);
+        task.setInputData(inputData);
+
+        WorkflowModel subWorkflowInstance = new WorkflowModel();
+        subWorkflowInstance.setStatus(WorkflowModel.Status.RUNNING);
+
+        StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
+        startWorkflowInput.setName("UnitWorkFlow");
+        startWorkflowInput.setVersion(2);
+        startWorkflowInput.setWorkflowInput(inputData);
+        startWorkflowInput.setTaskToDomain(workflowInstance.getTaskToDomain());
+
+        when(workflowExecutor.startWorkflow(startWorkflowInput)).thenReturn("workflow_1");
+        when(workflowExecutor.getWorkflow(eq("workflow_1"), eq(false)))
+                .thenReturn(subWorkflowInstance);
+
+        assertTrue(subWorkflow.execute(workflowInstance, task, workflowExecutor));
+        assertEquals("workflow_1", task.getSubWorkflowId());
+        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
+        assertNull(task.getReasonForIncompletion());
+        assertFalse(task.getOutputData().containsKey("subWorkflowLaunchError"));
     }
 
     @Test

@@ -36,6 +36,7 @@ public class SubWorkflow extends WorkflowSystemTask {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SubWorkflow.class);
     private static final String SUB_WORKFLOW_ID = "subWorkflowId";
+    private static final String SUB_WORKFLOW_LAUNCH_ERROR = "subWorkflowLaunchError";
 
     private final ObjectMapper objectMapper;
 
@@ -86,20 +87,28 @@ public class SubWorkflow extends WorkflowSystemTask {
 
             String subWorkflowId = workflowExecutor.startWorkflow(startWorkflowInput);
 
+            task.setReasonForIncompletion(null);
             task.setSubWorkflowId(subWorkflowId);
             // For backwards compatibility
             task.addOutput(SUB_WORKFLOW_ID, subWorkflowId);
+            task.getOutputData().remove(SUB_WORKFLOW_LAUNCH_ERROR);
 
             // Set task status based on current sub-workflow status, as the status can change in
             // recursion by the time we update here.
             WorkflowModel subWorkflow = workflowExecutor.getWorkflow(subWorkflowId, false);
             updateTaskStatus(subWorkflow, task);
         } catch (TransientException te) {
+            task.setStatus(TaskModel.Status.SCHEDULED);
+            task.setReasonForIncompletion(
+                    String.format(
+                            "Transient error starting sub workflow %s: %s", name, te.getMessage()));
+            task.addOutput(SUB_WORKFLOW_LAUNCH_ERROR, te.getMessage());
             LOGGER.info(
                     "A transient backend error happened when task {} in {} tried to start sub workflow {}.",
                     task.getTaskId(),
                     workflow.toShortString(),
-                    name);
+                    name,
+                    te);
         } catch (Exception ae) {
 
             task.setStatus(TaskModel.Status.FAILED);
@@ -117,6 +126,11 @@ public class SubWorkflow extends WorkflowSystemTask {
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         String workflowId = task.getSubWorkflowId();
         if (StringUtils.isEmpty(workflowId)) {
+            if (task.getStatus() == TaskModel.Status.SCHEDULED) {
+                start(workflow, task, workflowExecutor);
+                return StringUtils.isNotEmpty(task.getSubWorkflowId())
+                        || task.getStatus().isTerminal();
+            }
             return false;
         }
 
