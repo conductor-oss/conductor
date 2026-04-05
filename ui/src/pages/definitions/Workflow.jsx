@@ -84,23 +84,8 @@ export default function WorkflowDefinitions() {
   };
 
   const workflows = useMemo(() => {
-    // Extract latest versions only
     if (data) {
-      const unique = new Map();
-      const types = new Set();
-      for (let workflowDef of data) {
-        if (!unique.has(workflowDef.name)) {
-          unique.set(workflowDef.name, workflowDef);
-        } else if (unique.get(workflowDef.name).version < workflowDef.version) {
-          unique.set(workflowDef.name, workflowDef);
-        }
-
-        for (let task of workflowDef.tasks) {
-          types.add(task.type);
-        }
-      }
-
-      return Array.from(unique.values());
+      return data.results || data;
     }
   }, [data]);
 

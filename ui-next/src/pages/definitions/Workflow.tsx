@@ -38,9 +38,12 @@ import { featureFlags, FEATURES } from "utils/flags";
 import useCustomPagination from "utils/hooks/useCustomPagination";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { logger } from "utils/logger";
-import { useActionWithPath, useWorkflowDefs } from "utils/query";
+import {
+  SearchResult,
+  useActionWithPath,
+  useLatestWorkflowDefs,
+} from "utils/query";
 import { createSearchableTags, tryToJson } from "utils/utils";
-import { getUniqueWorkflows } from "utils/workflow";
 import CloneWorkflowDialog from "./dialog/CloneWorkflowDialog";
 
 const INTRO_CONTENT = `A **workflow definition** is a blueprint that defines the sequence of tasks, their dependencies, and how data flows between them.
@@ -61,8 +64,6 @@ export default function WorkflowDefinitions() {
   const { isTrialExpired } = useAuth();
 
   const isPlayground = featureFlags.isEnabled(FEATURES.PLAYGROUND);
-  const { data, isFetching, refetch }: UseQueryResult<WorkflowDef[]> =
-    useWorkflowDefs();
   const [showAddTagDialog, setShowAddTagDialog] = useState(false);
   const [addTagDialogData, setAddTagDialogData] =
     useState<TagDialogProps | null>(null);
@@ -82,6 +83,24 @@ export default function WorkflowDefinitions() {
     { filterParam, pageParam, searchParam },
     { setFilterParam, setSearchParam, handlePageChange },
   ] = useCustomPagination();
+  const [rowsPerPage, setRowsPerPage] = useState(15);
+
+  const isSearching = searchParam !== "";
+  const page = pageParam ? Number(pageParam) : 1;
+
+  // When searching/filtering, fetch all data so client-side search works across all workflows.
+  // When browsing without a search term, use server-side pagination for efficiency.
+  const pagination = isSearching
+    ? undefined
+    : { start: (page - 1) * rowsPerPage, size: rowsPerPage };
+
+  const {
+    data: searchResult,
+    isFetching,
+    refetch,
+  }: UseQueryResult<SearchResult<WorkflowDef>> = useLatestWorkflowDefs(
+    pagination,
+  );
   const [confirmDelete, setConfirmDelete] = useState<{
     confirmDelete: boolean;
     workflowName: string;
@@ -329,14 +348,11 @@ export default function WorkflowDefinitions() {
                   id={`delete-${workflowRowData.name}-btn`}
                   disabled={isTrialExpired}
                   onClick={() => {
-                    const selectedData = data?.find((x) => x.name === name);
-                    if (selectedData) {
-                      setConfirmDelete({
-                        confirmDelete: true,
-                        workflowName: selectedData.name,
-                        workflowVersion: selectedData.version,
-                      });
-                    }
+                    setConfirmDelete({
+                      confirmDelete: true,
+                      workflowName: workflowRowData.name,
+                      workflowVersion: workflowRowData.version,
+                    });
                   }}
                   size="small"
                   sx={{
@@ -351,7 +367,7 @@ export default function WorkflowDefinitions() {
         },
       },
     ],
-    [data, navigate, isTrialExpired],
+    [navigate, isTrialExpired],
   );
 
   const handleFilterChange = useCallback(
@@ -365,12 +381,7 @@ export default function WorkflowDefinitions() {
     [setFilterParam],
   );
 
-  const workflows = useMemo(() => {
-    // Extract latest versions only
-    if (data) {
-      return getUniqueWorkflows(data);
-    }
-  }, [data]);
+  const workflows = useMemo(() => searchResult?.results, [searchResult]);
 
   const handleClickBrowseTemplates = () => {
     pushHistory(isPlayground ? "/" : WORKFLOW_DEFINITION_URL.NEW);
@@ -404,7 +415,7 @@ export default function WorkflowDefinitions() {
               });
             }}
             selectedWorkflow={selectedWorkflowWithAction?.selectedWorkflow}
-            workflowList={data ?? []}
+            workflowList={workflows ?? []}
           />
         )}
 
@@ -501,6 +512,15 @@ export default function WorkflowDefinitions() {
               data={workflows}
               columns={columns}
               filterByTags
+              paginationServer={!isSearching}
+              paginationTotalRows={
+                isSearching ? undefined : searchResult?.totalHits
+              }
+              paginationPerPage={rowsPerPage}
+              onChangeRowsPerPage={(newPerPage) => {
+                setRowsPerPage(newPerPage);
+                handlePageChange(1);
+              }}
               customActions={[
                 <Tooltip
                   title="Refresh workflow definitions"
@@ -519,7 +539,7 @@ export default function WorkflowDefinitions() {
                 </Tooltip>,
               ]}
               onChangePage={handlePageChange}
-              paginationDefaultPage={pageParam ? Number(pageParam) : 1}
+              paginationDefaultPage={page}
               noDataComponent={
                 searchParam === "" ? (
                   <NoDataComponent
