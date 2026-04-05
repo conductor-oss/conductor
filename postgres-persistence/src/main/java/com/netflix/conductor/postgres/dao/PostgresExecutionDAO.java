@@ -385,12 +385,15 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
 
         String reservedSubWorkflowId =
                 getWithRetriedTransactions(
-                connection -> {
-                    addSubWorkflowIdReservation(
-                            connection, parentWorkflowId, parentWorkflowTaskId, subWorkflowId);
-                    return getSubWorkflowIdReservation(
-                            connection, parentWorkflowId, parentWorkflowTaskId);
-                });
+                        connection -> {
+                            addSubWorkflowIdReservation(
+                                    connection,
+                                    parentWorkflowId,
+                                    parentWorkflowTaskId,
+                                    subWorkflowId);
+                            return getSubWorkflowIdReservation(
+                                    connection, parentWorkflowId, parentWorkflowTaskId);
+                        });
         logger.debug(
                 "Resolved sub-workflow reservation for workflow {} task {} to child workflow {} in Postgres",
                 parentWorkflowId,

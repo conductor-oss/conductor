@@ -118,7 +118,8 @@ public class ExecutionDAOFacadeTest {
         workflow.setWorkflowId("workflowId");
         when(executionDAO.getWorkflow("workflowId", false)).thenReturn(workflow);
 
-        WorkflowModel found = executionDAOFacade.getWorkflowModelFromExecutionDAO("workflowId", false);
+        WorkflowModel found =
+                executionDAOFacade.getWorkflowModelFromExecutionDAO("workflowId", false);
         assertSame(workflow, found);
         verify(indexDAO, never()).get(any(), any());
     }
