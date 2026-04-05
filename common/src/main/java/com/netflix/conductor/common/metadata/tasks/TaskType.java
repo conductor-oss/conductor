@@ -32,6 +32,7 @@ public enum TaskType {
     EVENT,
     WAIT,
     HUMAN,
+    WAIT_FOR_WEBHOOK,
     USER_DEFINED,
     HTTP,
     LAMBDA,
@@ -66,6 +67,7 @@ public enum TaskType {
     public static final String TASK_TYPE_EVENT = "EVENT";
     public static final String TASK_TYPE_WAIT = "WAIT";
     public static final String TASK_TYPE_HUMAN = "HUMAN";
+    public static final String TASK_TYPE_WAIT_FOR_WEBHOOK = "WAIT_FOR_WEBHOOK";
     public static final String TASK_TYPE_SUB_WORKFLOW = "SUB_WORKFLOW";
     public static final String TASK_TYPE_START_WORKFLOW = "START_WORKFLOW";
     public static final String TASK_TYPE_FORK_JOIN = "FORK_JOIN";
