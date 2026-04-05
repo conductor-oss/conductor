@@ -90,6 +90,52 @@ public class ExecutorUtilsTest {
     }
 
     @Test
+    public void computePostponeUsesWorkflowOffsetForScheduledSubWorkflow() {
+        TaskModel scheduledSubWorkflow =
+                newTask(TaskType.TASK_TYPE_SUB_WORKFLOW, TaskModel.Status.SCHEDULED);
+
+        WorkflowModel workflow = newWorkflow(Arrays.asList(scheduledSubWorkflow), 432000);
+
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(900));
+
+        assertEquals(30, result.getSeconds());
+    }
+
+    @Test
+    public void computePostponePrefersScheduledSubWorkflowOffsetOverWorkflowTimeout() {
+        TaskModel scheduledSubWorkflow =
+                newTask(TaskType.TASK_TYPE_SUB_WORKFLOW, TaskModel.Status.SCHEDULED);
+        TaskModel scheduledSimple = newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.SCHEDULED);
+
+        WorkflowModel workflow =
+                newWorkflow(Arrays.asList(scheduledSimple, scheduledSubWorkflow), 432000);
+
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(900));
+
+        assertEquals(30, result.getSeconds());
+    }
+
+    @Test
+    public void computePostponeUsesWorkflowOffsetForInProgressSubWorkflow() {
+        TaskModel inProgressSubWorkflow =
+                newTask(TaskType.TASK_TYPE_SUB_WORKFLOW, TaskModel.Status.IN_PROGRESS);
+        inProgressSubWorkflow.setResponseTimeoutSeconds(500);
+        inProgressSubWorkflow.setStartTime(System.currentTimeMillis());
+
+        WorkflowModel workflow = newWorkflow(Arrays.asList(inProgressSubWorkflow), 432000);
+
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(900));
+
+        assertEquals(30, result.getSeconds());
+    }
+
+    @Test
     public void computePostponeDefaultsToWorkflowOffsetWhenNoEligibleTasks() {
         TaskModel completed = newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.COMPLETED);
         WorkflowModel workflow = newWorkflow(Arrays.asList(completed), 0);

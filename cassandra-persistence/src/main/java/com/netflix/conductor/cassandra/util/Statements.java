@@ -22,10 +22,14 @@ import static com.netflix.conductor.cassandra.util.Constants.EVENT_HANDLER_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.EVENT_HANDLER_NAME_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.HANDLERS_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.MESSAGE_ID_KEY;
+import static com.netflix.conductor.cassandra.util.Constants.PARENT_WORKFLOW_ID_KEY;
+import static com.netflix.conductor.cassandra.util.Constants.PARENT_WORKFLOW_TASK_ID_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.PAYLOAD_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.SHARD_ID_KEY;
+import static com.netflix.conductor.cassandra.util.Constants.SUB_WORKFLOW_ID_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_EVENT_EXECUTIONS;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_EVENT_HANDLERS;
+import static com.netflix.conductor.cassandra.util.Constants.TABLE_SUB_WORKFLOW_ID_RESERVATIONS;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_DEFS;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_DEF_LIMIT;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_LOOKUP;
@@ -413,6 +417,14 @@ public class Statements {
                 .getQueryString();
     }
 
+    public String getSelectSubWorkflowIdReservationStatement() {
+        return QueryBuilder.select(SUB_WORKFLOW_ID_KEY)
+                .from(keyspace, TABLE_SUB_WORKFLOW_ID_RESERVATIONS)
+                .where(eq(PARENT_WORKFLOW_ID_KEY, bindMarker()))
+                .and(eq(PARENT_WORKFLOW_TASK_ID_KEY, bindMarker()))
+                .getQueryString();
+    }
+
     /**
      * @return cql query statement to retrieve all event executions for a given message and event
      *     handler from the "event_executions" table
@@ -488,6 +500,15 @@ public class Statements {
                 .getQueryString();
     }
 
+    public String getInsertSubWorkflowIdReservationStatement() {
+        return QueryBuilder.insertInto(keyspace, TABLE_SUB_WORKFLOW_ID_RESERVATIONS)
+                .value(PARENT_WORKFLOW_ID_KEY, bindMarker())
+                .value(PARENT_WORKFLOW_TASK_ID_KEY, bindMarker())
+                .value(SUB_WORKFLOW_ID_KEY, bindMarker())
+                .ifNotExists()
+                .getQueryString();
+    }
+
     /**
      * @return cql query statement to update an event execution in the "event_executions" table
      */
@@ -522,6 +543,21 @@ public class Statements {
         return QueryBuilder.delete()
                 .from(keyspace, TABLE_TASK_LOOKUP)
                 .where(eq(TASK_ID_KEY, bindMarker()))
+                .getQueryString();
+    }
+
+    public String getDeleteSubWorkflowIdReservationStatement() {
+        return QueryBuilder.delete()
+                .from(keyspace, TABLE_SUB_WORKFLOW_ID_RESERVATIONS)
+                .where(eq(PARENT_WORKFLOW_ID_KEY, bindMarker()))
+                .and(eq(PARENT_WORKFLOW_TASK_ID_KEY, bindMarker()))
+                .getQueryString();
+    }
+
+    public String getDeleteSubWorkflowIdReservationsStatement() {
+        return QueryBuilder.delete()
+                .from(keyspace, TABLE_SUB_WORKFLOW_ID_RESERVATIONS)
+                .where(eq(PARENT_WORKFLOW_ID_KEY, bindMarker()))
                 .getQueryString();
     }
 

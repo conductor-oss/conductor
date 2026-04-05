@@ -26,6 +26,12 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_WAI
 @Slf4j
 public class ExecutorUtils {
 
+    private static boolean isActiveSubWorkflow(TaskModel taskModel) {
+        return TaskType.TASK_TYPE_SUB_WORKFLOW.equals(taskModel.getTaskType())
+                && (taskModel.getStatus() == TaskModel.Status.SCHEDULED
+                        || taskModel.getStatus() == TaskModel.Status.IN_PROGRESS);
+    }
+
     public static Duration computePostpone(
             WorkflowModel workflowModel,
             Duration workflowOffsetTimeout,
@@ -37,7 +43,13 @@ public class ExecutorUtils {
         Long postponeDurationSeconds = null;
         for (TaskModel taskModel : workflowModel.getTasks()) {
             Long candidateSeconds = null;
-            if (taskModel.getStatus() == TaskModel.Status.IN_PROGRESS) {
+            if (isActiveSubWorkflow(taskModel)) {
+                // Sub-workflow progress is driven by Conductor's internal orchestration rather than
+                // external worker polling or task-specific timeout signals. Revisit it on the
+                // normal workflow offset so launch retries and child-completion observation
+                // converge quickly.
+                candidateSeconds = workflowOffsetTimeoutSeconds;
+            } else if (taskModel.getStatus() == TaskModel.Status.IN_PROGRESS) {
                 if (taskModel.getTaskType().equals(TASK_TYPE_WAIT)) {
                     if (taskModel.getWaitTimeout() == 0) {
                         candidateSeconds = workflowOffsetTimeoutSeconds;

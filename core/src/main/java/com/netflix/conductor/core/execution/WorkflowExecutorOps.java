@@ -54,6 +54,8 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.ExecutionLockService;
 
+import com.google.common.base.Preconditions;
+
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 import static com.netflix.conductor.model.TaskModel.Status.*;
 
@@ -1969,51 +1971,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
     @Override
     public String startWorkflow(StartWorkflowInput input) {
-        WorkflowDef workflowDefinition;
-
-        if (input.getWorkflowDefinition() == null) {
-            workflowDefinition =
-                    metadataMapperService.lookupForWorkflowDefinition(
-                            input.getName(), input.getVersion());
-        } else {
-            workflowDefinition = input.getWorkflowDefinition();
-        }
-
-        workflowDefinition = metadataMapperService.populateTaskDefinitions(workflowDefinition);
-
-        // perform validations
-        Map<String, Object> workflowInput = input.getWorkflowInput();
-        String externalInputPayloadStoragePath = input.getExternalInputPayloadStoragePath();
-        validateWorkflow(workflowDefinition, workflowInput, externalInputPayloadStoragePath);
-
-        // Generate ID if it's not present
+        WorkflowDef workflowDefinition = resolveWorkflowDefinition(input);
         String workflowId =
                 Optional.ofNullable(input.getWorkflowId()).orElseGet(idGenerator::generate);
-
-        // Persist the Workflow
-        WorkflowModel workflow = new WorkflowModel();
-        workflow.setWorkflowId(workflowId);
-        workflow.setCorrelationId(input.getCorrelationId());
-        workflow.setPriority(input.getPriority() == null ? 0 : input.getPriority());
-        workflow.setWorkflowDefinition(workflowDefinition);
-        workflow.setStatus(WorkflowModel.Status.RUNNING);
-        workflow.setParentWorkflowId(input.getParentWorkflowId());
-        workflow.setParentWorkflowTaskId(input.getParentWorkflowTaskId());
-        workflow.setOwnerApp(WorkflowContext.get().getClientApp());
-        workflow.setCreateTime(System.currentTimeMillis());
-        workflow.setUpdatedBy(null);
-        workflow.setUpdatedTime(null);
-        workflow.setEvent(input.getEvent());
-        workflow.setTaskToDomain(input.getTaskToDomain());
-        workflow.setVariables(workflowDefinition.getVariables());
-
-        if (workflowInput != null && !workflowInput.isEmpty()) {
-            Map<String, Object> parsedInput =
-                    parametersUtils.getWorkflowInput(workflowDefinition, workflowInput);
-            workflow.setInput(parsedInput);
-        } else {
-            workflow.setExternalInputPayloadStoragePath(externalInputPayloadStoragePath);
-        }
+        WorkflowModel workflow = createWorkflowModel(input, workflowDefinition, workflowId);
 
         try {
             createAndEvaluate(workflow);
@@ -2039,22 +2000,160 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         }
     }
 
+    @Override
+    public WorkflowModel startWorkflowIdempotent(StartWorkflowInput input) {
+        Preconditions.checkArgument(
+                StringUtils.isNotBlank(input.getWorkflowId()),
+                "workflowId must be present for idempotent workflow start");
+
+        WorkflowDef workflowDefinition = resolveWorkflowDefinition(input);
+        String workflowId = input.getWorkflowId();
+
+        if (!executionLockService.acquireLock(workflowId)) {
+            throw new TransientException("Error acquiring lock when creating workflow: {}");
+        }
+
+        try {
+            try {
+                WorkflowModel existingWorkflow =
+                        executionDAOFacade.getWorkflowModelFromExecutionDAO(workflowId, false);
+                return existingWorkflow;
+            } catch (NotFoundException e) {
+                LOGGER.debug(
+                        "No existing workflow found in execution store for idempotent start of workflow id {}, proceeding with creation",
+                        workflowId);
+            }
+
+            WorkflowModel workflow = createWorkflowModel(input, workflowDefinition, workflowId);
+            createAndQueueEvaluationWithLock(workflow);
+
+            Monitors.recordWorkflowStartSuccess(
+                    workflow.getWorkflowName(),
+                    String.valueOf(workflow.getWorkflowVersion()),
+                    workflow.getOwnerApp());
+            return workflow;
+        } catch (Exception e) {
+            Monitors.recordWorkflowStartError(
+                    workflowDefinition.getName(), WorkflowContext.get().getClientApp());
+            LOGGER.error(
+                    "Unable to start workflow idempotently: {}", workflowDefinition.getName(), e);
+
+            try {
+                executionDAOFacade.removeWorkflow(workflowId, false);
+            } catch (Exception rwe) {
+                LOGGER.error("Could not remove the workflowId: " + workflowId, rwe);
+            }
+            throw e;
+        } finally {
+            executionLockService.releaseLock(workflowId);
+        }
+    }
+
+    @Override
+    public String reserveSubWorkflowId(String parentWorkflowId, String parentWorkflowTaskId) {
+        Preconditions.checkArgument(
+                StringUtils.isNotBlank(parentWorkflowId), "parentWorkflowId cannot be blank");
+        Preconditions.checkArgument(
+                StringUtils.isNotBlank(parentWorkflowTaskId),
+                "parentWorkflowTaskId cannot be blank");
+        return executionDAOFacade.reserveSubWorkflowId(
+                parentWorkflowId, parentWorkflowTaskId, idGenerator.generate());
+    }
+
+    @Override
+    public void removeSubWorkflowIdReservation(String workflowId, String taskId) {
+        Preconditions.checkArgument(
+                StringUtils.isNotBlank(workflowId), "workflowId cannot be blank");
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "taskId cannot be blank");
+        executionDAOFacade.removeSubWorkflowIdReservation(workflowId, taskId);
+    }
+
     private void createAndEvaluate(WorkflowModel workflow) {
         if (!executionLockService.acquireLock(workflow.getWorkflowId())) {
             throw new TransientException("Error acquiring lock when creating workflow: {}");
         }
         try {
-            executionDAOFacade.createWorkflow(workflow);
-            LOGGER.debug(
-                    "A new instance of workflow: {} created with id: {}",
-                    workflow.getWorkflowName(),
-                    workflow.getWorkflowId());
-            executionDAOFacade.populateWorkflowAndTaskPayloadData(workflow);
-            notifyWorkflowStatusListener(workflow, WorkflowEventType.STARTED);
-            decide(workflow);
+            createAndEvaluateWithLock(workflow);
         } finally {
             executionLockService.releaseLock(workflow.getWorkflowId());
         }
+    }
+
+    private void createAndEvaluateWithLock(WorkflowModel workflow) {
+        executionDAOFacade.createWorkflow(workflow);
+        LOGGER.debug(
+                "A new instance of workflow: {} created with id: {}",
+                workflow.getWorkflowName(),
+                workflow.getWorkflowId());
+        executionDAOFacade.populateWorkflowAndTaskPayloadData(workflow);
+        notifyWorkflowStatusListener(workflow, WorkflowEventType.STARTED);
+        decide(workflow);
+    }
+
+    private void createAndQueueEvaluationWithLock(WorkflowModel workflow) {
+        executionDAOFacade.createWorkflow(workflow);
+        LOGGER.debug(
+                "A new instance of workflow: {} created with id: {}",
+                workflow.getWorkflowName(),
+                workflow.getWorkflowId());
+        executionDAOFacade.populateWorkflowAndTaskPayloadData(workflow);
+        notifyWorkflowStatusListener(workflow, WorkflowEventType.STARTED);
+        try {
+            expediteLazyWorkflowEvaluation(workflow.getWorkflowId());
+        } catch (Exception e) {
+            LOGGER.warn(
+                    "Unable to expedite evaluation for newly created workflow {}, leaving default decider queue entry in place",
+                    workflow.getWorkflowId(),
+                    e);
+        }
+    }
+
+    private WorkflowDef resolveWorkflowDefinition(StartWorkflowInput input) {
+        WorkflowDef workflowDefinition;
+
+        if (input.getWorkflowDefinition() == null) {
+            workflowDefinition =
+                    metadataMapperService.lookupForWorkflowDefinition(
+                            input.getName(), input.getVersion());
+        } else {
+            workflowDefinition = input.getWorkflowDefinition();
+        }
+
+        workflowDefinition = metadataMapperService.populateTaskDefinitions(workflowDefinition);
+        validateWorkflow(
+                workflowDefinition,
+                input.getWorkflowInput(),
+                input.getExternalInputPayloadStoragePath());
+        return workflowDefinition;
+    }
+
+    private WorkflowModel createWorkflowModel(
+            StartWorkflowInput input, WorkflowDef workflowDefinition, String workflowId) {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId(workflowId);
+        workflow.setCorrelationId(input.getCorrelationId());
+        workflow.setPriority(input.getPriority() == null ? 0 : input.getPriority());
+        workflow.setWorkflowDefinition(workflowDefinition);
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        workflow.setParentWorkflowId(input.getParentWorkflowId());
+        workflow.setParentWorkflowTaskId(input.getParentWorkflowTaskId());
+        workflow.setOwnerApp(WorkflowContext.get().getClientApp());
+        workflow.setCreateTime(System.currentTimeMillis());
+        workflow.setUpdatedBy(null);
+        workflow.setUpdatedTime(null);
+        workflow.setEvent(input.getEvent());
+        workflow.setTaskToDomain(input.getTaskToDomain());
+        workflow.setVariables(workflowDefinition.getVariables());
+
+        Map<String, Object> workflowInput = input.getWorkflowInput();
+        if (workflowInput != null && !workflowInput.isEmpty()) {
+            Map<String, Object> parsedInput =
+                    parametersUtils.getWorkflowInput(workflowDefinition, workflowInput);
+            workflow.setInput(parsedInput);
+        } else {
+            workflow.setExternalInputPayloadStoragePath(input.getExternalInputPayloadStoragePath());
+        }
+        return workflow;
     }
 
     /**
