@@ -380,7 +380,7 @@ public class LLMHelper {
                         id = UUID.randomUUID().toString();
                     }
                     String argsAsString = toolCall.arguments();
-                    Map<String, Object> args = Map.of();
+                    Map<String, Object> args = new HashMap<>();
                     try {
                         @SuppressWarnings("unchecked")
                         Map<String, Object> parsedArgs =
