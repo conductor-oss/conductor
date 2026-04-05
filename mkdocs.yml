@@ -75,6 +75,7 @@ nav:
       - documentation/api/bulk.md
       - documentation/api/eventhandlers.md
       - documentation/api/taskdomains.md
+      - documentation/mcp/workflow.md
     - Workflow Definition:
       - documentation/configuration/workflowdef/index.md
     - System Tasks:

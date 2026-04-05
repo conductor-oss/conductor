@@ -89,7 +89,7 @@ ext {
     revConductorClient = '4.0.10'
     revReactor = '1.3.1'
     revSpringAI = '1.1.2'
-    revJSonSchemaValidator  = '1.0.73'
+    revJSonSchemaValidator  = '2.0.0'
     mongodb = '4.11.0'
     pgVector = '0.1.4'
     revMCP = '0.13.0'
