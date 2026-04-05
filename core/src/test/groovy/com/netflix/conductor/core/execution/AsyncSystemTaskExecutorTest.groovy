@@ -91,8 +91,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         1 * executionDAOFacade.getTaskModel(parentTaskId) >> task1
         1 * executionDAOFacade.getWorkflowModel(workflowId, subWorkflowTask.isTaskRetrievalRequired()) >> workflow
         1 * workflowExecutor.reserveSubWorkflowId(workflowId, parentTaskId) >> subWorkflowId
-        1 * workflowExecutor.startWorkflowIdempotent(*_) >> subWorkflowId
-        1 * workflowExecutor.getWorkflow(subWorkflowId, false) >> subWorkflow
+        1 * workflowExecutor.startWorkflowIdempotent(*_) >> subWorkflow
 
         // SUB_WORKFLOW is asyncComplete so its removed from the queue
         1 * queueDAO.remove(queueName, parentTaskId)

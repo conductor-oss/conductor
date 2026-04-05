@@ -378,8 +378,6 @@ public class TestSubWorkflow {
                         "existing-sub-workflow");
 
         when(workflowExecutor.startWorkflowIdempotent(startWorkflowInput))
-                .thenReturn("existing-sub-workflow");
-        when(workflowExecutor.getWorkflow("existing-sub-workflow", false))
                 .thenReturn(subWorkflowInstance);
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
@@ -417,8 +415,6 @@ public class TestSubWorkflow {
         when(workflowExecutor.reserveSubWorkflowId(PARENT_WORKFLOW_ID, PARENT_TASK_ID))
                 .thenReturn(RESERVED_SUB_WORKFLOW_ID);
         when(workflowExecutor.startWorkflowIdempotent(startWorkflowInput))
-                .thenReturn(RESERVED_SUB_WORKFLOW_ID);
-        when(workflowExecutor.getWorkflow(RESERVED_SUB_WORKFLOW_ID, false))
                 .thenReturn(subWorkflowInstance);
     }
 

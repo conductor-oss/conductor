@@ -2001,7 +2001,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     }
 
     @Override
-    public String startWorkflowIdempotent(StartWorkflowInput input) {
+    public WorkflowModel startWorkflowIdempotent(StartWorkflowInput input) {
         Preconditions.checkArgument(
                 StringUtils.isNotBlank(input.getWorkflowId()),
                 "workflowId must be present for idempotent workflow start");
@@ -2017,7 +2017,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             try {
                 WorkflowModel existingWorkflow =
                         executionDAOFacade.getWorkflowModelFromExecutionDAO(workflowId, false);
-                return existingWorkflow.getWorkflowId();
+                return existingWorkflow;
             } catch (NotFoundException e) {
                 LOGGER.debug(
                         "No existing workflow found in execution store for idempotent start of workflow id {}, proceeding with creation",
@@ -2025,13 +2025,13 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             }
 
             WorkflowModel workflow = createWorkflowModel(input, workflowDefinition, workflowId);
-            createAndEvaluateWithLock(workflow);
+            createAndQueueEvaluationWithLock(workflow);
 
             Monitors.recordWorkflowStartSuccess(
                     workflow.getWorkflowName(),
                     String.valueOf(workflow.getWorkflowVersion()),
                     workflow.getOwnerApp());
-            return workflowId;
+            return workflow;
         } catch (Exception e) {
             Monitors.recordWorkflowStartError(
                     workflowDefinition.getName(), WorkflowContext.get().getClientApp());
@@ -2088,6 +2088,24 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         executionDAOFacade.populateWorkflowAndTaskPayloadData(workflow);
         notifyWorkflowStatusListener(workflow, WorkflowEventType.STARTED);
         decide(workflow);
+    }
+
+    private void createAndQueueEvaluationWithLock(WorkflowModel workflow) {
+        executionDAOFacade.createWorkflow(workflow);
+        LOGGER.debug(
+                "A new instance of workflow: {} created with id: {}",
+                workflow.getWorkflowName(),
+                workflow.getWorkflowId());
+        executionDAOFacade.populateWorkflowAndTaskPayloadData(workflow);
+        notifyWorkflowStatusListener(workflow, WorkflowEventType.STARTED);
+        try {
+            expediteLazyWorkflowEvaluation(workflow.getWorkflowId());
+        } catch (Exception e) {
+            LOGGER.warn(
+                    "Unable to expedite evaluation for newly created workflow {}, leaving default decider queue entry in place",
+                    workflow.getWorkflowId(),
+                    e);
+        }
     }
 
     private WorkflowDef resolveWorkflowDefinition(StartWorkflowInput input) {

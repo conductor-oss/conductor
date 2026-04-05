@@ -842,9 +842,41 @@ public class TestWorkflowExecutor {
         when(executionDAOFacade.getWorkflowModelFromExecutionDAO("existing-workflow-id", false))
                 .thenReturn(workflow);
 
-        assertEquals("existing-workflow-id", workflowExecutor.startWorkflowIdempotent(input));
+        WorkflowModel existing = workflowExecutor.startWorkflowIdempotent(input);
+
+        assertEquals("existing-workflow-id", existing.getWorkflowId());
         verify(executionDAOFacade, never()).createWorkflow(any());
         verify(executionDAOFacade, never()).getWorkflowModel("existing-workflow-id", false);
+        verify(executionLockService).releaseLock("existing-workflow-id");
+    }
+
+    @Test
+    public void testStartWorkflowIdempotentReturnsExistingWorkflowModel() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("existing-workflow");
+        workflowDef.setVersion(1);
+
+        StartWorkflowInput input = new StartWorkflowInput();
+        input.setWorkflowDefinition(workflowDef);
+        input.setName(workflowDef.getName());
+        input.setVersion(workflowDef.getVersion());
+        input.setWorkflowInput(Collections.emptyMap());
+        input.setWorkflowId("existing-workflow-id");
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("existing-workflow-id");
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+
+        when(executionLockService.acquireLock("existing-workflow-id")).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO("existing-workflow-id", false))
+                .thenReturn(workflow);
+
+        WorkflowModel found = workflowExecutor.startWorkflowIdempotent(input);
+
+        assertSame(workflow, found);
+        verify(executionDAOFacade, never()).createWorkflow(any());
+        verify(queueDAO, never()).push(anyString(), anyString(), anyInt(), anyLong());
+        verify(queueDAO, never()).postpone(anyString(), anyString(), anyInt(), anyLong());
         verify(executionLockService).releaseLock("existing-workflow-id");
     }
 
@@ -865,7 +897,9 @@ public class TestWorkflowExecutor {
         when(executionDAOFacade.getWorkflowModelFromExecutionDAO("new-workflow-id", false))
                 .thenThrow(new NotFoundException("missing"));
 
-        assertEquals("new-workflow-id", workflowExecutor.startWorkflowIdempotent(input));
+        WorkflowModel created = workflowExecutor.startWorkflowIdempotent(input);
+
+        assertEquals("new-workflow-id", created.getWorkflowId());
         verify(executionDAOFacade).createWorkflow(any());
         verify(executionDAOFacade, never()).getWorkflowModel("new-workflow-id", false);
         verify(executionLockService, atLeastOnce()).releaseLock("new-workflow-id");
@@ -890,7 +924,9 @@ public class TestWorkflowExecutor {
         when(executionDAOFacade.getWorkflowModel("indexed-workflow-id", false))
                 .thenReturn(new WorkflowModel());
 
-        assertEquals("indexed-workflow-id", workflowExecutor.startWorkflowIdempotent(input));
+        WorkflowModel created = workflowExecutor.startWorkflowIdempotent(input);
+
+        assertEquals("indexed-workflow-id", created.getWorkflowId());
         verify(executionDAOFacade).createWorkflow(any());
         verify(executionDAOFacade, never()).getWorkflowModel("indexed-workflow-id", false);
         verify(executionLockService, atLeastOnce()).releaseLock("indexed-workflow-id");
@@ -919,6 +955,33 @@ public class TestWorkflowExecutor {
             verify(executionDAOFacade, never()).createWorkflow(any());
             verify(executionLockService).releaseLock("transient-workflow-id");
         }
+    }
+
+    @Test
+    public void testStartWorkflowIdempotentCreatesWorkflowAndExpeditesDecider() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("queued-workflow");
+        workflowDef.setVersion(1);
+
+        StartWorkflowInput input = new StartWorkflowInput();
+        input.setWorkflowDefinition(workflowDef);
+        input.setName(workflowDef.getName());
+        input.setVersion(workflowDef.getVersion());
+        input.setWorkflowInput(Collections.emptyMap());
+        input.setWorkflowId("queued-workflow-id");
+
+        when(executionLockService.acquireLock("queued-workflow-id")).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO("queued-workflow-id", false))
+                .thenThrow(new NotFoundException("missing"));
+        when(queueDAO.containsMessage("_deciderQueue", "queued-workflow-id")).thenReturn(true);
+
+        WorkflowModel created = workflowExecutor.startWorkflowIdempotent(input);
+
+        assertEquals("queued-workflow-id", created.getWorkflowId());
+        assertEquals(WorkflowModel.Status.RUNNING, created.getStatus());
+        verify(executionDAOFacade).createWorkflow(any());
+        verify(queueDAO).postpone("_deciderQueue", "queued-workflow-id", 10, 0);
+        verify(executionLockService, atLeastOnce()).releaseLock("queued-workflow-id");
     }
 
     @Test(expected = NotFoundException.class)

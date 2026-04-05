@@ -97,11 +97,10 @@ public class SubWorkflow extends WorkflowSystemTask {
             startWorkflowInput.setTaskToDomain(taskToDomain);
             startWorkflowInput.setWorkflowId(subWorkflowId);
 
-            // Set task status based on current sub-workflow status, as the status can change in
-            // recursion by the time we update here.
+            // Attach to the created child as soon as the workflow record exists. The child's
+            // initial decide continues asynchronously through the decider queue.
             WorkflowModel subWorkflow =
-                    workflowExecutor.getWorkflow(
-                            workflowExecutor.startWorkflowIdempotent(startWorkflowInput), false);
+                    workflowExecutor.startWorkflowIdempotent(startWorkflowInput);
             attachToSubWorkflow(task, subWorkflow);
         } catch (TransientException te) {
             task.setStatus(TaskModel.Status.SCHEDULED);
