@@ -36,7 +36,8 @@ import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.core.exception.NonTransientException;
+import com.netflix.conductor.core.exception.ConflictException;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.mysql.config.MySQLConfiguration;
 
 import static org.junit.Assert.assertEquals;
@@ -75,18 +76,17 @@ public class MySQLMetadataDAOTest {
 
         metadataDAO.createWorkflowDef(def);
 
-        NonTransientException applicationException =
-                assertThrows(NonTransientException.class, () -> metadataDAO.createWorkflowDef(def));
+        ConflictException applicationException =
+                assertThrows(ConflictException.class, () -> metadataDAO.createWorkflowDef(def));
         assertEquals(
                 "Workflow with testDuplicate.1 already exists!", applicationException.getMessage());
     }
 
     @Test
     public void testRemoveNotExistingWorkflowDef() {
-        NonTransientException applicationException =
+        NotFoundException applicationException =
                 assertThrows(
-                        NonTransientException.class,
-                        () -> metadataDAO.removeWorkflowDef("test", 1));
+                        NotFoundException.class, () -> metadataDAO.removeWorkflowDef("test", 1));
         assertEquals(
                 "No such workflow definition: test version: 1", applicationException.getMessage());
     }
@@ -231,9 +231,9 @@ public class MySQLMetadataDAOTest {
 
     @Test
     public void testRemoveNotExistingTaskDef() {
-        NonTransientException applicationException =
+        NotFoundException applicationException =
                 assertThrows(
-                        NonTransientException.class,
+                        NotFoundException.class,
                         () -> metadataDAO.removeTaskDef("test" + UUID.randomUUID().toString()));
         assertEquals("No such task definition", applicationException.getMessage());
     }

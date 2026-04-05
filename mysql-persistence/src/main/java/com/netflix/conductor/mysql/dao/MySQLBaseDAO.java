@@ -27,7 +27,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.retry.support.RetryTemplate;
 
+import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NonTransientException;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.mysql.util.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -98,8 +100,9 @@ public abstract class MySQLBaseDAO {
      * TransactionalFunction#apply(Connection)}.
      *
      * <p>If any {@link Throwable} thrown from {@code TransactionalFunction#apply(Connection)} will
-     * result in a rollback of the transaction and will be wrapped in an {@link
-     * NonTransientException} if it is not already one.
+     * result in a rollback of the transaction. Domain exceptions ({@link NotFoundException} and
+     * {@link ConflictException}) and {@link NonTransientException} are propagated unchanged. Other
+     * errors are wrapped in a {@link NonTransientException}.
      *
      * <p>Generally this is used to wrap multiple {@link #execute(Connection, String,
      * ExecuteFunction)} or {@link #query(Connection, String, QueryFunction)} invocations that
@@ -124,8 +127,14 @@ public abstract class MySQLBaseDAO {
                 return result;
             } catch (Throwable th) {
                 tx.rollback();
-                if (th instanceof NonTransientException) {
-                    throw th;
+                if (th instanceof NotFoundException notFoundException) {
+                    throw notFoundException;
+                }
+                if (th instanceof ConflictException conflictException) {
+                    throw conflictException;
+                }
+                if (th instanceof NonTransientException nonTransientException) {
+                    throw nonTransientException;
                 }
                 throw new NonTransientException(th.getMessage(), th);
             } finally {
@@ -145,6 +154,15 @@ public abstract class MySQLBaseDAO {
         try {
             return retryTemplate.execute(context -> getWithTransaction(function));
         } catch (Exception e) {
+            if (e instanceof NotFoundException notFoundException) {
+                throw notFoundException;
+            }
+            if (e instanceof ConflictException conflictException) {
+                throw conflictException;
+            }
+            if (e instanceof NonTransientException nonTransientException) {
+                throw nonTransientException;
+            }
             throw new NonTransientException(e.getMessage(), e);
         }
     }
