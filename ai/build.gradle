@@ -28,7 +28,7 @@ dependencies {
     api "org.springframework.ai:spring-ai-vertex-ai-embedding:${revSpringAI}"
     api "org.springframework.ai:spring-ai-azure-openai:${revSpringAI}"
     api "org.springframework.ai:spring-ai-ollama:${revSpringAI}"
-    api "com.google.genai:google-genai:1.18.0"
+    api "com.google.genai:google-genai:1.46.0"
     api "com.networknt:json-schema-validator:${revJSonSchemaValidator}"
 
     api("io.modelcontextprotocol.sdk:mcp:${revMCP}")
