@@ -823,34 +823,6 @@ public class TestWorkflowExecutor {
     }
 
     @Test
-    public void testStartWorkflowIdempotentReturnsExistingWorkflow() {
-        WorkflowDef workflowDef = new WorkflowDef();
-        workflowDef.setName("existing-workflow");
-        workflowDef.setVersion(1);
-
-        StartWorkflowInput input = new StartWorkflowInput();
-        input.setWorkflowDefinition(workflowDef);
-        input.setName(workflowDef.getName());
-        input.setVersion(workflowDef.getVersion());
-        input.setWorkflowInput(Collections.emptyMap());
-        input.setWorkflowId("existing-workflow-id");
-
-        WorkflowModel workflow = new WorkflowModel();
-        workflow.setWorkflowId("existing-workflow-id");
-
-        when(executionLockService.acquireLock("existing-workflow-id")).thenReturn(true);
-        when(executionDAOFacade.getWorkflowModelFromExecutionDAO("existing-workflow-id", false))
-                .thenReturn(workflow);
-
-        WorkflowModel existing = workflowExecutor.startWorkflowIdempotent(input);
-
-        assertEquals("existing-workflow-id", existing.getWorkflowId());
-        verify(executionDAOFacade, never()).createWorkflow(any());
-        verify(executionDAOFacade, never()).getWorkflowModel("existing-workflow-id", false);
-        verify(executionLockService).releaseLock("existing-workflow-id");
-    }
-
-    @Test
     public void testStartWorkflowIdempotentReturnsExistingWorkflowModel() {
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName("existing-workflow");
@@ -875,6 +847,7 @@ public class TestWorkflowExecutor {
 
         assertSame(workflow, found);
         verify(executionDAOFacade, never()).createWorkflow(any());
+        verify(executionDAOFacade, never()).getWorkflowModel("existing-workflow-id", false);
         verify(queueDAO, never()).push(anyString(), anyString(), anyInt(), anyLong());
         verify(queueDAO, never()).postpone(anyString(), anyString(), anyInt(), anyLong());
         verify(executionLockService).releaseLock("existing-workflow-id");

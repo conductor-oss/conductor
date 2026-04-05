@@ -293,11 +293,12 @@ public class ExecutionDAOFacadeTest {
         task.setWorkflowInstanceId("workflowId");
 
         when(executionDAO.getTask("subTaskId")).thenReturn(task);
+        when(executionDAO.removeTask("subTaskId")).thenReturn(true);
 
         executionDAOFacade.removeTask("subTaskId");
 
-        verify(executionDAO).removeSubWorkflowIdReservation("workflowId", "subTaskId");
         verify(executionDAO).removeTask("subTaskId");
+        verify(executionDAO).removeSubWorkflowIdReservation("workflowId", "subTaskId");
     }
 
     @Test
@@ -308,11 +309,28 @@ public class ExecutionDAOFacadeTest {
         task.setWorkflowInstanceId("workflowId");
 
         when(executionDAO.getTask("taskId")).thenReturn(task);
+        when(executionDAO.removeTask("taskId")).thenReturn(true);
 
         executionDAOFacade.removeTask("taskId");
 
-        verify(executionDAO, never()).removeSubWorkflowIdReservation(anyString(), anyString());
         verify(executionDAO).removeTask("taskId");
+        verify(executionDAO, never()).removeSubWorkflowIdReservation(anyString(), anyString());
+    }
+
+    @Test
+    public void testRemoveTaskDoesNotClearReservationWhenTaskDeletionFails() {
+        TaskModel task = new TaskModel();
+        task.setTaskId("subTaskId");
+        task.setTaskType(TaskType.TASK_TYPE_SUB_WORKFLOW);
+        task.setWorkflowInstanceId("workflowId");
+
+        when(executionDAO.getTask("subTaskId")).thenReturn(task);
+        when(executionDAO.removeTask("subTaskId")).thenReturn(false);
+
+        executionDAOFacade.removeTask("subTaskId");
+
+        verify(executionDAO).removeTask("subTaskId");
+        verify(executionDAO, never()).removeSubWorkflowIdReservation(anyString(), anyString());
     }
 
     @Test

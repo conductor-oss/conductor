@@ -601,8 +601,14 @@ public class ExecutionDAOFacade {
 
     public void removeTask(String taskId) {
         TaskModel taskModel = executionDAO.getTask(taskId);
+        boolean removed = executionDAO.removeTask(taskId);
+        if (!removed) {
+            LOGGER.warn(
+                    "Task {} was not removed; skipping owned sub-workflow reservation cleanup",
+                    taskId);
+            return;
+        }
         cleanupOwnedSubWorkflowReservation(taskModel);
-        executionDAO.removeTask(taskId);
     }
 
     private void cleanupOwnedSubWorkflowReservation(TaskModel task) {
