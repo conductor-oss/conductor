@@ -1424,6 +1424,9 @@ public abstract class AbstractProtoMapper {
         if (from.getFailureWorkflow() != null) {
             to.setFailureWorkflow( from.getFailureWorkflow() );
         }
+        if (from.getFailureWorkflowVersion() != null) {
+            to.setFailureWorkflowVersion( from.getFailureWorkflowVersion() );
+        }
         to.setSchemaVersion( from.getSchemaVersion() );
         to.setRestartable( from.isRestartable() );
         to.setWorkflowStatusListenerEnabled( from.isWorkflowStatusListenerEnabled() );
@@ -1476,6 +1479,7 @@ public abstract class AbstractProtoMapper {
         }
         to.setOutputParameters(outputParametersMap);
         to.setFailureWorkflow( from.getFailureWorkflow() );
+        to.setFailureWorkflowVersion( from.getFailureWorkflowVersion() );
         to.setSchemaVersion( from.getSchemaVersion() );
         to.setRestartable( from.getRestartable() );
         to.setWorkflowStatusListenerEnabled( from.getWorkflowStatusListenerEnabled() );
