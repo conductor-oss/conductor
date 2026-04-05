@@ -48,6 +48,18 @@ public class PostgresProperties {
 
     public boolean allowJsonQueries = true;
 
+    /**
+     * Auto-repair Flyway schema history on checksum mismatch during migrate. Note: repair runs on
+     * every startup while enabled, not just once. Disable after the upgrade is complete.
+     */
+    private boolean flywayRepairOnMigrate = false;
+
+    /**
+     * Validate migration checksums before running migrate. WARNING: setting to false bypasses
+     * Flyway's checksum safety entirely. Use as a last resort only.
+     */
+    private boolean flywayValidateOnMigrate = true;
+
     /** The maximum number of threads allowed in the async pool */
     private int asyncMaxPoolSize = 12;
 
@@ -140,6 +152,22 @@ public class PostgresProperties {
 
     public void setAsyncMaxPoolSize(int asyncMaxPoolSize) {
         this.asyncMaxPoolSize = asyncMaxPoolSize;
+    }
+
+    public boolean isFlywayRepairOnMigrate() {
+        return flywayRepairOnMigrate;
+    }
+
+    public void setFlywayRepairOnMigrate(boolean flywayRepairOnMigrate) {
+        this.flywayRepairOnMigrate = flywayRepairOnMigrate;
+    }
+
+    public boolean isFlywayValidateOnMigrate() {
+        return flywayValidateOnMigrate;
+    }
+
+    public void setFlywayValidateOnMigrate(boolean flywayValidateOnMigrate) {
+        this.flywayValidateOnMigrate = flywayValidateOnMigrate;
     }
 
     public Duration getPollDataFlushInterval() {
