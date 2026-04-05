@@ -108,6 +108,10 @@ jar {
 
 bootJar {
     mainClass = 'com.netflix.conductor.Conductor'
+    manifest {
+        attributes('Implementation-Title': project.name,
+                'Implementation-Version': project.version)
+    }
     archiveClassifier = 'boot'
 }
 
