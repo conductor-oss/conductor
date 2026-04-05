@@ -93,6 +93,7 @@ export const FEATURES = Object.freeze({
   AI_CODER_WORKER: "AI_CODER_WORKER",
   AI_CODER_CLOUD_WORKER: "AI_CODER_CLOUD_WORKER",
   TAG_VISIBILITY: "TAG_VISIBILITY",
+  CONNECTED_APPS_ENABLED: "CONNECTED_APPS_ENABLED",
 });
 
 const mapOfLocalStorageValues = Object.fromEntries(

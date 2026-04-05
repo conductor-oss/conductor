@@ -342,6 +342,8 @@ const TaskFormContent: FunctionComponent = () => {
     });
   };
 
+  const taskTypeLabel = taskType === TaskType.MCP ? "CONNECTED APP" : taskType;
+
   return (
     <Box
       ref={panelRef}
@@ -377,7 +379,7 @@ const TaskFormContent: FunctionComponent = () => {
                 color: "black",
               }}
             >
-              {taskType}
+              {taskTypeLabel}
             </Box>
             {taskType === TaskType.DECISION && (
               <Box
@@ -473,7 +475,8 @@ const TaskFormContent: FunctionComponent = () => {
                       color: colors.blueLightMode,
                     }}
                   >
-                    {taskType} Docs
+                    {taskTypeLabel}
+                    {" Docs"}
                   </div>
                 </Link>
               )}
