@@ -69,6 +69,7 @@ export interface HttpInputParameters {
   body?: unknown;
   encode?: boolean;
   hedgingConfig?: { maxAttempts?: number };
+  acceptedStatusCodes?: string[];
 }
 
 export interface HttpTaskDef extends CommonTaskDef {

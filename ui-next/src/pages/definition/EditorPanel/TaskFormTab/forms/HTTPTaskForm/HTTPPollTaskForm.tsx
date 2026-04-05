@@ -12,9 +12,11 @@ import { useMemo, useState } from "react";
 import { colors } from "theme/tokens/variables";
 import { HTTPMethods, PollingStrategy, TaskType } from "types";
 import {
+  ACCEPTED_STATUS_CODES_PATH,
   CONTENT_TYPE_SUGGESTIONS,
   HEADERS_PATH,
   HTTP_REQUEST_PATH,
+  STATUS_CODE_SUGGESTIONS,
 } from "utils/constants/httpSuggestions";
 import { updateField } from "utils/fieldHelpers";
 import { featureFlags, FEATURES } from "utils/flags";
@@ -32,6 +34,9 @@ import { useServiceMethodsDefinition } from "./state/hook";
 import { serviceMethodsMachine } from "./state/machine";
 import { HandleUpdateTemplateEvent } from "./state/types";
 import { HttpTaskFormProps } from "./types";
+import MuiTypography from "components/MuiTypography";
+import ConductorTooltip from "components/conductorTooltip/ConductorTooltip";
+import { ConductorAutoComplete } from "components/v1";
 
 const httpRequestUriPath = "inputParameters.http_request.uri";
 const httpRequestTerminationConditionPath =
@@ -54,6 +59,7 @@ export const HTTPPollTaskForm = ({ task, onChange }: HttpTaskFormProps) => {
       onChangeEncode,
       generatePath,
       onChangeHttpRequestBodyParameter,
+      onChangeAcceptedStatusCodes,
     },
     {
       httpHeaders,
@@ -64,6 +70,7 @@ export const HTTPPollTaskForm = ({ task, onChange }: HttpTaskFormProps) => {
       pollingStrategy,
       httpRequestEncode,
       errorInJsonField,
+      acceptedStatusCodes,
     },
   ] = useCreateHttpRequestHandlers({ task, onChange });
 
@@ -313,6 +320,62 @@ export const HTTPPollTaskForm = ({ task, onChange }: HttpTaskFormProps) => {
                   />
                 </Grid>
               </Grid>
+            </Grid>
+          </Grid>
+        </TaskFormSection>
+        <TaskFormSection
+          title=""
+          accordionAdditionalProps={{ defaultExpanded: true }}
+        >
+          <Grid container sx={{ width: "100%" }} spacing={3}>
+            <MuiTypography marginTop="10px" color="#767676" fontWeight={600}>
+              Accepted Status Codes
+              <ConductorTooltip
+                title="Accepted Status Codes"
+                content="Customize which HTTP status codes should be considered successful.
+              By default, only 2xx codes are accepted. Use the field below to
+              add individual status code families (e.g., 2xx, 3xx, 4xx, 5xx) or
+              specific codes (e.g., 200, 404, 500). Select or type each option
+              and press Enter to add it to the list of accepted codes."
+                placement="top"
+                children={
+                  <img
+                    alt="info"
+                    src="/icons/info-icon.svg"
+                    style={{ paddingLeft: "3px" }}
+                  />
+                }
+              />
+            </MuiTypography>
+
+            <Grid size={12}>
+              <MaybeVariable
+                value={acceptedStatusCodes}
+                onChange={(val) => {
+                  onChangeAcceptedStatusCodes(val);
+                }}
+                path={ACCEPTED_STATUS_CODES_PATH}
+                taskType={TaskType.HTTP}
+                helperTextStyle={{ padding: 0 }}
+                fieldStyle={{ paddingX: 0 }}
+              >
+                <ConductorAutoComplete
+                  id="http-task-accepted-status-codes"
+                  fullWidth
+                  label={""}
+                  options={STATUS_CODE_SUGGESTIONS}
+                  multiple
+                  freeSolo
+                  value={
+                    Array.isArray(acceptedStatusCodes)
+                      ? acceptedStatusCodes
+                      : []
+                  }
+                  onChange={(__, val: string[]) => {
+                    onChangeAcceptedStatusCodes(val);
+                  }}
+                />
+              </MaybeVariable>
             </Grid>
           </Grid>
         </TaskFormSection>
