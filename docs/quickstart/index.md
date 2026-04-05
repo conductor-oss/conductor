@@ -6,11 +6,11 @@ description: Run your first Conductor workflow in 2 minutes. Call an API, parse 
 
 **See a workflow execute in 2 minutes. Build your own in 5.**
 
-You need [Node.js](https://nodejs.org/) (v16+) and [Java](https://adoptium.net/) (21+) installed. That's it.
+You need [Node.js](https://nodejs.org/) (v16+) and Java 21+ installed. That's it.
 
 ## Phase 1: See it work
 
-> **Prerequisite:** Java 21+ is required to run the Conductor server. Run `java --version` to check. [Install Java 21](https://adoptium.net/)
+> **Prerequisite:** Java 21+ is required to run the Conductor server. Run `java --version` to check. Install Java 21 if needed.
 
 ### Start Conductor
 
@@ -22,7 +22,7 @@ conductor server start
 Wait for the server to start, then open the UI at [http://localhost:8080](http://localhost:8080).
 
 !!! note "Troubleshooting"
-    - **"Java not found" or server won't start?** Install Java 21+ from [Adoptium](https://adoptium.net/) and make sure `java -version` shows 21 or higher.
+    - **"Java not found" or server won't start?** Install Java 21+ and make sure `java -version` shows 21 or higher.
     - **Port 8080 already in use?** Start on a different port: `conductor server start --port 9090`
     - **Prefer Docker?** Skip the CLI server and run: `docker run -p 8080:8080 conductoross/conductor:latest`
 
