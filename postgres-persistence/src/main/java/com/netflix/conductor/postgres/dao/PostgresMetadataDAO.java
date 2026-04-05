@@ -26,10 +26,12 @@ import org.springframework.retry.support.RetryTemplate;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dao.PaginatedMetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.postgres.config.PostgresProperties;
 import com.netflix.conductor.postgres.util.ExecutorsUtil;
@@ -38,7 +40,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import jakarta.annotation.*;
 
-public class PostgresMetadataDAO extends PostgresBaseDAO implements MetadataDAO, EventHandlerDAO {
+public class PostgresMetadataDAO extends PostgresBaseDAO
+        implements MetadataDAO, EventHandlerDAO, PaginatedMetadataDAO {
 
     private final ConcurrentHashMap<String, TaskDef> taskDefCache = new ConcurrentHashMap<>();
     private static final String CLASS_NAME = PostgresMetadataDAO.class.getSimpleName();
@@ -220,6 +223,41 @@ public class PostgresMetadataDAO extends PostgresBaseDAO implements MetadataDAO,
         return queryWithTransaction(
                 GET_ALL_WORKFLOW_DEF_LATEST_VERSIONS_QUERY,
                 q -> q.executeAndFetch(WorkflowDef.class));
+    }
+
+    @Override
+    public SearchResult<WorkflowDef> searchWorkflowDefsLatestVersions(int start, int size) {
+        final String COUNT_QUERY =
+                "SELECT COUNT(DISTINCT name) FROM meta_workflow_def WHERE version = latest_version";
+
+        final String SEARCH_QUERY =
+                "SELECT json_data FROM meta_workflow_def "
+                        + "WHERE version = latest_version "
+                        + "ORDER BY name "
+                        + "LIMIT ? OFFSET ?";
+
+        return getWithRetriedTransactions(
+                tx -> {
+                    long totalHits =
+                            query(
+                                    tx,
+                                    COUNT_QUERY,
+                                    q -> {
+                                        Long count = q.executeScalar(Long.class);
+                                        return count != null ? count : 0L;
+                                    });
+
+                    List<WorkflowDef> results =
+                            query(
+                                    tx,
+                                    SEARCH_QUERY,
+                                    q ->
+                                            q.addParameter(size)
+                                                    .addParameter(start)
+                                                    .executeAndFetch(WorkflowDef.class));
+
+                    return new SearchResult<>(totalHits, results);
+                });
     }
 
     public List<WorkflowDef> getAllLatest() {

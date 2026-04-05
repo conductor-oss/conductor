@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.postgres.dao;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,7 @@ import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.postgres.config.PostgresConfiguration;
 
@@ -285,8 +287,10 @@ public class PostgresMetadataDAOTest {
 
     @Test
     public void testGetAllWorkflowDefsLatestVersions() {
+        int baselineSize = metadataDAO.getAllWorkflowDefsLatestVersions().size();
+
         WorkflowDef def = new WorkflowDef();
-        def.setName("test1");
+        def.setName("latest_ver_test1");
         def.setVersion(1);
         def.setDescription("description");
         def.setCreatedBy("unit_test");
@@ -296,12 +300,12 @@ public class PostgresMetadataDAOTest {
         def.setUpdateTime(2L);
         metadataDAO.createWorkflowDef(def);
 
-        def.setName("test2");
+        def.setName("latest_ver_test2");
         metadataDAO.createWorkflowDef(def);
         def.setVersion(2);
         metadataDAO.createWorkflowDef(def);
 
-        def.setName("test3");
+        def.setName("latest_ver_test3");
         def.setVersion(1);
         metadataDAO.createWorkflowDef(def);
         def.setVersion(2);
@@ -316,9 +320,127 @@ public class PostgresMetadataDAOTest {
                         .collect(Collectors.toMap(WorkflowDef::getName, Function.identity()));
 
         assertNotNull(allMap);
-        assertEquals(4, allMap.size());
-        assertEquals(1, allMap.get("test1").getVersion());
-        assertEquals(2, allMap.get("test2").getVersion());
-        assertEquals(3, allMap.get("test3").getVersion());
+        assertEquals(baselineSize + 3, allMap.size());
+        assertEquals(1, allMap.get("latest_ver_test1").getVersion());
+        assertEquals(2, allMap.get("latest_ver_test2").getVersion());
+        assertEquals(3, allMap.get("latest_ver_test3").getVersion());
+    }
+
+    @Test
+    public void testSearchWorkflowDefsLatestVersionsBasicPagination() {
+        // Capture the baseline count before inserting test data
+        long baselineCount = metadataDAO.searchWorkflowDefsLatestVersions(0, 1000).getTotalHits();
+
+        for (int i = 1; i <= 10; i++) {
+            WorkflowDef def = new WorkflowDef();
+            def.setName("paginate_basic_" + i);
+            def.setVersion(1);
+            def.setDescription("Test workflow " + i);
+            metadataDAO.createWorkflowDef(def);
+        }
+
+        SearchResult<WorkflowDef> result = metadataDAO.searchWorkflowDefsLatestVersions(0, 5);
+
+        assertNotNull(result);
+        assertEquals(baselineCount + 10, result.getTotalHits());
+        assertEquals(5, result.getResults().size());
+    }
+
+    @Test
+    public void testSearchWorkflowDefsLatestVersionsPaginationSecondPage() {
+        long baselineCount = metadataDAO.searchWorkflowDefsLatestVersions(0, 1000).getTotalHits();
+
+        for (int i = 1; i <= 10; i++) {
+            WorkflowDef def = new WorkflowDef();
+            def.setName("paginate_page_" + i);
+            def.setVersion(1);
+            metadataDAO.createWorkflowDef(def);
+        }
+
+        long expectedTotal = baselineCount + 10;
+        SearchResult<WorkflowDef> firstPage = metadataDAO.searchWorkflowDefsLatestVersions(0, 5);
+        SearchResult<WorkflowDef> secondPage = metadataDAO.searchWorkflowDefsLatestVersions(5, 5);
+
+        assertNotNull(firstPage);
+        assertNotNull(secondPage);
+        assertEquals(expectedTotal, firstPage.getTotalHits());
+        assertEquals(expectedTotal, secondPage.getTotalHits());
+        assertEquals(5, firstPage.getResults().size());
+        assertEquals(5, secondPage.getResults().size());
+
+        // Verify no overlap between pages
+        List<String> firstPageNames =
+                firstPage.getResults().stream()
+                        .map(WorkflowDef::getName)
+                        .collect(Collectors.toList());
+        List<String> secondPageNames =
+                secondPage.getResults().stream()
+                        .map(WorkflowDef::getName)
+                        .collect(Collectors.toList());
+
+        firstPageNames.retainAll(secondPageNames);
+        assertEquals(0, firstPageNames.size());
+    }
+
+    @Test
+    public void testSearchWorkflowDefsLatestVersionsOnlyLatest() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("paginate_multi_ver");
+        def.setVersion(1);
+        metadataDAO.createWorkflowDef(def);
+
+        def.setVersion(2);
+        metadataDAO.createWorkflowDef(def);
+
+        def.setVersion(3);
+        metadataDAO.createWorkflowDef(def);
+
+        SearchResult<WorkflowDef> result = metadataDAO.searchWorkflowDefsLatestVersions(0, 1000);
+
+        assertNotNull(result);
+        List<WorkflowDef> multiVersionResults =
+                result.getResults().stream()
+                        .filter(wd -> wd.getName().equals("paginate_multi_ver"))
+                        .collect(Collectors.toList());
+
+        assertEquals(1, multiVersionResults.size());
+        assertEquals(3, multiVersionResults.get(0).getVersion());
+    }
+
+    @Test
+    public void testSearchWorkflowDefsLatestVersionsEmptyResult() {
+        long totalHits = metadataDAO.searchWorkflowDefsLatestVersions(0, 1).getTotalHits();
+
+        // Use an offset beyond the total to get an empty page
+        SearchResult<WorkflowDef> result =
+                metadataDAO.searchWorkflowDefsLatestVersions((int) totalHits + 100, 10);
+
+        assertNotNull(result);
+        assertEquals(totalHits, result.getTotalHits());
+        assertEquals(0, result.getResults().size());
+    }
+
+    @Test
+    public void testSearchWorkflowDefsLatestVersionsOrderedByName() {
+        metadataDAO.createWorkflowDef(createWorkflowDef("paginate_order_zebra", 1));
+        metadataDAO.createWorkflowDef(createWorkflowDef("paginate_order_apple", 1));
+        metadataDAO.createWorkflowDef(createWorkflowDef("paginate_order_mango", 1));
+
+        SearchResult<WorkflowDef> result = metadataDAO.searchWorkflowDefsLatestVersions(0, 1000);
+
+        assertNotNull(result);
+        List<String> names =
+                result.getResults().stream().map(WorkflowDef::getName).collect(Collectors.toList());
+
+        List<String> sortedNames = new ArrayList<>(names);
+        sortedNames.sort(String::compareTo);
+        assertEquals(sortedNames, names);
+    }
+
+    private WorkflowDef createWorkflowDef(String name, int version) {
+        WorkflowDef def = new WorkflowDef();
+        def.setName(name);
+        def.setVersion(version);
+        return def;
     }
 }

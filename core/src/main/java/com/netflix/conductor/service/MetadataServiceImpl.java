@@ -28,11 +28,13 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.common.model.BulkResponse;
+import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dao.PaginatedMetadataDAO;
 import com.netflix.conductor.validations.ValidationContext;
 
 @Service
@@ -223,6 +225,22 @@ public class MetadataServiceImpl implements MetadataService {
     @Override
     public List<WorkflowDef> getWorkflowDefsLatestVersions() {
         return metadataDAO.getAllWorkflowDefsLatestVersions();
+    }
+
+    @Override
+    public SearchResult<WorkflowDef> searchWorkflowDefsLatestVersions(int start, int size) {
+        if (metadataDAO instanceof PaginatedMetadataDAO) {
+            return ((PaginatedMetadataDAO) metadataDAO)
+                    .searchWorkflowDefsLatestVersions(start, size);
+        }
+
+        List<WorkflowDef> allWorkflows = metadataDAO.getAllWorkflowDefsLatestVersions();
+        int totalHits = allWorkflows.size();
+        int fromIndex = Math.min(start, totalHits);
+        int toIndex = Math.min(start + size, totalHits);
+
+        List<WorkflowDef> paginatedResults = allWorkflows.subList(fromIndex, toIndex);
+        return new SearchResult<>(totalHits, paginatedResults);
     }
 
     public Map<String, ? extends Iterable<WorkflowDefSummary>> getWorkflowNamesAndVersions() {
