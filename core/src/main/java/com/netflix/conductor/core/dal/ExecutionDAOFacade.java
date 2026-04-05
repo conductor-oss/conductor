@@ -141,6 +141,26 @@ public class ExecutionDAOFacade {
     }
 
     /**
+     * Fetches the {@link WorkflowModel} from the primary execution store only.
+     *
+     * <p>Unlike {@link #getWorkflowModel(String, boolean)}, this method does not fall back to
+     * {@link IndexDAO}. Use it for control-flow decisions that must rely on the source of truth.
+     *
+     * @param workflowId the id of the workflow to be fetched
+     * @param includeTasks if true, fetches the {@link Task} data in the workflow.
+     * @return the {@link WorkflowModel} object from {@link ExecutionDAO}
+     * @throws NotFoundException no such {@link WorkflowModel} is found in {@link ExecutionDAO}.
+     */
+    public WorkflowModel getWorkflowModelFromExecutionDAO(String workflowId, boolean includeTasks) {
+        WorkflowModel workflow = executionDAO.getWorkflow(workflowId, includeTasks);
+        if (workflow == null) {
+            throw new NotFoundException("No such workflow found by id: %s", workflowId);
+        }
+        populateWorkflowAndTaskPayloadData(workflow);
+        return workflow;
+    }
+
+    /**
      * Fetches the {@link Workflow} object from the data store given the id. Attempts to fetch from
      * {@link ExecutionDAO} first, if not found, attempts to fetch from {@link IndexDAO}.
      *

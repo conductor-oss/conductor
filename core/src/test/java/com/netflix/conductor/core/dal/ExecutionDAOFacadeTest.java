@@ -113,6 +113,29 @@ public class ExecutionDAOFacadeTest {
     }
 
     @Test
+    public void testGetWorkflowModelFromExecutionDAODoesNotFallbackToIndex() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("workflowId");
+        when(executionDAO.getWorkflow("workflowId", false)).thenReturn(workflow);
+
+        WorkflowModel found = executionDAOFacade.getWorkflowModelFromExecutionDAO("workflowId", false);
+        assertSame(workflow, found);
+        verify(indexDAO, never()).get(any(), any());
+    }
+
+    @Test(expected = NotFoundException.class)
+    public void testGetWorkflowModelFromExecutionDAODoesNotUseIndexOnMiss() {
+        when(executionDAO.getWorkflow("missingWorkflow", false)).thenReturn(null);
+        when(indexDAO.get(any(), any())).thenReturn("{\"workflowId\":\"missingWorkflow\"}");
+
+        try {
+            executionDAOFacade.getWorkflowModelFromExecutionDAO("missingWorkflow", false);
+        } finally {
+            verify(indexDAO, never()).get(any(), any());
+        }
+    }
+
+    @Test
     public void testGetWorkflowsByCorrelationId() {
         when(executionDAO.canSearchAcrossWorkflows()).thenReturn(true);
         when(executionDAO.getWorkflowsByCorrelationId(any(), any(), anyBoolean()))

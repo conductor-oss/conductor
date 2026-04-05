@@ -2016,13 +2016,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         try {
             try {
                 WorkflowModel existingWorkflow =
-                        executionDAOFacade.getWorkflowModel(workflowId, false);
-                if (existingWorkflow != null) {
-                    return existingWorkflow.getWorkflowId();
-                }
+                        executionDAOFacade.getWorkflowModelFromExecutionDAO(workflowId, false);
+                return existingWorkflow.getWorkflowId();
             } catch (NotFoundException e) {
                 LOGGER.debug(
-                        "No existing workflow found for idempotent start of workflow id {}, proceeding with creation",
+                        "No existing workflow found in execution store for idempotent start of workflow id {}, proceeding with creation",
                         workflowId);
             }
 

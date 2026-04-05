@@ -44,6 +44,7 @@ import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
+import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.core.execution.mapper.*;
 import com.netflix.conductor.core.execution.tasks.*;
@@ -838,11 +839,12 @@ public class TestWorkflowExecutor {
         workflow.setWorkflowId("existing-workflow-id");
 
         when(executionLockService.acquireLock("existing-workflow-id")).thenReturn(true);
-        when(executionDAOFacade.getWorkflowModel("existing-workflow-id", false))
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO("existing-workflow-id", false))
                 .thenReturn(workflow);
 
         assertEquals("existing-workflow-id", workflowExecutor.startWorkflowIdempotent(input));
         verify(executionDAOFacade, never()).createWorkflow(any());
+        verify(executionDAOFacade, never()).getWorkflowModel("existing-workflow-id", false);
         verify(executionLockService).releaseLock("existing-workflow-id");
     }
 
@@ -860,12 +862,63 @@ public class TestWorkflowExecutor {
         input.setWorkflowId("new-workflow-id");
 
         when(executionLockService.acquireLock("new-workflow-id")).thenReturn(true);
-        when(executionDAOFacade.getWorkflowModel("new-workflow-id", false))
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO("new-workflow-id", false))
                 .thenThrow(new NotFoundException("missing"));
 
         assertEquals("new-workflow-id", workflowExecutor.startWorkflowIdempotent(input));
         verify(executionDAOFacade).createWorkflow(any());
+        verify(executionDAOFacade, never()).getWorkflowModel("new-workflow-id", false);
         verify(executionLockService, atLeastOnce()).releaseLock("new-workflow-id");
+    }
+
+    @Test
+    public void testStartWorkflowIdempotentIgnoresIndexOnlyWorkflow() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("indexed-workflow");
+        workflowDef.setVersion(1);
+
+        StartWorkflowInput input = new StartWorkflowInput();
+        input.setWorkflowDefinition(workflowDef);
+        input.setName(workflowDef.getName());
+        input.setVersion(workflowDef.getVersion());
+        input.setWorkflowInput(Collections.emptyMap());
+        input.setWorkflowId("indexed-workflow-id");
+
+        when(executionLockService.acquireLock("indexed-workflow-id")).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO("indexed-workflow-id", false))
+                .thenThrow(new NotFoundException("missing"));
+        when(executionDAOFacade.getWorkflowModel("indexed-workflow-id", false))
+                .thenReturn(new WorkflowModel());
+
+        assertEquals("indexed-workflow-id", workflowExecutor.startWorkflowIdempotent(input));
+        verify(executionDAOFacade).createWorkflow(any());
+        verify(executionDAOFacade, never()).getWorkflowModel("indexed-workflow-id", false);
+        verify(executionLockService, atLeastOnce()).releaseLock("indexed-workflow-id");
+    }
+
+    @Test(expected = TransientException.class)
+    public void testStartWorkflowIdempotentPropagatesExecutionStoreLookupFailure() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("transient-workflow");
+        workflowDef.setVersion(1);
+
+        StartWorkflowInput input = new StartWorkflowInput();
+        input.setWorkflowDefinition(workflowDef);
+        input.setName(workflowDef.getName());
+        input.setVersion(workflowDef.getVersion());
+        input.setWorkflowInput(Collections.emptyMap());
+        input.setWorkflowId("transient-workflow-id");
+
+        when(executionLockService.acquireLock("transient-workflow-id")).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO("transient-workflow-id", false))
+                .thenThrow(new TransientException("execution store unavailable"));
+
+        try {
+            workflowExecutor.startWorkflowIdempotent(input);
+        } finally {
+            verify(executionDAOFacade, never()).createWorkflow(any());
+            verify(executionLockService).releaseLock("transient-workflow-id");
+        }
     }
 
     @Test(expected = NotFoundException.class)
