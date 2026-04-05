@@ -344,6 +344,15 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
                 ObjectNode root = objectMapper.createObjectNode();
                 indexSetting.put("number_of_shards", properties.getIndexShardCount());
                 indexSetting.put("number_of_replicas", properties.getIndexReplicasCount());
+
+                // Write-throughput tuning: reduce segment creation frequency and
+                // increase translog flush threshold for high-volume bulk workloads.
+                indexSetting.put("refresh_interval", properties.getIndexRefreshInterval());
+                ObjectNode translogSettings = objectMapper.createObjectNode();
+                translogSettings.put(
+                        "flush_threshold_size", properties.getTranslogFlushThresholdSize());
+                indexSetting.set("translog", translogSettings);
+
                 JsonNode mappingNodeValue =
                         objectMapper.readTree(loadTypeMappingSource(mappingFilename));
                 root.set("settings", indexSetting);
@@ -398,6 +407,11 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
 
                 indexSetting.put("number_of_shards", properties.getIndexShardCount());
                 indexSetting.put("number_of_replicas", properties.getIndexReplicasCount());
+                indexSetting.put("refresh_interval", properties.getIndexRefreshInterval());
+                ObjectNode translogSettings = objectMapper.createObjectNode();
+                translogSettings.put(
+                        "flush_threshold_size", properties.getTranslogFlushThresholdSize());
+                indexSetting.set("translog", translogSettings);
 
                 setting.set("settings", indexSetting);
 
@@ -490,13 +504,11 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
         try {
             long startTime = Instant.now().toEpochMilli();
             String workflowId = workflow.getWorkflowId();
-            byte[] docBytes = objectMapper.writeValueAsBytes(workflow);
 
-            IndexRequest request =
-                    new IndexRequest(workflowIndexName)
-                            .id(workflowId)
-                            .source(docBytes, XContentType.JSON);
-            openSearchClient.index(request, RequestOptions.DEFAULT);
+            // Use the bulk-buffered path for workflow indexing to improve throughput.
+            // Single-doc IndexRequest calls create excessive HTTP round-trips and
+            // segment fragmentation under high write volumes.
+            indexObject(workflowIndexName, WORKFLOW_DOC_TYPE, workflowId, workflow);
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for indexing workflow: {}", endTime - startTime, workflowId);
