@@ -198,7 +198,7 @@ curl -X POST http://localhost:8080/api/metadata/taskdefs \
 Save `worker.py`:
 
 ```python
-import time
+import threading
 
 from conductor.client.automator.task_handler import TaskHandler
 from conductor.client.configuration.configuration import Configuration
@@ -227,8 +227,7 @@ def main():
     handler.start_processes()
 
     try:
-        while True:
-            time.sleep(0.1)  # avoid busy-waiting; yield CPU between poll cycles
+        threading.Event().wait()  # block until KeyboardInterrupt; no busy-wait
     except KeyboardInterrupt:
         handler.stop_processes()
 
