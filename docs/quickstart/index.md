@@ -178,6 +178,8 @@ curl -X POST http://localhost:8080/api/metadata/taskdefs \
 Save `worker.py`:
 
 ```python
+import threading
+
 from conductor.client.automator.task_handler import TaskHandler
 from conductor.client.configuration.configuration import Configuration
 from conductor.client.worker.worker_task import worker_task
@@ -205,8 +207,7 @@ def main():
     handler.start_processes()
 
     try:
-        while True:
-            pass
+        threading.Event().wait()
     except KeyboardInterrupt:
         handler.stop_processes()
 
