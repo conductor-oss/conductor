@@ -80,8 +80,7 @@ public class PullWorkflowMessagesTest {
         assertTrue(progressed);
         assertEquals(TaskModel.Status.COMPLETED, taskModel.getStatus());
         assertEquals(
-                List.of(msg),
-                taskModel.getOutputData().get(PullWorkflowMessages.OUTPUT_MESSAGES));
+                List.of(msg), taskModel.getOutputData().get(PullWorkflowMessages.OUTPUT_MESSAGES));
         assertEquals(1, taskModel.getOutputData().get(PullWorkflowMessages.OUTPUT_COUNT));
     }
 
