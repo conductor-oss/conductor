@@ -62,6 +62,7 @@ public class SetVariableTests {
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName(WORKFLOW_NAME);
         workflowDef.setVersion(1);
+        workflowDef.setOwnerEmail("test@conductor.io");
         workflowDef.getTasks().add(setVariableTask);
 
         metadataClient.updateWorkflowDefs(List.of(workflowDef));

@@ -26,7 +26,7 @@
   "workflowStatusListenerEnabled": false,
   "timeoutPolicy": "ALERT_ONLY",
   "timeoutSeconds": 0,
-  "ownerEmail": "test@harness.com"
+  "ownerEmail": "test@conductor.io"
 },{
   "name": "integration_test_wf",
   "description": "integration_test_wf",
@@ -69,7 +69,7 @@
   "workflowStatusListenerEnabled": false,
   "timeoutPolicy": "ALERT_ONLY",
   "timeoutSeconds": 0,
-  "ownerEmail": "test@harness.com"
+  "ownerEmail": "test@conductor.io"
 },{
   "name": "integration_test_wf_with_sub_wf",
   "description": "integration_test_wf_with_sub_wf",
@@ -126,6 +126,6 @@
   "workflowStatusListenerEnabled": false,
   "timeoutPolicy": "TIME_OUT_WF",
   "timeoutSeconds": 5,
-  "ownerEmail": "test@harness.com"
+  "ownerEmail": "test@conductor.io"
 }
 ]

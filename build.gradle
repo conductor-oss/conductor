@@ -41,6 +41,7 @@ allprojects {
     apply plugin: 'io.spring.dependency-management'
     apply plugin: 'java-library'
     apply plugin: 'project-report'
+    apply plugin: 'jacoco'
 
     java {
         toolchain {
@@ -61,14 +62,15 @@ allprojects {
             exclude group: 'org.slf4j', module: 'slf4j-log4j12'
 
             resolutionStrategy.eachDependency { details ->
+                // Compat: align all com.fasterxml.jackson.* to the same version — mixed versions cause ClassNotFoundException
                 if (details.requested.group.startsWith('com.fasterxml.jackson.')) {
                     details.useVersion "2.17.0"
                 }
-                // Force commons-lang3 to 3.18.0+ for compatibility with commons-compress used by Testcontainers
+                // Compat: commons-lang3 3.18.0+ required by Testcontainers/commons-compress
                 if (details.requested.group == 'org.apache.commons' && details.requested.name == 'commons-lang3') {
                     details.useVersion "3.18.0"
                 }
-                // Security: CVE-2025-12183 - force lz4-java to patched version
+                // Security: CVE-2025-12183 — lz4-java minimum patched version
                 if (details.requested.group == 'org.lz4' && details.requested.name == 'lz4-java') {
                     details.useVersion '1.8.1'
                 }
@@ -116,7 +118,8 @@ allprojects {
         testImplementation "org.junit.vintage:junit-vintage-engine"
         testAnnotationProcessor 'org.projectlombok:lombok:1.18.42'
 
-        //Locks for the dependecies
+        // PINNED (#964): jettison must stay at exactly 1.5.4 — `strictly` prevents both
+        // downgrade and upgrade. No known compatible higher version has been validated.
         implementation('org.codehaus.jettison:jettison') {
             version {
                 strictly '1.5.4'
@@ -124,7 +127,7 @@ allprojects {
         }
         implementation('org.apache.tomcat.embed:tomcat-embed-core')
 
-        // Security: force minimum versions for vulnerable transitive dependencies
+        // Security: minimum version floors for CVE-patched transitive dependencies.
         constraints {
             implementation('org.apache.tika:tika-core:3.2.2') {
                 because 'CVE-2025-66516: tika-parser-pdf-module vulnerability'
@@ -152,6 +155,14 @@ allprojects {
             showStandardStreams = false
         }
     }
+    jacocoTestReport {
+        reports {
+            xml.required = true
+            html.required = true
+        }
+    }
+    test.finalizedBy jacocoTestReport
+
     bootJar {
         enabled = false
     }
@@ -163,6 +174,32 @@ allprojects {
         compileJava {
             options.release = 21
         }
+    }
+}
+
+// Aggregated coverage report across all subprojects.
+// Run AFTER tests: ./gradlew build jacocoAggregatedReport
+// This task does NOT trigger test execution — it only aggregates existing .exec files.
+// Aggregated coverage report across all subprojects.
+// Run AFTER tests: ./gradlew build jacocoAggregatedReport
+// This task does NOT trigger test execution — it only aggregates existing .exec files.
+task jacocoAggregatedReport(type: JacocoReport) {
+    description = 'Generates an aggregated code coverage report from existing test execution data'
+    group = 'verification'
+
+    // Need compiled classes for the report, but not test execution
+    dependsOn subprojects.collect { it.tasks.named('classes') }
+
+    def javaSubprojects = subprojects.findAll { it.plugins.hasPlugin('java') }
+    additionalSourceDirs.from(javaSubprojects.collect { it.sourceSets.main.allJava })
+    sourceDirectories.from(javaSubprojects.collect { it.sourceSets.main.allJava })
+    classDirectories.from(javaSubprojects.collect { it.sourceSets.main.output.classesDirs })
+    executionData.setFrom(fileTree(dir: rootDir, includes: ['**/build/jacoco/*.exec']))
+
+    reports {
+        xml.required = true
+        html.required = true
+        html.outputLocation = layout.buildDirectory.dir('reports/jacoco/aggregated')
     }
 }
 

@@ -41,7 +41,16 @@ public enum TaskType {
     KAFKA_PUBLISH,
     JSON_JQ_TRANSFORM,
     SET_VARIABLE,
-    NOOP;
+    NOOP,
+    LLM_TEXT_COMPLETE,
+    LLM_CHAT_COMPLETE,
+    LLM_INDEX_TEXT,
+    LLM_SEARCH_INDEX,
+    LLM_GENERATE_EMBEDDINGS,
+    LLM_STORE_EMBEDDINGS,
+    LLM_GET_EMBEDDINGS,
+    LIST_MCP_TOOLS,
+    CALL_MCP_TOOL;
 
     /**
      * TaskType constants representing each of the possible enumeration values. Motivation: to not

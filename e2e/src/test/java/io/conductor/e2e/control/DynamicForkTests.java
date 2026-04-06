@@ -463,7 +463,7 @@ public class DynamicForkTests {
 
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName(workflowName1);
-        workflowDef.setOwnerEmail("test@orkes.io");
+        workflowDef.setOwnerEmail("test@conductor.io");
         workflowDef.setTimeoutSeconds(600);
         workflowDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
         workflowDef.setDescription(
@@ -689,16 +689,16 @@ public class DynamicForkTests {
 
     private void registerWorkflowDef(String workflowName, MetadataClient metadataClient1) {
         TaskDef taskDef = new TaskDef("dt1");
-        taskDef.setOwnerEmail("test@orkes.io");
+        taskDef.setOwnerEmail("test@conductor.io");
 
         TaskDef taskDef4 = new TaskDef("integration_task_2");
-        taskDef4.setOwnerEmail("test@orkes.io");
+        taskDef4.setOwnerEmail("test@conductor.io");
 
         TaskDef taskDef3 = new TaskDef("integration_task_3");
-        taskDef3.setOwnerEmail("test@orkes.io");
+        taskDef3.setOwnerEmail("test@conductor.io");
 
         TaskDef taskDef2 = new TaskDef("dt2");
-        taskDef2.setOwnerEmail("test@orkes.io");
+        taskDef2.setOwnerEmail("test@conductor.io");
 
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setTaskReferenceName("dt2");
@@ -733,7 +733,7 @@ public class DynamicForkTests {
 
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName(workflowName);
-        workflowDef.setOwnerEmail("test@orkes.io");
+        workflowDef.setOwnerEmail("test@conductor.io");
         workflowDef.setTimeoutSeconds(600);
         workflowDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
         workflowDef.setInputParameters(Arrays.asList("value", "inlineValue"));

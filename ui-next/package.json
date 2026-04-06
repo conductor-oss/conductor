@@ -89,7 +89,7 @@
     "lodash": "^4.17.20",
     "mock-json-schema": "^1.1.1",
     "monaco-languages-jq": "^1.0.0",
-    "path-to-regexp": "^8.2.0",
+    "path-to-regexp": "^8.4.0",
     "prismjs": "^1.27.0",
     "prop-types": "^15.7.2",
     "qs": "^6.14.0",

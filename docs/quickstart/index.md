@@ -333,22 +333,24 @@ Conductor picks up from the failed task, reusing the outputs of all previously c
     === "JavaScript"
 
         ```bash
-        npm install conductor-javascript-sdk
+        npm install @io-orkes/conductor-javascript
         ```
 
         ```javascript
-        const { ConductorWorker } = require("conductor-javascript-sdk");
+        const { OrkesClients, TaskHandler } = require("@io-orkes/conductor-javascript");
 
-        const worker = new ConductorWorker({
-          url: "http://localhost:8080/api",
-        });
-
-        worker.register("process_result", async (task) => {
-          const { summary, randomValue } = task.inputData;
-          return { result: summary.toUpperCase(), doubled: randomValue * 2 };
-        });
-
-        worker.start();
+        async function main() {
+          const clients = await OrkesClients.from({ serverUrl: "http://localhost:8080/api" });
+          const handler = new TaskHandler(clients, [{
+            taskDefName: "process_result",
+            execute: async (task) => {
+              const { summary, randomValue } = task.inputData;
+              return { outputData: { result: summary.toUpperCase(), doubled: randomValue * 2 }, status: "COMPLETED" };
+            },
+          }]);
+          handler.startPolling();
+        }
+        main();
         ```
 
         See the [JavaScript SDK](https://github.com/conductor-oss/javascript-sdk) for full setup.

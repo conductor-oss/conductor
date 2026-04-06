@@ -240,7 +240,7 @@ public class FailureWorkflowTests {
 
         WorkflowDef failureWorkflow = new WorkflowDef();
         failureWorkflow.setName("failure_workflow");
-        failureWorkflow.setOwnerEmail("test@orkes.io");
+        failureWorkflow.setOwnerEmail("test@conductor.io");
         failureWorkflow.setInputParameters(Arrays.asList("value", "inlineValue"));
         failureWorkflow.setDescription("Workflow to monitor order state");
         failureWorkflow.setTimeoutSeconds(600);
@@ -250,7 +250,7 @@ public class FailureWorkflowTests {
 
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName(workflowName);
-        workflowDef.setOwnerEmail("test@orkes.io");
+        workflowDef.setOwnerEmail("test@conductor.io");
         workflowDef.setInputParameters(Arrays.asList("value", "inlineValue"));
         workflowDef.setDescription("Workflow to monitor order state");
         workflowDef.setTimeoutSeconds(600);

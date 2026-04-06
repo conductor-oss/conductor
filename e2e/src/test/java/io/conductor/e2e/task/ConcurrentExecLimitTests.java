@@ -114,6 +114,7 @@ public class ConcurrentExecLimitTests {
                             getResourceAsString("exec_limit_workflow.json"), WorkflowDef.class);
             metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
             TaskDef tasKDef = new TaskDef(taskName);
+            tasKDef.setOwnerEmail("test@conductor.io");
             tasKDef.setConcurrentExecLimit(2);
             metadataClient.registerTaskDefs(List.of(tasKDef));
         } catch (IOException e) {

@@ -67,7 +67,7 @@ public class PostgresIndexQueryBuilder {
             Pattern conditionRegex = Pattern.compile(CONDITION_REGEX);
             Matcher conditionMatcher = conditionRegex.matcher(query);
             if (conditionMatcher.find()) {
-                String[] valueArr = conditionMatcher.group(3).replaceAll("[\"()]", "").split(",");
+                String[] valueArr = conditionMatcher.group(3).replaceAll("[\"'()]", "").split(",");
                 ArrayList<String> values = new ArrayList<>(Arrays.asList(valueArr));
                 this.attribute = camelToSnake(conditionMatcher.group(1));
                 this.values = values;
