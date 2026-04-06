@@ -2,34 +2,60 @@
 
 Instructions for Claude Code working in this repository.
 
-## Documentation Changes: Verify, Don't Reason
+## Writing Documentation
 
-**Before writing or editing any code example, command, or API reference in docs, verify it against the source.**
+Documentation in this project is **derived from source**, not composed from memory or intuition. The workflow is: open the source → read what's there → write the doc from what you find. The source is the spec; the doc is a rendering of it.
 
-This rule exists because a hallucinated endpoint (`POST /api/workflow/{name}/run`) was committed to the quickstart and caught only in PR review. The correct endpoint (`POST /api/workflow/execute/{name}/{version}`) is in `rest/src/main/java/com/netflix/conductor/rest/controllers/WorkflowResource.java`. The pattern repeats: plausible-sounding docs can be silently wrong.
+Concrete reason this matters: a curl equivalent for `conductor workflow start --sync` was once written as `POST /api/workflow/{name}/run` — an endpoint that does not exist. Opening `WorkflowResource.java` first would have given the correct path (`POST /api/workflow/execute/{name}/{version}`) immediately.
 
-### Verification checklist for any doc edit
+### For each content type, start here
 
-- **REST endpoint** → grep `@PostMapping`, `@GetMapping`, `@PutMapping`, `@DeleteMapping` in `rest/src/main/java/` to confirm the path exists.
-- **Query params / request body** → read the method signature in the matching controller.
-- **CLI command** → check `conductor-cli/cmd/*.go` (separate repo under this workspace).
-- **SDK example** → trace against the SDK source, not the doc you're editing.
-- **Expected output** → match real log output from tests or CI; do not invent.
+**REST endpoint or curl example**
+1. Open the controller: `rest/src/main/java/com/netflix/conductor/rest/controllers/`
+2. Find the method by its `@PostMapping`/`@GetMapping` annotation — copy the path literally.
+3. Read the method signature for query params, path variables, and request body.
+4. Write the curl from what you just read.
 
-If you cannot verify locally (no running server, no CLI binary), **say so in the PR description** and mark the block with a `<!-- TODO: verify against live server -->` comment rather than committing an unverified example.
+**CLI command or flag**
+1. Open `conductor-cli/cmd/*.go` (separate repo under this workspace).
+2. Find the `cobra.Command` for the subcommand and read its `Flags()` declarations.
+3. Write the example from what you just read — flag names, types, and defaults.
+
+**SDK code example (Python, JS, Java, Go)**
+1. Open the SDK source file for the method you're documenting.
+2. Read the method signature and required parameters.
+3. If a working test exists for that method, use it as the starting point.
+4. Write from the signature — do not infer from the method name alone.
+
+**Expected output block**
+1. Get real output: run the command, or find it in test fixtures or CI logs.
+2. Paste verbatim. Do not construct output that "looks right."
+3. For variable fields (IDs, timestamps), use annotated placeholders like `<workflow-id>`.
+
+**Editing an existing section**
+- Before changing anything, read every code block and command in the section.
+- Verify each one using the steps above, not just the block you plan to change.
+- Fix anything you find while you're there.
+
+### When you can't verify
+
+If a running server or CLI is unavailable:
+- Add `<!-- TODO: verify against live server -->` in the file.
+- Note it explicitly in the PR description.
+- Do not write an unverified example and leave it unmarked.
 
 ### Key source locations
 
-| Topic | Where to look |
+| Content | Where to look |
 |---|---|
 | REST API routes | `rest/src/main/java/com/netflix/conductor/rest/controllers/` |
-| Workflow execution (sync) | `WorkflowResource.java` → `executeWorkflow()` at `/workflow/execute/{name}/{version}` |
+| Workflow sync execution | `WorkflowResource.java` → `executeWorkflow()` at `@PostMapping("execute/{name}/{version}")` |
 | Task routes | `TaskResource.java` |
-| CLI `workflow start --sync` | `conductor-cli/cmd/workflow.go` → `ExecuteWorkflow()` call |
+| CLI subcommands and flags | `conductor-cli/cmd/workflow.go`, `cmd/task.go`, etc. |
 
 ## Other Guidelines
 
-See [AGENTS.md](AGENTS.md) for full project conventions (code style, testing, dependency pinning, PR guidelines).
+See [AGENTS.md](AGENTS.md) for full project conventions: code style, testing, dependency pinning, PR guidelines.
 
 ## GitHub Account
 

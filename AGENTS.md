@@ -124,29 +124,48 @@ These are grep-able (`grep "// Security:" **/*.gradle`, `grep "// Compat:" **/*.
 - Follow secure coding practices for input validation and error handling
 - Review [SECURITY.md](SECURITY.md) for vulnerability reporting procedures
 
-## Documentation Verification
+## Writing Documentation
 
-**Every documentation change must be verified against source — not reasoned from memory or intuition.**
+Documentation in this project is **derived from source**, not composed from memory. Open the source first, read what's there, then write the doc from what you find. The source is the spec; the doc is a rendering of it.
 
-This rule exists because plausible-looking docs can be wrong in ways that silently break onboarding. A concrete past example: a curl equivalent for `conductor workflow start --sync` was written as `POST /api/workflow/{name}/run` — an endpoint that does not exist. The correct endpoint (`POST /api/workflow/execute/{name}/{version}`) was found only by reading the controller source.
+This matters because plausible-looking docs can be silently wrong. Concretely: a curl equivalent for `conductor workflow start --sync` was once written as `POST /api/workflow/{name}/run` — an endpoint that does not exist. Reading the controller first would have given the correct path immediately.
 
-### What to verify and how
+### Workflow for each content type
 
-| Doc element | How to verify |
-|---|---|
-| REST endpoint path | Grep `WorkflowResource.java`, `TaskResource.java`, etc. for `@PostMapping`, `@GetMapping` with the path. |
-| REST request body / query params | Read the method signature in the controller source. |
-| CLI command flags and behavior | Read `cmd/*.go` in `conductor-cli`. |
-| SDK method names and signatures | Read the relevant SDK source file. |
-| Code examples (Python, JS, Java, Go) | Trace through the example step by step against the actual SDK — do not generate from description alone. |
-| Expected output blocks | Run the command locally if possible; otherwise match exactly against real log output in tests or CI. |
+**REST API endpoint or curl example**
+1. Open the relevant controller: `rest/src/main/java/com/netflix/conductor/rest/controllers/`
+2. Find the method using its `@PostMapping`/`@GetMapping`/etc. annotation — copy the path literally.
+3. Read the method signature for query params, path variables, and request body type.
+4. Write the curl command from what you just read.
 
-### Hard rules
+**CLI command or flag**
+1. Open `cmd/*.go` in `conductor-cli` (separate repo).
+2. Find the `cobra.Command` definition for the subcommand.
+3. Read the `Flags()` declarations for exact flag names, types, and defaults.
+4. Write the example from what you just read.
 
-- **Never write a REST endpoint path without grepping the controller source to confirm it exists.**
-- **Never write a curl example by reasoning from a CLI flag name.** The CLI and REST API often use different verbs, paths, and parameter names.
-- If you cannot verify something locally (e.g., no running server), say so explicitly in the PR description rather than writing a best-guess example.
-- When editing a doc file, re-check every code block and command in the section you touched — not just the line you changed.
+**SDK code example (Python, JS, Java, Go)**
+1. Open the relevant SDK source file.
+2. Find the method signature and required parameters.
+3. Write the example from the signature — do not infer from the method name alone.
+4. If a working test exists for that method, use it as the starting point.
+
+**Expected output block**
+1. Get real output: run the command locally, or find it in test fixtures, CI logs, or existing tests.
+2. Paste verbatim. Do not paraphrase or construct output that "looks right."
+3. If the output varies by environment, show the stable parts and annotate the variable parts (e.g., `<workflow-id>`).
+
+**Editing an existing doc section**
+1. Before touching prose, read every code block and command in the section.
+2. Verify each one using the steps above — not just the block you plan to change.
+3. Fix anything you find while you're there.
+
+### When you can't verify
+
+If a running server or CLI binary is unavailable:
+- Add a `<!-- TODO: verify against live server -->` comment in the file.
+- Note it explicitly in the PR description.
+- Do not write a best-guess example and leave it unmarked.
 
 ## Agent Behavior
 
