@@ -124,6 +124,30 @@ These are grep-able (`grep "// Security:" **/*.gradle`, `grep "// Compat:" **/*.
 - Follow secure coding practices for input validation and error handling
 - Review [SECURITY.md](SECURITY.md) for vulnerability reporting procedures
 
+## Documentation Verification
+
+**Every documentation change must be verified against source — not reasoned from memory or intuition.**
+
+This rule exists because plausible-looking docs can be wrong in ways that silently break onboarding. A concrete past example: a curl equivalent for `conductor workflow start --sync` was written as `POST /api/workflow/{name}/run` — an endpoint that does not exist. The correct endpoint (`POST /api/workflow/execute/{name}/{version}`) was found only by reading the controller source.
+
+### What to verify and how
+
+| Doc element | How to verify |
+|---|---|
+| REST endpoint path | Grep `WorkflowResource.java`, `TaskResource.java`, etc. for `@PostMapping`, `@GetMapping` with the path. |
+| REST request body / query params | Read the method signature in the controller source. |
+| CLI command flags and behavior | Read `cmd/*.go` in `conductor-cli`. |
+| SDK method names and signatures | Read the relevant SDK source file. |
+| Code examples (Python, JS, Java, Go) | Trace through the example step by step against the actual SDK — do not generate from description alone. |
+| Expected output blocks | Run the command locally if possible; otherwise match exactly against real log output in tests or CI. |
+
+### Hard rules
+
+- **Never write a REST endpoint path without grepping the controller source to confirm it exists.**
+- **Never write a curl example by reasoning from a CLI flag name.** The CLI and REST API often use different verbs, paths, and parameter names.
+- If you cannot verify something locally (e.g., no running server), say so explicitly in the PR description rather than writing a best-guess example.
+- When editing a doc file, re-check every code block and command in the section you touched — not just the line you changed.
+
 ## Agent Behavior
 
 - **Prefer automation**: Execute requested actions without confirmation unless blocked by missing info or safety concerns
