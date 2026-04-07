@@ -20,6 +20,10 @@ The project is built with Java 21 and uses Gradle as the build system.
 
 > **Important**: Always run `./gradlew spotlessApply` after making code changes to ensure consistent formatting.
 
+## Java Version References
+
+**Never link to a specific Java distribution** (e.g., Adoptium, Temurin, OpenJDK.org, Amazon Corretto) in docs, READMEs, or comments. Just say "Java 21+" and let users install it however they prefer.
+
 ## Code Style
 
 - Use the Spotless plugin for uniform code formatting—always run before committing

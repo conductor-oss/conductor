@@ -28,7 +28,7 @@ Conductor is an open-source, durable workflow engine built at [Netflix](https://
 
 # Get Running in 60 Seconds
 
-**Prerequisites:** [Node.js](https://nodejs.org/) v16+ and [Java](https://adoptium.net/) 21+ must be installed.
+**Prerequisites:** [Node.js](https://nodejs.org/) v16+ and Java 21+ must be installed.
 
 ```shell
 npm install -g @conductor-oss/conductor-cli
