@@ -124,6 +124,49 @@ These are grep-able (`grep "// Security:" **/*.gradle`, `grep "// Compat:" **/*.
 - Follow secure coding practices for input validation and error handling
 - Review [SECURITY.md](SECURITY.md) for vulnerability reporting procedures
 
+## Writing Documentation
+
+Documentation in this project is **derived from source**, not composed from memory. Open the source first, read what's there, then write the doc from what you find. The source is the spec; the doc is a rendering of it.
+
+This matters because plausible-looking docs can be silently wrong. Concretely: a curl equivalent for `conductor workflow start --sync` was once written as `POST /api/workflow/{name}/run` — an endpoint that does not exist. Reading the controller first would have given the correct path immediately.
+
+### Workflow for each content type
+
+**REST API endpoint or curl example**
+1. Open the relevant controller: `rest/src/main/java/com/netflix/conductor/rest/controllers/`
+2. Find the method using its `@PostMapping`/`@GetMapping`/etc. annotation — copy the path literally.
+3. Read the method signature for query params, path variables, and request body type.
+4. Write the curl command from what you just read.
+
+**CLI command or flag**
+1. Open `cmd/*.go` in `conductor-cli` (separate repo).
+2. Find the `cobra.Command` definition for the subcommand.
+3. Read the `Flags()` declarations for exact flag names, types, and defaults.
+4. Write the example from what you just read.
+
+**SDK code example (Python, JS, Java, Go)**
+1. Open the relevant SDK source file.
+2. Find the method signature and required parameters.
+3. Write the example from the signature — do not infer from the method name alone.
+4. If a working test exists for that method, use it as the starting point.
+
+**Expected output block**
+1. Get real output: run the command locally, or find it in test fixtures, CI logs, or existing tests.
+2. Paste verbatim. Do not paraphrase or construct output that "looks right."
+3. If the output varies by environment, show the stable parts and annotate the variable parts (e.g., `<workflow-id>`).
+
+**Editing an existing doc section**
+1. Before touching prose, read every code block and command in the section.
+2. Verify each one using the steps above — not just the block you plan to change.
+3. Fix anything you find while you're there.
+
+### When you can't verify
+
+If a running server or CLI binary is unavailable:
+- Add a `<!-- TODO: verify against live server -->` comment in the file.
+- Note it explicitly in the PR description.
+- Do not write a best-guess example and leave it unmarked.
+
 ## Agent Behavior
 
 - **Prefer automation**: Execute requested actions without confirmation unless blocked by missing info or safety concerns
