@@ -15,6 +15,7 @@ dependencies {
     implementation project(':conductor-common')
     implementation project(':conductor-core')
     implementation project(':conductor-redis-configuration')
+    implementation project(':conductor-redis-api')
     compileOnly 'org.springframework.boot:spring-boot-starter'
 
     implementation "io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}"

@@ -5,8 +5,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-autoconfigure'
 
-    //Jedis
-    implementation "redis.clients:jedis:${revJedis}"
+    implementation project(':conductor-redis-api')
 
     //Micrometer
     implementation "io.micrometer:micrometer-core:${revMicrometer}"

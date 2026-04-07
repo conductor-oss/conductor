@@ -237,6 +237,26 @@ public class UnifiedJedisCommands implements JedisCommands {
     }
 
     @Override
+    public Long llen(String key) {
+        return executeInJedis(jedis -> jedis.llen(key));
+    }
+
+    @Override
+    public Long rpush(String key, String... values) {
+        return executeInJedis(jedis -> jedis.rpush(key, values));
+    }
+
+    @Override
+    public List<String> lrange(String key, long start, long end) {
+        return executeInJedis(jedis -> jedis.lrange(key, start, end));
+    }
+
+    @Override
+    public String ltrim(String key, long start, long end) {
+        return executeInJedis(jedis -> jedis.ltrim(key, start, end));
+    }
+
+    @Override
     public ScanResult<Map.Entry<String, String>> hscan(String key, String cursor) {
         return executeInJedis(jedis -> jedis.hscan(key, cursor));
     }

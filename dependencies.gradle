@@ -32,7 +32,26 @@ ext {
     revHamcrestAllMatchers = '1.8'
     revHealth = '1.1.4'
     revPostgres = '42.7.2'
-    revProtoBuf = '4.33.0'
+
+    // -----------------------------------------------------------------
+    // PINNED DEPENDENCIES — do not upgrade without reading the notes.
+    // Dependabot ignore rules in .github/dependabot.yml enforce these.
+    // See: https://github.com/conductor-oss/conductor/issues/964
+    // -----------------------------------------------------------------
+
+    // PINNED (#964): protobuf-java must stay at 3.x.
+    // protobuf-java 4.x combined with GraalVM polyglot 25.x causes Gradle
+    // to request org.graalvm.polyglot:polyglot4 which does not exist on
+    // Maven Central, breaking compilation. Revisit when a 4.x release
+    // resolves this GraalVM capability-resolution conflict.
+    revProtoBuf = '3.25.5'
+
+    // PINNED (#964): GraalVM polyglot artifacts — ALL must be the same version.
+    // Mixing versions (e.g. polyglot:24.x with js:25.x) causes a runtime
+    // "polyglot version X is not compatible with Truffle Y" error.
+    // When upgrading, bump revGraalVM everywhere it is referenced and test.
+    // core/build.gradle uses this variable for all five GraalVM artifacts.
+    revGraalVM = '25.0.2'
     revJakartaAnnotation = '2.1.1'
     revJAXB = '4.0.1'
     revJAXRS = '4.0.0'
