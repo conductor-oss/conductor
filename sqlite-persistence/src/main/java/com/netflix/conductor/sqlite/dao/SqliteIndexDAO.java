@@ -106,7 +106,10 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
                                         .addParameter(startTime.toString())
                                         .addParameter(updateTime.toString())
                                         .addParameter(workflow.getStatus().toString())
-                                        .addParameter(workflow.getParentWorkflowId() != null ? workflow.getParentWorkflowId() : "")
+                                        .addParameter(
+                                                workflow.getParentWorkflowId() != null
+                                                        ? workflow.getParentWorkflowId()
+                                                        : "")
                                         .addJsonParameter(workflow)
                                         .executeUpdate());
         logger.debug("Sqlite index workflow rows updated: {}", rowsUpdated);

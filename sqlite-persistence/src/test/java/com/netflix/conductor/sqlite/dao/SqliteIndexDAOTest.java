@@ -788,7 +788,8 @@ public class SqliteIndexDAOTest {
         String query = "parentWorkflowId=\"wf-nonexistent-parent\"";
         SearchResult<WorkflowSummary> results =
                 indexDAO.searchWorkflowSummary(query, "*", 0, 15, new ArrayList<>());
-        assertEquals("Should find 0 workflows for nonexistent parent", 0, results.getResults().size());
+        assertEquals(
+                "Should find 0 workflows for nonexistent parent", 0, results.getResults().size());
     }
 
     @Test

@@ -91,7 +91,9 @@ public class PostgresIndexQueryBuilder {
             } else {
                 if (attribute.endsWith("_time")) {
                     return attribute + " " + operator + " ?::TIMESTAMPTZ";
-                } else if (operator.equals("=") && values.size() == 1 && values.get(0).contains("*")) {
+                } else if (operator.equals("=")
+                        && values.size() == 1
+                        && values.get(0).contains("*")) {
                     return attribute + " LIKE ?";
                 } else {
                     return attribute + " " + operator + " ?";

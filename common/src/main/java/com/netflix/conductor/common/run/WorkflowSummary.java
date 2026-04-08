@@ -149,7 +149,8 @@ public class WorkflowSummary {
             this.taskToDomain = workflow.getTaskToDomain();
         }
         this.createdBy = workflow.getCreatedBy();
-        this.parentWorkflowId = workflow.getParentWorkflowId() != null ? workflow.getParentWorkflowId() : "";
+        this.parentWorkflowId =
+                workflow.getParentWorkflowId() != null ? workflow.getParentWorkflowId() : "";
     }
 
     /**

@@ -470,7 +470,8 @@ public class PostgresIndexDAOTest {
         }
 
         List<String> orderBy = Arrays.asList(new String[] {"taskId:DESC"});
-        SearchResult<TaskSummary> results = indexDAO.searchTaskSummary("", "task-id-pagination*", 0, 2, orderBy);
+        SearchResult<TaskSummary> results =
+                indexDAO.searchTaskSummary("", "task-id-pagination*", 0, 2, orderBy);
         assertEquals("Wrong totalHits returned", 5, results.getTotalHits());
         assertEquals("Wrong number of results returned", 2, results.getResults().size());
         assertEquals(
@@ -662,7 +663,8 @@ public class PostgresIndexDAOTest {
         String query = "parentWorkflowId=\"wf-nonexistent-parent\"";
         SearchResult<WorkflowSummary> results =
                 indexDAO.searchWorkflowSummary(query, "*", 0, 15, new ArrayList<>());
-        assertEquals("Should find 0 workflows for nonexistent parent", 0, results.getResults().size());
+        assertEquals(
+                "Should find 0 workflows for nonexistent parent", 0, results.getResults().size());
     }
 
     @Test

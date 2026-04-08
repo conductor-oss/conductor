@@ -97,7 +97,9 @@ public class SqliteIndexQueryBuilder {
             } else {
                 if (attribute.endsWith("_time")) {
                     return attribute + " " + operator + " datetime(?)";
-                } else if (operator.equals("=") && values.size() == 1 && values.get(0).contains("*")) {
+                } else if (operator.equals("=")
+                        && values.size() == 1
+                        && values.get(0).contains("*")) {
                     return "lower(" + attribute + ") LIKE lower(?)";
                 } else {
                     return attribute + " " + operator + " ?";

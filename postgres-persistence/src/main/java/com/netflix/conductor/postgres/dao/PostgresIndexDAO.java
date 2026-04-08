@@ -109,7 +109,10 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
                                         .addParameter(startTime)
                                         .addParameter(updateTime)
                                         .addParameter(workflow.getStatus().toString())
-                                        .addParameter(workflow.getParentWorkflowId() != null ? workflow.getParentWorkflowId() : "")
+                                        .addParameter(
+                                                workflow.getParentWorkflowId() != null
+                                                        ? workflow.getParentWorkflowId()
+                                                        : "")
                                         .addJsonParameter(workflow)
                                         .executeUpdate());
         logger.debug("Postgres index workflow rows updated: {}", rowsUpdated);

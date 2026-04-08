@@ -103,12 +103,7 @@ public class NameValue extends AbstractNode implements FilterProvider {
             }
             String unquoted = value.getUnquotedValue();
             if (unquoted.contains("*")) {
-                return Query.of(
-                        q ->
-                                q.wildcard(
-                                        w ->
-                                                w.field(name.getName())
-                                                        .value(unquoted)));
+                return Query.of(q -> q.wildcard(w -> w.field(name.getName()).value(unquoted)));
             }
             return Query.of(
                     q ->
