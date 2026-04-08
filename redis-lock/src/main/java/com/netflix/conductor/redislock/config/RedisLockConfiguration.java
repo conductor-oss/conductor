@@ -95,7 +95,7 @@ public class RedisLockConfiguration {
                         .useSentinelServers()
                         .setScanInterval(2000)
                         .setMasterName(masterName)
-                        .addSentinelAddress(redisServerAddress)
+                        .addSentinelAddress(redisServerAddress.split(";"))
                         .setUsername(redisServerUsername)
                         .setPassword(redisServerPassword)
                         .setTimeout(connectionTimeout)
