@@ -12,7 +12,7 @@ export { Tab, default as Tabs } from "./Tabs";
 
 // Text / inputs
 export { default as Dropdown } from "./ui/inputs/Dropdown";
-export { default as Heading } from "./Heading";
+export { default as Heading } from "./ui/Heading";
 export { default as Input } from "./ui/inputs/Input";
 export { default as Typography } from "./ui/MuiTypography";
 export { default as NavLink } from "./ui/NavLink";
