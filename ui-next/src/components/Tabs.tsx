@@ -1,7 +1,9 @@
-import React from "react";
 import { Tab as RawTab, Tabs as RawTabs } from "@mui/material";
-import { colors } from "../theme/tokens/variables";
+import type { TabProps } from "@mui/material/Tab";
+import type { TabsProps } from "@mui/material/Tabs";
+import React from "react";
 import { getTheme } from "../theme";
+import { colors } from "../theme/tokens/variables";
 
 // Override styles for 'Contextual' tabs
 const contextualTabStyle = {
@@ -53,7 +55,11 @@ const contextualTabsStyle = {
   },
 };
 
-export default function Tabs({ contextual, children, ...props }) {
+export type TabsOwnProps = TabsProps & {
+  contextual?: boolean;
+};
+
+export default function Tabs({ contextual, children, ...props }: TabsOwnProps) {
   return (
     <RawTabs
       sx={contextual ? contextualTabsStyle : regularTabStyle}
@@ -61,14 +67,23 @@ export default function Tabs({ contextual, children, ...props }) {
       {...props}
     >
       {contextual
-        ? children.map((child, idx) =>
-            React.cloneElement(child, { contextual: true, key: idx }),
+        ? React.Children.map(children, (child, idx) =>
+            React.isValidElement(child)
+              ? React.cloneElement(child, {
+                  contextual: true,
+                  key: child.key ?? idx,
+                })
+              : child,
           )
         : children}
     </RawTabs>
   );
 }
 
-export function Tab({ contextual = null, ...props }) {
+export type TabOwnProps = TabProps & {
+  contextual?: boolean | null;
+};
+
+export function Tab({ contextual = null, ...props }: TabOwnProps) {
   return <RawTab sx={contextual ? contextualTabStyle : null} {...props} />;
 }

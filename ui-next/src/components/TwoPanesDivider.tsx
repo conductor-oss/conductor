@@ -1,34 +1,51 @@
-import { useCallback, useRef, useState } from "react";
-import { createTheme, useTheme, ThemeProvider } from "@mui/material";
-import { colors } from "theme/tokens/variables";
-
-import getTheme from "theme/theme";
-import { Box } from "@mui/material";
+import { Box, createTheme, ThemeProvider, useTheme } from "@mui/material";
 import useMediaQuery from "@mui/material/useMediaQuery";
+import {
+  useCallback,
+  useRef,
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from "react";
+import getTheme from "theme/theme";
+import { colors } from "theme/tokens/variables";
 
 const MIN_LEFT_WIDTH = 400;
 const MIN_RIGHT_WIDTH = 150;
 const SMALL_PERCENT_THREASHOLD = 34;
 
-const smallThemeCreate = (
-  _existingTheme, // ignore existingTheme for now. since it will make font bigger when not on mobile
-) =>
-  createTheme({
-    ...getTheme(),
+// Base theme from getTheme(), not useTheme(): using the live theme here increased font sizes off-mobile.
+const smallThemeCreate = () => {
+  const base = getTheme();
+  return createTheme({
+    ...base,
     breakpoints: {
+      ...base.breakpoints,
       values: {
+        ...base.breakpoints.values,
         xs: 0,
         sm: 20,
       },
     },
   });
+};
+
+export type TwoPanesDividerProps = {
+  leftPanelContent: ReactNode;
+  rightPanelContent: ReactNode;
+  leftPanelExpanded?: boolean;
+  setLeftPanelExpanded: Dispatch<SetStateAction<boolean>>;
+  hideCollapseButton?: boolean;
+};
 
 const TwoPanesBoxider = ({
   leftPanelContent,
   rightPanelContent,
   leftPanelExpanded = false,
   setLeftPanelExpanded,
-}) => {
+  hideCollapseButton: _hideCollapseButton,
+}: TwoPanesDividerProps) => {
   const theme = useTheme();
   // Checking responsive width
   const isValidWidth = useMediaQuery((theme) => theme.breakpoints.down("sm"));
@@ -39,10 +56,10 @@ const TwoPanesBoxider = ({
     name: "default",
   });
 
-  const containerRef = useRef(null);
-  const leftPanelRef = useRef(null);
-  const rightPanelRef = useRef(null);
-  const resizerRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const leftPanelRef = useRef<HTMLDivElement | null>(null);
+  const rightPanelRef = useRef<HTMLDivElement | null>(null);
+  const resizerRef = useRef<HTMLDivElement | null>(null);
 
   const handleMouseDown = () => {
     document.addEventListener("mouseup", handleMouseUp, true);
@@ -55,29 +72,37 @@ const TwoPanesBoxider = ({
   };
 
   const handleMouseMove = useCallback(
-    (e) => {
+    (e: MouseEvent) => {
       e.preventDefault();
 
-      const boundingClientRect = leftPanelRef.current.getBoundingClientRect();
+      const leftEl = leftPanelRef.current;
+      const containerEl = containerRef.current;
+      const rightEl = rightPanelRef.current;
+      const resizerEl = resizerRef.current;
+      if (!leftEl || !containerEl || !rightEl || !resizerEl) {
+        return;
+      }
+
+      const boundingClientRect = leftEl.getBoundingClientRect();
 
       const leftWidth = e.clientX - boundingClientRect.x;
-      const containerWidth = containerRef.current.offsetWidth;
+      const containerWidth = containerEl.offsetWidth;
       const rightWidth = containerWidth - leftWidth;
 
       const leftWidthAsPercent = (leftWidth / containerWidth) * 100;
       const rightWidthAsPercent = (rightWidth / containerWidth) * 100;
 
       if (leftWidth >= MIN_LEFT_WIDTH && rightWidth >= MIN_RIGHT_WIDTH) {
-        leftPanelRef.current.style.width = `${leftWidthAsPercent}%`;
-        rightPanelRef.current.style.width = `${rightWidthAsPercent}%`;
-        resizerRef.current.style.left = `calc(${leftWidthAsPercent}% - 3px)`;
+        leftEl.style.width = `${leftWidthAsPercent}%`;
+        rightEl.style.width = `${rightWidthAsPercent}%`;
+        resizerEl.style.left = `calc(${leftWidthAsPercent}% - 3px)`;
       }
 
       const isNotMobileAndRightPanelIsSmall =
         !isValidWidth && SMALL_PERCENT_THREASHOLD > rightWidthAsPercent;
 
       if (isNotMobileAndRightPanelIsSmall) {
-        setRightPanelTheme({ theme: smallThemeCreate(theme), name: "small" });
+        setRightPanelTheme({ theme: smallThemeCreate(), name: "small" });
       } else {
         setRightPanelTheme({ theme, name: "default" });
       }
@@ -166,7 +191,7 @@ const TwoPanesBoxider = ({
 
       <Box
         ref={resizerRef}
-        onMouseDown={(e) => handleMouseDown(e)}
+        onMouseDown={handleMouseDown}
         onMouseEnter={(_e) => setIsHoveringResizer(true)}
         onMouseLeave={(_e) => setIsHoveringResizer(false)}
         id="editor-panel-resize-line"
