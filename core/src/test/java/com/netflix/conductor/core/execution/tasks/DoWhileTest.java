@@ -1162,6 +1162,201 @@ public class DoWhileTest {
         verify(workflowExecutor, never()).scheduleNextIteration(any(), any());
     }
 
+    // -------------------------------------------------------------------------
+    // Issue #895: DO_WHILE with SWITCH + async task prematurely advances iteration
+    // -------------------------------------------------------------------------
+
+    /**
+     * Regression test for GitHub issue #895.
+     *
+     * <p>Scenario: DO_WHILE.loopOver = [SWITCH], SWITCH.defaultCase = [task1,
+     * jq_transform(asyncComplete=true), task2]. When jq_transform completes but task2 has not yet
+     * been scheduled into the workflow, isIterationComplete must return false so the iteration does
+     * not advance prematurely.
+     */
+    @Test
+    public void
+            testExecute_SwitchWithAsyncTask_DoesNotAdvanceIterationUntilLastCaseTaskScheduled() {
+        // Build workflow-task definitions
+        WorkflowTask task1Def = new WorkflowTask();
+        task1Def.setTaskReferenceName("task1");
+        task1Def.setType("SIMPLE");
+
+        WorkflowTask jqTransformDef = new WorkflowTask();
+        jqTransformDef.setTaskReferenceName("jq_transform");
+        jqTransformDef.setType("JSON_JQ_TRANSFORM");
+        jqTransformDef.setAsyncComplete(true);
+
+        WorkflowTask task2Def = new WorkflowTask();
+        task2Def.setTaskReferenceName("task2");
+        task2Def.setType("SIMPLE");
+
+        WorkflowTask switchDef = new WorkflowTask();
+        switchDef.setTaskReferenceName("switchTask");
+        switchDef.setType("SWITCH");
+        switchDef.setDefaultCase(List.of(task1Def, jqTransformDef, task2Def));
+
+        WorkflowTask doWhileDef = new WorkflowTask();
+        doWhileDef.setTaskReferenceName("loopTask");
+        doWhileDef.setType("DO_WHILE");
+        doWhileDef.setLoopOver(List.of(switchDef));
+        doWhileDef.setLoopCondition("$.loopTask['iteration'] < 2");
+
+        // Build the DO_WHILE task model
+        TaskModel doWhileTask = new TaskModel();
+        doWhileTask.setTaskId("dw-task-id");
+        doWhileTask.setReferenceTaskName("loopTask");
+        doWhileTask.setTaskType("DO_WHILE");
+        doWhileTask.setStatus(TaskModel.Status.IN_PROGRESS);
+        doWhileTask.setIteration(1);
+        doWhileTask.setWorkflowTask(doWhileDef);
+        doWhileTask.addOutput("iteration", 1);
+
+        // Build SWITCH task model (COMPLETED, with hasChildren set)
+        TaskModel switchTask = new TaskModel();
+        switchTask.setTaskId("switch-task-id");
+        switchTask.setReferenceTaskName("switchTask__1");
+        switchTask.setTaskType("SWITCH");
+        switchTask.setStatus(TaskModel.Status.COMPLETED);
+        switchTask.setIteration(1);
+        switchTask.setWorkflowTask(switchDef);
+        switchTask.getInputData().put("hasChildren", "true");
+
+        // Build task1 model (COMPLETED)
+        TaskModel task1 = new TaskModel();
+        task1.setTaskId("task1-id");
+        task1.setReferenceTaskName("task1__1");
+        task1.setTaskType("SIMPLE");
+        task1.setStatus(TaskModel.Status.COMPLETED);
+        task1.setIteration(1);
+        task1.setWorkflowTask(task1Def);
+
+        // Build jq_transform model (COMPLETED — simulating asyncComplete execution done)
+        TaskModel jqTransform = new TaskModel();
+        jqTransform.setTaskId("jq-id");
+        jqTransform.setReferenceTaskName("jq_transform__1");
+        jqTransform.setTaskType("JSON_JQ_TRANSFORM");
+        jqTransform.setStatus(TaskModel.Status.COMPLETED);
+        jqTransform.setIteration(1);
+        jqTransform.setWorkflowTask(jqTransformDef);
+
+        // NOTE: task2 is intentionally NOT added to the workflow tasks list yet.
+        // This simulates the window where jq_transform has completed but task2
+        // has not been scheduled yet (the exact scenario from issue #895).
+
+        WorkflowModel workflow = createWorkflowWithDef();
+        List<TaskModel> tasks = new ArrayList<>();
+        tasks.add(doWhileTask);
+        tasks.add(switchTask);
+        tasks.add(task1);
+        tasks.add(jqTransform);
+        workflow.setTasks(tasks);
+
+        // execute() must return false — iteration should NOT advance yet
+        boolean result = doWhile.execute(workflow, doWhileTask, workflowExecutor);
+
+        assertFalse(
+                "execute() must return false when task2 (successor of jq_transform inside SWITCH) "
+                        + "has not yet been scheduled into the workflow",
+                result);
+        assertEquals(
+                "Iteration must remain at 1 — premature advancement is the bug from issue #895",
+                1,
+                doWhileTask.getIteration());
+        verify(workflowExecutor, never()).scheduleNextIteration(any(), any());
+    }
+
+    /**
+     * Complement to the regression test above: once task2 IS in the workflow and completed, the
+     * iteration SHOULD advance (assuming the loop condition permits it).
+     */
+    @Test
+    public void testExecute_SwitchWithAsyncTask_AdvancesIterationOnceAllCaseTasksComplete() {
+        // Build workflow-task definitions (same structure as the regression test)
+        WorkflowTask task1Def = new WorkflowTask();
+        task1Def.setTaskReferenceName("task1");
+        task1Def.setType("SIMPLE");
+
+        WorkflowTask jqTransformDef = new WorkflowTask();
+        jqTransformDef.setTaskReferenceName("jq_transform");
+        jqTransformDef.setType("JSON_JQ_TRANSFORM");
+        jqTransformDef.setAsyncComplete(true);
+
+        WorkflowTask task2Def = new WorkflowTask();
+        task2Def.setTaskReferenceName("task2");
+        task2Def.setType("SIMPLE");
+
+        WorkflowTask switchDef = new WorkflowTask();
+        switchDef.setTaskReferenceName("switchTask");
+        switchDef.setType("SWITCH");
+        switchDef.setDefaultCase(List.of(task1Def, jqTransformDef, task2Def));
+
+        WorkflowTask doWhileDef = new WorkflowTask();
+        doWhileDef.setTaskReferenceName("loopTask");
+        doWhileDef.setType("DO_WHILE");
+        doWhileDef.setLoopOver(List.of(switchDef));
+        doWhileDef.setLoopCondition("$.loopTask['iteration'] < 2");
+
+        TaskModel doWhileTask = new TaskModel();
+        doWhileTask.setTaskId("dw-task-id");
+        doWhileTask.setReferenceTaskName("loopTask");
+        doWhileTask.setTaskType("DO_WHILE");
+        doWhileTask.setStatus(TaskModel.Status.IN_PROGRESS);
+        doWhileTask.setIteration(1);
+        doWhileTask.setWorkflowTask(doWhileDef);
+        doWhileTask.addOutput("iteration", 1);
+
+        TaskModel switchTask = new TaskModel();
+        switchTask.setTaskId("switch-task-id");
+        switchTask.setReferenceTaskName("switchTask__1");
+        switchTask.setTaskType("SWITCH");
+        switchTask.setStatus(TaskModel.Status.COMPLETED);
+        switchTask.setIteration(1);
+        switchTask.setWorkflowTask(switchDef);
+        switchTask.getInputData().put("hasChildren", "true");
+
+        TaskModel task1 = new TaskModel();
+        task1.setTaskId("task1-id");
+        task1.setReferenceTaskName("task1__1");
+        task1.setTaskType("SIMPLE");
+        task1.setStatus(TaskModel.Status.COMPLETED);
+        task1.setIteration(1);
+        task1.setWorkflowTask(task1Def);
+
+        TaskModel jqTransform = new TaskModel();
+        jqTransform.setTaskId("jq-id");
+        jqTransform.setReferenceTaskName("jq_transform__1");
+        jqTransform.setTaskType("JSON_JQ_TRANSFORM");
+        jqTransform.setStatus(TaskModel.Status.COMPLETED);
+        jqTransform.setIteration(1);
+        jqTransform.setWorkflowTask(jqTransformDef);
+
+        // task2 IS now scheduled and completed — iteration should advance
+        TaskModel task2 = new TaskModel();
+        task2.setTaskId("task2-id");
+        task2.setReferenceTaskName("task2__1");
+        task2.setTaskType("SIMPLE");
+        task2.setStatus(TaskModel.Status.COMPLETED);
+        task2.setIteration(1);
+        task2.setWorkflowTask(task2Def);
+
+        WorkflowModel workflow = createWorkflowWithDef();
+        List<TaskModel> tasks = new ArrayList<>();
+        tasks.add(doWhileTask);
+        tasks.add(switchTask);
+        tasks.add(task1);
+        tasks.add(jqTransform);
+        tasks.add(task2);
+        workflow.setTasks(tasks);
+
+        boolean result = doWhile.execute(workflow, doWhileTask, workflowExecutor);
+
+        assertTrue("execute() should return true when all case tasks are complete", result);
+        // Iteration advances from 1 to 2 (loop condition: iteration < 2 is still true at i=1)
+        assertEquals("Iteration should advance to 2", 2, doWhileTask.getIteration());
+        verify(workflowExecutor, times(1)).scheduleNextIteration(any(), any());
+    }
+
     @Test
     public void testListIteration_VerifiesLOCReduction() {
         // This test demonstrates the LOC reduction from counter-based to list iteration
