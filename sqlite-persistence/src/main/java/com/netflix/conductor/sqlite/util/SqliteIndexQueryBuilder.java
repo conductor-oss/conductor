@@ -48,7 +48,8 @@ public class SqliteIndexQueryBuilder {
         "task_type",
         "task_def_name",
         "update_time",
-        "json_data"
+        "json_data",
+        "parent_workflow_id"
     };
 
     private static final String[] VALID_SORT_ORDER = {"ASC", "DESC"};
@@ -96,6 +97,10 @@ public class SqliteIndexQueryBuilder {
             } else {
                 if (attribute.endsWith("_time")) {
                     return attribute + " " + operator + " datetime(?)";
+                } else if (operator.equals("=")
+                        && values.size() == 1
+                        && values.get(0).contains("*")) {
+                    return "lower(" + attribute + ") LIKE lower(?)";
                 } else {
                     return attribute + " " + operator + " ?";
                 }
@@ -116,7 +121,11 @@ public class SqliteIndexQueryBuilder {
                     q.addParameter(value);
                 }
             } else {
-                q.addParameter(values.get(0));
+                String val = values.get(0);
+                if (val.contains("*")) {
+                    val = val.replace("*", "%");
+                }
+                q.addParameter(val);
             }
         }
 
