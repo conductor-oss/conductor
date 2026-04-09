@@ -697,4 +697,119 @@ public class SqliteIndexDAOTest {
         log_records = queryDb("SELECT * FROM task_execution_logs WHERE task_id = '" + taskId + "'");
         assertEquals("Task execution logs were not deleted", 0, log_records.size());
     }
+
+    private WorkflowSummary getMockWorkflowSummary(String id, String parentWorkflowId) {
+        WorkflowSummary wfs = getMockWorkflowSummary(id);
+        wfs.setParentWorkflowId(parentWorkflowId);
+        return wfs;
+    }
+
+    @Test
+    public void testWildcardSearchWorkflowSummaryByType() {
+        WorkflowSummary wfs1 = getMockWorkflowSummary("wf-wildcard-1");
+        wfs1.setWorkflowType("order_processing_v1");
+        indexDAO.indexWorkflow(wfs1);
+
+        WorkflowSummary wfs2 = getMockWorkflowSummary("wf-wildcard-2");
+        wfs2.setWorkflowType("order_processing_v2");
+        indexDAO.indexWorkflow(wfs2);
+
+        WorkflowSummary wfs3 = getMockWorkflowSummary("wf-wildcard-3");
+        wfs3.setWorkflowType("payment_processing_v1");
+        indexDAO.indexWorkflow(wfs3);
+
+        String query = "workflowType=order_processing*";
+        SearchResult<WorkflowSummary> results =
+                indexDAO.searchWorkflowSummary(query, "*", 0, 15, new ArrayList<>());
+        assertEquals("Should find 2 order_processing workflows", 2, results.getResults().size());
+
+        query = "workflowType=*processing*";
+        results = indexDAO.searchWorkflowSummary(query, "*", 0, 15, new ArrayList<>());
+        assertEquals("Should find 3 processing workflows", 3, results.getResults().size());
+    }
+
+    @Test
+    public void testWildcardSearchNoMatches() {
+        WorkflowSummary wfs = getMockWorkflowSummary("wf-wildcard-nomatch");
+        wfs.setWorkflowType("order_processing_v1");
+        indexDAO.indexWorkflow(wfs);
+
+        String query = "workflowType=payment*";
+        SearchResult<WorkflowSummary> results =
+                indexDAO.searchWorkflowSummary(query, "*", 0, 15, new ArrayList<>());
+        assertEquals("Should find 0 workflows", 0, results.getResults().size());
+    }
+
+    @Test
+    public void testSearchExcludeSubWorkflows() {
+        WorkflowSummary topLevel1 = getMockWorkflowSummary("wf-top-1", "");
+        indexDAO.indexWorkflow(topLevel1);
+
+        WorkflowSummary topLevel2 = getMockWorkflowSummary("wf-top-2", "");
+        indexDAO.indexWorkflow(topLevel2);
+
+        WorkflowSummary subWf1 = getMockWorkflowSummary("wf-sub-1", "wf-top-1");
+        indexDAO.indexWorkflow(subWf1);
+
+        WorkflowSummary subWf2 = getMockWorkflowSummary("wf-sub-2", "wf-top-1");
+        indexDAO.indexWorkflow(subWf2);
+
+        String query = "parentWorkflowId=\"\"";
+        SearchResult<WorkflowSummary> results =
+                indexDAO.searchWorkflowSummary(query, "*", 0, 15, new ArrayList<>());
+        assertEquals("Should find only 2 top-level workflows", 2, results.getResults().size());
+    }
+
+    @Test
+    public void testSearchSubWorkflowsOfParent() {
+        WorkflowSummary topLevel = getMockWorkflowSummary("wf-parent-1", "");
+        indexDAO.indexWorkflow(topLevel);
+
+        WorkflowSummary subWf1 = getMockWorkflowSummary("wf-child-1", "wf-parent-1");
+        indexDAO.indexWorkflow(subWf1);
+
+        WorkflowSummary subWf2 = getMockWorkflowSummary("wf-child-2", "wf-parent-1");
+        indexDAO.indexWorkflow(subWf2);
+
+        WorkflowSummary subWf3 = getMockWorkflowSummary("wf-child-3", "wf-parent-other");
+        indexDAO.indexWorkflow(subWf3);
+
+        String query = "parentWorkflowId=\"wf-parent-1\"";
+        SearchResult<WorkflowSummary> results =
+                indexDAO.searchWorkflowSummary(query, "*", 0, 15, new ArrayList<>());
+        assertEquals("Should find 2 child workflows", 2, results.getResults().size());
+    }
+
+    @Test
+    public void testSearchSubWorkflowsWrongParentReturnsEmpty() {
+        WorkflowSummary subWf1 = getMockWorkflowSummary("wf-orphan-1", "wf-parent-1");
+        indexDAO.indexWorkflow(subWf1);
+
+        String query = "parentWorkflowId=\"wf-nonexistent-parent\"";
+        SearchResult<WorkflowSummary> results =
+                indexDAO.searchWorkflowSummary(query, "*", 0, 15, new ArrayList<>());
+        assertEquals(
+                "Should find 0 workflows for nonexistent parent", 0, results.getResults().size());
+    }
+
+    @Test
+    public void testWildcardWithParentWorkflowIdFilter() {
+        WorkflowSummary topOrder = getMockWorkflowSummary("wf-combined-1", "");
+        topOrder.setWorkflowType("order_processing_v1");
+        indexDAO.indexWorkflow(topOrder);
+
+        WorkflowSummary topPayment = getMockWorkflowSummary("wf-combined-2", "");
+        topPayment.setWorkflowType("payment_processing_v1");
+        indexDAO.indexWorkflow(topPayment);
+
+        WorkflowSummary subOrder = getMockWorkflowSummary("wf-combined-3", "wf-combined-1");
+        subOrder.setWorkflowType("order_processing_v1");
+        indexDAO.indexWorkflow(subOrder);
+
+        String query = "parentWorkflowId=\"\" AND workflowType=order*";
+        SearchResult<WorkflowSummary> results =
+                indexDAO.searchWorkflowSummary(query, "*", 0, 15, new ArrayList<>());
+        assertEquals("Should find 1 top-level order workflow", 1, results.getResults().size());
+        assertEquals("wf-combined-1", results.getResults().get(0).getWorkflowId());
+    }
 }

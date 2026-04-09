@@ -22,7 +22,6 @@ import java.util.*;
 
 import javax.sql.DataSource;
 
-import org.flywaydb.core.Flyway;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -59,8 +58,7 @@ import static org.junit.Assert.*;
         properties = {
             "conductor.app.asyncIndexingEnabled=false",
             "conductor.elasticsearch.version=0",
-            "conductor.indexing.type=postgres",
-            "spring.flyway.clean-disabled=false"
+            "conductor.indexing.type=postgres"
         })
 @SpringBootTest
 public class PostgresIndexDAOTest {
@@ -73,12 +71,9 @@ public class PostgresIndexDAOTest {
     @Autowired
     private DataSource dataSource;
 
-    @Autowired Flyway flyway;
-
-    // clean the database between tests.
     @Before
     public void before() {
-        flyway.migrate();
+        // Tests share a single database instance; each test scopes its own queries.
     }
 
     private WorkflowSummary getMockWorkflowSummary(String id) {
@@ -433,8 +428,8 @@ public class PostgresIndexDAOTest {
                 "Results returned in wrong order",
                 "workflow-id-pagination-3",
                 results.getResults().get(1).getWorkflowId());
-        results = indexDAO.searchWorkflowSummary("", "*", 2, 2, orderBy);
-        assertEquals("Wrong totalHits returned", 8, results.getTotalHits());
+        results = indexDAO.searchWorkflowSummary("", "workflow-id-pagination*", 2, 2, orderBy);
+        assertEquals("Wrong totalHits returned", 5, results.getTotalHits());
         assertEquals("Wrong number of results returned", 2, results.getResults().size());
         assertEquals(
                 "Results returned in wrong order",
@@ -444,9 +439,9 @@ public class PostgresIndexDAOTest {
                 "Results returned in wrong order",
                 "workflow-id-pagination-1",
                 results.getResults().get(1).getWorkflowId());
-        results = indexDAO.searchWorkflowSummary("", "*", 4, 2, orderBy);
-        assertEquals("Wrong totalHits returned", 8, results.getTotalHits());
-        assertEquals("Wrong number of results returned", 2, results.getResults().size());
+        results = indexDAO.searchWorkflowSummary("", "workflow-id-pagination*", 4, 2, orderBy);
+        assertEquals("Wrong totalHits returned", 5, results.getTotalHits());
+        assertEquals("Wrong number of results returned", 1, results.getResults().size());
         assertEquals(
                 "Results returned in wrong order",
                 "workflow-id-pagination-0",
@@ -475,8 +470,9 @@ public class PostgresIndexDAOTest {
         }
 
         List<String> orderBy = Arrays.asList(new String[] {"taskId:DESC"});
-        SearchResult<TaskSummary> results = indexDAO.searchTaskSummary("", "*", 0, 2, orderBy);
-        assertEquals("Wrong totalHits returned", 10, results.getTotalHits());
+        SearchResult<TaskSummary> results =
+                indexDAO.searchTaskSummary("", "task-id-pagination*", 0, 2, orderBy);
+        assertEquals("Wrong totalHits returned", 5, results.getTotalHits());
         assertEquals("Wrong number of results returned", 2, results.getResults().size());
         assertEquals(
                 "Results returned in wrong order",
@@ -486,8 +482,8 @@ public class PostgresIndexDAOTest {
                 "Results returned in wrong order",
                 "task-id-pagination-3",
                 results.getResults().get(1).getTaskId());
-        results = indexDAO.searchTaskSummary("", "*", 2, 2, orderBy);
-        assertEquals("Wrong totalHits returned", 10, results.getTotalHits());
+        results = indexDAO.searchTaskSummary("", "task-id-pagination*", 2, 2, orderBy);
+        assertEquals("Wrong totalHits returned", 5, results.getTotalHits());
         assertEquals("Wrong number of results returned", 2, results.getResults().size());
         assertEquals(
                 "Results returned in wrong order",
@@ -497,9 +493,9 @@ public class PostgresIndexDAOTest {
                 "Results returned in wrong order",
                 "task-id-pagination-1",
                 results.getResults().get(1).getTaskId());
-        results = indexDAO.searchTaskSummary("", "*", 4, 2, orderBy);
-        assertEquals("Wrong totalHits returned", 10, results.getTotalHits());
-        assertEquals("Wrong number of results returned", 2, results.getResults().size());
+        results = indexDAO.searchTaskSummary("", "task-id-pagination*", 4, 2, orderBy);
+        assertEquals("Wrong totalHits returned", 5, results.getTotalHits());
+        assertEquals("Wrong number of results returned", 1, results.getResults().size());
         assertEquals(
                 "Results returned in wrong order",
                 "task-id-pagination-0",
@@ -568,5 +564,128 @@ public class PostgresIndexDAOTest {
 
         log_records = queryDb("SELECT * FROM task_execution_logs WHERE task_id = '" + taskId + "'");
         assertEquals("Task execution logs were not deleted", 0, log_records.size());
+    }
+
+    private WorkflowSummary getMockWorkflowSummary(String id, String parentWorkflowId) {
+        WorkflowSummary wfs = getMockWorkflowSummary(id);
+        wfs.setParentWorkflowId(parentWorkflowId);
+        return wfs;
+    }
+
+    @Test
+    public void testWildcardSearchWorkflowSummaryByType() {
+        WorkflowSummary wfs1 = getMockWorkflowSummary("wf-wildcard-1");
+        wfs1.setWorkflowType("wc_order_proc_v1");
+        indexDAO.indexWorkflow(wfs1);
+
+        WorkflowSummary wfs2 = getMockWorkflowSummary("wf-wildcard-2");
+        wfs2.setWorkflowType("wc_order_proc_v2");
+        indexDAO.indexWorkflow(wfs2);
+
+        WorkflowSummary wfs3 = getMockWorkflowSummary("wf-wildcard-3");
+        wfs3.setWorkflowType("wc_payment_proc_v1");
+        indexDAO.indexWorkflow(wfs3);
+
+        // Prefix wildcard: should match wfs1 and wfs2
+        String query = "workflowType=wc_order_proc*";
+        SearchResult<WorkflowSummary> results =
+                indexDAO.searchWorkflowSummary(query, "*", 0, 15, new ArrayList<>());
+        assertEquals("Should find 2 wc_order_proc workflows", 2, results.getResults().size());
+
+        // Contains wildcard: should match all 3
+        query = "workflowType=wc_*_proc*";
+        results = indexDAO.searchWorkflowSummary(query, "*", 0, 15, new ArrayList<>());
+        assertEquals("Should find 3 processing workflows", 3, results.getResults().size());
+    }
+
+    @Test
+    public void testWildcardSearchNoMatches() {
+        WorkflowSummary wfs = getMockWorkflowSummary("wf-wildcard-nomatch");
+        wfs.setWorkflowType("nomatch_order_type_v1");
+        indexDAO.indexWorkflow(wfs);
+
+        String query = "workflowType=nomatch_zzz*";
+        SearchResult<WorkflowSummary> results =
+                indexDAO.searchWorkflowSummary(query, "*", 0, 15, new ArrayList<>());
+        assertEquals("Should find 0 workflows", 0, results.getResults().size());
+    }
+
+    @Test
+    public void testSearchExcludeSubWorkflows() {
+        WorkflowSummary topLevel1 = getMockWorkflowSummary("wf-top-1", "");
+        topLevel1.setWorkflowType("subwf_test_type");
+        indexDAO.indexWorkflow(topLevel1);
+
+        WorkflowSummary topLevel2 = getMockWorkflowSummary("wf-top-2", "");
+        topLevel2.setWorkflowType("subwf_test_type");
+        indexDAO.indexWorkflow(topLevel2);
+
+        WorkflowSummary subWf1 = getMockWorkflowSummary("wf-sub-1", "wf-top-1");
+        subWf1.setWorkflowType("subwf_test_type");
+        indexDAO.indexWorkflow(subWf1);
+
+        WorkflowSummary subWf2 = getMockWorkflowSummary("wf-sub-2", "wf-top-1");
+        subWf2.setWorkflowType("subwf_test_type");
+        indexDAO.indexWorkflow(subWf2);
+
+        // Search for top-level only, scoped to our unique type
+        String query = "parentWorkflowId=\"\" AND workflowType=subwf_test_type";
+        SearchResult<WorkflowSummary> results =
+                indexDAO.searchWorkflowSummary(query, "*", 0, 15, new ArrayList<>());
+        assertEquals("Should find only 2 top-level workflows", 2, results.getResults().size());
+    }
+
+    @Test
+    public void testSearchSubWorkflowsOfParent() {
+        WorkflowSummary topLevel = getMockWorkflowSummary("wf-parent-1", "");
+        indexDAO.indexWorkflow(topLevel);
+
+        WorkflowSummary subWf1 = getMockWorkflowSummary("wf-child-1", "wf-parent-1");
+        indexDAO.indexWorkflow(subWf1);
+
+        WorkflowSummary subWf2 = getMockWorkflowSummary("wf-child-2", "wf-parent-1");
+        indexDAO.indexWorkflow(subWf2);
+
+        WorkflowSummary subWf3 = getMockWorkflowSummary("wf-child-3", "wf-parent-other");
+        indexDAO.indexWorkflow(subWf3);
+
+        String query = "parentWorkflowId=\"wf-parent-1\"";
+        SearchResult<WorkflowSummary> results =
+                indexDAO.searchWorkflowSummary(query, "*", 0, 15, new ArrayList<>());
+        assertEquals("Should find 2 child workflows", 2, results.getResults().size());
+    }
+
+    @Test
+    public void testSearchSubWorkflowsWrongParentReturnsEmpty() {
+        WorkflowSummary subWf1 = getMockWorkflowSummary("wf-orphan-1", "wf-parent-1");
+        indexDAO.indexWorkflow(subWf1);
+
+        String query = "parentWorkflowId=\"wf-nonexistent-parent\"";
+        SearchResult<WorkflowSummary> results =
+                indexDAO.searchWorkflowSummary(query, "*", 0, 15, new ArrayList<>());
+        assertEquals(
+                "Should find 0 workflows for nonexistent parent", 0, results.getResults().size());
+    }
+
+    @Test
+    public void testWildcardWithParentWorkflowIdFilter() {
+        WorkflowSummary topOrder = getMockWorkflowSummary("wf-combined-1", "");
+        topOrder.setWorkflowType("cmb_order_v1");
+        indexDAO.indexWorkflow(topOrder);
+
+        WorkflowSummary topPayment = getMockWorkflowSummary("wf-combined-2", "");
+        topPayment.setWorkflowType("cmb_payment_v1");
+        indexDAO.indexWorkflow(topPayment);
+
+        WorkflowSummary subOrder = getMockWorkflowSummary("wf-combined-3", "wf-combined-1");
+        subOrder.setWorkflowType("cmb_order_v1");
+        indexDAO.indexWorkflow(subOrder);
+
+        // Only top-level order workflows
+        String query = "parentWorkflowId=\"\" AND workflowType=cmb_order*";
+        SearchResult<WorkflowSummary> results =
+                indexDAO.searchWorkflowSummary(query, "*", 0, 15, new ArrayList<>());
+        assertEquals("Should find 1 top-level order workflow", 1, results.getResults().size());
+        assertEquals("wf-combined-1", results.getResults().get(0).getWorkflowId());
     }
 }

@@ -101,6 +101,10 @@ public class NameValue extends AbstractNode implements FilterProvider {
             if (value.isSysConstant()) {
                 return systemConstantQuery(value.getSysConstant(), true);
             }
+            String unquoted = value.getUnquotedValue();
+            if (unquoted.contains("*")) {
+                return Query.of(q -> q.wildcard(w -> w.field(name.getName()).value(unquoted)));
+            }
             return Query.of(
                     q ->
                             q.term(
