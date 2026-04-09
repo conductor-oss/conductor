@@ -1,4 +1,4 @@
-import Button from "components/MuiButton";
+import Button from "components/ui/buttons/MuiButton";
 import { WorkflowEditContext } from "pages/definition/state";
 import {
   TaskAndCrumbs,

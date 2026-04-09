@@ -1,13 +1,13 @@
 import { LogoutOutlined } from "@mui/icons-material";
 import { Avatar, Box, Typography, Tooltip } from "@mui/material";
-import { useAuth } from "shared/auth";
+import { useAuth } from "components/features/auth";
 import { useCallback, useState } from "react";
 import { colors } from "theme/tokens/variables";
 import TokenIcon from "images/svg/token.svg";
 import { SnackbarMessage } from "components/SnackbarMessage";
 import { Auth0User } from "types/User";
 import { featureFlags, FEATURES } from "utils/flags";
-import { getAccessToken } from "shared/auth/tokenManagerJotai";
+import { getAccessToken } from "components/features/auth/tokenManagerJotai";
 
 const isPlayground = featureFlags.isEnabled(FEATURES.PLAYGROUND);
 

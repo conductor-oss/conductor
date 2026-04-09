@@ -10,7 +10,7 @@ import {
 import { useLocation } from "react-router";
 import { featureFlags, FEATURES } from "utils/flags";
 import { ActorRef, State } from "xstate";
-import { AuthContext } from "../../../shared/auth/context";
+import { AuthContext } from "components/features/auth/context";
 import { useSidebarMenu } from "../../../shared/PersistableSidebar/state/hook";
 import { PersistableSidebarEvent } from "../../../shared/PersistableSidebar/state/types";
 import { AuthProviderMachineContext } from "../../../shared/state";

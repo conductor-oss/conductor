@@ -28,7 +28,7 @@ import { tryToJson } from "utils/utils";
 import { featureFlags, FEATURES } from "utils/flags";
 import HedgingConfigForm from "../HedgingConfigForm";
 import ServiceRegistryPopulator from "../ServiceRegistrySelector";
-import MuiTypography from "components/MuiTypography";
+import MuiTypography from "components/ui/MuiTypography";
 import { Link } from "react-router";
 import EditTaskDefConfigModal from "../HTTPTaskForm/EditTaskDefConfigModal";
 import { MessageContext } from "components/v1/layout/MessageContext";

@@ -1,6 +1,6 @@
 import { Box, CircularProgress, Paper, Tab, Tabs } from "@mui/material";
-import { DocLink } from "components/DocLink";
-import ConfirmChoiceDialog from "components/ConfirmChoiceDialog";
+import { DocLink } from "components/ui/DocLink";
+import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
 import { SnackbarMessage } from "components/SnackbarMessage";
 import { ConductorSectionHeader } from "components/v1/layout/section/ConductorSectionHeader";
 import EventHandlerButton from "pages/definition/EventHandler/eventhandlers/EventHandlerButton";
@@ -8,7 +8,7 @@ import EventHandlerEditor from "pages/definition/EventHandler/eventhandlers/Even
 import EventHandlerForm from "pages/definition/EventHandler/eventhandlers/FormComponent/EventHandlerForm";
 import { useEventHandlerDefinition } from "pages/definition/EventHandler/eventhandlers/state/hook";
 import { Helmet } from "react-helmet";
-import SectionContainer from "shared/SectionContainer";
+import SectionContainer from "components/ui/layout/SectionContainer";
 import { colors } from "theme/tokens/variables";
 import { DOC_LINK_URL } from "utils/constants/docLink";
 import { EVENT_HANDLERS_URL } from "utils/constants/route";

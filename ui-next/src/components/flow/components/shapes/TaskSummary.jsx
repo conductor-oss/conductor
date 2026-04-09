@@ -1,4 +1,4 @@
-import StatusBadge from "components/StatusBadge";
+import StatusBadge from "components/ui/StatusBadge";
 import { taskStatusCompareFn } from "utils";
 import CardLabel from "./TaskCard/CardLabel";
 import CardStatusBadge from "./TaskCard/CardStatusBadge";

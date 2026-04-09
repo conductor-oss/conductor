@@ -1,6 +1,6 @@
 import { Grid } from "@mui/material";
-import Button from "components/MuiButton";
-import IconButton from "components/MuiIconButton";
+import Button from "components/ui/buttons/MuiButton";
+import IconButton from "components/ui/buttons/MuiIconButton";
 import AddIcon from "components/v1/icons/AddIcon";
 import TrashIcon from "components/v1/icons/TrashIcon";
 import _isEmpty from "lodash/isEmpty";

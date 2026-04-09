@@ -8,8 +8,8 @@ import {
 } from "@mui/material";
 import { Share, X } from "@phosphor-icons/react";
 import { Button, Paper } from "components";
-import MuiCheckbox from "components/MuiCheckbox";
-import UIModal from "components/UIModal";
+import MuiCheckbox from "components/ui/MuiCheckbox";
+import UIModal from "components/ui/dialogs/UIModal";
 import ConductorInput from "components/v1/ConductorInput";
 import { MessageContext } from "components/v1/layout/MessageContext";
 import _ from "lodash";

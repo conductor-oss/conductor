@@ -6,21 +6,23 @@ import {
   Tag as TagIcon,
 } from "@phosphor-icons/react";
 import { Button, DataTable, IconButton, NavLink, Paper } from "components";
-import { ColumnCustomType } from "components/DataTable/types";
-import ConfirmChoiceDialog from "components/ConfirmChoiceDialog";
-import Header from "components/Header";
-import NoDataComponent from "components/NoDataComponent";
+import { ColumnCustomType } from "components/ui/DataTable/types";
+import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
+import Header from "components/ui/Header";
+import NoDataComponent from "components/ui/NoDataComponent";
 import { SnackbarMessage } from "components/SnackbarMessage";
-import TagChip from "components/TagChip";
-import AddTagDialog, { TagDialogProps } from "components/tags/AddTagDialog";
+import TagChip from "components/ui/TagChip";
+import AddTagDialog, {
+  TagDialogProps,
+} from "components/ui/dialogs/AddTagDialog";
 import AddIcon from "components/v1/icons/AddIcon";
 import { MessageContext } from "components/v1/layout/MessageContext";
 import { useCallback, useContext, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
-import { useAuth } from "shared/auth";
-import SectionContainer from "shared/SectionContainer";
-import SectionHeader from "shared/SectionHeader";
-import SectionHeaderActions from "shared/SectionHeaderActions";
+import { useAuth } from "components/features/auth";
+import SectionContainer from "components/ui/layout/SectionContainer";
+import SectionHeader from "components/ui/layout/SectionHeader";
+import SectionHeaderActions from "components/ui/layout/SectionHeaderActions";
 import { colors } from "theme/tokens/variables";
 import { TaskDto } from "types";
 import { PopoverMessage } from "types/Messages";

@@ -7,7 +7,7 @@ import {
   PopperPlacementType,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import MuiIconButton from "components/MuiIconButton";
+import MuiIconButton from "components/ui/buttons/MuiIconButton";
 import XCloseIcon from "components/v1/icons/XCloseIcon";
 
 interface CustomTooltipProps {

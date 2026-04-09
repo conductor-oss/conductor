@@ -1,6 +1,6 @@
 import { Backdrop, Box, Drawer, alpha, useTheme } from "@mui/material";
 import { useMemo, useState } from "react";
-import { useAuth } from "shared/auth";
+import { useAuth } from "components/features/auth";
 import { colors } from "theme/tokens/variables";
 import { Auth0User } from "types/User";
 import { drawerWidthClose, drawerWidthOpen } from "./constants";

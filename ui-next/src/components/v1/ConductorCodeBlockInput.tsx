@@ -11,7 +11,7 @@ import { Theme } from "@mui/material/styles";
 import { SxProps } from "@mui/system";
 import { FunctionComponent, ReactNode, useCallback, useState } from "react";
 
-import { ConductorTooltipProps } from "components/conductorTooltip/ConductorTooltip";
+import { ConductorTooltipProps } from "components/ui/ConductorTooltip";
 
 import { CodeBlockInputWrapper } from "./CodeBlockInputWrapper";
 import Close from "@mui/icons-material/Close";

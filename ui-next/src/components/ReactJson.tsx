@@ -8,7 +8,7 @@ import {
   PencilSimple,
   XCircle,
 } from "@phosphor-icons/react";
-import Button from "components/MuiButton";
+import Button from "components/ui/buttons/MuiButton";
 import SaveIcon from "components/v1/icons/SaveIcon";
 import XCloseIcon from "components/v1/icons/XCloseIcon";
 import { CSSProperties, Suspense, useContext, useRef, useState } from "react";

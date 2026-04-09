@@ -1,6 +1,6 @@
 import { Box, FormControlLabel, Grid } from "@mui/material";
 
-import MuiCheckbox from "components/MuiCheckbox";
+import MuiCheckbox from "components/ui/MuiCheckbox";
 import {
   AnInputComponent,
   EventJson,

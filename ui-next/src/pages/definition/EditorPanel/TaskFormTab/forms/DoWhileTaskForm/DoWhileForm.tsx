@@ -1,8 +1,8 @@
 import { Box, FormControlLabel, Grid } from "@mui/material";
 import { useSelector } from "@xstate/react";
-import MuiCheckbox from "components/MuiCheckbox";
-import RadioButtonGroup from "components/RadioButtonGroup";
-import ConfirmChoiceDialog from "components/ConfirmChoiceDialog";
+import MuiCheckbox from "components/ui/MuiCheckbox";
+import RadioButtonGroup from "components/ui/inputs/RadioButtonGroup";
+import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
 import { ConductorAutoComplete } from "components/v1";
 import ConductorInput from "components/v1/ConductorInput";
 import ConductorInputNumber from "components/v1/ConductorInputNumber";

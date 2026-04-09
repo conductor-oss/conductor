@@ -7,7 +7,7 @@ import {
   Tooltip,
 } from "@mui/material";
 import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
-import ConductorDateRangePicker from "components/v1/date-time/ConductorDateRangePicker";
+import ConductorDateRangePicker from "components/ui/date-time/ConductorDateRangePicker";
 import { baseLabelStyle } from "components/v1/theme/styles";
 import { SMALL_EDITOR_DEFAULT_OPTIONS } from "utils/constants";
 

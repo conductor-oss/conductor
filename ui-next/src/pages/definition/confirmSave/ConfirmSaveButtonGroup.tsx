@@ -4,7 +4,7 @@ import { FunctionComponent } from "react";
 import { ActorRef } from "xstate";
 
 import CircularProgress from "@mui/material/CircularProgress";
-import { ButtonTooltip } from "components/ButtonTooltip";
+import { ButtonTooltip } from "components/ui/buttons/ButtonTooltip";
 import SaveIcon from "components/v1/icons/SaveIcon";
 import XCloseIcon from "components/v1/icons/XCloseIcon";
 import { SaveWorkflowEvents, SaveWorkflowMachineEventTypes } from "./state";

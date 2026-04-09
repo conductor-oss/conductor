@@ -7,7 +7,7 @@ import { useMemo } from "react";
 import ProgressIcon from "./progressicons";
 import { X } from "@phosphor-icons/react";
 import { DefinitionMachineEventTypes } from "pages/definition/state/types";
-import MuiAlert from "components/MuiAlert";
+import MuiAlert from "components/ui/MuiAlert";
 import { usePanelChanges } from "pages/definition/state/usePanelChanges";
 import { selectIsOpenedEdge } from "components/flow/state/selectors";
 import AddTaskSidebar from "components/flow/components/RichAddTaskMenu/AddTaskSidebar";

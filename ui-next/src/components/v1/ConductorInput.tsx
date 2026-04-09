@@ -12,7 +12,7 @@ import {
 import InputAdornment from "@mui/material/InputAdornment";
 import ConductorToolTip, {
   ConductorTooltipProps,
-} from "components/conductorTooltip/ConductorTooltip";
+} from "components/ui/ConductorTooltip";
 import _isEmpty from "lodash/isEmpty";
 import {
   ChangeEvent,

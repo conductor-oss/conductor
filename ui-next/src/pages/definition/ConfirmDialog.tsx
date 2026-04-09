@@ -1,5 +1,5 @@
 import { useCallback, FunctionComponent } from "react";
-import ConfirmChoiceDialog from "components/ConfirmChoiceDialog";
+import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
 
 interface ConfirmDialogProps {
   onConfirm: () => void;

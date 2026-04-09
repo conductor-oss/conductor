@@ -1,6 +1,6 @@
 import { Box, Tooltip, TooltipProps, styled } from "@mui/material";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import MuiTypography from "components/MuiTypography";
+import MuiTypography from "components/ui/MuiTypography";
 import { greyText } from "theme/tokens/colors";
 import { ReactNode } from "react";
 

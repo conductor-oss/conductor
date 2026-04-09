@@ -14,12 +14,14 @@ import {
   TagIcon,
 } from "@phosphor-icons/react";
 import { Button, DataTable, IconButton, NavLink } from "components";
-import NoDataComponent from "components/NoDataComponent";
-import Paper from "components/Paper";
+import NoDataComponent from "components/ui/NoDataComponent";
+import Paper from "components/ui/Paper";
 import { SnackbarMessage } from "components/SnackbarMessage";
-import TagChip from "components/TagChip";
-import ConfirmChoiceDialog from "components/ConfirmChoiceDialog";
-import AddTagDialog, { TagDialogProps } from "components/tags/AddTagDialog";
+import TagChip from "components/ui/TagChip";
+import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
+import AddTagDialog, {
+  TagDialogProps,
+} from "components/ui/dialogs/AddTagDialog";
 import ConductorInput from "components/v1/ConductorInput";
 import { TagsRenderer } from "components/v1/TagList";
 import AddIcon from "components/v1/icons/AddIcon";
@@ -27,10 +29,10 @@ import PlayIcon from "components/v1/icons/PlayIcon";
 import { useCallback, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
 import { useQueryState } from "react-router-use-location-state";
-import SectionContainer from "shared/SectionContainer";
-import SectionHeader from "shared/SectionHeader";
-import SectionHeaderActions from "shared/SectionHeaderActions";
-import { useAuth } from "shared/auth";
+import SectionContainer from "components/ui/layout/SectionContainer";
+import SectionHeader from "components/ui/layout/SectionHeader";
+import SectionHeaderActions from "components/ui/layout/SectionHeaderActions";
+import { useAuth } from "components/features/auth";
 import { colors } from "theme/tokens/variables";
 import { ConductorEvent } from "types/Events";
 import { TagDto } from "types/Tag";
@@ -40,7 +42,7 @@ import { EVENT_HANDLERS_URL } from "utils/constants/route";
 import useCustomPagination from "utils/hooks/useCustomPagination";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { useActionWithPath, useFetch } from "utils/query";
-import Header from "../../components/Header";
+import Header from "components/ui/Header";
 import {
   activeFilterGroups,
   conditionalRowStyles,

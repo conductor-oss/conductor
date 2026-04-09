@@ -1,5 +1,5 @@
 import { Box, Grid } from "@mui/material";
-import RadioButtonGroup from "components/RadioButtonGroup";
+import RadioButtonGroup from "components/ui/inputs/RadioButtonGroup";
 import ConductorInput from "components/v1/ConductorInput";
 import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
 import { path as _path } from "lodash/fp";

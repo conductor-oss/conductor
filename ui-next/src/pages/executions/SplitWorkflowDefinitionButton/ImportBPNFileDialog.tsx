@@ -15,10 +15,10 @@ import {
 } from "@mui/material";
 import ConductorInput from "components/v1/ConductorInput";
 import { UploadSimple, XCircle } from "@phosphor-icons/react";
-import CodeBlockInput from "components/CodeBlockInput";
+import CodeBlockInput from "components/ui/inputs/CodeBlockInput";
 import { useImportBPMWorkflow } from "./hook";
 import { useRef } from "react";
-import MuiTypography from "components/MuiTypography";
+import MuiTypography from "components/ui/MuiTypography";
 
 export const ImportBPNFileDialog = ({
   open,

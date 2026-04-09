@@ -2,7 +2,7 @@ import { Box, Link } from "@mui/material";
 import _omit from "lodash/omit";
 import { FunctionComponent, useMemo } from "react";
 
-import MuiTypography from "components/MuiTypography";
+import MuiTypography from "components/ui/MuiTypography";
 import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
 import { WaitTaskDef } from "types";
 import { Optional } from "../OptionalFieldForm";

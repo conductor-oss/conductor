@@ -1,6 +1,6 @@
 import { Box, Stack, Tooltip } from "@mui/material";
 import { useSelector } from "@xstate/react";
-import Button, { MuiButtonProps } from "components/MuiButton";
+import Button, { MuiButtonProps } from "components/ui/buttons/MuiButton";
 import SplitButton from "components/v1/ConductorSplitButton";
 import DownloadIcon from "components/v1/icons/DownloadIcon";
 import ResetIcon from "components/v1/icons/ResetIcon";
@@ -17,7 +17,7 @@ import {
   TaskDefinitionMachineState,
 } from "pages/definition/task/state/types";
 import { FunctionComponent, useMemo } from "react";
-import { useAuth } from "shared/auth";
+import { useAuth } from "components/features/auth";
 import { colors } from "theme/tokens/variables";
 import { ActorRef } from "xstate";
 import { OpenTestTaskButton } from "../EditorPanel/TaskFormTab/forms/TestTaskButton/OpenTestTaskButton";

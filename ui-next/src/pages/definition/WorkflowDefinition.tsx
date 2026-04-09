@@ -8,7 +8,7 @@ import {
   WorkflowDefinitionEvents,
 } from "pages/definition/state";
 import { Helmet } from "react-helmet";
-import { useAuth } from "shared/auth";
+import { useAuth } from "components/features/auth";
 import { ActorRef, State } from "xstate";
 import sharedStyles from "../styles";
 import EditorPanel from "./EditorPanel/EditorPanel";

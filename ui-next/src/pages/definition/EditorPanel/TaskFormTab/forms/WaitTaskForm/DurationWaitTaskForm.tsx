@@ -1,5 +1,5 @@
 import { Grid, Link } from "@mui/material";
-import MuiTypography from "components/MuiTypography";
+import MuiTypography from "components/ui/MuiTypography";
 import ConductorInputNumber from "components/v1/ConductorInputNumber";
 import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
 import _capitalize from "lodash/capitalize";

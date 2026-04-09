@@ -1,6 +1,6 @@
 import { Grid } from "@mui/material";
-import IconButton from "components/MuiIconButton";
-import MuiTypography from "components/MuiTypography";
+import IconButton from "components/ui/buttons/MuiIconButton";
+import MuiTypography from "components/ui/MuiTypography";
 import ConductorInput from "components/v1/ConductorInput";
 import XCloseIcon from "components/v1/icons/XCloseIcon";
 import { Props } from "./common";

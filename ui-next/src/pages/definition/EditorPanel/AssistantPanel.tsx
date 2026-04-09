@@ -1,6 +1,6 @@
 import { Box } from "@mui/material";
-import Agent from "components/agent/Agent";
-import { AgentDisplayMode } from "components/agent/agent-types";
+import Agent from "components/features/agent/Agent";
+import { AgentDisplayMode } from "components/features/agent/agent-types";
 import React, { useEffect, useRef } from "react";
 import { ActorRef } from "xstate";
 import { WorkflowDefinitionEvents } from "../state/types";

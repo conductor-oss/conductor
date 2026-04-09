@@ -1,7 +1,7 @@
 import { Box, CircularProgress, FormControlLabel, Grid } from "@mui/material";
 import { useInterpret } from "@xstate/react";
-import Button from "components/MuiButton";
-import MuiCheckbox from "components/MuiCheckbox";
+import Button from "components/ui/buttons/MuiButton";
+import MuiCheckbox from "components/ui/MuiCheckbox";
 import { ConductorAutoComplete } from "components/v1/ConductorAutoComplete";
 import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
 import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";

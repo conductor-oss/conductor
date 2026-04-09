@@ -1,10 +1,10 @@
 import { Box, Grid, Stack } from "@mui/material";
 import { Button, DataTable, Paper } from "components";
-import { LegacyColumn } from "components/DataTable/types";
-import Header from "components/Header";
-import MuiButton from "components/MuiButton";
-import MuiTypography from "components/MuiTypography";
-import TagChip from "components/TagChip";
+import { LegacyColumn } from "components/ui/DataTable/types";
+import Header from "components/ui/Header";
+import MuiButton from "components/ui/buttons/MuiButton";
+import MuiTypography from "components/ui/MuiTypography";
+import TagChip from "components/ui/TagChip";
 import { ConductorAutoComplete } from "components/v1";
 import ConductorMultiSelect from "components/v1/ConductorMultiSelect";
 import XCloseIcon from "components/v1/icons/XCloseIcon";
@@ -16,7 +16,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Helmet } from "react-helmet";
 import { Link, useParams } from "react-router";
 import { useQueryState } from "react-router-use-location-state";
-import SectionContainer from "shared/SectionContainer";
+import SectionContainer from "components/ui/layout/SectionContainer";
 import { EVENT_MONITOR_URL } from "utils/constants/route";
 import { EventItem, GroupedEventItem, ModalConfig } from "../types";
 import {

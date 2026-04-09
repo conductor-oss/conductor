@@ -1,6 +1,6 @@
 import { Autocomplete } from "@mui/material";
 import { createFilterOptions } from "@mui/material/Autocomplete";
-import TagChip from "components/TagChip";
+import TagChip from "components/ui/TagChip";
 import ConductorInput from "components/v1/ConductorInput";
 import XCloseIcon from "components/v1/icons/XCloseIcon";
 import { ReactNode } from "react";

@@ -17,7 +17,7 @@ import {
   useRef,
 } from "react";
 import FitToFrame from "shared/icons/FitToFrame";
-import { ZoomControlsButton } from "shared/ZoomControlsButton";
+import { ZoomControlsButton } from "components/ZoomControlsButton";
 import { ColorModeContext } from "theme/material/ColorModeContext";
 import { colors } from "theme/tokens/variables";
 import { logrocketTrackIfEnabled } from "utils/logrocket";

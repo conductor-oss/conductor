@@ -10,13 +10,13 @@ import {
 import { Theme } from "@mui/material/styles";
 import { SxProps } from "@mui/system";
 import { ArrowsInSimple } from "@phosphor-icons/react";
-import IconButton from "components/MuiIconButton";
-import MuiTypography from "components/MuiTypography";
+import IconButton from "components/ui/buttons/MuiIconButton";
+import MuiTypography from "components/ui/MuiTypography";
 import { SnackbarMessage } from "components/SnackbarMessage";
 import { MaybeTooltipLabel } from "components/v1/ConductorInput";
 import { labelScale } from "components/v1/theme/styles";
 import CopyIcon from "components/v1/icons/CopyIcon";
-import { ConductorTooltipProps } from "components/conductorTooltip/ConductorTooltip";
+import { ConductorTooltipProps } from "components/ui/ConductorTooltip";
 import _isEmpty from "lodash/isEmpty";
 import {
   ReactNode,

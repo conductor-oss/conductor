@@ -56,7 +56,7 @@ export type {
 // =============================================================================
 export { App } from "./components/App";
 export { getRoutes } from "./routes/routes";
-export { default as AuthGuard } from "./components/auth/AuthGuard";
+export { default as AuthGuard } from "./components/features/auth/AuthGuard";
 
 // =============================================================================
 // Core Components
@@ -64,16 +64,16 @@ export { default as AuthGuard } from "./components/auth/AuthGuard";
 export * from "./components";
 
 // Additional commonly used components
-export { default as Header } from "./components/Header";
-export { default as ClipboardCopy } from "./components/ClipboardCopy";
-export { default as ConfirmChoiceDialog } from "./components/ConfirmChoiceDialog";
-export { default as NoDataComponent } from "./components/NoDataComponent";
-export { DocLink } from "./components/DocLink";
+export { default as Header } from "./components/ui/Header";
+export { default as ClipboardCopy } from "./components/ui/ClipboardCopy";
+export { default as ConfirmChoiceDialog } from "./components/ui/dialogs/ConfirmChoiceDialog";
+export { default as NoDataComponent } from "./components/ui/NoDataComponent";
+export { DocLink } from "./components/ui/DocLink";
 export { SnackbarMessage } from "./components/SnackbarMessage";
 export { TagsRenderer } from "./components/v1/TagList";
 export { default as AddIcon } from "./components/v1/icons/AddIcon";
 export { default as CopyIcon } from "./components/v1/icons/CopyIcon";
-export { default as AddTagDialog } from "./components/tags/AddTagDialog";
+export { default as AddTagDialog } from "./components/ui/dialogs/AddTagDialog";
 
 // Sidebar components
 export { Sidebar } from "./components/Sidebar";
@@ -102,7 +102,7 @@ export {
 // =============================================================================
 // Shared Utilities & Hooks
 // =============================================================================
-export { useAuth } from "./shared/auth";
+export { useAuth } from "./components/features/auth";
 export { UISidebar } from "./components/Sidebar/UiSidebar";
 
 // =============================================================================
@@ -110,14 +110,14 @@ export { UISidebar } from "./components/Sidebar/UiSidebar";
 // Full auth implementation is in the enterprise package.
 // =============================================================================
 export { authProviderMachine } from "./shared/state/machine";
-export { AuthContext } from "./shared/auth/context";
-export type { AuthState } from "./shared/auth/types";
-export { defaultAuthState } from "./shared/auth/types";
+export { AuthContext } from "./components/features/auth/context";
+export type { AuthState } from "./components/features/auth/types";
+export { defaultAuthState } from "./components/features/auth/types";
 export {
   setTokenData,
   getTokenData,
   getAccessToken,
-} from "./shared/auth/tokenManagerJotai";
+} from "./components/features/auth/tokenManagerJotai";
 export {
   SupportedProviders,
   AuthMachineEventTypes,

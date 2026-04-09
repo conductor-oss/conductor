@@ -1,6 +1,6 @@
 import { Box, Grid } from "@mui/material";
 import { Button } from "components";
-import Paper from "components/Paper";
+import Paper from "components/ui/Paper";
 import { SnackbarMessage } from "components/SnackbarMessage";
 import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
 import ConductorInput from "components/v1/ConductorInput";

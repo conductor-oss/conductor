@@ -1,5 +1,5 @@
 import { Grid } from "@mui/material";
-import MuiTypography from "components/MuiTypography";
+import MuiTypography from "components/ui/MuiTypography";
 import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
 import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
 import { useContext } from "react";

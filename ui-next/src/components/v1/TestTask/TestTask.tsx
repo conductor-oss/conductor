@@ -11,8 +11,8 @@ import {
   styled,
 } from "@mui/material";
 import CircularProgress from "@mui/material/CircularProgress";
-import MuiButton from "components/MuiButton";
-import MuiTypography from "components/MuiTypography";
+import MuiButton from "components/ui/buttons/MuiButton";
+import MuiTypography from "components/ui/MuiTypography";
 import WorkflowStatusBadge from "components/WorkflowStatusBadge";
 import _assoc from "lodash/fp/assoc";
 import { ChangeEvent, FunctionComponent, useMemo, useState } from "react";

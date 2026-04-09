@@ -12,7 +12,7 @@ import {
 import { SnackbarMessage } from "components/SnackbarMessage";
 import { SidebarVersionBlock } from "./SidebarVersionBlock";
 import TokenIcon from "images/svg/token.svg";
-import { getAccessToken } from "shared/auth/tokenManagerJotai";
+import { getAccessToken } from "components/features/auth/tokenManagerJotai";
 import { Auth0User } from "types/User";
 import { FEATURES, featureFlags } from "utils";
 import type { ReactNode } from "react";

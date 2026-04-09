@@ -2,7 +2,7 @@ import { useContext, useState } from "react";
 import CardLabel from "./TaskCard/CardLabel";
 import CardStatusBadge from "./TaskCard/CardStatusBadge";
 // import CardAttemptsBadge from "./TaskCard/CardAttemptsBadge";
-import Button from "components/MuiButton";
+import Button from "components/ui/buttons/MuiButton";
 import { FlowExecutionContext } from "pages/execution/state";
 import { TaskStatus } from "types/TaskStatus";
 import DeleteButton from "./TaskCard/DeleteButton";

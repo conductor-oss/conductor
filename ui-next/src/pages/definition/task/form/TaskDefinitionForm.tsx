@@ -6,7 +6,7 @@ import {
   Link,
   Switch,
 } from "@mui/material";
-import MuiTypography from "components/MuiTypography";
+import MuiTypography from "components/ui/MuiTypography";
 import { ConductorArrayFieldBase } from "components/v1/ConductorArrayField";
 import ConductorInput from "components/v1/ConductorInput";
 import ConductorInputNumber from "components/v1/ConductorInputNumber";

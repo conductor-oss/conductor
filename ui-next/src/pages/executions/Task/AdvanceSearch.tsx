@@ -1,7 +1,7 @@
 import { Monaco } from "@monaco-editor/react";
 import { Box, Grid } from "@mui/material";
 import { Button } from "components";
-import MuiTypography from "components/MuiTypography";
+import MuiTypography from "components/ui/MuiTypography";
 import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
 import ConductorInput from "components/v1/ConductorInput";
 import SplitButton from "components/v1/ConductorSplitButton";

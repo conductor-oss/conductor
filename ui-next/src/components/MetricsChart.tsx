@@ -5,7 +5,7 @@ import {
   ErrorsChart,
   LatencyChart,
   RequestsChart,
-} from "./charts";
+} from "./ui/charts";
 
 interface MetricsChartProps {
   type: ChartType;

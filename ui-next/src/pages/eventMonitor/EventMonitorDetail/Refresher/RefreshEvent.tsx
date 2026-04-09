@@ -6,7 +6,7 @@ import {
   Radio,
   RadioGroup,
 } from "@mui/material";
-import MuiTypography from "components/MuiTypography";
+import MuiTypography from "components/ui/MuiTypography";
 import { Button } from "components";
 import { useMemo } from "react";
 import RefreshIcon from "components/v1/icons/RefreshIcon";

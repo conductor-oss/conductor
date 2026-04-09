@@ -1,8 +1,8 @@
 import { Box, FormControl, MenuItem, useMediaQuery } from "@mui/material";
 import { FunctionComponent, useMemo } from "react";
 
-import MuiCheckbox from "components/MuiCheckbox";
-import StatusBadge from "components/StatusBadge";
+import MuiCheckbox from "components/ui/MuiCheckbox";
+import StatusBadge from "components/ui/StatusBadge";
 import { ConductorSelect } from "components/v1";
 import { Entries } from "types";
 import { SelectableStatus } from "./state";

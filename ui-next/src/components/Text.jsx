@@ -1,4 +1,4 @@
-import MuiTypography from "./MuiTypography";
+import MuiTypography from "./ui/MuiTypography";
 
 const levelMap = ["caption", "body2", "body1"];
 

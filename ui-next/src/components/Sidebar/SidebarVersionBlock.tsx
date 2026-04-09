@@ -1,6 +1,6 @@
 import { Box, Typography, useTheme } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import ClipboardCopy from "components/ClipboardCopy";
+import ClipboardCopy from "components/ui/ClipboardCopy";
 import { colors } from "theme/tokens/variables";
 import { FEATURES, featureFlags } from "utils";
 

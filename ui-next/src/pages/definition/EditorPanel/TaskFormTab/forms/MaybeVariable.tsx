@@ -7,7 +7,7 @@ import { FormTaskType } from "types/TaskType";
 import _path from "lodash/fp/path";
 import { taskGeneratorMap } from "components/flow/nodes";
 import _isNil from "lodash/isNil";
-import HelperText from "components/HelperText";
+import HelperText from "components/ui/inputs/HelperText";
 
 interface MaybeVariableProps {
   value: string | any;

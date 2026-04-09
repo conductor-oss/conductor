@@ -1,5 +1,5 @@
 import { FormControlLabel } from "@mui/material";
-import MuiCheckbox from "components/MuiCheckbox";
+import MuiCheckbox from "components/ui/MuiCheckbox";
 
 export type ConductorCheckboxProps = {
   id?: string;

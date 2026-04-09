@@ -1,13 +1,13 @@
 import HighlightOffOutlinedIcon from "@mui/icons-material/HighlightOffOutlined";
 import Box, { BoxProps } from "@mui/material/Box";
 import Link from "@mui/material/Link";
-import MuiIconButton from "components/MuiIconButton";
+import MuiIconButton from "components/ui/buttons/MuiIconButton";
 import { drawerWidthClose } from "../../../Sidebar/constants";
 import { colors } from "theme/tokens/variables";
 import { useAnnouncementBanner } from "./bannerUtils";
 import AnnouncementIcon from "components/v1/icons/AnnouncementIcon";
 import { Grid } from "@mui/material";
-import Button from "components/MuiButton";
+import Button from "components/ui/buttons/MuiButton";
 import ChatIcon from "components/v1/icons/ChatIcon";
 import { openInNewTab } from "utils/helpers";
 import UnlockIcon from "components/v1/icons/UnlockIcon";

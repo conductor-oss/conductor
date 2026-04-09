@@ -6,7 +6,10 @@ import { Key } from "ts-key-enum";
 import { useHotkeys } from "react-hotkeys-hook";
 import _debounce from "lodash/debounce";
 
-import { ButtonTooltip, ButtonTooltipProps } from "components/ButtonTooltip";
+import {
+  ButtonTooltip,
+  ButtonTooltipProps,
+} from "components/ui/buttons/ButtonTooltip";
 import DownloadIcon from "components/v1/icons/DownloadIcon";
 import ResetIcon from "components/v1/icons/ResetIcon";
 import SaveIcon from "components/v1/icons/SaveIcon";
@@ -22,7 +25,7 @@ import SplitButton from "components/v1/ConductorSplitButton";
 import { SnackbarMessage } from "components/SnackbarMessage";
 import { HOT_KEYS_WORKFLOW_DEFINITION } from "utils/constants/common";
 import { UnderlinedText } from "components/v1/UnderlinedText";
-import { useAuth } from "shared/auth";
+import { useAuth } from "components/features/auth";
 import { RunWorkflowButton } from "./RunWorkflowButton";
 
 export interface HeaderActionButtonsProps {

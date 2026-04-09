@@ -1,11 +1,10 @@
 import { Grid } from "@mui/material";
+import StatusBadge from "components/ui/StatusBadge";
 import _isNil from "lodash/isNil";
-
+import { customTypeRenderers } from "plugins/customTypeRenderers";
 import { useEnv } from "plugins/env";
 import { durationRenderer, timestampRenderer } from "utils/index";
-import { customTypeRenderers } from "plugins/customTypeRenderers";
-import StatusBadge from "components/StatusBadge";
-import Paper from "./Paper";
+import Paper from "./ui/Paper";
 
 export default function KeyValueTable({ data }) {
   const env = useEnv();

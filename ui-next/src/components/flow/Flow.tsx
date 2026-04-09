@@ -1,5 +1,5 @@
 import { DndContext, MouseSensor, useSensor, useSensors } from "@dnd-kit/core";
-import ConfirmChoiceDialog from "components/ConfirmChoiceDialog";
+import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
 import { isForkJoinPathEmpty } from "components/flow/nodes/mapper/forkJoin";
 import { isSwitchPathEmpty } from "components/flow/nodes/mapper/switch";
 import { getFlowTheme } from "components/flow/theme";

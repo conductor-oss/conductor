@@ -5,11 +5,11 @@ import { ExecutionTask, TaskStatus } from "types";
 import { taskStatusCompareFn } from "utils";
 
 import { KeyValueTable } from "components";
-import StatusBadge from "components/StatusBadge";
+import StatusBadge from "components/ui/StatusBadge";
 import { useLocation } from "react-router";
 import { usePushHistory } from "utils/hooks/usePushHistory";
-import IconButton from "components/MuiIconButton";
-import MuiTypography from "components/MuiTypography";
+import IconButton from "components/ui/buttons/MuiIconButton";
+import MuiTypography from "components/ui/MuiTypography";
 
 interface TaskSummaryProps {
   selectedTask: ExecutionTask;

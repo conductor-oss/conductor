@@ -1,8 +1,8 @@
 import SearchIcon from "@mui/icons-material/Search";
 import { Stack } from "@mui/material";
-import MuiTypography from "components/MuiTypography";
+import MuiTypography from "components/ui/MuiTypography";
 import SearchEverything from "components/SearchEverything";
-import UIModal from "components/UIModal";
+import UIModal from "components/ui/dialogs/UIModal";
 import HotKeysButton from "components/Sidebar/HotKeysButton";
 import { Fragment } from "react";
 import { colors } from "theme/tokens/variables";

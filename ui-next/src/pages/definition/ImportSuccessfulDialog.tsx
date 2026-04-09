@@ -1,4 +1,4 @@
-import ConfirmChoiceDialog from "components/ConfirmChoiceDialog";
+import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
 import { openInNewTab } from "utils/helpers";
 
 const ImportSuccessfulDialog = ({

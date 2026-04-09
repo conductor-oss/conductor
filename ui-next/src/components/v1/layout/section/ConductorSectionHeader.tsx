@@ -9,7 +9,7 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import { Theme } from "@mui/material/styles";
-import Button, { MuiButtonProps } from "components/MuiButton";
+import Button, { MuiButtonProps } from "components/ui/buttons/MuiButton";
 import { SidebarContext } from "components/Sidebar/context/SidebarContext";
 
 export interface ActionButton extends MuiButtonProps {

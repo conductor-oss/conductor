@@ -1,5 +1,5 @@
 import { Box, Grid } from "@mui/material";
-import RadioButtonGroup from "components/RadioButtonGroup";
+import RadioButtonGroup from "components/ui/inputs/RadioButtonGroup";
 import { ConductorArrayField } from "components/v1/ConductorArrayField";
 import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
 import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";

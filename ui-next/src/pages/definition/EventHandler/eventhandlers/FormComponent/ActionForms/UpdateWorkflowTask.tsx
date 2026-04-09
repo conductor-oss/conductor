@@ -1,8 +1,8 @@
 import { FormControlLabel, Grid } from "@mui/material";
-import HelperText from "components/HelperText";
-import MuiCheckbox from "components/MuiCheckbox";
-import IconButton from "components/MuiIconButton";
-import MuiTypography from "components/MuiTypography";
+import HelperText from "components/ui/inputs/HelperText";
+import MuiCheckbox from "components/ui/MuiCheckbox";
+import IconButton from "components/ui/buttons/MuiIconButton";
+import MuiTypography from "components/ui/MuiTypography";
 import ConductorInput from "components/v1/ConductorInput";
 import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
 import XCloseIcon from "components/v1/icons/XCloseIcon";

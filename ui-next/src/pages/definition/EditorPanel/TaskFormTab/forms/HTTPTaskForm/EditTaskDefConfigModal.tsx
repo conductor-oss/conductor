@@ -4,10 +4,10 @@ import React, { ReactElement, useState } from "react";
 import { useServiceMethodsDefinition } from "./state/hook";
 import { ActorRef } from "xstate";
 import { ServiceMethodsMachineEvents } from "./state/types";
-import UIModal from "components/UIModal";
+import UIModal from "components/ui/dialogs/UIModal";
 import { Edit } from "@mui/icons-material";
 import ConductorInputNumber from "components/v1/ConductorInputNumber";
-import MuiTypography from "components/MuiTypography";
+import MuiTypography from "components/ui/MuiTypography";
 
 import XCloseIcon from "components/v1/icons/XCloseIcon";
 import SaveIcon from "components/v1/icons/SaveIcon";

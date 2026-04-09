@@ -3,7 +3,7 @@ import { useInterpret, useSelector } from "@xstate/react";
 import { TestTaskButtonMachineStates, TestTaskMachine } from "./state";
 import { useAuthHeaders } from "utils/query";
 import { useTestTaskButtonMachine } from "./state/hook";
-import { useAuth } from "shared/auth";
+import { useAuth } from "components/features/auth";
 import { useContext } from "react";
 import { MessageContext } from "components/v1/layout/MessageContext";
 import { TestTaskButtonProps } from "types/TestTaskTypes";

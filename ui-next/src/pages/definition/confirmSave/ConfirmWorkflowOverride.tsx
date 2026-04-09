@@ -1,7 +1,7 @@
 import { useCallback, FunctionComponent } from "react";
 import { useSelector, useActor } from "@xstate/react";
 import { ActorRef } from "xstate";
-import ConfirmChoiceDialog from "components/ConfirmChoiceDialog";
+import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
 import { SaveWorkflowEvents, SaveWorkflowMachineEventTypes } from "./state";
 import { Typography } from "components/index";
 import { tryToJson } from "utils/utils";

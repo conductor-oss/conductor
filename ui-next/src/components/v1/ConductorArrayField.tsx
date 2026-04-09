@@ -1,6 +1,6 @@
 import { Box, Grid, MenuItem } from "@mui/material";
-import Button from "components/MuiButton";
-import IconButton from "components/MuiIconButton";
+import Button from "components/ui/buttons/MuiButton";
+import IconButton from "components/ui/buttons/MuiIconButton";
 import _isEmpty from "lodash/isEmpty";
 import _isNull from "lodash/isNull";
 import FieldTypeDropdown from "pages/definition/EditorPanel/TaskFormTab/forms/FieldTypeDropdown";

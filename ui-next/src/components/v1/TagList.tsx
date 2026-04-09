@@ -1,6 +1,6 @@
 import { Box } from "@mui/material";
 import { TagDto } from "../../types/Tag";
-import TagChip from "../TagChip";
+import TagChip from "components/ui/TagChip";
 
 interface TagListProps {
   tags?: TagDto[];

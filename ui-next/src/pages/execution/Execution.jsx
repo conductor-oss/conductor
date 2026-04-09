@@ -1,11 +1,11 @@
 import LaunchIcon from "@mui/icons-material/Launch";
 import { Box, Stack, Tooltip } from "@mui/material";
 import { AutoRefreshButton, Button, Heading, LinearProgress } from "components";
-import MuiAlert from "components/MuiAlert";
-import MuiTypography from "components/MuiTypography";
-import NavLink from "components/NavLink";
+import MuiAlert from "components/ui/MuiAlert";
+import MuiTypography from "components/ui/MuiTypography";
+import NavLink from "components/ui/NavLink";
 import { SnackbarMessage } from "components/SnackbarMessage";
-import StatusBadge from "components/StatusBadge";
+import StatusBadge from "components/ui/StatusBadge";
 import TwoPanesDivider from "components/TwoPanesDivider";
 import { Flow } from "components/flow/Flow";
 import { CopyClipboardButton } from "components/v1/CopyClipboardButton";
@@ -34,9 +34,9 @@ import { FlowExecutionContextProvider } from "./state";
 import { useExecutionMachine } from "./state/hook";
 import { ExecutionTabs } from "./state/types";
 import { WorkflowIntrospection } from "pages/execution/WorkflowIntrospection";
-import Agent from "components/agent/Agent";
-import { AgentDisplayMode } from "components/agent/agent-types";
-import { agentFirstUseAtom } from "shared/agent/agentAtomsStore";
+import Agent from "components/features/agent/Agent";
+import { AgentDisplayMode } from "components/features/agent/agent-types";
+import { agentFirstUseAtom } from "components/features/agent/agentAtomsStore";
 import { useAtom } from "jotai";
 
 const SecondaryActions = ({

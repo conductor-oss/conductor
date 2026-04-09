@@ -6,8 +6,8 @@ import {
   DialogTitle,
   Grid,
 } from "@mui/material";
-import ActionButton from "components/ActionButton";
-import Button from "components/MuiButton";
+import ActionButton from "components/ui/buttons/ActionButton";
+import Button from "components/ui/buttons/MuiButton";
 import ReactHookFormInput from "components/v1/react-hook-form/ReactHookFormInput";
 import { DefaultValues, SubmitHandler, useForm } from "react-hook-form";
 import { WORKFLOW_NAME_ERROR_MESSAGE } from "utils/constants/common";

@@ -1,5 +1,5 @@
 import { Snackbar, SnackbarOrigin, SxProps } from "@mui/material";
-import MuiAlert from "components/MuiAlert";
+import MuiAlert from "components/ui/MuiAlert";
 import { WarningCircle } from "@phosphor-icons/react";
 import { ReactNode } from "react";
 // How good is it to use lab components? https://material-ui.com/components/about-the-lab/

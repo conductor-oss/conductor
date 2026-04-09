@@ -13,8 +13,10 @@ import Paper from "@mui/material/Paper";
 import Popper from "@mui/material/Popper";
 import MenuItem from "@mui/material/MenuItem";
 import MenuList from "@mui/material/MenuList";
-import MuiButton, { MuiButtonProps } from "components/MuiButton";
-import MuiButtonGroup, { MuiButtonGroupProps } from "components/MuiButtonGroup";
+import MuiButton, { MuiButtonProps } from "components/ui/buttons/MuiButton";
+import MuiButtonGroup, {
+  MuiButtonGroupProps,
+} from "components/ui/buttons/MuiButtonGroup";
 import DropdownIcon from "./icons/DropdownIcon";
 import { colors } from "theme/tokens/variables";
 import { blueLight } from "theme/tokens/colors";

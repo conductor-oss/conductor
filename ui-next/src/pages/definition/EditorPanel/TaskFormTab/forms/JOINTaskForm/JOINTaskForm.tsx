@@ -1,10 +1,10 @@
 import { Box, Grid, Stack, Typography } from "@mui/material";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import { useSelector } from "@xstate/react";
-import Button from "components/MuiButton";
-import MuiCheckbox from "components/MuiCheckbox";
-import MuiTypography from "components/MuiTypography";
-import ConfirmChoiceDialog from "components/ConfirmChoiceDialog";
+import Button from "components/ui/buttons/MuiButton";
+import MuiCheckbox from "components/ui/MuiCheckbox";
+import MuiTypography from "components/ui/MuiTypography";
+import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
 import {
   crumbsToTaskSteps,
   forkLastTaskReferences,

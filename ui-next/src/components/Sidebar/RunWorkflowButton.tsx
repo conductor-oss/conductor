@@ -1,11 +1,11 @@
 import PlayIcon from "@mui/icons-material/PlayArrowOutlined";
 import { Box } from "@mui/material";
 
-import MuiButton from "components/MuiButton";
-import MuiIconButton from "components/MuiIconButton";
+import MuiButton from "components/ui/buttons/MuiButton";
+import MuiIconButton from "components/ui/buttons/MuiIconButton";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { RUN_WORKFLOW_URL } from "utils/constants/route";
-import { useAuth } from "shared/auth";
+import { useAuth } from "components/features/auth";
 
 const RunWorkflowButton = ({ open }: { open: boolean }) => {
   const pushHistory = usePushHistory();

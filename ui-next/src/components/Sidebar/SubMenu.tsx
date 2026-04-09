@@ -1,7 +1,7 @@
 import ClickAwayListener from "@mui/material/ClickAwayListener";
 import ListItem from "@mui/material/ListItem";
 import Popper from "@mui/material/Popper";
-import Paper from "components/Paper";
+import Paper from "components/ui/Paper";
 import { useCallback, useContext, useRef } from "react";
 import { matchPath } from "react-router";
 import { colors } from "theme/tokens/variables";

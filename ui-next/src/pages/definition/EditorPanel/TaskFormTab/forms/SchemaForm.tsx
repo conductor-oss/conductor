@@ -1,6 +1,6 @@
 import { Grid, Stack, Tooltip } from "@mui/material";
 import { NotePencilIcon as EditIcon, EyeIcon } from "@phosphor-icons/react";
-import MuiIconButton from "components/MuiIconButton";
+import MuiIconButton from "components/ui/buttons/MuiIconButton";
 import { chain, map } from "lodash";
 import { ConductorNameVersionField } from "components/v1/ConductorNameVersionField";
 import { pluginRegistry } from "plugins/registry";

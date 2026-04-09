@@ -1,10 +1,10 @@
 import { Monaco } from "@monaco-editor/react";
 import { Box, Grid } from "@mui/material";
 import { Button, Paper } from "components";
-import { DEFAULT_ROWS_PER_PAGE } from "components/DataTable/DataTable";
-import MuiTypography from "components/MuiTypography";
-import StatusBadge from "components/StatusBadge";
-import { renderStatusTagChip } from "components/StatusTagChip";
+import { DEFAULT_ROWS_PER_PAGE } from "components/ui/DataTable/DataTable";
+import MuiTypography from "components/ui/MuiTypography";
+import StatusBadge from "components/ui/StatusBadge";
+import { renderStatusTagChip } from "components/ui/StatusTagChip";
 import { ConductorAutoComplete } from "components/v1";
 import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
 import ConductorInput from "components/v1/ConductorInput";

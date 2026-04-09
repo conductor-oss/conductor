@@ -4,7 +4,7 @@ import SaveIcon from "components/v1/icons/SaveIcon";
 import XCloseIcon from "components/v1/icons/XCloseIcon";
 import ResetIcon from "components/v1/icons/ResetIcon";
 import { Theme } from "@mui/material/styles";
-import { useAuth } from "shared/auth";
+import { useAuth } from "components/features/auth";
 
 export interface ScheduleButtonsProps {
   isConfirmingSave: boolean;

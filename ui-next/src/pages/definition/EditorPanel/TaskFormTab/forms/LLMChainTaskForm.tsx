@@ -1,10 +1,10 @@
 import { Grid, Box } from "@mui/material";
 import JSONField from "./JSONField";
-import Input from "components/Input";
+import Input from "components/ui/inputs/Input";
 import TaskFormSection from "./TaskFormSection";
 import { TaskFormProps } from "./types";
-import Dropdown from "components/Dropdown";
-import MuiButton from "components/MuiButton";
+import Dropdown from "components/ui/inputs/Dropdown";
+import MuiButton from "components/ui/buttons/MuiButton";
 import { Link } from "react-router";
 
 const LLMChainTaskForm = ({ task, onChange }: TaskFormProps) => (

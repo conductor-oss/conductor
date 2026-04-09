@@ -21,7 +21,7 @@ import { pluginRegistry, SidebarItemRegistration } from "plugins/registry";
 import { FunctionComponent, useContext, useMemo } from "react";
 import { FEATURES, featureFlags } from "utils";
 import { SidebarContext } from "./context/SidebarContext";
-import { useAuth } from "../../shared/auth";
+import { useAuth } from "components/features/auth";
 import { getCoreSidebarItems } from "./sidebarCoreItems";
 
 const customLogo = featureFlags.getValue(FEATURES.CUSTOM_LOGO_URL);

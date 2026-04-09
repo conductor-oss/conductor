@@ -1,7 +1,7 @@
 import { useSelector } from "@xstate/react";
 import { usePanAndZoomActor } from "components/flow/components/graphs/PanAndZoomWrapper";
 import { FlowActorContext } from "components/flow/state/FlowActorContext";
-import Button from "components/MuiButton";
+import Button from "components/ui/buttons/MuiButton";
 import {
   ExecutionActionTypes,
   FlowExecutionContext,

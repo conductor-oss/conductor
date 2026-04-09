@@ -2,7 +2,7 @@ import ListItemText from "@mui/material/ListItemText";
 import MenuItem from "@mui/material/MenuItem";
 import { ReactNode, useEffect, useState } from "react";
 
-import MuiCheckbox from "components/MuiCheckbox";
+import MuiCheckbox from "components/ui/MuiCheckbox";
 import ConductorSelect from "./ConductorSelect";
 
 const ALL_VALUE = "all";

@@ -9,9 +9,9 @@ import {
 } from "@mui/material";
 import { Theme } from "@mui/material/styles";
 import { Button, Paper } from "components";
-import { DEFAULT_ROWS_PER_PAGE } from "components/DataTable/DataTable";
-import StatusBadge from "components/StatusBadge";
-import { renderStatusTagChip } from "components/StatusTagChip";
+import { DEFAULT_ROWS_PER_PAGE } from "components/ui/DataTable/DataTable";
+import StatusBadge from "components/ui/StatusBadge";
+import { renderStatusTagChip } from "components/ui/StatusTagChip";
 import { ConductorAutoComplete } from "components/v1";
 import ConductorInput from "components/v1/ConductorInput";
 import SplitButton from "components/v1/ConductorSplitButton";

@@ -1,7 +1,7 @@
 import { Box, Grid, Link } from "@mui/material";
 import { Button } from "components/index";
 import { Play } from "@phosphor-icons/react";
-import MuiTypography from "components/MuiTypography";
+import MuiTypography from "components/ui/MuiTypography";
 import ConductorInput from "components/v1/ConductorInput";
 import { WORKFLOW_EXECUTION_URL } from "utils/constants/route";
 import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";

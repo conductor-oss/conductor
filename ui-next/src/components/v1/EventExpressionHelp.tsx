@@ -1,5 +1,5 @@
 import { Box } from "@mui/material";
-import MuiTypography from "components/MuiTypography";
+import MuiTypography from "components/ui/MuiTypography";
 import { useState } from "react";
 import { ConductorAutoComplete } from "./ConductorAutoComplete";
 
