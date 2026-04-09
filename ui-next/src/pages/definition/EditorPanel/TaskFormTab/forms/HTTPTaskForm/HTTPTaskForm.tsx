@@ -1,7 +1,7 @@
 import { Box, Grid, Switch } from "@mui/material";
 import { useInterpret } from "@xstate/react";
 import RadioButtonGroup from "components/ui/inputs/RadioButtonGroup";
-import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
 import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
 import { ConductorFlatMapFormBase } from "components/ui/FlatMapForm/ConductorFlatMapForm";
 import { MessageContext } from "components/providers/messageContext";

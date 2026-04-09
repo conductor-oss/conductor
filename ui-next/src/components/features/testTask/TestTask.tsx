@@ -25,9 +25,9 @@ import {
 } from "types/TestTaskTypes";
 import { extractVariablesFromJSON } from "utils/json";
 import { tryToJson } from "utils/utils";
-import { ConductorCodeBlockInput } from "../ConductorCodeBlockInput";
-import ConductorInput from "../ConductorInput";
-import XCloseIcon from "../icons/XCloseIcon";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import XCloseIcon from "components/icons/XCloseIcon";
 
 const CustomisedTooltip = styled(({ className, ...props }: TooltipProps) => (
   <Tooltip {...props} classes={{ popper: className }} />

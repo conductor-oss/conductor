@@ -26,8 +26,8 @@ import {
   useState,
 } from "react";
 import { colors, fontSizes } from "theme/tokens/variables";
-import InfoIcon from "./icons/InfoIcon";
-import XCloseIcon from "./icons/XCloseIcon";
+import InfoIcon from "../../icons/InfoIcon";
+import XCloseIcon from "../../icons/XCloseIcon";
 import { MessageContext } from "components/providers/messageContext/MessageContext";
 import { formHelperStyle, inputLabelStyle, labelScale } from "theme/styles";
 import { getColor } from "theme/theme";

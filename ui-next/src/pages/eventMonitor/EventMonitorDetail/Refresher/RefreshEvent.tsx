@@ -9,7 +9,7 @@ import {
 import MuiTypography from "components/ui/MuiTypography";
 import { Button } from "components";
 import { useMemo } from "react";
-import RefreshIcon from "components/v1/icons/RefreshIcon";
+import RefreshIcon from "components/icons/RefreshIcon";
 const REFRESH_SECONDS_OPTIONS = [5, 10, 30, 60];
 
 const getRefreshMessage = (

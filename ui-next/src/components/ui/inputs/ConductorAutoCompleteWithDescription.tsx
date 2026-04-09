@@ -5,7 +5,7 @@ import { CSSProperties, FunctionComponent, ReactNode } from "react";
 import { autocompleteStyle } from "shared/styles";
 import { fontWeights } from "theme/tokens/variables";
 import ConductorInput from "./ConductorInput";
-import XCloseIcon from "./icons/XCloseIcon";
+import XCloseIcon from "../../icons/XCloseIcon";
 
 const filter = createFilterOptions();
 

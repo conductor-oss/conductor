@@ -5,12 +5,12 @@ import MuiIconButton from "components/ui/buttons/MuiIconButton";
 import { drawerWidthClose } from "components/providers/sidebar/constants";
 import { colors } from "theme/tokens/variables";
 import { useAnnouncementBanner } from "./bannerUtils";
-import AnnouncementIcon from "components/v1/icons/AnnouncementIcon";
+import AnnouncementIcon from "components/icons/AnnouncementIcon";
 import { Grid } from "@mui/material";
 import Button from "components/ui/buttons/MuiButton";
-import ChatIcon from "components/v1/icons/ChatIcon";
+import ChatIcon from "components/icons/ChatIcon";
 import { openInNewTab } from "utils/helpers";
-import UnlockIcon from "components/v1/icons/UnlockIcon";
+import UnlockIcon from "components/icons/UnlockIcon";
 import BannerIcon from "images/svg/banner-icon.svg";
 
 const TALK_TO_AN_EXPERT_URL = "https://orkes.io/talk-to-an-expert";

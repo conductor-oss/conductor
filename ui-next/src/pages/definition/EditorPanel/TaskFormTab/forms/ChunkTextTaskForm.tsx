@@ -22,8 +22,8 @@ import { Optional } from "./OptionalFieldForm";
 import TaskFormSection from "./TaskFormSection";
 import { TaskFormProps } from "./types";
 import { updateField } from "utils/fieldHelpers";
-import ConductorInput from "components/v1/ConductorInput";
-import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
 import { ColorModeContext } from "theme/material/ColorModeContext";
 
 // Comprehensive media type options with auto-detect

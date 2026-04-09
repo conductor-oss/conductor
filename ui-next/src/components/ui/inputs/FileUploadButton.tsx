@@ -5,7 +5,7 @@ import Stack from "@mui/material/Stack";
 import Button, { MuiButtonProps } from "components/ui/buttons/MuiButton";
 import { ChangeEvent, ElementType } from "react";
 import { colors } from "theme/tokens/variables";
-import XCloseIcon from "./icons/XCloseIcon";
+import XCloseIcon from "../../icons/XCloseIcon";
 
 export interface FileUploadButtonProps extends MuiButtonProps {
   value?: string;

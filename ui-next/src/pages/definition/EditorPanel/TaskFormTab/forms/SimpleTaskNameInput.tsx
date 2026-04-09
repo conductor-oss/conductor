@@ -10,8 +10,8 @@ import Snackbar from "@mui/material/Snackbar";
 import { useSelector } from "@xstate/react";
 import MuiAlert from "components/ui/MuiAlert";
 import Button from "components/ui/buttons/MuiButton";
-import ConductorInput from "components/v1/ConductorInput";
-import XCloseIcon from "components/v1/icons/XCloseIcon";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import XCloseIcon from "components/icons/XCloseIcon";
 import { WorkflowEditContext } from "pages/definition/state";
 import React, {
   FunctionComponent,

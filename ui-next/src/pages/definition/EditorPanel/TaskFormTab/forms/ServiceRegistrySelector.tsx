@@ -13,8 +13,8 @@ import {
 import { MagicWand } from "@phosphor-icons/react";
 import MuiButton from "components/ui/buttons/MuiButton";
 import UIModal from "components/ui/dialogs/UIModal";
-import { ConductorAutoComplete } from "components/v1";
-import ConductorInput from "components/v1/ConductorInput";
+import { ConductorAutoComplete } from "components/ui/inputs";
+import ConductorInput from "components/ui/inputs/ConductorInput";
 import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
 import { MessageContext } from "components/providers/messageContext";
 import _every from "lodash/every";

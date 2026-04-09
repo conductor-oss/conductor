@@ -7,7 +7,7 @@ import {
 } from "@mui/material";
 import { ReactNode } from "react";
 
-import AddIcon from "./icons/AddIcon";
+import AddIcon from "../../icons/AddIcon";
 
 export const ConductorEmptyGroupField = ({
   addButtonLabel,

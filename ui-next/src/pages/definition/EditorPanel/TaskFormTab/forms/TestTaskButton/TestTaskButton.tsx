@@ -1,4 +1,4 @@
-import { TestTask } from "components/v1/TestTask";
+import { TestTask } from "components/features/testTask";
 import { useInterpret, useSelector } from "@xstate/react";
 import { TestTaskButtonMachineStates, TestTaskMachine } from "./state";
 import { useAuthHeaders } from "utils/query";

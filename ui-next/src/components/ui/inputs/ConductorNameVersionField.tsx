@@ -3,8 +3,8 @@ import _isNil from "lodash/isNil";
 import _last from "lodash/last";
 import { forwardRef, useImperativeHandle, useMemo } from "react";
 
-import { ConductorAutoComplete } from "components/v1";
-import ConductorSelect from "components/v1/ConductorSelect";
+import { ConductorAutoComplete } from "components/ui/inputs";
+import ConductorSelect from "components/ui/inputs/ConductorSelect";
 import { useFetch } from "utils/query";
 
 export interface ConductorNameVersionFieldProps {

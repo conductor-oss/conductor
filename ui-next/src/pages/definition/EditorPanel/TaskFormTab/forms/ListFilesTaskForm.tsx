@@ -9,7 +9,7 @@ import { updateField } from "utils/fieldHelpers";
 import TaskFormSection from "./TaskFormSection";
 import { TaskFormProps } from "./types";
 import { Optional } from "./OptionalFieldForm";
-import { ConductorAutoComplete } from "components/v1";
+import { ConductorAutoComplete } from "components/ui/inputs";
 import { useGetIntegration } from "utils/hooks";
 import { MaybeVariable } from "./MaybeVariable";
 

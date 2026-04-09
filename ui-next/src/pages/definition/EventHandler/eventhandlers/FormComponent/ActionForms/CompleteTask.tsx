@@ -1,9 +1,9 @@
 import { Grid } from "@mui/material";
 import IconButton from "components/ui/buttons/MuiIconButton";
 import MuiTypography from "components/ui/MuiTypography";
-import { ConductorUpdateTaskFormEvent } from "components/v1/ConductorUpdateTaskFromEvent";
+import { ConductorUpdateTaskFormEvent } from "components/ui/inputs/ConductorUpdateTaskFromEvent";
 import { ConductorFlatMapFormBase } from "components/ui/FlatMapForm/ConductorFlatMapForm";
-import XCloseIcon from "components/v1/icons/XCloseIcon";
+import XCloseIcon from "components/icons/XCloseIcon";
 import { Props } from "./common";
 
 export const CompleteTask = ({

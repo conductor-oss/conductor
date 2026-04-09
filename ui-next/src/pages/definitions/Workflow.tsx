@@ -15,8 +15,8 @@ import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
 import AddTagDialog, {
   TagDialogProps,
 } from "components/ui/dialogs/AddTagDialog";
-import TagList from "components/v1/TagList";
-import PlayIcon from "components/v1/icons/PlayIcon";
+import TagList from "components/ui/TagList";
+import PlayIcon from "components/icons/PlayIcon";
 import { MessageContext } from "components/providers/messageContext";
 import SplitWorkflowDefinitionButton from "pages/executions/SplitWorkflowDefinitionButton/SplitWorkflowDefinitionButton";
 import { removeDeletedWorkflow } from "pages/runWorkflow/runWorkflowUtils";

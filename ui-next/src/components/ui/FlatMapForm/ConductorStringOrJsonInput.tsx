@@ -6,11 +6,11 @@ import {
   cloneElement,
   isValidElement,
 } from "react";
-import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
 import { useCoerceToObject } from "utils/utils";
 import type { ConductorAutocompleteVariablesProps } from "./ConductorAutocompleteVariables";
 import { TextTIcon } from "@phosphor-icons/react";
-import ConductorInput from "components/v1/ConductorInput";
+import ConductorInput from "components/ui/inputs/ConductorInput";
 
 export type ConductorStringOrJsonInputProps = Omit<
   ConductorAutocompleteVariablesProps,

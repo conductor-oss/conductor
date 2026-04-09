@@ -5,7 +5,7 @@ import Dropdown from "components/ui/inputs/Dropdown";
 import MuiButton from "components/ui/buttons/MuiButton";
 import MuiCheckbox from "components/ui/MuiCheckbox";
 import MuiTypography from "components/ui/MuiTypography";
-import { RoundedInput } from "components/v1/RoundedInput";
+import { RoundedInput } from "components/ui/inputs/RoundedInput";
 import { identity as _identity } from "lodash/fp";
 import { FunctionComponent, useState } from "react";
 import { FEATURES, featureFlags, tryToJson } from "utils";

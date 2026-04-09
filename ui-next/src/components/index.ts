@@ -30,7 +30,7 @@ export { default as LinearProgress } from "components/ui/LinearProgress";
 
 export * from "./ui/inputs/InputNumber";
 
-export * from "./SubjectSelector";
+export * from "./ui/SubjectSelector";
 
 export * from "./ui/inputs/AutoCompleteWithDescription";
 export * from "./ui/inputs/CodeBlockInput";

@@ -1,7 +1,7 @@
 import { FormControlLabel, Grid, Radio, RadioGroup } from "@mui/material";
 import ConductorInput, {
   ConductorInputProps,
-} from "components/v1/ConductorInput";
+} from "components/ui/inputs/ConductorInput";
 import _omit from "lodash/omit";
 import { ComponentType, useMemo } from "react";
 

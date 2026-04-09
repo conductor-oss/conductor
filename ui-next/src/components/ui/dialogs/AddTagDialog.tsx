@@ -8,8 +8,8 @@ import {
 import ActionButton from "components/ui/buttons/ActionButton";
 import MuiAlert from "components/ui/MuiAlert";
 import Button from "components/ui/buttons/MuiButton";
-import SaveIcon from "components/v1/icons/SaveIcon";
-import XCloseIcon from "components/v1/icons/XCloseIcon";
+import SaveIcon from "components/icons/SaveIcon";
+import XCloseIcon from "components/icons/XCloseIcon";
 import _differenceWith from "lodash/differenceWith";
 import _uniq from "lodash/uniq";
 import { useState } from "react";

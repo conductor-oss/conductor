@@ -1,8 +1,8 @@
 import { Grid } from "@mui/material";
 import Button from "components/ui/buttons/MuiButton";
 import IconButton from "components/ui/buttons/MuiIconButton";
-import AddIcon from "components/v1/icons/AddIcon";
-import TrashIcon from "components/v1/icons/TrashIcon";
+import AddIcon from "components/icons/AddIcon";
+import TrashIcon from "components/icons/TrashIcon";
 import _isEmpty from "lodash/isEmpty";
 import maybeVariable from "pages/definition/EditorPanel/TaskFormTab/forms/maybeVariableHOC";
 import { FunctionComponent, ReactNode } from "react";

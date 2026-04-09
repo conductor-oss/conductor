@@ -1,4 +1,4 @@
-import type { ConductorInputStyleProps } from "components/v1/ConductorInput";
+import type { ConductorInputStyleProps } from "components/ui/inputs/ConductorInput";
 import baseTheme from "./material/baseTheme";
 import appBar from "./material/components/appBar";
 import paper from "./material/components/paper";

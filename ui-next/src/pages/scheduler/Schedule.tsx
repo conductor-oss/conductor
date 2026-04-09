@@ -13,7 +13,7 @@ import {
 import { LinearProgress } from "components";
 import { DocLink } from "components/ui/DocLink";
 import { SnackbarMessage } from "components/SnackbarMessage";
-import ConductorInput from "components/v1/ConductorInput";
+import ConductorInput from "components/ui/inputs/ConductorInput";
 import { MessageContext } from "components/providers/messageContext";
 import { ConductorSectionHeader } from "components/ui/layout/section/ConductorSectionHeader";
 import { IdempotencyStrategyEnum } from "pages/runWorkflow/types";

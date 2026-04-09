@@ -1,6 +1,6 @@
 import { Grid, Link } from "@mui/material";
 import MuiTypography from "components/ui/MuiTypography";
-import ConductorInputNumber from "components/v1/ConductorInputNumber";
+import ConductorInputNumber from "components/ui/inputs/ConductorInputNumber";
 import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
 import _capitalize from "lodash/capitalize";
 import { durationStringToPairs } from "pages/definition/EditorPanel/TaskFormTab/forms/WaitTaskForm/helpers";

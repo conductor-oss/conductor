@@ -13,9 +13,9 @@ import { ArrowsInSimple } from "@phosphor-icons/react";
 import IconButton from "components/ui/buttons/MuiIconButton";
 import MuiTypography from "components/ui/MuiTypography";
 import { SnackbarMessage } from "components/SnackbarMessage";
-import { MaybeTooltipLabel } from "components/v1/ConductorInput";
+import { MaybeTooltipLabel } from "components/ui/inputs/ConductorInput";
 import { labelScale } from "theme/styles";
-import CopyIcon from "components/v1/icons/CopyIcon";
+import CopyIcon from "components/icons/CopyIcon";
 import { ConductorTooltipProps } from "components/ui/ConductorTooltip";
 import _isEmpty from "lodash/isEmpty";
 import {
@@ -34,7 +34,7 @@ import {
 import { ColorModeContext } from "theme/material/ColorModeContext";
 import { colors, fontSizes } from "theme/tokens/variables";
 import { logger } from "utils/logger";
-import ExpandIcon from "./icons/ExpandIcon";
+import ExpandIcon from "../../icons/ExpandIcon";
 import { inputLabelStyle } from "theme/styles";
 import { getColor } from "theme/theme";
 

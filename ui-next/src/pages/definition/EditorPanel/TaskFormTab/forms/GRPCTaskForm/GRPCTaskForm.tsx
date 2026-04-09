@@ -14,7 +14,7 @@ import { GrpcTaskFormProps } from "./types";
 
 import { useInterpret } from "@xstate/react";
 import { useAuthHeaders } from "utils/query";
-import { ConductorAutoComplete } from "components/v1";
+import { ConductorAutoComplete } from "components/ui/inputs";
 import { ServiceDefDto, ServiceType } from "types/RemoteServiceTypes";
 import { splitHostAndPort } from "utils/remoteServices";
 
@@ -23,7 +23,7 @@ import { useServiceMethodsDefinition } from "../HTTPTaskForm/state/hook";
 import { updateField } from "utils/fieldHelpers";
 import { ConductorAdditionalHeaders } from "../HTTPTaskForm/ConductorAdditionalHeaders";
 import { SchemaDefinition } from "types/SchemaDefinition";
-import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
 import { tryToJson } from "utils/utils";
 import { featureFlags, FEATURES } from "utils/flags";
 import HedgingConfigForm from "../HedgingConfigForm";

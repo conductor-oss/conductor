@@ -1,4 +1,4 @@
-import TooltipStateless from "components/v1/TooltipStateless";
+import TooltipStateless from "components/ui/TooltipStateless";
 import { TooltipProps } from "@mui/material";
 import { ReactNode, useEffect, useState } from "react";
 

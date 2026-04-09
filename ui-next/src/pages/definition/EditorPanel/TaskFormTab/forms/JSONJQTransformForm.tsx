@@ -1,5 +1,5 @@
 import { Box, Grid } from "@mui/material";
-import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
 import { ConductorFlatMapFormBase } from "components/ui/FlatMapForm/ConductorFlatMapForm";
 import _path from "lodash/fp/path";
 import { updateField } from "utils/fieldHelpers";

@@ -6,7 +6,7 @@ import {
 } from "../state/types";
 import { ButtonTooltip } from "components/ui/buttons/ButtonTooltip";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
-import { UnderlinedText } from "components/v1/UnderlinedText";
+import { UnderlinedText } from "components/ui/UnderlinedText";
 
 export interface RunWorkflowButtonProps {
   definitionActor: ActorRef<WorkflowDefinitionEvents>;

@@ -6,11 +6,11 @@ import { ActorRef } from "xstate";
 import { ServiceMethodsMachineEvents } from "./state/types";
 import UIModal from "components/ui/dialogs/UIModal";
 import { Edit } from "@mui/icons-material";
-import ConductorInputNumber from "components/v1/ConductorInputNumber";
+import ConductorInputNumber from "components/ui/inputs/ConductorInputNumber";
 import MuiTypography from "components/ui/MuiTypography";
 
-import XCloseIcon from "components/v1/icons/XCloseIcon";
-import SaveIcon from "components/v1/icons/SaveIcon";
+import XCloseIcon from "components/icons/XCloseIcon";
+import SaveIcon from "components/icons/SaveIcon";
 import { NotePencil } from "@phosphor-icons/react";
 
 const EditTaskDefConfigModal = ({

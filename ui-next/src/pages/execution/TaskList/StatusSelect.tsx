@@ -3,7 +3,7 @@ import { FunctionComponent, useMemo } from "react";
 
 import MuiCheckbox from "components/ui/MuiCheckbox";
 import StatusBadge from "components/ui/StatusBadge";
-import { ConductorSelect } from "components/v1";
+import { ConductorSelect } from "components/ui/inputs";
 import { Entries } from "types";
 import { SelectableStatus } from "./state";
 

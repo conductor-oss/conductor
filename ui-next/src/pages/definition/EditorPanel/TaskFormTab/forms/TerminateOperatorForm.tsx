@@ -1,5 +1,5 @@
 import { Grid, Stack } from "@mui/material";
-import { ConductorAutoComplete } from "components/v1";
+import { ConductorAutoComplete } from "components/ui/inputs";
 import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
 import { ConductorFlatMapFormBase } from "components/ui/FlatMapForm/ConductorFlatMapForm";
 import { path as _path } from "lodash/fp";

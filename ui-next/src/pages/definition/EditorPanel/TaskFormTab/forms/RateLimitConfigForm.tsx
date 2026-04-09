@@ -1,5 +1,5 @@
 import { Box, Grid } from "@mui/material";
-import ConductorInput from "components/v1/ConductorInput";
+import ConductorInput from "components/ui/inputs/ConductorInput";
 import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
 import ConductorTooltip from "components/ui/ConductorTooltip";
 

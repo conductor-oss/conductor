@@ -2,13 +2,13 @@ import { Box, Grid, Paper, Theme } from "@mui/material";
 import { Button } from "components";
 import MuiAlert from "components/ui/MuiAlert";
 import NavLink from "components/ui/NavLink";
-import { ConductorAutoComplete } from "components/v1";
-import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
-import ConductorInput from "components/v1/ConductorInput";
-import SplitButton from "components/v1/ConductorSplitButton";
-import PlayIcon from "components/v1/icons/PlayIcon";
-import ResetIcon from "components/v1/icons/ResetIcon";
-import XCloseIcon from "components/v1/icons/XCloseIcon";
+import { ConductorAutoComplete } from "components/ui/inputs";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import SplitButton from "components/ui/buttons/ConductorSplitButton";
+import PlayIcon from "components/icons/PlayIcon";
+import ResetIcon from "components/icons/ResetIcon";
+import XCloseIcon from "components/icons/XCloseIcon";
 import { RunWorkflowHistoryTable } from "pages/definition/RunWorkflow/RunWorkflowHistoryTable";
 import {
   IdempotencyStrategyEnum,

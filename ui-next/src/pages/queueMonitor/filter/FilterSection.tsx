@@ -1,11 +1,11 @@
 import { Grid, MenuItem, Paper, useMediaQuery } from "@mui/material";
 import Button from "components/ui/buttons/MuiButton";
 import MuiTypography from "components/ui/MuiTypography";
-import ConductorInput from "components/v1/ConductorInput";
-import ConductorSelect from "components/v1/ConductorSelect";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import ConductorSelect from "components/ui/inputs/ConductorSelect";
 import ConductorDateTimePicker from "components/ui/date-time/ConductorDateTimePicker";
-import FilterIcon from "components/v1/icons/FilterIcon";
-import ResetIcon from "components/v1/icons/ResetIcon";
+import FilterIcon from "components/icons/FilterIcon";
+import ResetIcon from "components/icons/ResetIcon";
 import _isEmpty from "lodash/isEmpty";
 import { ChangeEvent, FunctionComponent, ReactNode } from "react";
 import { Link as RouterLink } from "react-router";

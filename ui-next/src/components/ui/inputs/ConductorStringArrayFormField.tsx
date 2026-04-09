@@ -1,12 +1,12 @@
 import { Grid, IconButton } from "@mui/material";
 import { Button } from "components";
-import { ConductorGroupFieldTitle } from "components/v1/ConductorGroupFieldTitle";
+import { ConductorGroupFieldTitle } from "components/ui/inputs/ConductorGroupFieldTitle";
 import { ChangeEvent, FunctionComponent, ReactNode, useState } from "react";
 import { adjust, remove } from "utils";
 import { ConductorEmptyGroupField } from "./ConductorEmptyGroupField";
 import ConductorInput from "./ConductorInput";
-import AddIcon from "./icons/AddIcon";
-import TrashIcon from "./icons/TrashIcon";
+import AddIcon from "../../icons/AddIcon";
+import TrashIcon from "../../icons/TrashIcon";
 
 interface ConductorStringArrayFormFieldProps {
   inputParameters: string[];

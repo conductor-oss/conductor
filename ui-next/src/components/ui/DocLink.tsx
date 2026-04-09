@@ -2,7 +2,7 @@ import React from "react";
 import MuiTypography from "./MuiTypography";
 import { colors } from "theme/tokens/variables";
 import { openInNewTab } from "utils/helpers";
-import DocsIcon from "components/v1/icons/DocsIcon";
+import DocsIcon from "components/icons/DocsIcon";
 
 interface DocLinkProps {
   url: string;

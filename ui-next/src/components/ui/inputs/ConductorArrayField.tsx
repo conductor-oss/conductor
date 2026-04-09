@@ -14,8 +14,8 @@ import { ConductorEmptyGroupField } from "./ConductorEmptyGroupField";
 import ConductorInput from "./ConductorInput";
 import ConductorSelect from "./ConductorSelect";
 import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
-import AddIcon from "./icons/AddIcon";
-import TrashIcon from "./icons/TrashIcon";
+import AddIcon from "../../icons/AddIcon";
+import TrashIcon from "../../icons/TrashIcon";
 
 interface RemovableFieldProps {
   onChange: (value: any) => void;

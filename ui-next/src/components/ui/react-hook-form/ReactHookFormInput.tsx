@@ -9,7 +9,7 @@ import {
 
 import ConductorInput, {
   ConductorInputProps,
-} from "components/v1/ConductorInput";
+} from "components/ui/inputs/ConductorInput";
 
 type ReactHookFormInputProps<
   T extends FieldValues,

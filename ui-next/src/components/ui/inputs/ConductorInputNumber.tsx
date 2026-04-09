@@ -3,7 +3,7 @@ import { NumericFormat, NumericFormatProps } from "react-number-format";
 
 import ConductorInput, {
   ConductorInputProps,
-} from "components/v1/ConductorInput";
+} from "components/ui/inputs/ConductorInput";
 
 export type ConductorInputNumberProps = Omit<
   ConductorInputProps,

@@ -3,7 +3,7 @@ import { useSelector } from "@xstate/react";
 import MuiCheckbox from "components/ui/MuiCheckbox";
 import RadioButtonGroup from "components/ui/inputs/RadioButtonGroup";
 import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
-import ConductorInput from "components/v1/ConductorInput";
+import ConductorInput from "components/ui/inputs/ConductorInput";
 import { ConductorFlatMapFormBase } from "components/ui/FlatMapForm/ConductorFlatMapForm";
 import _path from "lodash/fp/path";
 import _isEmpty from "lodash/isEmpty";

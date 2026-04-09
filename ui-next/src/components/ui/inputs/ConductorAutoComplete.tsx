@@ -11,7 +11,7 @@ import parse from "autosuggest-highlight/parse";
 import { forwardRef } from "react";
 import { autocompleteStyle } from "shared/styles";
 import ConductorInput, { ConductorInputProps } from "./ConductorInput";
-import XCloseIcon from "./icons/XCloseIcon";
+import XCloseIcon from "../../icons/XCloseIcon";
 
 export type ConductorAutocompleteProps<T = string> = Omit<
   AutocompleteProps<

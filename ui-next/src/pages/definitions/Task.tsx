@@ -15,7 +15,7 @@ import TagChip from "components/ui/TagChip";
 import AddTagDialog, {
   TagDialogProps,
 } from "components/ui/dialogs/AddTagDialog";
-import AddIcon from "components/v1/icons/AddIcon";
+import AddIcon from "components/icons/AddIcon";
 import { MessageContext } from "components/providers/messageContext";
 import { useCallback, useContext, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
@@ -37,7 +37,7 @@ import { useAction, useActionWithPath, useFetch } from "utils/query";
 import { getSequentiallySuffix } from "utils/strings";
 import { createSearchableTags } from "utils/utils";
 import CloneDialog from "./dialog/CloneDialog";
-import TagList from "components/v1/TagList";
+import TagList from "components/ui/TagList";
 
 const INTRO_CONTENT = `A **task definition** defines the task's default parameters, such as input/output schemas, timeouts, and retries. 
 This provides reusability and modularity across workflows.

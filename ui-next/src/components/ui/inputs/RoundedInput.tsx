@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import { forwardRef, useState, ChangeEvent, useRef, Ref } from "react";
 import { blueLightMode } from "theme/tokens/colors";
-import XCloseIcon from "./icons/XCloseIcon";
+import XCloseIcon from "../../icons/XCloseIcon";
 
 const style = {
   inputStyle: {

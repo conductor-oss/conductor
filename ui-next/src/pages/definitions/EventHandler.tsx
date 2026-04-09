@@ -22,10 +22,10 @@ import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
 import AddTagDialog, {
   TagDialogProps,
 } from "components/ui/dialogs/AddTagDialog";
-import ConductorInput from "components/v1/ConductorInput";
-import { TagsRenderer } from "components/v1/TagList";
-import AddIcon from "components/v1/icons/AddIcon";
-import PlayIcon from "components/v1/icons/PlayIcon";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import { TagsRenderer } from "components/ui/TagList";
+import AddIcon from "components/icons/AddIcon";
+import PlayIcon from "components/icons/PlayIcon";
 import { useCallback, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
 import { useQueryState } from "react-router-use-location-state";

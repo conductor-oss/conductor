@@ -1,10 +1,10 @@
 import { Grid } from "@mui/material";
 import IconButton from "components/ui/buttons/MuiIconButton";
 import MuiTypography from "components/ui/MuiTypography";
-import { ConductorAutoComplete } from "components/v1";
-import ConductorInput from "components/v1/ConductorInput";
+import { ConductorAutoComplete } from "components/ui/inputs";
+import ConductorInput from "components/ui/inputs/ConductorInput";
 import { ConductorFlatMapFormBase } from "components/ui/FlatMapForm/ConductorFlatMapForm";
-import XCloseIcon from "components/v1/icons/XCloseIcon";
+import XCloseIcon from "components/icons/XCloseIcon";
 import _isEmpty from "lodash/isEmpty";
 import _isUndefined from "lodash/isUndefined";
 import { FocusEvent, useMemo } from "react";

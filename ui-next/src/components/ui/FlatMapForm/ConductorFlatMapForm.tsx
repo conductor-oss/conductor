@@ -1,9 +1,9 @@
 import { Box, Grid } from "@mui/material";
 import Button from "components/ui/buttons/MuiButton";
-import { ConductorEmptyGroupField } from "components/v1/ConductorEmptyGroupField";
-import { ConductorGroupFieldTitle } from "components/v1/ConductorGroupFieldTitle";
+import { ConductorEmptyGroupField } from "components/ui/inputs/ConductorEmptyGroupField";
+import { ConductorGroupFieldTitle } from "components/ui/inputs/ConductorGroupFieldTitle";
 import { ConductorKeyValueInput } from "./ConductorKeyValueInput";
-import AddIcon from "components/v1/icons/AddIcon";
+import AddIcon from "components/icons/AddIcon";
 import _omit from "lodash/omit";
 import maybeVariable from "pages/definition/EditorPanel/TaskFormTab/forms/maybeVariableHOC";
 import { FunctionComponent, ReactNode, useMemo } from "react";

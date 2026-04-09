@@ -17,7 +17,7 @@ import MuiButton, { MuiButtonProps } from "components/ui/buttons/MuiButton";
 import MuiButtonGroup, {
   MuiButtonGroupProps,
 } from "components/ui/buttons/MuiButtonGroup";
-import DropdownIcon from "./icons/DropdownIcon";
+import DropdownIcon from "../../icons/DropdownIcon";
 import { colors } from "theme/tokens/variables";
 import { blueLight } from "theme/tokens/colors";
 import { Tooltip } from "@mui/material";

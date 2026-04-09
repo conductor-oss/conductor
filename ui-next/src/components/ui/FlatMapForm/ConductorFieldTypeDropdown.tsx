@@ -7,7 +7,7 @@ import {
   FIELD_TYPE_STRING,
   FieldType,
 } from "types/common";
-import ConductorSelect from "components/v1/ConductorSelect";
+import ConductorSelect from "components/ui/inputs/ConductorSelect";
 import { ConductorTooltipProps } from "components/ui/ConductorTooltip";
 
 const fieldTypeOption: FieldType[] = [

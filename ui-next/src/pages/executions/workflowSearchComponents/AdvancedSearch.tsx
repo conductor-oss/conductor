@@ -5,12 +5,12 @@ import { DEFAULT_ROWS_PER_PAGE } from "components/ui/DataTable/DataTable";
 import MuiTypography from "components/ui/MuiTypography";
 import StatusBadge from "components/ui/StatusBadge";
 import { renderStatusTagChip } from "components/ui/StatusTagChip";
-import { ConductorAutoComplete } from "components/v1";
-import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
-import ConductorInput from "components/v1/ConductorInput";
-import SplitButton from "components/v1/ConductorSplitButton";
-import ResetIcon from "components/v1/icons/ResetIcon";
-import SearchIcon from "components/v1/icons/SearchIcon";
+import { ConductorAutoComplete } from "components/ui/inputs";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import SplitButton from "components/ui/buttons/ConductorSplitButton";
+import ResetIcon from "components/icons/ResetIcon";
+import SearchIcon from "components/icons/SearchIcon";
 import _isEmpty from "lodash/isEmpty";
 import {
   ReactNode,

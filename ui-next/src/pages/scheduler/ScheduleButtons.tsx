@@ -1,8 +1,8 @@
 import { FunctionComponent } from "react";
 import { Button, Stack, useMediaQuery } from "@mui/material";
-import SaveIcon from "components/v1/icons/SaveIcon";
-import XCloseIcon from "components/v1/icons/XCloseIcon";
-import ResetIcon from "components/v1/icons/ResetIcon";
+import SaveIcon from "components/icons/SaveIcon";
+import XCloseIcon from "components/icons/XCloseIcon";
+import ResetIcon from "components/icons/ResetIcon";
 import { Theme } from "@mui/material/styles";
 import { useAuth } from "components/features/auth";
 

@@ -10,7 +10,7 @@ import { Share, X } from "@phosphor-icons/react";
 import { Button, Paper } from "components";
 import MuiCheckbox from "components/ui/MuiCheckbox";
 import UIModal from "components/ui/dialogs/UIModal";
-import ConductorInput from "components/v1/ConductorInput";
+import ConductorInput from "components/ui/inputs/ConductorInput";
 import { MessageContext } from "components/providers/messageContext";
 import _ from "lodash";
 import _last from "lodash/last";

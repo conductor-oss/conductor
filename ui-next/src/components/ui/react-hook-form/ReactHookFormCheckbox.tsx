@@ -9,7 +9,7 @@ import {
 import {
   ConductorCheckbox,
   ConductorCheckboxProps,
-} from "components/v1/ConductorCheckbox";
+} from "components/ui/inputs/ConductorCheckbox";
 
 type ReactHookFormCheckboxProps<
   T extends FieldValues,

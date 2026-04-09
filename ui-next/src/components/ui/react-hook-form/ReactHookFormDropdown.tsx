@@ -10,7 +10,7 @@ import _isNil from "lodash/isNil";
 import {
   ConductorAutoComplete,
   ConductorAutocompleteProps,
-} from "components/v1/ConductorAutoComplete";
+} from "components/ui/inputs/ConductorAutoComplete";
 
 type ReactHookFormDropdownProps<
   T extends FieldValues,

@@ -2,7 +2,7 @@ import { Box } from "@mui/material";
 import { Paper } from "components";
 import { DEFAULT_ROWS_PER_PAGE } from "components/ui/DataTable/DataTable";
 import MuiTypography from "components/ui/MuiTypography";
-import AddIcon from "components/v1/icons/AddIcon";
+import AddIcon from "components/icons/AddIcon";
 import _isEmpty from "lodash/isEmpty";
 import _isEqual from "lodash/isEqual";
 import { useCallback, useEffect, useMemo, useState } from "react";

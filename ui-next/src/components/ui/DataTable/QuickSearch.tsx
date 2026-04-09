@@ -1,7 +1,7 @@
 import { Box, Grid, GridProps } from "@mui/material";
 import { FunctionComponent, ReactNode } from "react";
 
-import ConductorInput from "components/v1/ConductorInput";
+import ConductorInput from "components/ui/inputs/ConductorInput";
 
 export interface QuickSearchProps {
   autoFocusValue: boolean;

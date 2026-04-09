@@ -1,10 +1,10 @@
 import { Grid } from "@mui/material";
 import MuiCheckbox from "components/ui/MuiCheckbox";
 import IconButton from "components/ui/buttons/MuiIconButton";
-import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
-import ConductorInput from "components/v1/ConductorInput";
-import ConductorInputNumber from "components/v1/ConductorInputNumber";
-import TrashIcon from "components/v1/icons/TrashIcon";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import ConductorInputNumber from "components/ui/inputs/ConductorInputNumber";
+import TrashIcon from "components/icons/TrashIcon";
 import { ConductorTooltipProps } from "components/ui/ConductorTooltip";
 import _isEmpty from "lodash/isEmpty";
 import {

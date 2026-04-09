@@ -9,8 +9,8 @@ import { TextFieldProps } from "@mui/material";
 
 import ConductorInput, {
   ConductorInputProps,
-} from "components/v1/ConductorInput";
-import DatetimeIcon from "components/v1/icons/DatetimeIcon";
+} from "components/ui/inputs/ConductorInput";
+import DatetimeIcon from "components/icons/DatetimeIcon";
 import { FORMAT_DATE_TIME_PICKER } from "utils/constants/common";
 
 export type ConductorDateTimePickerProps<TDate> = DateTimePickerProps<TDate> &

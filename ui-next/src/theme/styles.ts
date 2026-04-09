@@ -1,5 +1,5 @@
 import { SxProps, Theme } from "@mui/material";
-import type { ConductorInputStyleProps } from "components/v1/ConductorInput";
+import type { ConductorInputStyleProps } from "components/ui/inputs/ConductorInput";
 import { fontSizes } from "theme/tokens/variables";
 import { getColor } from "./theme";
 

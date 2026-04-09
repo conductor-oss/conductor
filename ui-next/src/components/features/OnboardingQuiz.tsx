@@ -5,7 +5,7 @@ import { CSSObject } from "@mui/material/styles";
 import { useState } from "react";
 
 import { Button, Input, Paper, Typography } from "components";
-import RunIcon from "components/v1/icons/RunIcon";
+import RunIcon from "components/icons/RunIcon";
 import CPlusPlusLogo from "images/svg/c-plus-plus-logo.svg";
 import CSharpLogo from "images/svg/c-sharp-logo.svg";
 import GoLangLogo from "images/svg/go-lang-logo.svg";
@@ -13,7 +13,7 @@ import JavaLogo from "images/svg/java-logo.svg";
 import JavaScriptLogo from "images/svg/javascript-logo.svg";
 import PythonLogo from "images/svg/python-logo.svg";
 import { orkesBrandN200, orkesBrandS600 } from "theme/tokens/colors";
-import CircleCheckIcon from "components/v1/icons/CircleCheckIcon";
+import CircleCheckIcon from "components/icons/CircleCheckIcon";
 
 const inputStyle = {
   "& .MuiInputBase-root": {

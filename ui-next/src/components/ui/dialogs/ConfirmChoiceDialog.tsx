@@ -5,9 +5,9 @@ import {
   DialogContent,
   DialogTitle,
 } from "@mui/material";
-import ConductorInput from "components/v1/ConductorInput";
-import SaveIcon from "components/v1/icons/SaveIcon";
-import XCloseIcon from "components/v1/icons/XCloseIcon";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import SaveIcon from "components/icons/SaveIcon";
+import XCloseIcon from "components/icons/XCloseIcon";
 import { ReactNode, useState } from "react";
 import { Button, Text } from "components/index";
 import ActionButton from "components/ui/buttons/ActionButton";

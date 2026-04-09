@@ -1,6 +1,6 @@
 import { usePushHistory } from "utils/hooks/usePushHistory";
-import SplitButton from "components/v1/ConductorSplitButton";
-import AddIcon from "components/v1/icons/AddIcon";
+import SplitButton from "components/ui/buttons/ConductorSplitButton";
+import AddIcon from "components/icons/AddIcon";
 import {
   WORKFLOW_DEFINITION_URL,
   WORKFLOW_EXPLORER_URL,

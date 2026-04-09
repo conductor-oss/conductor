@@ -10,8 +10,8 @@ import match from "autosuggest-highlight/match";
 import parse from "autosuggest-highlight/parse";
 import ConductorInput, {
   ConductorInputProps,
-} from "components/v1/ConductorInput";
-import XCloseIcon from "components/v1/icons/XCloseIcon";
+} from "components/ui/inputs/ConductorInput";
+import XCloseIcon from "components/icons/XCloseIcon";
 import _initial from "lodash/initial";
 import _isNil from "lodash/isNil";
 import { TaskFormContext } from "pages/definition/EditorPanel/TaskFormTab/state";

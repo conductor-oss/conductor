@@ -1,6 +1,6 @@
 import { Box, FormControlLabel, Switch } from "@mui/material";
 import MuiTypography from "components/ui/MuiTypography";
-import PlayIcon from "components/v1/icons/PlayIcon";
+import PlayIcon from "components/icons/PlayIcon";
 import _isEqual from "lodash/isEqual";
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet";

@@ -1,7 +1,7 @@
 import { FormControlLabel, Grid } from "@mui/material";
 import RadioButtonGroup from "components/ui/inputs/RadioButtonGroup";
 import Text from "components/Text";
-import ConductorInput from "components/v1/ConductorInput";
+import ConductorInput from "components/ui/inputs/ConductorInput";
 import { colors } from "theme/tokens/variables";
 
 const style = {

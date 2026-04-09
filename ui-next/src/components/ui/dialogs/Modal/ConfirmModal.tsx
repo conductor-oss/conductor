@@ -8,8 +8,8 @@ import {
 import ActionButton from "components/ui/buttons/ActionButton";
 import Button from "components/ui/buttons/MuiButton";
 import MuiTypography from "components/ui/MuiTypography";
-import SaveIcon from "components/v1/icons/SaveIcon";
-import XCloseIcon from "components/v1/icons/XCloseIcon";
+import SaveIcon from "components/icons/SaveIcon";
+import XCloseIcon from "components/icons/XCloseIcon";
 import { ReactNode } from "react";
 import { modalStyles } from "./commonStyles";
 

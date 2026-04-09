@@ -8,7 +8,7 @@ import {
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import MuiIconButton from "components/ui/buttons/MuiIconButton";
-import XCloseIcon from "components/v1/icons/XCloseIcon";
+import XCloseIcon from "components/icons/XCloseIcon";
 
 interface CustomTooltipProps {
   open: boolean;

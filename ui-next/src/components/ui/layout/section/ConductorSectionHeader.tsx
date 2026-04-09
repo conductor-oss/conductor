@@ -1,5 +1,5 @@
 import { FunctionComponent, ReactNode, useContext } from "react";
-import ConductorBreadcrumbs from "components/v1/ConductorBreadcrumbs";
+import ConductorBreadcrumbs from "components/ui/layout/ConductorBreadcrumbs";
 import {
   Box,
   MenuItem,
