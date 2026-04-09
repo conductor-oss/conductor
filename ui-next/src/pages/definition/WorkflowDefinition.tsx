@@ -1,7 +1,7 @@
 import { AlertColor, Box } from "@mui/material";
 import { useSelector } from "@xstate/react";
 import { SnackbarMessage } from "components/SnackbarMessage";
-import TwoPanesDivider from "components/TwoPanesDivider";
+import TwoPanesDivider from "components/ui/TwoPanesDivider";
 import {
   DefinitionMachineContext,
   FlowEditContextProvider,

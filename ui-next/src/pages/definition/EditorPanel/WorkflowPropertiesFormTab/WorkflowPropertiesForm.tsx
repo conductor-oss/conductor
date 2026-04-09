@@ -8,7 +8,7 @@ import {
   Tab,
   Tabs,
 } from "@mui/material";
-import { PanelAccordion } from "components/PanelAccordion";
+import { PanelAccordion } from "components/ui/PanelAccordion";
 import { ConductorAutoComplete } from "components/ui/inputs";
 import ConductorInput from "components/ui/inputs/ConductorInput";
 import { ConductorStringArrayFormField } from "components/ui/inputs/ConductorStringArrayFormField";

@@ -39,7 +39,7 @@ export type TwoPanesDividerProps = {
   hideCollapseButton?: boolean;
 };
 
-const TwoPanesBoxider = ({
+const TwoPanesDivider = ({
   leftPanelContent,
   rightPanelContent,
   leftPanelExpanded = false,
@@ -215,4 +215,4 @@ const TwoPanesBoxider = ({
   );
 };
 
-export default TwoPanesBoxider;
+export default TwoPanesDivider;

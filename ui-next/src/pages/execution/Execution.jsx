@@ -6,7 +6,7 @@ import MuiTypography from "components/ui/MuiTypography";
 import NavLink from "components/ui/NavLink";
 import { SnackbarMessage } from "components/SnackbarMessage";
 import StatusBadge from "components/ui/StatusBadge";
-import TwoPanesDivider from "components/TwoPanesDivider";
+import TwoPanesDivider from "components/ui/TwoPanesDivider";
 import { Flow } from "components/features/flow/Flow";
 import { CopyClipboardButton } from "components/ui/inputs/CopyClipboardButton";
 import OpenIcon from "components/icons/OpenIcon";
