@@ -42,7 +42,7 @@ COPY --from=build /usr/src/app/build .
 
 # copy default nginx config
 COPY ./docker/server/nginx/nginx.conf /etc/nginx/conf.d/nginx.conf.template 
-COPY ./docker/ui/bin/startup-ui.sh .
+COPY ./docker/ui/startup-ui.sh .
 
 EXPOSE 5000
 
