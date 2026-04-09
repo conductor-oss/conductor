@@ -5,7 +5,7 @@ import { selectIsOpenedEdge } from "components/features/flow/state/selectors";
 import { HeadBarSelect } from "components/v1";
 import ConductorBreadcrumbs from "components/v1/ConductorBreadcrumbs";
 import DoubleArrowLeftIcon from "components/v1/icons/DoubleArrowLeftIcon";
-import ButtonLinks from "components/v1/layout/header/ButtonLinks";
+import ButtonLinks from "components/ui/layout/header/ButtonLinks";
 import _isString from "lodash/isString";
 import _isUndefined from "lodash/isUndefined";
 import _uniq from "lodash/uniq";

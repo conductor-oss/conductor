@@ -1,6 +1,6 @@
 import { Box, useMediaQuery } from "@mui/material";
 import { Theme } from "@mui/material/styles";
-import ButtonLinks from "components/v1/layout/header/ButtonLinks";
+import ButtonLinks from "components/ui/layout/header/ButtonLinks";
 import { SidebarContext } from "components/providers/sidebar/context/SidebarContext";
 import { ReactNode, useContext } from "react";
 import { useLocation } from "react-router";

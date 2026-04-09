@@ -15,7 +15,7 @@
  */
 
 import { Sidebar } from "components/providers/sidebar";
-import { useAnnouncementBanner } from "components/v1/layout/header/bannerUtils";
+import { useAnnouncementBanner } from "components/ui/layout/header/bannerUtils";
 import { MenuItemType } from "components/providers/sidebar/types";
 import { pluginRegistry, SidebarItemRegistration } from "plugins/registry";
 import { FunctionComponent, useContext, useMemo } from "react";

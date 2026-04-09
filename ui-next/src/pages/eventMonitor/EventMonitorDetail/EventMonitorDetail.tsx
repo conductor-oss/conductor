@@ -8,7 +8,7 @@ import TagChip from "components/ui/TagChip";
 import { ConductorAutoComplete } from "components/v1";
 import ConductorMultiSelect from "components/v1/ConductorMultiSelect";
 import XCloseIcon from "components/v1/icons/XCloseIcon";
-import { ConductorSectionHeader } from "components/v1/layout/section/ConductorSectionHeader";
+import { ConductorSectionHeader } from "components/ui/layout/section/ConductorSectionHeader";
 import _countBy from "lodash/countBy";
 import _get from "lodash/get";
 import _isEmpty from "lodash/isEmpty";

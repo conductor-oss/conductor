@@ -11,7 +11,7 @@ import {
 import { useMachine } from "@xstate/react";
 import { DocLink } from "components/ui/DocLink";
 import { MessageContext } from "components/providers/messageContext";
-import { ConductorSectionHeader } from "components/v1/layout/section/ConductorSectionHeader";
+import { ConductorSectionHeader } from "components/ui/layout/section/ConductorSectionHeader";
 import _get from "lodash/get";
 import _isString from "lodash/isString";
 import TaskDefinitionDialogs from "pages/definition/task/dialogs/TaskDefinitionDialogs";

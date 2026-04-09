@@ -8,7 +8,7 @@
 import { AppBar, Box, Toolbar } from "@mui/material";
 import SearchEverythingModal from "components/features/search/SearchWrapper";
 import { SidebarContext } from "components/providers/sidebar/context/SidebarContext";
-import AnnouncementBanner from "components/v1/layout/header/AnnouncementBanner";
+import AnnouncementBanner from "components/ui/layout/header/AnnouncementBanner";
 import { ReactNode, useContext } from "react";
 import { UISidebar } from "components/providers/sidebar/UiSidebar";
 import { releaseVersion } from "utils/releaseVersion";
