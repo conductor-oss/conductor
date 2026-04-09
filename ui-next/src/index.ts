@@ -76,10 +76,10 @@ export { default as CopyIcon } from "./components/v1/icons/CopyIcon";
 export { default as AddTagDialog } from "./components/ui/dialogs/AddTagDialog";
 
 // Sidebar components
-export { Sidebar } from "./components/Sidebar";
-export { SidebarContext } from "./components/Sidebar/context/SidebarContext";
-export { SidebarProvider } from "./components/Sidebar/context/SidebarContextProvider";
-export { getCoreSidebarItems } from "./components/Sidebar/sidebarCoreItems";
+export { Sidebar } from "./components/providers/sidebar";
+export { SidebarContext } from "./components/providers/sidebar/context/SidebarContext";
+export { SidebarProvider } from "./components/providers/sidebar/context/SidebarContextProvider";
+export { getCoreSidebarItems } from "./components/providers/sidebar/sidebarCoreItems";
 
 // =============================================================================
 // Core Pages (for customization/extension)
@@ -103,7 +103,7 @@ export {
 // Shared Utilities & Hooks
 // =============================================================================
 export { useAuth } from "./components/features/auth";
-export { UISidebar } from "./components/Sidebar/UiSidebar";
+export { UISidebar } from "./components/providers/sidebar/UiSidebar";
 
 // =============================================================================
 // Auth Infrastructure (minimal stubs for OSS mode)
@@ -147,7 +147,7 @@ export { featureFlags, FEATURES, logger } from "./utils";
 // Theme Provider
 // =============================================================================
 export { Provider as ThemeProvider } from "./theme/material/provider";
-export { MessageProvider } from "./components/v1/layout/MessageContext";
+export { MessageProvider } from "./components/providers/messageContext";
 
 // =============================================================================
 // Common Constants

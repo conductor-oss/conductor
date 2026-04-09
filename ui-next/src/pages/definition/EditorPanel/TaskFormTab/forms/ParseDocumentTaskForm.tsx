@@ -10,7 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 import ConductorInput from "components/v1/ConductorInput";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
 import { useCallback, useState } from "react";
 import { updateField } from "utils/fieldHelpers";
 import { useGetIntegration } from "utils/hooks";

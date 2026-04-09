@@ -1,7 +1,7 @@
 import { Box, Grid } from "@mui/material";
 import { useSelector } from "@xstate/react";
 import { Text } from "components";
-import { selectIsOpenedEdge } from "components/flow/state/selectors";
+import { selectIsOpenedEdge } from "components/features/flow/state/selectors";
 import { HeadBarSelect } from "components/v1";
 import ConductorBreadcrumbs from "components/v1/ConductorBreadcrumbs";
 import DoubleArrowLeftIcon from "components/v1/icons/DoubleArrowLeftIcon";

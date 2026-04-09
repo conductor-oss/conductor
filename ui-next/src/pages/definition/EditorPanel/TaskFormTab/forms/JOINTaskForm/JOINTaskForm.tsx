@@ -9,8 +9,8 @@ import {
   crumbsToTaskSteps,
   forkLastTaskReferences,
   tasksAsNodes,
-} from "components/flow/nodes/mapper";
-import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+} from "components/features/flow/nodes/mapper";
+import { ConductorFlatMapFormBase } from "components/ui/FlatMapForm/ConductorFlatMapForm";
 import _difference from "lodash/difference";
 import _first from "lodash/first";
 import { path as _path } from "lodash/fp";

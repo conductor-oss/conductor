@@ -10,7 +10,7 @@ import {
   Tabs,
 } from "components";
 import ClipboardCopy from "components/ui/ClipboardCopy";
-import { dowhileHasAllIterationsInOutput } from "components/flow/components/shapes/TaskCard/helpers";
+import { dowhileHasAllIterationsInOutput } from "components/features/flow/components/shapes/TaskCard/helpers";
 import { SnackbarMessage } from "components/SnackbarMessage";
 import StatusBadge from "components/ui/StatusBadge";
 import ConductorTooltip from "components/ui/ConductorTooltip";

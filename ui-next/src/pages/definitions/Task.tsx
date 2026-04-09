@@ -16,7 +16,7 @@ import AddTagDialog, {
   TagDialogProps,
 } from "components/ui/dialogs/AddTagDialog";
 import AddIcon from "components/v1/icons/AddIcon";
-import { MessageContext } from "components/v1/layout/MessageContext";
+import { MessageContext } from "components/providers/messageContext";
 import { useCallback, useContext, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
 import { useAuth } from "components/features/auth";

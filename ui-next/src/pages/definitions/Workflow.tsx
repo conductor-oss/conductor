@@ -17,7 +17,7 @@ import AddTagDialog, {
 } from "components/ui/dialogs/AddTagDialog";
 import TagList from "components/v1/TagList";
 import PlayIcon from "components/v1/icons/PlayIcon";
-import { MessageContext } from "components/v1/layout/MessageContext";
+import { MessageContext } from "components/providers/messageContext";
 import SplitWorkflowDefinitionButton from "pages/executions/SplitWorkflowDefinitionButton/SplitWorkflowDefinitionButton";
 import { removeDeletedWorkflow } from "pages/runWorkflow/runWorkflowUtils";
 import { useCallback, useContext, useMemo, useState } from "react";

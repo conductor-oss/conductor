@@ -11,7 +11,7 @@ import { ConductorArrayFieldBase } from "components/v1/ConductorArrayField";
 import ConductorInput from "components/v1/ConductorInput";
 import ConductorInputNumber from "components/v1/ConductorInputNumber";
 import ConductorSelect from "components/v1/ConductorSelect";
-import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+import { ConductorFlatMapFormBase } from "components/ui/FlatMapForm/ConductorFlatMapForm";
 import _ from "lodash";
 import _isArray from "lodash/isArray";
 import { useTaskDefinitionFormActor } from "pages/definition/task/form/state/hook";

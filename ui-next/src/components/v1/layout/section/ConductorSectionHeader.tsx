@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { Theme } from "@mui/material/styles";
 import Button, { MuiButtonProps } from "components/ui/buttons/MuiButton";
-import { SidebarContext } from "components/Sidebar/context/SidebarContext";
+import { SidebarContext } from "components/providers/sidebar/context/SidebarContext";
 
 export interface ActionButton extends MuiButtonProps {
   label?: ReactNode;

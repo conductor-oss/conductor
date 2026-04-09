@@ -58,7 +58,7 @@ const SectionHeaderActions = ({ buttons }: { buttons: IActionButton[] }) => {
       display="flex"
       gap={3}
       flexDirection={[isValidWidth ? "column-reverse" : "row", "row"]}
-      // width="100%"
+      alignItems="center"
     >
       {renderButtons()}
     </Box>

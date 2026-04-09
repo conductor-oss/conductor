@@ -6,11 +6,11 @@
  */
 
 import { AppBar, Box, Toolbar } from "@mui/material";
-import SearchEverythingModal from "components/searchWrapper/SearchWrapper";
-import { SidebarContext } from "components/Sidebar/context/SidebarContext";
+import SearchEverythingModal from "components/features/search/SearchWrapper";
+import { SidebarContext } from "components/providers/sidebar/context/SidebarContext";
 import AnnouncementBanner from "components/v1/layout/header/AnnouncementBanner";
 import { ReactNode, useContext } from "react";
-import { UISidebar } from "components/Sidebar/UiSidebar";
+import { UISidebar } from "components/providers/sidebar/UiSidebar";
 import { releaseVersion } from "utils/releaseVersion";
 import AppBarModules from "plugins/AppBarModules";
 import { useAuth } from "components/features/auth";

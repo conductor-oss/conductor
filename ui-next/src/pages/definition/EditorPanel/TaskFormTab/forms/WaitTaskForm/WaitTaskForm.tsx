@@ -3,7 +3,7 @@ import _omit from "lodash/omit";
 import { FunctionComponent, useMemo } from "react";
 
 import MuiTypography from "components/ui/MuiTypography";
-import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+import { ConductorFlatMapFormBase } from "components/ui/FlatMapForm/ConductorFlatMapForm";
 import { WaitTaskDef } from "types";
 import { Optional } from "../OptionalFieldForm";
 import TaskFormSection from "../TaskFormSection";

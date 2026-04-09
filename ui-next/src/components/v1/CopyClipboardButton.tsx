@@ -2,7 +2,7 @@ import IconButton, { IconButtonProps } from "@mui/material/IconButton";
 import { useContext } from "react";
 
 import CopyIcon from "components/v1/icons/CopyIcon";
-import { MessageContext } from "components/v1/layout/MessageContext";
+import { MessageContext } from "components/providers/messageContext";
 
 export type CopyClipboardButtonProps = IconButtonProps & {
   text: string;

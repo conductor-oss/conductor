@@ -13,7 +13,7 @@ import { castToType } from "utils/helpers";
 import { ConductorEmptyGroupField } from "./ConductorEmptyGroupField";
 import ConductorInput from "./ConductorInput";
 import ConductorSelect from "./ConductorSelect";
-import { ConductorAutocompleteVariables } from "./FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
 import AddIcon from "./icons/AddIcon";
 import TrashIcon from "./icons/TrashIcon";
 

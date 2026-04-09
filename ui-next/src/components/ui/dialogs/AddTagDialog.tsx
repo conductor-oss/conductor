@@ -16,7 +16,7 @@ import { useState } from "react";
 import { TagDto } from "types/Tag";
 import { useActionWithPath, useTags } from "utils/query";
 import { getErrorMessage } from "utils/utils";
-import ReplaceTagsInput from "components/tags/ReplaceTagsInput";
+import ReplaceTagsInput from "components/features/tags/ReplaceTagsInput";
 
 export type TagDialogProps = {
   open: boolean;

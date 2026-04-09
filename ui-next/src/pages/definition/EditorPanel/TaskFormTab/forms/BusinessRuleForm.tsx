@@ -2,8 +2,8 @@ import { Box, Grid } from "@mui/material";
 import _get from "lodash/get";
 
 import { ConductorArrayField } from "components/v1/ConductorArrayField";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
-import { ConductorFlatMapForm } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorFlatMapForm } from "components/ui/FlatMapForm/ConductorFlatMapForm";
 import { TaskType } from "types";
 import { ConductorCacheOutput } from "./ConductorCacheOutputForm";
 import { updateField } from "utils/fieldHelpers";

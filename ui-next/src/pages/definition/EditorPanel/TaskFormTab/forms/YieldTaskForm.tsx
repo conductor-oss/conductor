@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Box, Grid } from "@mui/material";
 import { path as _path } from "lodash/fp";
 
-import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+import { ConductorFlatMapFormBase } from "components/ui/FlatMapForm/ConductorFlatMapForm";
 import { ConductorCacheOutput } from "./ConductorCacheOutputForm";
 
 import { SnackbarMessage } from "components/SnackbarMessage";

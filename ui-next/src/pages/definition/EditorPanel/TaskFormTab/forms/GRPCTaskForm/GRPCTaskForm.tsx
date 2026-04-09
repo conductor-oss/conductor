@@ -1,7 +1,7 @@
 import { Box, Grid, Checkbox, FormControlLabel } from "@mui/material";
 import { useContext, useEffect, useMemo, useState } from "react";
 
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
 
 import { TaskType } from "types";
 
@@ -31,7 +31,7 @@ import ServiceRegistryPopulator from "../ServiceRegistrySelector";
 import MuiTypography from "components/ui/MuiTypography";
 import { Link } from "react-router";
 import EditTaskDefConfigModal from "../HTTPTaskForm/EditTaskDefConfigModal";
-import { MessageContext } from "components/v1/layout/MessageContext";
+import { MessageContext } from "components/providers/messageContext";
 import { HandleUpdateTemplateEvent } from "../HTTPTaskForm/state/types";
 
 export const GRPCTaskForm = ({ task, onChange }: GrpcTaskFormProps) => {

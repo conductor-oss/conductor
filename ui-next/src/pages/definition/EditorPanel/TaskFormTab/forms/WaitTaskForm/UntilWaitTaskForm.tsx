@@ -2,7 +2,7 @@ import { Grid, Link } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import MuiTypography from "components/ui/MuiTypography";
 import { ConductorAutoComplete } from "components/v1";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
 import ConductorDateTimePicker from "components/ui/date-time/ConductorDateTimePicker";
 import _isEmpty from "lodash/isEmpty";
 import { FunctionComponent } from "react";

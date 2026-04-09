@@ -2,7 +2,7 @@ import { Box, Link } from "@mui/material";
 import { WarningIcon } from "@phosphor-icons/react";
 import { useActor, useSelector } from "@xstate/react";
 import ConductorTooltip from "components/ui/ConductorTooltip";
-import theme from "components/flow/theme";
+import theme from "components/features/flow/theme";
 import DocsIcon from "components/v1/icons/DocsIcon";
 import {
   BusinessRuleForm,

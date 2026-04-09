@@ -2,7 +2,7 @@ import { Fragment, FunctionComponent } from "react";
 import { Box, Grid, IconButton } from "@mui/material";
 import { Button } from "components";
 import maybeVariable from "../maybeVariableHOC";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
 import { ConductorEmptyGroupField } from "components/v1/ConductorEmptyGroupField";
 import AddIcon from "components/v1/icons/AddIcon";
 import TrashIcon from "components/v1/icons/TrashIcon";

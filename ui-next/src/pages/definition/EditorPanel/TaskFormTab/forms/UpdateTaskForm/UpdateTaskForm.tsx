@@ -6,8 +6,8 @@ import {
   EventJson,
   UpdateTaskFormEvent,
 } from "pages/definition/EditorPanel/TaskFormTab/forms/UpdateTaskForm/UpdateTaskFromEvent";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
-import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorFlatMapFormBase } from "components/ui/FlatMapForm/ConductorFlatMapForm";
 import { updateField } from "utils/fieldHelpers";
 import TaskFormSection from "../TaskFormSection";
 import { TaskFormProps } from "../types";

@@ -17,10 +17,11 @@ const lightButtonGroup: Partial<Components<Theme>> = {
         transition: "none",
         fontWeight: 500,
         boxShadow: "none",
+        padding: "8px 12px 8px 12px",
         "&.Mui-disabled": {
-          color: colors.defaultModalBackdropColor,
+          color: colors.sidebarFaintGrey,
           backgroundColor: colors.sidebarBarelyPastWhite,
-          borderColor: colors.defaultModalBackdropColor,
+          border: `1px solid ${colors.defaultModalBackdropColor}`,
         },
       },
 
@@ -53,9 +54,9 @@ const lightButtonGroup: Partial<Components<Theme>> = {
         },
 
         "&.Mui-disabled": {
-          color: colors.defaultModalBackdropColor,
+          color: colors.sidebarFaintGrey,
           backgroundColor: colors.sidebarBarelyPastWhite,
-          borderColor: colors.defaultModalBackdropColor,
+          border: `1px solid ${colors.defaultModalBackdropColor}`,
           ":not(:last-of-type)": {
             border: `1px solid ${colors.defaultModalBackdropColor}`,
           },
@@ -85,9 +86,9 @@ const lightButtonGroup: Partial<Components<Theme>> = {
           border: `1px solid ${colors.blueLightMode}`,
         },
         "&.Mui-disabled": {
-          color: colors.defaultModalBackdropColor,
+          color: colors.sidebarFaintGrey,
           backgroundColor: colors.sidebarBarelyPastWhite,
-          borderColor: colors.defaultModalBackdropColor,
+          border: `1px solid ${colors.defaultModalBackdropColor}`,
           ":not(:last-of-type)": {
             border: `1px solid ${colors.defaultModalBackdropColor}`,
           },
@@ -117,12 +118,27 @@ const lightButtonGroup: Partial<Components<Theme>> = {
         },
 
         "&.Mui-disabled": {
-          color: colors.defaultModalBackdropColor,
+          color: colors.sidebarFaintGrey,
           backgroundColor: colors.sidebarBarelyPastWhite,
           borderColor: colors.defaultModalBackdropColor,
           ":not(:last-of-type)": {
             border: `1px solid ${colors.defaultModalBackdropColor}`,
           },
+        },
+      },
+    },
+  },
+  MuiIconButton: {
+    styleOverrides: {
+      root: {
+        color: colors.gray04,
+        borderColor: colors.gray04,
+        "&.Mui-disabled": {
+          color: colors.gray08,
+          borderColor: colors.gray08,
+        },
+        "&:hover": {
+          backgroundColor: undefined,
         },
       },
     },
@@ -147,7 +163,6 @@ const darkButtonGroup: Partial<Components<Theme>> = {
         padding: "8px",
 
         "&.Mui-disabled": {
-          border: "none",
           color: colors.sidebarFaintGrey,
           backgroundColor: colors.sidebarBarelyPastWhite,
         },
@@ -205,6 +220,21 @@ const darkButtonGroup: Partial<Components<Theme>> = {
         },
         ":not(:last-of-type)": {
           border: `1px solid ${colors.sidebarFaintGrey}`,
+        },
+      },
+    },
+  },
+  MuiIconButton: {
+    styleOverrides: {
+      root: {
+        color: colors.gray12,
+        borderColor: colors.gray12,
+        "&.Mui-disabled": {
+          color: colors.gray05,
+          borderColor: colors.gray05,
+        },
+        "&:hover": {
+          backgroundColor: colors.gray06,
         },
       },
     },

@@ -1,5 +1,5 @@
 import { useInterpret, useSelector } from "@xstate/react";
-import { MessageContext } from "components/v1/layout/MessageContext";
+import { MessageContext } from "components/providers/messageContext";
 import { useSetAtom } from "jotai";
 import _get from "lodash/get";
 import {

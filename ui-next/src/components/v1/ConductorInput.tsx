@@ -28,9 +28,9 @@ import {
 import { colors, fontSizes } from "theme/tokens/variables";
 import InfoIcon from "./icons/InfoIcon";
 import XCloseIcon from "./icons/XCloseIcon";
-import { MessageContext } from "./layout/MessageContext/MessageContext";
-import { formHelperStyle, inputLabelStyle, labelScale } from "./theme/styles";
-import { getColor } from "./theme/theme";
+import { MessageContext } from "components/providers/messageContext/MessageContext";
+import { formHelperStyle, inputLabelStyle, labelScale } from "theme/styles";
+import { getColor } from "theme/theme";
 
 export type ConductorInputStyleProps = {
   theme: Theme;

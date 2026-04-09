@@ -1,7 +1,7 @@
 import { Box, Grid } from "@mui/material";
 
 import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
 import { configurePromQl } from "utils/monacoUtils/CodeEditorUtils";
 import { useTaskForm } from "../hooks/useTaskForm";
 import { TaskFormProps } from "../types";

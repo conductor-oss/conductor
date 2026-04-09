@@ -5,7 +5,7 @@ import { Paper, Tab, Tabs } from "components";
 import MuiTypography from "components/ui/MuiTypography";
 import { SnackbarMessage } from "components/SnackbarMessage";
 import UIModal from "components/ui/dialogs/UIModal";
-import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+import { ConductorFlatMapFormBase } from "components/ui/FlatMapForm/ConductorFlatMapForm";
 import CopyIcon from "components/v1/icons/CopyIcon";
 import { path as _path } from "lodash/fp";
 import { useMemo, useState } from "react";

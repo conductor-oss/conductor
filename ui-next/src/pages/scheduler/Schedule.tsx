@@ -14,7 +14,7 @@ import { LinearProgress } from "components";
 import { DocLink } from "components/ui/DocLink";
 import { SnackbarMessage } from "components/SnackbarMessage";
 import ConductorInput from "components/v1/ConductorInput";
-import { MessageContext } from "components/v1/layout/MessageContext";
+import { MessageContext } from "components/providers/messageContext";
 import { ConductorSectionHeader } from "components/v1/layout/section/ConductorSectionHeader";
 import { IdempotencyStrategyEnum } from "pages/runWorkflow/types";
 import { useCallback, useContext, useMemo, useState } from "react";

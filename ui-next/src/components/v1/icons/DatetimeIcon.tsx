@@ -1,4 +1,4 @@
-import { CustomIconType } from "components/flow/components/shapes/TaskCard/icons/types";
+import { CustomIconType } from "components/features/flow/components/shapes/TaskCard/icons/types";
 
 const DatetimeIcon = ({ size = 20, ...props }: CustomIconType) => (
   <svg

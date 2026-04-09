@@ -2,7 +2,7 @@ import { FormControlLabel, Grid, Link, Switch } from "@mui/material";
 import { useSelector } from "@xstate/react";
 import MuiTypography from "components/ui/MuiTypography";
 import PromptVariables from "components/PromptVariables";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
 import { path as _path, clone, setWith } from "lodash/fp";
 import { ConductorValueInput } from "pages/definition/EditorPanel/TaskFormTab/forms/ConductorValueInput";
 import { ConductorArrayMapFormBase } from "pages/definition/EditorPanel/TaskFormTab/forms/LLMFormFields/ConductorArrayMapForm";

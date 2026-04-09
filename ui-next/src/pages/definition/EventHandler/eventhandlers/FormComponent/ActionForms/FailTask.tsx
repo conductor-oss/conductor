@@ -3,7 +3,7 @@ import HelperText from "components/ui/inputs/HelperText";
 import IconButton from "components/ui/buttons/MuiIconButton";
 import MuiTypography from "components/ui/MuiTypography";
 import { ConductorUpdateTaskFormEvent } from "components/v1/ConductorUpdateTaskFromEvent";
-import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+import { ConductorFlatMapFormBase } from "components/ui/FlatMapForm/ConductorFlatMapForm";
 import XCloseIcon from "components/v1/icons/XCloseIcon";
 import { Props } from "./common";
 
