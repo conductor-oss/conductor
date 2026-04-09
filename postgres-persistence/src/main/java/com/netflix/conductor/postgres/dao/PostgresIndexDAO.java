@@ -82,11 +82,11 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
     @Override
     public void indexWorkflow(WorkflowSummary workflow) {
         String INSERT_WORKFLOW_INDEX_SQL =
-                "INSERT INTO workflow_index (workflow_id, correlation_id, workflow_type, start_time, update_time, status, json_data)"
-                        + "VALUES (?, ?, ?, ?, ?, ?, ?::JSONB) ON CONFLICT (workflow_id) \n"
+                "INSERT INTO workflow_index (workflow_id, correlation_id, workflow_type, start_time, update_time, status, parent_workflow_id, json_data)"
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?::JSONB) ON CONFLICT (workflow_id) \n"
                         + "DO UPDATE SET correlation_id = EXCLUDED.correlation_id, workflow_type = EXCLUDED.workflow_type, "
                         + "start_time = EXCLUDED.start_time, status = EXCLUDED.status, json_data = EXCLUDED.json_data, "
-                        + "update_time = EXCLUDED.update_time "
+                        + "update_time = EXCLUDED.update_time, parent_workflow_id = EXCLUDED.parent_workflow_id "
                         + "WHERE EXCLUDED.update_time >= workflow_index.update_time";
 
         if (onlyIndexOnStatusChange) {
@@ -109,6 +109,10 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
                                         .addParameter(startTime)
                                         .addParameter(updateTime)
                                         .addParameter(workflow.getStatus().toString())
+                                        .addParameter(
+                                                workflow.getParentWorkflowId() != null
+                                                        ? workflow.getParentWorkflowId()
+                                                        : "")
                                         .addJsonParameter(workflow)
                                         .executeUpdate());
         logger.debug("Postgres index workflow rows updated: {}", rowsUpdated);
