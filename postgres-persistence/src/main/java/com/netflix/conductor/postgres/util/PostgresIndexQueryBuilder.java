@@ -50,6 +50,7 @@ public class PostgresIndexQueryBuilder {
         "task_def_name",
         "update_time",
         "json_data",
+        "parent_workflow_id",
         "jsonb_to_tsvector('english', json_data, '[\"all\"]')"
     };
 
@@ -90,6 +91,10 @@ public class PostgresIndexQueryBuilder {
             } else {
                 if (attribute.endsWith("_time")) {
                     return attribute + " " + operator + " ?::TIMESTAMPTZ";
+                } else if (operator.equals("=")
+                        && values.size() == 1
+                        && values.get(0).contains("*")) {
+                    return attribute + " LIKE ?";
                 } else {
                     return attribute + " " + operator + " ?";
                 }
@@ -107,7 +112,11 @@ public class PostgresIndexQueryBuilder {
             if (values.size() > 1) {
                 q.addParameter(values);
             } else {
-                q.addParameter(values.get(0));
+                String val = values.get(0);
+                if (val.contains("*")) {
+                    val = val.replace("*", "%");
+                }
+                q.addParameter(val);
             }
         }
 
