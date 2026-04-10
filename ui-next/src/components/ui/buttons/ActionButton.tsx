@@ -3,15 +3,14 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Button, { MuiButtonProps } from "./MuiButton";
 
 const style = {
-  // Let DialogActions / flex parents lay out like a plain Button sibling (one flex item).
   root: {
-    display: "contents",
+    display: "inline-flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
   },
   wrapper: {
     position: "relative",
-    width: "fit-content",
-    maxWidth: "100%",
-    flexShrink: 0,
+    width: "100%",
   },
   buttonProgress: {
     position: "absolute",
