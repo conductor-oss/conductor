@@ -18,6 +18,7 @@ const lightButton: Partial<Components<Theme>> = {
         fontWeight: 500,
         boxShadow: "none",
         padding: "8px 12px 8px 12px",
+        border: "1px solid inherit",
       },
       sizeSmall: {
         minHeight: "28px",
@@ -48,7 +49,6 @@ const lightButton: Partial<Components<Theme>> = {
           backgroundColor: colors.blueLightMode,
           border: `1px solid ${colors.blueLightMode}`,
           boxShadow: `3px 3px 0px 0px ${colors.primaryHoverBoxShadow}`,
-          transition: "0.3s ease-in-out",
         },
 
         ":active": {
@@ -56,13 +56,12 @@ const lightButton: Partial<Components<Theme>> = {
           backgroundColor: colors.darkBlueLightMode,
           borderColor: colors.darkBlueLightMode,
           boxShadow: "none",
-          transition: "0.3s ease-in-out",
         },
 
         "&.Mui-disabled": {
-          border: "none",
-          color: colors.sidebarFaintGrey,
+          color: colors.defaultModalBackdropColor,
           backgroundColor: colors.sidebarBarelyPastWhite,
+          borderColor: colors.defaultModalBackdropColor,
         },
       },
       outlinedPrimary: {
@@ -72,6 +71,9 @@ const lightButton: Partial<Components<Theme>> = {
       },
       textPrimary: {
         color: colors.blueLightMode,
+        ":hover": {
+          backgroundColor: "unset",
+        },
       },
       containedSecondary: {
         color: colors.blueLightMode,
@@ -83,7 +85,6 @@ const lightButton: Partial<Components<Theme>> = {
           backgroundColor: colors.white,
           border: `1px solid ${colors.blueLightMode}`,
           boxShadow: `3px 3px 0px 0px ${colors.secondaryHoverBoxShadow}`,
-          transition: "0.3s ease-in-out",
         },
 
         ":active": {
@@ -91,14 +92,12 @@ const lightButton: Partial<Components<Theme>> = {
           backgroundColor: colors.darkBlueLightMode,
           borderColor: colors.darkBlueLightMode,
           boxShadow: "none",
-          transition: "0.3s ease-in-out",
         },
 
         "&.Mui-disabled": {
-          color: colors.sidebarFaintGrey,
+          color: colors.defaultModalBackdropColor,
           backgroundColor: colors.sidebarBarelyPastWhite,
-          borderColor: colors.sidebarFaintGrey,
-          opacity: 0.8,
+          borderColor: colors.defaultModalBackdropColor,
         },
       },
       outlinedSecondary: {
@@ -107,6 +106,9 @@ const lightButton: Partial<Components<Theme>> = {
       },
       textSecondary: {
         color: colors.sidebarGreyDark,
+        ":hover": {
+          backgroundColor: "unset",
+        },
       },
       // @ts-ignore
       containedTertiary: {
@@ -119,7 +121,6 @@ const lightButton: Partial<Components<Theme>> = {
           backgroundColor: colors.white,
           borderColor: colors.sidebarFaintGrey,
           boxShadow: `3px 3px 0px 0px ${colors.tertiaryHoverBoxShadow}`,
-          transition: "0.3s ease-in-out",
         },
 
         ":active": {
@@ -127,13 +128,12 @@ const lightButton: Partial<Components<Theme>> = {
           backgroundColor: colors.darkBlueLightMode,
           borderColor: colors.darkBlueLightMode,
           boxShadow: "none",
-          transition: "0.3s ease-in-out",
         },
 
         "&.Mui-disabled": {
-          color: colors.sidebarFaintGrey,
+          color: colors.defaultModalBackdropColor,
           backgroundColor: colors.sidebarBarelyPastWhite,
-          borderColor: colors.sidebarFaintGrey,
+          borderColor: colors.defaultModalBackdropColor,
         },
       },
       outlinedTertiary: {
@@ -147,6 +147,28 @@ const lightButton: Partial<Components<Theme>> = {
       },
       textTertiary: {
         color: colors.sidebarGrey,
+      },
+      containedError: {
+        border: `1px solid ${colors.red07}`,
+
+        ":hover": {
+          backgroundColor: colors.red07,
+          border: `1px solid ${colors.red07}`,
+          boxShadow: `3px 3px 0px 0px ${colors.primaryHoverBoxShadow}`,
+        },
+
+        ":active": {
+          color: colors.sidebarBlacky,
+          backgroundColor: colors.red07,
+          borderColor: colors.red07,
+          boxShadow: "none",
+        },
+
+        "&.Mui-disabled": {
+          color: colors.defaultModalBackdropColor,
+          backgroundColor: colors.sidebarBarelyPastWhite,
+          borderColor: colors.defaultModalBackdropColor,
+        },
       },
     },
   },
