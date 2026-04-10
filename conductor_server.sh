@@ -66,7 +66,7 @@ JAR_PATH="$CONDUCTOR_HOME/$JAR_NAME"
 
 # Download JAR if not present
 if [ ! -f "$JAR_PATH" ]; then
-  echo "First run: downloading Conductor Server JAR (~600 MB) to $CONDUCTOR_HOME"
+  echo "First run: downloading Conductor Server JAR to $CONDUCTOR_HOME"
   echo "This may take a few minutes on a slow connection."
   mkdir -p "$CONDUCTOR_HOME"
   curl -L --progress-bar -o "$JAR_PATH" "$JAR_URL"
