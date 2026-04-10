@@ -51,7 +51,7 @@ export const GetStartedSample = ({
       <Tabs
         value={selectedLanguage}
         variant="scrollable"
-        scrollButtons="false"
+        scrollButtons={false}
         style={{
           marginBottom: 0,
           borderBottom: "1px solid rgba(0,0,0,0.2)",
@@ -72,7 +72,7 @@ export const GetStartedSample = ({
         <Tabs
           value={selectedJavaLanguageSet}
           variant="scrollable"
-          scrollButtons="false"
+          scrollButtons={false}
           style={{
             marginBottom: 0,
             borderBottom: "1px solid rgba(0,0,0,0.2)",

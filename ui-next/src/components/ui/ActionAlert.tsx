@@ -2,7 +2,7 @@ import AlertTitle from "@mui/material/AlertTitle";
 import Alert from "@mui/material/Alert";
 import UndoIcon from "@mui/icons-material/Undo";
 import { greyText, lightPurple, purple } from "theme/tokens/colors";
-import MuiTypography from "../MuiTypography";
+import MuiTypography from "./MuiTypography";
 
 const actionAlertStyle = {
   alert: {

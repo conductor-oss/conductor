@@ -77,7 +77,7 @@ const SampleCodeSection = ({
       <Tabs
         value={selectedSample}
         variant="scrollable"
-        scrollButtons="false"
+        scrollButtons={false}
         style={{
           marginBottom: 0,
           borderBottom: "1px solid rgba(0,0,0,0.2)",
