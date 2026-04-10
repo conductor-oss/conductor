@@ -17,7 +17,6 @@ const lightButtonGroup: Partial<Components<Theme>> = {
         transition: "none",
         fontWeight: 500,
         boxShadow: "none",
-        padding: "8px 12px 8px 12px",
         "&.Mui-disabled": {
           color: colors.sidebarFaintGrey,
           backgroundColor: colors.sidebarBarelyPastWhite,

@@ -143,7 +143,7 @@ export const ConductorSectionHeader: FunctionComponent<
         {buttonsComponent ? buttonsComponent : null}
 
         {buttons && buttons.length > 0 ? (
-          <Stack id={buttonsId} flexDirection={"row"} gap={1} flexWrap="wrap">
+          <Stack id={buttonsId} flexDirection="row" gap={1} flexWrap="wrap">
             {renderButtons()}
           </Stack>
         ) : null}

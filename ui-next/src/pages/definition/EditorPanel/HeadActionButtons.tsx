@@ -230,7 +230,7 @@ export const HeadActionButtons: FunctionComponent<HeaderActionButtonsProps> = ({
   );
 
   return (
-    <Stack flexDirection="row" gap={1} flexWrap="wrap">
+    <Stack flexDirection="row" gap={1} flexWrap="wrap" alignItems="center">
       {errorMessage && (
         <SnackbarMessage
           onDismiss={() => {

@@ -141,6 +141,7 @@ export const WorkflowMetaBar: FunctionComponent<WorkflowMetaBarProps> = ({
                 display: "flex",
                 gap: 2,
                 flexWrap: "wrap",
+                alignItems: "center",
                 justifyContent: ["flex-start", "flex-end"],
               }}
             >
