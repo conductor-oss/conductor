@@ -53,6 +53,10 @@ export default function WorkflowPanel() {
   const [asQuery, setAsQuery] = useQueryState("asQuery", false);
   const [freeText, setFreeText] = useQueryState("freeText", "");
   const [status, setStatus] = useQueryState<string[]>("status", []);
+  const [excludeSubWorkflows, setExcludeSubWorkflows] = useQueryState(
+    "excludeSubWorkflows",
+    false,
+  );
   const [openDateSelect, setOpenDateSelect] = useState(false);
   const [openStartDatePicker, setStartOpenDatePicker] = useState(false);
   const [openEndDatePicker, setEndOpenDatePicker] = useState(false);
@@ -207,6 +211,8 @@ export default function WorkflowPanel() {
             setFreeText={setFreeText}
             status={status}
             setStatus={setStatus}
+            excludeSubWorkflows={excludeSubWorkflows}
+            setExcludeSubWorkflows={setExcludeSubWorkflows}
             startTimeFrom={startTimeFrom}
             setStartTimeFrom={setStartTimeFrom}
             onStartFromChange={onStartFromChange}
