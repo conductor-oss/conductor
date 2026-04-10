@@ -13,7 +13,7 @@ import {
 import { ColorModeContext } from "theme/material/ColorModeContext";
 import { inputLabelIdleStyles } from "theme/material/components/formControls";
 import { SMALL_EDITOR_DEFAULT_OPTIONS } from "utils/constants";
-import Text from "components/Text";
+import Text from "components/ui/Text";
 
 type CodeBlockInputProps = {
   label?: ReactNode;

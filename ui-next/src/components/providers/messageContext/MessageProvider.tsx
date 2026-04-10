@@ -1,4 +1,4 @@
-import { SnackbarMessage } from "components/SnackbarMessage";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
 import { ReactNode, useState } from "react";
 import { PopoverMessage } from "types/Messages";
 import { MessageContext } from "./MessageContext";

@@ -20,7 +20,7 @@ import { useLocation, useNavigate } from "react-router";
 import { useQueryState } from "react-router-use-location-state";
 import { editor } from "shared/editor";
 import SectionContainer from "components/ui/layout/SectionContainer";
-import SectionHeader from "components/ui/layout/SectionHeader";
+import SectionHeader from "components/layout/SectionHeader";
 import { useAuth } from "components/features/auth";
 import { colors } from "theme/tokens/variables";
 import { logger, tryToJson, useLocalStorage } from "utils/index";

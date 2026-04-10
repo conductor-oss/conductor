@@ -17,15 +17,15 @@ import {
 } from "@mui/material";
 import MuiButton from "components/ui/buttons/MuiButton";
 import MuiTypography from "components/ui/MuiTypography";
-import { SnackbarMessage } from "components/SnackbarMessage";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
 import { Suspense, SyntheticEvent, useState } from "react";
 import { defaultEditorOptions, type EditorOptions } from "shared/editor";
 import { greyText } from "theme/tokens/colors";
 import {
   ApiSearchModalProps,
   SupportedDisplayTypes,
-} from "../../../shared/CodeModal/types";
-import { modalStyles } from "../Modal/commonStyles";
+} from "shared/CodeModal/types";
+import { modalStyles } from "components/ui/dialogs/Modal/commonStyles";
 
 const editorOption: EditorOptions = {
   ...defaultEditorOptions,

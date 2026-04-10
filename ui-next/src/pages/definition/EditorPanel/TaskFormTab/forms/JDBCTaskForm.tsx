@@ -2,7 +2,7 @@ import { Box, Grid } from "@mui/material";
 import RadioButtonGroup from "components/ui/inputs/RadioButtonGroup";
 import { ConductorArrayField } from "components/ui/inputs/ConductorArrayField";
 import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
-import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 import { assoc as _assoc, path as _path } from "lodash/fp";
 import { ChangeEvent } from "react";
 import { UseQueryResult } from "react-query";

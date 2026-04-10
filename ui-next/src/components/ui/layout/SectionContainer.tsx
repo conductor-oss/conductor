@@ -3,7 +3,7 @@
 import { Box } from "@mui/material";
 import { ReactNode } from "react";
 
-import { FeatureDisabledWrapper } from "components/ui/FeatureDisabledWrapper";
+import { FeatureDisabledWrapper } from "components/FeatureDisabledWrapper";
 import { HEADER_Z_INDEX } from "utils/constants/common";
 
 export type SectionContainerProps = {

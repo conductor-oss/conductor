@@ -12,8 +12,8 @@ import { PanelAccordion } from "components/ui/PanelAccordion";
 import { ConductorAutoComplete } from "components/ui/inputs";
 import ConductorInput from "components/ui/inputs/ConductorInput";
 import { ConductorStringArrayFormField } from "components/ui/inputs/ConductorStringArrayFormField";
-import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
-import { ConductorFlatMapFormBase } from "components/ui/FlatMapForm/ConductorFlatMapForm";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import _clone from "lodash/clone";
 import { pluginRegistry } from "plugins/registry";
 import {

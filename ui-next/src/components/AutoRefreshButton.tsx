@@ -19,8 +19,8 @@ import {
 } from "react";
 import { WorkflowExecutionStatus } from "types/Execution";
 import { ActorRef, State } from "xstate";
-import DropdownButton from "./DropdownButton";
-import Button, { MuiButtonProps } from "./MuiButton";
+import DropdownButton from "components/ui/buttons/DropdownButton";
+import Button, { MuiButtonProps } from "components/ui/buttons/MuiButton";
 import { SpinningIcon } from "components/ui/SpinningIcon";
 
 interface AutoRefreshButtonProps {

@@ -10,7 +10,7 @@ import _isNil from "lodash/isNil";
 import {
   ConductorFlatMapFormBase,
   ConductorFlatMapFormProps,
-} from "components/ui/FlatMapForm/ConductorFlatMapForm";
+} from "components/FlatMapForm/ConductorFlatMapForm";
 
 type ReactHookFormFlatMapFormProps<
   T extends FieldValues,

@@ -1,5 +1,5 @@
 import { Grid } from "@mui/material";
-import StatusBadge from "components/ui/StatusBadge";
+import StatusBadge from "components/StatusBadge";
 import _isNil from "lodash/isNil";
 import { customTypeRenderers } from "plugins/customTypeRenderers";
 import { useEnv } from "plugins/env";

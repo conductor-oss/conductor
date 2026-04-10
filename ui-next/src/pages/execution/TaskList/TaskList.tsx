@@ -1,7 +1,7 @@
 import { Box, Stack } from "@mui/material";
 import { DataTable } from "components";
 import { ColumnCustomType, LegacyColumn } from "components/ui/DataTable/types";
-import StatusBadge from "components/ui/StatusBadge";
+import StatusBadge from "components/StatusBadge";
 import { FunctionComponent, useContext } from "react";
 import { ColorModeContext } from "theme/material/ColorModeContext";
 import { colors } from "theme/tokens/variables";

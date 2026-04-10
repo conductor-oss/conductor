@@ -10,18 +10,18 @@ import { ColumnCustomType } from "components/ui/DataTable/types";
 import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
 import Header from "components/ui/Header";
 import NoDataComponent from "components/ui/NoDataComponent";
-import { SnackbarMessage } from "components/SnackbarMessage";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
 import TagChip from "components/ui/TagChip";
 import AddTagDialog, {
   TagDialogProps,
-} from "components/ui/dialogs/AddTagDialog";
+} from "components/features/tags/AddTagDialog";
 import AddIcon from "components/icons/AddIcon";
 import { MessageContext } from "components/providers/messageContext";
 import { useCallback, useContext, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
 import { useAuth } from "components/features/auth";
 import SectionContainer from "components/ui/layout/SectionContainer";
-import SectionHeader from "components/ui/layout/SectionHeader";
+import SectionHeader from "components/layout/SectionHeader";
 import SectionHeaderActions from "components/ui/layout/SectionHeaderActions";
 import { colors } from "theme/tokens/variables";
 import { TaskDto } from "types";

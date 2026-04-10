@@ -1,6 +1,6 @@
 import { Grid } from "@mui/material";
-import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
-import { ConductorFlatMapFormBase } from "components/ui/FlatMapForm/ConductorFlatMapForm";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import { TaskDef } from "types";
 
 type PromptVariablesProps = {

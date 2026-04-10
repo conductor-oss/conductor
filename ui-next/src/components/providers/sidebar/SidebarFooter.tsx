@@ -9,7 +9,7 @@ import {
   alpha,
   useTheme,
 } from "@mui/material";
-import { SnackbarMessage } from "components/SnackbarMessage";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
 import { SidebarVersionBlock } from "./SidebarVersionBlock";
 import TokenIcon from "images/svg/token.svg";
 import { getAccessToken } from "components/features/auth/tokenManagerJotai";

@@ -69,11 +69,11 @@ export { default as ClipboardCopy } from "./components/ui/ClipboardCopy";
 export { default as ConfirmChoiceDialog } from "./components/ui/dialogs/ConfirmChoiceDialog";
 export { default as NoDataComponent } from "./components/ui/NoDataComponent";
 export { DocLink } from "./components/ui/DocLink";
-export { SnackbarMessage } from "./components/SnackbarMessage";
+export { SnackbarMessage } from "./components/ui/SnackbarMessage";
 export { TagsRenderer } from "./components/ui/TagList";
 export { default as AddIcon } from "./components/icons/AddIcon";
 export { default as CopyIcon } from "./components/icons/CopyIcon";
-export { default as AddTagDialog } from "./components/ui/dialogs/AddTagDialog";
+export { default as AddTagDialog } from "./components/features/tags/AddTagDialog";
 
 // Sidebar components
 export { Sidebar } from "./components/providers/sidebar";

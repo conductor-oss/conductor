@@ -1,7 +1,7 @@
 import { useMemo, Fragment, FunctionComponent, ReactNode } from "react";
 import { Article as FormIcon } from "@phosphor-icons/react";
 import { Box, ToggleButton, Tooltip, Stack, SxProps } from "@mui/material";
-import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 import _isString from "lodash/isString";
 import { FormTaskType } from "types/TaskType";
 import _path from "lodash/fp/path";

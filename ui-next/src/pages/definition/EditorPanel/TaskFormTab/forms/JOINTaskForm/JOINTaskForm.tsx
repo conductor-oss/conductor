@@ -10,7 +10,7 @@ import {
   forkLastTaskReferences,
   tasksAsNodes,
 } from "components/features/flow/nodes/mapper";
-import { ConductorFlatMapFormBase } from "components/ui/FlatMapForm/ConductorFlatMapForm";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import _difference from "lodash/difference";
 import _first from "lodash/first";
 import { path as _path } from "lodash/fp";

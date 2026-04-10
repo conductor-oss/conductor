@@ -4,7 +4,7 @@ import MuiCheckbox from "components/ui/MuiCheckbox";
 import IconButton from "components/ui/buttons/MuiIconButton";
 import MuiTypography from "components/ui/MuiTypography";
 import ConductorInput from "components/ui/inputs/ConductorInput";
-import { ConductorFlatMapFormBase } from "components/ui/FlatMapForm/ConductorFlatMapForm";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import XCloseIcon from "components/icons/XCloseIcon";
 import { Props } from "./common";
 

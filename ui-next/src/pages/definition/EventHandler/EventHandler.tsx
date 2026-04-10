@@ -1,8 +1,8 @@
 import { Box, CircularProgress, Paper, Tab, Tabs } from "@mui/material";
 import { DocLink } from "components/ui/DocLink";
 import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
-import { SnackbarMessage } from "components/SnackbarMessage";
-import { ConductorSectionHeader } from "components/ui/layout/section/ConductorSectionHeader";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
+import { ConductorSectionHeader } from "components/layout/section/ConductorSectionHeader";
 import EventHandlerButton from "pages/definition/EventHandler/eventhandlers/EventHandlerButton";
 import EventHandlerEditor from "pages/definition/EventHandler/eventhandlers/EventHandlerEditor";
 import EventHandlerForm from "pages/definition/EventHandler/eventhandlers/FormComponent/EventHandlerForm";

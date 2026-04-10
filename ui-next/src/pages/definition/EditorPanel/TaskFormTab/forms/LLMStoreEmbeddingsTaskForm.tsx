@@ -6,7 +6,7 @@ import { ConductorCacheOutput } from "./ConductorCacheOutputForm";
 import { Optional } from "./OptionalFieldForm";
 import TaskFormSection from "./TaskFormSection";
 import { TaskFormProps } from "./types";
-import { ConductorFlatMapFormBase } from "components/ui/FlatMapForm/ConductorFlatMapForm";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import LLMFormFieldsWrapper from "./LLMFormFields/LLMFormFieldsWrapper";
 
 const vectorDbFields = [

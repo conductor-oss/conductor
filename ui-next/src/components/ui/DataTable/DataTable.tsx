@@ -35,7 +35,7 @@ import { createTableTitle, logger, useLocalStorage } from "utils";
 import { LOCAL_STORAGE_KEY } from "utils/constants/common";
 import { ColumnsSelector } from "./ColumnSelector";
 import { Filter } from "./Filter";
-import { TagFilter } from "./TagFilter";
+import { TagFilter } from "components/TagFilter";
 import {
   createDefaultFilterObject,
   defaultFilterItemsSorter,

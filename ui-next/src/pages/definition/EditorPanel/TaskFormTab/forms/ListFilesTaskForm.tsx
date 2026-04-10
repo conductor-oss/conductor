@@ -2,8 +2,8 @@ import { Box, Grid, Typography } from "@mui/material";
 import { path as _path, pipe as _pipe, assoc as _assoc } from "lodash/fp";
 import { useState } from "react";
 
-import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
-import { ConductorFlatMapForm } from "components/ui/FlatMapForm/ConductorFlatMapForm";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorFlatMapForm } from "components/FlatMapForm/ConductorFlatMapForm";
 import { TaskType } from "types";
 import { updateField } from "utils/fieldHelpers";
 import TaskFormSection from "./TaskFormSection";

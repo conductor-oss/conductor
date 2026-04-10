@@ -1,7 +1,7 @@
 import { Box, Grid } from "@mui/material";
 import { Button } from "components";
 import Paper from "components/ui/Paper";
-import { SnackbarMessage } from "components/SnackbarMessage";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
 import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
 import ConductorInput from "components/ui/inputs/ConductorInput";
 import ResetIcon from "components/icons/ResetIcon";

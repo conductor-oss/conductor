@@ -12,10 +12,10 @@ import {
 } from "@mui/material";
 import { LinearProgress } from "components";
 import { DocLink } from "components/ui/DocLink";
-import { SnackbarMessage } from "components/SnackbarMessage";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
 import ConductorInput from "components/ui/inputs/ConductorInput";
 import { MessageContext } from "components/providers/messageContext";
-import { ConductorSectionHeader } from "components/ui/layout/section/ConductorSectionHeader";
+import { ConductorSectionHeader } from "components/layout/section/ConductorSectionHeader";
 import { IdempotencyStrategyEnum } from "pages/runWorkflow/types";
 import { useCallback, useContext, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";

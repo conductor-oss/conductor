@@ -12,7 +12,7 @@ import { UseQueryResult } from "react-query";
 import { Navigate } from "react-router";
 import { useQueryState } from "react-router-use-location-state";
 import SectionContainer from "components/ui/layout/SectionContainer";
-import SectionHeader from "components/ui/layout/SectionHeader";
+import SectionHeader from "components/layout/SectionHeader";
 import SectionHeaderActions from "components/ui/layout/SectionHeaderActions";
 import { colors } from "theme/tokens/variables";
 import { Key } from "ts-key-enum";

@@ -1,5 +1,5 @@
 import { Box, Button, Grid, Stack } from "@mui/material";
-import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 import React, { ReactElement, useState } from "react";
 import { useServiceMethodsDefinition } from "./state/hook";
 import { ActorRef } from "xstate";

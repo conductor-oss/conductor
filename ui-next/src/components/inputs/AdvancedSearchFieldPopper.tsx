@@ -2,11 +2,11 @@ import { Box, IconButton, Popper, PopperProps, TextField } from "@mui/material";
 
 import { colors } from "theme/tokens/variables";
 import { ChangeEvent, useRef } from "react";
-import XCloseIcon from "../../icons/XCloseIcon";
-import ArrowUpIcon from "../../icons/ArrowUpIcon";
-import ArrowDownIcon from "../../icons/ArrowDownIcon";
+import XCloseIcon from "components/icons/XCloseIcon";
+import ArrowUpIcon from "components/icons/ArrowUpIcon";
+import ArrowDownIcon from "components/icons/ArrowDownIcon";
 import useArrowNavigation from "useArrowNavigation";
-import EnterIcon from "../../icons/EnterIcon";
+import EnterIcon from "components/icons/EnterIcon";
 
 type OptionsProps = {
   taskName: string;

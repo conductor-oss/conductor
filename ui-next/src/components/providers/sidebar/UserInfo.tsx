@@ -4,7 +4,7 @@ import { useAuth } from "components/features/auth";
 import { useCallback, useState } from "react";
 import { colors } from "theme/tokens/variables";
 import TokenIcon from "images/svg/token.svg";
-import { SnackbarMessage } from "components/SnackbarMessage";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
 import { Auth0User } from "types/User";
 import { featureFlags, FEATURES } from "utils/flags";
 import { getAccessToken } from "components/features/auth/tokenManagerJotai";

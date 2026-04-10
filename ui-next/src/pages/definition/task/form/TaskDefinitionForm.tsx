@@ -11,7 +11,7 @@ import { ConductorArrayFieldBase } from "components/ui/inputs/ConductorArrayFiel
 import ConductorInput from "components/ui/inputs/ConductorInput";
 import ConductorInputNumber from "components/ui/inputs/ConductorInputNumber";
 import ConductorSelect from "components/ui/inputs/ConductorSelect";
-import { ConductorFlatMapFormBase } from "components/ui/FlatMapForm/ConductorFlatMapForm";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import _ from "lodash";
 import _isArray from "lodash/isArray";
 import { useTaskDefinitionFormActor } from "pages/definition/task/form/state/hook";
@@ -22,7 +22,7 @@ import {
   TaskTimeoutPolicy,
   TaskTimeoutPolicyLabel,
 } from "pages/definition/task/state";
-import { ConductorNameVersionField } from "components/ui/inputs/ConductorNameVersionField";
+import { ConductorNameVersionField } from "components/inputs/ConductorNameVersionField";
 import { SchemaDefinition } from "types/SchemaDefinition";
 import { handleValidChars } from "utils";
 import { TASK_NAME_REGEX, regexToString } from "utils/constants/regex";

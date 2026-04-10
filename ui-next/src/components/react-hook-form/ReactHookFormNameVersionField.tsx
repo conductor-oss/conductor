@@ -10,7 +10,7 @@ import _isNil from "lodash/isNil";
 import {
   ConductorNameVersionField,
   ConductorNameVersionFieldProps,
-} from "components/ui/inputs/ConductorNameVersionField";
+} from "components/inputs/ConductorNameVersionField";
 
 type ReactHookFormNameVersionFieldProps<
   T extends FieldValues,

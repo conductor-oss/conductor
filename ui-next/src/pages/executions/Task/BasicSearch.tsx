@@ -1,7 +1,7 @@
 import { Box, Grid } from "@mui/material";
 import { Button } from "components";
-import StatusBadge from "components/ui/StatusBadge";
-import { renderStatusTagChip } from "components/ui/StatusTagChip";
+import StatusBadge from "components/StatusBadge";
+import { renderStatusTagChip } from "components/StatusTagChip";
 import { ConductorAutoComplete } from "components/ui/inputs";
 import ConductorInput from "components/ui/inputs/ConductorInput";
 import SplitButton from "components/ui/buttons/ConductorSplitButton";

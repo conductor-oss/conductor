@@ -5,7 +5,7 @@ import { ExecutionTask, TaskStatus } from "types";
 import { taskStatusCompareFn } from "utils";
 
 import { KeyValueTable } from "components";
-import StatusBadge from "components/ui/StatusBadge";
+import StatusBadge from "components/StatusBadge";
 import { useLocation } from "react-router";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import IconButton from "components/ui/buttons/MuiIconButton";

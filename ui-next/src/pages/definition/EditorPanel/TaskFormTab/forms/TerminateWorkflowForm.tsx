@@ -1,7 +1,7 @@
 import { Box, FormControlLabel, Grid } from "@mui/material";
 import MuiCheckbox from "components/ui/MuiCheckbox";
-import { AutocompleteArrayField } from "components/ui/FlatMapForm/ConductorAutocompleteArrayField";
-import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
+import { AutocompleteArrayField } from "components/FlatMapForm/ConductorAutocompleteArrayField";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 import { TaskType } from "types/common";
 import { Optional } from "./OptionalFieldForm";
 import TaskFormSection from "./TaskFormSection";

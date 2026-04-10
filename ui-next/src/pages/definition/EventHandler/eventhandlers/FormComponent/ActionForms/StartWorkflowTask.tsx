@@ -3,7 +3,7 @@ import IconButton from "components/ui/buttons/MuiIconButton";
 import MuiTypography from "components/ui/MuiTypography";
 import { ConductorAutoComplete } from "components/ui/inputs";
 import ConductorInput from "components/ui/inputs/ConductorInput";
-import { ConductorFlatMapFormBase } from "components/ui/FlatMapForm/ConductorFlatMapForm";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import XCloseIcon from "components/icons/XCloseIcon";
 import _isEmpty from "lodash/isEmpty";
 import _isUndefined from "lodash/isUndefined";

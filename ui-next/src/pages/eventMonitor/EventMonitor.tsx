@@ -2,7 +2,7 @@ import { Box, Grid } from "@mui/material";
 import { Paper, NavLink } from "components";
 import { Helmet } from "react-helmet";
 import SectionContainer from "components/ui/layout/SectionContainer";
-import SectionHeader from "components/ui/layout/SectionHeader";
+import SectionHeader from "components/layout/SectionHeader";
 import { useQueryState } from "react-router-use-location-state";
 import { useCallback, useMemo, useState } from "react";
 import DataTable from "components/ui/DataTable/DataTable";

@@ -2,8 +2,8 @@ import { Tab as RawTab, Tabs as RawTabs } from "@mui/material";
 import type { TabProps } from "@mui/material/Tab";
 import type { TabsProps } from "@mui/material/Tabs";
 import React from "react";
-import { getTheme } from "../theme";
-import { colors } from "../theme/tokens/variables";
+import { getTheme } from "../../theme";
+import { colors } from "../../theme/tokens/variables";
 
 // Override styles for 'Contextual' tabs
 const contextualTabStyle = {

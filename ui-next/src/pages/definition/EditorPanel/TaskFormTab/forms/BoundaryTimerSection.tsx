@@ -1,7 +1,7 @@
 import { Grid } from "@mui/material";
 import MuiTypography from "components/ui/MuiTypography";
 import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
-import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 import { useContext } from "react";
 import { useSelector } from "@xstate/react";
 import { FormMachineActionTypes } from "pages/definition/EditorPanel/TaskFormTab/state";

@@ -5,8 +5,8 @@ import { DataTable, NavLink, Paper, Text } from "components";
 import { ColumnCustomType, LegacyColumn } from "components/ui/DataTable/types";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import NoDataComponent from "components/ui/NoDataComponent";
-import { SnackbarMessage } from "components/SnackbarMessage";
-import StatusBadge from "components/ui/StatusBadge";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
+import StatusBadge from "components/StatusBadge";
 import { colors } from "theme/tokens/variables";
 import {
   WORKFLOW_DEFINITION_URL,

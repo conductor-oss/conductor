@@ -16,12 +16,12 @@ import {
 import { Button, DataTable, IconButton, NavLink } from "components";
 import NoDataComponent from "components/ui/NoDataComponent";
 import Paper from "components/ui/Paper";
-import { SnackbarMessage } from "components/SnackbarMessage";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
 import TagChip from "components/ui/TagChip";
 import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
 import AddTagDialog, {
   TagDialogProps,
-} from "components/ui/dialogs/AddTagDialog";
+} from "components/features/tags/AddTagDialog";
 import ConductorInput from "components/ui/inputs/ConductorInput";
 import { TagsRenderer } from "components/ui/TagList";
 import AddIcon from "components/icons/AddIcon";
@@ -30,7 +30,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
 import { useQueryState } from "react-router-use-location-state";
 import SectionContainer from "components/ui/layout/SectionContainer";
-import SectionHeader from "components/ui/layout/SectionHeader";
+import SectionHeader from "components/layout/SectionHeader";
 import SectionHeaderActions from "components/ui/layout/SectionHeaderActions";
 import { useAuth } from "components/features/auth";
 import { colors } from "theme/tokens/variables";

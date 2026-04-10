@@ -4,7 +4,7 @@ import Button from "components/ui/buttons/MuiButton";
 import IconButton from "components/ui/buttons/MuiIconButton";
 import MuiTypography from "components/ui/MuiTypography";
 import StrikedText from "components/ui/StrikedText";
-import Text from "components/Text";
+import Text from "components/ui/Text";
 import { FunctionComponent, useCallback, useMemo } from "react";
 import { Link } from "@mui/material";
 import { TaskDef } from "types";

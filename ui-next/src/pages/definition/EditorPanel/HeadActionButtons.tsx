@@ -22,7 +22,7 @@ import {
 } from "../state/types";
 import { useWorkflowChanges } from "../state/useMadeChanges";
 import SplitButton from "components/ui/buttons/ConductorSplitButton";
-import { SnackbarMessage } from "components/SnackbarMessage";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
 import { HOT_KEYS_WORKFLOW_DEFINITION } from "utils/constants/common";
 import { UnderlinedText } from "components/ui/UnderlinedText";
 import { useAuth } from "components/features/auth";

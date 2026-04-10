@@ -4,7 +4,7 @@ import Paper from "components/ui/Paper";
 import { Helmet } from "react-helmet";
 import { useNavigate } from "react-router";
 import SectionContainer from "components/ui/layout/SectionContainer";
-import SectionHeader from "components/ui/layout/SectionHeader";
+import SectionHeader from "components/layout/SectionHeader";
 import { PollDataTable } from "./PollDataTable";
 import { PollWorkerDetailsDataTable } from "./PollWorkerDetails";
 import { QueueMonitorContextProvider, useQueueMachine } from "./state";

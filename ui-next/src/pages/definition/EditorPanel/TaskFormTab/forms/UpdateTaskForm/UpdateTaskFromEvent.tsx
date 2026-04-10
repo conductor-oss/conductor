@@ -5,7 +5,7 @@ import React, { useMemo } from "react";
 import ConductorInput, {
   ConductorInputProps,
 } from "../../../../../../components/ui/inputs/ConductorInput";
-import { ConductorAutocompleteVariablesProps } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutocompleteVariablesProps } from "components/FlatMapForm/ConductorAutocompleteVariables";
 
 type EventTaskReferenceInput = { taskId: string };
 type WorkflowTaskReferenceInput = { workflowId: string; taskRefName: string };

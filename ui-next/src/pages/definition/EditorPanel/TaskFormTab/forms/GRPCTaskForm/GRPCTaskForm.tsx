@@ -1,7 +1,7 @@
 import { Box, Grid, Checkbox, FormControlLabel } from "@mui/material";
 import { useContext, useEffect, useMemo, useState } from "react";
 
-import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 
 import { TaskType } from "types";
 

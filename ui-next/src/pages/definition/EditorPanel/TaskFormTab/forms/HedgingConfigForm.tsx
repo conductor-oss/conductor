@@ -1,6 +1,6 @@
 import { Box } from "@mui/material";
 import MuiTypography from "components/ui/MuiTypography";
-import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 import ConductorTooltip from "components/ui/ConductorTooltip";
 
 interface HedgingConfigFormProp {

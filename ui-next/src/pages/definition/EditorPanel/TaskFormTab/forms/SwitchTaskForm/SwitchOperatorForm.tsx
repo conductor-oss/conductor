@@ -4,7 +4,7 @@ import MuiCheckbox from "components/ui/MuiCheckbox";
 import RadioButtonGroup from "components/ui/inputs/RadioButtonGroup";
 import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
 import ConductorInput from "components/ui/inputs/ConductorInput";
-import { ConductorFlatMapFormBase } from "components/ui/FlatMapForm/ConductorFlatMapForm";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import _path from "lodash/fp/path";
 import _isEmpty from "lodash/isEmpty";
 import _nth from "lodash/nth";

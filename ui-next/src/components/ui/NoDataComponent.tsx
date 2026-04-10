@@ -1,7 +1,5 @@
 import React from "react";
-import EmptyPageIntro, {
-  EmptyPageIntroProps,
-} from "components/ui/EmptyPageIntro";
+import EmptyPageIntro, { EmptyPageIntroProps } from "components/EmptyPageIntro";
 import TagChip from "components/ui/TagChip";
 import { Box } from "@mui/material";
 

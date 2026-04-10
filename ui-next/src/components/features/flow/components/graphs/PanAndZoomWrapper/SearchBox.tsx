@@ -7,7 +7,7 @@ import { FunctionComponent, useMemo, useState } from "react";
 
 import { ActorRef } from "xstate";
 import { usePanAndZoomActor } from "./state";
-import { AdvancedSearchFieldPopper } from "components/ui/inputs/AdvancedSearchFieldPopper";
+import { AdvancedSearchFieldPopper } from "components/inputs/AdvancedSearchFieldPopper";
 import { isPseudoTask } from "utils/utils";
 import { NodeData } from "reaflow";
 import { useHotkeys } from "react-hotkeys-hook";

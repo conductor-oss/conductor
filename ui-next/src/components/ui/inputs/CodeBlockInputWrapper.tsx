@@ -12,7 +12,7 @@ import { SxProps } from "@mui/system";
 import { ArrowsInSimple } from "@phosphor-icons/react";
 import IconButton from "components/ui/buttons/MuiIconButton";
 import MuiTypography from "components/ui/MuiTypography";
-import { SnackbarMessage } from "components/SnackbarMessage";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
 import { MaybeTooltipLabel } from "components/ui/inputs/ConductorInput";
 import { labelScale } from "theme/styles";
 import CopyIcon from "components/icons/CopyIcon";

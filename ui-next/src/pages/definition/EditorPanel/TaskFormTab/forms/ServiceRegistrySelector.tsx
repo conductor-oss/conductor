@@ -15,7 +15,7 @@ import MuiButton from "components/ui/buttons/MuiButton";
 import UIModal from "components/ui/dialogs/UIModal";
 import { ConductorAutoComplete } from "components/ui/inputs";
 import ConductorInput from "components/ui/inputs/ConductorInput";
-import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 import { MessageContext } from "components/providers/messageContext";
 import _every from "lodash/every";
 import _isEmpty from "lodash/isEmpty";

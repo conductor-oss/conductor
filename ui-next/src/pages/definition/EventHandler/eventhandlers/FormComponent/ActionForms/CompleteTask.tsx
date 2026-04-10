@@ -1,8 +1,8 @@
 import { Grid } from "@mui/material";
 import IconButton from "components/ui/buttons/MuiIconButton";
 import MuiTypography from "components/ui/MuiTypography";
-import { ConductorUpdateTaskFormEvent } from "components/ui/inputs/ConductorUpdateTaskFromEvent";
-import { ConductorFlatMapFormBase } from "components/ui/FlatMapForm/ConductorFlatMapForm";
+import { ConductorUpdateTaskFormEvent } from "components/inputs/ConductorUpdateTaskFromEvent";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import XCloseIcon from "components/icons/XCloseIcon";
 import { Props } from "./common";
 

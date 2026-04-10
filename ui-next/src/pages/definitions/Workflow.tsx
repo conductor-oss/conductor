@@ -10,11 +10,11 @@ import { FilterObjectItem } from "components/ui/DataTable/state";
 import { ColumnCustomType, LegacyColumn } from "components/ui/DataTable/types";
 import Header from "components/ui/Header";
 import NoDataComponent from "components/ui/NoDataComponent";
-import { SnackbarMessage } from "components/SnackbarMessage";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
 import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
 import AddTagDialog, {
   TagDialogProps,
-} from "components/ui/dialogs/AddTagDialog";
+} from "components/features/tags/AddTagDialog";
 import TagList from "components/ui/TagList";
 import PlayIcon from "components/icons/PlayIcon";
 import { MessageContext } from "components/providers/messageContext";
@@ -25,7 +25,7 @@ import { Helmet } from "react-helmet";
 import { UseQueryResult } from "react-query";
 import { useNavigate } from "react-router";
 import SectionContainer from "components/ui/layout/SectionContainer";
-import SectionHeader from "components/ui/layout/SectionHeader";
+import SectionHeader from "components/layout/SectionHeader";
 import SectionHeaderActions from "components/ui/layout/SectionHeaderActions";
 import { useAuth } from "components/features/auth";
 import { colors } from "theme/tokens/variables";

@@ -6,7 +6,7 @@ import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
 import { ConductorAutoComplete } from "components/ui/inputs";
 import ConductorInput from "components/ui/inputs/ConductorInput";
 import ConductorInputNumber from "components/ui/inputs/ConductorInputNumber";
-import { ConductorFlatMapFormBase } from "components/ui/FlatMapForm/ConductorFlatMapForm";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import _capitalize from "lodash/capitalize";
 import _first from "lodash/first";
 import _isNull from "lodash/isNull";

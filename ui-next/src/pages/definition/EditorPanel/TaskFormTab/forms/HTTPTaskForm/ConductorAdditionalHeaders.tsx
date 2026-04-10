@@ -9,7 +9,7 @@ import { FunctionComponent, useMemo, useState } from "react";
 import { Button } from "components";
 import { ConductorAutoComplete } from "components/ui/inputs";
 import { ConductorEmptyGroupField } from "components/ui/inputs/ConductorEmptyGroupField";
-import { ConductorAutocompleteVariables } from "components/ui/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 import AddIcon from "components/icons/AddIcon";
 import TrashIcon from "components/icons/TrashIcon";
 import { HEADER_SUGGESTIONS } from "utils/constants/httpSuggestions";
