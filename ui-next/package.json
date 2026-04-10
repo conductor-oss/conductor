@@ -12,7 +12,8 @@
       "types": "./dist/index.d.ts"
     },
     "./styles.css": "./dist/style.css",
-    "./global.css": "./dist/global.css"
+    "./global.css": "./dist/global.css",
+    "./*": "./*"
   },
   "files": [
     "dist"
