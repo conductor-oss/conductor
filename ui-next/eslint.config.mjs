@@ -50,6 +50,9 @@ const baseConfig = {
       ...globals.browser,
       ...globals.node,
     },
+    parserOptions: {
+      tsconfigRootDir: import.meta.dirname,
+    },
   },
   rules: {
     "no-undef": "error",
