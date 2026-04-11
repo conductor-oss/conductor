@@ -20,7 +20,6 @@ import org.testcontainers.utility.DockerImageName;
 
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.redis.jedis.JedisCommands;
-import com.netflix.conductor.redis.jedis.UnifiedJedisCommands;
 
 import redis.clients.jedis.UnifiedJedis;
 
@@ -72,18 +71,17 @@ class RedisStandaloneConfigurationTest {
     }
 
     @Test
-    void getJedisCommands_returnsUnifiedJedisCommands() {
+    void getJedisCommands_returnsJedisCommands() {
         UnifiedJedis jedis = config.createUnifiedJedis(properties);
-        JedisCommands commands = config.getJedisCommands(jedis);
+        JedisCommands commands = config.getJedisCommands(jedis, properties);
 
         assertNotNull(commands);
-        assertInstanceOf(UnifiedJedisCommands.class, commands);
     }
 
     @Test
     void getJedisCommands_canPerformOperations() {
         UnifiedJedis jedis = config.createUnifiedJedis(properties);
-        JedisCommands commands = config.getJedisCommands(jedis);
+        JedisCommands commands = config.getJedisCommands(jedis, properties);
 
         commands.set("cmd-test-key", "value");
         assertEquals("value", commands.get("cmd-test-key"));
