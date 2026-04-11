@@ -36,7 +36,7 @@ dependencies {
     implementation "org.elasticsearch.client:elasticsearch-rest-client:${revElasticSearch8}"
     implementation "co.elastic.clients:elasticsearch-java:${revElasticSearch8}"
 
-    testImplementation "net.java.dev.jna:jna:5.7.0"
+    testImplementation "net.java.dev.jna:jna:5.18.1"
     testImplementation "org.awaitility:awaitility:${revAwaitility}"
     testImplementation "org.testcontainers:elasticsearch:${revTestContainer}"
     testImplementation project(':conductor-test-util').sourceSets.test.output
