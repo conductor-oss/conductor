@@ -1,7 +1,7 @@
 import { Grid } from "@mui/material";
-import { ConductorAutoComplete } from "components/v1";
-import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
-import ConductorInput from "components/v1/ConductorInput";
+import { ConductorAutoComplete } from "components/ui/inputs";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
+import ConductorInput from "components/ui/inputs/ConductorInput";
 import { SMALL_EDITOR_DEFAULT_OPTIONS } from "utils/constants";
 import { IdempotencyValuesProp } from "../../definition/RunWorkflow/state";
 import IdempotencyForm from "../../runWorkflow/IdempotencyForm";

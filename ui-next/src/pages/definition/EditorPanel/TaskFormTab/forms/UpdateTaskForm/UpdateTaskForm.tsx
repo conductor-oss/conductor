@@ -1,13 +1,13 @@
 import { Box, FormControlLabel, Grid } from "@mui/material";
 
-import MuiCheckbox from "components/MuiCheckbox";
+import MuiCheckbox from "components/ui/MuiCheckbox";
 import {
   AnInputComponent,
   EventJson,
   UpdateTaskFormEvent,
 } from "pages/definition/EditorPanel/TaskFormTab/forms/UpdateTaskForm/UpdateTaskFromEvent";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
-import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import { updateField } from "utils/fieldHelpers";
 import TaskFormSection from "../TaskFormSection";
 import { TaskFormProps } from "../types";

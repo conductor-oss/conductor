@@ -2,8 +2,8 @@ import { Grid, SxProps } from "@mui/material";
 import _isEmpty from "lodash/isEmpty";
 import { FunctionComponent } from "react";
 
-import { ConductorAutoComplete } from "components/v1";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutoComplete } from "components/ui/inputs";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 import { FIELD_TYPE_OBJECT, FIELD_TYPE_STRING, FieldType } from "types/common";
 import {
   DEFAULT_FIELD_VALUES_CONF,

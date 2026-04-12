@@ -2,7 +2,7 @@ import {
   crumbsToTask,
   removeTaskReferenceFromCrumbs,
   START_TASK_FAKE_TASK_REFERENCE_NAME,
-} from "components/flow/nodes/mapper";
+} from "components/features/flow/nodes/mapper";
 import _prop from "lodash/fp/prop";
 import _head from "lodash/head";
 import _isEmpty from "lodash/isEmpty";

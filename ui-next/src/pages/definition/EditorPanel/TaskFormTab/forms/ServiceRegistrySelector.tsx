@@ -11,12 +11,12 @@ import {
   TableRow,
 } from "@mui/material";
 import { MagicWand } from "@phosphor-icons/react";
-import MuiButton from "components/MuiButton";
-import UIModal from "components/UIModal";
-import { ConductorAutoComplete } from "components/v1";
-import ConductorInput from "components/v1/ConductorInput";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
-import { MessageContext } from "components/v1/layout/MessageContext";
+import MuiButton from "components/ui/buttons/MuiButton";
+import UIModal from "components/ui/dialogs/UIModal";
+import { ConductorAutoComplete } from "components/ui/inputs";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
+import { MessageContext } from "components/providers/messageContext";
 import _every from "lodash/every";
 import _isEmpty from "lodash/isEmpty";
 import _isNil from "lodash/isNil";

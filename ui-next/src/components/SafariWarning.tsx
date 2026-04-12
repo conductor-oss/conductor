@@ -1,4 +1,4 @@
-import { SnackbarMessage } from "components/SnackbarMessage";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
 import { isSafari } from "utils";
 
 interface SafariWarningProps {

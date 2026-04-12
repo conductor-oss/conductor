@@ -25,7 +25,7 @@ vi.mock("../timezones.json", () => ({
 }));
 
 // Mock the ConductorAutoComplete component to render a simple select
-vi.mock("components/v1/ConductorAutoComplete", () => ({
+vi.mock("components/ui/inputs/ConductorAutoComplete", () => ({
   ConductorAutoComplete: ({ value, onChange, options, ...props }: any) => (
     <div data-testid="timezone-picker">
       <label htmlFor="timezone-select">Select Timezone</label>

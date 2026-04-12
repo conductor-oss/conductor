@@ -6,11 +6,11 @@ import {
   DialogTitle,
   Grid,
 } from "@mui/material";
-import ActionButton from "components/ActionButton";
-import Button from "components/MuiButton";
-import { MessageContext } from "components/v1/layout/MessageContext";
-import ReactHookFormDropdown from "components/v1/react-hook-form/ReactHookFormDropdown";
-import ReactHookFormInput from "components/v1/react-hook-form/ReactHookFormInput";
+import ActionButton from "components/ui/buttons/ActionButton";
+import Button from "components/ui/buttons/MuiButton";
+import { MessageContext } from "components/providers/messageContext";
+import ReactHookFormDropdown from "components/ui/react-hook-form/ReactHookFormDropdown";
+import ReactHookFormInput from "components/ui/react-hook-form/ReactHookFormInput";
 import _last from "lodash/last";
 import { getWorkflowDefinitionByNameAndVersion } from "pages/definition/commonService";
 import { useContext, useMemo } from "react";

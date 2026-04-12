@@ -2,7 +2,7 @@ import { createMachine } from "xstate";
 import * as actions from "./actions";
 import * as guards from "./guards";
 import * as services from "./services";
-import { FlowActionTypes } from "components/flow/state/types";
+import { FlowActionTypes } from "components/features/flow/state/types";
 import {
   ExecutionActionTypes,
   ExecutionMachineEvents,

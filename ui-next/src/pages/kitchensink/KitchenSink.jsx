@@ -27,11 +27,11 @@ import EnhancedTable from "./EnhancedTable";
 import DataTableDemo from "./DataTableDemo";
 import { useAction } from "utils/query";
 import top100Films from "./sampleMovieData";
-import Dropdown from "components/Dropdown";
+import Dropdown from "components/ui/inputs/Dropdown";
 import sharedStyles from "../styles";
 import { logger } from "utils/index";
-import Button from "components/MuiButton";
-import MuiCheckbox from "components/MuiCheckbox";
+import Button from "components/ui/buttons/MuiButton";
+import MuiCheckbox from "components/ui/MuiCheckbox";
 
 export default function KitchenSink() {
   return (
