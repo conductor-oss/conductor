@@ -6,26 +6,28 @@ import {
   Tag as TagIcon,
 } from "@phosphor-icons/react";
 import { Button, DataTable, IconButton, NavLink, Paper } from "components";
-import { FilterObjectItem } from "components/DataTable/state";
-import { ColumnCustomType, LegacyColumn } from "components/DataTable/types";
-import Header from "components/Header";
-import NoDataComponent from "components/NoDataComponent";
-import { SnackbarMessage } from "components/SnackbarMessage";
-import ConfirmChoiceDialog from "components/ConfirmChoiceDialog";
-import AddTagDialog, { TagDialogProps } from "components/tags/AddTagDialog";
-import TagList from "components/v1/TagList";
-import PlayIcon from "components/v1/icons/PlayIcon";
-import { MessageContext } from "components/v1/layout/MessageContext";
+import { FilterObjectItem } from "components/ui/DataTable/state";
+import { ColumnCustomType, LegacyColumn } from "components/ui/DataTable/types";
+import Header from "components/ui/Header";
+import NoDataComponent from "components/ui/NoDataComponent";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
+import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
+import AddTagDialog, {
+  TagDialogProps,
+} from "components/features/tags/AddTagDialog";
+import TagList from "components/ui/TagList";
+import PlayIcon from "components/icons/PlayIcon";
+import { MessageContext } from "components/providers/messageContext";
 import SplitWorkflowDefinitionButton from "pages/executions/SplitWorkflowDefinitionButton/SplitWorkflowDefinitionButton";
 import { removeDeletedWorkflow } from "pages/runWorkflow/runWorkflowUtils";
 import { useCallback, useContext, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
 import { UseQueryResult } from "react-query";
 import { useNavigate } from "react-router";
-import SectionContainer from "shared/SectionContainer";
-import SectionHeader from "shared/SectionHeader";
-import SectionHeaderActions from "shared/SectionHeaderActions";
-import { useAuth } from "shared/auth";
+import SectionContainer from "components/ui/layout/SectionContainer";
+import SectionHeader from "components/layout/SectionHeader";
+import SectionHeaderActions from "components/ui/layout/SectionHeaderActions";
+import { useAuth } from "components/features/auth";
 import { colors } from "theme/tokens/variables";
 import { PopoverMessage } from "types/Messages";
 import { TagDto } from "types/Tag";

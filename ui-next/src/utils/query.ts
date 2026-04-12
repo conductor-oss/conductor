@@ -16,7 +16,7 @@ import {
   UseQueryResult,
 } from "react-query";
 import { useLocation, useNavigate } from "react-router";
-import { getAccessToken as getAccessTokenStub } from "shared/auth/tokenManagerJotai";
+import { getAccessToken as getAccessTokenStub } from "components/features/auth/tokenManagerJotai";
 
 // Get access token from plugin registry (enterprise) or fallback to stub (OSS)
 function getAccessToken(): string | null {

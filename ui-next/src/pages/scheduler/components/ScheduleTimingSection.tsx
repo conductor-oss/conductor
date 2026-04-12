@@ -6,9 +6,9 @@ import {
   Switch,
   Tooltip,
 } from "@mui/material";
-import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
-import ConductorDateRangePicker from "components/v1/date-time/ConductorDateRangePicker";
-import { baseLabelStyle } from "components/v1/theme/styles";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
+import ConductorDateRangePicker from "components/ui/date-time/ConductorDateRangePicker";
+import { baseLabelStyle } from "theme/styles";
 import { SMALL_EDITOR_DEFAULT_OPTIONS } from "utils/constants";
 
 interface ScheduleTimingSectionProps {

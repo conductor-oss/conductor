@@ -1,5 +1,5 @@
-import { useAuth } from "shared/auth"; // TODO missing error page
-import Error from "components/v1/error/Error";
+import { useAuth } from "components/features/auth"; // TODO missing error page
+import Error from "components/ui/Error";
 import useInterval from "utils/useInterval";
 import { tryToJson } from "utils/utils";
 import { ParsedErrorMessage } from "./types";

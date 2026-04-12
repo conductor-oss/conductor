@@ -30,7 +30,7 @@
  */
 
 import { App } from "components/App";
-import DefaultAuthGuard from "components/auth/AuthGuard";
+import DefaultAuthGuard from "components/features/auth/AuthGuard";
 import ApiReferencePage from "pages/apiDocs/ApiReferencePage";
 import { CreatorFlags } from "pages/creatorFlags/CreatorFlags";
 import { TaskDefinition } from "pages/definition/task";

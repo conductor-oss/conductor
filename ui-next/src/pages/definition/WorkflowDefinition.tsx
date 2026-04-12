@@ -1,14 +1,14 @@
 import { AlertColor, Box } from "@mui/material";
 import { useSelector } from "@xstate/react";
-import { SnackbarMessage } from "components/SnackbarMessage";
-import TwoPanesDivider from "components/TwoPanesDivider";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
+import TwoPanesDivider from "components/ui/TwoPanesDivider";
 import {
   DefinitionMachineContext,
   FlowEditContextProvider,
   WorkflowDefinitionEvents,
 } from "pages/definition/state";
 import { Helmet } from "react-helmet";
-import { useAuth } from "shared/auth";
+import { useAuth } from "components/features/auth";
 import { ActorRef, State } from "xstate";
 import sharedStyles from "../styles";
 import EditorPanel from "./EditorPanel/EditorPanel";

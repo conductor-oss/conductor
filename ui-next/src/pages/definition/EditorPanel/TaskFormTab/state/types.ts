@@ -2,7 +2,7 @@ import { TaskDef, AuthHeaders, Crumb } from "types";
 import { TaskHeaderMachineEvents } from "pages/definition/EditorPanel/TaskFormTab/forms/TaskFormHeader/state/types";
 import { ActorRef } from "xstate";
 import { EdgeData } from "reaflow";
-import { FlowActionTypes } from "components/flow/state";
+import { FlowActionTypes } from "components/features/flow/state";
 
 export enum FormMachineActionTypes {
   UPDATE_TASK = "UPDATE_TASK",
