@@ -1,13 +1,13 @@
 import { useMemo, Fragment, FunctionComponent, ReactNode } from "react";
 import { Article as FormIcon } from "@phosphor-icons/react";
 import { Box, ToggleButton, Tooltip, Stack, SxProps } from "@mui/material";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 import _isString from "lodash/isString";
 import { FormTaskType } from "types/TaskType";
 import _path from "lodash/fp/path";
-import { taskGeneratorMap } from "components/flow/nodes";
+import { taskGeneratorMap } from "components/features/flow/nodes";
 import _isNil from "lodash/isNil";
-import HelperText from "components/HelperText";
+import HelperText from "components/ui/inputs/HelperText";
 
 interface MaybeVariableProps {
   value: string | any;

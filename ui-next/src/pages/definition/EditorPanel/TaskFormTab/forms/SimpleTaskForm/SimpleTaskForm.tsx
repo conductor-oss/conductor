@@ -2,14 +2,14 @@ import { Editor } from "@monaco-editor/react";
 import { Box, Grid, IconButton, Link, Stack } from "@mui/material";
 import { ArrowsOutSimple, ArrowSquareOut } from "@phosphor-icons/react";
 import { Paper, Tab, Tabs } from "components";
-import MuiTypography from "components/MuiTypography";
-import { SnackbarMessage } from "components/SnackbarMessage";
-import UIModal from "components/UIModal";
-import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
-import CopyIcon from "components/v1/icons/CopyIcon";
+import MuiTypography from "components/ui/MuiTypography";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
+import UIModal from "components/ui/dialogs/UIModal";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
+import CopyIcon from "components/icons/CopyIcon";
 import { path as _path } from "lodash/fp";
 import { useMemo, useState } from "react";
-import { getAccessToken } from "shared/auth/tokenManagerJotai";
+import { getAccessToken } from "components/features/auth/tokenManagerJotai";
 import { defaultEditorOptions, type EditorOptions } from "shared/editor";
 import { updateField } from "utils/fieldHelpers";
 import { ConductorCacheOutput } from "../ConductorCacheOutputForm";
@@ -77,7 +77,7 @@ const SampleCodeSection = ({
       <Tabs
         value={selectedSample}
         variant="scrollable"
-        scrollButtons="false"
+        scrollButtons={false}
         style={{
           marginBottom: 0,
           borderBottom: "1px solid rgba(0,0,0,0.2)",

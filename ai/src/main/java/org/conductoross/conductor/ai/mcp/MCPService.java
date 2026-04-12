@@ -27,7 +27,6 @@ import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -381,15 +380,6 @@ public class MCPService {
             return objectMapper.readTree(jsonData.toString());
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse SSE data as JSON: " + jsonData, e);
-        }
-    }
-
-    /** Closes an HTTP MCP client. */
-    private void closeClient(McpSyncClient client) {
-        try {
-            client.close();
-        } catch (Exception e) {
-            log.warn("Error closing MCP client: {}", e.getMessage());
         }
     }
 

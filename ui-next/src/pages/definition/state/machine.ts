@@ -1,6 +1,6 @@
-import { crumbsToTaskSteps } from "components/flow/nodes";
-import { FlowActionTypes } from "components/flow/state";
-import { flowMachine } from "components/flow/state/machine";
+import { crumbsToTaskSteps } from "components/features/flow/nodes";
+import { FlowActionTypes } from "components/features/flow/state";
+import { flowMachine } from "components/features/flow/state/machine";
 import _flow from "lodash/flow";
 import _isEmpty from "lodash/isEmpty";
 import _last from "lodash/last";

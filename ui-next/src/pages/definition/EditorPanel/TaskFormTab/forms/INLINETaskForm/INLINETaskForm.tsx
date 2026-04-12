@@ -1,6 +1,6 @@
 import { Box, FormControlLabel, Grid } from "@mui/material";
-import RadioButtonGroup from "components/RadioButtonGroup";
-import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+import RadioButtonGroup from "components/ui/inputs/RadioButtonGroup";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import _path from "lodash/fp/path";
 import { colors } from "theme/tokens/variables";
 import { InlineTaskDef } from "types";

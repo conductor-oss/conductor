@@ -4,9 +4,9 @@ import {
   UsersThree as GroupIcon,
   User as UserIcon,
 } from "@phosphor-icons/react";
-import TagChip from "components/TagChip";
-import ConductorInput from "components/v1/ConductorInput";
-import XCloseIcon from "components/v1/icons/XCloseIcon";
+import TagChip from "components/ui/TagChip";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import XCloseIcon from "components/icons/XCloseIcon";
 import { CSSProperties, FunctionComponent } from "react";
 import { autocompleteStyle } from "shared/styles";
 import { SelectableOption } from "./types";

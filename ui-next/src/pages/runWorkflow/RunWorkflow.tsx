@@ -1,14 +1,14 @@
 import { Box, Grid, Paper, Theme } from "@mui/material";
 import { Button } from "components";
-import MuiAlert from "components/MuiAlert";
-import NavLink from "components/NavLink";
-import { ConductorAutoComplete } from "components/v1";
-import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
-import ConductorInput from "components/v1/ConductorInput";
-import SplitButton from "components/v1/ConductorSplitButton";
-import PlayIcon from "components/v1/icons/PlayIcon";
-import ResetIcon from "components/v1/icons/ResetIcon";
-import XCloseIcon from "components/v1/icons/XCloseIcon";
+import MuiAlert from "components/ui/MuiAlert";
+import NavLink from "components/ui/NavLink";
+import { ConductorAutoComplete } from "components/ui/inputs";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import SplitButton from "components/ui/buttons/ConductorSplitButton";
+import PlayIcon from "components/icons/PlayIcon";
+import ResetIcon from "components/icons/ResetIcon";
+import XCloseIcon from "components/icons/XCloseIcon";
 import { RunWorkflowHistoryTable } from "pages/definition/RunWorkflow/RunWorkflowHistoryTable";
 import {
   IdempotencyStrategyEnum,
@@ -19,9 +19,9 @@ import { Helmet } from "react-helmet";
 import { useLocation, useNavigate } from "react-router";
 import { useQueryState } from "react-router-use-location-state";
 import { editor } from "shared/editor";
-import SectionContainer from "shared/SectionContainer";
-import SectionHeader from "shared/SectionHeader";
-import { useAuth } from "shared/auth";
+import SectionContainer from "components/ui/layout/SectionContainer";
+import SectionHeader from "components/layout/SectionHeader";
+import { useAuth } from "components/features/auth";
 import { colors } from "theme/tokens/variables";
 import { logger, tryToJson, useLocalStorage } from "utils/index";
 import { useAction, useWorkflowDefsByVersions } from "utils/query";

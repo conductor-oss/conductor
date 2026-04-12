@@ -1,7 +1,7 @@
 import { Box, Grid } from "@mui/material";
-import ConductorInput from "components/v1/ConductorInput";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
-import ConductorTooltip from "components/conductorTooltip/ConductorTooltip";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
+import ConductorTooltip from "components/ui/ConductorTooltip";
 
 type RateLimitConfigValue = {
   rateLimitKey: string;

@@ -77,6 +77,11 @@ export default defineConfig(({ mode }) => {
   // App build mode - creates standalone OSS application
   return {
     base: BASE_URL,
+    resolve: {
+      // Prefer TypeScript so extensionless imports (e.g. `components/Foo`) resolve to
+      // `Foo.tsx` when both TS and JS variants could apply.
+      extensions: [".mjs", ".js", ".mts", ".ts", ".tsx", ".jsx", ".json"],
+    },
     plugins: [
       react(),
       tsconfigPaths(),

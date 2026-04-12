@@ -8,9 +8,9 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import { Text } from "components";
-import MuiTypography from "components/MuiTypography";
-import ConductorInput from "components/v1/ConductorInput";
-import ConductorSelect from "components/v1/ConductorSelect";
+import MuiTypography from "components/ui/MuiTypography";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import ConductorSelect from "components/ui/inputs/ConductorSelect";
 import cronstrue from "cronstrue";
 import {
   formatInTimeZone,
