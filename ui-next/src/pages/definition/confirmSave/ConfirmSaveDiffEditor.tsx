@@ -4,7 +4,7 @@ import { ActorRef } from "xstate";
 import { DiffOnMount, MonacoDiffEditor } from "@monaco-editor/react";
 import { useActor, useSelector } from "@xstate/react";
 import { SaveWorkflowEvents, SaveWorkflowMachineEventTypes } from "./state";
-import { DiffEditor } from "components/DiffEditor/DiffEditor";
+import { DiffEditor } from "components/ui/DiffEditor";
 
 interface ConfirmSaveDiffEditorProps {
   saveChangesActor: ActorRef<SaveWorkflowEvents>;

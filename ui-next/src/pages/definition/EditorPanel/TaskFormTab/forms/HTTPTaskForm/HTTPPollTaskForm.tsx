@@ -1,10 +1,10 @@
 import { Box, FormControlLabel, Grid } from "@mui/material";
 import { useInterpret } from "@xstate/react";
-import RadioButtonGroup from "components/RadioButtonGroup";
-import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
-import ConductorInput from "components/v1/ConductorInput";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
-import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+import RadioButtonGroup from "components/ui/inputs/RadioButtonGroup";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import { assoc as _assoc, path as _path, pipe as _pipe } from "lodash/fp";
 import { mock } from "mock-json-schema";
 import { ServiceType } from "types/RemoteServiceTypes";

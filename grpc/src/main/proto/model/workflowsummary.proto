@@ -29,4 +29,5 @@ message WorkflowSummary {
     string created_by = 19;
     map<string, string> task_to_domain = 20;
     string idempotency_key = 21;
+    string parent_workflow_id = 22;
 }

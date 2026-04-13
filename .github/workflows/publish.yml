@@ -107,6 +107,6 @@ jobs:
             conductoross/conductor:${{ env.RELEASE_VERSION }}
             orkesio/orkes-conductor-community-standalone:${{ env.RELEASE_VERSION }}
             orkesio/orkes-conductor-community:${{ env.RELEASE_VERSION }}
-            ${{ (github.event_name == 'release' && !github.event.release.prerelease) && 'conductoross/conductor:latest' || '' }}
-            ${{ (github.event_name == 'release' && !github.event.release.prerelease) && 'orkesio/orkes-conductor-community-standalone:latest' || '' }}
-            ${{ (github.event_name == 'release' && !github.event.release.prerelease) && 'orkesio/orkes-conductor-community:latest' || '' }}
+            ${{ (github.event_name == 'release' && !github.event.release.prerelease && !contains(github.ref_name, 'rc') && !contains(github.ref_name, 'beta') && !contains(github.ref_name, 'alpha')) && 'conductoross/conductor:latest' || '' }}
+            ${{ (github.event_name == 'release' && !github.event.release.prerelease && !contains(github.ref_name, 'rc') && !contains(github.ref_name, 'beta') && !contains(github.ref_name, 'alpha')) && 'orkesio/orkes-conductor-community-standalone:latest' || '' }}
+            ${{ (github.event_name == 'release' && !github.event.release.prerelease && !contains(github.ref_name, 'rc') && !contains(github.ref_name, 'beta') && !contains(github.ref_name, 'alpha')) && 'orkesio/orkes-conductor-community:latest' || '' }}

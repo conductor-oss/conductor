@@ -1,5 +1,5 @@
 import { FunctionComponent } from "react";
-import Button from "components/MuiButton";
+import Button from "components/ui/buttons/MuiButton";
 import Stack from "@mui/material/Stack";
 
 export interface RangeButtonsProps {

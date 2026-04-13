@@ -35,6 +35,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.postgres.config.PostgresConfiguration;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -111,17 +112,15 @@ public class PostgresLockDAOTest {
     }
 
     @Test
-    public void testExpiredLockCanBeAcquiredAgain() throws InterruptedException {
+    public void testExpiredLockCanBeAcquiredAgain() {
         String lockId = UUID.randomUUID().toString();
         assertTrue(
                 postgresLock.acquireLock(lockId, 500, 500, TimeUnit.MILLISECONDS),
                 "First lock acquisition failed");
 
-        Thread.sleep(1000); // Ensure the lock has expired.
-
-        assertTrue(
-                postgresLock.acquireLock(lockId, 500, 500, TimeUnit.MILLISECONDS),
-                "Lock acquisition after expiration failed");
+        await().atMost(1500, TimeUnit.MILLISECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
+                .until(() -> postgresLock.acquireLock(lockId, 500, 500, TimeUnit.MILLISECONDS));
 
         postgresLock.releaseLock(lockId);
     }

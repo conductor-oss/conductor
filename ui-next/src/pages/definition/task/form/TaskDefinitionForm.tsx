@@ -6,12 +6,12 @@ import {
   Link,
   Switch,
 } from "@mui/material";
-import MuiTypography from "components/MuiTypography";
-import { ConductorArrayFieldBase } from "components/v1/ConductorArrayField";
-import ConductorInput from "components/v1/ConductorInput";
-import ConductorInputNumber from "components/v1/ConductorInputNumber";
-import ConductorSelect from "components/v1/ConductorSelect";
-import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+import MuiTypography from "components/ui/MuiTypography";
+import { ConductorArrayFieldBase } from "components/ui/inputs/ConductorArrayField";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import ConductorInputNumber from "components/ui/inputs/ConductorInputNumber";
+import ConductorSelect from "components/ui/inputs/ConductorSelect";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import _ from "lodash";
 import _isArray from "lodash/isArray";
 import { useTaskDefinitionFormActor } from "pages/definition/task/form/state/hook";
@@ -22,7 +22,7 @@ import {
   TaskTimeoutPolicy,
   TaskTimeoutPolicyLabel,
 } from "pages/definition/task/state";
-import { ConductorNameVersionField } from "components/v1/ConductorNameVersionField";
+import { ConductorNameVersionField } from "components/inputs/ConductorNameVersionField";
 import { SchemaDefinition } from "types/SchemaDefinition";
 import { handleValidChars } from "utils";
 import { TASK_NAME_REGEX, regexToString } from "utils/constants/regex";

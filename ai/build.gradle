@@ -31,7 +31,7 @@ dependencies {
     api "com.google.genai:google-genai:1.18.0"
     api "com.networknt:json-schema-validator:${revJSonSchemaValidator}"
 
-    api("io.modelcontextprotocol.sdk:mcp:${revMCP}")
+    api("io.modelcontextprotocol.sdk:mcp-core:${revMCP}")
     api "com.squareup.okhttp3:okhttp:4.12.0"
 
     // Markdown parsing for PDF generation
@@ -58,6 +58,6 @@ dependencies {
     testImplementation "org.testcontainers:postgresql:${revTestContainer}"
     testImplementation "org.postgresql:postgresql:${revPostgres}"
     testImplementation "org.apache.commons:commons-compress:${revCommonsCompress}"
-    testImplementation "com.h2database:h2:2.2.224"
+    testImplementation "com.h2database:h2:2.4.240"
 
 }

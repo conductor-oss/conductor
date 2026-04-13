@@ -168,8 +168,7 @@ class Es8IndexManagementSupport {
         deleteLegacyIndexTemplateIfOwned(legacyTemplateName, templateName, indexPattern, aliasName);
         IndexTemplateMapping.Builder template =
                 new IndexTemplateMapping.Builder()
-                        .settings(buildIndexTemplateSettings(additionalSettings, aliasName))
-                        .aliases(aliasName, a -> a);
+                        .settings(buildIndexTemplateSettings(additionalSettings, aliasName));
         if (mappings != null) {
             template.mappings(parseTypeMapping(mappings));
         }

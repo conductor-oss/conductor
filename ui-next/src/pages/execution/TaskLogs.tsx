@@ -1,6 +1,6 @@
 import { Box } from "@mui/material";
-import { Input, Text, Typography } from "components";
-import ClipboardCopy from "components/ClipboardCopy";
+import { Input, Typography } from "components";
+import ClipboardCopy from "components/ui/ClipboardCopy";
 import { useMemo, useState } from "react";
 import { TaskLog } from "types";
 import { formatToDateTimeString } from "utils/date";
@@ -94,9 +94,9 @@ export default function TaskLogs({
           ))}
         </Box>
       ) : (
-        <Text sx={{ margin: "15px" }} variant="body1">
+        <Typography sx={{ margin: "15px" }} variant="body1">
           No logs available
-        </Text>
+        </Typography>
       )}
     </Box>
   );

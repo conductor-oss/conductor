@@ -3,7 +3,7 @@ import match from "autosuggest-highlight/match";
 import parse from "autosuggest-highlight/parse";
 import { SyntheticEvent } from "react";
 
-import { ConductorAutoComplete } from "components/v1";
+import { ConductorAutoComplete } from "components/ui/inputs";
 
 const ConductorFlexibleAutoCompleteVariables = ({
   options = [],

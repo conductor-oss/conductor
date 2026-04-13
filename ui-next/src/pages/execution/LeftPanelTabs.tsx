@@ -2,7 +2,7 @@ import { Tab, Tabs } from "components";
 import { ExecutionTabs } from "./state/types";
 import { WorkflowExecution } from "types/Execution";
 import { featureFlags, FEATURES } from "utils/flags";
-import { agentFirstUseAtom } from "shared/agent/agentAtomsStore";
+import { agentFirstUseAtom } from "components/features/agent/agentAtomsStore";
 import { useAtom } from "jotai";
 
 export interface LeftPanelTabsProps {

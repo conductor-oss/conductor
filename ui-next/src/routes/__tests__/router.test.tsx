@@ -197,7 +197,7 @@ vi.mock("utils/constants/route", () => ({
 vi.mock("@okta/okta-react", () => ({
   LoginCallback: () => ({ type: "LoginCallback" }),
 }));
-vi.mock("components/auth/AuthGuard", () => ({
+vi.mock("components/features/auth/AuthGuard", () => ({
   default: () => ({ type: "AuthGuard" }),
 }));
 vi.mock("components/App", () => ({ App: () => ({ type: "App" }) }));
@@ -321,7 +321,7 @@ vi.mock("enterprise/pages/webhooks/edit/WebhookEdit", () => ({
 vi.mock("enterprise/pages/workflowExplorer/Explorer", () => ({
   default: () => ({ type: "Explorer" }),
 }));
-vi.mock("shared/auth/oidc/OidcRedirectEndpoint", () => ({
+vi.mock("components/features/auth/oidc/OidcRedirectEndpoint", () => ({
   OidcRedirectEndpoint: () => ({ type: "OidcRedirectEndpoint" }),
 }));
 vi.mock("enterprise/pages/auth/Login", () => ({

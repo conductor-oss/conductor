@@ -15,34 +15,33 @@ import {
   Tag as TagIcon,
 } from "@phosphor-icons/react";
 import { Button, DataTable, IconButton, NavLink } from "components";
-import { ColumnCustomType } from "components/DataTable/types";
-import Header from "components/Header";
-import NoDataComponent from "components/NoDataComponent";
-import Paper from "components/Paper";
-import { SnackbarMessage } from "components/SnackbarMessage";
-import TagChip from "components/TagChip";
-import ConfirmChoiceDialog from "components/ConfirmChoiceDialog";
-import AddTagDialog from "components/tags/AddTagDialog";
-import ConductorInput from "components/v1/ConductorInput";
-import TagList from "components/v1/TagList";
-import AddIcon from "components/v1/icons/AddIcon";
-import PlayIcon from "components/v1/icons/PlayIcon";
+import { ColumnCustomType } from "components/ui/DataTable/types";
+import Header from "components/ui/Header";
+import NoDataComponent from "components/ui/NoDataComponent";
+import Paper from "components/ui/Paper";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
+import TagChip from "components/ui/TagChip";
+import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
+import AddTagDialog from "components/features/tags/AddTagDialog";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import TagList from "components/ui/TagList";
+import AddIcon from "components/icons/AddIcon";
+import PlayIcon from "components/icons/PlayIcon";
 import cronstrue from "cronstrue";
 import { useSaveSchedule } from "pages/scheduler/schedulerHooks";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
 import { useQueryState } from "react-router-use-location-state";
-import SectionContainer from "shared/SectionContainer";
-import SectionHeader from "shared/SectionHeader";
-import SectionHeaderActions from "shared/SectionHeaderActions";
-import { useAuth } from "shared/auth";
+import SectionContainer from "components/ui/layout/SectionContainer";
+import SectionHeader from "components/layout/SectionHeader";
+import SectionHeaderActions from "components/ui/layout/SectionHeaderActions";
+import { useAuth } from "components/features/auth";
 import { colors } from "theme/tokens/variables";
 import { PopoverMessage } from "types/Messages";
 import { IScheduleDto, IStartWorkflowRequest } from "types/Schedulers";
 import { TagDto } from "types/Tag";
 import { HTTPMethods } from "types/TaskType";
 import { getSequentiallySuffix, logger } from "utils";
-import { getScheduleCronSchedules } from "pages/scheduler/utils/cronSchedules";
 import {
   ACTIVE_FILTER_QUERY_PARAM,
   generateForbiddenMessage,
@@ -100,37 +99,18 @@ const searchableWorkflow = (workflow: IStartWorkflowRequest) => {
     : `${workflow.name} - Latest`;
 };
 
-const humanizeCronExpression = (cronExpression: string) => {
-  try {
-    return cronstrue.toString(cronExpression);
-  } catch {
-    return cronExpression;
-  }
-};
-
 const columns = [
   {
     id: "cronExpression",
     name: "cronExpression",
     label: "Cron expression",
-    renderer: (cron: string, row: IScheduleDto) => {
-      const cronSchedules = getScheduleCronSchedules(row);
-      if (!cronSchedules.length) {
+    renderer: (cron: string) => {
+      if (!cron) {
         return "";
       }
-
-      const cronDescriptions = cronSchedules.map((entry) => {
-        const expression = entry.cronExpression || cron;
-        const timezone = entry.zoneId || row.zoneId || "UTC";
-        return `${humanizeCronExpression(expression)} (${timezone})`;
-      });
-      const tooltipText = cronSchedules
-        .map((entry) => entry.cronExpression || cron)
-        .join(" | ");
-
       return (
-        <Tooltip title={tooltipText}>
-          <span>{cronDescriptions.join(" | ")}</span>
+        <Tooltip title={cron}>
+          <span>{cron ? cronstrue.toString(cron) : ""}</span>
         </Tooltip>
       );
     },
