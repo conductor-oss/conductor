@@ -1,7 +1,7 @@
 import TaskFormSection from "pages/definition/EditorPanel/TaskFormTab/forms/TaskFormSection";
 import { Box, Grid } from "@mui/material";
 import { TaskFormProps } from "pages/definition/EditorPanel/TaskFormTab/forms/types";
-import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 
 export const UnknownTaskForm = ({ task, onChange }: TaskFormProps) => {
   return (

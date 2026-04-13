@@ -3,12 +3,12 @@ import Forum from "@mui/icons-material/Forum";
 import UnfoldMore from "@mui/icons-material/UnfoldMore";
 import { Box, Button } from "@mui/material";
 import { CaretUp, NotePencilIcon } from "@phosphor-icons/react";
-import IconButton from "components/MuiIconButton";
-import Puller from "components/Puller";
-import { AgentContentTab } from "components/agent/agent-types";
+import IconButton from "components/ui/buttons/MuiIconButton";
+import Puller from "components/ui/Puller";
+import { AgentContentTab } from "components/features/agent/agent-types";
 import { useAtom } from "jotai";
 import React from "react";
-import { agentContentTabAtom } from "shared/agent/agentAtomsStore";
+import { agentContentTabAtom } from "components/features/agent/agentAtomsStore";
 import { ActorRef } from "xstate";
 import {
   DefinitionMachineEventTypes,

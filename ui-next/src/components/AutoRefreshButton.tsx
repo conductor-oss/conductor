@@ -3,7 +3,7 @@ import {
   ArrowCounterClockwise as Restart,
 } from "@phosphor-icons/react";
 import { useActor, useSelector } from "@xstate/react";
-import RefreshIcon from "components/v1/icons/RefreshIcon";
+import RefreshIcon from "components/icons/RefreshIcon";
 import isNil from "lodash/isNil";
 import {
   COUNT_DOWN_TYPE,
@@ -19,9 +19,9 @@ import {
 } from "react";
 import { WorkflowExecutionStatus } from "types/Execution";
 import { ActorRef, State } from "xstate";
-import DropdownButton from "./DropdownButton";
-import Button, { MuiButtonProps } from "./MuiButton";
-import { SpinningIcon } from "./v1/SpinningIcon";
+import DropdownButton from "components/ui/buttons/DropdownButton";
+import Button, { MuiButtonProps } from "components/ui/buttons/MuiButton";
+import { SpinningIcon } from "components/ui/SpinningIcon";
 
 interface AutoRefreshButtonProps {
   buttonProps: MuiButtonProps;

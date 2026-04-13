@@ -1,13 +1,13 @@
 import { Box, FormControlLabel, Switch } from "@mui/material";
-import MuiTypography from "components/MuiTypography";
-import PlayIcon from "components/v1/icons/PlayIcon";
+import MuiTypography from "components/ui/MuiTypography";
+import PlayIcon from "components/icons/PlayIcon";
 import _isEqual from "lodash/isEqual";
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet";
 import { useQueryState } from "react-router-use-location-state";
-import SectionContainer from "shared/SectionContainer";
-import SectionHeader from "shared/SectionHeader";
-import SectionHeaderActions from "shared/SectionHeaderActions";
+import SectionContainer from "components/ui/layout/SectionContainer";
+import SectionHeader from "components/layout/SectionHeader";
+import SectionHeaderActions from "components/ui/layout/SectionHeaderActions";
 import { colors } from "theme/tokens/variables";
 import { TaskExecutionResult } from "types/TaskExecution";
 import { DoSearchProps } from "types/WorkflowExecution";
@@ -53,6 +53,10 @@ export default function WorkflowPanel() {
   const [asQuery, setAsQuery] = useQueryState("asQuery", false);
   const [freeText, setFreeText] = useQueryState("freeText", "");
   const [status, setStatus] = useQueryState<string[]>("status", []);
+  const [excludeSubWorkflows, setExcludeSubWorkflows] = useQueryState(
+    "excludeSubWorkflows",
+    false,
+  );
   const [openDateSelect, setOpenDateSelect] = useState(false);
   const [openStartDatePicker, setStartOpenDatePicker] = useState(false);
   const [openEndDatePicker, setEndOpenDatePicker] = useState(false);
@@ -207,6 +211,8 @@ export default function WorkflowPanel() {
             setFreeText={setFreeText}
             status={status}
             setStatus={setStatus}
+            excludeSubWorkflows={excludeSubWorkflows}
+            setExcludeSubWorkflows={setExcludeSubWorkflows}
             startTimeFrom={startTimeFrom}
             setStartTimeFrom={setStartTimeFrom}
             onStartFromChange={onStartFromChange}

@@ -523,4 +523,104 @@ public class PostgresIndexQueryBuilderTest {
             assertEquals("Incorrectly formatted query string: xyz", e.getMessage());
         }
     }
+
+    @Test
+    void shouldGenerateQueryWithWildcardPrefix() throws SQLException {
+        String inputQuery = "workflowType=abc*";
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getQuery();
+        assertEquals(
+                "SELECT json_data::TEXT FROM table_name WHERE workflow_type LIKE ? LIMIT ? OFFSET ?",
+                generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter("abc%");
+        inOrder.verify(mockQuery).addParameter(15);
+        inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldGenerateQueryWithWildcardContains() throws SQLException {
+        String inputQuery = "correlationId=\"*order*\"";
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getQuery();
+        assertEquals(
+                "SELECT json_data::TEXT FROM table_name WHERE correlation_id LIKE ? LIMIT ? OFFSET ?",
+                generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter("%order%");
+        inOrder.verify(mockQuery).addParameter(15);
+        inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldGenerateExactMatchQueryWhenNoWildcard() throws SQLException {
+        String inputQuery = "workflowType=abc";
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getQuery();
+        assertEquals(
+                "SELECT json_data::TEXT FROM table_name WHERE workflow_type = ? LIMIT ? OFFSET ?",
+                generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter("abc");
+        inOrder.verify(mockQuery).addParameter(15);
+        inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldNotExpandWildcardInINClause() throws SQLException {
+        String inputQuery = "status IN (COMP*,RUNNING)";
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getQuery();
+        assertEquals(
+                "SELECT json_data::TEXT FROM table_name WHERE status = ANY(?) LIMIT ? OFFSET ?",
+                generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter(new ArrayList<>(List.of("COMP*", "RUNNING")));
+        inOrder.verify(mockQuery).addParameter(15);
+        inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldGenerateQueryForParentWorkflowId() throws SQLException {
+        String inputQuery = "parentWorkflowId=\"\"";
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getQuery();
+        assertEquals(
+                "SELECT json_data::TEXT FROM table_name WHERE parent_workflow_id = ? LIMIT ? OFFSET ?",
+                generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter("");
+        inOrder.verify(mockQuery).addParameter(15);
+        inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
 }

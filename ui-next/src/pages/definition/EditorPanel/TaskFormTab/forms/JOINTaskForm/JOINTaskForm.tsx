@@ -1,16 +1,16 @@
 import { Box, Grid, Stack, Typography } from "@mui/material";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import { useSelector } from "@xstate/react";
-import Button from "components/MuiButton";
-import MuiCheckbox from "components/MuiCheckbox";
-import MuiTypography from "components/MuiTypography";
-import ConfirmChoiceDialog from "components/ConfirmChoiceDialog";
+import Button from "components/ui/buttons/MuiButton";
+import MuiCheckbox from "components/ui/MuiCheckbox";
+import MuiTypography from "components/ui/MuiTypography";
+import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
 import {
   crumbsToTaskSteps,
   forkLastTaskReferences,
   tasksAsNodes,
-} from "components/flow/nodes/mapper";
-import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+} from "components/features/flow/nodes/mapper";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import _difference from "lodash/difference";
 import _first from "lodash/first";
 import { path as _path } from "lodash/fp";

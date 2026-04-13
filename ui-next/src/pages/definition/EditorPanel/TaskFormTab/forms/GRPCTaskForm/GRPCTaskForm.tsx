@@ -1,7 +1,7 @@
 import { Box, Grid, Checkbox, FormControlLabel } from "@mui/material";
 import { useContext, useEffect, useMemo, useState } from "react";
 
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 
 import { TaskType } from "types";
 
@@ -14,7 +14,7 @@ import { GrpcTaskFormProps } from "./types";
 
 import { useInterpret } from "@xstate/react";
 import { useAuthHeaders } from "utils/query";
-import { ConductorAutoComplete } from "components/v1";
+import { ConductorAutoComplete } from "components/ui/inputs";
 import { ServiceDefDto, ServiceType } from "types/RemoteServiceTypes";
 import { splitHostAndPort } from "utils/remoteServices";
 
@@ -23,15 +23,15 @@ import { useServiceMethodsDefinition } from "../HTTPTaskForm/state/hook";
 import { updateField } from "utils/fieldHelpers";
 import { ConductorAdditionalHeaders } from "../HTTPTaskForm/ConductorAdditionalHeaders";
 import { SchemaDefinition } from "types/SchemaDefinition";
-import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
 import { tryToJson } from "utils/utils";
 import { featureFlags, FEATURES } from "utils/flags";
 import HedgingConfigForm from "../HedgingConfigForm";
 import ServiceRegistryPopulator from "../ServiceRegistrySelector";
-import MuiTypography from "components/MuiTypography";
+import MuiTypography from "components/ui/MuiTypography";
 import { Link } from "react-router";
 import EditTaskDefConfigModal from "../HTTPTaskForm/EditTaskDefConfigModal";
-import { MessageContext } from "components/v1/layout/MessageContext";
+import { MessageContext } from "components/providers/messageContext";
 import { HandleUpdateTemplateEvent } from "../HTTPTaskForm/state/types";
 
 export const GRPCTaskForm = ({ task, onChange }: GrpcTaskFormProps) => {

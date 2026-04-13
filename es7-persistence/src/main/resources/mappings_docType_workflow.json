@@ -67,6 +67,11 @@
     "event": {
       "type": "keyword",
       "index": true
+    },
+    "parentWorkflowId": {
+      "type": "keyword",
+      "index": true,
+      "doc_values": true
     }
   }
 }

@@ -1,7 +1,7 @@
 import { Box, TextField } from "@mui/material";
 import { useSelector } from "@xstate/react";
 import { Text } from "components";
-import EditInPlace from "components/EditInPlace";
+import EditInPlace from "components/ui/inputs/EditInPlace";
 import _isString from "lodash/isString";
 import { useTaskDefinitionFormActor } from "pages/definition/task/form/state/hook";
 import { TASK_FORM_MACHINE_ID } from "pages/definition/task/state/helpers";

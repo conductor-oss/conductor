@@ -1,11 +1,11 @@
 import { FormControlLabel, Grid } from "@mui/material";
-import HelperText from "components/HelperText";
-import MuiCheckbox from "components/MuiCheckbox";
-import IconButton from "components/MuiIconButton";
-import MuiTypography from "components/MuiTypography";
-import ConductorInput from "components/v1/ConductorInput";
-import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
-import XCloseIcon from "components/v1/icons/XCloseIcon";
+import HelperText from "components/ui/inputs/HelperText";
+import MuiCheckbox from "components/ui/MuiCheckbox";
+import IconButton from "components/ui/buttons/MuiIconButton";
+import MuiTypography from "components/ui/MuiTypography";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
+import XCloseIcon from "components/icons/XCloseIcon";
 import { Props } from "./common";
 
 export const UpdateWorkflowForm = ({

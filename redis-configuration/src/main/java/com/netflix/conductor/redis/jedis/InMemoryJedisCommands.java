@@ -39,6 +39,7 @@ public class InMemoryJedisCommands implements JedisCommands {
     private final ConcurrentHashMap<String, ConcurrentSkipListSet<ScoredMember>> sortedSets =
             new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, AtomicLong> counters = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, LinkedList<String>> lists = new ConcurrentHashMap<>();
 
     private record ScoredMember(String member, double score) implements Comparable<ScoredMember> {
         @Override
@@ -500,6 +501,51 @@ public class InMemoryJedisCommands implements JedisCommands {
                         .limit(count)
                         .collect(Collectors.toList());
         return new ScanResult<>("0", matched);
+    }
+
+    // --- List commands ---
+
+    @Override
+    public Long llen(String key) {
+        LinkedList<String> list = lists.get(key);
+        return list != null ? (long) list.size() : 0L;
+    }
+
+    @Override
+    public Long rpush(String key, String... values) {
+        LinkedList<String> list = lists.computeIfAbsent(key, k -> new LinkedList<>());
+        for (String value : values) {
+            list.addLast(value);
+        }
+        return (long) list.size();
+    }
+
+    @Override
+    public List<String> lrange(String key, long start, long end) {
+        LinkedList<String> list = lists.get(key);
+        if (list == null || list.isEmpty()) return new ArrayList<>();
+        int size = list.size();
+        int s = (int) Math.max(start, 0);
+        int e = end < 0 ? size + (int) end : (int) Math.min(end, size - 1);
+        if (s > e) return new ArrayList<>();
+        return new ArrayList<>(list.subList(s, e + 1));
+    }
+
+    @Override
+    public String ltrim(String key, long start, long end) {
+        LinkedList<String> list = lists.get(key);
+        if (list == null) return "OK";
+        int size = list.size();
+        int s = (int) Math.max(start, 0);
+        int e = end < 0 ? size + (int) end : (int) Math.min(end, size - 1);
+        if (s > e) {
+            list.clear();
+        } else {
+            List<String> kept = new ArrayList<>(list.subList(s, e + 1));
+            list.clear();
+            list.addAll(kept);
+        }
+        return "OK";
     }
 
     // --- Lua scripting (no-op for in-memory) ---

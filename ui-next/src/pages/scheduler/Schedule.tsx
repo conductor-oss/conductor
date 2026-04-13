@@ -11,16 +11,16 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import { LinearProgress } from "components";
-import { DocLink } from "components/DocLink";
-import { SnackbarMessage } from "components/SnackbarMessage";
-import ConductorInput from "components/v1/ConductorInput";
-import { MessageContext } from "components/v1/layout/MessageContext";
-import { ConductorSectionHeader } from "components/v1/layout/section/ConductorSectionHeader";
+import { DocLink } from "components/ui/DocLink";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import { MessageContext } from "components/providers/messageContext";
+import { ConductorSectionHeader } from "components/layout/section/ConductorSectionHeader";
 import { IdempotencyStrategyEnum } from "pages/runWorkflow/types";
 import { useCallback, useContext, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
 import { useLocation, useParams } from "react-router";
-import SectionContainer from "shared/SectionContainer";
+import SectionContainer from "components/ui/layout/SectionContainer";
 import { colors } from "theme/tokens/variables";
 import { IObject } from "types/common";
 import { DOC_LINK_URL } from "utils/constants/docLink";

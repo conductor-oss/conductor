@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { assoc as _assoc, pipe as _pipe } from "lodash/fp";
-import { getAuthHeaders } from "shared/auth/tokenManagerJotai";
+import { getAuthHeaders } from "components/features/auth/tokenManagerJotai";
 import { getInputParametersFromSchemaIfNeeded } from "../../helpers";
 import { SchemaFormPropsValue } from "../SchemaForm";
 import { TaskFormProps } from "../types";

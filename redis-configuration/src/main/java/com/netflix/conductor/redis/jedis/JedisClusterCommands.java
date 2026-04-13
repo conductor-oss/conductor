@@ -235,6 +235,26 @@ public class JedisClusterCommands implements JedisCommands {
     }
 
     @Override
+    public Long llen(String key) {
+        return jedisCluster.llen(key);
+    }
+
+    @Override
+    public Long rpush(String key, String... values) {
+        return jedisCluster.rpush(key, values);
+    }
+
+    @Override
+    public List<String> lrange(String key, long start, long end) {
+        return jedisCluster.lrange(key, start, end);
+    }
+
+    @Override
+    public String ltrim(String key, long start, long end) {
+        return jedisCluster.ltrim(key, start, end);
+    }
+
+    @Override
     public ScanResult<Entry<String, String>> hscan(String key, String cursor) {
         return jedisCluster.hscan(key, cursor);
     }

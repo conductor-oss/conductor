@@ -1,5 +1,5 @@
 import { useSelector } from "@xstate/react";
-import ConfirmChoiceDialog from "components/ConfirmChoiceDialog";
+import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
 import { TaskDefinitionDialogsProps } from "pages/definition/task/dialogs/state";
 import {
   TaskDefinitionMachineState,
