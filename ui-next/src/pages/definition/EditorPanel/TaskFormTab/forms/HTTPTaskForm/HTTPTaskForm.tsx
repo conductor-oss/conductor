@@ -35,9 +35,9 @@ import { useServiceMethodsDefinition } from "./state/hook";
 import { serviceMethodsMachine } from "./state/machine";
 import { HandleUpdateTemplateEvent } from "./state/types";
 import { HttpTaskFormProps } from "./types";
-import { ConductorAutoComplete } from "components/v1";
-import MuiTypography from "components/MuiTypography";
-import ConductorTooltip from "components/conductorTooltip/ConductorTooltip";
+import { ConductorAutoComplete } from "components/ui/inputs";
+import MuiTypography from "components/ui/MuiTypography";
+import ConductorTooltip from "components/ui/ConductorTooltip";
 
 export const HTTPTaskForm = ({
   task,
