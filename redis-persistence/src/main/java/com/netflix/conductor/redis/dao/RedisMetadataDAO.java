@@ -63,8 +63,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
     private volatile List<WorkflowDef> workflowDefCache = new ArrayList<>();
     private final boolean workflowDefCacheEnabled;
     private final ScheduledExecutorService cacheRefreshExecutor =
-            Executors.newScheduledThreadPool(
-                    2, r -> new Thread(r, "redis-metadata-cache-refresh"));
+            Executors.newScheduledThreadPool(2, r -> new Thread(r, "redis-metadata-cache-refresh"));
 
     public RedisMetadataDAO(
             JedisProxy jedisProxy,
