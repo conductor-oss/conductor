@@ -1,5 +1,5 @@
 import { ExecutionTask } from "types/Execution";
-import ClipboardCopy from "components/ClipboardCopy";
+import ClipboardCopy from "components/ui/ClipboardCopy";
 import { Link } from "@mui/material";
 import _isEmpty from "lodash/isEmpty";
 

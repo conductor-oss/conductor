@@ -22,11 +22,12 @@ import javax.net.ssl.SSLContext;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
 import org.apache.hc.core5.ssl.SSLContextBuilder;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 
 import com.netflix.conductor.redis.jedis.JedisCommands;
+import com.netflix.conductor.redis.jedis.RetryingJedisCommands;
 import com.netflix.conductor.redis.jedis.UnifiedJedisCommands;
 import com.netflix.dyno.connectionpool.Host;
 
@@ -41,13 +42,14 @@ import redis.clients.jedis.UnifiedJedis;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(name = "conductor.db.type", havingValue = "redis_sentinel")
+@Conditional(RedisSentinelCondition.class)
 @Slf4j
 public class RedisSentinelConfiguration extends RedisConfiguration {
 
     @Bean
-    public JedisCommands getJedisCommands(UnifiedJedis unifiedJedis) {
-        return new UnifiedJedisCommands(unifiedJedis);
+    public JedisCommands getJedisCommands(
+            UnifiedJedis unifiedJedis, RedisProperties redisProperties) {
+        return RetryingJedisCommands.wrap(new UnifiedJedisCommands(unifiedJedis), redisProperties);
     }
 
     @Override

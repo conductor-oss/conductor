@@ -1,14 +1,14 @@
 import { Box, Paper, Typography, Chip } from "@mui/material";
 import { ArrowClockwise as RefreshIcon } from "@phosphor-icons/react";
 import { DataTable } from "components";
-import Button from "components/MuiButton";
+import Button from "components/ui/buttons/MuiButton";
 import { useCallback, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
-import SectionContainer from "shared/SectionContainer";
-import SectionHeader from "shared/SectionHeader";
-import Header from "components/Header";
+import SectionContainer from "components/ui/layout/SectionContainer";
+import SectionHeader from "components/layout/SectionHeader";
+import Header from "components/ui/Header";
 import { useBatchedTagsData } from "utils/hooks";
-import NoDataComponent from "components/NoDataComponent";
+import NoDataComponent from "components/ui/NoDataComponent";
 import { colors } from "theme/tokens/variables";
 
 interface TagAggregation {

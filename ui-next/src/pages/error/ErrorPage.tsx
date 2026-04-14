@@ -1,17 +1,17 @@
 import Box from "@mui/material/Box";
-import MuiTypography from "components/MuiTypography";
-import Error from "components/v1/error/Error";
+import MuiTypography from "components/ui/MuiTypography";
+import Error from "components/ui/Error";
 import EmailNotVerifiedSvg from "images/svg/email-not-verified.svg";
 import UserNotFoundSvg from "images/svg/user-not-found.svg";
 import { useCallback, useMemo } from "react";
 import { Helmet } from "react-helmet";
 import { useQueryState } from "react-router-use-location-state";
-import { useAuth } from "shared/auth";
+import { useAuth } from "components/features/auth";
 import {
   silentlyRefreshToken,
   hasRefreshPermanentlyFailed,
-} from "shared/auth/silentRefresh";
-import { canRefreshToken } from "shared/auth/tokenManagerJotai";
+} from "components/features/auth/silentRefresh";
+import { canRefreshToken } from "components/features/auth/tokenManagerJotai";
 import { HttpStatusCode } from "utils/constants/httpStatusCode";
 import { useErrorMonitoring } from "utils/monitoring";
 import Forbidden from "./Forbidden";

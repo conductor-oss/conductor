@@ -5,13 +5,13 @@ import {
 } from "@phosphor-icons/react";
 import { DataTable, NavLink, Paper } from "components";
 import ConfirmChoiceDialog from "components/enterprise/ConfirmChoiceDialog";
-import Button from "components/MuiButton";
-import IconButton from "components/MuiIconButton";
+import Button from "components/ui/buttons/MuiButton";
+import IconButton from "components/ui/buttons/MuiIconButton";
 import sharedStyles from "pages/styles";
 import { useState } from "react";
 import { Helmet } from "react-helmet";
-import SectionContainer from "shared/SectionContainer";
-import SectionHeader from "shared/SectionHeader";
+import SectionContainer from "components/ui/layout/SectionContainer";
+import SectionHeader from "components/layout/SectionHeader";
 import { featureFlags, FEATURES } from "utils/flags";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { useActionWithPath, useFetch } from "utils/query";

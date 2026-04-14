@@ -8,12 +8,12 @@ import {
   Tab,
   Tabs,
 } from "@mui/material";
-import { PanelAccordion } from "components/PanelAccordion";
-import { ConductorAutoComplete } from "components/v1";
-import ConductorInput from "components/v1/ConductorInput";
-import { ConductorStringArrayFormField } from "components/v1/ConductorStringArrayFormField";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
-import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+import { PanelAccordion } from "components/ui/PanelAccordion";
+import { ConductorAutoComplete } from "components/ui/inputs";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import { ConductorStringArrayFormField } from "components/ui/inputs/ConductorStringArrayFormField";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import _clone from "lodash/clone";
 import { pluginRegistry } from "plugins/registry";
 import {

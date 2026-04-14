@@ -1,7 +1,10 @@
 import { useInterpret, useSelector } from "@xstate/react";
-import { FlowActionTypes, SelectNodeEvent } from "components/flow/state";
-import { selectNodes } from "components/flow/state/selectors";
-import { MessageContext } from "components/v1/layout/MessageContext";
+import {
+  FlowActionTypes,
+  SelectNodeEvent,
+} from "components/features/flow/state";
+import { selectNodes } from "components/features/flow/state/selectors";
+import { MessageContext } from "components/providers/messageContext";
 import _isEmpty from "lodash/isEmpty";
 import { useContext, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";

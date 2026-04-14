@@ -1,10 +1,10 @@
 import { Box, Grid, Link } from "@mui/material";
 import { Button } from "components/index";
 import { Play } from "@phosphor-icons/react";
-import MuiTypography from "components/MuiTypography";
-import ConductorInput from "components/v1/ConductorInput";
+import MuiTypography from "components/ui/MuiTypography";
+import ConductorInput from "components/ui/inputs/ConductorInput";
 import { WORKFLOW_EXECUTION_URL } from "utils/constants/route";
-import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
 
 export type TestTaskFormProps = {
   handleRunTestTask: () => void;

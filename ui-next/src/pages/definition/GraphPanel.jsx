@@ -1,16 +1,16 @@
 import { useCallback, useState } from "react";
 import { Box } from "@mui/material";
 import { useSelector } from "@xstate/react";
-import { Flow } from "components/flow/Flow";
+import { Flow } from "components/features/flow/Flow";
 import { useLocalCopyMachine } from "./ConfirmLocalCopyDialog/state/hook";
 import { useMemo } from "react";
 import ProgressIcon from "./progressicons";
 import { X } from "@phosphor-icons/react";
 import { DefinitionMachineEventTypes } from "pages/definition/state/types";
-import MuiAlert from "components/MuiAlert";
+import MuiAlert from "components/ui/MuiAlert";
 import { usePanelChanges } from "pages/definition/state/usePanelChanges";
-import { selectIsOpenedEdge } from "components/flow/state/selectors";
-import AddTaskSidebar from "components/flow/components/RichAddTaskMenu/AddTaskSidebar";
+import { selectIsOpenedEdge } from "components/features/flow/state/selectors";
+import AddTaskSidebar from "components/features/flow/components/RichAddTaskMenu/AddTaskSidebar";
 
 const GraphPanel = ({ definitionActor }) => {
   const { leftPanelExpanded, setLeftPanelExpanded } =

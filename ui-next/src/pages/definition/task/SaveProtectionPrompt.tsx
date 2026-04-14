@@ -1,7 +1,7 @@
 import { useSelector } from "@xstate/react";
 import fastDeepEqual from "fast-deep-equal";
 import { FunctionComponent, useEffect, useRef } from "react";
-import BlockNavigationWithConfirmation from "shared/BlockNavigationWithConfirmation";
+import BlockNavigationWithConfirmation from "components/BlockNavigationWithConfirmation";
 import { useSaveProtection } from "shared/useSaveProtection";
 import { ActorRef } from "xstate";
 import { TaskDefinitionFormMachineEvent } from "./form/state";

@@ -182,7 +182,7 @@ description: Conductor is an open source workflow engine and durable execution p
     </details>
     <details class="faq-item">
       <summary>Is Conductor open source?</summary>
-      <p>Yes. Conductor is a fully open source workflow engine, Apache 2.0 licensed. You can self-host it on your own infrastructure with no vendor lock-in. It supports 8+ persistence backends, 6 message brokers, and runs anywhere Docker runs.</p>
+      <p>Yes. Conductor is a fully open source workflow engine, Apache 2.0 licensed. You can self-host it on your own infrastructure with no vendor lock-in. It supports 5 persistence backends, 6 message brokers, and runs anywhere Docker runs.</p>
     </details>
     <details class="faq-item">
       <summary>Is this the same as Netflix Conductor?</summary>
@@ -238,7 +238,7 @@ description: Conductor is an open source workflow engine and durable execution p
     </details>
     <details class="faq-item">
       <summary>How does Conductor compare to other workflow engines?</summary>
-      <p>Conductor is the only open source workflow engine with native LLM task types for 14+ providers, built-in MCP integration, and vector database support. Combined with durable execution, 7+ language SDKs (Java, Python, Go, JavaScript, C#, Ruby, Rust), 6 message brokers, 8+ persistence backends, and battle-tested scale at Netflix, Tesla, LinkedIn, and JP Morgan, Conductor provides the most complete workflow orchestration platform available. Unlike Temporal, Step Functions, or Airflow, Conductor is fully self-hosted, supports both code-first and JSON workflow definitions, and provides native AI agent orchestration out of the box.</p>
+      <p>Conductor is the only open source workflow engine with native LLM task types for 14+ providers, built-in MCP integration, and vector database support. Combined with durable execution, 7+ language SDKs (Java, Python, Go, JavaScript, C#, Ruby, Rust), 6 message brokers, 5 persistence backends, and battle-tested scale at Netflix, Tesla, LinkedIn, and JP Morgan, Conductor provides the most complete workflow orchestration platform available. Unlike Temporal, Step Functions, or Airflow, Conductor is fully self-hosted, supports both code-first and JSON workflow definitions, and provides native AI agent orchestration out of the box.</p>
     </details>
   </div>
 </div>

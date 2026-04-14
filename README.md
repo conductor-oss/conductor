@@ -28,14 +28,12 @@ Conductor is an open-source, durable workflow engine built at [Netflix](https://
 
 # Get Running in 60 Seconds
 
-**Prerequisites:** [Node.js](https://nodejs.org/) v16+ and [Java](https://adoptium.net/) 21+ must be installed.
+**Prerequisites:** [Node.js](https://nodejs.org/) v16+ and Java 21+ must be installed.
 
 ```shell
 npm install -g @conductor-oss/conductor-cli
 conductor server start
 ```
-
-> **Note:** First start downloads ~600 MB (the server JAR). This is a one-time download.
 
 Open [http://localhost:8080](http://localhost:8080) — your server is running with the built-in UI.
 
@@ -55,49 +53,107 @@ conductor workflow start -w hello_workflow --sync
 
 See the [Quickstart guide](https://docs.conductor-oss.org/quickstart/) for the full walkthrough, including writing workers and replaying workflows.
 
-<details>
-<summary><strong>Prefer Docker?</strong></summary>
+**Docker Image for Conductor:**
 
 ```shell
-docker run -p 8080:8080 conductoross/conductor:latest
+docker run -p 8080:8080 conductoross/conductor:latest # replace latest with the published version to pin to a specific version
 ```
 
 All CLI commands have equivalent cURL/API calls. See the [Quickstart](https://docs.conductor-oss.org/quickstart/) for details.
-</details>
+
 
 ---
 
 # Why Conductor is the workflow engine of choice for developers
 
-|                               |                                                                                                                                                                                                     |
-|-------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Durable execution**         | Every step is persisted. Survive crashes, restarts, and network failures. At-least-once task delivery with configurable retries, timeouts, and compensation flows.                                  |
-| **Deterministic by design**   | Orchestration is separated from business logic — determinism is an architectural guarantee, not a developer discipline. No side effects, no hidden state, no replay bugs. Your workers run any code they want; the workflow graph stays deterministic by construction. |
-| **AI agent orchestration**    | 14+ native LLM providers, MCP tool calling, function calling, human-in-the-loop approval, vector databases (Pinecone, pgvector, MongoDB Atlas) for RAG.                                             |
-| **Dynamic at runtime**        | Dynamic forks, dynamic tasks, and dynamic sub-workflows — all resolved at runtime. LLMs can generate workflow definitions as JSON and Conductor executes them immediately. No compile/deploy cycle. |
-| **Full replayability**        | Restart from the beginning, rerun from any task, or retry just the failed step — on any workflow, at any time, indefinitely.                                                                        |
-| **Internet scale**            | Battle-tested at Netflix, Tesla, LinkedIn, J.P. Morgan, and others. Scales horizontally to billions of workflow executions.                                                                         |
-| **Polyglot workers**          | Write workers in Java, Python, Go, JavaScript, C#, Ruby, or Rust. Workers poll, execute, and report — run them anywhere.                                                                            |
-| **Self-hosted, no lock-in**   | Apache 2.0 licensed. 8+ persistence backends, 6 message brokers. Runs anywhere Docker or a JVM runs.                                                                                                |
+| | |
+|---|---|
+| **Durable execution** | Every step is persisted. Survives crashes, restarts, and network failures with configurable retries and timeouts. |
+| **Deterministic by design** | Orchestration is separated from business logic — determinism is architectural, not developer discipline. Workers run any code; the workflow graph stays deterministic by construction. |
+| **AI agent orchestration** | 14+ native LLM providers, MCP tool calling, function calling, human-in-the-loop approval, and vector databases for RAG. |
+| **Dynamic at runtime** | Dynamic forks, tasks, and sub-workflows resolved at runtime. LLMs generate JSON workflow definitions and Conductor executes them immediately. |
+| **Full replayability** | Restart from the beginning, rerun from any task, or retry just the failed step — on any workflow, at any time. |
+| **Internet scale** | Battle-tested at Netflix, Tesla, LinkedIn, and J.P. Morgan. Scales horizontally to billions of workflow executions. |
+| **Polyglot workers** | Workers in Java, Python, Go, JavaScript, C#, Ruby, or Rust. Workers poll, execute, and report — run them anywhere. |
+| **Self-hosted, no lock-in** | Apache 2.0. 5 persistence backends, 6 message brokers. Runs anywhere Docker or a JVM runs. |
 
-# AI-Native Orchestration
+# Ship Agents, Not Framework Code
 
-Conductor keeps orchestration deterministic by separating it from business logic. Workflows are defined as JSON; workers are plain code in any language and can call any system.
+Conductor workers are plain code — any language, any library, any I/O. No determinism constraints, no SDK ritual. The orchestration layer is declarative and machine-readable, so LLMs generate and compose workflows natively. If an agent crashes at iteration 12, it resumes from iteration 12.
 
-This gives you:
-- AI-native orchestration: LLMs can generate and modify JSON workflow definitions directly, and Conductor executes them immediately.
-- Deterministic orchestration and safe replay without forcing your business logic into a framework.
-- Fast iteration by updating orchestration without redeploying workers.
+**An autonomous think-act agent in Conductor:** discover tools via MCP, reason with an LLM, call the chosen tool, repeat until done.
 
-Conductor scales horizontally to the internet scale by scaling both server and workers scaling independently based on queue depth and throughput. See the [production deployment guide](docs/devguide/running/deploy.md) and [scaling workers guide](docs/devguide/how-tos/Workers/scaling-workers.md).
+```json
+{
+  "name": "autonomous_agent",
+  "description": "Agent that loops until the task is complete",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "discover_tools",
+      "taskReferenceName": "discover",
+      "type": "LIST_MCP_TOOLS",
+      "inputParameters": {
+        "mcpServer": "${workflow.input.mcpServerUrl}"
+      }
+    },
+    {
+      "name": "agent_loop",
+      "taskReferenceName": "loop",
+      "type": "DO_WHILE",
+      "loopCondition": "if ($.loop['think'].output.result.done == true) { false; } else { true; }",
+      "loopOver": [
+        {
+          "name": "think",
+          "taskReferenceName": "think",
+          "type": "LLM_CHAT_COMPLETE",
+          "inputParameters": {
+            "llmProvider": "openai",
+            "model": "gpt-4o-mini",
+            "messages": [
+              {
+                "role": "system",
+                "message": "You are an autonomous agent. Available tools: ${discover.output.tools}. Previous results: ${loop.output.results}. Respond with JSON: {\"action\": \"tool_name\", \"arguments\": {}, \"done\": false} or {\"answer\": \"final answer\", \"done\": true}."
+              },
+              { "role": "user", "message": "${workflow.input.task}" }
+            ]
+          }
+        },
+        {
+          "name": "act",
+          "taskReferenceName": "act",
+          "type": "SWITCH",
+          "expression": "$.think.output.result.done ? 'done' : 'call_tool'",
+          "decisionCases": {
+            "call_tool": [
+              {
+                "name": "execute_tool",
+                "taskReferenceName": "tool_call",
+                "type": "CALL_MCP_TOOL",
+                "inputParameters": {
+                  "mcpServer": "${workflow.input.mcpServerUrl}",
+                  "method": "${think.output.result.action}",
+                  "arguments": "${think.output.result.arguments}"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+Every step is durably persisted — no framework, no SDK lock-in. Code-first engines force your code to be deterministic so the framework can replay it. Conductor makes the engine deterministic — so your code doesn't have to be.
+
+See the [Build Your First AI Agent](https://docs.conductor-oss.org/devguide/ai/first-ai-agent.html) guide for the full walkthrough.
 
 ---
 
-## Conductor Skills for AI Agents
+## Conductor Skills for AI Coding Assistants
 
-**[Conductor Skills](https://github.com/conductor-oss/conductor-skills)** are skills for your AI agent to create, manage and deploy workflows.
-No code-compile-deploy loop, just describe what you want, add context and have workflows running.
-You can also use it to build end to end applications that are backed by Conductor workflows.
+**[Conductor Skills](https://github.com/conductor-oss/conductor-skills)** let AI coding assistants (Claude Code, Gemini CLI, and others) create, manage, and deploy Conductor workflows directly from your terminal.
 
 ### Claude
 ```shell
@@ -148,7 +204,8 @@ powershell -c "irm https://conductor-oss.github.io/conductor-skills/install.ps1 
 
 ---
 
-# Backend Configuration
+<details>
+<summary><strong>Backend Configuration</strong></summary>
 
 | Backend | Configuration |
 |---------|---------------|
@@ -158,6 +215,8 @@ powershell -c "irm https://conductor-oss.github.io/conductor-skills/install.ps1 
 | Postgres | [config-postgres.properties](docker/server/config/config-postgres.properties) |
 | Postgres + ES7 | [config-postgres-es7.properties](docker/server/config/config-postgres-es7.properties) |
 | MySQL + ES7 | [config-mysql.properties](docker/server/config/config-mysql.properties) |
+
+</details>
 
 ---
 
@@ -197,7 +256,7 @@ Yes. Conductor OSS is the continuation of the original [Netflix Conductor](https
 <details>
 <summary><strong>Is Conductor open source?</strong></summary>
 
-Yes. Conductor is a fully open-source workflow engine licensed under Apache 2.0. You can self-host on your own infrastructure with 8+ persistence backends and 6 message brokers.
+Yes. Conductor is a fully open-source workflow engine licensed under Apache 2.0. You can self-host on your own infrastructure with 5 persistence backends and 6 message brokers.
 </details>
 
 <details>
@@ -237,9 +296,45 @@ Coupling orchestration logic with business logic forces developers to maintain d
 </details>
 
 <details>
+<summary><strong>Isn't writing workflows as code more powerful than JSON?</strong></summary>
+
+It depends on what you mean by "powerful." In code-first engines, the workflow definition and your business logic live in the same runtime — which means the engine must replay your code to recover state. That forces determinism constraints on your business logic: no direct I/O, no system time, no threads, no randomness. Conductor separates these concerns. The orchestration graph is declarative (JSON), so it's deterministic by construction. Your workers are plain code with zero constraints — use any language, any library, call any API. You get the full power of code where it matters (business logic) without the framework tax where it doesn't (orchestration).
+</details>
+
+<details>
+<summary><strong>Can JSON workflows handle complex logic like branching, loops, and error handling?</strong></summary>
+
+Yes. Conductor supports `SWITCH` (conditional branching), `DO_WHILE` (loops with configurable iteration cleanup), `FORK_JOIN` (parallel execution with dynamic fanout), `SUB_WORKFLOW` (composition), and `DYNAMIC` tasks resolved at runtime. These are composable — you can nest loops inside branches inside forks. For error handling, every task supports configurable retries, timeouts, and optional/compensating tasks. The declarative model doesn't limit complexity — it makes complexity visible and debuggable.
+</details>
+
+<details>
+<summary><strong>How does Conductor handle workflow versioning?</strong></summary>
+
+Workflow definitions are versioned by number. Running executions continue on the version they started with — deploying a new version never breaks in-flight workflows. There's no replay compatibility problem because Conductor doesn't replay your code. The orchestration graph is the source of truth, and each execution is pinned to its definition version. Update orchestration logic without redeploying workers and without worrying about breaking running workflows.
+</details>
+
+<details>
+<summary><strong>What about developer experience — IDE support, type checking, debugging?</strong></summary>
+
+Conductor provides a built-in visual UI for designing, running, and debugging workflows. Every execution is fully observable: you can inspect the input, output, timing, and retry history of every task. For type safety, Conductor validates workflow inputs and task I/O against JSON Schema. Workers are plain code in your language of choice — you get full IDE support, type checking, and debugging for your business logic. The orchestration layer is visible in the UI, not hidden inside a framework.
+</details>
+
+<details>
+<summary><strong>Can Conductor handle long-running workflows (days, weeks, months)?</strong></summary>
+
+Yes. Conductor is designed for long-running workflows. Executions are fully persisted — a workflow can pause for months waiting for a human approval, an external signal, or a scheduled timer, and resume exactly where it left off. There's no in-memory state to lose. This is the same mechanism that makes AI agent loops durable: if iteration 12 waits for a human review for three weeks, iteration 13 picks up right where it left off.
+</details>
+
+<details>
+<summary><strong>Don't I lose flexibility by not having orchestration in code?</strong></summary>
+
+You gain flexibility. Because workflows are JSON, LLMs can generate and modify them at runtime — no compile/deploy cycle. Dynamic forks let you fan out to a variable number of parallel tasks determined at runtime. Dynamic sub-workflows let one workflow compose others by name. And because workers are decoupled from orchestration, you can update the workflow graph or swap worker implementations independently. Code-first engines couple these together, so changing orchestration means redeploying and re-versioning your code.
+</details>
+
+<details>
 <summary><strong>How does Conductor compare to other workflow engines?</strong></summary>
 
-Conductor is an open-source workflow engine with native LLM task types for 14+ providers, built-in MCP integration, durable execution, full replayability, and 7+ language SDKs.
+Conductor is an open-source workflow engine with native LLM task types for 14+ providers, built-in MCP integration, durable execution, full replayability, and 7 language SDKs. Unlike code-first engines, Conductor separates orchestration from business logic — determinism is an architectural guarantee, not a developer constraint. Your workers are plain code with zero framework rules. The orchestration layer is declarative, so it's observable, versionable, and composable by LLMs. Battle-tested at Netflix, Tesla, LinkedIn, and J.P. Morgan.
 </details>
 
 <details>

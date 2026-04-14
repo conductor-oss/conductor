@@ -6,7 +6,7 @@ import Stack from "@mui/material/Stack";
 import { CSSProperties, useState } from "react";
 
 import { ReactJson } from "components";
-import MuiIconButton from "components/MuiIconButton";
+import MuiIconButton from "components/ui/buttons/MuiIconButton";
 import { colors } from "theme/tokens/variables";
 
 type DataType = {

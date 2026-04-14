@@ -1,7 +1,7 @@
 import React from "react";
 import EmptyPageIntro from "./EmptyPageIntro";
 import { openInNewTab } from "utils/helpers";
-import UnlockIcon from "./v1/icons/UnlockIcon";
+import UnlockIcon from "components/icons/UnlockIcon";
 
 const TALK_TO_AN_EXPERT_URL = "https://orkes.io/talk-to-an-expert";
 

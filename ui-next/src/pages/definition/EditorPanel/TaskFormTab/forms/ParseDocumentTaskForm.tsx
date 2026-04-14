@@ -9,8 +9,8 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import ConductorInput from "components/v1/ConductorInput";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 import { useCallback, useState } from "react";
 import { updateField } from "utils/fieldHelpers";
 import { useGetIntegration } from "utils/hooks";

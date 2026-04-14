@@ -8,8 +8,8 @@ import {
 import {
   START_TASK_FAKE_TASK_REFERENCE_NAME,
   END_TASK_FAKE_TASK_REFERENCE_NAME,
-} from "components/flow/nodes";
-import { SelectNodeEvent } from "components/flow/state";
+} from "components/features/flow/nodes";
+import { SelectNodeEvent } from "components/features/flow/state";
 
 import _isNil from "lodash/isNil";
 import _last from "lodash/last";

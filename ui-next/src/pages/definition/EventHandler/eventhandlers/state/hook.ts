@@ -1,5 +1,5 @@
 import { useInterpret, useSelector } from "@xstate/react";
-import { MessageContext } from "components/v1/layout/MessageContext";
+import { MessageContext } from "components/providers/messageContext";
 import _get from "lodash/get";
 import { useContext, useMemo } from "react";
 import { useLocation, useParams, Location } from "react-router";
