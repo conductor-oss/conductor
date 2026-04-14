@@ -21,11 +21,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.tasks.TaskType;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.dao.ExecutionDAO;
+import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -33,6 +35,9 @@ import com.netflix.conductor.service.ExecutionLockService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
+
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -49,6 +54,7 @@ public class WorkflowSweeperTest {
     private QueueDAO queueDAO;
     private WorkflowExecutor workflowExecutor;
     private ExecutionDAO executionDAO;
+    private IndexDAO indexDAO;
     private ConductorProperties properties;
     private SweeperProperties sweeperProperties;
     private SystemTaskRegistry systemTaskRegistry;
@@ -62,6 +68,7 @@ public class WorkflowSweeperTest {
         queueDAO = mock(QueueDAO.class);
         workflowExecutor = mock(WorkflowExecutor.class);
         executionDAO = mock(ExecutionDAO.class);
+        indexDAO = mock(IndexDAO.class);
         properties = mock(ConductorProperties.class);
         sweeperProperties = mock(SweeperProperties.class);
         systemTaskRegistry = mock(SystemTaskRegistry.class);
@@ -72,6 +79,7 @@ public class WorkflowSweeperTest {
         when(properties.getMaxPostponeDurationSeconds()).thenReturn(Duration.ofSeconds(3600));
         when(properties.getLockLeaseTime()).thenReturn(Duration.ofSeconds(60));
         when(properties.getSweeperThreadCount()).thenReturn(0);
+        when(properties.isTaskIndexingEnabled()).thenReturn(true);
 
         workflowSweeper =
                 new WorkflowSweeper(
@@ -79,6 +87,7 @@ public class WorkflowSweeperTest {
                         queueDAO,
                         workflowExecutor,
                         executionDAO,
+                        indexDAO,
                         properties,
                         sweeperProperties,
                         systemTaskRegistry,
@@ -181,15 +190,60 @@ public class WorkflowSweeperTest {
         workflowSweeper.sweep(WORKFLOW_ID);
 
         verify(executionDAO).updateTask(subWorkflowTask);
+        verify(indexDAO).indexTask(any());
         verify(workflowExecutor, times(2)).decide(WORKFLOW_ID);
         verify(queueDAO, never()).push(anyString(), anyString(), anyLong());
         verify(executionLockService).releaseLock(WORKFLOW_ID);
     }
 
+    @Test
+    public void sweepReindexesWorkflowWhenIndexedStateDoesNotMatchExecutionStore() {
+        TaskModel completedTask =
+                newTask("completed-task", TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.COMPLETED);
+        WorkflowModel workflow = newWorkflow(List.of(completedTask));
+        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+
+        when(executionLockService.acquireLock(WORKFLOW_ID)).thenReturn(true);
+        when(workflowExecutor.getWorkflow(WORKFLOW_ID, true)).thenReturn(workflow);
+        when(indexDAO.get(WORKFLOW_ID, "status")).thenReturn(WorkflowModel.Status.RUNNING.name());
+
+        workflowSweeper.sweep(WORKFLOW_ID);
+
+        verify(indexDAO).indexWorkflow(any());
+        verify(indexDAO).indexTask(any());
+        verify(queueDAO).remove(DECIDER_QUEUE, WORKFLOW_ID);
+        verify(executionLockService).releaseLock(WORKFLOW_ID);
+    }
+
+    @Test
+    public void sweepReindexesWorkflowWhenRepairMutatesExecutionStoreDirectly() {
+        TaskModel completedTask =
+                newTask("completed-task", TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.COMPLETED);
+        WorkflowModel workflow = newWorkflow(List.of(completedTask));
+
+        when(executionLockService.acquireLock(WORKFLOW_ID)).thenReturn(true);
+        when(workflowExecutor.getWorkflow(WORKFLOW_ID, true)).thenReturn(workflow);
+        when(workflowExecutor.decide(WORKFLOW_ID)).thenReturn(workflow, workflow);
+        when(systemTaskRegistry.isSystemTask(anyString())).thenReturn(false);
+        when(indexDAO.get(WORKFLOW_ID, "status")).thenReturn(WorkflowModel.Status.RUNNING.name());
+
+        workflowSweeper.sweep(WORKFLOW_ID);
+
+        verify(executionDAO).updateWorkflow(workflow);
+        verify(indexDAO).indexWorkflow(any());
+        verify(executionLockService).releaseLock(WORKFLOW_ID);
+    }
+
     private WorkflowModel newWorkflow(List<TaskModel> tasks) {
         WorkflowModel workflowModel = new WorkflowModel();
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("test-workflow");
+        workflowDef.setVersion(1);
         workflowModel.setWorkflowId(WORKFLOW_ID);
+        workflowModel.setWorkflowDefinition(workflowDef);
         workflowModel.setStatus(WorkflowModel.Status.RUNNING);
+        workflowModel.setCreateTime(System.currentTimeMillis());
+        workflowModel.setUpdatedTime(System.currentTimeMillis());
         workflowModel.setTasks(tasks);
         return workflowModel;
     }

@@ -28,6 +28,7 @@ import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.events.EventHandler;
+import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
@@ -189,6 +190,19 @@ public class TestElasticSearchRestDAOV8 extends ElasticSearchRestDaoBaseTest {
     }
 
     @Test
+    public void shouldForceRefreshWorkflowIndexWhenRefreshOnWriteEnabled() throws Exception {
+        enableRefreshOnWrite();
+        disableAutomaticRefresh();
+
+        WorkflowSummary workflowSummary =
+                TestUtils.loadWorkflowSnapshot(objectMapper, "workflow_summary");
+
+        indexDAO.indexWorkflow(workflowSummary);
+
+        assertWorkflowSummary(workflowSummary.getWorkflowId(), workflowSummary);
+    }
+
+    @Test
     public void shouldRemoveWorkflow() {
         WorkflowSummary workflowSummary =
                 TestUtils.loadWorkflowSnapshot(objectMapper, "workflow_summary");
@@ -256,6 +270,47 @@ public class TestElasticSearchRestDAOV8 extends ElasticSearchRestDaoBaseTest {
     }
 
     @Test
+    public void shouldNotOverwriteWorkflowWithOlderUpdateTime() {
+        WorkflowSummary currentWorkflow =
+                TestUtils.loadWorkflowSnapshot(objectMapper, "workflow_summary");
+        currentWorkflow.setWorkflowId(uuid());
+        currentWorkflow.setStatus(WorkflowStatus.COMPLETED);
+        currentWorkflow.setUpdateTime(getFormattedTime(Date.from(Instant.now())));
+
+        WorkflowSummary staleWorkflow =
+                TestUtils.loadWorkflowSnapshot(objectMapper, "workflow_summary");
+        staleWorkflow.setWorkflowId(currentWorkflow.getWorkflowId());
+        staleWorkflow.setStatus(WorkflowStatus.RUNNING);
+        staleWorkflow.setUpdateTime(
+                getFormattedTime(Date.from(Instant.now().minus(Duration.ofMinutes(5)))));
+
+        indexDAO.indexWorkflow(currentWorkflow);
+        indexDAO.indexWorkflow(staleWorkflow);
+
+        assertWorkflowSummary(currentWorkflow.getWorkflowId(), currentWorkflow);
+    }
+
+    @Test
+    public void shouldSkipOlderWorkflowPartialUpdateWhenUpdateTimeProvided() {
+        WorkflowSummary workflowSummary =
+                TestUtils.loadWorkflowSnapshot(objectMapper, "workflow_summary");
+        workflowSummary.setWorkflowId(uuid());
+        workflowSummary.setStatus(WorkflowStatus.COMPLETED);
+        workflowSummary.setUpdateTime(getFormattedTime(Date.from(Instant.now())));
+        indexDAO.indexWorkflow(workflowSummary);
+
+        indexDAO.updateWorkflow(
+                workflowSummary.getWorkflowId(),
+                new String[] {"status", "updateTime"},
+                new Object[] {
+                    WorkflowStatus.RUNNING,
+                    getFormattedTime(Date.from(Instant.now().minus(Duration.ofMinutes(5))))
+                });
+
+        assertWorkflowSummary(workflowSummary.getWorkflowId(), workflowSummary);
+    }
+
+    @Test
     public void shouldIndexTask() {
         TaskSummary taskSummary = TestUtils.loadTaskSnapshot(objectMapper, "task_summary");
         indexDAO.indexTask(taskSummary);
@@ -273,6 +328,54 @@ public class TestElasticSearchRestDAOV8 extends ElasticSearchRestDaoBaseTest {
         List<String> tasks = tryFindResults(() -> searchTasks(taskSummary));
 
         assertEquals(taskSummary.getTaskId(), tasks.get(0));
+    }
+
+    @Test
+    public void shouldNotOverwriteTaskWithOlderUpdateTime() {
+        TaskSummary currentTask = TestUtils.loadTaskSnapshot(objectMapper, "task_summary");
+        currentTask.setTaskId(uuid());
+        currentTask.setWorkflowId(uuid());
+        currentTask.setStatus(Task.Status.COMPLETED);
+        currentTask.setUpdateTime(getFormattedTime(Date.from(Instant.now())));
+
+        TaskSummary staleTask = TestUtils.loadTaskSnapshot(objectMapper, "task_summary");
+        staleTask.setTaskId(currentTask.getTaskId());
+        staleTask.setWorkflowId(currentTask.getWorkflowId());
+        staleTask.setStatus(Task.Status.IN_PROGRESS);
+        staleTask.setUpdateTime(
+                getFormattedTime(Date.from(Instant.now().minus(Duration.ofMinutes(5)))));
+
+        indexDAO.indexTask(currentTask);
+        indexDAO.indexTask(staleTask);
+
+        TaskSummary indexedTask = findTaskSummary(currentTask.getTaskId());
+        assertEquals(currentTask.getTaskId(), indexedTask.getTaskId());
+        assertEquals(currentTask.getStatus(), indexedTask.getStatus());
+        assertEquals(currentTask.getUpdateTime(), indexedTask.getUpdateTime());
+    }
+
+    @Test
+    public void shouldSkipOlderTaskPartialUpdateWhenUpdateTimeProvided() {
+        TaskSummary taskSummary = TestUtils.loadTaskSnapshot(objectMapper, "task_summary");
+        taskSummary.setTaskId(uuid());
+        taskSummary.setWorkflowId(uuid());
+        taskSummary.setStatus(Task.Status.COMPLETED);
+        taskSummary.setUpdateTime(getFormattedTime(Date.from(Instant.now())));
+        indexDAO.indexTask(taskSummary);
+
+        indexDAO.updateTask(
+                taskSummary.getWorkflowId(),
+                taskSummary.getTaskId(),
+                new String[] {"status", "updateTime"},
+                new Object[] {
+                    Task.Status.IN_PROGRESS,
+                    getFormattedTime(Date.from(Instant.now().minus(Duration.ofMinutes(5))))
+                });
+
+        TaskSummary indexedTask = findTaskSummary(taskSummary.getTaskId());
+        assertEquals(taskSummary.getTaskId(), indexedTask.getTaskId());
+        assertEquals(taskSummary.getStatus(), indexedTask.getStatus());
+        assertEquals(taskSummary.getUpdateTime(), indexedTask.getUpdateTime());
     }
 
     @Test
@@ -390,6 +493,29 @@ public class TestElasticSearchRestDAOV8 extends ElasticSearchRestDaoBaseTest {
     }
 
     @Test
+    public void shouldForceRefreshAncillaryIndicesWhenRefreshOnWriteEnabled() throws Exception {
+        enableRefreshOnWrite();
+        disableAutomaticRefresh();
+
+        List<TaskExecLog> logs = new ArrayList<>();
+        String taskId = uuid();
+        logs.add(createLog(taskId, "log1"));
+        logs.add(createLog(taskId, "log2"));
+        indexDAO.addTaskExecutionLogs(logs);
+        assertEquals(2, tryFindResults(() -> indexDAO.getTaskExecutionLogs(taskId), 2).size());
+
+        String queue = "refresh-queue";
+        Message message = new Message(uuid(), "payload", null);
+        indexDAO.addMessage(queue, message);
+        assertEquals(1, tryFindResults(() -> indexDAO.getMessages(queue), 1).size());
+
+        String event = "refresh-event";
+        EventExecution execution = createEventExecution(event);
+        indexDAO.addEventExecution(execution);
+        assertEquals(1, tryFindResults(() -> indexDAO.getEventExecutions(event), 1).size());
+    }
+
+    @Test
     public void shouldAddMessage() {
         String queue = "queue";
         Message message1 = new Message(uuid(), "payload1", null);
@@ -443,6 +569,31 @@ public class TestElasticSearchRestDAOV8 extends ElasticSearchRestDaoBaseTest {
         assertTrue(
                 "Not all event executions was indexed",
                 indexedExecutions.containsAll(Arrays.asList(execution1, execution2)));
+    }
+
+    @Test
+    public void shouldForceRefreshWorkflowMutationsWhenRefreshOnWriteEnabled() throws Exception {
+        enableRefreshOnWrite();
+        disableAutomaticRefresh();
+
+        WorkflowSummary workflowSummary =
+                TestUtils.loadWorkflowSnapshot(objectMapper, "workflow_summary");
+        indexDocument(
+                indexName(WORKFLOW_DOC_TYPE), workflowSummary.getWorkflowId(), workflowSummary);
+
+        indexDAO.updateWorkflow(
+                workflowSummary.getWorkflowId(),
+                new String[] {"status"},
+                new Object[] {WorkflowStatus.COMPLETED});
+
+        WorkflowSummary updatedWorkflow = findWorkflowSummary(workflowSummary.getWorkflowId());
+        assertEquals(WorkflowStatus.COMPLETED, updatedWorkflow.getStatus());
+
+        indexDAO.removeWorkflow(workflowSummary.getWorkflowId());
+
+        List<String> workflows =
+                tryFindResults(() -> searchWorkflows(workflowSummary.getWorkflowId()), 0);
+        assertTrue("Workflow was not removed.", workflows.isEmpty());
     }
 
     @Test
@@ -584,10 +735,63 @@ public class TestElasticSearchRestDAOV8 extends ElasticSearchRestDaoBaseTest {
                 .getResults();
     }
 
+    private WorkflowSummary findWorkflowSummary(String workflowId) {
+        List<WorkflowSummary> results =
+                tryFindResults(
+                        () ->
+                                indexDAO.searchWorkflowSummary(
+                                                "",
+                                                "workflowId:\"" + workflowId + "\"",
+                                                0,
+                                                100,
+                                                Collections.emptyList())
+                                        .getResults());
+        return results.getFirst();
+    }
+
+    private TaskSummary findTaskSummary(String taskId) {
+        List<TaskSummary> results =
+                tryFindResults(
+                        () ->
+                                indexDAO.searchTaskSummary(
+                                                "",
+                                                "taskId:\"" + taskId + "\"",
+                                                0,
+                                                100,
+                                                Collections.emptyList())
+                                        .getResults());
+        return results.getFirst();
+    }
+
     private TaskExecLog createLog(String taskId, String log) {
         TaskExecLog taskExecLog = new TaskExecLog(log);
         taskExecLog.setTaskId(taskId);
         return taskExecLog;
+    }
+
+    private void enableRefreshOnWrite() {
+        properties.setWaitForIndexRefresh(false);
+        properties.setRefreshOnWrite(true);
+    }
+
+    private void disableAutomaticRefresh() throws IOException {
+        for (String docType :
+                List.of(
+                        WORKFLOW_DOC_TYPE,
+                        TASK_DOC_TYPE,
+                        LOG_DOC_TYPE,
+                        MSG_DOC_TYPE,
+                        EVENT_DOC_TYPE)) {
+            Request request = new Request("PUT", "/" + indexName(docType) + "-000001/_settings");
+            request.setJsonEntity("{\"index\":{\"refresh_interval\":\"-1\"}}");
+            restClient.performRequest(request);
+        }
+    }
+
+    private void indexDocument(String indexAlias, String id, Object document) throws IOException {
+        Request request = new Request("PUT", "/" + indexAlias + "/_doc/" + id + "?refresh=true");
+        request.setJsonEntity(objectMapper.writeValueAsString(document));
+        restClient.performRequest(request);
     }
 
     private EventExecution createEventExecution(String event) {
