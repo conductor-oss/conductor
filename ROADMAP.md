@@ -1,75 +1,61 @@
 # Conductor OSS Roadmap
 
+<!--
+  machine-readable: true
+  format: markdown-tables
+  last_reviewed: 2026-04-12
+  statuses: [Done, Partial, Planned]
+-->
 
-## New Features
-### Type safety for workflow inputs and task input/output through JSON Schema
+> **Status key:** `Done` = shipped and available, `Partial` = partially implemented, `Planned` = not yet started.
 
-* Allow type safe workflows and workers with support for JSON schema and protobuf
-* Enable scaffolding code generation for workers through schema for workers using CLI tool
+## System Tasks and Operators
 
-### New System Tasks
+| Status | Item | Details |
+|--------|------|---------|
+| Done | LLM text completion | `LLM_TEXT_COMPLETE` system task in `ai/` module |
+| Done | LLM chat completion with memory | `LLM_CHAT_COMPLETE` system task in `ai/` module |
+| Done | LLM embedding generation | `LLM_GENERATE_EMBEDDINGS` system task in `ai/` module |
+| Done | Improved While loop (DO_WHILE) | `keepLastN` iteration cleanup, `items` list iteration, `loopIndex`/`loopItem` injection |
+| Done | Python scripting for INLINE task | `PythonEvaluator` via GraalVM polyglot alongside JavaScript |
+| Done | Database task | System task for relational and NoSQL database operations |
+| Planned | HTTP task polling | Polling/retry support for the HTTP system task |
+| Planned | For..Each operator | Parallel and sequential iteration operator |
+| Planned | Try..Catch operator | Task-level error handling without failing the workflow |
 
-* Database task to work with relational & no-sql databases
-* Polling support for HTTP task
-* Operators
- * * For..Each with parallel and sequential execution
- * * Improved While loop
- * *  Try..Catch for improved error handling at the task level
+## APIs
 
-### LLM Integrations
-Conductor is a perfect platform to build your next LLM powered application or incorporating genAI into your applications.
-Enable system tasks for LLM integrations that lets you work with various language models for:
-1. Text completion
-2. Chat completion with memory
-3. Embedding generation
+| Status | Item | Details |
+|--------|------|---------|
+| Done | Synchronous workflow execution | `POST /api/workflow/execute/{name}/{version}` with configurable wait time and `waitUntilTaskRef` |
+| Done | Update tasks synchronously | `POST /tasks/{workflowId}/{taskRefName}/{status}/sync` returns updated workflow |
+| Planned | Update workflow variables | API to update workflow variables during execution |
 
-### CLI for Conductor
-Allow developers to manage their conductor instance via CLI.
+## Type Safety
 
-* Manage metadata
-* Query and manage workflow executions (terminate, pause, resume, retry)
-* Start | Stop manage conductor server
+| Status     | Item | Details |
+|------------|------|---------|
+| Done       | JSON Schema validation | `JsonSchemaValidator` validates workflow input and task I/O against JSON schemas |
+| Planned    | Protobuf support | Type-safe workflows and workers via protobuf definitions |
+| Incubating | Code generation for workers | Scaffold worker code from schema definitions using the CLI |
 
-### Support Python as a scripting language for INLINE task
-Extend usability of Conductor by allowing lightweight python code as INLINE tasks.
+## CLI
 
-### New APIs for workflow state management
+| Status | Item | Details |
+|--------|------|---------|
+| Done | Conductor CLI | Go-based CLI in `conductor-cli/` repo. Manages metadata, workflow executions, and server lifecycle |
 
-* Synchronous execution of workflows
-* update workflow variables
-* Update tasks synchronously
 
-## SDKs
+## Testing and Debugging
 
-* Rust
-* Kotlin
-* C++
-* Ruby
-* Swift
-* Flutter / Dart 
-* PHP
-
-### Worker metrics on server
-Expose an endpoint on the server that can be used by workers to publish worker specific metrics.
-This will allow monitoring metrics for all the workers in a distributed system across the entire system. 
-
-## Testing
-Infrastructure to make workflows easier to test and debug right from the UI and IDE.
-
-### Workflow Debugger
-
-* Ability to debug your workflows during development just like you would do when you write code
-* All functionality of a debugger
-* Breakpoints add/remove
-* Step to next
-* Drop to a certain task that was already executed. (going back in time)
-* Ability to inspect, modify, add input / output parameters
-* Watch Windows to see values of interesting &nbsp;parameters during execution
-* Attaching to a certain WF execution
-* Remote Task debugging (with SDK Support).. Enable step by step execution in a task worker from the server
+| Status | Item | Details |
+|--------|------|---------|
+| Planned | Workflow debugger | Full debugger experience: breakpoints, step-through, variable inspection, rewind to previous task, attach to running execution, remote task debugging via SDKs |
 
 ## Maintenance
 
-1. Deprecate support for Elasticsearch 6
-2. Update support for newer versions of Elasticsearch
-2. Improve/Fix JOIN task performance (less about making it performant and more about just fixing the usability) &nbsp;- Done
+| Status | Item | Details |
+|--------|------|---------|
+| Done | Deprecate Elasticsearch 6 | ES6 module replaced with deprecation stub |
+| Done | Elasticsearch 7 and 8 support | `es7-persistence` and `es8-persistence` modules (ES8 uses Java API client) |
+| Done | JOIN task performance | `FORK_JOIN` synchronous join mode (`joinMode=SYNC`) reduces polling overhead |

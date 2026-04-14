@@ -301,7 +301,7 @@ To pass parameters from a sub-workflow back to its parent workflow, you must pas
 }
 ```
 
-In the parent workflow, these sub-workflow outputs can be referenced using the expression format `${&lt;sub_workflow_ref>.output.&lt;someKey>}`.
+In the parent workflow, these sub-workflow outputs can be referenced using the expression format `${<sub_workflow_ref>.output.<someKey>}`.
 
 </details>
 
