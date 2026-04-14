@@ -23,7 +23,7 @@ import { TaskType, TaskDef } from "types";
 import { TaskStatsEventTypes } from "../TaskStats/state";
 import _isNil from "lodash/isNil";
 import fastDeepEqual from "fast-deep-equal";
-import { FlowActionTypes } from "components/flow/state";
+import { FlowActionTypes } from "components/features/flow/state";
 import _isUndefined from "lodash/isUndefined";
 import _omitBy from "lodash/omitBy";
 

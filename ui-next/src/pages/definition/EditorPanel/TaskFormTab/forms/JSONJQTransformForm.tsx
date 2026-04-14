@@ -1,6 +1,6 @@
 import { Box, Grid } from "@mui/material";
-import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
-import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import _path from "lodash/fp/path";
 import { updateField } from "utils/fieldHelpers";
 import { configureJQLanguage } from "utils/monacoUtils/CodeEditorUtils";

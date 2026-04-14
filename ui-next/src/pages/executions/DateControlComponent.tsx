@@ -7,7 +7,7 @@ import {
   styled,
 } from "@mui/material";
 import { DatePickerComponent } from "./DatePickerComponent";
-import MuiTypography from "components/MuiTypography";
+import MuiTypography from "components/ui/MuiTypography";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 
 import { commonlyUsedDateTime, getSearchDateTime } from "utils/date";

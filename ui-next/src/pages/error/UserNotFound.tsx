@@ -1,7 +1,7 @@
 import { Box, Paper } from "@mui/material";
-import MuiButton from "components/MuiButton";
-import MuiTypography from "components/MuiTypography";
-import { ErrorProps } from "components/v1/error/Error";
+import MuiButton from "components/ui/buttons/MuiButton";
+import MuiTypography from "components/ui/MuiTypography";
+import { ErrorProps } from "components/ui/Error";
 import { sidebarGrey } from "theme/tokens/colors";
 
 export const UserNotFound = ({

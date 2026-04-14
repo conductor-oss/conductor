@@ -1,12 +1,12 @@
 import { Monaco } from "@monaco-editor/react";
 import { Box, Grid } from "@mui/material";
 import { Button } from "components";
-import MuiTypography from "components/MuiTypography";
-import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
-import ConductorInput from "components/v1/ConductorInput";
-import SplitButton from "components/v1/ConductorSplitButton";
-import ResetIcon from "components/v1/icons/ResetIcon";
-import SearchIcon from "components/v1/icons/SearchIcon";
+import MuiTypography from "components/ui/MuiTypography";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import SplitButton from "components/ui/buttons/ConductorSplitButton";
+import ResetIcon from "components/icons/ResetIcon";
+import SearchIcon from "components/icons/SearchIcon";
 import { Dispatch, useEffect, useRef } from "react";
 import { QueryDispatch, SetStateAction } from "react-router-use-location-state";
 import { colors } from "theme/tokens/variables";

@@ -1,6 +1,6 @@
 import { Grid } from "@mui/material";
-import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 import { FunctionComponent } from "react";
 import { FIELD_TYPE_OBJECT, FIELD_TYPE_STRING, FieldType } from "types/common";
 import {

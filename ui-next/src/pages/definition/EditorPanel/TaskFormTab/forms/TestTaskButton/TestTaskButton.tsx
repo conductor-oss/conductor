@@ -1,11 +1,11 @@
-import { TestTask } from "components/v1/TestTask";
+import { TestTask } from "components/features/testTask";
 import { useInterpret, useSelector } from "@xstate/react";
 import { TestTaskButtonMachineStates, TestTaskMachine } from "./state";
 import { useAuthHeaders } from "utils/query";
 import { useTestTaskButtonMachine } from "./state/hook";
-import { useAuth } from "shared/auth";
+import { useAuth } from "components/features/auth";
 import { useContext } from "react";
-import { MessageContext } from "components/v1/layout/MessageContext";
+import { MessageContext } from "components/providers/messageContext";
 import { TestTaskButtonProps } from "types/TestTaskTypes";
 
 export const TestTaskButton = ({

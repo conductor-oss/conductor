@@ -7,12 +7,12 @@ import {
   WorkflowIntrospectionRecord,
 } from "types/Execution";
 import { ColorModeContext } from "theme/material/ColorModeContext";
-import { LegacyColumn } from "components/DataTable/types";
+import { LegacyColumn } from "components/ui/DataTable/types";
 import { colors } from "theme/tokens/variables";
 import { DataTable } from "components/index";
-import Dropdown from "components/Dropdown";
+import Dropdown from "components/ui/inputs/Dropdown";
 import { clickHandler, taskIdRenderer } from "pages/execution/componentHelpers";
-import { StackTraceComponent } from "components/StackTrace";
+import { StackTraceComponent } from "components/ui/StackTrace";
 
 interface WorkflowIntrospectionProps {
   selectTask: (taskSel: { ref?: string; taskId?: string }) => void;

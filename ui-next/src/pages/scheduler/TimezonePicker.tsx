@@ -1,4 +1,4 @@
-import { ConductorAutoComplete } from "components/v1/ConductorAutoComplete";
+import { ConductorAutoComplete } from "components/ui/inputs/ConductorAutoComplete";
 import timezones from "./timezones.json";
 
 type TimezonePickerProps = {

@@ -13,7 +13,7 @@ import {
   Toolbar,
 } from "@mui/material";
 import { Heading, Paper, Text } from "components";
-import MuiCheckbox from "components/MuiCheckbox";
+import MuiCheckbox from "components/ui/MuiCheckbox";
 import PropTypes from "prop-types";
 import { useState } from "react";
 import { INNER_HEADER_LEVEL } from "theme/tokens/globalConstants";

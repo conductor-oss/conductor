@@ -1,6 +1,6 @@
 import Editor, { Monaco } from "@monaco-editor/react";
 import { Box } from "@mui/material";
-import { DiffEditor } from "components/DiffEditor/DiffEditor";
+import { DiffEditor } from "components/ui/DiffEditor";
 import { useTaskDefinition } from "pages/definition/task/state/hook";
 import { TaskDefinitionDiffEditorProps } from "pages/definition/task/state/types";
 import {

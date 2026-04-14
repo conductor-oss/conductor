@@ -1,9 +1,9 @@
 import { Box, Grid } from "@mui/material";
 import _get from "lodash/get";
 
-import { ConductorArrayField } from "components/v1/ConductorArrayField";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
-import { ConductorFlatMapForm } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+import { ConductorArrayField } from "components/ui/inputs/ConductorArrayField";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorFlatMapForm } from "components/FlatMapForm/ConductorFlatMapForm";
 import { TaskType } from "types";
 import { ConductorCacheOutput } from "./ConductorCacheOutputForm";
 import { updateField } from "utils/fieldHelpers";
@@ -11,7 +11,7 @@ import { Optional } from "./OptionalFieldForm";
 import TaskFormSection from "./TaskFormSection";
 import { TaskFormProps } from "./types";
 import { useGetSetHandler } from "./useGetSetHandler";
-import ConductorInput from "components/v1/ConductorInput";
+import ConductorInput from "components/ui/inputs/ConductorInput";
 
 const EXECUTION_STRATEGY_OPTIONS = ["FIRE_FIRST", "FIRE_ALL"];
 

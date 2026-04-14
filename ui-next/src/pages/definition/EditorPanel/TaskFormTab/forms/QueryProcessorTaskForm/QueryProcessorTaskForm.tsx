@@ -1,7 +1,7 @@
 import { Box, Grid } from "@mui/material";
-import RadioButtonGroup from "components/RadioButtonGroup";
-import ConductorInput from "components/v1/ConductorInput";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
+import RadioButtonGroup from "components/ui/inputs/RadioButtonGroup";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 import { path as _path } from "lodash/fp";
 import { WorkflowExecutionStatus } from "types/Execution";
 import { QueryProcessorType } from "types/TaskType";

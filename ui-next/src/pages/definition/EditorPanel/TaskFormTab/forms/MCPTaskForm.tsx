@@ -12,7 +12,7 @@ import {
   createTheme,
 } from "@mui/material";
 import { BookIcon, GearIcon } from "@phosphor-icons/react";
-import { ConductorAutoComplete } from "components/v1";
+import { ConductorAutoComplete } from "components/ui/inputs";
 import { IntegrationIcon } from "components/IntegrationIcon";
 import { useNavigate } from "react-router";
 import { colors } from "theme/tokens/variables";

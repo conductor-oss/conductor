@@ -1,5 +1,5 @@
 import { Box, Grid } from "@mui/material";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 import { TaskType } from "types";
 import { MaybeVariable } from "../MaybeVariable";
 import { Optional } from "../OptionalFieldForm";

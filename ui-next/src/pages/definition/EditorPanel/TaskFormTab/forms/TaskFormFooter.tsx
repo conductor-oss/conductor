@@ -6,7 +6,7 @@ import ArrayForm from "./ArrayForm";
 import { Input, Dropdown } from "../../../../../components";
 
 import TaskFormSection from "./TaskFormSection";
-import MuiTypography from "components/MuiTypography";
+import MuiTypography from "components/ui/MuiTypography";
 
 type Props = {
   selectedNode: any;

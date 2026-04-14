@@ -3,7 +3,7 @@ import React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import ReactPlayer from "react-player";
-import TagChip from "./TagChip";
+import TagChip from "components/ui/TagChip";
 import { logrocketTrackIfEnabled } from "utils/logrocket";
 
 export interface EmptyPageIntroProps {

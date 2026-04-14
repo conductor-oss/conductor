@@ -1,8 +1,8 @@
 import { Box, Grid } from "@mui/material";
 import MenuItem from "@mui/material/MenuItem";
 import { Button, Text } from "components";
-import { ConductorSelect } from "components/v1";
-import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
+import { ConductorSelect } from "components/ui/inputs";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
 import debounce from "lodash/debounce";
 import _isEmpty from "lodash/isEmpty";
 import sharedStyles from "pages/styles";
