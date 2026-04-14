@@ -61,12 +61,10 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
     private static final String className = RedisMetadataDAO.class.getSimpleName();
     private volatile Map<String, TaskDef> taskDefCache = new HashMap<>();
     private volatile List<WorkflowDef> workflowDefCache = new ArrayList<>();
-    private final ScheduledExecutorService taskDefRefreshExecutor =
-            Executors.newSingleThreadScheduledExecutor(
-                    r -> new Thread(r, "redis-taskdef-cache-refresh"));
-    private final ScheduledExecutorService workflowDefRefreshExecutor =
-            Executors.newSingleThreadScheduledExecutor(
-                    r -> new Thread(r, "redis-workflowdef-cache-refresh"));
+    private final boolean workflowDefCacheEnabled;
+    private final ScheduledExecutorService cacheRefreshExecutor =
+            Executors.newScheduledThreadPool(
+                    2, r -> new Thread(r, "redis-metadata-cache-refresh"));
 
     public RedisMetadataDAO(
             JedisProxy jedisProxy,
@@ -74,26 +72,29 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
             ConductorProperties conductorProperties,
             RedisProperties properties) {
         super(jedisProxy, objectMapper, conductorProperties, properties);
+        this.workflowDefCacheEnabled = properties.isWorkflowDefCacheEnabled();
         refreshTaskDefs();
         long taskCacheRefreshTime = properties.getTaskDefCacheRefreshInterval().getSeconds();
-        taskDefRefreshExecutor.scheduleWithFixedDelay(
+        cacheRefreshExecutor.scheduleWithFixedDelay(
                 this::refreshTaskDefs,
                 taskCacheRefreshTime,
                 taskCacheRefreshTime,
                 TimeUnit.SECONDS);
-        refreshWorkflowDefs();
-        long metadataCacheRefreshTime = properties.getMetadataCacheRefreshInterval().getSeconds();
-        workflowDefRefreshExecutor.scheduleWithFixedDelay(
-                this::refreshWorkflowDefs,
-                metadataCacheRefreshTime,
-                metadataCacheRefreshTime,
-                TimeUnit.SECONDS);
+        if (workflowDefCacheEnabled) {
+            refreshWorkflowDefs();
+            long metadataCacheRefreshTime =
+                    properties.getMetadataCacheRefreshInterval().getSeconds();
+            cacheRefreshExecutor.scheduleWithFixedDelay(
+                    this::refreshWorkflowDefs,
+                    metadataCacheRefreshTime,
+                    metadataCacheRefreshTime,
+                    TimeUnit.SECONDS);
+        }
     }
 
     @PreDestroy
     public void shutdown() {
-        taskDefRefreshExecutor.shutdown();
-        workflowDefRefreshExecutor.shutdown();
+        cacheRefreshExecutor.shutdown();
     }
 
     @Override
@@ -300,7 +301,9 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
         }
 
         recordRedisDaoRequests("removeWorkflowDef");
-        refreshWorkflowDefs();
+        if (workflowDefCacheEnabled) {
+            refreshWorkflowDefs();
+        }
     }
 
     public List<String> findAll() {
@@ -310,7 +313,10 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 
     @Override
     public List<WorkflowDef> getAllWorkflowDefs() {
-        return new ArrayList<>(workflowDefCache);
+        if (workflowDefCacheEnabled) {
+            return new ArrayList<>(workflowDefCache);
+        }
+        return loadAllWorkflowDefsFromDB();
     }
 
     private List<WorkflowDef> loadAllWorkflowDefsFromDB() {
@@ -336,10 +342,11 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 
     @Override
     public List<WorkflowDef> getAllWorkflowDefsLatestVersions() {
-        // Derive from cache: group by name, keep the highest version per workflow.
         recordRedisDaoRequests("getAllWorkflowLatestVersionsDefs");
+        List<WorkflowDef> source =
+                workflowDefCacheEnabled ? workflowDefCache : loadAllWorkflowDefsFromDB();
         Map<String, WorkflowDef> latestByName = new HashMap<>();
-        for (WorkflowDef def : workflowDefCache) {
+        for (WorkflowDef def : source) {
             latestByName.merge(
                     def.getName(),
                     def,
@@ -358,6 +365,8 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 
         jedisProxy.sadd(nsKey(WORKFLOW_DEF_NAMES), workflowDef.getName());
         recordRedisDaoRequests("storeWorkflowDef", "n/a", workflowDef.getName());
-        refreshWorkflowDefs();
+        if (workflowDefCacheEnabled) {
+            refreshWorkflowDefs();
+        }
     }
 }
