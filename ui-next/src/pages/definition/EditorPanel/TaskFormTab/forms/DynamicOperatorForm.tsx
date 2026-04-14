@@ -1,8 +1,8 @@
 import { Box, Grid } from "@mui/material";
 import { path as _path } from "lodash/fp";
 
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
-import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import { updateField } from "utils/fieldHelpers";
 import { Optional } from "./OptionalFieldForm";
 import TaskFormSection from "./TaskFormSection";

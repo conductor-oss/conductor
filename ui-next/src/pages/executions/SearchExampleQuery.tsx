@@ -1,4 +1,4 @@
-import MuiTypography from "components/MuiTypography";
+import MuiTypography from "components/ui/MuiTypography";
 
 export const ExampleSearchQuery = () => {
   return (

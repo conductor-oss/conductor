@@ -1,10 +1,10 @@
 import { Box, FormControlLabel, Grid } from "@mui/material";
 import { useSelector } from "@xstate/react";
-import MuiCheckbox from "components/MuiCheckbox";
-import RadioButtonGroup from "components/RadioButtonGroup";
-import ConfirmChoiceDialog from "components/ConfirmChoiceDialog";
-import ConductorInput from "components/v1/ConductorInput";
-import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+import MuiCheckbox from "components/ui/MuiCheckbox";
+import RadioButtonGroup from "components/ui/inputs/RadioButtonGroup";
+import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import _path from "lodash/fp/path";
 import _isEmpty from "lodash/isEmpty";
 import _nth from "lodash/nth";

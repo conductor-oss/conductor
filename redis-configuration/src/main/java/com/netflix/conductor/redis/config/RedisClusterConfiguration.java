@@ -23,8 +23,8 @@ import javax.net.ssl.SSLContext;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
 import org.apache.hc.core5.ssl.SSLContextBuilder;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 
 import com.netflix.conductor.redis.jedis.JedisClusterCommands;
@@ -40,7 +40,7 @@ import redis.clients.jedis.Protocol;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(name = "conductor.db.type", havingValue = "redis_cluster")
+@Conditional(RedisClusterCondition.class)
 @Slf4j
 public class RedisClusterConfiguration extends RedisConfiguration {
 

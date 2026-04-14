@@ -1,11 +1,11 @@
 import { SafariWarning } from "components/SafariWarning";
-import OnboardingQuiz from "components/v1/quiz/OnboardingQuiz";
+import OnboardingQuiz from "components/features/OnboardingQuiz";
 import React, { useState } from "react";
 import { Helmet } from "react-helmet";
 import { Outlet } from "react-router";
-import { AuthProvider as AuthProviderImport } from "shared/auth/AuthProvider";
-import SideAndTopBarsLayout from "shared/SideAndTopBarsLayout";
-import { SidebarProvider } from "components/Sidebar/context/SidebarContextProvider";
+import { AuthProvider as AuthProviderImport } from "components/features/auth/AuthProvider";
+import SideAndTopBarsLayout from "components/layout/SideAndTopBarsLayout";
+import { SidebarProvider } from "components/providers/sidebar/context/SidebarContextProvider";
 import { UserSettingsProvider } from "shared/UserSettingsProvider";
 import { pluginRegistry } from "plugins/registry";
 import {

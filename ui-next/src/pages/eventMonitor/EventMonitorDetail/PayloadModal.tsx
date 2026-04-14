@@ -7,8 +7,8 @@ import {
 } from "@mui/material";
 import { Suspense } from "react";
 import { Editor } from "@monaco-editor/react";
-import MuiButton from "components/MuiButton";
-import { modalStyles } from "components/v1/Modal/commonStyles";
+import MuiButton from "components/ui/buttons/MuiButton";
+import { modalStyles } from "components/ui/dialogs/Modal/commonStyles";
 import { Close, Code as CodeIcon } from "@mui/icons-material";
 import { defaultEditorOptions, type EditorOptions } from "shared/editor";
 const editorOption: EditorOptions = {

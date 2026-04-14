@@ -83,6 +83,8 @@ export interface HttpServiceDefDto extends commonServiceDef {
 export interface GrpcServiceDefDto extends commonServiceDef {
   host: string;
   port: number;
+  useSSL?: boolean;
+  trustCert?: boolean;
 }
 
 export type ServiceDefDto = HttpServiceDefDto & GrpcServiceDefDto;

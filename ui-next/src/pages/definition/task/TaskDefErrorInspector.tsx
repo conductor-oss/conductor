@@ -1,7 +1,7 @@
 import { colors } from "theme/tokens/variables";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import MuiTypography from "components/MuiTypography";
+import MuiTypography from "components/ui/MuiTypography";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import List from "@mui/material/List";
 import { ListItem } from "@mui/material";

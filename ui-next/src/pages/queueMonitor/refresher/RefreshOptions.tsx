@@ -7,8 +7,8 @@ import {
 } from "@mui/material";
 import { ArrowClockwise as RefreshIcon } from "@phosphor-icons/react";
 import { useActor, useSelector } from "@xstate/react";
-import Button from "components/MuiButton";
-import MuiTypography from "components/MuiTypography";
+import Button from "components/ui/buttons/MuiButton";
+import MuiTypography from "components/ui/MuiTypography";
 import { FunctionComponent, ReactNode, useContext, useMemo } from "react";
 import { ActorRef, State } from "xstate";
 import { QueueMonitorContext } from "../state";

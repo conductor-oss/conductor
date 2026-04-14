@@ -1,5 +1,5 @@
 import { Theme } from "@mui/material";
-import { baseLabelStyle } from "components/v1/theme/styles";
+import { baseLabelStyle } from "theme/styles";
 import { isEmpty as _isEmpty } from "lodash";
 import { greyText2, lightGrey } from "theme/tokens/colors";
 

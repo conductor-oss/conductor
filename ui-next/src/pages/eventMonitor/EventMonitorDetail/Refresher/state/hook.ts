@@ -9,7 +9,7 @@ import {
 } from "./types";
 import { useAuthHeaders } from "utils/query";
 import { useCallback, useContext, useEffect } from "react";
-import { MessageContext } from "components/v1/layout/MessageContext";
+import { MessageContext } from "components/providers/messageContext";
 
 export const useRefreshMachine = (
   pageType?: PageType,

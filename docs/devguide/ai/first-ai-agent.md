@@ -14,14 +14,14 @@ description: "Build your first AI agent with Conductor in 5 minutes. Step-by-ste
 
 ## Step 1: Start an MCP server
 
-Your agent needs tools to call. MCP (Model Context Protocol) is the open standard for connecting AI agents to tools. Start a simple MCP server — or use any MCP server you already have running.
+Your agent needs tools to call. MCP (Model Context Protocol) is the open standard for connecting AI agents to tools. Start a test MCP server — or use any MCP server you already have running.
 
 ```bash
-# Example: start a weather MCP server (Node.js)
-npx -y @anthropic-ai/create-mcp --template weather
+pip install mcp-testkit
+mcp-testkit --transport http
 ```
 
-Note the URL where your MCP server is running (e.g., `http://localhost:3001/mcp`). You'll use this in the workflow definition.
+This starts an MCP server at `http://localhost:3001/mcp` with 65 deterministic tools for testing. You'll use this URL in the workflow definition.
 
 !!! tip "Any MCP server works"
     Conductor connects to any MCP-compatible server. Use community MCP servers for GitHub, Slack, databases, or any API — or build your own. See the [MCP integration guide](mcp-guide.md) for details.
@@ -52,14 +52,14 @@ Save this as `my_first_agent.json`. This is a complete AI agent in four tasks �
   "description": "AI agent that discovers tools, plans, executes, and summarizes",
   "version": 1,
   "schemaVersion": 2,
-  "inputParameters": ["task", "mcpServerUrl"],
+  "inputParameters": ["task"],
   "tasks": [
     {
       "name": "discover_tools",
       "taskReferenceName": "discover",
       "type": "LIST_MCP_TOOLS",
       "inputParameters": {
-        "mcpServer": "${workflow.input.mcpServerUrl}"
+        "mcpServer": "http://localhost:3001/mcp"
       }
     },
     {
@@ -88,7 +88,7 @@ Save this as `my_first_agent.json`. This is a complete AI agent in four tasks �
       "taskReferenceName": "execute",
       "type": "CALL_MCP_TOOL",
       "inputParameters": {
-        "mcpServer": "${workflow.input.mcpServerUrl}",
+        "mcpServer": "http://localhost:3001/mcp",
         "method": "${plan.output.result.method}",
         "arguments": "${plan.output.result.arguments}"
       }
@@ -136,13 +136,18 @@ Every task is a native Conductor system task. No workers to write, no code to de
 # Register the workflow
 conductor workflow create my_first_agent.json
 
-# Run the agent
-curl -X POST 'http://localhost:8080/api/workflow/my_first_agent' \
+# Run the agent synchronously — output prints directly to your terminal
+curl -s -X POST 'http://localhost:8080/api/workflow/execute/my_first_agent/1' \
   -H 'Content-Type: application/json' \
   -d '{
-    "task": "What is the weather in San Francisco?",
-    "mcpServerUrl": "http://localhost:3001/mcp"
-  }'
+    "task": "What is the weather in San Francisco?"
+  }' | jq .
+```
+
+Or using the CLI:
+
+```bash
+conductor workflow start -w my_first_agent --sync --input '{"task": "What is the weather in San Francisco?"}'
 ```
 
 Open [http://localhost:8080](http://localhost:8080) to see the execution. Click into the workflow to see each task's input, output, and timing.
@@ -196,14 +201,14 @@ Turn your agent into an autonomous loop that keeps working until the task is don
   "description": "Agent that loops until the task is complete",
   "version": 1,
   "schemaVersion": 2,
-  "inputParameters": ["task", "mcpServerUrl"],
+  "inputParameters": ["task"],
   "tasks": [
     {
       "name": "discover_tools",
       "taskReferenceName": "discover",
       "type": "LIST_MCP_TOOLS",
       "inputParameters": {
-        "mcpServer": "${workflow.input.mcpServerUrl}"
+        "mcpServer": "http://localhost:3001/mcp"
       }
     },
     {
@@ -245,7 +250,7 @@ Turn your agent into an autonomous loop that keeps working until the task is don
                 "taskReferenceName": "tool_call",
                 "type": "CALL_MCP_TOOL",
                 "inputParameters": {
-                  "mcpServer": "${workflow.input.mcpServerUrl}",
+                  "mcpServer": "http://localhost:3001/mcp",
                   "method": "${think.output.result.action}",
                   "arguments": "${think.output.result.arguments}"
                 }

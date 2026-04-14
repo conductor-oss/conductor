@@ -198,7 +198,7 @@ curl -X POST http://localhost:8080/api/metadata/taskdefs \
 Save `worker.py`:
 
 ```python
-import time
+import threading
 
 from conductor.client.automator.task_handler import TaskHandler
 from conductor.client.configuration.configuration import Configuration
@@ -227,8 +227,7 @@ def main():
     handler.start_processes()
 
     try:
-        while True:
-            time.sleep(0.1)  # avoid busy-waiting; yield CPU between poll cycles
+        threading.Event().wait()  # block until KeyboardInterrupt; no busy-wait
     except KeyboardInterrupt:
         handler.stop_processes()
 
@@ -287,9 +286,8 @@ Every Conductor workflow execution is fully replayable — restart from the begi
 Take any workflow execution ID from Phase 1 or Phase 2 and restart it:
 
 ```bash
-# The CLI writes "Auto-detected server: ..." to stdout before the JSON.
-# Use tail -1 to skip that line; 2>/dev/null silences stderr.
-WORKFLOW_ID=$(conductor workflow start -w hello_workflow --version 2 --sync 2>/dev/null | tail -1 | jq -r '.workflowId // empty')
+# Start a workflow and capture its ID (printed as a plain UUID)
+WORKFLOW_ID=$(conductor workflow start -w hello_workflow --version 2)
 
 # Restart the entire workflow from the beginning
 curl -X POST "http://localhost:8080/api/workflow/$WORKFLOW_ID/restart"

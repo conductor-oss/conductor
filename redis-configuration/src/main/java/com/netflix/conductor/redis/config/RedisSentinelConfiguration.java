@@ -12,16 +12,22 @@
  */
 package com.netflix.conductor.redis.config;
 
+import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.net.ssl.SSLContext;
+
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
+import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 
 import com.netflix.conductor.redis.jedis.JedisCommands;
+import com.netflix.conductor.redis.jedis.RetryingJedisCommands;
 import com.netflix.conductor.redis.jedis.UnifiedJedisCommands;
 import com.netflix.dyno.connectionpool.Host;
 
@@ -36,13 +42,14 @@ import redis.clients.jedis.UnifiedJedis;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(name = "conductor.db.type", havingValue = "redis_sentinel")
+@Conditional(RedisSentinelCondition.class)
 @Slf4j
 public class RedisSentinelConfiguration extends RedisConfiguration {
 
     @Bean
-    public JedisCommands getJedisCommands(UnifiedJedis unifiedJedis) {
-        return new UnifiedJedisCommands(unifiedJedis);
+    public JedisCommands getJedisCommands(
+            UnifiedJedis unifiedJedis, RedisProperties redisProperties) {
+        return RetryingJedisCommands.wrap(new UnifiedJedisCommands(unifiedJedis), redisProperties);
     }
 
     @Override
@@ -78,34 +85,65 @@ public class RedisSentinelConfiguration extends RedisConfiguration {
                 sentinels,
                 redisProperties.isSsl());
 
-        // Client config for connections to the Redis master
-        DefaultJedisClientConfig.Builder masterConfigBuilder =
-                DefaultJedisClientConfig.builder()
-                        .connectionTimeoutMillis(30_000)
-                        .socketTimeoutMillis(30_000)
-                        .database(redisProperties.getDatabase())
-                        .ssl(redisProperties.isSsl());
-
-        if (isNotBlank(redisProperties.getUser())) {
-            masterConfigBuilder.user(redisProperties.getUser()).password(password);
-        } else if (password != null) {
-            masterConfigBuilder.password(password);
-        }
-
-        JedisClientConfig masterConfig = masterConfigBuilder.build();
-
-        // Client config for connections to sentinel nodes (typically no auth, no SSL)
-        JedisClientConfig sentinelConfig =
-                DefaultJedisClientConfig.builder()
-                        .connectionTimeoutMillis(30_000)
-                        .socketTimeoutMillis(30_000)
-                        .build();
+        JedisClientConfig masterConfig = createMasterClientConfig(redisProperties, password);
+        JedisClientConfig sentinelConfig = createSentinelClientConfig(redisProperties, password);
 
         JedisSentineled sentineled =
                 new JedisSentineled(
                         masterName, masterConfig, poolConfig, sentinels, sentinelConfig);
 
         return sentineled;
+    }
+
+    JedisClientConfig createMasterClientConfig(RedisProperties redisProperties, String password) {
+        DefaultJedisClientConfig.Builder builder = createBaseClientConfigBuilder(redisProperties);
+        builder.database(redisProperties.getDatabase());
+        applyCredentials(builder, redisProperties, password);
+        return builder.build();
+    }
+
+    JedisClientConfig createSentinelClientConfig(RedisProperties redisProperties, String password) {
+        DefaultJedisClientConfig.Builder builder = createBaseClientConfigBuilder(redisProperties);
+        applyCredentials(builder, redisProperties, password);
+        return builder.build();
+    }
+
+    private DefaultJedisClientConfig.Builder createBaseClientConfigBuilder(
+            RedisProperties redisProperties) {
+        DefaultJedisClientConfig.Builder builder =
+                DefaultJedisClientConfig.builder()
+                        .connectionTimeoutMillis(30_000)
+                        .socketTimeoutMillis(30_000)
+                        .ssl(redisProperties.isSsl());
+
+        if (redisProperties.isSsl() && redisProperties.isIgnoreSsl()) {
+            try {
+                SSLContext context =
+                        SSLContextBuilder.create()
+                                .loadTrustMaterial(
+                                        (X509Certificate[] certificateChain, String authType) ->
+                                                true)
+                                .build();
+                builder.sslParameters(context.getDefaultSSLParameters())
+                        .hostnameVerifier(new NoopHostnameVerifier())
+                        .sslSocketFactory(context.getSocketFactory());
+            } catch (Exception e) {
+                log.error("Failed to init naive ssl context", e);
+            }
+        }
+
+        return builder;
+    }
+
+    private void applyCredentials(
+            DefaultJedisClientConfig.Builder builder,
+            RedisProperties redisProperties,
+            String password) {
+        if (isNotBlank(redisProperties.getUser())) {
+            builder.user(redisProperties.getUser()).password(password);
+        } else if (password != null) {
+            builder.password(password);
+        }
     }
 
     private String getPassword(java.util.List<Host> hosts) {

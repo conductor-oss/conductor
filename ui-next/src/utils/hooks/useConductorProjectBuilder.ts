@@ -1,7 +1,7 @@
 import {
   CodeLanguage,
   JavaLanguageSet,
-} from "components/GetStartedSample/types";
+} from "components/features/getStartedSample/types";
 import { useState, useEffect, useCallback } from "react";
 
 interface UseConductorProjectBuilderOptionsBase {

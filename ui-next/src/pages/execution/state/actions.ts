@@ -10,19 +10,19 @@ import {
   pure,
 } from "xstate";
 import { executionToWorkflowDef } from "./executionMapper";
-import { flowMachine } from "components/flow/state/machine";
+import { flowMachine } from "components/features/flow/state/machine";
 import {
   FlowActionTypes,
   FlowEvents,
   ResetZoomPositionEvent,
   SelectTaskWithTaskRefEvent,
-} from "components/flow/state/types";
+} from "components/features/flow/state/types";
 import { TaskStatus, Execution, DoWhileSelection, ExecutionTask } from "types";
 import { gtagAbstract, flattenGtagObject } from "utils";
 import {
   UpdateWfDefinitionEvent,
   SelectNodeEvent,
-} from "components/flow/state/types";
+} from "components/features/flow/state/types";
 import {
   UpdateExecutionEvent,
   ExecutionMachineContext,

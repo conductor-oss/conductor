@@ -1,5 +1,5 @@
 import { useInterpret, useSelector } from "@xstate/react";
-import { MessageContext } from "components/v1/layout/MessageContext";
+import { MessageContext } from "components/providers/messageContext";
 import { useSetAtom } from "jotai";
 import _get from "lodash/get";
 import {
@@ -14,8 +14,8 @@ import { useContext, useEffect, useMemo } from "react";
 import { useQueryClient } from "react-query";
 import { Location, useLocation, useNavigate, useParams } from "react-router";
 import { useQueryState } from "react-router-use-location-state";
-import { setDefinitionServiceAtom } from "shared/agent/agentAtomsStore";
-import { AuthContext } from "shared/auth/context";
+import { setDefinitionServiceAtom } from "components/features/agent/agentAtomsStore";
+import { AuthContext } from "components/features/auth/context";
 import { PersistableSidebarEventTypes } from "shared/PersistableSidebar/state/types";
 import { AuthProviderMachineContext } from "shared/state";
 import { User } from "types/User";

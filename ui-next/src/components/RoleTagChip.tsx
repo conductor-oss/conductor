@@ -2,7 +2,7 @@ import { ChipProps } from "@mui/material";
 import { userRoleColorGenerator } from "utils/roles";
 import { forwardRef } from "react";
 import { toUpperFirst } from "utils";
-import TagChip from "./TagChip";
+import TagChip from "./ui/TagChip";
 
 const RoleTagChip = forwardRef<HTMLDivElement, ChipProps>(
   ({ style = {}, label = "", ...props }, ref) => {

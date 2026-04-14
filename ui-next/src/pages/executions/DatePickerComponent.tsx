@@ -7,18 +7,18 @@ import {
   Switch,
   IconButton,
 } from "@mui/material";
-import MuiButton from "components/MuiButton";
-import MuiTypography from "components/MuiTypography";
+import MuiButton from "components/ui/buttons/MuiButton";
+import MuiTypography from "components/ui/MuiTypography";
 import CheckCircleOutlineOutlinedIcon from "@mui/icons-material/CheckCircleOutlineOutlined";
-import ConductorSelect from "components/v1/ConductorSelect";
+import ConductorSelect from "components/ui/inputs/ConductorSelect";
 import { COUNT_OPTIONS, TIME_OPTIONS } from "utils/constants/dateTimePicker";
-import { ConductorAutoComplete } from "components/v1";
+import { ConductorAutoComplete } from "components/ui/inputs";
 import { useState } from "react";
-import { ConductorTimePicker } from "components/v1/date-time/ConductorTimePicker";
-import { SingleDateRangePicker } from "components/v1/date-time/ConductorSingleDateRangePicker";
+import { ConductorTimePicker } from "components/ui/date-time/ConductorTimePicker";
+import { SingleDateRangePicker } from "components/ui/date-time/ConductorSingleDateRangePicker";
 import { getCombineDateTime, getDateTime, getSearchDateTime } from "utils/date";
 import _isEmpty from "lodash/isEmpty";
-import XCloseIcon from "components/v1/icons/XCloseIcon";
+import XCloseIcon from "components/icons/XCloseIcon";
 
 import { COMMONLY_USED } from "utils/constants/dateTimePicker";
 
