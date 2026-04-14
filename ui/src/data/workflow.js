@@ -148,7 +148,7 @@ export function useWorkflowNames() {
       return [];
     }
 
-    return data instanceof Map ? Array.from(data.keys()) : Object.keys(data);
+    return Object.keys(data);
   }, [data]);
 }
 
@@ -160,7 +160,7 @@ export function useWorkflowNamesAndVersions() {
   const newData = useMemo(() => {
     const retval = new Map();
     if (data) {
-      const entries = data instanceof Map ? data.entries() : Object.entries(data);
+      const entries = Object.entries(data);
 
       for (let [workflowName, workflowVersions] of entries) {
         const versions = (Array.isArray(workflowVersions)
