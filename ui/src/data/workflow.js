@@ -163,10 +163,7 @@ export function useWorkflowNamesAndVersions() {
       const entries = Object.entries(data);
 
       for (let [workflowName, workflowVersions] of entries) {
-        const versions = (Array.isArray(workflowVersions)
-          ? workflowVersions
-          : Array.from(workflowVersions || [])
-        ).map((row) => ({
+        const versions = workflowVersions.map((row) => ({
           version: row.version,
           createTime: row.createTime,
           updateTime: row.updateTime,

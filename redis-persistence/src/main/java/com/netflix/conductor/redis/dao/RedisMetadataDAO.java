@@ -95,6 +95,14 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
     @PreDestroy
     public void shutdown() {
         cacheRefreshExecutor.shutdown();
+        try {
+            if (!cacheRefreshExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                cacheRefreshExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            cacheRefreshExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 
     @Override
@@ -344,7 +352,9 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
     public List<WorkflowDef> getAllWorkflowDefsLatestVersions() {
         recordRedisDaoRequests("getAllWorkflowLatestVersionsDefs");
         List<WorkflowDef> source =
-                workflowDefCacheEnabled ? workflowDefCache : loadAllWorkflowDefsFromDB();
+                workflowDefCacheEnabled
+                        ? new ArrayList<>(workflowDefCache)
+                        : loadAllWorkflowDefsFromDB();
         Map<String, WorkflowDef> latestByName = new HashMap<>();
         for (WorkflowDef def : source) {
             latestByName.merge(
