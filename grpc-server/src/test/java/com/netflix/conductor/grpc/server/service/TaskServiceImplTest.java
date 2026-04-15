@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -26,6 +26,7 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.grpc.SearchPb;
 import com.netflix.conductor.grpc.TaskServicePb;
+import com.netflix.conductor.proto.ExecutionMetadataPb;
 import com.netflix.conductor.proto.TaskPb;
 import com.netflix.conductor.proto.TaskSummaryPb;
 import com.netflix.conductor.service.ExecutionService;
@@ -231,7 +232,11 @@ public class TaskServiceImplTest {
 
         assertEquals(1, taskSearchResult.getTotalHits());
         assertEquals(
-                TaskPb.Task.newBuilder().setCallbackFromWorker(true).build(),
+                TaskPb.Task.newBuilder()
+                        .setCallbackFromWorker(true)
+                        .setExecutionMetadata(
+                                ExecutionMetadataPb.ExecutionMetadata.newBuilder().build())
+                        .build(),
                 taskSearchResult.getResultsList().get(0));
     }
 }

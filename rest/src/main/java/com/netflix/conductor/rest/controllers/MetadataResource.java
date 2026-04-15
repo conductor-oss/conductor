@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -59,7 +59,7 @@ public class MetadataResource {
 
     @PutMapping("/workflow")
     @Operation(summary = "Create or update workflow definition")
-    public BulkResponse update(@RequestBody List<WorkflowDef> workflowDefs) {
+    public BulkResponse<String> update(@RequestBody List<WorkflowDef> workflowDefs) {
         return metadataService.updateWorkflowDef(workflowDefs);
     }
 
@@ -81,6 +81,12 @@ public class MetadataResource {
     @GetMapping("/workflow/names-and-versions")
     public Map<String, ? extends Iterable<WorkflowDefSummary>> getWorkflowNamesAndVersions() {
         return metadataService.getWorkflowNamesAndVersions();
+    }
+
+    @Operation(summary = "Returns only the latest version of all workflow definitions")
+    @GetMapping("/workflow/latest-versions")
+    public List<WorkflowDef> getAllWorkflowsWithLatestVersions() {
+        return metadataService.getWorkflowDefsLatestVersions();
     }
 
     @DeleteMapping("/workflow/{name}/{version}")

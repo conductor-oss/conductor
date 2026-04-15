@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -20,8 +20,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import javax.annotation.PostConstruct;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.Cache;
@@ -35,6 +33,8 @@ import com.netflix.conductor.cassandra.dao.CassandraEventHandlerDAO;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.metrics.Monitors;
+
+import jakarta.annotation.PostConstruct;
 
 import static com.netflix.conductor.cassandra.config.cache.CachingConfig.EVENT_HANDLER_CACHE;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -203,6 +203,14 @@ public class Statements {
      *     "workflow_defs_index" table
      */
     public String getSelectAllWorkflowDefsStatement() {
+        return QueryBuilder.select()
+                .all()
+                .from(keyspace, TABLE_WORKFLOW_DEFS_INDEX)
+                .where(eq(WORKFLOW_DEF_INDEX_KEY, bindMarker()))
+                .getQueryString();
+    }
+
+    public String getSelectAllWorkflowDefsLatestVersionsStatement() {
         return QueryBuilder.select()
                 .all()
                 .from(keyspace, TABLE_WORKFLOW_DEFS_INDEX)

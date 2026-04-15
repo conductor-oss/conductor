@@ -3,28 +3,40 @@ import { Tabs, Tab, ReactJson, Dropdown, Banner } from "../../components";
 import { TabPanel, TabContext } from "@material-ui/lab";
 
 import TaskSummary from "./TaskSummary";
+import TaskHuman from "./TaskHuman";
 import TaskLogs from "./TaskLogs";
 
 import { makeStyles } from "@material-ui/styles";
 import _ from "lodash";
 import TaskPollData from "./TaskPollData";
+import {
+  pendingTaskSelection,
+  taskWithLatestIteration
+} from "../../utils/helpers";
+import { useWorkflow } from "../../data/workflow";
 
 const useStyles = makeStyles({
   banner: {
-    margin: 15,
+    margin: 15
   },
   dfSelect: {
     padding: 15,
-    backgroundColor: "#efefef",
+    backgroundColor: "#efefef"
   },
   tabPanel: {
     padding: 0,
     flex: 1,
-    overflowY: "auto",
-  },
+    overflowY: "auto"
+  }
 });
 
-export default function RightPanel({ selectedTask, dag, onTaskChange }) {
+export default function RightPanel({
+                                     selectedTask,
+                                     dag,
+                                     execution,
+                                     onTaskChange,
+                                     selectedNode
+                                   }) {
   const [tabIndex, setTabIndex] = useState("summary");
 
   const classes = useStyles();
@@ -33,10 +45,20 @@ export default function RightPanel({ selectedTask, dag, onTaskChange }) {
     setTabIndex("summary"); // Reset to Status Tab on ref change
   }, [selectedTask]);
 
-  const taskResult = useMemo(
-    () => dag && dag.resolveTaskResult(selectedTask),
-    [dag, selectedTask]
-  );
+  const taskResult =
+    selectedNode?.data?.task?.executionData?.status === "PENDING"
+      ? pendingTaskSelection(selectedNode?.data?.task)
+      : taskWithLatestIteration(execution?.tasks, selectedTask);
+
+  const {
+    refetch,
+  } = useWorkflow(taskResult?.workflowInstanceId);
+
+  const refresh = () => {
+    setTabIndex("summary");
+    return refetch();
+  }
+
   const dfOptions = useMemo(
     () => dag && dag.getSiblings(selectedTask),
     [dag, selectedTask]
@@ -75,7 +97,7 @@ export default function RightPanel({ selectedTask, dag, onTaskChange }) {
               disableClearable
               onChange={(e, v) => {
                 onTaskChange({
-                  id: v.taskId,
+                  id: v.taskId
                 });
               }}
               options={retryOptions}
@@ -122,14 +144,23 @@ export default function RightPanel({ selectedTask, dag, onTaskChange }) {
             <Tab label="Definition" value="definition" key="definition" />,
             ...(_.get(taskResult, "workflowTask.type") === "SIMPLE"
               ? [
-                  <Tab
-                    label="Poll Data"
-                    disabled={!taskResult.status}
-                    value="pollData"
-                    key="pollData"
-                  />,
-                ]
+                <Tab
+                  label="Poll Data"
+                  disabled={!taskResult.status}
+                  value="pollData"
+                  key="pollData"
+                />
+              ]
               : []),
+            ...(_.get(taskResult, "workflowTask.type") === "HUMAN"
+              ? [
+                <Tab
+                  label="Execute human task"
+                  disabled={taskResult.status !== "IN_PROGRESS"}
+                  value="executeHuman"
+                  key="executeHuman"
+                />
+              ] : [])
           ]}
         </Tabs>
         <>
@@ -175,6 +206,9 @@ export default function RightPanel({ selectedTask, dag, onTaskChange }) {
               src={taskResult.workflowTask}
               label="Task Definition at Runtime"
             />
+          </TabPanel>
+          <TabPanel className={classes.tabPanel} value="executeHuman">
+            <TaskHuman taskResult={taskResult} onTaskExecuted={refresh}/>
           </TabPanel>
         </>
       </TabContext>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -62,6 +62,7 @@ public class Event extends WorkflowSystemTask {
         payload.put("workflowType", workflow.getWorkflowName());
         payload.put("workflowVersion", workflow.getWorkflowVersion());
         payload.put("correlationId", workflow.getCorrelationId());
+        payload.put("taskToDomain", workflow.getTaskToDomain());
 
         task.setStatus(TaskModel.Status.IN_PROGRESS);
         task.addOutput(payload);

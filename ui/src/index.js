@@ -8,6 +8,7 @@ import { BrowserRouter } from "react-router-dom";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import { QueryClient, QueryClientProvider } from "react-query";
 import { ReactQueryDevtools } from "react-query/devtools";
+import { getBasename } from "./utils/helpers";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,7 +23,7 @@ ReactDOM.render(
   //<React.StrictMode>
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
-      <BrowserRouter>
+      <BrowserRouter basename={getBasename()}>
         <CssBaseline />
         <ReactQueryDevtools initialIsOpen={true} />
 

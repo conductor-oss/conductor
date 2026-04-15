@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -52,6 +52,7 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
     private final AsyncSystemTaskExecutor asyncSystemTaskExecutor;
     private final ConductorProperties properties;
     private final ExecutionService executionService;
+    private final int queuePopTimeout;
 
     ConcurrentHashMap<String, ExecutionConfig> queueExecutionConfigMap = new ConcurrentHashMap<>();
 
@@ -67,6 +68,7 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
         this.queueDAO = queueDAO;
         this.pollInterval = properties.getSystemTaskWorkerPollInterval().toMillis();
         this.executionService = executionService;
+        this.queuePopTimeout = (int) properties.getSystemTaskQueuePopTimeout().toMillis();
 
         LOGGER.info("SystemTaskWorker initialized with {} threads", threadCount);
     }
@@ -82,7 +84,11 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
                         1000,
                         pollInterval,
                         TimeUnit.MILLISECONDS);
-        LOGGER.info("Started listening for task: {} in queue: {}", systemTask, queueName);
+        LOGGER.info(
+                "Started listening for task: {} in queue: {} at pollInterval of {} ms",
+                systemTask,
+                queueName,
+                pollInterval);
     }
 
     void pollAndExecute(WorkflowSystemTask systemTask, String queueName) {
@@ -96,8 +102,14 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
         SemaphoreUtil semaphoreUtil = executionConfig.getSemaphoreUtil();
         ExecutorService executorService = executionConfig.getExecutorService();
         String taskName = QueueUtils.getTaskType(queueName);
-
-        int messagesToAcquire = semaphoreUtil.availableSlots();
+        final int systemTaskMaxPollCount = properties.getSystemTaskMaxPollCount();
+        int maxSystemTasksToAcquire =
+                (systemTaskMaxPollCount < 1
+                                || systemTaskMaxPollCount
+                                        > properties.getSystemTaskWorkerThreadCount())
+                        ? properties.getSystemTaskWorkerThreadCount()
+                        : systemTaskMaxPollCount;
+        int messagesToAcquire = Math.min(semaphoreUtil.availableSlots(), maxSystemTasksToAcquire);
 
         try {
             if (messagesToAcquire <= 0 || !semaphoreUtil.acquireSlots(messagesToAcquire)) {
@@ -108,12 +120,13 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
 
             LOGGER.debug("Polling queue: {} with {} slots acquired", queueName, messagesToAcquire);
 
-            List<String> polledTaskIds = queueDAO.pop(queueName, messagesToAcquire, 200);
+            List<String> polledTaskIds =
+                    queueDAO.pop(queueName, messagesToAcquire, queuePopTimeout);
 
             Monitors.recordTaskPoll(queueName);
             LOGGER.debug("Polling queue:{}, got {} tasks", queueName, polledTaskIds.size());
 
-            if (polledTaskIds.size() > 0) {
+            if (!polledTaskIds.isEmpty()) {
                 // Immediately release unused slots when number of messages acquired is less than
                 // acquired slots
                 if (polledTaskIds.size() < messagesToAcquire) {

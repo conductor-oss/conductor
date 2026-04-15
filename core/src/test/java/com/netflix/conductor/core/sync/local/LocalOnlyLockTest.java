@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -26,7 +26,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 @Ignore
 // Test always times out in CI environment
@@ -85,21 +84,17 @@ public class LocalOnlyLockTest {
                             localOnlyLock.acquireLock("c", 100, 10000, TimeUnit.MILLISECONDS);
                         })
                 .get();
-        try {
-            localOnlyLock.releaseLock("c");
-        } catch (IllegalMonitorStateException e) {
-            // expected
-            localOnlyLock.deleteLock("c");
-            return;
-        } finally {
-            executor.submit(
-                            () -> {
-                                localOnlyLock.releaseLock("c");
-                            })
-                    .get();
-        }
+        // Releasing from another thread should not throw exception (it's caught internally)
+        localOnlyLock.releaseLock("c");
 
-        fail();
+        // The owning thread should still be able to release the lock
+        executor.submit(
+                        () -> {
+                            localOnlyLock.releaseLock("c");
+                        })
+                .get();
+
+        localOnlyLock.deleteLock("c");
     }
 
     @Test(timeout = 10 * 10_000)

@@ -1,3 +1,4 @@
+import { getBasename } from "../utils/helpers";
 import { useEnv } from "./env";
 
 export function useFetchContext() {
@@ -15,8 +16,9 @@ export function fetchWithContext(
 ) {
   const newParams = { ...fetchParams };
 
-  const newPath = `/api/${path}`;
-  const cleanPath = newPath.replace(/([^:]\/)\/+/g, "$1"); // Cleanup duplicated slashes
+  const basename = getBasename();
+  const newPath = basename + `api/${path}`;
+  const cleanPath = cleanDuplicateSlash(newPath); // Cleanup duplicated slashes
 
   return fetch(cleanPath, newParams)
     .then((res) => Promise.all([res, res.text()]))
@@ -37,4 +39,13 @@ export function fetchWithContext(
         }
       }
     });
+}
+
+/**
+ * @param {string} path 
+ * @returns path with '/' not duplicated, except at ://
+ * 
+ */
+export function cleanDuplicateSlash(path) {
+  return path.replace(/(:\/\/)\/*|(\/)+/g, "$1$2");
 }

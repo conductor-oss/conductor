@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -13,6 +13,7 @@
 package com.netflix.conductor.redis.dao;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
@@ -119,7 +120,9 @@ public class RedisRateLimitingDAO extends BaseDynoDAO implements RateLimitingDAO
                                     currentTimeEpochMillis));
             if (currentBucketCount < rateLimitPerFrequency) {
                 jedisProxy.zadd(
-                        key, currentTimeEpochMillis, String.valueOf(currentTimeEpochMillis));
+                        key,
+                        currentTimeEpochMillis,
+                        currentTimeEpochMillis + ":" + UUID.randomUUID());
                 jedisProxy.expire(key, rateLimitFrequencyInSeconds);
                 LOGGER.info(
                         "TaskId: {} with TaskDefinition of: {} has rateLimitPerFrequency: {} and rateLimitFrequencyInSeconds: {} within the rate limit with current count {}",

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -89,6 +89,20 @@ public class MetadataResourceTest {
 
         when(mockMetadataService.getWorkflowDefs()).thenReturn(listOfWorkflowDef);
         assertEquals(listOfWorkflowDef, metadataResource.getAll());
+    }
+
+    @Test
+    public void testGetAllWorkflowDefLatestVersions() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("test");
+        workflowDef.setVersion(1);
+        workflowDef.setDescription("test");
+
+        List<WorkflowDef> listOfWorkflowDef = new ArrayList<>();
+        listOfWorkflowDef.add(workflowDef);
+
+        when(mockMetadataService.getWorkflowDefsLatestVersions()).thenReturn(listOfWorkflowDef);
+        assertEquals(listOfWorkflowDef, metadataResource.getAllWorkflowsWithLatestVersions());
     }
 
     @Test

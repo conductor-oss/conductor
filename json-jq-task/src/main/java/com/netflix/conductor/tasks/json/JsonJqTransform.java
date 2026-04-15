@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -19,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.core.execution.WorkflowExecutor;
@@ -51,7 +50,6 @@ public class JsonJqTransform extends WorkflowSystemTask {
     private final ObjectMapper objectMapper;
     private final LoadingCache<String, JsonQuery> queryCache = createQueryCache();
 
-    @Autowired
     public JsonJqTransform(ObjectMapper objectMapper) {
         super(NAME);
         this.objectMapper = objectMapper;
@@ -84,12 +82,14 @@ public class JsonJqTransform extends WorkflowSystemTask {
             if (result == null) {
                 task.addOutput(OUTPUT_RESULT, null);
                 task.addOutput(OUTPUT_RESULT_LIST, null);
-            } else if (result.isEmpty()) {
-                task.addOutput(OUTPUT_RESULT, null);
-                task.addOutput(OUTPUT_RESULT_LIST, result);
             } else {
-                task.addOutput(OUTPUT_RESULT, extractBody(result.get(0)));
-                task.addOutput(OUTPUT_RESULT_LIST, result);
+                List<Object> extractedResults = extractBodies(result);
+                if (extractedResults.isEmpty()) {
+                    task.addOutput(OUTPUT_RESULT, null);
+                } else {
+                    task.addOutput(OUTPUT_RESULT, extractedResults.get(0));
+                }
+                task.addOutput(OUTPUT_RESULT_LIST, extractedResults);
             }
         } catch (final Exception e) {
             LOGGER.error(
@@ -128,6 +128,14 @@ public class JsonJqTransform extends WorkflowSystemTask {
             messages.add(currentStack.getMessage());
         }
         return messages.stream().filter(it -> !it.contains("N/A")).findFirst().orElse("");
+    }
+
+    private List<Object> extractBodies(List<JsonNode> nodes) {
+        List<Object> values = new ArrayList<>(nodes.size());
+        for (JsonNode node : nodes) {
+            values.add(extractBody(node));
+        }
+        return values;
     }
 
     private Object extractBody(JsonNode node) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,11 +14,11 @@ package com.netflix.conductor.common.metadata.workflow;
 
 import java.util.Objects;
 
-import javax.validation.constraints.NotEmpty;
-
 import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.netflix.conductor.common.constraints.NoSemiColonConstraint;
+
+import jakarta.validation.constraints.NotEmpty;
 
 @ProtoMessage
 public class WorkflowDefSummary implements Comparable<WorkflowDefSummary> {
@@ -34,6 +34,9 @@ public class WorkflowDefSummary implements Comparable<WorkflowDefSummary> {
 
     @ProtoField(id = 3)
     private Long createTime;
+
+    @ProtoField(id = 4)
+    private Long updateTime;
 
     /**
      * @return the version
@@ -54,6 +57,13 @@ public class WorkflowDefSummary implements Comparable<WorkflowDefSummary> {
      */
     public Long getCreateTime() {
         return createTime;
+    }
+
+    /**
+     * @return the updateTime
+     */
+    public Long getUpdateTime() {
+        return updateTime;
     }
 
     @Override
@@ -78,6 +88,10 @@ public class WorkflowDefSummary implements Comparable<WorkflowDefSummary> {
 
     public void setCreateTime(Long createTime) {
         this.createTime = createTime;
+    }
+
+    public void setUpdateTime(Long updateTime) {
+        this.updateTime = updateTime;
     }
 
     @Override

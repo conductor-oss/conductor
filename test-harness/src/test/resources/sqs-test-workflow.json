@@ -1,0 +1,34 @@
+{
+  "name": "sqs_test_workflow",
+  "description": "Test workflow to verify SQS Event Queue AWS SDK v2 upgrade",
+  "version": 1,
+  "ownerEmail": "test@conductor.io",
+  "tasks": [
+    {
+      "name": "send_sqs_event",
+      "taskReferenceName": "send_sqs_event_ref",
+      "type": "EVENT",
+      "sink": "sqs:conductor-test-sqs-COMPLETED",
+      "asyncComplete": false,
+      "inputParameters": {
+      },
+      "startDelay": 0,
+      "optional": false
+    },
+    {
+      "name": "wait_for_sqs_event", 
+      "taskReferenceName": "wait_for_sqs_event_ref",
+      "type": "WAIT",
+      "inputParameters": {
+        "eventReceived": true
+      },
+      "startDelay": 0,
+      "optional": false
+    }
+  ],
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": true,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 300
+}

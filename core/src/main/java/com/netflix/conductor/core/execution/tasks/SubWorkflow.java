@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -24,7 +24,6 @@ import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.core.operation.StartWorkflowOperation;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -39,12 +38,10 @@ public class SubWorkflow extends WorkflowSystemTask {
     private static final String SUB_WORKFLOW_ID = "subWorkflowId";
 
     private final ObjectMapper objectMapper;
-    private final StartWorkflowOperation startWorkflowOperation;
 
-    public SubWorkflow(ObjectMapper objectMapper, StartWorkflowOperation startWorkflowOperation) {
+    public SubWorkflow(ObjectMapper objectMapper) {
         super(TASK_TYPE_SUB_WORKFLOW);
         this.objectMapper = objectMapper;
-        this.startWorkflowOperation = startWorkflowOperation;
     }
 
     @SuppressWarnings("unchecked")
@@ -53,6 +50,8 @@ public class SubWorkflow extends WorkflowSystemTask {
         Map<String, Object> input = task.getInputData();
         String name = input.get("subWorkflowName").toString();
         int version = (int) input.get("subWorkflowVersion");
+        // version=0 is treated as "use latest", same as null
+        Integer resolvedVersion = version == 0 ? null : version;
 
         WorkflowDef workflowDefinition = null;
         if (input.get("subWorkflowDefinition") != null) {
@@ -78,14 +77,14 @@ public class SubWorkflow extends WorkflowSystemTask {
             StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
             startWorkflowInput.setWorkflowDefinition(workflowDefinition);
             startWorkflowInput.setName(name);
-            startWorkflowInput.setVersion(version);
+            startWorkflowInput.setVersion(resolvedVersion);
             startWorkflowInput.setWorkflowInput(wfInput);
             startWorkflowInput.setCorrelationId(correlationId);
             startWorkflowInput.setParentWorkflowId(workflow.getWorkflowId());
             startWorkflowInput.setParentWorkflowTaskId(task.getTaskId());
             startWorkflowInput.setTaskToDomain(taskToDomain);
 
-            String subWorkflowId = startWorkflowOperation.execute(startWorkflowInput);
+            String subWorkflowId = workflowExecutor.startWorkflow(startWorkflowInput);
 
             task.setSubWorkflowId(subWorkflowId);
             // For backwards compatibility
@@ -145,11 +144,6 @@ public class SubWorkflow extends WorkflowSystemTask {
                         : "Parent workflow has been terminated with reason: "
                                 + workflow.getReasonForIncompletion();
         workflowExecutor.terminateWorkflow(subWorkflow, reason, null);
-    }
-
-    @Override
-    public boolean isAsync() {
-        return true;
     }
 
     /**

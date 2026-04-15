@@ -1,0 +1,134 @@
+import _merge from "lodash/merge";
+declare global {
+  interface Window {
+    conductor: any;
+    heap?: any;
+    authConfig?: {
+      domain?: string;
+      clientId?: string;
+      useIdToken?: boolean;
+      audience?: string;
+      type?: string;
+      issuer?: string;
+      idps?: any[]; //Typing as any. else would need to import okta types. and this is Oidc
+      useInteractionCodeFlow?: boolean;
+      authorizationEndpoint?: string;
+      tokenEndpoint?: string;
+      endSessionEndpoint?: string;
+    };
+    auth0Identifiers?: {
+      domain?: string;
+      clientId?: string;
+    };
+  }
+}
+
+export const FEATURES = Object.freeze({
+  ACCESS_MANAGEMENT: "ACCESS_MANAGEMENT",
+  COPY_TOKEN: "COPY_TOKEN",
+  TASK_VISIBILITY: "TASK_VISIBILITY",
+  PLAYGROUND: "PLAYGROUND",
+  SCHEDULER: "SCHEDULER",
+  CREATOR_ENABLE_CREATOR: "CREATOR_ENABLE_CREATOR",
+  CREATOR_ENABLE_REAFLOW_DIAGRAM: "CREATOR_ENABLE_REAFLOW_DIAGRAM",
+  ENABLE_DARK_MODE_TOGGLE: "ENABLE_DARK_MODE_TOGGLE",
+  NAVBAR_ELEMENTS_VARIANT: "NAVBAR_ELEMENTS_VARIANT",
+  SHOW_START_TITLE: "SHOW_START_TITLE",
+  SHOW_CLOUD_LINK: "SHOW_CLOUD_LINK",
+  SHOW_FEEDBACK_FORM: "SHOW_FEEDBACK_FORM",
+  SHOW_SUPPORT_FORM: "SHOW_SUPPORT_FORM",
+  SHOW_DOCUMENTATION: "SHOW_DOCUMENTATION",
+  SHOW_JOIN_SLACK_COMMUNITY: "SHOW_JOIN_SLACK_COMMUNITY",
+  BETA_KEYBOARD_FLOW: "BETA_KEYBOARD_FLOW",
+  ENABLE_METRICS_DASHBOARD: "ENABLE_METRICS_DASHBOARD",
+  METRICS_ORIGIN_URL: "METRICS_ORIGIN_URL",
+  HIDE_JAVASCRIPT_OPTION: "HIDE_JAVASCRIPT_OPTION",
+  HUMAN_TASK: "HUMAN_TASK",
+  LOGIN_REDIRECT_TYPE: "LOGIN_REDIRECT_TYPE",
+  DRAG_DROP_TASK_INCREMENT_THRESHOLD: "DRAG_DROP_TASK_INCREMENT_THRESHOLD",
+  INTEGRATIONS: "INTEGRATIONS",
+  INTEGRATIONS_FLAT_LAYOUT: "INTEGRATIONS_FLAT_LAYOUT",
+  ANNOUNCEMENT_EXPIRY_DATE: "ANNOUNCEMENT_EXPIRY_DATE",
+  SHOW_NEWS_ICON: "SHOW_NEWS_ICON",
+  HEAP_APP_ID: "HEAP_APP_ID",
+  DISABLE_EXPAND_WORKFLOW: "ENABLE_EXPAND_WORKFLOW",
+  DISABLE_TASK_STATS: "ENABLE_TASK_STATS",
+  ENABLE_TASK_DEFINITION_FORM: "ENABLE_TASK_DEFINITION_FORM",
+  SECRETS: "SECRETS",
+  WEBHOOKS: "WEBHOOKS",
+  RBAC: "RBAC",
+  SHOW_ONBOARDING_QUIZ: "SHOW_ONBOARDING_QUIZ",
+  SKU_ENABLED: "SKU_ENABLED",
+  TASK_INDEXING: "TASK_INDEXING",
+  TRIGGER_WORKFLOW: "TRIGGER_WORKFLOW",
+  ENV_IS_PRODUCTION: "ENV_IS_PRODUCTION",
+  ENABLE_WHITE_BACKGROUND_FORM: "ENABLE_WHITE_BACKGROUND_FORM",
+  ADVANCED_ERROR_INSPECTOR_VALIDATIONS: "ADVANCED_ERROR_INSPECTOR_VALIDATIONS",
+  CUSTOM_LOGO_URL: "CUSTOM_LOGO_URL",
+  SHOW_END_TIME_IN_DATEPICKER: "SHOW_END_TIME_IN_DATEPICKER",
+  SHOW_EVENT_MONITOR: "SHOW_EVENT_MONITOR",
+  SENDGRID_TASK: "SENDGRID_TASK",
+  LOG_ROCKET_KEY: "LOG_ROCKET_KEY",
+  SHOW_AI_STUDIO_BANNER_FLAG: "SHOW_AI_STUDIO_BANNER_FLAG",
+  SHOW_GET_STARTED_PAGE: "SHOW_GET_STARTED_PAGE",
+  GET_STARTED_VIDEO_URL: "GET_STARTED_VIDEO_URL",
+  REMOTE_SERVICES: "REMOTE_SERVICES",
+  MULTITENANCY_TYPE: "MULTITENANCY_TYPE",
+  DEFAULT_ROLES: "DEFAULT_ROLES",
+  HIDE_IMPORT_BPMN: "HIDE_IMPORT_BPMN",
+  GATEWAY_ENABLED: "GATEWAY_ENABLED",
+  CLOUD_TEMPLATES_SOURCE: "CLOUD_TEMPLATES_SOURCE",
+  AI_PROMPTS_VERSIONING: "AI_PROMPTS_VERSIONING",
+  GROWTHBOOK_CLIENT_KEY: "GROWTHBOOK_CLIENT_KEY",
+  ENABLE_RERUN_FROM_FORK_AND_DOWHILE_TASKS:
+    "ENABLE_RERUN_FROM_FORK_AND_DOWHILE_TASKS",
+  GOOGLE_CLIENT_ID: "GOOGLE_CLIENT_ID",
+  NOTIFY_HUMAN_TASK: "NOTIFY_HUMAN_TASK",
+  WORKFLOW_INTROSPECTION: "WORKFLOW_INTROSPECTION",
+  ENABLE_CONFETTI: "ENABLE_CONFETTI",
+  OIDC_REMOVE_OFFLINE_ACCESS: "OIDC_REMOVE_OFFLINE_ACCESS",
+  SHOW_ROLES_MENU_ITEM: "SHOW_ROLES_MENU_ITEM",
+  SHOW_AGENT: "SHOW_AGENT",
+  ENABLE_AGENT_AUDIO_INPUT: "ENABLE_AGENT_AUDIO_INPUT",
+  AI_CODER_WORKER: "AI_CODER_WORKER",
+  AI_CODER_CLOUD_WORKER: "AI_CODER_CLOUD_WORKER",
+  TAG_VISIBILITY: "TAG_VISIBILITY",
+});
+
+const mapOfLocalStorageValues = Object.fromEntries(
+  Object.entries(FEATURES).map(([k, v]) => [
+    k,
+    localStorage.getItem(v) === null ? undefined : localStorage.getItem(v),
+  ]),
+);
+const mapOfEnvValues = Object.fromEntries(
+  Object.entries(FEATURES).map(([k, v]) => [
+    k,
+    process.env[`REACT_APP_FEATURE_${v}`],
+  ]),
+);
+const mapOfContextJs = Object.fromEntries(
+  Object.entries(FEATURES).map(([k, v]) => [
+    k,
+    window.conductor && window.conductor[v],
+  ]),
+);
+
+const result = _merge(
+  {},
+  mapOfContextJs,
+  mapOfEnvValues,
+  mapOfLocalStorageValues,
+);
+
+export const featureFlags = {
+  isEnabled: (feature: string) => {
+    return result[feature] === "true" || result[feature] === true;
+  },
+  getValue: (feature: string, defaultValue?: string) => {
+    return result[feature] || defaultValue;
+  },
+  getContextValue: (feature: string) => {
+    return window.conductor && window.conductor[feature];
+  },
+};

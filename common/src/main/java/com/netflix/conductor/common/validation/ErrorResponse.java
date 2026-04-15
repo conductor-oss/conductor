@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -13,6 +13,7 @@
 package com.netflix.conductor.common.validation;
 
 import java.util.List;
+import java.util.Map;
 
 public class ErrorResponse {
 
@@ -22,6 +23,16 @@ public class ErrorResponse {
     private String instance;
     private boolean retryable;
     private List<ValidationError> validationErrors;
+
+    private Map<String, Object> metadata;
+
+    public Map<String, Object> getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(Map<String, Object> metadata) {
+        this.metadata = metadata;
+    }
 
     public int getStatus() {
         return status;

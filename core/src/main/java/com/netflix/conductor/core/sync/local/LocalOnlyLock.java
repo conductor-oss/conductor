@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -96,7 +96,13 @@ public class LocalOnlyLock implements Lock {
                 return;
             }
             LOGGER.trace("Releasing {}", lockId);
-            LOCKIDTOSEMAPHOREMAP.get(lockId).unlock();
+            try {
+                LOCKIDTOSEMAPHOREMAP.get(lockId).unlock();
+            } catch (IllegalMonitorStateException e) {
+                // Releasing a lock without holding it can cause this exception, which can be
+                // ignored.
+                // This matches the behavior of RedisLock implementation.
+            }
             removeLeaseExpirationJob(lockId);
         }
     }

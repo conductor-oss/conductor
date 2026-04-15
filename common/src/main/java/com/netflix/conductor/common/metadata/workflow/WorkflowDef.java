@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,43 +12,31 @@
  */
 package com.netflix.conductor.common.metadata.workflow;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
-import javax.validation.Valid;
-import javax.validation.constraints.Email;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
+import java.util.*;
 
 import com.netflix.conductor.annotations.protogen.ProtoEnum;
 import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
-import com.netflix.conductor.common.constraints.NoSemiColonConstraint;
 import com.netflix.conductor.common.constraints.OwnerEmailMandatoryConstraint;
 import com.netflix.conductor.common.constraints.TaskReferenceNameUniqueConstraint;
-import com.netflix.conductor.common.metadata.BaseDef;
+import com.netflix.conductor.common.constraints.ValidNameConstraint;
+import com.netflix.conductor.common.metadata.Auditable;
+import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 
 @ProtoMessage
 @TaskReferenceNameUniqueConstraint
-public class WorkflowDef extends BaseDef {
-
-    @ProtoEnum
-    public enum TimeoutPolicy {
-        TIME_OUT_WF,
-        ALERT_ONLY
-    }
+public class WorkflowDef extends Auditable {
 
     @NotEmpty(message = "WorkflowDef name cannot be null or empty")
     @ProtoField(id = 1)
-    @NoSemiColonConstraint(
-            message = "Workflow name cannot contain the following set of characters: ':'")
+    @ValidNameConstraint
     private String name;
 
     @ProtoField(id = 2)
@@ -76,7 +64,7 @@ public class WorkflowDef extends BaseDef {
     @Max(value = 2, message = "workflowDef schemaVersion: {value} is only supported")
     private int schemaVersion = 2;
 
-    // By default, a workflow is restartable
+    // By default a workflow is restartable
     @ProtoField(id = 9)
     private boolean restartable = true;
 
@@ -85,7 +73,6 @@ public class WorkflowDef extends BaseDef {
 
     @ProtoField(id = 11)
     @OwnerEmailMandatoryConstraint
-    @Email(message = "ownerEmail should be valid email address")
     private String ownerEmail;
 
     @ProtoField(id = 12)
@@ -100,6 +87,42 @@ public class WorkflowDef extends BaseDef {
 
     @ProtoField(id = 15)
     private Map<String, Object> inputTemplate = new HashMap<>();
+
+    @ProtoField(id = 17)
+    private String workflowStatusListenerSink;
+
+    @ProtoField(id = 18)
+    private RateLimitConfig rateLimitConfig;
+
+    @ProtoField(id = 19)
+    private SchemaDef inputSchema;
+
+    @ProtoField(id = 20)
+    private SchemaDef outputSchema;
+
+    @ProtoField(id = 21)
+    private boolean enforceSchema = true;
+
+    @ProtoField(id = 22)
+    private Map<String, Object> metadata = new HashMap<>();
+
+    @ProtoField(id = 23)
+    private CacheConfig cacheConfig;
+
+    @ProtoField(id = 24)
+    private List<String> maskedFields = new ArrayList<>();
+
+    public static String getKey(String name, int version) {
+        return name + "." + version;
+    }
+
+    public boolean isEnforceSchema() {
+        return enforceSchema;
+    }
+
+    public void setEnforceSchema(boolean enforceSchema) {
+        this.enforceSchema = enforceSchema;
+    }
 
     /**
      * @return the name
@@ -179,6 +202,13 @@ public class WorkflowDef extends BaseDef {
     }
 
     /**
+     * @param version the version to set
+     */
+    public void setVersion(int version) {
+        this.version = version;
+    }
+
+    /**
      * @return the failureWorkflow
      */
     public String getFailureWorkflow() {
@@ -190,13 +220,6 @@ public class WorkflowDef extends BaseDef {
      */
     public void setFailureWorkflow(String failureWorkflow) {
         this.failureWorkflow = failureWorkflow;
-    }
-
-    /**
-     * @param version the version to set
-     */
-    public void setVersion(int version) {
-        this.version = version;
     }
 
     /**
@@ -317,8 +340,60 @@ public class WorkflowDef extends BaseDef {
         return getKey(name, version);
     }
 
-    public static String getKey(String name, int version) {
-        return name + "." + version;
+    public String getWorkflowStatusListenerSink() {
+        return workflowStatusListenerSink;
+    }
+
+    public void setWorkflowStatusListenerSink(String workflowStatusListenerSink) {
+        this.workflowStatusListenerSink = workflowStatusListenerSink;
+    }
+
+    public RateLimitConfig getRateLimitConfig() {
+        return rateLimitConfig;
+    }
+
+    public void setRateLimitConfig(RateLimitConfig rateLimitConfig) {
+        this.rateLimitConfig = rateLimitConfig;
+    }
+
+    public SchemaDef getInputSchema() {
+        return inputSchema;
+    }
+
+    public void setInputSchema(SchemaDef inputSchema) {
+        this.inputSchema = inputSchema;
+    }
+
+    public SchemaDef getOutputSchema() {
+        return outputSchema;
+    }
+
+    public void setOutputSchema(SchemaDef outputSchema) {
+        this.outputSchema = outputSchema;
+    }
+
+    public Map<String, Object> getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(Map<String, Object> metadata) {
+        this.metadata = metadata;
+    }
+
+    public CacheConfig getCacheConfig() {
+        return cacheConfig;
+    }
+
+    public void setCacheConfig(final CacheConfig cacheConfig) {
+        this.cacheConfig = cacheConfig;
+    }
+
+    public List<String> getMaskedFields() {
+        return maskedFields;
+    }
+
+    public void setMaskedFields(List<String> maskedFields) {
+        this.maskedFields = maskedFields;
     }
 
     public boolean containsType(String taskType) {
@@ -384,31 +459,12 @@ public class WorkflowDef extends BaseDef {
             return false;
         }
         WorkflowDef that = (WorkflowDef) o;
-        return getVersion() == that.getVersion()
-                && getSchemaVersion() == that.getSchemaVersion()
-                && Objects.equals(getName(), that.getName())
-                && Objects.equals(getDescription(), that.getDescription())
-                && Objects.equals(getTasks(), that.getTasks())
-                && Objects.equals(getInputParameters(), that.getInputParameters())
-                && Objects.equals(getOutputParameters(), that.getOutputParameters())
-                && Objects.equals(getFailureWorkflow(), that.getFailureWorkflow())
-                && Objects.equals(getOwnerEmail(), that.getOwnerEmail())
-                && Objects.equals(getTimeoutSeconds(), that.getTimeoutSeconds());
+        return version == that.version && Objects.equals(name, that.name);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(
-                getName(),
-                getDescription(),
-                getVersion(),
-                getTasks(),
-                getInputParameters(),
-                getOutputParameters(),
-                getFailureWorkflow(),
-                getSchemaVersion(),
-                getOwnerEmail(),
-                getTimeoutSeconds());
+        return Objects.hash(name, version);
     }
 
     @Override
@@ -437,8 +493,36 @@ public class WorkflowDef extends BaseDef {
                 + restartable
                 + ", workflowStatusListenerEnabled="
                 + workflowStatusListenerEnabled
+                + ", ownerEmail='"
+                + ownerEmail
+                + '\''
+                + ", timeoutPolicy="
+                + timeoutPolicy
                 + ", timeoutSeconds="
                 + timeoutSeconds
+                + ", variables="
+                + variables
+                + ", inputTemplate="
+                + inputTemplate
+                + ", workflowStatusListenerSink='"
+                + workflowStatusListenerSink
+                + '\''
+                + ", rateLimitConfig="
+                + rateLimitConfig
+                + ", inputSchema="
+                + inputSchema
+                + ", outputSchema="
+                + outputSchema
+                + ", enforceSchema="
+                + enforceSchema
+                + ", maskedFields="
+                + maskedFields
                 + '}';
+    }
+
+    @ProtoEnum
+    public enum TimeoutPolicy {
+        TIME_OUT_WF,
+        ALERT_ONLY
     }
 }

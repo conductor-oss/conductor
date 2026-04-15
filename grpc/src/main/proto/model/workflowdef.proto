@@ -1,8 +1,11 @@
 syntax = "proto3";
 package conductor.proto;
 
+import "model/ratelimitconfig.proto";
 import "model/workflowtask.proto";
 import "google/protobuf/struct.proto";
+import "model/schemadef.proto";
+import "model/cacheconfig.proto";
 
 option java_package = "com.netflix.conductor.proto";
 option java_outer_classname = "WorkflowDefPb";
@@ -28,4 +31,12 @@ message WorkflowDef {
     int64 timeout_seconds = 13;
     map<string, google.protobuf.Value> variables = 14;
     map<string, google.protobuf.Value> input_template = 15;
+    string workflow_status_listener_sink = 17;
+    RateLimitConfig rate_limit_config = 18;
+    SchemaDef input_schema = 19;
+    SchemaDef output_schema = 20;
+    bool enforce_schema = 21;
+    map<string, google.protobuf.Value> metadata = 22;
+    CacheConfig cache_config = 23;
+    repeated string masked_fields = 24;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,13 +15,13 @@ package com.netflix.conductor.common.metadata.workflow;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.validation.Valid;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
-
 import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 
 @ProtoMessage
 public class StartWorkflowRequest {
@@ -53,6 +53,29 @@ public class StartWorkflowRequest {
     @Min(value = 0, message = "priority: ${validatedValue} should be minimum {value}")
     @Max(value = 99, message = "priority: ${validatedValue} should be maximum {value}")
     private Integer priority = 0;
+
+    @ProtoField(id = 9)
+    private String createdBy;
+
+    private String idempotencyKey;
+
+    private IdempotencyStrategy idempotencyStrategy;
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
+    }
+
+    public IdempotencyStrategy getIdempotencyStrategy() {
+        return idempotencyStrategy;
+    }
+
+    public void setIdempotencyStrategy(IdempotencyStrategy idempotencyStrategy) {
+        this.idempotencyStrategy = idempotencyStrategy;
+    }
 
     public String getName() {
         return name;
@@ -156,6 +179,19 @@ public class StartWorkflowRequest {
 
     public StartWorkflowRequest withWorkflowDef(WorkflowDef workflowDef) {
         this.workflowDef = workflowDef;
+        return this;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public StartWorkflowRequest withCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
         return this;
     }
 }

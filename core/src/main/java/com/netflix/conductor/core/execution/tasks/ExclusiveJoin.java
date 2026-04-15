@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -65,9 +65,20 @@ public class ExclusiveJoin extends WorkflowSystemTask {
             }
             taskStatus = exclusiveTask.getStatus();
             foundExlusiveJoinOnTask = taskStatus.isTerminal();
-            hasFailures = !taskStatus.isSuccessful();
+            hasFailures =
+                    !taskStatus.isSuccessful()
+                            && (!exclusiveTask.getWorkflowTask().isPermissive()
+                                    || joinOn.stream()
+                                            .map(workflow::getTaskByRefName)
+                                            .allMatch(t -> t.getStatus().isTerminal()));
             if (hasFailures) {
-                failureReason.append(exclusiveTask.getReasonForIncompletion()).append(" ");
+                final String failureReasons =
+                        joinOn.stream()
+                                .map(workflow::getTaskByRefName)
+                                .filter(t -> !t.getStatus().isSuccessful())
+                                .map(TaskModel::getReasonForIncompletion)
+                                .collect(Collectors.joining(" "));
+                failureReason.append(failureReasons);
             }
 
             break;

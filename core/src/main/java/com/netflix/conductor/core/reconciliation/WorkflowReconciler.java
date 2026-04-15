@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -32,11 +32,14 @@ import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
  * Periodically polls all running workflows in the system and evaluates them for timeouts and/or
  * maintain consistency.
  */
+// Deprecated - and superseeded by new WorkflowSweeper in org.conductoross.conductor.core.execution
+// package
+@Deprecated(forRemoval = true)
 @Component
 @ConditionalOnProperty(
         name = "conductor.workflow-reconciler.enabled",
         havingValue = "true",
-        matchIfMissing = true)
+        matchIfMissing = false)
 public class WorkflowReconciler extends LifecycleAwareComponent {
 
     private final WorkflowSweeper workflowSweeper;

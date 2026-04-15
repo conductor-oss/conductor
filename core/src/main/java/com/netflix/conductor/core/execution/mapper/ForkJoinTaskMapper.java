@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,6 +15,7 @@ package com.netflix.conductor.core.execution.mapper;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,6 +79,10 @@ public class ForkJoinTaskMapper implements TaskMapper {
         forkTask.setEndTime(epochMillis);
         forkTask.setInputData(taskInput);
         forkTask.setStatus(TaskModel.Status.COMPLETED);
+        if (Objects.nonNull(taskMapperContext.getTaskDefinition())) {
+            forkTask.setIsolationGroupId(
+                    taskMapperContext.getTaskDefinition().getIsolationGroupId());
+        }
 
         tasksToBeScheduled.add(forkTask);
         List<List<WorkflowTask>> forkTasks = workflowTask.getForkTasks();

@@ -1,0 +1,595 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://conductoross.org/schemas/WorkflowDef.json",
+  "title": "WorkflowDef",
+  "description": "Workflow definition schema",
+  "type": "object",
+  "required": ["name", "tasks"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Unique name identifying the workflow",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the workflow"
+    },
+    "version": {
+      "type": "integer",
+      "description": "Version of the workflow definition",
+      "default": 1
+    },
+    "tasks": {
+      "type": "array",
+      "description": "List of tasks that make up the workflow",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/WorkflowTask"
+      }
+    },
+    "inputParameters": {
+      "type": "array",
+      "description": "List of input parameter names",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "outputParameters": {
+      "type": "object",
+      "description": "Output parameters mapping",
+      "additionalProperties": true,
+      "default": {}
+    },
+    "failureWorkflow": {
+      "type": "string",
+      "description": "Name of workflow to execute on failure"
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "description": "Schema version",
+      "minimum": 2,
+      "maximum": 2,
+      "default": 2
+    },
+    "restartable": {
+      "type": "boolean",
+      "description": "Whether the workflow can be restarted",
+      "default": true
+    },
+    "workflowStatusListenerEnabled": {
+      "type": "boolean",
+      "description": "Whether workflow status listener is enabled",
+      "default": false
+    },
+    "ownerEmail": {
+      "type": "string",
+      "description": "Email of the workflow owner",
+      "format": "email"
+    },
+    "timeoutPolicy": {
+      "type": "string",
+      "description": "Timeout policy for the workflow",
+      "enum": ["TIME_OUT_WF", "ALERT_ONLY"],
+      "default": "ALERT_ONLY"
+    },
+    "timeoutSeconds": {
+      "type": "integer",
+      "description": "Timeout in seconds after which workflow is deemed timed out",
+      "minimum": 0
+    },
+    "variables": {
+      "type": "object",
+      "description": "Global workflow variables",
+      "additionalProperties": true,
+      "default": {}
+    },
+    "inputTemplate": {
+      "type": "object",
+      "description": "Template for input parameters",
+      "additionalProperties": true,
+      "default": {}
+    },
+    "workflowStatusListenerSink": {
+      "type": "string",
+      "description": "Sink for workflow status events"
+    },
+    "rateLimitConfig": {
+      "$ref": "#/definitions/RateLimitConfig"
+    },
+    "inputSchema": {
+      "$ref": "#/definitions/SchemaDef"
+    },
+    "outputSchema": {
+      "$ref": "#/definitions/SchemaDef"
+    },
+    "enforceSchema": {
+      "type": "boolean",
+      "description": "Whether to enforce schema validation",
+      "default": true
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata",
+      "additionalProperties": true,
+      "default": {}
+    },
+    "cacheConfig": {
+      "$ref": "#/definitions/CacheConfig"
+    },
+    "maskedFields": {
+      "type": "array",
+      "description": "List of fields to mask in logs",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "ownerApp": {
+      "type": "string",
+      "description": "Owner application"
+    },
+    "createTime": {
+      "type": "integer",
+      "description": "Creation timestamp in milliseconds",
+      "format": "int64"
+    },
+    "updateTime": {
+      "type": "integer",
+      "description": "Last update timestamp in milliseconds",
+      "format": "int64"
+    },
+    "createdBy": {
+      "type": "string",
+      "description": "User who created this workflow definition"
+    },
+    "updatedBy": {
+      "type": "string",
+      "description": "User who last updated this workflow definition"
+    }
+  },
+  "definitions": {
+    "WorkflowTask": {
+      "type": "object",
+      "required": ["name", "taskReferenceName"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Task name",
+          "minLength": 1
+        },
+        "taskReferenceName": {
+          "type": "string",
+          "description": "Unique reference name for this task within the workflow",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "description": "Task description"
+        },
+        "inputParameters": {
+          "type": "object",
+          "description": "Input parameters for the task",
+          "additionalProperties": true,
+          "default": {}
+        },
+        "type": {
+          "type": "string",
+          "description": "Task type",
+          "default": "SIMPLE"
+        },
+        "dynamicTaskNameParam": {
+          "type": "string",
+          "description": "Parameter name for dynamic task name"
+        },
+        "caseValueParam": {
+          "type": "string",
+          "description": "Case value parameter (deprecated)",
+          "deprecated": true
+        },
+        "caseExpression": {
+          "type": "string",
+          "description": "Case expression (deprecated)",
+          "deprecated": true
+        },
+        "scriptExpression": {
+          "type": "string",
+          "description": "Script expression for script tasks"
+        },
+        "decisionCases": {
+          "type": "object",
+          "description": "Decision cases for SWITCH/DECISION tasks",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/WorkflowTask"
+            }
+          },
+          "default": {}
+        },
+        "dynamicForkTasksParam": {
+          "type": "string",
+          "description": "Parameter name for dynamic fork tasks"
+        },
+        "dynamicForkTasksInputParamName": {
+          "type": "string",
+          "description": "Input parameter name for dynamic fork tasks"
+        },
+        "defaultCase": {
+          "type": "array",
+          "description": "Default case tasks for SWITCH/DECISION",
+          "items": {
+            "$ref": "#/definitions/WorkflowTask"
+          },
+          "default": []
+        },
+        "forkTasks": {
+          "type": "array",
+          "description": "Fork tasks for FORK_JOIN",
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/WorkflowTask"
+            }
+          },
+          "default": []
+        },
+        "startDelay": {
+          "type": "integer",
+          "description": "Start delay in seconds",
+          "minimum": 0,
+          "default": 0
+        },
+        "subWorkflowParam": {
+          "$ref": "#/definitions/SubWorkflowParams"
+        },
+        "joinOn": {
+          "type": "array",
+          "description": "List of task reference names to join on",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "sink": {
+          "type": "string",
+          "description": "Sink for EVENT tasks"
+        },
+        "optional": {
+          "type": "boolean",
+          "description": "Whether the task is optional",
+          "default": false
+        },
+        "taskDefinition": {
+          "$ref": "#/definitions/TaskDef"
+        },
+        "rateLimited": {
+          "type": "boolean",
+          "description": "Whether the task is rate limited"
+        },
+        "defaultExclusiveJoinTask": {
+          "type": "array",
+          "description": "Default tasks for exclusive join",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "asyncComplete": {
+          "type": "boolean",
+          "description": "Whether to wait for async completion",
+          "default": false
+        },
+        "loopCondition": {
+          "type": "string",
+          "description": "Loop condition for DO_WHILE tasks"
+        },
+        "loopOver": {
+          "type": "array",
+          "description": "Tasks to loop over in DO_WHILE",
+          "items": {
+            "$ref": "#/definitions/WorkflowTask"
+          },
+          "default": []
+        },
+        "retryCount": {
+          "type": "integer",
+          "description": "Number of retries for this task",
+          "minimum": 0
+        },
+        "evaluatorType": {
+          "type": "string",
+          "description": "Evaluator type for expressions"
+        },
+        "expression": {
+          "type": "string",
+          "description": "Expression to evaluate"
+        },
+        "onStateChange": {
+          "type": "object",
+          "description": "Events to emit on state change",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/StateChangeEvent"
+            }
+          },
+          "default": {}
+        },
+        "joinStatus": {
+          "type": "string",
+          "description": "Join status criteria"
+        },
+        "cacheConfig": {
+          "$ref": "#/definitions/CacheConfig"
+        },
+        "permissive": {
+          "type": "boolean",
+          "description": "Whether the task is permissive",
+          "default": false
+        }
+      }
+    },
+    "TaskDef": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Unique task name",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "description": "Task description"
+        },
+        "retryCount": {
+          "type": "integer",
+          "description": "Number of retries",
+          "minimum": 0,
+          "default": 3
+        },
+        "timeoutSeconds": {
+          "type": "integer",
+          "description": "Task timeout in seconds",
+          "minimum": 0
+        },
+        "inputKeys": {
+          "type": "array",
+          "description": "Expected input keys",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "outputKeys": {
+          "type": "array",
+          "description": "Expected output keys",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "timeoutPolicy": {
+          "type": "string",
+          "description": "Timeout policy",
+          "enum": ["RETRY", "TIME_OUT_WF", "ALERT_ONLY"],
+          "default": "TIME_OUT_WF"
+        },
+        "retryLogic": {
+          "type": "string",
+          "description": "Retry logic",
+          "enum": ["FIXED", "EXPONENTIAL_BACKOFF", "LINEAR_BACKOFF"],
+          "default": "FIXED"
+        },
+        "retryDelaySeconds": {
+          "type": "integer",
+          "description": "Retry delay in seconds",
+          "default": 60
+        },
+        "responseTimeoutSeconds": {
+          "type": "integer",
+          "description": "Response timeout in seconds",
+          "minimum": 1,
+          "default": 3600
+        },
+        "concurrentExecLimit": {
+          "type": "integer",
+          "description": "Concurrent execution limit"
+        },
+        "inputTemplate": {
+          "type": "object",
+          "description": "Input template",
+          "additionalProperties": true,
+          "default": {}
+        },
+        "rateLimitPerFrequency": {
+          "type": "integer",
+          "description": "Rate limit per frequency"
+        },
+        "rateLimitFrequencyInSeconds": {
+          "type": "integer",
+          "description": "Rate limit frequency in seconds"
+        },
+        "isolationGroupId": {
+          "type": "string",
+          "description": "Isolation group ID"
+        },
+        "executionNameSpace": {
+          "type": "string",
+          "description": "Execution namespace"
+        },
+        "ownerEmail": {
+          "type": "string",
+          "description": "Owner email",
+          "format": "email"
+        },
+        "pollTimeoutSeconds": {
+          "type": "integer",
+          "description": "Poll timeout in seconds",
+          "minimum": 0
+        },
+        "backoffScaleFactor": {
+          "type": "integer",
+          "description": "Backoff scale factor for LINEAR_BACKOFF",
+          "minimum": 1,
+          "default": 1
+        },
+        "baseType": {
+          "type": "string",
+          "description": "Base task type"
+        },
+        "totalTimeoutSeconds": {
+          "type": "integer",
+          "description": "Total timeout in seconds",
+          "minimum": 0
+        },
+        "inputSchema": {
+          "$ref": "#/definitions/SchemaDef"
+        },
+        "outputSchema": {
+          "$ref": "#/definitions/SchemaDef"
+        },
+        "enforceSchema": {
+          "type": "boolean",
+          "description": "Whether to enforce schema validation",
+          "default": false
+        }
+      }
+    },
+    "SubWorkflowParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Sub-workflow name"
+        },
+        "version": {
+          "type": "integer",
+          "description": "Sub-workflow version"
+        },
+        "taskToDomain": {
+          "type": "object",
+          "description": "Task to domain mapping",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "workflowDefinition": {
+          "description": "Inline workflow definition (can be WorkflowDef object, DSL string, or Map that gets converted)",
+          "oneOf": [
+            {
+              "type": "object",
+              "description": "WorkflowDef object or LinkedHashMap"
+            },
+            {
+              "type": "string",
+              "pattern": "^\\$\\{.*\\}$",
+              "description": "DSL expression string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "description": "Idempotency key for the sub-workflow"
+        },
+        "idempotencyStrategy": {
+          "type": "string",
+          "description": "Idempotency strategy",
+          "enum": ["RETURN_EXISTING", "FAIL"]
+        },
+        "priority": {
+          "description": "Priority of the sub-workflow (can be integer or string expression)",
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 99
+            },
+            {
+              "type": "string",
+              "description": "Expression that evaluates to priority"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "SchemaDef": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Schema name"
+        },
+        "version": {
+          "type": "integer",
+          "description": "Schema version",
+          "default": 1
+        },
+        "type": {
+          "type": "string",
+          "description": "Schema type",
+          "enum": ["JSON", "AVRO", "PROTOBUF"]
+        },
+        "data": {
+          "type": "object",
+          "description": "Schema definition data",
+          "additionalProperties": true
+        },
+        "externalRef": {
+          "type": "string",
+          "description": "External schema reference"
+        }
+      }
+    },
+    "RateLimitConfig": {
+      "type": "object",
+      "properties": {
+        "rateLimitKey": {
+          "type": "string",
+          "description": "Rate limit key"
+        },
+        "concurrentExecLimit": {
+          "type": "integer",
+          "description": "Concurrent execution limit (required field, primitive int)"
+        }
+      }
+    },
+    "CacheConfig": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "Cache key"
+        },
+        "ttlInSecond": {
+          "type": "integer",
+          "description": "TTL in seconds (required field, primitive int)"
+        }
+      }
+    },
+    "StateChangeEvent": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Type of the state change event"
+        },
+        "payload": {
+          "type": "object",
+          "description": "Event payload containing event-specific data",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

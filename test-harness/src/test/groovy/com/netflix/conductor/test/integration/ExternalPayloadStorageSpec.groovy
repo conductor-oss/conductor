@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -448,7 +448,7 @@ class ExternalPayloadStorageSpec extends AbstractSpecification {
             tasks[0].outputData.isEmpty()
 
             tasks[1].taskType == TaskType.SUB_WORKFLOW.name()
-            tasks[1].status == Task.Status.SCHEDULED
+            tasks[1].status == Task.Status.IN_PROGRESS
             tasks[1].inputData.isEmpty()
 
         }
@@ -456,7 +456,6 @@ class ExternalPayloadStorageSpec extends AbstractSpecification {
         when: "the subworkflow is started by issuing a system task call"
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowTaskId = workflow.getTaskByRefName('swt').taskId
-        asyncSystemTaskExecutor.execute(subWorkflowTask, subWorkflowTaskId)
 
         then: "verify that the sub workflow task is in a IN_PROGRESS state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -756,7 +755,7 @@ class ExternalPayloadStorageSpec extends AbstractSpecification {
             tasks[2].taskType == 'SUB_WORKFLOW'
             !tasks[2].inputData
 
-            tasks[2].status == Task.Status.SCHEDULED
+            tasks[2].status == Task.Status.IN_PROGRESS
             tasks[3].taskType == 'JOIN'
             tasks[3].status == Task.Status.IN_PROGRESS
             tasks[3].referenceTaskName == 'dynamicfanouttask_join'

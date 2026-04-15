@@ -1,0 +1,22 @@
+{
+  "name": "image_gen_stabilityai",
+  "description": "Generates an image using Stability AI's SD3.5 Large model via the v2beta API.",
+  "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "generate_image",
+      "taskReferenceName": "stable_diffusion_image",
+      "type": "GENERATE_IMAGE",
+      "inputParameters": {
+        "llmProvider": "stabilityai",
+        "model": "sd3.5-large",
+        "prompt": "A fantasy castle perched on a floating island surrounded by clouds, digital art, highly detailed",
+        "width": 1024,
+        "height": 1024,
+        "n": 1,
+        "style": "cinematic"
+      }
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,8 +15,6 @@ package com.netflix.conductor.rest.controllers;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -24,6 +22,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.netflix.conductor.common.validation.ErrorResponse;
 import com.netflix.conductor.core.exception.ConflictException;
@@ -33,6 +32,7 @@ import com.netflix.conductor.core.utils.Utils;
 import com.netflix.conductor.metrics.Monitors;
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestControllerAdvice
 @Order(ValidationExceptionMapper.ORDER + 1)
@@ -50,6 +50,7 @@ public class ApplicationExceptionMapper {
         EXCEPTION_STATUS_MAP.put(ConflictException.class, HttpStatus.CONFLICT);
         EXCEPTION_STATUS_MAP.put(IllegalArgumentException.class, HttpStatus.BAD_REQUEST);
         EXCEPTION_STATUS_MAP.put(InvalidFormatException.class, HttpStatus.INTERNAL_SERVER_ERROR);
+        EXCEPTION_STATUS_MAP.put(NoResourceFoundException.class, HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(Throwable.class)

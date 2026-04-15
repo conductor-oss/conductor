@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "noFallthroughCasesInSwitch": true,
+    "declaration": true,
+    "declarationDir": "./dist",
+    "baseUrl": "src",
+    "paths": {
+      "components/*": ["components/*"],
+      "images/*": ["images/*"],
+      "pages/*": ["pages/*"],
+      "plugins/*": ["plugins/*"],
+      "shared/*": ["shared/*"],
+      "theme/*": ["theme/*"],
+      "types/*": ["types/*"],
+      "utils/*": ["utils/*"],
+      "commonServices/*": ["commonServices/*"],
+      "growthbook/*": ["growthbook/*"],
+      "templates/*": ["templates/*"],
+      "testData/*": ["testData/*"]
+    },
+    "types": ["react", "react-dom", "vite/client", "vitest/globals", "node"]
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

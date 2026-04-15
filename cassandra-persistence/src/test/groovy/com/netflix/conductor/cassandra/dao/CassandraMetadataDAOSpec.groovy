@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -164,6 +164,36 @@ class CassandraMetadataDAOSpec extends CassandraSpec {
         taskDefList && taskDefList.size() == 1
         taskDefList.get(0).getResponseTimeoutSeconds() == 199
 
+    }
+
+    def "Get All WorkflowDef"() {
+        when:
+        metadataDAO.removeWorkflowDef("workflow_def_1", 1)
+        WorkflowDef workflowDef = new WorkflowDef()
+        workflowDef.setName("workflow_def_1")
+        workflowDef.setVersion(1)
+        workflowDef.setOwnerEmail("test@junit.com")
+        metadataDAO.createWorkflowDef(workflowDef)
+
+        workflowDef.setName("workflow_def_2")
+        metadataDAO.createWorkflowDef(workflowDef)
+        workflowDef.setVersion(2)
+        metadataDAO.createWorkflowDef(workflowDef)
+
+        workflowDef.setName("workflow_def_3")
+        workflowDef.setVersion(1)
+        metadataDAO.createWorkflowDef(workflowDef)
+        workflowDef.setVersion(2)
+        metadataDAO.createWorkflowDef(workflowDef)
+        workflowDef.setVersion(3)
+        metadataDAO.createWorkflowDef(workflowDef)
+
+        then: // fetch the workflow definition
+        def allDefsLatestVersions = metadataDAO.getAllWorkflowDefsLatestVersions()
+        Map<String, WorkflowDef> allDefsMap = allDefsLatestVersions.collectEntries {wfDef -> [wfDef.getName(), wfDef]}
+        allDefsMap.get("workflow_def_1").getVersion() == 1
+        allDefsMap.get("workflow_def_2").getVersion() == 2
+        allDefsMap.get("workflow_def_3").getVersion() == 3
     }
 
     def "parse index string"() {

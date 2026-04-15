@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,6 +14,7 @@ package com.netflix.conductor.tasks.http.providers;
 
 import java.time.Duration;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.web.client.RestTemplate;
 
@@ -46,6 +47,7 @@ public class DefaultRestTemplateProviderTest {
     }
 
     @Test
+    @Ignore("We can no longer do this and have customizable timeouts per HttpTask.")
     public void sameObjectForSameThread() {
         DefaultRestTemplateProvider defaultRestTemplateProvider =
                 new DefaultRestTemplateProvider(Duration.ofMillis(150), Duration.ofMillis(100));

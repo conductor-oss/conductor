@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -42,7 +42,7 @@ public abstract class Auditable {
      * @return the createTime
      */
     public Long getCreateTime() {
-        return createTime;
+        return createTime == null ? 0 : createTime;
     }
 
     /**
@@ -56,7 +56,7 @@ public abstract class Auditable {
      * @return the updateTime
      */
     public Long getUpdateTime() {
-        return updateTime;
+        return updateTime == null ? 0 : updateTime;
     }
 
     /**

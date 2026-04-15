@@ -1,0 +1,26 @@
+# Dependencies
+node_modules
+
+# Local env (may contain secrets)
+.env.local
+.env.*.local
+
+# Build output
+dist
+build
+storybook-static
+
+# Test / Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
+
+# Turbo
+.turbo
+
+# Vite
+.vite
+
+# IDE / OS
+.DS_Store
+

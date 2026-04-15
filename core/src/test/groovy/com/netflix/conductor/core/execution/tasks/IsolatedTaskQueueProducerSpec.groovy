@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -13,8 +13,6 @@
 package com.netflix.conductor.core.execution.tasks
 
 import java.time.Duration
-
-import org.junit.Test
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.service.MetadataService
@@ -45,7 +43,6 @@ class IsolatedTaskQueueProducerSpec extends Specification {
                 Duration.ofSeconds(10))
     }
 
-    @Test
     def "addTaskQueuesAddsElementToQueue"() {
         given:
         TaskDef taskDef = new TaskDef(isolationGroupId: "isolated")

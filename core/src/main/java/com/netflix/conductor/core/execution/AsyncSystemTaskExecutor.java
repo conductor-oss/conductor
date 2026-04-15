@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -110,6 +110,7 @@ public class AsyncSystemTaskExecutor {
         }
 
         boolean hasTaskExecutionCompleted = false;
+        boolean shouldRemoveTaskFromQueue = false;
         String workflowId = task.getWorkflowInstanceId();
         // if we are here the Task object is updated and needs to be persisted regardless of an
         // exception
@@ -130,7 +131,7 @@ public class AsyncSystemTaskExecutor {
                             String.format(
                                     "Workflow is in %s state", workflow.getStatus().toString()));
                 }
-                queueDAO.remove(queueName, task.getTaskId());
+                shouldRemoveTaskFromQueue = true;
                 return;
             }
 
@@ -156,13 +157,12 @@ public class AsyncSystemTaskExecutor {
             // Update message in Task queue based on Task status
             // Remove asyncComplete system tasks from the queue that are not in SCHEDULED state
             if (isTaskAsyncComplete && task.getStatus() != TaskModel.Status.SCHEDULED) {
-                queueDAO.remove(queueName, task.getTaskId());
+                shouldRemoveTaskFromQueue = true;
                 hasTaskExecutionCompleted = true;
             } else if (task.getStatus().isTerminal()) {
                 task.setEndTime(System.currentTimeMillis());
-                queueDAO.remove(queueName, task.getTaskId());
+                shouldRemoveTaskFromQueue = true;
                 hasTaskExecutionCompleted = true;
-                LOGGER.debug("{} removed from queue: {}", task, queueName);
             } else {
                 task.setCallbackAfterSeconds(systemTaskCallbackTime);
                 systemTask
@@ -188,6 +188,10 @@ public class AsyncSystemTaskExecutor {
             LOGGER.error("Error executing system task - {}, with id: {}", systemTask, taskId, e);
         } finally {
             executionDAOFacade.updateTask(task);
+            if (shouldRemoveTaskFromQueue) {
+                queueDAO.remove(queueName, task.getTaskId());
+                LOGGER.debug("{} removed from queue: {}", task, queueName);
+            }
             // if the current task execution has completed, then the workflow needs to be evaluated
             if (hasTaskExecutionCompleted) {
                 workflowExecutor.decide(workflowId);

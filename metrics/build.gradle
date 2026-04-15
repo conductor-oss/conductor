@@ -1,0 +1,37 @@
+dependencies {
+
+    implementation project(':conductor-common')
+
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+    compileOnly 'org.springframework.boot:spring-boot-starter-web'
+
+    implementation "org.apache.commons:commons-lang3:"
+
+    implementation "com.google.guava:guava:${revGuava}"
+
+    implementation "javax.ws.rs:jsr311-api:${revJsr311Api}"
+
+    implementation "io.reactivex:rxjava:${revRxJava}"
+
+    // Metrics
+    implementation "io.micrometer:micrometer-core:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-atlas:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-prometheus:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-datadog:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-jmx:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-otlp:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-dynatrace:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-elastic:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-new-relic:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-stackdriver:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-statsd:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-cloudwatch2:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-azure-monitor:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-influx:${revMicrometer}"
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation "org.testcontainers:mockserver:${revTestContainer}"
+    testImplementation "org.mock-server:mockserver-client-java:${revMockServerClient}"
+
+
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -20,6 +20,7 @@ public class Message {
     private String id;
     private String receipt;
     private int priority;
+    private int timeout;
 
     public Message() {}
 
@@ -27,6 +28,11 @@ public class Message {
         this.payload = payload;
         this.id = id;
         this.receipt = receipt;
+    }
+
+    public Message(String id, String payload) {
+        this.id = id;
+        this.payload = payload;
     }
 
     public Message(String id, String payload, String receipt, int priority) {
@@ -95,6 +101,17 @@ public class Message {
      */
     public void setPriority(int priority) {
         this.priority = priority;
+    }
+
+    public int getTimeout() {
+        return timeout;
+    }
+
+    /**
+     * @param timeout Timeout in seconds
+     */
+    public void setTimeout(int timeout) {
+        this.timeout = timeout;
     }
 
     @Override

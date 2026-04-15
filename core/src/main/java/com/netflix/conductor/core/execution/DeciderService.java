@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -75,6 +75,7 @@ public class DeciderService {
             ExternalPayloadStorageUtils externalPayloadStorageUtils,
             SystemTaskRegistry systemTaskRegistry,
             @Qualifier("taskMappersByTaskType") Map<String, TaskMapper> taskMappers,
+            @Qualifier("annotatedTaskSystems") Map<String, TaskMapper> annotatedTaskSystems,
             @Value("${conductor.app.taskPendingTimeThreshold:60m}")
                     Duration taskPendingTimeThreshold) {
         this.idGenerator = idGenerator;
@@ -84,6 +85,19 @@ public class DeciderService {
         this.externalPayloadStorageUtils = externalPayloadStorageUtils;
         this.taskPendingTimeThresholdMins = taskPendingTimeThreshold.toMinutes();
         this.systemTaskRegistry = systemTaskRegistry;
+        LOGGER.info("taskMappers: {}", taskMappers.keySet());
+        LOGGER.info("annotatedTaskMappers: {}", annotatedTaskSystems.keySet());
+        // Add annotated mappers only if no existing mapper is registered for that task
+        // type
+        // Existing mappers take precedence over annotated ones
+        annotatedTaskSystems.forEach(
+                (taskType, mapper) -> {
+                    if (this.taskMappers.putIfAbsent(taskType, mapper) != null) {
+                        LOGGER.info(
+                                "Skipping annotated mapper for '{}' - existing mapper already registered",
+                                taskType);
+                    }
+                });
     }
 
     public DeciderOutcome decide(WorkflowModel workflow) throws TerminateWorkflowException {
@@ -135,8 +149,10 @@ public class DeciderService {
         boolean hasSuccessfulTerminateTask = false;
         for (TaskModel task : workflow.getTasks()) {
 
-            // Filter the list of tasks and include only tasks that are not retried, not executed
-            // marked to be skipped and not part of System tasks that is DECISION, FORK, JOIN
+            // Filter the list of tasks and include only tasks that are not retried, not
+            // executed
+            // marked to be skipped and not part of System tasks that is DECISION, FORK,
+            // JOIN
             // This list will be empty for a new workflow being started
             if (!task.isRetried() && !task.getStatus().equals(SKIPPED) && !task.isExecuted()) {
                 pendingTasks.add(task);
@@ -186,7 +202,8 @@ public class DeciderService {
             if (taskDefinition.isPresent()) {
                 checkTaskTimeout(taskDefinition.get(), pendingTask);
                 checkTaskPollTimeout(taskDefinition.get(), pendingTask);
-                // If the task has not been updated for "responseTimeoutSeconds" then mark task as
+                // If the task has not been updated for "responseTimeoutSeconds" then mark task
+                // as
                 // TIMED_OUT
                 if (isResponseTimedOut(taskDefinition.get(), pendingTask)) {
                     timeoutTask(taskDefinition.get(), pendingTask);
@@ -207,7 +224,9 @@ public class DeciderService {
                     tasksToBeScheduled.put(retryTask.get().getReferenceTaskName(), retryTask.get());
                     executedTaskRefNames.remove(retryTask.get().getReferenceTaskName());
                     outcome.tasksToBeUpdated.add(pendingTask);
-                } else {
+                } else if (!(pendingTask.getWorkflowTask() != null
+                        && pendingTask.getWorkflowTask().isPermissive()
+                        && !pendingTask.getWorkflowTask().isOptional())) {
                     pendingTask.setStatus(COMPLETED_WITH_ERRORS);
                 }
             }
@@ -254,6 +273,39 @@ public class DeciderService {
         if (hasSuccessfulTerminateTask
                 || (outcome.tasksToBeScheduled.isEmpty() && checkForWorkflowCompletion(workflow))) {
             LOGGER.debug("Marking workflow: {} as complete.", workflow);
+            List<TaskModel> permissiveTasksTerminalNonSuccessful =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getWorkflowTask() != null)
+                            .filter(t -> t.getWorkflowTask().isPermissive())
+                            .filter(t -> !t.getWorkflowTask().isOptional())
+                            .collect(
+                                    Collectors.toMap(
+                                            TaskModel::getReferenceTaskName,
+                                            t -> t,
+                                            (t1, t2) ->
+                                                    t1.getRetryCount() > t2.getRetryCount()
+                                                            ? t1
+                                                            : t2))
+                            .values()
+                            .stream()
+                            .filter(
+                                    t ->
+                                            t.getStatus().isTerminal()
+                                                    && !t.getStatus().isSuccessful())
+                            .toList();
+            if (!permissiveTasksTerminalNonSuccessful.isEmpty()) {
+                final String errMsg =
+                        permissiveTasksTerminalNonSuccessful.stream()
+                                .map(
+                                        t ->
+                                                String.format(
+                                                        "Task %s failed with status: %s and reason: '%s'",
+                                                        t.getTaskId(),
+                                                        t.getStatus(),
+                                                        t.getReasonForIncompletion()))
+                                .collect(Collectors.joining(". "));
+                throw new TerminateWorkflowException(errMsg);
+            }
             outcome.isComplete = true;
         }
 
@@ -413,7 +465,8 @@ public class DeciderService {
                 return false;
             }
 
-            // If there is a TERMINATE task that has been executed successfuly then the workflow
+            // If there is a TERMINATE task that has been executed successfuly then the
+            // workflow
             // should be marked as completed.
             if (TERMINATE.name().equals(task.getTaskType())
                     && task.getStatus().isTerminal()
@@ -435,11 +488,6 @@ public class DeciderService {
         for (WorkflowTask wftask : workflowTasks) {
             TaskModel.Status status = taskStatusMap.get(wftask.getTaskReferenceName());
             if (status == null || !status.isTerminal()) {
-                return false;
-            }
-            // if we reach here, the task has been completed.
-            // Was the task successful in completion?
-            if (!status.isSuccessful()) {
                 return false;
             }
         }
@@ -529,7 +577,8 @@ public class DeciderService {
         if (!task.getStatus().isRetriable()
                 || TaskType.isBuiltIn(task.getTaskType())
                 || expectedRetryCount <= retryCount) {
-            if (workflowTask != null && workflowTask.isOptional()) {
+            if (workflowTask != null
+                    && (workflowTask.isOptional() || workflowTask.isPermissive())) {
                 return Optional.empty();
             }
             WorkflowModel.Status status;
@@ -591,7 +640,7 @@ public class DeciderService {
         rescheduled.setStatus(SCHEDULED);
         rescheduled.setPollCount(0);
         rescheduled.setInputData(new HashMap<>(task.getInputData()));
-        rescheduled.setReasonForIncompletion(null);
+        rescheduled.setReasonForIncompletion(task.getReasonForIncompletion());
         rescheduled.setSubWorkflowId(null);
         rescheduled.setSeq(0);
         rescheduled.setScheduledTime(0);
@@ -838,7 +887,7 @@ public class DeciderService {
 
         String type = taskToSchedule.getType();
 
-        // get tasks already scheduled (in progress/terminal) for  this workflow instance
+        // get tasks already scheduled (in progress/terminal) for this workflow instance
         List<String> tasksInWorkflow =
                 workflow.getTasks().stream()
                         .filter(
@@ -861,10 +910,13 @@ public class DeciderService {
                         .withDeciderService(this)
                         .build();
 
-        // For static forks, each branch of the fork creates a join task upon completion for
-        // dynamic forks, a join task is created with the fork and also with each branch of the
+        // For static forks, each branch of the fork creates a join task upon completion
+        // for
+        // dynamic forks, a join task is created with the fork and also with each branch
+        // of the
         // fork.
-        // A new task must only be scheduled if a task, with the same reference name is not already
+        // A new task must only be scheduled if a task, with the same reference name is
+        // not already
         // in this workflow instance
         return taskMappers
                 .getOrDefault(type, taskMappers.get(USER_DEFINED.name()))

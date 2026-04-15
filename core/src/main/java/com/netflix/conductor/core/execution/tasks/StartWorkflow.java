@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,8 +15,6 @@ package com.netflix.conductor.core.execution.tasks;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.validation.Validator;
-
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,11 +24,11 @@ import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.core.operation.StartWorkflowOperation;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.Validator;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_START_WORKFLOW;
 import static com.netflix.conductor.model.TaskModel.Status.COMPLETED;
@@ -46,16 +44,11 @@ public class StartWorkflow extends WorkflowSystemTask {
 
     private final ObjectMapper objectMapper;
     private final Validator validator;
-    private final StartWorkflowOperation startWorkflowOperation;
 
-    public StartWorkflow(
-            ObjectMapper objectMapper,
-            Validator validator,
-            StartWorkflowOperation startWorkflowOperation) {
+    public StartWorkflow(ObjectMapper objectMapper, Validator validator) {
         super(TASK_TYPE_START_WORKFLOW);
         this.objectMapper = objectMapper;
         this.validator = validator;
-        this.startWorkflowOperation = startWorkflowOperation;
     }
 
     @Override
@@ -79,7 +72,7 @@ public class StartWorkflow extends WorkflowSystemTask {
                         request.getCorrelationId(), workflow.getCorrelationId()));
 
         try {
-            String workflowId = startWorkflow(request, workflow.getWorkflowId());
+            String workflowId = startWorkflow(request, workflow.getWorkflowId(), workflowExecutor);
             taskModel.addOutput(WORKFLOW_ID, workflowId);
             taskModel.setStatus(COMPLETED);
         } catch (TransientException te) {
@@ -144,10 +137,11 @@ public class StartWorkflow extends WorkflowSystemTask {
         return startWorkflowRequest;
     }
 
-    private String startWorkflow(StartWorkflowRequest request, String workflowId) {
+    private String startWorkflow(
+            StartWorkflowRequest request, String workflowId, WorkflowExecutor workflowExecutor) {
         StartWorkflowInput input = new StartWorkflowInput(request);
         input.setTriggeringWorkflowId(workflowId);
-        return startWorkflowOperation.execute(input);
+        return workflowExecutor.startWorkflow(input);
     }
 
     @Override

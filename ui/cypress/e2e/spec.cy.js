@@ -2,8 +2,8 @@ describe("Landing Page", () => {
   beforeEach(() => {
     cy.intercept("/api/workflow/search?**", { fixture: "workflowSearch.json" });
     cy.intercept("/api/tasks/search?**", { fixture: "taskSearch.json" });
-    cy.intercept("/api/metadata/workflow", {
-      fixture: "metadataWorkflow.json",
+    cy.intercept("/api/metadata/workflow/names-and-versions", {
+      fixture: "metadataWorkflowNamesAndVersions.json",
     });
     cy.intercept("/api/metadata/taskdefs", { fixture: "metadataTasks.json" });
   });
@@ -11,7 +11,7 @@ describe("Landing Page", () => {
   it("Homepage preloads with default query", () => {
     cy.visit("/");
     cy.contains("Search Execution");
-    cy.contains("Page 1 of 5");
+    cy.contains("Page 1 of 1");
     cy.get(".rdt_TableCell").contains("feature_value_compute_workflow");
   });
 

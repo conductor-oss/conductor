@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 /**
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Component;
  * com.netflix.conductor.common.metadata.tasks.TaskType} to {@link WorkflowSystemTask} instances.
  */
 @Component
+@DependsOn("workerTaskAnnotationScanner")
 public class SystemTaskRegistry {
 
     public static final String ASYNC_SYSTEM_TASKS_QUALIFIER = "asyncSystemTasks";

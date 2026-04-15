@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -189,7 +189,10 @@ public class HttpTaskTest {
         task.getInputData().remove(HttpTask.REQUEST_PARAMETER_NAME);
         httpTask.start(workflow, task, workflowExecutor);
         assertEquals(TaskModel.Status.FAILED, task.getStatus());
-        assertEquals(HttpTask.MISSING_REQUEST, task.getReasonForIncompletion());
+        // Without http_request key, falls back to inputData directly which lacks uri/method
+        assertTrue(
+                task.getReasonForIncompletion().contains("Missing HTTP URI")
+                        || task.getReasonForIncompletion().contains("No HTTP method specified"));
     }
 
     @Test
@@ -315,7 +318,7 @@ public class HttpTaskTest {
         task.setScheduledTime(0);
 
         httpTask.start(workflow, task, workflowExecutor);
-        assertEquals(task.getStatus(), TaskModel.Status.FAILED);
+        assertEquals(TaskModel.Status.FAILED, task.getStatus());
     }
 
     @Test
@@ -338,7 +341,10 @@ public class HttpTaskTest {
         task.setReferenceTaskName("t1");
         httpTask.start(workflow, task, workflowExecutor);
         assertEquals(TaskModel.Status.FAILED, task.getStatus());
-        assertEquals(HttpTask.MISSING_REQUEST, task.getReasonForIncompletion());
+        // Without http_request key, falls back to inputData directly which lacks uri/method
+        assertTrue(
+                task.getReasonForIncompletion().contains("Missing HTTP URI")
+                        || task.getReasonForIncompletion().contains("No HTTP method specified"));
         assertFalse(task.getStatus().isSuccessful());
 
         WorkflowTask workflowTask = new WorkflowTask();
@@ -366,6 +372,7 @@ public class HttpTaskTest {
                         metadataDAO,
                         externalPayloadStorageUtils,
                         systemTaskRegistry,
+                        Collections.emptyMap(),
                         Collections.emptyMap(),
                         Duration.ofMinutes(60))
                 .decide(workflow);

@@ -1,0 +1,22 @@
+{
+  "name": "video_gen_openai_sora",
+  "description": "Generates a video using OpenAI Sora. The task is async -- it submits a job and polls until the video is ready.",
+  "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "generate_video",
+      "taskReferenceName": "sora_video",
+      "type": "GENERATE_VIDEO",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "sora-2",
+        "prompt": "A slow cinematic aerial shot of a coastal city at golden hour, waves crashing against cliffs",
+        "duration": 8,
+        "size": "1280x720",
+        "n": 1,
+        "style": "cinematic"
+      }
+    }
+  ]
+}

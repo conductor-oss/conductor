@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -33,7 +33,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult.Status;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.core.operation.StartWorkflowOperation;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.JsonUtils;
 import com.netflix.conductor.core.utils.ParametersUtils;
@@ -53,7 +52,6 @@ public class TestSimpleActionProcessor {
     private WorkflowExecutor workflowExecutor;
     private ExternalPayloadStorageUtils externalPayloadStorageUtils;
     private SimpleActionProcessor actionProcessor;
-    private StartWorkflowOperation startWorkflowOperation;
 
     @Autowired private ObjectMapper objectMapper;
 
@@ -62,14 +60,12 @@ public class TestSimpleActionProcessor {
         externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
 
         workflowExecutor = mock(WorkflowExecutor.class);
-        startWorkflowOperation = mock(StartWorkflowOperation.class);
 
         actionProcessor =
                 new SimpleActionProcessor(
                         workflowExecutor,
                         new ParametersUtils(objectMapper),
-                        new JsonUtils(objectMapper),
-                        startWorkflowOperation);
+                        new JsonUtils(objectMapper));
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -96,7 +92,7 @@ public class TestSimpleActionProcessor {
         workflowDef.setName("testWorkflow");
         workflowDef.setVersion(1);
 
-        when(startWorkflowOperation.execute(any())).thenReturn("workflow_1");
+        when(workflowExecutor.startWorkflow(any())).thenReturn("workflow_1");
 
         Map<String, Object> output =
                 actionProcessor.execute(action, payload, "testEvent", "testMessage");
@@ -107,7 +103,7 @@ public class TestSimpleActionProcessor {
         ArgumentCaptor<StartWorkflowInput> startWorkflowInputArgumentCaptor =
                 ArgumentCaptor.forClass(StartWorkflowInput.class);
 
-        verify(startWorkflowOperation).execute(startWorkflowInputArgumentCaptor.capture());
+        verify(workflowExecutor).startWorkflow(startWorkflowInputArgumentCaptor.capture());
         StartWorkflowInput capturedValue = startWorkflowInputArgumentCaptor.getValue();
 
         assertEquals("test_1", capturedValue.getWorkflowInput().get("testInput"));
@@ -116,6 +112,49 @@ public class TestSimpleActionProcessor {
                 "testMessage", capturedValue.getWorkflowInput().get("conductor.event.messageId"));
         assertEquals("testEvent", capturedValue.getWorkflowInput().get("conductor.event.name"));
         assertEquals(taskToDomain, capturedValue.getTaskToDomain());
+    }
+
+    @Test
+    public void testStartWorkflow_taskDomain() throws Exception {
+        StartWorkflow startWorkflow = new StartWorkflow();
+        startWorkflow.setName("testWorkflow");
+        startWorkflow.getInput().put("testInput", "${testId}");
+
+        Action action = new Action();
+        action.setAction(Type.start_workflow);
+        action.setStart_workflow(startWorkflow);
+
+        Object payload =
+                objectMapper.readValue(
+                        "{ \"testId\": \"test_1\", \"taskToDomain\":{\"testTask\":\"testDomain\"} }",
+                        Object.class);
+
+        Map<String, String> taskToDomain = new HashMap<>();
+        taskToDomain.put("testTask", "testDomain");
+
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("testWorkflow");
+        workflowDef.setVersion(1);
+
+        when(workflowExecutor.startWorkflow(any())).thenReturn("workflow_1");
+
+        Map<String, Object> output =
+                actionProcessor.execute(action, payload, "testEvent", "testMessage");
+
+        assertNotNull(output);
+        assertEquals("workflow_1", output.get("workflowId"));
+
+        ArgumentCaptor<StartWorkflowInput> startWorkflowInputArgumentCaptor =
+                ArgumentCaptor.forClass(StartWorkflowInput.class);
+
+        verify(workflowExecutor).startWorkflow(startWorkflowInputArgumentCaptor.capture());
+        StartWorkflowInput capturedValue = startWorkflowInputArgumentCaptor.getValue();
+
+        assertEquals("test_1", capturedValue.getWorkflowInput().get("testInput"));
+        assertEquals(taskToDomain, capturedValue.getTaskToDomain());
+        assertEquals(
+                "testMessage", capturedValue.getWorkflowInput().get("conductor.event.messageId"));
+        assertEquals("testEvent", capturedValue.getWorkflowInput().get("conductor.event.name"));
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -139,7 +178,7 @@ public class TestSimpleActionProcessor {
         workflowDef.setName("testWorkflow");
         workflowDef.setVersion(1);
 
-        when(startWorkflowOperation.execute(any())).thenReturn("workflow_1");
+        when(workflowExecutor.startWorkflow(any())).thenReturn("workflow_1");
 
         Map<String, Object> output =
                 actionProcessor.execute(action, payload, "testEvent", "testMessage");
@@ -150,7 +189,7 @@ public class TestSimpleActionProcessor {
         ArgumentCaptor<StartWorkflowInput> startWorkflowInputArgumentCaptor =
                 ArgumentCaptor.forClass(StartWorkflowInput.class);
 
-        verify(startWorkflowOperation).execute(startWorkflowInputArgumentCaptor.capture());
+        verify(workflowExecutor).startWorkflow(startWorkflowInputArgumentCaptor.capture());
         StartWorkflowInput capturedArgument = startWorkflowInputArgumentCaptor.getValue();
         assertEquals("test_1", capturedArgument.getWorkflowInput().get("testInput"));
         assertNull(capturedArgument.getCorrelationId());
@@ -287,5 +326,44 @@ public class TestSimpleActionProcessor {
                 "testEvent", argumentCaptor.getValue().getOutputData().get("conductor.event.name"));
         assertEquals("workflow_1", argumentCaptor.getValue().getOutputData().get("workflowId"));
         assertEquals("task_1", argumentCaptor.getValue().getOutputData().get("taskId"));
+    }
+
+    @Test
+    public void testFailTaskSetsReasonForIncompletion() throws Exception {
+        TaskDetails taskDetails = new TaskDetails();
+        taskDetails.setTaskId("${taskId}");
+        taskDetails.setReasonForIncompletion("${error}");
+        taskDetails.getOutput().put("actuatorError", "${error}");
+
+        Action action = new Action();
+        action.setAction(Type.fail_task);
+        action.setFail_task(taskDetails);
+
+        Object payload =
+                objectMapper.readValue(
+                        "{\"taskId\":\"task_1\", \"error\":\"Actuator rejected request\"}",
+                        Object.class);
+
+        TaskModel task = new TaskModel();
+        task.setTaskId("task_1");
+        task.setReferenceTaskName("testTask");
+
+        when(workflowExecutor.getTask(eq("task_1"))).thenReturn(task);
+
+        actionProcessor.execute(action, payload, "testEvent", "testMessage");
+
+        ArgumentCaptor<TaskResult> argumentCaptor = ArgumentCaptor.forClass(TaskResult.class);
+        verify(workflowExecutor).updateTask(argumentCaptor.capture());
+        assertEquals(Status.FAILED, argumentCaptor.getValue().getStatus());
+        assertEquals(
+                "Actuator rejected request", argumentCaptor.getValue().getReasonForIncompletion());
+        assertEquals(
+                "Actuator rejected request",
+                argumentCaptor.getValue().getOutputData().get("actuatorError"));
+        assertEquals(
+                "testMessage",
+                argumentCaptor.getValue().getOutputData().get("conductor.event.messageId"));
+        assertEquals(
+                "testEvent", argumentCaptor.getValue().getOutputData().get("conductor.event.name"));
     }
 }

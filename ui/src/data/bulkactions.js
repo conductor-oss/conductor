@@ -48,3 +48,20 @@ export const useBulkTerminateWithReasonAction = (callbacks) => {
     });
   }, callbacks);
 };
+
+export const useBulkDeleteAction = (callbacks) => {
+  const fetchContext = useFetchContext();
+
+  return useMutation((mutateParams) => {
+    const path = new Path("/workflow/bulk/remove");
+    path.search.append("archiveWorkflow", mutateParams.archiveWorkflow);
+
+    return fetchWithContext(path, fetchContext, {
+      method: "delete",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: _.get(mutateParams, "body"),
+    });
+  }, callbacks);
+};

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -162,6 +162,13 @@ public class DefaultEventQueueManager extends LifecycleAwareComponent implements
                         } catch (Exception e) {
                             LOGGER.error("Failed to stop queue: " + queue, e);
                         }
+                    });
+
+            Map<String, Map<String, Long>> eventToQueueSize = getQueueSizes();
+            eventToQueueSize.forEach(
+                    (event, queueMap) -> {
+                        Map.Entry<String, Long> queueSize = queueMap.entrySet().iterator().next();
+                        Monitors.recordEventQueueDepth(queueSize.getKey(), queueSize.getValue());
                     });
 
             LOGGER.debug("Event queues: {}", eventToQueueMap.keySet());

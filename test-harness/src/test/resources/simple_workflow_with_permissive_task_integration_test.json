@@ -1,0 +1,94 @@
+{
+  "name": "permissive_task_wf",
+  "description": "permissive_task_wf",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "task_permissive",
+      "taskReferenceName": "t1",
+      "inputParameters": {
+        "p1": "${workflow.input.param1}",
+        "p2": "${workflow.input.param2}"
+      },
+      "type": "SIMPLE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "permissive": true,
+      "retryCount": 1,
+      "taskDefinition": {
+        "createdBy": "integration_app",
+        "name": "task_permissive",
+        "description": "task_permissive",
+        "retryCount": 1,
+        "timeoutSeconds": 120,
+        "inputKeys": [],
+        "outputKeys": [],
+        "timeoutPolicy": "TIME_OUT_WF",
+        "retryLogic": "FIXED",
+        "retryDelaySeconds": 0,
+        "responseTimeoutSeconds": 3600,
+        "inputTemplate": {},
+        "rateLimitPerFrequency": 0,
+        "rateLimitFrequencyInSeconds": 1
+      },
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": []
+    },
+    {
+      "name": "integration_task_2",
+      "taskReferenceName": "t2",
+      "inputParameters": {
+        "tp1": "${workflow.input.param1}",
+        "tp2": "${t1.output.op}"
+      },
+      "type": "SIMPLE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "permissive": true,
+      "retryCount": 1,
+      "taskDefinition": {
+        "createdBy": "integration_app",
+        "name": "integration_task_2",
+        "description": "integration_task_2",
+        "retryCount": 1,
+        "timeoutSeconds": 120,
+        "inputKeys": [],
+        "outputKeys": [],
+        "timeoutPolicy": "TIME_OUT_WF",
+        "retryLogic": "FIXED",
+        "retryDelaySeconds": 0,
+        "responseTimeoutSeconds": 3600,
+        "inputTemplate": {},
+        "rateLimitPerFrequency": 0,
+        "rateLimitFrequencyInSeconds": 1
+      },
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": []
+    }
+  ],
+  "inputParameters": [
+    "param1",
+    "param2"
+  ],
+  "outputParameters": {
+    "o1": "${workflow.input.param1}",
+    "o2": "${t2.output.uuid}",
+    "o3": "${t1.output.op}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}

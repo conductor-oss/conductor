@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.dao;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -36,6 +37,16 @@ public interface QueueDAO {
      *     (for timed queues)
      */
     void push(String queueName, String id, int priority, long offsetTimeInSecond);
+
+    /**
+     * @param queueName name of the queue
+     * @param id message id
+     * @param priority message priority (between 0 and 99)
+     * @param offsetTime time after which the message should be marked visible.
+     */
+    default void push(String queueName, String id, int priority, Duration offsetTime) {
+        push(queueName, id, priority, offsetTime.getSeconds());
+    }
 
     /**
      * @param queueName Name of the queue

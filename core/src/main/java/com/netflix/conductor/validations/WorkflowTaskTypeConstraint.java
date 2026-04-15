@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -18,19 +18,21 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.text.ParseException;
 import java.time.format.DateTimeParseException;
+import java.util.Map;
 import java.util.Optional;
-
-import javax.validation.Constraint;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
-import javax.validation.Payload;
 
 import org.apache.commons.lang3.StringUtils;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.netflix.conductor.core.utils.DateTimeUtils;
+
+import jakarta.validation.Constraint;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
+import jakarta.validation.Payload;
 
 import static com.netflix.conductor.core.execution.tasks.Terminate.getTerminationStatusParameter;
 import static com.netflix.conductor.core.execution.tasks.Terminate.validateInputStatus;
@@ -166,7 +168,32 @@ public @interface WorkflowTaskTypeConstraint {
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                 valid = false;
             }
+
+            if (workflowTask.getCaseExpression() != null) {
+                try {
+                    validateScriptExpression(
+                            workflowTask.getCaseExpression(), workflowTask.getInputParameters());
+                } catch (Exception ee) {
+                    String message =
+                            String.format(
+                                    ee.getMessage() + ", taskType: DECISION taskName %s",
+                                    workflowTask.getName());
+                    context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+                    valid = false;
+                }
+            }
+
             return valid;
+        }
+
+        private void validateScriptExpression(
+                String expression, Map<String, Object> inputParameters) {
+            try {
+                Object returnValue = ScriptEvaluator.eval(expression, inputParameters);
+            } catch (Exception e) {
+                throw new IllegalArgumentException(
+                        String.format("Expression is not well formatted: %s", e.getMessage()));
+            }
         }
 
         private boolean isSwitchTaskValid(
@@ -209,6 +236,21 @@ public @interface WorkflowTaskTypeConstraint {
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                 valid = false;
             }
+
+            if ("javascript".equals(workflowTask.getEvaluatorType())
+                    && workflowTask.getExpression() != null) {
+                try {
+                    validateScriptExpression(
+                            workflowTask.getExpression(), workflowTask.getInputParameters());
+                } catch (Exception ee) {
+                    String message =
+                            String.format(
+                                    ee.getMessage() + ", taskType: SWITCH taskName %s",
+                                    workflowTask.getName());
+                    context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+                    valid = false;
+                }
+            }
             return valid;
         }
 
@@ -219,7 +261,7 @@ public @interface WorkflowTaskTypeConstraint {
                 String message =
                         String.format(
                                 PARAM_REQUIRED_STRING_FORMAT,
-                                "loopExpression",
+                                "loopCondition",
                                 TaskType.DO_WHILE,
                                 workflowTask.getName());
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
@@ -229,7 +271,7 @@ public @interface WorkflowTaskTypeConstraint {
                 String message =
                         String.format(
                                 PARAM_REQUIRED_STRING_FORMAT,
-                                "loopover",
+                                "loopOver",
                                 TaskType.DO_WHILE,
                                 workflowTask.getName());
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
@@ -305,9 +347,22 @@ public @interface WorkflowTaskTypeConstraint {
                 WorkflowTask workflowTask, ConstraintValidatorContext context) {
             boolean valid = true;
 
-            // For DYNAMIC_FORK_JOIN_TASK support dynamicForkJoinTasksParam or combination of
-            // dynamicForkTasksParam and dynamicForkTasksInputParamName.
-            // Both are not allowed.
+            // For DYNAMIC_FORK_JOIN_TASK support:
+            // 1. dynamicForkJoinTasksParam (legacy), OR
+            // 2. combination of dynamicForkTasksParam and dynamicForkTasksInputParamName, OR
+            // 3. forkTaskInputs in inputParameters (simple/modern approach)
+            // Options 1 and 2 are mutually exclusive.
+
+            // Check if using the simple forkTaskInputs approach
+            boolean usesForkTaskInputs =
+                    workflowTask.getInputParameters() != null
+                            && workflowTask.getInputParameters().containsKey("forkTaskInputs");
+
+            if (usesForkTaskInputs) {
+                // forkTaskInputs approach is valid on its own
+                return valid;
+            }
+
             if (workflowTask.getDynamicForkJoinTasksParam() != null
                     && (workflowTask.getDynamicForkTasksParam() != null
                             || workflowTask.getDynamicForkTasksInputParamName() != null)) {
@@ -352,12 +407,21 @@ public @interface WorkflowTaskTypeConstraint {
             boolean valid = true;
             boolean isInputParameterSet = false;
             boolean isInputTemplateSet = false;
+            boolean isTopLevelInputSet = false;
 
             // Either http_request in WorkflowTask inputParam should be set or in inputTemplate
-            // Taskdef should be set
+            // Taskdef should be set, or the input parameters can be provided at the top level
+            // (e.g. uri, method directly in inputParameters)
             if (workflowTask.getInputParameters() != null
                     && workflowTask.getInputParameters().containsKey("http_request")) {
                 isInputParameterSet = true;
+            }
+
+            // Check if top-level HTTP parameters are provided (uri or method)
+            if (workflowTask.getInputParameters() != null
+                    && (workflowTask.getInputParameters().containsKey("uri")
+                            || workflowTask.getInputParameters().containsKey("method"))) {
+                isTopLevelInputSet = true;
             }
 
             TaskDef taskDef =
@@ -372,11 +436,11 @@ public @interface WorkflowTaskTypeConstraint {
                 isInputTemplateSet = true;
             }
 
-            if (!(isInputParameterSet || isInputTemplateSet)) {
+            if (!(isInputParameterSet || isInputTemplateSet || isTopLevelInputSet)) {
                 String message =
                         String.format(
                                 PARAM_REQUIRED_STRING_FORMAT,
-                                "inputParameters.http_request",
+                                "inputParameters.http_request or inputParameters.uri",
                                 TaskType.HTTP,
                                 workflowTask.getName());
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();

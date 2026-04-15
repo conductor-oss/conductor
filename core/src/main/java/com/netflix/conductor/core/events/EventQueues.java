@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
@@ -37,7 +36,6 @@ public class EventQueues {
     private final ParametersUtils parametersUtils;
     private final Map<String, EventQueueProvider> providers;
 
-    @Autowired
     public EventQueues(
             @Qualifier(EVENT_QUEUE_PROVIDERS_QUALIFIER) Map<String, EventQueueProvider> providers,
             ParametersUtils parametersUtils) {

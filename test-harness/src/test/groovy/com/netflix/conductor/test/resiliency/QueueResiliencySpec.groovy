@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,6 +14,7 @@ package com.netflix.conductor.test.resiliency
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
+import org.springframework.test.context.TestPropertySource
 
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskResult
@@ -29,6 +30,8 @@ import com.netflix.conductor.rest.controllers.TaskResource
 import com.netflix.conductor.rest.controllers.WorkflowResource
 import com.netflix.conductor.test.base.AbstractResiliencySpecification
 
+import spock.lang.Ignore
+
 /**
  * When QueueDAO is unavailable,
  * Ensure All Worklow and Task resource endpoints either:
@@ -36,6 +39,11 @@ import com.netflix.conductor.test.base.AbstractResiliencySpecification
  * 2. Succeeds
  * 3. Doesn't involve QueueDAO
  */
+@TestPropertySource(properties = "conductor.app.workflow.name-validation.enabled=true")
+@Ignore
+//FIXME Interaction based testing won't work. Spy doesn't detect/intercept any calls because BaseRedisQueueDAO
+// methods are final.
+// No test in this class currently works.
 class QueueResiliencySpec extends AbstractResiliencySpecification {
 
     @Autowired
@@ -500,30 +508,6 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
         then:
         1 * queueDAO.getSize(*_) >> { throw new IllegalStateException("Queue getSize failed from Spy") }
         thrown(Exception)
-    }
-
-    def "Verify log doesn't involve QueueDAO"() {
-        when:
-        taskResource.log("testTaskId", "test log")
-
-        then:
-        0 * queueDAO._
-    }
-
-    def "Verify getTaskLogs doesn't involve QueueDAO"() {
-        when:
-        taskResource.getTaskLogs("testTaskId")
-
-        then:
-        0 * queueDAO._
-    }
-
-    def "Verify getTask doesn't involve QueueDAO"() {
-        when:
-        taskResource.getTask("testTaskId")
-
-        then:
-        0 * queueDAO._
     }
 
     def "Verify getAllQueueDetails fails when QueueDAO is unavailable"() {

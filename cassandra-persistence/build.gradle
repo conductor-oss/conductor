@@ -1,5 +1,5 @@
 /*
- *  Copyright 2021 Netflix, Inc.
+ *  Copyright 2023 Conductor authors
  *  <p>
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  *  the License. You may obtain a copy of the License at
@@ -20,10 +20,11 @@ dependencies {
     implementation "com.datastax.cassandra:cassandra-driver-core:${revCassandra}"
     implementation "org.apache.commons:commons-lang3"
 
+    testImplementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8"
     testImplementation project(':conductor-core').sourceSets.test.output
     testImplementation project(':conductor-common').sourceSets.test.output
 
-    testImplementation "org.codehaus.groovy:groovy-all:${revGroovy}"
+    testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
     testImplementation "org.spockframework:spock-core:${revSpock}"
     testImplementation "org.spockframework:spock-spring:${revSpock}"
     testImplementation "org.testcontainers:spock:${revTestContainer}"

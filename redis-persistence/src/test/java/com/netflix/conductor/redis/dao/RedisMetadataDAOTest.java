@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2021 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,22 +12,24 @@
  */
 package com.netflix.conductor.redis.dao;
 
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.utility.DockerImageName;
 
-import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
+import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskDef.RetryLogic;
 import com.netflix.conductor.common.metadata.tasks.TaskDef.TimeoutPolicy;
@@ -36,51 +38,76 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.redis.config.RedisProperties;
-import com.netflix.conductor.redis.jedis.JedisMock;
 import com.netflix.conductor.redis.jedis.JedisProxy;
+import com.netflix.conductor.redis.jedis.JedisStandalone;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import redis.clients.jedis.commands.JedisCommands;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
 
-@ContextConfiguration(classes = {TestObjectMapperConfiguration.class})
-@RunWith(SpringRunner.class)
-public class RedisMetadataDAOTest {
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+class RedisMetadataDAOTest {
+
+    private static final GenericContainer<?> redis =
+            new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
 
     private RedisMetadataDAO redisMetadataDAO;
+    private JedisPool jedisPool;
 
-    @Autowired private ObjectMapper objectMapper;
+    @BeforeAll
+    void setUp() {
+        redis.start();
 
-    @Before
-    public void init() {
-        ConductorProperties conductorProperties = mock(ConductorProperties.class);
-        RedisProperties properties = mock(RedisProperties.class);
-        when(properties.getTaskDefCacheRefreshInterval()).thenReturn(Duration.ofSeconds(60));
-        JedisCommands jedisMock = new JedisMock();
-        JedisProxy jedisProxy = new JedisProxy(jedisMock);
+        JedisPoolConfig config = new JedisPoolConfig();
+        config.setMinIdle(2);
+        config.setMaxTotal(10);
+
+        jedisPool = new JedisPool(config, redis.getHost(), redis.getFirstMappedPort());
+        JedisProxy jedisProxy = new JedisProxy(new JedisStandalone(jedisPool));
+        ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
+        ConductorProperties conductorProperties = new ConductorProperties();
+        RedisProperties redisProperties = new RedisProperties(conductorProperties);
 
         redisMetadataDAO =
-                new RedisMetadataDAO(jedisProxy, objectMapper, conductorProperties, properties);
+                new RedisMetadataDAO(
+                        jedisProxy, objectMapper, conductorProperties, redisProperties);
     }
 
-    @Test(expected = ConflictException.class)
-    public void testDup() {
+    @AfterAll
+    void tearDown() {
+        redis.stop();
+    }
+
+    @BeforeEach
+    void cleanUp() {
+        try (Jedis jedis = jedisPool.getResource()) {
+            jedis.flushAll();
+        }
+        // Re-create the DAO to reset the internal taskDefCache after flush
+        JedisProxy jedisProxy = new JedisProxy(new JedisStandalone(jedisPool));
+        ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
+        ConductorProperties conductorProperties = new ConductorProperties();
+        RedisProperties redisProperties = new RedisProperties(conductorProperties);
+        redisMetadataDAO =
+                new RedisMetadataDAO(
+                        jedisProxy, objectMapper, conductorProperties, redisProperties);
+    }
+
+    @Test
+    void testDup() {
         WorkflowDef def = new WorkflowDef();
         def.setName("testDup");
         def.setVersion(1);
 
         redisMetadataDAO.createWorkflowDef(def);
-        redisMetadataDAO.createWorkflowDef(def);
+        assertThrows(ConflictException.class, () -> redisMetadataDAO.createWorkflowDef(def));
     }
 
     @Test
-    public void testWorkflowDefOperations() {
-
+    void testWorkflowDefOperations() {
         WorkflowDef def = new WorkflowDef();
         def.setName("test");
         def.setVersion(1);
@@ -157,17 +184,53 @@ public class RedisMetadataDAOTest {
         redisMetadataDAO.removeWorkflowDef("test", 1);
         redisMetadataDAO.removeWorkflowDef("test", 2);
         WorkflowDef workflow = redisMetadataDAO.getLatestWorkflowDef("test").get();
-        assertEquals(workflow.getVersion(), 3);
-    }
-
-    @Test(expected = NotFoundException.class)
-    public void removeInvalidWorkflowDef() {
-        redisMetadataDAO.removeWorkflowDef("hello", 1);
+        assertEquals(3, workflow.getVersion());
     }
 
     @Test
-    public void testTaskDefOperations() {
+    void testGetAllWorkflowDefsLatestVersions() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("test1");
+        def.setVersion(1);
+        def.setDescription("description");
+        def.setCreatedBy("unit_test");
+        def.setCreateTime(1L);
+        def.setOwnerApp("ownerApp");
+        def.setUpdatedBy("unit_test2");
+        def.setUpdateTime(2L);
+        redisMetadataDAO.createWorkflowDef(def);
 
+        def.setName("test2");
+        redisMetadataDAO.createWorkflowDef(def);
+        def.setVersion(2);
+        redisMetadataDAO.createWorkflowDef(def);
+
+        def.setName("test3");
+        def.setVersion(1);
+        redisMetadataDAO.createWorkflowDef(def);
+        def.setVersion(2);
+        redisMetadataDAO.createWorkflowDef(def);
+        def.setVersion(3);
+        redisMetadataDAO.createWorkflowDef(def);
+
+        Map<String, WorkflowDef> allMap =
+                redisMetadataDAO.getAllWorkflowDefsLatestVersions().stream()
+                        .collect(Collectors.toMap(WorkflowDef::getName, Function.identity()));
+
+        assertNotNull(allMap);
+        assertEquals(3, allMap.size());
+        assertEquals(1, allMap.get("test1").getVersion());
+        assertEquals(2, allMap.get("test2").getVersion());
+        assertEquals(3, allMap.get("test3").getVersion());
+    }
+
+    @Test
+    void removeInvalidWorkflowDef() {
+        assertThrows(NotFoundException.class, () -> redisMetadataDAO.removeWorkflowDef("hello", 1));
+    }
+
+    @Test
+    void testTaskDefOperations() {
         TaskDef def = new TaskDef("taskA");
         def.setDescription("description");
         def.setCreatedBy("unit_test");
@@ -221,13 +284,15 @@ public class RedisMetadataDAOTest {
         assertEquals(def.getName(), all.get(0).getName());
     }
 
-    @Test(expected = NotFoundException.class)
-    public void testRemoveTaskDef() {
-        redisMetadataDAO.removeTaskDef("test" + UUID.randomUUID());
+    @Test
+    void testRemoveTaskDef() {
+        assertThrows(
+                NotFoundException.class,
+                () -> redisMetadataDAO.removeTaskDef("test" + UUID.randomUUID()));
     }
 
     @Test
-    public void testDefaultsAreSetForResponseTimeout() {
+    void testDefaultsAreSetForResponseTimeout() {
         TaskDef def = new TaskDef("taskA");
         def.setDescription("description");
         def.setCreatedBy("unit_test");
@@ -248,11 +313,108 @@ public class RedisMetadataDAOTest {
         redisMetadataDAO.createTaskDef(def);
 
         TaskDef found = redisMetadataDAO.getTaskDef(def.getName());
-        assertEquals(found.getResponseTimeoutSeconds(), 3600);
+        assertEquals(3600, found.getResponseTimeoutSeconds());
         found.setTimeoutSeconds(200);
         found.setResponseTimeoutSeconds(0);
         redisMetadataDAO.updateTaskDef(found);
         TaskDef foundNew = redisMetadataDAO.getTaskDef(def.getName());
-        assertEquals(foundNew.getResponseTimeoutSeconds(), 199);
+        assertEquals(199, foundNew.getResponseTimeoutSeconds());
+    }
+
+    @Test
+    void testGetWorkflowDefNotFound() {
+        Optional<WorkflowDef> result = redisMetadataDAO.getWorkflowDef("nonexistent", 1);
+        assertFalse(result.isPresent());
+    }
+
+    @Test
+    void testGetLatestWorkflowDefNotFound() {
+        Optional<WorkflowDef> result = redisMetadataDAO.getLatestWorkflowDef("nonexistent");
+        assertFalse(result.isPresent());
+    }
+
+    @Test
+    void testGetTaskDefNotFound() {
+        TaskDef result = redisMetadataDAO.getTaskDef("nonexistent");
+        assertNull(result);
+    }
+
+    @Test
+    void testUpdateWorkflowDef() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("update_test");
+        def.setVersion(1);
+        def.setDescription("original");
+
+        redisMetadataDAO.createWorkflowDef(def);
+
+        def.setDescription("updated");
+        redisMetadataDAO.updateWorkflowDef(def);
+
+        WorkflowDef found = redisMetadataDAO.getWorkflowDef("update_test", 1).get();
+        assertEquals("updated", found.getDescription());
+    }
+
+    @Test
+    void testFindAll() {
+        for (int i = 0; i < 3; i++) {
+            WorkflowDef def = new WorkflowDef();
+            def.setName("wf_" + i);
+            def.setVersion(1);
+            redisMetadataDAO.createWorkflowDef(def);
+        }
+
+        List<String> names = redisMetadataDAO.findAll();
+        assertEquals(3, names.size());
+    }
+
+    private RedisMetadataDAO newCacheEnabledDAO() {
+        JedisProxy jedisProxy = new JedisProxy(new JedisStandalone(jedisPool));
+        ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
+        ConductorProperties conductorProperties = new ConductorProperties();
+        RedisProperties redisProperties = new RedisProperties(conductorProperties);
+        redisProperties.setWorkflowDefCacheEnabled(true);
+        return new RedisMetadataDAO(jedisProxy, objectMapper, conductorProperties, redisProperties);
+    }
+
+    @Test
+    void testWorkflowDefCacheReflectsCreateAndRemove() {
+        RedisMetadataDAO dao = newCacheEnabledDAO();
+        assertEquals(0, dao.getAllWorkflowDefs().size());
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName("cachedWf");
+        def.setVersion(1);
+        dao.createWorkflowDef(def);
+
+        List<WorkflowDef> all = dao.getAllWorkflowDefs();
+        assertEquals(1, all.size());
+        assertEquals("cachedWf", all.get(0).getName());
+
+        dao.removeWorkflowDef("cachedWf", 1);
+        assertEquals(0, dao.getAllWorkflowDefs().size());
+    }
+
+    @Test
+    void testGetAllWorkflowDefsLatestVersionsFromCache() {
+        RedisMetadataDAO dao = newCacheEnabledDAO();
+        for (int version = 1; version <= 3; version++) {
+            WorkflowDef def = new WorkflowDef();
+            def.setName("wfA");
+            def.setVersion(version);
+            dao.createWorkflowDef(def);
+        }
+        WorkflowDef defB = new WorkflowDef();
+        defB.setName("wfB");
+        defB.setVersion(1);
+        dao.createWorkflowDef(defB);
+
+        Map<String, WorkflowDef> latestByName =
+                dao.getAllWorkflowDefsLatestVersions().stream()
+                        .collect(Collectors.toMap(WorkflowDef::getName, d -> d));
+
+        assertEquals(2, latestByName.size());
+        assertEquals(3, latestByName.get("wfA").getVersion());
+        assertEquals(1, latestByName.get("wfB").getVersion());
     }
 }

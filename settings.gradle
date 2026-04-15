@@ -1,5 +1,5 @@
 /*
- *  Copyright 2021 Netflix, Inc.
+ *  Copyright 2023 Conductor authors
  *  <p>
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  *  the License. You may obtain a copy of the License at
@@ -11,34 +11,20 @@
  *  specific language governing permissions and limitations under the License.
  */
 
-plugins {
-    id "com.gradle.enterprise" version "3.11.1"
-}
-
-gradleEnterprise {
-    buildScan {
-        termsOfServiceUrl = "https://gradle.com/terms-of-service"
-        termsOfServiceAgree = "yes"
-        publishAlways()
-
-        buildScanPublished { scan ->
-            file("buildscan.log") << "${new Date()} - ${scan.buildScanUri}\n"
-        }
-    }
-}
-
 rootProject.name = 'conductor'
 
+include 'ai'
 include 'annotations'
 include 'annotations-processor'
 
 include 'server'
+include 'server-lite'
 include 'common'
 include 'core'
-include 'client'
-include 'client-spring'
 
 include 'cassandra-persistence'
+include 'redis-configuration'
+include 'redis-api'
 include 'redis-persistence'
 
 include 'es6-persistence'
@@ -58,8 +44,34 @@ include 'grpc'
 include 'grpc-server'
 include 'grpc-client'
 
-include 'java-sdk'
+// community modules
+include 'workflow-event-listener'
+include 'task-status-listener'
+include 'test-util'
+include 'kafka'
+include 'common-persistence'
+include 'mysql-persistence'
+include 'postgres-persistence'
+include 'sqlite-persistence'
+include 'metrics'
+include 'es7-persistence'
+include 'es8-persistence'
+include 'os-persistence'
+include 'os-persistence-v2'
+include 'os-persistence-v3'
+include 'azureblob-storage'
+include 'postgres-external-storage'
+include 'amqp'
+include 'nats'
+include 'nats-streaming'
+include 'kafka-event-queue'
 
 include 'test-harness'
+
+include 'scheduler'
+include 'scheduler-postgres-persistence'
+include 'scheduler-mysql-persistence'
+
+include 'e2e'
 
 rootProject.children.each {it.name="conductor-${it.name}"}

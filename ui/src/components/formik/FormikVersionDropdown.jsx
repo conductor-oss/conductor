@@ -1,7 +1,10 @@
 import { useFormikContext } from "formik";
 import { useWorkflowNamesAndVersions } from "../../data/workflow";
-import FormikDropdown from "./FormikDropdown";
+import { Select } from "../../components";
+import { MenuItem } from "@material-ui/core";
 import { useEffect } from "react";
+import _ from "lodash";
+import { timestampRenderer } from "../../utils/helpers";
 
 export default function FormikVersionDropdown(props) {
   const { name } = props;
@@ -10,6 +13,18 @@ export default function FormikVersionDropdown(props) {
     setFieldValue,
     values: { workflowName, workflowVersion },
   } = useFormikContext();
+
+  const versionTime = (versionObj) => {
+    return (
+      versionObj &&
+      timestampRenderer(versionObj.updateTime || versionObj.createTime)
+    );
+  }
+
+  // Version Change or Reset
+  const handleResetVersion = (version) => {
+    setFieldValue('workflowVersion', "" + version)
+  };
 
   useEffect(() => {
     if (workflowVersion && namesAndVersions.has(workflowName)) {
@@ -28,8 +43,23 @@ export default function FormikVersionDropdown(props) {
 
   const versions =
     workflowName && namesAndVersions.has(workflowName)
-      ? namesAndVersions.get(workflowName).map((row) => "" + row.version)
+      ? namesAndVersions.get(workflowName)
       : [];
 
-  return <FormikDropdown options={versions} {...props} />;
+  return <Select
+    value={_.isUndefined(workflowVersion) ? "" : workflowVersion}
+    displayEmpty
+    renderValue={(v) =>
+      v === "" ? "Latest Version" : `Version ${v}`
+    }
+    onChange={(evt) => handleResetVersion(evt.target.value)}
+    {...props}
+  >
+    <MenuItem value="">Latest Version</MenuItem>
+    {versions.map((row) => (
+      <MenuItem value={row.version} key={row.version}>
+        Version {row.version} ({versionTime(row)})
+      </MenuItem>
+    ))}
+  </Select>;
 }

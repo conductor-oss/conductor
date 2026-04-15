@@ -49,11 +49,12 @@ export default function SaveTaskDialog({ onSuccess, onCancel, document }) {
     },
     onError: (err) => {
       console.log("onerror", err);
-      let errStr = _.isString(err.body)
-        ? err.body
-        : JSON.stringify(err.body, null, 2);
+      const errObj = JSON.parse(err);
+      let errStr = errObj.validationErrors && errObj.validationErrors.length > 0
+        ? `${errObj.validationErrors[0].message}: ${errObj.validationErrors[0].path}`
+        : errObj.message;
       setErrorMsg({
-        message: `${TASK_SAVE_FAILED}: ${errStr}`,
+        message: `${TASK_SAVE_FAILED} ${errStr}`,
         dismissible: true,
       });
     },
