@@ -56,7 +56,3 @@ If a running server or CLI is unavailable:
 ## Other Guidelines
 
 See [AGENTS.md](AGENTS.md) for full project conventions: code style, testing, dependency pinning, PR guidelines.
-
-## GitHub Account
-
-Always use `nthmost-orkes` for all `gh` commands in this repo. Verify with `gh auth status` before filing issues or creating PRs.
