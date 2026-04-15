@@ -101,7 +101,6 @@ public class MetadataServiceTest {
             for (int i = 5; i > 0; i--) {
                 WorkflowDef def = new WorkflowDef();
                 def.setCreateTime(new Date().getTime());
-                def.setUpdateTime(new Date().getTime());
                 def.setVersion(i);
                 def.setName("test_workflow_def");
                 retval.add(def);
@@ -542,7 +541,6 @@ public class MetadataServiceTest {
             WorkflowDefSummary ver = versions.next();
             assertEquals(i, ver.getVersion());
             assertNotNull(ver.getCreateTime());
-            assertNotNull(ver.getUpdateTime());
             assertEquals("test_workflow_def", ver.getName());
         }
     }
