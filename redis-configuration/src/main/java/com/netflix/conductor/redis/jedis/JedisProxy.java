@@ -367,6 +367,11 @@ public class JedisProxy {
         return jedisCommands.scriptLoad(script, sampleKey);
     }
 
+    public boolean supportsMultiKeyAtomicScripts() {
+        return !(jedisCommands instanceof JedisClusterCommands)
+                && !(jedisCommands instanceof InMemoryJedisCommands);
+    }
+
     public String info(String command) {
         return jedisCommands.info(command);
     }

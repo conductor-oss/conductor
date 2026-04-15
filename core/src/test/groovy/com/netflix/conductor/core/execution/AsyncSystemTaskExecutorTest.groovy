@@ -25,6 +25,7 @@ import com.netflix.conductor.dao.MetadataDAO
 import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.model.TaskModel
 import com.netflix.conductor.model.WorkflowModel
+import com.netflix.conductor.service.ExecutionLockService
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import spock.lang.Specification
@@ -38,6 +39,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
     QueueDAO queueDAO
     MetadataDAO metadataDAO
     WorkflowExecutor workflowExecutor
+    ExecutionLockService executionLockService
 
     @Subject
     AsyncSystemTaskExecutor executor
@@ -50,6 +52,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         queueDAO = Mock(QueueDAO.class)
         metadataDAO = Mock(MetadataDAO.class)
         workflowExecutor = Mock(WorkflowExecutor.class)
+        executionLockService = Mock(ExecutionLockService.class)
 
         workflowSystemTask = Mock(WorkflowSystemTask.class) {
             isTaskRetrievalRequired() >> true
@@ -58,7 +61,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         properties.taskExecutionPostponeDuration = Duration.ofSeconds(1)
         properties.systemTaskWorkerCallbackDuration = Duration.ofSeconds(1)
 
-        executor = new AsyncSystemTaskExecutor(executionDAOFacade, queueDAO, metadataDAO, properties, workflowExecutor)
+        executor = new AsyncSystemTaskExecutor(executionDAOFacade, queueDAO, metadataDAO, properties, workflowExecutor, executionLockService)
     }
 
     // this is not strictly a unit test, but its essential to test AsyncSystemTaskExecutor with SubWorkflow
@@ -88,7 +91,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         executor.execute(subWorkflowTask, task1Id)
 
         then:
-        1 * executionDAOFacade.getTaskModel(task1Id) >> task1
+        2 * executionDAOFacade.getTaskModel(task1Id) >> task1
         1 * executionDAOFacade.getWorkflowModel(workflowId, subWorkflowTask.isTaskRetrievalRequired()) >> workflow
         1 * workflowExecutor.startWorkflow(*_) >> subWorkflowId
         1 * workflowExecutor.getWorkflow(subWorkflowId, false) >> subWorkflow
@@ -154,7 +157,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         executor.execute(workflowSystemTask, taskId)
 
         then:
-        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        2 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         1 * queueDAO.remove(queueName, taskId)
 
@@ -242,7 +245,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         executor.execute(workflowSystemTask, taskId)
 
         then:
-        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        2 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         1 * executionDAOFacade.updateTask(task)
         1 * queueDAO.postpone(queueName, taskId, task.workflowPriority, properties.systemTaskWorkerCallbackDuration.seconds)
@@ -270,7 +273,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         executor.execute(workflowSystemTask, taskId)
 
         then:
-        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        2 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         1 * executionDAOFacade.updateTask(task)
 
@@ -296,7 +299,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         executor.execute(workflowSystemTask, taskId)
 
         then:
-        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        2 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         1 * executionDAOFacade.updateTask(task)
 
@@ -328,7 +331,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         executor.execute(workflowSystemTask, taskId)
 
         then:
-        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        2 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         1 * executionDAOFacade.updateTask(task) // 1st call for pollCount, 2nd call for status update
 
@@ -356,7 +359,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         executor.execute(workflowSystemTask, taskId)
 
         then:
-        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        2 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         1 * executionDAOFacade.updateTask(task) // 1st call for pollCount, 2nd call for status update
 
@@ -380,7 +383,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         executor.execute(workflowSystemTask, taskId)
 
         then:
-        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        2 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         1 * executionDAOFacade.updateTask(task) // only one call since pollCount is not incremented
 

@@ -55,6 +55,7 @@ public class ExecutionService {
     private final ExternalPayloadStorage externalPayloadStorage;
     private final SystemTaskRegistry systemTaskRegistry;
     private final TaskStatusListener taskStatusListener;
+    private final ExecutionLockService executionLockService;
 
     private final long queueTaskMessagePostponeSecs;
 
@@ -69,7 +70,8 @@ public class ExecutionService {
             ConductorProperties properties,
             ExternalPayloadStorage externalPayloadStorage,
             SystemTaskRegistry systemTaskRegistry,
-            TaskStatusListener taskStatusListener) {
+            TaskStatusListener taskStatusListener,
+            ExecutionLockService executionLockService) {
         this.workflowExecutor = workflowExecutor;
         this.executionDAOFacade = executionDAOFacade;
         this.queueDAO = queueDAO;
@@ -79,6 +81,7 @@ public class ExecutionService {
                 properties.getTaskExecutionPostponeDuration().getSeconds();
         this.systemTaskRegistry = systemTaskRegistry;
         this.taskStatusListener = taskStatusListener;
+        this.executionLockService = executionLockService;
     }
 
     public Task poll(String taskType, String workerId) {
@@ -166,18 +169,31 @@ public class ExecutionService {
                     continue;
                 }
 
-                taskModel.setStatus(TaskModel.Status.IN_PROGRESS);
-                if (taskModel.getStartTime() == 0) {
-                    taskModel.setStartTime(System.currentTimeMillis());
-                    Monitors.recordQueueWaitTime(
-                            taskModel.getTaskDefName(), taskModel.getQueueWaitTime());
+                String workflowId = taskModel.getWorkflowInstanceId();
+                executionLockService.waitForLock(workflowId);
+                try {
+                    taskModel = executionDAOFacade.getTaskModel(taskId);
+                    if (taskModel == null || taskModel.getStatus().isTerminal()) {
+                        queueDAO.remove(queueName, taskId);
+                        LOGGER.debug("Removed task: {} from the queue: {}", taskId, queueName);
+                        continue;
+                    }
+
+                    taskModel.setStatus(TaskModel.Status.IN_PROGRESS);
+                    if (taskModel.getStartTime() == 0) {
+                        taskModel.setStartTime(System.currentTimeMillis());
+                        Monitors.recordQueueWaitTime(
+                                taskModel.getTaskDefName(), taskModel.getQueueWaitTime());
+                    }
+                    taskModel.setCallbackAfterSeconds(
+                            0); // reset callbackAfterSeconds when giving the task to the worker
+                    taskModel.setWorkerId(workerId);
+                    taskModel.incrementPollCount();
+                    executionDAOFacade.updateTask(taskModel);
+                    tasks.add(taskModel.toTask());
+                } finally {
+                    executionLockService.releaseLock(workflowId);
                 }
-                taskModel.setCallbackAfterSeconds(
-                        0); // reset callbackAfterSeconds when giving the task to the worker
-                taskModel.setWorkerId(workerId);
-                taskModel.incrementPollCount();
-                executionDAOFacade.updateTask(taskModel);
-                tasks.add(taskModel.toTask());
             } catch (Exception e) {
                 // db operation failed for dequeued message, re-enqueue with a delay
                 LOGGER.warn(

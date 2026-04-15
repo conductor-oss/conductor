@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.redis.dao;
 
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -58,7 +59,33 @@ public class RedisExecutionDAO extends BaseDynoDAO
     private static final String WORKFLOW_DEF_TO_WORKFLOWS = "WORKFLOW_DEF_TO_WORKFLOWS";
     private static final String CORR_ID_TO_WORKFLOWS = "CORR_ID_TO_WORKFLOWS";
     private static final String EVENT_EXECUTION = "EVENT_EXECUTION";
+    // Persist the scheduled-task pointer, workflow mapping, in-progress markers, and task payload
+    // together so duplicate decide paths cannot leave Redis in a split state for the same task key.
+    private static final byte[] CREATE_TASK_SCRIPT =
+            String.join(
+                            "\n",
+                            "local created = redis.call('hsetnx', KEYS[1], ARGV[1], ARGV[2])",
+                            "if created == 0 then",
+                            "  return 0",
+                            "end",
+                            "redis.call('sadd', KEYS[2], ARGV[2])",
+                            "redis.call('sadd', KEYS[3], ARGV[2])",
+                            "if ARGV[4] == '1' then",
+                            "  redis.call('sadd', KEYS[5], ARGV[2])",
+                            "else",
+                            "  redis.call('srem', KEYS[5], ARGV[2])",
+                            "end",
+                            "if ARGV[5] == '1' then",
+                            "  redis.call('srem', KEYS[3], ARGV[2])",
+                            "end",
+                            "if ARGV[6] == '1' then",
+                            "  redis.call('zrem', KEYS[6], ARGV[2])",
+                            "end",
+                            "redis.call('set', KEYS[4], ARGV[3])",
+                            "return 1")
+                    .getBytes(StandardCharsets.UTF_8);
     private final int ttlEventExecutionSeconds;
+    private volatile byte[] createTaskScriptSha;
 
     public RedisExecutionDAO(
             JedisProxy jedisProxy,
@@ -143,50 +170,167 @@ public class RedisExecutionDAO extends BaseDynoDAO
 
             recordRedisDaoRequests("createTask", task.getTaskType(), task.getWorkflowType());
 
-            String taskKey = task.getReferenceTaskName() + "" + task.getRetryCount();
-            Long added =
-                    jedisProxy.hset(
-                            nsKey(SCHEDULED_TASKS, task.getWorkflowInstanceId()),
-                            taskKey,
-                            task.getTaskId());
-            if (added < 1) {
-                LOGGER.debug(
-                        "Task already scheduled, skipping the run "
-                                + task.getTaskId()
-                                + ", ref="
-                                + task.getReferenceTaskName()
-                                + ", key="
-                                + taskKey);
-                continue;
-            }
-
             if (task.getStatus() != null
                     && !task.getStatus().isTerminal()
                     && task.getScheduledTime() == 0) {
                 task.setScheduledTime(System.currentTimeMillis());
             }
 
-            correlateTaskToWorkflowInDS(task.getTaskId(), task.getWorkflowInstanceId());
-            LOGGER.debug(
-                    "Scheduled task added to WORKFLOW_TO_TASKS workflowId: {}, taskId: {}, taskType: {} during createTasks",
-                    task.getWorkflowInstanceId(),
-                    task.getTaskId(),
-                    task.getTaskType());
-
-            String inProgressTaskKey = nsKey(IN_PROGRESS_TASKS, task.getTaskDefName());
-            jedisProxy.sadd(inProgressTaskKey, task.getTaskId());
-            LOGGER.debug(
-                    "Scheduled task added to IN_PROGRESS_TASKS with inProgressTaskKey: {}, workflowId: {}, taskId: {}, taskType: {} during createTasks",
-                    inProgressTaskKey,
-                    task.getWorkflowInstanceId(),
-                    task.getTaskId(),
-                    task.getTaskType());
-
-            updateTask(task);
-            tasksCreated.add(task);
+            if (createTask(task)) {
+                tasksCreated.add(task);
+            }
         }
 
         return tasksCreated;
+    }
+
+    private boolean createTask(TaskModel task) {
+        if (jedisProxy.supportsMultiKeyAtomicScripts()) {
+            return createTaskAtomically(task);
+        }
+        // Redis Cluster cannot guarantee atomicity for these multi-key writes with the current key
+        // layout because the keys are not hash-slot aligned. Preserve existing behavior there
+        // until the key model is updated to support cross-structure atomic scripts.
+        return createTaskNonAtomically(task);
+    }
+
+    private boolean createTaskNonAtomically(TaskModel task) {
+        String taskKey = task.getReferenceTaskName() + "" + task.getRetryCount();
+        Long added =
+                jedisProxy.hsetnx(
+                        nsKey(SCHEDULED_TASKS, task.getWorkflowInstanceId()),
+                        taskKey,
+                        task.getTaskId());
+        if (added < 1) {
+            logTaskAlreadyScheduled(task, taskKey);
+            return false;
+        }
+
+        correlateTaskToWorkflowInDS(task.getTaskId(), task.getWorkflowInstanceId());
+        LOGGER.debug(
+                "Scheduled task added to WORKFLOW_TO_TASKS workflowId: {}, taskId: {}, taskType: {} during createTasks",
+                task.getWorkflowInstanceId(),
+                task.getTaskId(),
+                task.getTaskType());
+
+        String inProgressTaskKey = nsKey(IN_PROGRESS_TASKS, task.getTaskDefName());
+        jedisProxy.sadd(inProgressTaskKey, task.getTaskId());
+        LOGGER.debug(
+                "Scheduled task added to IN_PROGRESS_TASKS with inProgressTaskKey: {}, workflowId: {}, taskId: {}, taskType: {} during createTasks",
+                inProgressTaskKey,
+                task.getWorkflowInstanceId(),
+                task.getTaskId(),
+                task.getTaskType());
+
+        updateTask(task);
+        return true;
+    }
+
+    private boolean createTaskAtomically(TaskModel task) {
+        Optional<TaskDef> taskDefinition = task.getTaskDefinition();
+        String payload = toJson(task);
+        String taskKey = task.getReferenceTaskName() + "" + task.getRetryCount();
+
+        List<byte[]> keys =
+                List.of(
+                        nsKey(SCHEDULED_TASKS, task.getWorkflowInstanceId())
+                                .getBytes(StandardCharsets.UTF_8),
+                        nsKey(WORKFLOW_TO_TASKS, task.getWorkflowInstanceId())
+                                .getBytes(StandardCharsets.UTF_8),
+                        nsKey(IN_PROGRESS_TASKS, task.getTaskDefName())
+                                .getBytes(StandardCharsets.UTF_8),
+                        nsKey(TASK, task.getTaskId()).getBytes(StandardCharsets.UTF_8),
+                        nsKey(TASKS_IN_PROGRESS_STATUS, task.getTaskDefName())
+                                .getBytes(StandardCharsets.UTF_8),
+                        nsKey(TASK_LIMIT_BUCKET, task.getTaskDefName())
+                                .getBytes(StandardCharsets.UTF_8));
+        List<byte[]> args =
+                List.of(
+                        taskKey.getBytes(StandardCharsets.UTF_8),
+                        task.getTaskId().getBytes(StandardCharsets.UTF_8),
+                        payload.getBytes(StandardCharsets.UTF_8),
+                        shouldAddTaskInProgressStatus(task, taskDefinition)
+                                ? "1".getBytes(StandardCharsets.UTF_8)
+                                : "0".getBytes(StandardCharsets.UTF_8),
+                        task.getStatus() != null && task.getStatus().isTerminal()
+                                ? "1".getBytes(StandardCharsets.UTF_8)
+                                : "0".getBytes(StandardCharsets.UTF_8),
+                        shouldRemoveTaskLimitBucket(task, taskDefinition)
+                                ? "1".getBytes(StandardCharsets.UTF_8)
+                                : "0".getBytes(StandardCharsets.UTF_8));
+
+        Object response = runCreateTaskScript(keys, args);
+        long added = response instanceof Number ? ((Number) response).longValue() : 0L;
+        if (added < 1) {
+            logTaskAlreadyScheduled(task, taskKey);
+            return false;
+        }
+        recordTaskPayloadPersisted(task, taskDefinition, payload);
+        return true;
+    }
+
+    private Object runCreateTaskScript(List<byte[]> keys, List<byte[]> args) {
+        byte[] sampleKey = keys.get(0);
+        try {
+            return jedisProxy.evalsha(loadCreateTaskScript(sampleKey), keys, args);
+        } catch (RuntimeException e) {
+            if (!isNoScriptError(e)) {
+                throw e;
+            }
+            synchronized (this) {
+                createTaskScriptSha = jedisProxy.scriptLoad(CREATE_TASK_SCRIPT, sampleKey);
+            }
+            return jedisProxy.evalsha(createTaskScriptSha, keys, args);
+        }
+    }
+
+    private void recordTaskPayloadPersisted(
+            TaskModel task, Optional<TaskDef> taskDefinition, String payload) {
+        recordRedisDaoPayloadSize(
+                "updateTask",
+                payload.length(),
+                taskDefinition.map(TaskDef::getName).orElse("n/a"),
+                task.getWorkflowType());
+        recordRedisDaoRequests("updateTask", task.getTaskType(), task.getWorkflowType());
+    }
+
+    private boolean shouldAddTaskInProgressStatus(
+            TaskModel task, Optional<TaskDef> taskDefinition) {
+        return taskDefinition.isPresent()
+                && taskDefinition.get().concurrencyLimit() > 0
+                && task.getStatus() == TaskModel.Status.IN_PROGRESS;
+    }
+
+    private boolean shouldRemoveTaskLimitBucket(TaskModel task, Optional<TaskDef> taskDefinition) {
+        return taskDefinition.isPresent()
+                && taskDefinition.get().concurrencyLimit() > 0
+                && task.getStatus() != TaskModel.Status.IN_PROGRESS;
+    }
+
+    private byte[] loadCreateTaskScript(byte[] sampleKey) {
+        byte[] sha = createTaskScriptSha;
+        if (sha == null || sha.length == 0) {
+            synchronized (this) {
+                sha = createTaskScriptSha;
+                if (sha == null || sha.length == 0) {
+                    sha = jedisProxy.scriptLoad(CREATE_TASK_SCRIPT, sampleKey);
+                    createTaskScriptSha = sha;
+                }
+            }
+        }
+        return sha;
+    }
+
+    private boolean isNoScriptError(RuntimeException e) {
+        return e.getMessage() != null && e.getMessage().contains("NOSCRIPT");
+    }
+
+    private void logTaskAlreadyScheduled(TaskModel task, String taskKey) {
+        LOGGER.debug(
+                "Task already scheduled, skipping the run {}, ref={}, key={}",
+                task.getTaskId(),
+                task.getReferenceTaskName(),
+                taskKey);
     }
 
     @Override

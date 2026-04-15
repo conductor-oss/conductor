@@ -783,172 +783,181 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         }
 
         String workflowId = taskResult.getWorkflowInstanceId();
-        WorkflowModel workflowInstance = executionDAOFacade.getWorkflowModel(workflowId, false);
-
-        TaskModel task =
-                Optional.ofNullable(executionDAOFacade.getTaskModel(taskResult.getTaskId()))
-                        .orElseThrow(
-                                () ->
-                                        new NotFoundException(
-                                                "No such task found by id: %s",
-                                                taskResult.getTaskId()));
-
-        LOGGER.debug("Task: {} belonging to Workflow {} being updated", task, workflowInstance);
-
-        String taskQueueName = QueueUtils.getQueueName(task);
-
-        if (task.getStatus().isTerminal()) {
-            // Task was already updated....
-            queueDAO.remove(taskQueueName, taskResult.getTaskId());
-            LOGGER.info(
-                    "Task: {} has already finished execution with status: {} within workflow: {}. Removed task from queue: {}",
-                    task.getTaskId(),
-                    task.getStatus(),
-                    task.getWorkflowInstanceId(),
-                    taskQueueName);
-            Monitors.recordUpdateConflict(
-                    task.getTaskType(), workflowInstance.getWorkflowName(), task.getStatus());
-            return task;
-        }
-
-        if (workflowInstance.getStatus().isTerminal()) {
-            // Workflow is in terminal state
-            queueDAO.remove(taskQueueName, taskResult.getTaskId());
-            LOGGER.info(
-                    "Workflow: {} has already finished execution. Task update for: {} ignored and removed from Queue: {}.",
-                    workflowInstance,
-                    taskResult.getTaskId(),
-                    taskQueueName);
-            Monitors.recordUpdateConflict(
-                    task.getTaskType(),
-                    workflowInstance.getWorkflowName(),
-                    workflowInstance.getStatus());
-            return task;
-        }
-
-        // for system tasks, setting to SCHEDULED would mean restarting the task which
-        // is
-        // undesirable
-        // for worker tasks, set status to SCHEDULED and push to the queue
-        if (!systemTaskRegistry.isSystemTask(task.getTaskType())
-                && taskResult.getStatus() == TaskResult.Status.IN_PROGRESS) {
-            task.setStatus(SCHEDULED);
-        } else {
-            task.setStatus(TaskModel.Status.valueOf(taskResult.getStatus().name()));
-        }
-        task.setOutputMessage(taskResult.getOutputMessage());
-        task.setReasonForIncompletion(taskResult.getReasonForIncompletion());
-        task.setWorkerId(taskResult.getWorkerId());
-        task.setCallbackAfterSeconds(taskResult.getCallbackAfterSeconds());
-        task.setOutputData(taskResult.getOutputData());
-        task.setSubWorkflowId(taskResult.getSubWorkflowId());
-
-        if (StringUtils.isNotBlank(taskResult.getExternalOutputPayloadStoragePath())) {
-            task.setExternalOutputPayloadStoragePath(
-                    taskResult.getExternalOutputPayloadStoragePath());
-        }
-
-        if (task.getStatus().isTerminal()) {
-            task.setEndTime(System.currentTimeMillis());
-        }
-
-        // Update message in Task queue based on Task status
-        switch (task.getStatus()) {
-            case COMPLETED:
-            case CANCELED:
-            case FAILED:
-            case FAILED_WITH_TERMINAL_ERROR:
-            case TIMED_OUT:
-                try {
-                    queueDAO.remove(taskQueueName, taskResult.getTaskId());
-                    LOGGER.debug(
-                            "Task: {} removed from taskQueue: {} since the task status is {}",
-                            task,
-                            taskQueueName,
-                            task.getStatus().name());
-                } catch (Exception e) {
-                    // Ignore exceptions on queue remove as it wouldn't impact task and workflow
-                    // execution, and will be cleaned up eventually
-                    String errorMsg =
-                            String.format(
-                                    "Error removing the message in queue for task: %s for workflow: %s",
-                                    task.getTaskId(), workflowId);
-                    LOGGER.warn(errorMsg, e);
-                    Monitors.recordTaskQueueOpError(
-                            task.getTaskType(), workflowInstance.getWorkflowName());
-                }
-                break;
-            case IN_PROGRESS:
-            case SCHEDULED:
-                try {
-                    long callBack = taskResult.getCallbackAfterSeconds();
-                    queueDAO.postpone(
-                            taskQueueName, task.getTaskId(), task.getWorkflowPriority(), callBack);
-                    LOGGER.debug(
-                            "Task: {} postponed in taskQueue: {} since the task status is {} with callbackAfterSeconds: {}",
-                            task,
-                            taskQueueName,
-                            task.getStatus().name(),
-                            callBack);
-                } catch (Exception e) {
-                    // Throw exceptions on queue postpone, this would impact task execution
-                    String errorMsg =
-                            String.format(
-                                    "Error postponing the message in queue for task: %s for workflow: %s",
-                                    task.getTaskId(), workflowId);
-                    LOGGER.error(errorMsg, e);
-                    Monitors.recordTaskQueueOpError(
-                            task.getTaskType(), workflowInstance.getWorkflowName());
-                    throw new TransientException(errorMsg, e);
-                }
-                break;
-            default:
-                break;
-        }
-
-        // Throw a TransientException if below operations fail to avoid workflow
-        // inconsistencies.
+        executionLockService.waitForLock(workflowId);
         try {
-            executionDAOFacade.updateTask(task);
-        } catch (Exception e) {
-            String errorMsg =
-                    String.format(
-                            "Error updating task: %s for workflow: %s",
-                            task.getTaskId(), workflowId);
-            LOGGER.error(errorMsg, e);
-            Monitors.recordTaskUpdateError(task.getTaskType(), workflowInstance.getWorkflowName());
-            throw new TransientException(errorMsg, e);
-        }
+            WorkflowModel workflowInstance = executionDAOFacade.getWorkflowModel(workflowId, false);
 
-        try {
-            notifyTaskStatusListener(task);
-        } catch (Exception e) {
-            String errorMsg =
-                    String.format(
-                            "Error while notifying TaskStatusListener: %s for workflow: %s",
-                            task.getTaskId(), workflowId);
-            LOGGER.error(errorMsg, e);
-        }
+            TaskModel task =
+                    Optional.ofNullable(executionDAOFacade.getTaskModel(taskResult.getTaskId()))
+                            .orElseThrow(
+                                    () ->
+                                            new NotFoundException(
+                                                    "No such task found by id: %s",
+                                                    taskResult.getTaskId()));
 
-        List<TaskExecLog> taskLogs = taskResult.getLogs();
-        if (taskLogs != null) {
-            taskLogs.forEach(taskExecLog -> taskExecLog.setTaskId(task.getTaskId()));
-            executionDAOFacade.addTaskExecLog(taskLogs);
-        }
+            LOGGER.debug("Task: {} belonging to Workflow {} being updated", task, workflowInstance);
 
-        if (task.getStatus().isTerminal()) {
-            long duration = getTaskDuration(0, task);
-            long lastDuration = task.getEndTime() - task.getStartTime();
-            Monitors.recordTaskExecutionTime(
-                    task.getTaskDefName(), duration, true, task.getStatus());
-            Monitors.recordTaskExecutionTime(
-                    task.getTaskDefName(), lastDuration, false, task.getStatus());
-        }
+            String taskQueueName = QueueUtils.getQueueName(task);
 
-        if (!isLazyEvaluateWorkflow(workflowInstance.getWorkflowDefinition(), task)) {
-            decide(workflowId);
+            if (task.getStatus().isTerminal()) {
+                // Task was already updated....
+                queueDAO.remove(taskQueueName, taskResult.getTaskId());
+                LOGGER.info(
+                        "Task: {} has already finished execution with status: {} within workflow: {}. Removed task from queue: {}",
+                        task.getTaskId(),
+                        task.getStatus(),
+                        task.getWorkflowInstanceId(),
+                        taskQueueName);
+                Monitors.recordUpdateConflict(
+                        task.getTaskType(), workflowInstance.getWorkflowName(), task.getStatus());
+                return task;
+            }
+
+            if (workflowInstance.getStatus().isTerminal()) {
+                // Workflow is in terminal state
+                queueDAO.remove(taskQueueName, taskResult.getTaskId());
+                LOGGER.info(
+                        "Workflow: {} has already finished execution. Task update for: {} ignored and removed from Queue: {}.",
+                        workflowInstance,
+                        taskResult.getTaskId(),
+                        taskQueueName);
+                Monitors.recordUpdateConflict(
+                        task.getTaskType(),
+                        workflowInstance.getWorkflowName(),
+                        workflowInstance.getStatus());
+                return task;
+            }
+
+            // for system tasks, setting to SCHEDULED would mean restarting the task which
+            // is
+            // undesirable
+            // for worker tasks, set status to SCHEDULED and push to the queue
+            if (!systemTaskRegistry.isSystemTask(task.getTaskType())
+                    && taskResult.getStatus() == TaskResult.Status.IN_PROGRESS) {
+                task.setStatus(SCHEDULED);
+            } else {
+                task.setStatus(TaskModel.Status.valueOf(taskResult.getStatus().name()));
+            }
+            task.setOutputMessage(taskResult.getOutputMessage());
+            task.setReasonForIncompletion(taskResult.getReasonForIncompletion());
+            task.setWorkerId(taskResult.getWorkerId());
+            task.setCallbackAfterSeconds(taskResult.getCallbackAfterSeconds());
+            task.setOutputData(taskResult.getOutputData());
+            task.setSubWorkflowId(taskResult.getSubWorkflowId());
+
+            if (StringUtils.isNotBlank(taskResult.getExternalOutputPayloadStoragePath())) {
+                task.setExternalOutputPayloadStoragePath(
+                        taskResult.getExternalOutputPayloadStoragePath());
+            }
+
+            if (task.getStatus().isTerminal()) {
+                task.setEndTime(System.currentTimeMillis());
+            }
+
+            // Update message in Task queue based on Task status
+            switch (task.getStatus()) {
+                case COMPLETED:
+                case CANCELED:
+                case FAILED:
+                case FAILED_WITH_TERMINAL_ERROR:
+                case TIMED_OUT:
+                    try {
+                        queueDAO.remove(taskQueueName, taskResult.getTaskId());
+                        LOGGER.debug(
+                                "Task: {} removed from taskQueue: {} since the task status is {}",
+                                task,
+                                taskQueueName,
+                                task.getStatus().name());
+                    } catch (Exception e) {
+                        // Ignore exceptions on queue remove as it wouldn't impact task and workflow
+                        // execution, and will be cleaned up eventually
+                        String errorMsg =
+                                String.format(
+                                        "Error removing the message in queue for task: %s for workflow: %s",
+                                        task.getTaskId(), workflowId);
+                        LOGGER.warn(errorMsg, e);
+                        Monitors.recordTaskQueueOpError(
+                                task.getTaskType(), workflowInstance.getWorkflowName());
+                    }
+                    break;
+                case IN_PROGRESS:
+                case SCHEDULED:
+                    try {
+                        long callBack = taskResult.getCallbackAfterSeconds();
+                        queueDAO.postpone(
+                                taskQueueName,
+                                task.getTaskId(),
+                                task.getWorkflowPriority(),
+                                callBack);
+                        LOGGER.debug(
+                                "Task: {} postponed in taskQueue: {} since the task status is {} with callbackAfterSeconds: {}",
+                                task,
+                                taskQueueName,
+                                task.getStatus().name(),
+                                callBack);
+                    } catch (Exception e) {
+                        // Throw exceptions on queue postpone, this would impact task execution
+                        String errorMsg =
+                                String.format(
+                                        "Error postponing the message in queue for task: %s for workflow: %s",
+                                        task.getTaskId(), workflowId);
+                        LOGGER.error(errorMsg, e);
+                        Monitors.recordTaskQueueOpError(
+                                task.getTaskType(), workflowInstance.getWorkflowName());
+                        throw new TransientException(errorMsg, e);
+                    }
+                    break;
+                default:
+                    break;
+            }
+
+            // Throw a TransientException if below operations fail to avoid workflow
+            // inconsistencies.
+            try {
+                executionDAOFacade.updateTask(task);
+            } catch (Exception e) {
+                String errorMsg =
+                        String.format(
+                                "Error updating task: %s for workflow: %s",
+                                task.getTaskId(), workflowId);
+                LOGGER.error(errorMsg, e);
+                Monitors.recordTaskUpdateError(
+                        task.getTaskType(), workflowInstance.getWorkflowName());
+                throw new TransientException(errorMsg, e);
+            }
+
+            try {
+                notifyTaskStatusListener(task);
+            } catch (Exception e) {
+                String errorMsg =
+                        String.format(
+                                "Error while notifying TaskStatusListener: %s for workflow: %s",
+                                task.getTaskId(), workflowId);
+                LOGGER.error(errorMsg, e);
+            }
+
+            List<TaskExecLog> taskLogs = taskResult.getLogs();
+            if (taskLogs != null) {
+                taskLogs.forEach(taskExecLog -> taskExecLog.setTaskId(task.getTaskId()));
+                executionDAOFacade.addTaskExecLog(taskLogs);
+            }
+
+            if (task.getStatus().isTerminal()) {
+                long duration = getTaskDuration(0, task);
+                long lastDuration = task.getEndTime() - task.getStartTime();
+                Monitors.recordTaskExecutionTime(
+                        task.getTaskDefName(), duration, true, task.getStatus());
+                Monitors.recordTaskExecutionTime(
+                        task.getTaskDefName(), lastDuration, false, task.getStatus());
+            }
+
+            if (!isLazyEvaluateWorkflow(workflowInstance.getWorkflowDefinition(), task)) {
+                decide(workflowId);
+            }
+            return task;
+        } finally {
+            executionLockService.releaseLock(workflowId);
         }
-        return task;
     }
 
     private void notifyTaskStatusListener(TaskModel task) {
@@ -979,30 +988,36 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     }
 
     private void extendLease(TaskResult taskResult) {
-        TaskModel task =
-                Optional.ofNullable(executionDAOFacade.getTaskModel(taskResult.getTaskId()))
-                        .orElseThrow(
-                                () ->
-                                        new NotFoundException(
-                                                "No such task found by id: %s",
-                                                taskResult.getTaskId()));
+        String workflowId = taskResult.getWorkflowInstanceId();
+        executionLockService.waitForLock(workflowId);
+        try {
+            TaskModel task =
+                    Optional.ofNullable(executionDAOFacade.getTaskModel(taskResult.getTaskId()))
+                            .orElseThrow(
+                                    () ->
+                                            new NotFoundException(
+                                                    "No such task found by id: %s",
+                                                    taskResult.getTaskId()));
 
-        LOGGER.debug(
-                "Extend lease for Task: {} belonging to Workflow: {}",
-                task,
-                task.getWorkflowInstanceId());
-        if (!task.getStatus().isTerminal()) {
-            try {
-                executionDAOFacade.extendLease(task);
-            } catch (Exception e) {
-                String errorMsg =
-                        String.format(
-                                "Error extend lease for Task: %s belonging to Workflow: %s",
-                                task.getTaskId(), task.getWorkflowInstanceId());
-                LOGGER.error(errorMsg, e);
-                Monitors.recordTaskExtendLeaseError(task.getTaskType(), task.getWorkflowType());
-                throw new TransientException(errorMsg, e);
+            LOGGER.debug(
+                    "Extend lease for Task: {} belonging to Workflow: {}",
+                    task,
+                    task.getWorkflowInstanceId());
+            if (!task.getStatus().isTerminal()) {
+                try {
+                    executionDAOFacade.extendLease(task);
+                } catch (Exception e) {
+                    String errorMsg =
+                            String.format(
+                                    "Error extend lease for Task: %s belonging to Workflow: %s",
+                                    task.getTaskId(), task.getWorkflowInstanceId());
+                    LOGGER.error(errorMsg, e);
+                    Monitors.recordTaskExtendLeaseError(task.getTaskType(), task.getWorkflowType());
+                    throw new TransientException(errorMsg, e);
+                }
             }
+        } finally {
+            executionLockService.releaseLock(workflowId);
         }
     }
 

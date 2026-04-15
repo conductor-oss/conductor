@@ -25,6 +25,7 @@ import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.ExecutionLockService;
 
 @Component
 public class AsyncSystemTaskExecutor {
@@ -35,6 +36,7 @@ public class AsyncSystemTaskExecutor {
     private final long queueTaskMessagePostponeSecs;
     private final long systemTaskCallbackTime;
     private final WorkflowExecutor workflowExecutor;
+    private final ExecutionLockService executionLockService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AsyncSystemTaskExecutor.class);
 
@@ -43,11 +45,13 @@ public class AsyncSystemTaskExecutor {
             QueueDAO queueDAO,
             MetadataDAO metadataDAO,
             ConductorProperties conductorProperties,
-            WorkflowExecutor workflowExecutor) {
+            WorkflowExecutor workflowExecutor,
+            ExecutionLockService executionLockService) {
         this.executionDAOFacade = executionDAOFacade;
         this.queueDAO = queueDAO;
         this.metadataDAO = metadataDAO;
         this.workflowExecutor = workflowExecutor;
+        this.executionLockService = executionLockService;
         this.systemTaskCallbackTime =
                 conductorProperties.getSystemTaskWorkerCallbackDuration().getSeconds();
         this.queueTaskMessagePostponeSecs =
@@ -114,88 +118,107 @@ public class AsyncSystemTaskExecutor {
         String workflowId = task.getWorkflowInstanceId();
         // if we are here the Task object is updated and needs to be persisted regardless of an
         // exception
+        executionLockService.waitForLock(workflowId);
         try {
-            WorkflowModel workflow =
-                    executionDAOFacade.getWorkflowModel(
-                            workflowId, systemTask.isTaskRetrievalRequired());
-
-            if (workflow.getStatus().isTerminal()) {
-                LOGGER.info(
-                        "Workflow {} has been completed for {}/{}",
-                        workflow.toShortString(),
-                        systemTask,
-                        task.getTaskId());
-                if (!task.getStatus().isTerminal()) {
-                    task.setStatus(TaskModel.Status.CANCELED);
-                    task.setReasonForIncompletion(
-                            String.format(
-                                    "Workflow is in %s state", workflow.getStatus().toString()));
-                }
-                shouldRemoveTaskFromQueue = true;
+            task = loadTaskQuietly(taskId);
+            if (task == null) {
+                LOGGER.error(
+                        "TaskId: {} could not be reloaded while executing {}", taskId, systemTask);
+                queueDAO.remove(queueName, taskId);
                 return;
             }
 
-            LOGGER.debug(
-                    "Executing {}/{} in {} state",
-                    task.getTaskType(),
-                    task.getTaskId(),
-                    task.getStatus());
+            try {
+                WorkflowModel workflow =
+                        executionDAOFacade.getWorkflowModel(
+                                workflowId, systemTask.isTaskRetrievalRequired());
 
-            boolean isTaskAsyncComplete = systemTask.isAsyncComplete(task);
-            if (task.getStatus() == TaskModel.Status.SCHEDULED || !isTaskAsyncComplete) {
-                task.incrementPollCount();
-            }
+                if (workflow.getStatus().isTerminal()) {
+                    LOGGER.info(
+                            "Workflow {} has been completed for {}/{}",
+                            workflow.toShortString(),
+                            systemTask,
+                            task.getTaskId());
+                    if (!task.getStatus().isTerminal()) {
+                        task.setStatus(TaskModel.Status.CANCELED);
+                        task.setReasonForIncompletion(
+                                String.format(
+                                        "Workflow is in %s state",
+                                        workflow.getStatus().toString()));
+                    }
+                    shouldRemoveTaskFromQueue = true;
+                    return;
+                }
 
-            if (task.getStatus() == TaskModel.Status.SCHEDULED) {
-                task.setStartTime(System.currentTimeMillis());
-                Monitors.recordQueueWaitTime(task.getTaskType(), task.getQueueWaitTime());
-                systemTask.start(workflow, task, workflowExecutor);
-            } else if (task.getStatus() == TaskModel.Status.IN_PROGRESS) {
-                systemTask.execute(workflow, task, workflowExecutor);
-            }
-
-            // Update message in Task queue based on Task status
-            // Remove asyncComplete system tasks from the queue that are not in SCHEDULED state
-            if (isTaskAsyncComplete && task.getStatus() != TaskModel.Status.SCHEDULED) {
-                shouldRemoveTaskFromQueue = true;
-                hasTaskExecutionCompleted = true;
-            } else if (task.getStatus().isTerminal()) {
-                task.setEndTime(System.currentTimeMillis());
-                shouldRemoveTaskFromQueue = true;
-                hasTaskExecutionCompleted = true;
-            } else {
-                task.setCallbackAfterSeconds(systemTaskCallbackTime);
-                systemTask
-                        .getEvaluationOffset(task, systemTaskCallbackTime)
-                        .ifPresentOrElse(
-                                task::setCallbackAfterSeconds,
-                                () -> task.setCallbackAfterSeconds(systemTaskCallbackTime));
-                queueDAO.postpone(
-                        queueName,
+                LOGGER.debug(
+                        "Executing {}/{} in {} state",
+                        task.getTaskType(),
                         task.getTaskId(),
-                        task.getWorkflowPriority(),
-                        task.getCallbackAfterSeconds());
-                LOGGER.debug("{} postponed in queue: {}", task, queueName);
-            }
+                        task.getStatus());
 
-            LOGGER.debug(
-                    "Finished execution of {}/{}-{}",
-                    systemTask,
-                    task.getTaskId(),
-                    task.getStatus());
-        } catch (Exception e) {
-            Monitors.error(AsyncSystemTaskExecutor.class.getSimpleName(), "executeSystemTask");
-            LOGGER.error("Error executing system task - {}, with id: {}", systemTask, taskId, e);
+                boolean isTaskAsyncComplete = systemTask.isAsyncComplete(task);
+                if (task.getStatus() == TaskModel.Status.SCHEDULED || !isTaskAsyncComplete) {
+                    task.incrementPollCount();
+                }
+
+                if (task.getStatus() == TaskModel.Status.SCHEDULED) {
+                    task.setStartTime(System.currentTimeMillis());
+                    Monitors.recordQueueWaitTime(task.getTaskType(), task.getQueueWaitTime());
+                    systemTask.start(workflow, task, workflowExecutor);
+                } else if (task.getStatus() == TaskModel.Status.IN_PROGRESS) {
+                    systemTask.execute(workflow, task, workflowExecutor);
+                }
+
+                // Update message in Task queue based on Task status
+                // Remove asyncComplete system tasks from the queue that are not in SCHEDULED state
+                if (isTaskAsyncComplete && task.getStatus() != TaskModel.Status.SCHEDULED) {
+                    shouldRemoveTaskFromQueue = true;
+                    hasTaskExecutionCompleted = true;
+                } else if (task.getStatus().isTerminal()) {
+                    task.setEndTime(System.currentTimeMillis());
+                    shouldRemoveTaskFromQueue = true;
+                    hasTaskExecutionCompleted = true;
+                } else {
+                    task.setCallbackAfterSeconds(systemTaskCallbackTime);
+                    TaskModel taskForEvaluationOffset = task;
+                    systemTask
+                            .getEvaluationOffset(taskForEvaluationOffset, systemTaskCallbackTime)
+                            .ifPresentOrElse(
+                                    taskForEvaluationOffset::setCallbackAfterSeconds,
+                                    () ->
+                                            taskForEvaluationOffset.setCallbackAfterSeconds(
+                                                    systemTaskCallbackTime));
+                    queueDAO.postpone(
+                            queueName,
+                            task.getTaskId(),
+                            task.getWorkflowPriority(),
+                            task.getCallbackAfterSeconds());
+                    LOGGER.debug("{} postponed in queue: {}", task, queueName);
+                }
+
+                LOGGER.debug(
+                        "Finished execution of {}/{}-{}",
+                        systemTask,
+                        task.getTaskId(),
+                        task.getStatus());
+            } catch (Exception e) {
+                Monitors.error(AsyncSystemTaskExecutor.class.getSimpleName(), "executeSystemTask");
+                LOGGER.error(
+                        "Error executing system task - {}, with id: {}", systemTask, taskId, e);
+            } finally {
+                executionDAOFacade.updateTask(task);
+                if (shouldRemoveTaskFromQueue) {
+                    queueDAO.remove(queueName, task.getTaskId());
+                    LOGGER.debug("{} removed from queue: {}", task, queueName);
+                }
+                // if the current task execution has completed, then the workflow needs to be
+                // evaluated
+                if (hasTaskExecutionCompleted) {
+                    workflowExecutor.decide(workflowId);
+                }
+            }
         } finally {
-            executionDAOFacade.updateTask(task);
-            if (shouldRemoveTaskFromQueue) {
-                queueDAO.remove(queueName, task.getTaskId());
-                LOGGER.debug("{} removed from queue: {}", task, queueName);
-            }
-            // if the current task execution has completed, then the workflow needs to be evaluated
-            if (hasTaskExecutionCompleted) {
-                workflowExecutor.decide(workflowId);
-            }
+            executionLockService.releaseLock(workflowId);
         }
     }
 

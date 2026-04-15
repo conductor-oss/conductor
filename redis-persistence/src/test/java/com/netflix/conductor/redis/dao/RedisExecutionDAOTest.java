@@ -152,6 +152,50 @@ public class RedisExecutionDAOTest extends ExecutionDAOTest {
     }
 
     @Test
+    public void testCreateTasksDoesNotOverwriteScheduledTaskOnDuplicateRefAndRetry() {
+        WorkflowModel workflow = createRunningWorkflow();
+        executionDAO.createWorkflow(workflow);
+
+        TaskModel originalTask = new TaskModel();
+        originalTask.setTaskDefName("task_type");
+        originalTask.setTaskType("task_type");
+        originalTask.setStatus(TaskModel.Status.SCHEDULED);
+        originalTask.setTaskId(UUID.randomUUID().toString());
+        originalTask.setWorkflowInstanceId(workflow.getWorkflowId());
+        originalTask.setReferenceTaskName("join_ref");
+        originalTask.setRetryCount(0);
+
+        TaskModel duplicateTask = new TaskModel();
+        duplicateTask.setTaskDefName("task_type");
+        duplicateTask.setTaskType("task_type");
+        duplicateTask.setStatus(TaskModel.Status.SCHEDULED);
+        duplicateTask.setTaskId(UUID.randomUUID().toString());
+        duplicateTask.setWorkflowInstanceId(workflow.getWorkflowId());
+        duplicateTask.setReferenceTaskName("join_ref");
+        duplicateTask.setRetryCount(0);
+
+        List<TaskModel> created = executionDAO.createTasks(List.of(originalTask));
+        assertEquals(1, created.size());
+
+        created = executionDAO.createTasks(List.of(duplicateTask));
+        assertTrue(created.isEmpty());
+
+        try (Jedis jedis = jedisPool.getResource()) {
+            String scheduledTaskId =
+                    jedis.hget("SCHEDULED_TASKS." + workflow.getWorkflowId(), "join_ref0");
+            assertEquals(originalTask.getTaskId(), scheduledTaskId);
+            assertFalse(jedis.exists("TASK." + duplicateTask.getTaskId()));
+            assertEquals(
+                    Collections.singleton(originalTask.getTaskId()),
+                    jedis.smembers("WORKFLOW_TO_TASKS." + workflow.getWorkflowId()));
+        }
+
+        List<TaskModel> retrievedTasks = executionDAO.getTasksForWorkflow(workflow.getWorkflowId());
+        assertEquals(1, retrievedTasks.size());
+        assertEquals(originalTask.getTaskId(), retrievedTasks.get(0).getTaskId());
+    }
+
+    @Test
     public void testPendingWorkflowCount() {
         String workflowName = "count_workflow_" + UUID.randomUUID();
         int workflowCount = 5;
