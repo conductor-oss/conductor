@@ -35,6 +35,9 @@ public class WorkflowDefSummary implements Comparable<WorkflowDefSummary> {
     @ProtoField(id = 3)
     private Long createTime;
 
+    @ProtoField(id = 4)
+    private Long updateTime;
+
     /**
      * @return the version
      */
@@ -54,6 +57,13 @@ public class WorkflowDefSummary implements Comparable<WorkflowDefSummary> {
      */
     public Long getCreateTime() {
         return createTime;
+    }
+
+    /**
+     * @return the updateTime
+     */
+    public Long getUpdateTime() {
+        return updateTime;
     }
 
     @Override
@@ -78,6 +88,10 @@ public class WorkflowDefSummary implements Comparable<WorkflowDefSummary> {
 
     public void setCreateTime(Long createTime) {
         this.createTime = createTime;
+    }
+
+    public void setUpdateTime(Long updateTime) {
+        this.updateTime = updateTime;
     }
 
     @Override
