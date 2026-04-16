@@ -1,4 +1,4 @@
-import { MAX_EXPAND_TASKS } from "components/flow/nodes/constants";
+import { MAX_EXPAND_TASKS } from "components/features/flow/nodes/constants";
 import _curry from "lodash/curry";
 import _findLast from "lodash/findLast";
 import _first from "lodash/first";

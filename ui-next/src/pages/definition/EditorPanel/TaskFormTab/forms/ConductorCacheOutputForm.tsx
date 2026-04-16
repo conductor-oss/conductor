@@ -1,5 +1,5 @@
 import { Box, FormControlLabel, Grid, Link, Switch } from "@mui/material";
-import ConductorInput from "components/v1/ConductorInput";
+import ConductorInput from "components/ui/inputs/ConductorInput";
 import { path as _path } from "lodash/fp";
 import { FunctionComponent, useState } from "react";
 import { updateField } from "utils/fieldHelpers";

@@ -796,7 +796,7 @@ public class WorkflowRerunTests {
 
         TaskDef simpleTaskDef = new TaskDef(simpleTaskName);
         simpleTaskDef.setRetryCount(0);
-        simpleTaskDef.setOwnerEmail("test@orkes.io");
+        simpleTaskDef.setOwnerEmail("test@conductor.io");
 
         WorkflowTask simpleTaskWt = new WorkflowTask();
         simpleTaskWt.setTaskReferenceName(simpleTaskName);
@@ -806,7 +806,7 @@ public class WorkflowRerunTests {
 
         WorkflowDef subWfDef = new WorkflowDef();
         subWfDef.setName(subWfName);
-        subWfDef.setOwnerEmail("test@orkes.io");
+        subWfDef.setOwnerEmail("test@conductor.io");
         subWfDef.setDescription("Sub workflow for rerun-fork test");
         subWfDef.setTimeoutSeconds(600);
         subWfDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
@@ -815,7 +815,7 @@ public class WorkflowRerunTests {
 
         TaskDef beforeTaskDef = new TaskDef(simpleTaskBefore);
         beforeTaskDef.setRetryCount(0);
-        beforeTaskDef.setOwnerEmail("test@orkes.io");
+        beforeTaskDef.setOwnerEmail("test@conductor.io");
 
         WorkflowTask beforeTask = new WorkflowTask();
         beforeTask.setTaskReferenceName(simpleTaskBefore);
@@ -857,7 +857,7 @@ public class WorkflowRerunTests {
 
         TaskDef afterTaskDef = new TaskDef(simpleTaskAfter);
         afterTaskDef.setRetryCount(0);
-        afterTaskDef.setOwnerEmail("test@orkes.io");
+        afterTaskDef.setOwnerEmail("test@conductor.io");
 
         WorkflowTask afterTask = new WorkflowTask();
         afterTask.setTaskReferenceName(simpleTaskAfter);
@@ -867,7 +867,7 @@ public class WorkflowRerunTests {
 
         WorkflowDef parentWfDef = new WorkflowDef();
         parentWfDef.setName(parentWfName);
-        parentWfDef.setOwnerEmail("test@orkes.io");
+        parentWfDef.setOwnerEmail("test@conductor.io");
         parentWfDef.setDescription("Test rerun from SUB_WORKFLOW inside FORK (#7097)");
         parentWfDef.setTimeoutSeconds(600);
         parentWfDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
@@ -1112,7 +1112,7 @@ public class WorkflowRerunTests {
 
         TaskDef simpleTaskDef = new TaskDef(simpleTaskName);
         simpleTaskDef.setRetryCount(0);
-        simpleTaskDef.setOwnerEmail("test@orkes.io");
+        simpleTaskDef.setOwnerEmail("test@conductor.io");
 
         WorkflowTask simpleTaskWt = new WorkflowTask();
         simpleTaskWt.setTaskReferenceName(simpleTaskName);
@@ -1122,7 +1122,7 @@ public class WorkflowRerunTests {
 
         WorkflowDef subWfDef = new WorkflowDef();
         subWfDef.setName(subWfName);
-        subWfDef.setOwnerEmail("test@orkes.io");
+        subWfDef.setOwnerEmail("test@conductor.io");
         subWfDef.setDescription("Sub workflow for sequential fork rerun test");
         subWfDef.setTimeoutSeconds(600);
         subWfDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
@@ -1131,7 +1131,7 @@ public class WorkflowRerunTests {
 
         TaskDef beforeTaskDef = new TaskDef(taskBeforeRef);
         beforeTaskDef.setRetryCount(0);
-        beforeTaskDef.setOwnerEmail("test@orkes.io");
+        beforeTaskDef.setOwnerEmail("test@conductor.io");
 
         WorkflowTask beforeTask = new WorkflowTask();
         beforeTask.setTaskReferenceName(taskBeforeRef);
@@ -1183,7 +1183,7 @@ public class WorkflowRerunTests {
 
         WorkflowDef parentWfDef = new WorkflowDef();
         parentWfDef.setName(parentWfName);
-        parentWfDef.setOwnerEmail("test@orkes.io");
+        parentWfDef.setOwnerEmail("test@conductor.io");
         parentWfDef.setDescription("Exact reproduction of ticket #7097");
         parentWfDef.setTimeoutSeconds(600);
         parentWfDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
@@ -1408,7 +1408,7 @@ public class WorkflowRerunTests {
 
         TaskDef simpleTaskDef = new TaskDef(simpleTaskName);
         simpleTaskDef.setRetryCount(0);
-        simpleTaskDef.setOwnerEmail("test@orkes.io");
+        simpleTaskDef.setOwnerEmail("test@conductor.io");
 
         WorkflowTask simpleTaskWt = new WorkflowTask();
         simpleTaskWt.setTaskReferenceName(simpleTaskName);
@@ -1418,7 +1418,7 @@ public class WorkflowRerunTests {
 
         WorkflowDef subWfDef = new WorkflowDef();
         subWfDef.setName(subWfName);
-        subWfDef.setOwnerEmail("test@orkes.io");
+        subWfDef.setOwnerEmail("test@conductor.io");
         subWfDef.setDescription("Sub workflow for inner task rerun test");
         subWfDef.setTimeoutSeconds(600);
         subWfDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
@@ -1427,7 +1427,7 @@ public class WorkflowRerunTests {
 
         TaskDef beforeTaskDef = new TaskDef(simpleTaskBefore);
         beforeTaskDef.setRetryCount(0);
-        beforeTaskDef.setOwnerEmail("test@orkes.io");
+        beforeTaskDef.setOwnerEmail("test@conductor.io");
 
         WorkflowTask beforeTask = new WorkflowTask();
         beforeTask.setTaskReferenceName(simpleTaskBefore);
@@ -1467,7 +1467,7 @@ public class WorkflowRerunTests {
 
         TaskDef afterTaskDef = new TaskDef(simpleTaskAfter);
         afterTaskDef.setRetryCount(0);
-        afterTaskDef.setOwnerEmail("test@orkes.io");
+        afterTaskDef.setOwnerEmail("test@conductor.io");
         WorkflowTask afterTask = new WorkflowTask();
         afterTask.setTaskReferenceName(simpleTaskAfter);
         afterTask.setName(simpleTaskAfter);
@@ -1476,7 +1476,7 @@ public class WorkflowRerunTests {
 
         WorkflowDef parentWfDef = new WorkflowDef();
         parentWfDef.setName(parentWfName);
-        parentWfDef.setOwnerEmail("test@orkes.io");
+        parentWfDef.setOwnerEmail("test@conductor.io");
         parentWfDef.setDescription("Test rerun from inner task of SUB_WORKFLOW in FORK");
         parentWfDef.setTimeoutSeconds(600);
         parentWfDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
@@ -2255,7 +2255,7 @@ public class WorkflowRerunTests {
         workflowDef.setTimeoutSeconds(600);
         workflowDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
         workflowDef.setTasks(Arrays.asList(fork_workflow_task, join));
-        workflowDef.setOwnerEmail("test@orkes.io");
+        workflowDef.setOwnerEmail("test@conductor.io");
         metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
     }
 
@@ -2309,7 +2309,7 @@ public class WorkflowRerunTests {
         workflowDef.setTimeoutSeconds(600);
         workflowDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
         workflowDef.setTasks(Arrays.asList(fork_workflow_task, join, loopTask));
-        workflowDef.setOwnerEmail("test@orkes.io");
+        workflowDef.setOwnerEmail("test@conductor.io");
         metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
     }
 
@@ -2333,7 +2333,7 @@ public class WorkflowRerunTests {
         workflowDef.setTimeoutSeconds(600);
         workflowDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
         workflowDef.setTasks(List.of(waitTask0, waitTask1));
-        workflowDef.setOwnerEmail("test@orkes.io");
+        workflowDef.setOwnerEmail("test@conductor.io");
 
         metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
         return workflowDef;
@@ -2361,7 +2361,7 @@ public class WorkflowRerunTests {
         workflowDef.setTimeoutSeconds(600);
         workflowDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
         workflowDef.setTasks(List.of(doWhileTask));
-        workflowDef.setOwnerEmail("test@orkes.io");
+        workflowDef.setOwnerEmail("test@conductor.io");
         workflowDef.setInputParameters(List.of("maxIterations"));
 
         metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
@@ -2402,7 +2402,7 @@ public class WorkflowRerunTests {
         workflowDef.setTimeoutSeconds(600);
         workflowDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
         workflowDef.setTasks(List.of(switchTask));
-        workflowDef.setOwnerEmail("test@orkes.io");
+        workflowDef.setOwnerEmail("test@conductor.io");
         workflowDef.setInputParameters(List.of("switchValue"));
 
         metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
@@ -2476,7 +2476,7 @@ public class WorkflowRerunTests {
         workflowDef.setTimeoutSeconds(600);
         workflowDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
         workflowDef.setTasks(List.of(forkTask, joinTask));
-        workflowDef.setOwnerEmail("test@orkes.io");
+        workflowDef.setOwnerEmail("test@conductor.io");
 
         metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
     }

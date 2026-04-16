@@ -13,6 +13,7 @@
 package com.netflix.conductor.redis.dao;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
@@ -119,7 +120,9 @@ public class RedisRateLimitingDAO extends BaseDynoDAO implements RateLimitingDAO
                                     currentTimeEpochMillis));
             if (currentBucketCount < rateLimitPerFrequency) {
                 jedisProxy.zadd(
-                        key, currentTimeEpochMillis, String.valueOf(currentTimeEpochMillis));
+                        key,
+                        currentTimeEpochMillis,
+                        currentTimeEpochMillis + ":" + UUID.randomUUID());
                 jedisProxy.expire(key, rateLimitFrequencyInSeconds);
                 LOGGER.info(
                         "TaskId: {} with TaskDefinition of: {} has rateLimitPerFrequency: {} and rateLimitFrequencyInSeconds: {} within the rate limit with current count {}",

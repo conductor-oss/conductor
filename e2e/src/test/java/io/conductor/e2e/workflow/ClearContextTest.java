@@ -44,7 +44,7 @@ public class ClearContextTest {
         // Step 1: Register a test task definition
         String taskName = "clear_context_test_task";
         TaskDef taskDef = new TaskDef(taskName);
-        taskDef.setOwnerEmail("test@orkes.io");
+        taskDef.setOwnerEmail("test@conductor.io");
         metadataClient.registerTaskDefs(java.util.Collections.singletonList(taskDef));
 
         // Step 2: Register a workflow definition using this task
@@ -58,7 +58,7 @@ public class ClearContextTest {
         workflowTask.setTaskDefinition(taskDef);
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName(workflowName);
-        workflowDef.setOwnerEmail("test@orkes.io");
+        workflowDef.setOwnerEmail("test@conductor.io");
         workflowDef.setVersion(1);
         workflowDef.setTasks(java.util.Collections.singletonList(workflowTask));
         metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));

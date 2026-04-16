@@ -14,5 +14,6 @@
   "rateLimitPerFrequency": 0,
   "rateLimitFrequencyInSeconds": 1,
   "pollTimeoutSeconds": 3600,
-  "backoffScaleFactor": 1
+  "backoffScaleFactor": 1,
+  "ownerEmail": "test@conductor.io"
 }

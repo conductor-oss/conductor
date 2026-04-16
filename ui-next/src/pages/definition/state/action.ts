@@ -1,4 +1,4 @@
-import { FlowActionTypes, FlowEvents } from "components/flow/state";
+import { FlowActionTypes, FlowEvents } from "components/features/flow/state";
 import _first from "lodash/first";
 import _has from "lodash/has";
 import _isNil from "lodash/isNil";
@@ -58,7 +58,7 @@ import {
 } from "./types";
 
 import { JsonSchema } from "@jsonforms/core";
-import { crumbsToTask } from "components/flow/nodes";
+import { crumbsToTask } from "components/features/flow/nodes";
 import _isEmpty from "lodash/isEmpty";
 import { CommonTaskDef } from "types/TaskType";
 import { ImportSummary } from "utils/cloudTemplates";

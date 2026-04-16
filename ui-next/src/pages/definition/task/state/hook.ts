@@ -3,7 +3,7 @@ import fastDeepEqual from "fast-deep-equal";
 import { useContext } from "react";
 import { ActorRef } from "xstate";
 
-import { MessageContext } from "components/v1/layout/MessageContext";
+import { MessageContext } from "components/providers/messageContext";
 import {
   TaskDefinitionMachineEvent,
   TaskDefinitionMachineEventType,

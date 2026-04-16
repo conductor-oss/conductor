@@ -30,6 +30,7 @@ dependencies {
 
     testImplementation project(':conductor-test-util').sourceSets.test.output
     testImplementation project(':conductor-common-persistence').sourceSets.test.output
+    testImplementation "org.awaitility:awaitility:${revAwaitility}"
 }
 
 test {

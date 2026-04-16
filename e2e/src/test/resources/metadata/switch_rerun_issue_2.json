@@ -1,5 +1,6 @@
 {
   "name": "switch_rerun_issue_2",
+  "ownerEmail": "test@conductor.io",
   "description": "Tests rerun with nested SWITCH inside DO_WHILE loop",
   "version": 1,
   "schemaVersion": 2,

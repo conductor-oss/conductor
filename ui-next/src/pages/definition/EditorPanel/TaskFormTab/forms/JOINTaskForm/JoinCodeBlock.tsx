@@ -4,7 +4,7 @@ import { Theme } from "@mui/material/styles";
 import { SxProps } from "@mui/system";
 import _keys from "lodash/keys";
 
-import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
 import {
   invalidDollarVariables,
   undeclaredInputParameters,

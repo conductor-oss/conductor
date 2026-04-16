@@ -1,7 +1,7 @@
 import { Box, Tooltip } from "@mui/material";
 import { List } from "@phosphor-icons/react";
 
-import { useAuth } from "shared/auth";
+import { useAuth } from "components/features/auth";
 import { FEATURES, featureFlags } from "utils";
 
 import { IconButton, NavLink } from "components";

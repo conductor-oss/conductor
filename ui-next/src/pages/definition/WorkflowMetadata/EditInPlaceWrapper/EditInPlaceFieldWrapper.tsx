@@ -1,7 +1,9 @@
 import { ActorRef } from "xstate";
 import { CSSProperties, useRef } from "react";
 import { useActor, useSelector } from "@xstate/react";
-import EditInPlace, { EditInPlaceProps } from "components/EditInPlace";
+import EditInPlace, {
+  EditInPlaceProps,
+} from "components/ui/inputs/EditInPlace";
 import { InputBase } from "@mui/material";
 import { EditInPlaceEventTypes, EditInPlaceMachineEvents } from "./state";
 import { FunctionComponent } from "react";

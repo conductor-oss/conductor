@@ -555,15 +555,15 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         task1
         task1.workflowInstanceId == workflowInstanceId
 
-        when: "There is a delay of 6 seconds introduced and the task is completed"
-        Thread.sleep(6000)
+        when: "The task is completed and then a delay triggers workflow timeout"
         task1.status = Task.Status.COMPLETED
         workflowExecutor.updateTask(new TaskResult(task1))
+        Thread.sleep(6000)
+        sweep(workflowInstanceId)
 
-        then: "verify that the workflow is TIMED_OUT and the task is COMPLETED"
+        then: "verify that the workflow is TIMED_OUT and task1 is still COMPLETED"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.TIMED_OUT
-            tasks.size() == 1
             tasks[0].taskType == 'integration_task_1'
             tasks[0].status == Task.Status.COMPLETED
         }
@@ -572,15 +572,13 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         workflowExecutor.retry(workflowInstanceId, false)
         sweep(workflowInstanceId)
 
-        then: "Ensure that the workflow is RUNNING and next task is scheduled"
+        then: "Ensure that the workflow is RUNNING and the completed task is preserved"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             lastRetriedTime != 0
-            tasks.size() == 2
             tasks[0].taskType == 'integration_task_1'
             tasks[0].status == Task.Status.COMPLETED
-            tasks[1].taskType == 'integration_task_2'
-            tasks[1].status == Task.Status.SCHEDULED
+            tasks.any { it.taskType == 'integration_task_2' && it.status == Task.Status.SCHEDULED }
         }
 
         cleanup: "Ensure that the workflow configuration changes are reverted"

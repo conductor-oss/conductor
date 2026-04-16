@@ -79,6 +79,10 @@
         },
         "archived": {
           "type": "boolean"
+        },
+        "parentWorkflowId": {
+          "type": "keyword",
+          "index": true
         }
       }
     }

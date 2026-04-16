@@ -76,7 +76,7 @@ public class WorkflowInputTests {
     private void registerWorkflowDef(
             String workflowName, String taskName, MetadataClient metadataClient1) {
         TaskDef taskDef = new TaskDef(taskName);
-        taskDef.setOwnerEmail("test@orkes.io");
+        taskDef.setOwnerEmail("test@conductor.io");
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setTaskReferenceName(taskName);
         workflowTask.setName(taskName);
@@ -85,7 +85,7 @@ public class WorkflowInputTests {
         workflowTask.setInputParameters(Map.of("value", "${workflow.input.value}", "order", "123"));
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName(workflowName);
-        workflowDef.setOwnerEmail("test@orkes.io");
+        workflowDef.setOwnerEmail("test@conductor.io");
         workflowDef.setInputParameters(Arrays.asList("value", "inlineValue"));
         workflowDef.setDescription("Workflow to monitor order state");
         workflowDef.setTasks(Arrays.asList(workflowTask));

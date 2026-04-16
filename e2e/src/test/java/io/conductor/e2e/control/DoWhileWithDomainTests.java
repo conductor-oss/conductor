@@ -110,10 +110,10 @@ public class DoWhileWithDomainTests {
 
     private void registerInlineWorkflowDef(String workflowName, MetadataClient metadataClient1) {
         TaskDef taskDef = new TaskDef("dt1");
-        taskDef.setOwnerEmail("test@orkes.io");
+        taskDef.setOwnerEmail("test@conductor.io");
 
         TaskDef taskDef2 = new TaskDef("dt2");
-        taskDef2.setOwnerEmail("test@orkes.io");
+        taskDef2.setOwnerEmail("test@conductor.io");
 
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setTaskReferenceName("dt2");
@@ -147,7 +147,7 @@ public class DoWhileWithDomainTests {
 
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName(workflowName);
-        workflowDef.setOwnerEmail("test@orkes.io");
+        workflowDef.setOwnerEmail("test@conductor.io");
         workflowDef.setTimeoutSeconds(600);
         workflowDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
         workflowDef.setInputParameters(Arrays.asList("value", "inlineValue"));

@@ -265,16 +265,16 @@ public class SubWorkflowVersionTests {
 
     private void registerWorkflowDef(String workflowName, MetadataClient metadataClient1) {
         TaskDef taskDef = new TaskDef("dt1");
-        taskDef.setOwnerEmail("test@orkes.io");
+        taskDef.setOwnerEmail("test@conductor.io");
 
         TaskDef taskDef4 = new TaskDef("integration_task_2");
-        taskDef4.setOwnerEmail("test@orkes.io");
+        taskDef4.setOwnerEmail("test@conductor.io");
 
         TaskDef taskDef3 = new TaskDef("integration_task_3");
-        taskDef3.setOwnerEmail("test@orkes.io");
+        taskDef3.setOwnerEmail("test@conductor.io");
 
         TaskDef taskDef2 = new TaskDef("dt2");
-        taskDef2.setOwnerEmail("test@orkes.io");
+        taskDef2.setOwnerEmail("test@conductor.io");
 
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setTaskReferenceName("dt2");
@@ -309,7 +309,7 @@ public class SubWorkflowVersionTests {
 
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName(workflowName);
-        workflowDef.setOwnerEmail("test@orkes.io");
+        workflowDef.setOwnerEmail("test@conductor.io");
         workflowDef.setInputParameters(Arrays.asList("value", "inlineValue"));
         workflowDef.setDescription("Workflow to test retry");
         workflowDef.setTasks(Arrays.asList(inline, dynamicFork, join));
@@ -323,7 +323,7 @@ public class SubWorkflowVersionTests {
     public static void registerSubWorkflow(
             String subWorkflowName, String taskName, MetadataClient metadataClient) {
         TaskDef taskDef = new TaskDef(taskName);
-        taskDef.setOwnerEmail("test@orkes.io");
+        taskDef.setOwnerEmail("test@conductor.io");
         taskDef.setRetryCount(0);
 
         WorkflowTask inline = new WorkflowTask();
@@ -335,7 +335,7 @@ public class SubWorkflowVersionTests {
 
         WorkflowDef subworkflowDef = new WorkflowDef();
         subworkflowDef.setName(subWorkflowName);
-        subworkflowDef.setOwnerEmail("test@orkes.io");
+        subworkflowDef.setOwnerEmail("test@conductor.io");
         subworkflowDef.setInputParameters(Arrays.asList("value", "inlineValue"));
         subworkflowDef.setDescription("Sub Workflow to test retry");
         subworkflowDef.setTasks(Arrays.asList(inline));

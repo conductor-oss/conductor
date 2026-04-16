@@ -237,7 +237,7 @@ public class WorkflowRestartTests {
 
         TaskDef task = new TaskDef();
         task.setName("added");
-        task.setOwnerEmail("test@orkes.io");
+        task.setOwnerEmail("test@conductor.io");
         metadataClient.registerTaskDefs(Arrays.asList(task));
         workflowDef.getTasks().add(workflowTask);
         metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));

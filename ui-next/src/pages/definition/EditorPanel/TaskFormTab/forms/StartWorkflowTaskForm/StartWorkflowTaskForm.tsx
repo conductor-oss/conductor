@@ -1,8 +1,8 @@
 import { Box, CircularProgress, Grid } from "@mui/material";
 import { useInterpret } from "@xstate/react";
-import Button from "components/MuiButton";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
-import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+import Button from "components/ui/buttons/MuiButton";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import _path from "lodash/fp/path";
 import _isEmpty from "lodash/isEmpty";
 import _isNil from "lodash/isNil";

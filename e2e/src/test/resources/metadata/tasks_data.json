@@ -1,7 +1,7 @@
 [
   {
     "createTime": 1680695746698,
-    "createdBy": "test@orkes.io",
+    "createdBy": "test@conductor.io",
     "name": "rate-limit-task-by-correlationId",
     "retryCount": 0,
     "timeoutSeconds": 0,
@@ -14,12 +14,12 @@
     "inputTemplate": {},
     "rateLimitPerFrequency": 1,
     "rateLimitFrequencyInSeconds": 10,
-    "ownerEmail": "test@orkes.io",
+    "ownerEmail": "test@conductor.io",
     "backoffScaleFactor": 1
   },
   {
     "createTime": 1680695772911,
-    "createdBy": "test@orkes.io",
+    "createdBy": "test@conductor.io",
     "name": "task-concurrency-limit-test",
     "retryCount": 0,
     "timeoutSeconds": 0,
@@ -33,12 +33,12 @@
     "inputTemplate": {},
     "rateLimitPerFrequency": 0,
     "rateLimitFrequencyInSeconds": 1,
-    "ownerEmail": "test@orkes.io",
+    "ownerEmail": "test@conductor.io",
     "backoffScaleFactor": 1
   },
   {
     "createTime": 1680695983031,
-    "createdBy": "test@orkes.io",
+    "createdBy": "test@conductor.io",
     "name": "rate-limited-task",
     "retryCount": 0,
     "timeoutSeconds": 0,
@@ -51,7 +51,7 @@
     "inputTemplate": {},
     "rateLimitPerFrequency": 1,
     "rateLimitFrequencyInSeconds": 10,
-    "ownerEmail": "test@orkes.io",
+    "ownerEmail": "test@conductor.io",
     "backoffScaleFactor": 1
   }
 ]

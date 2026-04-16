@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { SupportedDisplayTypes } from "./types";
 import _prop from "lodash/property";
-import { getAccessToken } from "shared/auth/tokenManagerJotai";
+import { getAccessToken } from "components/features/auth/tokenManagerJotai";
 
 export type toCodeT<T> = Partial<
   Record<SupportedDisplayTypes, (args: T, accessToken: string) => string>

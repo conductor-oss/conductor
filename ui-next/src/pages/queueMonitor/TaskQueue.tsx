@@ -1,10 +1,10 @@
 import { Box, Button } from "@mui/material";
 import { useSelector } from "@xstate/react";
-import Paper from "components/Paper";
+import Paper from "components/ui/Paper";
 import { Helmet } from "react-helmet";
 import { useNavigate } from "react-router";
-import SectionContainer from "shared/SectionContainer";
-import SectionHeader from "shared/SectionHeader";
+import SectionContainer from "components/ui/layout/SectionContainer";
+import SectionHeader from "components/layout/SectionHeader";
 import { PollDataTable } from "./PollDataTable";
 import { PollWorkerDetailsDataTable } from "./PollWorkerDetails";
 import { QueueMonitorContextProvider, useQueueMachine } from "./state";

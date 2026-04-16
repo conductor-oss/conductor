@@ -1,6 +1,6 @@
 import CssBaseline from "@mui/material/CssBaseline";
 import { inspect } from "@xstate/inspect";
-import { MessageProvider } from "components/v1/layout/MessageContext";
+import { MessageProvider } from "components/providers/messageContext";
 import "highlight.js/styles/agate.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";

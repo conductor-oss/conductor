@@ -1,11 +1,11 @@
 import { Grid } from "@mui/material";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
-import Dropdown from "components/Dropdown";
-import MuiButton from "components/MuiButton";
-import MuiCheckbox from "components/MuiCheckbox";
-import MuiTypography from "components/MuiTypography";
-import { RoundedInput } from "components/v1/RoundedInput";
+import Dropdown from "components/ui/inputs/Dropdown";
+import MuiButton from "components/ui/buttons/MuiButton";
+import MuiCheckbox from "components/ui/MuiCheckbox";
+import MuiTypography from "components/ui/MuiTypography";
+import { RoundedInput } from "components/ui/inputs/RoundedInput";
 import { identity as _identity } from "lodash/fp";
 import { FunctionComponent, useState } from "react";
 import { FEATURES, featureFlags, tryToJson } from "utils";

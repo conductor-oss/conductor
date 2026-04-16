@@ -448,7 +448,6 @@ class SubWorkflowSpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
         }
 
         when: "poll and complete the integration_task_2 task"

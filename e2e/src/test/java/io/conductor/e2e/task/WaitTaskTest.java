@@ -57,6 +57,7 @@ public class WaitTaskTest {
         ConductorWorkflow<Map<String, Object>> workflow = new ConductorWorkflow<>(executor);
         workflow.setName("wait_task_test");
         workflow.setVersion(1);
+        workflow.setOwnerEmail("test@conductor.io");
         workflow.setVariables(new HashMap<>());
         workflow.add(new Wait("wait_for_2_second", Duration.of(2, SECONDS)));
         CompletableFuture<Workflow> future = workflow.executeDynamic(new HashMap<>());
@@ -84,6 +85,7 @@ public class WaitTaskTest {
         var workflowDef = new WorkflowDef();
         workflowDef.setName("wait_task__with_domain");
         workflowDef.setVersion(1);
+        workflowDef.setOwnerEmail("test@conductor.io");
 
         var waitTask = new WorkflowTask();
         waitTask.setType("WAIT");
@@ -122,6 +124,7 @@ public class WaitTaskTest {
         var workflowDef = new WorkflowDef();
         workflowDef.setName("set_variable_wait_workflow");
         workflowDef.setVersion(1);
+        workflowDef.setOwnerEmail("test@conductor.io");
 
         // SET_VARIABLE task
         var setVarTask = new WorkflowTask();

@@ -109,10 +109,10 @@ public class SubWorkflowInlineTests {
 
     private void registerInlineWorkflowDef(String workflowName, MetadataClient metadataClient1) {
         TaskDef taskDef = new TaskDef("dt1");
-        taskDef.setOwnerEmail("test@orkes.io");
+        taskDef.setOwnerEmail("test@conductor.io");
 
         TaskDef taskDef2 = new TaskDef("dt2");
-        taskDef2.setOwnerEmail("test@orkes.io");
+        taskDef2.setOwnerEmail("test@conductor.io");
 
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setTaskReferenceName("dt2");
@@ -148,7 +148,7 @@ public class SubWorkflowInlineTests {
         workflowDef.setName(workflowName);
         workflowDef.setTimeoutSeconds(600);
         workflowDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
-        workflowDef.setOwnerEmail("test@orkes.io");
+        workflowDef.setOwnerEmail("test@conductor.io");
         workflowDef.setInputParameters(Arrays.asList("value", "inlineValue"));
         workflowDef.setDescription("Workflow to test inline sub_workflow definition");
         workflowDef.setTasks(Arrays.asList(workflowTask, inlineSubworkflow));

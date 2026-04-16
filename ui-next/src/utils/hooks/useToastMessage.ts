@@ -1,4 +1,4 @@
-import { MessageContext } from "components/v1/layout/MessageContext";
+import { MessageContext } from "components/providers/messageContext";
 import { useCallback, useContext } from "react";
 import { PopoverMessage } from "types/Messages";
 
