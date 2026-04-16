@@ -82,8 +82,12 @@ allprojects {
                     details.useVersion revMicrometer
                 }
                 // Force Netty codec specifically for Micrometer transitive dependencies
-                if (details.requested.group == 'io.netty' && details.requested.name == 'netty-codec') {
+                if (details.requested.group == 'io.netty') {
                     details.useVersion revNetty
+                }
+                // Keep grpc artifacts aligned (including grpc-netty-shaded) to avoid vulnerable transitive mixes.
+                if (details.requested.group == 'io.grpc') {
+                    details.useVersion revGrpc
                 }
             }
         }
