@@ -6,21 +6,23 @@ import {
   Tag as TagIcon,
 } from "@phosphor-icons/react";
 import { Button, DataTable, IconButton, NavLink, Paper } from "components";
-import { ColumnCustomType } from "components/DataTable/types";
-import ConfirmChoiceDialog from "components/ConfirmChoiceDialog";
-import Header from "components/Header";
-import NoDataComponent from "components/NoDataComponent";
-import { SnackbarMessage } from "components/SnackbarMessage";
-import TagChip from "components/TagChip";
-import AddTagDialog, { TagDialogProps } from "components/tags/AddTagDialog";
-import AddIcon from "components/v1/icons/AddIcon";
-import { MessageContext } from "components/v1/layout/MessageContext";
+import { ColumnCustomType } from "components/ui/DataTable/types";
+import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
+import Header from "components/ui/Header";
+import NoDataComponent from "components/ui/NoDataComponent";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
+import TagChip from "components/ui/TagChip";
+import AddTagDialog, {
+  TagDialogProps,
+} from "components/features/tags/AddTagDialog";
+import AddIcon from "components/icons/AddIcon";
+import { MessageContext } from "components/providers/messageContext";
 import { useCallback, useContext, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
-import { useAuth } from "shared/auth";
-import SectionContainer from "shared/SectionContainer";
-import SectionHeader from "shared/SectionHeader";
-import SectionHeaderActions from "shared/SectionHeaderActions";
+import { useAuth } from "components/features/auth";
+import SectionContainer from "components/ui/layout/SectionContainer";
+import SectionHeader from "components/layout/SectionHeader";
+import SectionHeaderActions from "components/ui/layout/SectionHeaderActions";
 import { colors } from "theme/tokens/variables";
 import { TaskDto } from "types";
 import { PopoverMessage } from "types/Messages";
@@ -35,7 +37,7 @@ import { useAction, useActionWithPath, useFetch } from "utils/query";
 import { getSequentiallySuffix } from "utils/strings";
 import { createSearchableTags } from "utils/utils";
 import CloneDialog from "./dialog/CloneDialog";
-import TagList from "components/v1/TagList";
+import TagList from "components/ui/TagList";
 
 const INTRO_CONTENT = `A **task definition** defines the task's default parameters, such as input/output schemas, timeouts, and retries. 
 This provides reusability and modularity across workflows.

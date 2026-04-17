@@ -1,11 +1,11 @@
 import { Box, Grid } from "@mui/material";
 import { path as _path } from "lodash/fp";
 
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 import {
   ConductorFlatMapForm,
   ConductorFlatMapFormBase,
-} from "components/v1/FlatMapForm/ConductorFlatMapForm";
+} from "components/FlatMapForm/ConductorFlatMapForm";
 import { TaskType } from "types";
 import { ConductorCacheOutput } from "./ConductorCacheOutputForm";
 import { ConductorValueInput } from "./ConductorValueInput";

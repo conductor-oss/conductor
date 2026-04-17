@@ -1,4 +1,4 @@
-import { NodeTaskData } from "components/flow/nodes/mapper";
+import { NodeTaskData } from "components/features/flow/nodes/mapper";
 import { NodeData } from "reaflow";
 import { TaskDef, WorkflowDef, Crumb, CrumbMap, AuthHeaders } from "types";
 import { ImportSummary } from "utils/cloudTemplates";

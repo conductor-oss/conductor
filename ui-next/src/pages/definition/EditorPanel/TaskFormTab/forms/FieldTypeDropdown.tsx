@@ -9,7 +9,7 @@ import {
   FieldType,
 } from "types/common";
 import { inferType } from "utils";
-import ConductorSelect from "components/v1/ConductorSelect";
+import ConductorSelect from "components/ui/inputs/ConductorSelect";
 
 const fieldTypeOption: FieldType[] = [
   FIELD_TYPE_STRING,

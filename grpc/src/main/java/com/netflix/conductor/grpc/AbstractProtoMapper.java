@@ -1610,6 +1610,9 @@ public abstract class AbstractProtoMapper {
         if (from.getIdempotencyKey() != null) {
             to.setIdempotencyKey( from.getIdempotencyKey() );
         }
+        if (from.getParentWorkflowId() != null) {
+            to.setParentWorkflowId( from.getParentWorkflowId() );
+        }
         return to.build();
     }
 
@@ -1636,6 +1639,7 @@ public abstract class AbstractProtoMapper {
         to.setCreatedBy( from.getCreatedBy() );
         to.setTaskToDomain( from.getTaskToDomainMap() );
         to.setIdempotencyKey( from.getIdempotencyKey() );
+        to.setParentWorkflowId( from.getParentWorkflowId() );
         return to;
     }
 

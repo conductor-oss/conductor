@@ -1,9 +1,9 @@
 import { Box, Link } from "@mui/material";
 import { WarningIcon } from "@phosphor-icons/react";
 import { useActor, useSelector } from "@xstate/react";
-import ConductorTooltip from "components/conductorTooltip/ConductorTooltip";
-import theme from "components/flow/theme";
-import DocsIcon from "components/v1/icons/DocsIcon";
+import ConductorTooltip from "components/ui/ConductorTooltip";
+import theme from "components/features/flow/theme";
+import DocsIcon from "components/icons/DocsIcon";
 import {
   BusinessRuleForm,
   DoWhileForm,
@@ -44,7 +44,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { useAuth } from "shared/auth";
+import { useAuth } from "components/features/auth";
 import { colors } from "theme/tokens/variables";
 import { FormTaskType, TaskDef, TaskType } from "types";
 import { updateField } from "utils/fieldHelpers";
@@ -342,6 +342,8 @@ const TaskFormContent: FunctionComponent = () => {
     });
   };
 
+  const taskTypeLabel = taskType === TaskType.MCP ? "CONNECTED APP" : taskType;
+
   return (
     <Box
       ref={panelRef}
@@ -377,7 +379,7 @@ const TaskFormContent: FunctionComponent = () => {
                 color: "black",
               }}
             >
-              {taskType}
+              {taskTypeLabel}
             </Box>
             {taskType === TaskType.DECISION && (
               <Box
@@ -473,7 +475,8 @@ const TaskFormContent: FunctionComponent = () => {
                       color: colors.blueLightMode,
                     }}
                   >
-                    {taskType} Docs
+                    {taskTypeLabel}
+                    {" Docs"}
                   </div>
                 </Link>
               )}

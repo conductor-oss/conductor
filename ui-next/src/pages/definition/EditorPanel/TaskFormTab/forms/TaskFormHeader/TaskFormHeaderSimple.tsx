@@ -4,7 +4,7 @@ import { FunctionComponent } from "react";
 import { ActorRef } from "xstate";
 
 import { Button } from "components";
-import ConductorInput from "components/v1/ConductorInput";
+import ConductorInput from "components/ui/inputs/ConductorInput";
 import SimpleTaskNameInput from "../SimpleTaskNameInput";
 import {
   TaskFormHeaderEventTypes,

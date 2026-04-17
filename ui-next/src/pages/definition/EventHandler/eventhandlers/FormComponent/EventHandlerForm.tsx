@@ -14,10 +14,10 @@ import { ChangeEvent, Fragment } from "react";
 import { ActorRef } from "xstate";
 
 import { Button } from "components";
-import { ConductorAutoComplete } from "components/v1";
-import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
-import ConductorInput from "components/v1/ConductorInput";
-import ConductorSelect from "components/v1/ConductorSelect";
+import { ConductorAutoComplete } from "components/ui/inputs";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import ConductorSelect from "components/ui/inputs/ConductorSelect";
 import { colors } from "theme/tokens/variables";
 import { useEventNameSuggestions } from "utils/hooks/useEventNameSuggestions";
 import { CompleteTask } from "./ActionForms/CompleteTask";

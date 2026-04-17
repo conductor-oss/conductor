@@ -44,7 +44,7 @@ export const mockPageComponents = () => {
   }));
 
   // Mock core components
-  vi.mock("components/auth/AuthGuard", () => ({
+  vi.mock("components/features/auth/AuthGuard", () => ({
     default: ({ children, runWorkflow }: any) => (
       <div data-testid="auth-guard" data-run-workflow={runWorkflow}>
         {children}
@@ -57,7 +57,7 @@ export const mockPageComponents = () => {
   }));
 
   // Mock auth components
-  vi.mock("shared/auth/oidc/OidcRedirectEndpoint", () => ({
+  vi.mock("components/features/auth/oidc/OidcRedirectEndpoint", () => ({
     OidcRedirectEndpoint: () => (
       <div data-testid="oidc-redirect-endpoint">OidcRedirectEndpoint</div>
     ),

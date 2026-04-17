@@ -8,7 +8,7 @@ description: "Frequently asked questions about Conductor — open source workflo
 
 ### Is Conductor open source?
 
-Yes. Conductor is a fully open source workflow engine, released under the Apache 2.0 license. You can self-host it on your own infrastructure — there is no vendor lock-in, no proprietary runtime, and no cloud dependency. The self-hosted workflow engine supports 8+ persistence backends, 6 message brokers, and runs anywhere Docker or a JVM runs.
+Yes. Conductor is a fully open source workflow engine, released under the Apache 2.0 license. You can self-host it on your own infrastructure — there is no vendor lock-in, no proprietary runtime, and no cloud dependency. The self-hosted workflow engine supports 5 persistence backends, 6 message brokers, and runs anywhere Docker or a JVM runs.
 
 ### Is this the same as Netflix Conductor?
 
@@ -62,7 +62,7 @@ Conductor is fully open source (Apache 2.0) with no proprietary server component
 
 ### How is Conductor different from AWS Step Functions?
 
-Step Functions is a proprietary, cloud-locked service. Conductor is an open source, self-hosted workflow engine you can run on any infrastructure. Conductor supports 7+ language SDKs, 8+ persistence backends, and provides native AI agent orchestration — none of which Step Functions offers. If you need an open source Step Functions alternative with no cloud lock-in, Conductor is a strong fit.
+Step Functions is a proprietary, cloud-locked service. Conductor is an open source, self-hosted workflow engine you can run on any infrastructure. Conductor supports 7+ language SDKs, 5 persistence backends, and provides native AI agent orchestration — none of which Step Functions offers. If you need an open source Step Functions alternative with no cloud lock-in, Conductor is a strong fit.
 
 ### How is Conductor different from Airflow?
 
@@ -110,7 +110,7 @@ Yes. The HUMAN task type pauses workflow execution until an external signal (app
 
 ## What persistence backends are supported?
 
-Redis+Dynomite, PostgreSQL, MySQL, Cassandra, SQLite, Elasticsearch, and OpenSearch. Choose based on your scale and operational requirements.
+Redis, PostgreSQL, MySQL, Cassandra, and SQLite. Choose based on your scale and operational requirements.
 
 ## What message brokers are supported?
 

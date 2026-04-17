@@ -130,44 +130,48 @@ export function useSaveWorkflow(callbacks) {
   );
 }
 
+function useWorkflowNamesAndVersionsQuery() {
+  return useFetch(
+    ["workflowNamesAndVersions"],
+    "/metadata/workflow/names-and-versions",
+    {
+      staleTime: STALE_TIME_WORKFLOW_DEFS,
+    }
+  );
+}
+
 export function useWorkflowNames() {
-  const { data } = useWorkflowDefs();
-  // Extract unique names
+  const { data } = useWorkflowNamesAndVersionsQuery();
+
   return useMemo(() => {
-    if (data) {
-      const nameSet = new Set(data.map((def) => def.name));
-      return Array.from(nameSet);
-    } else {
+    if (!data) {
       return [];
     }
+
+    return Object.keys(data);
   }, [data]);
 }
 
 // Version numbers do not necessarily start, or run contiguously from 1. Could be arbitrary integers e.g. 52335678.
 // By convention they should be monotonic (ever increasing) wrt time.
 export function useWorkflowNamesAndVersions() {
-  const { data, ...rest } = useWorkflowDefs();
+  const { data, ...rest } = useWorkflowNamesAndVersionsQuery();
 
   const newData = useMemo(() => {
     const retval = new Map();
     if (data) {
-      for (let def of data) {
-        let arr;
-        if (!retval.has(def.name)) {
-          arr = [];
-          retval.set(def.name, arr);
-        } else {
-          arr = retval.get(def.name);
-        }
-        arr.push({
-          version: def.version,
-          createTime: def.createTime,
-          updateTime: def.updateTime,
-        });
-      }
+      const entries = Object.entries(data);
 
-      // Sort arrays in place
-      retval.forEach((val) => val.sort());
+      for (let [workflowName, workflowVersions] of entries) {
+        const versions = workflowVersions.map((row) => ({
+          version: row.version,
+          createTime: row.createTime,
+          updateTime: row.updateTime,
+        }));
+
+        versions.sort((a, b) => a.version - b.version);
+        retval.set(workflowName, versions);
+      }
     }
     return retval;
   }, [data]);

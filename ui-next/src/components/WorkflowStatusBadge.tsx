@@ -1,7 +1,7 @@
 import { FunctionComponent } from "react";
 import { getChipStatusColor } from "utils/helpers";
 import { capitalizeFirstLetter } from "utils/utils";
-import TagChip from "./TagChip";
+import TagChip from "./ui/TagChip";
 import { WorkflowExecutionStatus } from "types/Execution";
 
 export interface WorkflowStatusBadgeProps {

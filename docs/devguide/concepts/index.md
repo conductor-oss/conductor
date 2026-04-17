@@ -351,8 +351,8 @@ These are the facts that matter when comparing workflow and orchestration engine
   team can write workers in the language they know best.
 - **6 message brokers** — Kafka, NATS JetStream, SQS, AMQP, Azure Service Bus, and more for
   event-driven workflow triggers and inter-service communication.
-- **8+ persistence backends** — PostgreSQL, MySQL, Redis, Cassandra, Elasticsearch, MongoDB,
-  and others, letting you run Conductor on the infrastructure you already operate.
+- **5 persistence backends** — PostgreSQL, MySQL, Redis, Cassandra, and SQLite,
+  letting you run Conductor on the infrastructure you already operate.
 - **Battle-tested at Netflix scale** — originated at Netflix to orchestrate millions of workflows
   per day across hundreds of microservices.
 

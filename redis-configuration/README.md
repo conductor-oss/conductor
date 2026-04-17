@@ -98,7 +98,7 @@ All properties are prefixed with `conductor.redis.`.
 - **`RedisConfiguration`** - Abstract base. Creates the `UnifiedJedis` bean and runs a pool monitor thread that publishes connection metrics every 10 seconds.
 - **`RedisStandaloneConfiguration`** - Creates a `JedisPooled` instance.
 - **`RedisClusterConfiguration`** - Creates a `JedisCluster` instance. Supports `ignore-ssl` for trust-all TLS in dev environments.
-- **`RedisSentinelConfiguration`** - Creates a `JedisSentineled` instance. Sentinel nodes use a separate client config (no auth/SSL) from the master connection.
+- **`RedisSentinelConfiguration`** - Creates a `JedisSentineled` instance. Sentinel nodes reuse the configured auth and SSL settings so existing secured Sentinel deployments continue to work.
 - **`RedisProperties`** - Spring Boot `@ConfigurationProperties` binding for all `conductor.redis.*` properties.
 - **`ConfigurationHostSupplier`** - Parses the `hosts` string into `Host` objects.
 - **`AnyRedisCondition`** - Spring condition that matches when `conductor.db.type` is any Redis variant.

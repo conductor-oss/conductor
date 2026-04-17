@@ -1,6 +1,6 @@
 import { Box, Grid } from "@mui/material";
-import { ConductorAutoComplete } from "components/v1";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutoComplete } from "components/ui/inputs";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 import { GetSignedJWTAlgorithmType } from "types";
 import { ConductorCacheOutput } from "./ConductorCacheOutputForm";
 import { ConductorValueInput } from "./ConductorValueInput";

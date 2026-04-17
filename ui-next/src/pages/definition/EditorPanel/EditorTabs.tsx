@@ -1,7 +1,7 @@
 import { Badge, Box, Button, Stack } from "@mui/material";
 import { Tab, Tabs } from "components";
-import IconButton from "components/MuiIconButton";
-import DoubleArrowRightIcon from "components/v1/icons/DoubleArrowRightIcon";
+import IconButton from "components/ui/buttons/MuiIconButton";
+import DoubleArrowRightIcon from "components/icons/DoubleArrowRightIcon";
 import React, { forwardRef, useRef } from "react";
 import { FEATURES, featureFlags } from "utils";
 import { ActorRef, EventObject } from "xstate";
