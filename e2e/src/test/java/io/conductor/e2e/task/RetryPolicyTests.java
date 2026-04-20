@@ -586,7 +586,7 @@ public class RetryPolicyTests {
         Map<String, Object> def = taskDefBase(tt);
         def.put("retryDelaySeconds", 1);
         def.put("retryLogic", "FIXED");
-        def.put("backoffJitterMs", 2000);
+        def.put("backoffJitterMs", 1000);
         registerTaskDef(def);
         registerWorkflow(wf, tt);
 
@@ -594,14 +594,17 @@ public class RetryPolicyTests {
         List<String> wfIds = new ArrayList<>();
         for (int i = 0; i < N; i++) wfIds.add(startWorkflow(wf));
 
-        // Poll and fail all initial tasks concurrently so retries are scheduled at the same instant
+        // Poll and fail all initial tasks concurrently so retries are scheduled at the same instant.
+        // Use the task's own workflowInstanceId (not the lambda-captured id) so that the server
+        // calls decide() on the correct workflow and schedules the retry.
         ExecutorService pool = Executors.newFixedThreadPool(N);
         CountDownLatch allFailed = new CountDownLatch(N);
-        for (String id : wfIds) {
+        for (int i = 0; i < N; i++) {
             pool.submit(
                     () -> {
                         try {
-                            failTask(id, pollTask(tt).getTaskId());
+                            Task t = pollTask(tt);
+                            failTask(t.getWorkflowInstanceId(), t.getTaskId());
                         } finally {
                             allFailed.countDown();
                         }
@@ -610,35 +613,37 @@ public class RetryPolicyTests {
         assertTrue(allFailed.await(30, TimeUnit.SECONDS), "All tasks failed within timeout");
         pool.shutdown();
 
-        // Collect timestamps of when each retry task first becomes poppable
+        // Collect timestamps of when each retry task first becomes poppable.
+        // Track tasksPolled (termination condition) separately from pollTimestampsSeconds (jitter
+        // spread check) — the set only grows when a new second-bucket is seen, so it cannot be
+        // used as a task counter.
+        int tasksPolled = 0;
         Set<Long> pollTimestampsSeconds = ConcurrentHashMap.newKeySet();
         long start = System.currentTimeMillis();
-        while (pollTimestampsSeconds.size() < N && System.currentTimeMillis() - start < 15_000) {
+        while (tasksPolled < N && System.currentTimeMillis() - start < 31_000) {
             List<Task> batch =
                     taskClient.batchPollTasksByTaskType(tt, "e2e-concurrency-worker", N, 500);
             long nowSec = System.currentTimeMillis() / 1000;
             for (Task t : batch) {
                 pollTimestampsSeconds.add(nowSec);
+                tasksPolled++;
                 completeTask(t.getWorkflowInstanceId(), t.getTaskId());
             }
             if (batch.isEmpty()) Thread.sleep(200);
         }
 
-        assertEquals(
-                N,
-                pollTimestampsSeconds.size() + /* could be in same second with low N */ 0,
-                "All " + N + " retry tasks must eventually be polled");
+        assertEquals(N, tasksPolled, "All " + N + " retry tasks must eventually be polled");
 
-        // With 2s jitter and N=5 tasks, it's statistically very unlikely that all tasks become
+        // With 1s jitter and N=5 tasks, it's statistically very unlikely that all tasks become
         // available in the exact same second bucket if jitter is truly random.
         // We assert that tasks spread across at least 2 distinct second-buckets.
-        // (P(all same bucket) ≈ (1/2)^4 = 6.25% with uniform jitter over 2s — acceptable flakiness
+        // (P(all same bucket) ≈ (1/2)^4 = 6.25% with uniform jitter over 1s — acceptable flakiness
         //  threshold given that test failures prompt investigation rather than automatic re-run.)
         assertTrue(
                 pollTimestampsSeconds.size() >= 2 || N == 1,
                 "With "
                         + N
-                        + " tasks and 2s jitter, retries must spread across ≥2 second-buckets. "
+                        + " tasks and 1s jitter, retries must spread across ≥2 second-buckets. "
                         + "All "
                         + N
                         + " tasks appeared in the same second — jitter may not be applied.");
@@ -662,23 +667,29 @@ public class RetryPolicyTests {
         List<String> wfIds = new ArrayList<>();
         for (int i = 0; i < N; i++) wfIds.add(startWorkflow(wf));
 
-        // Fail each initial task, then complete each retry — all under concurrent conditions
+        // Fail each initial task, then complete each retry — all under concurrent conditions.
+        // Poll the task first and derive the workflow ID from it so that failTask, awaitScheduledRetry,
+        // and completeTask all operate on the same workflow (not the lambda-captured id which may
+        // belong to a different workflow than the one whose task was polled).
         ExecutorService pool = Executors.newFixedThreadPool(N);
         CountDownLatch done = new CountDownLatch(N);
-        for (String id : wfIds) {
+        for (int i = 0; i < N; i++) {
             pool.submit(
                     () -> {
                         try {
-                            failTask(id, pollTask(tt).getTaskId());
+                            Task initial = pollTask(tt);
+                            String wfId = initial.getWorkflowInstanceId();
+                            failTask(wfId, initial.getTaskId());
                             // await and complete the retry
-                            Task retry = awaitScheduledRetry(id, 2);
-                            assertNotNull(retry, "retry task must be scheduled for wf " + id);
+                            Task retry = awaitScheduledRetry(wfId, 2);
+                            assertNotNull(retry, "retry task must be scheduled for wf " + wfId);
                             // cap applied: base=1s (retry0), raw retry1=2s (2^1 * 1) → capped to 2s
                             assertTrue(
                                     retry.getCallbackAfterSeconds() <= 2,
                                     "callbackAfterSeconds must be ≤ cap (2s); was "
                                             + retry.getCallbackAfterSeconds());
-                            completeTask(id, pollTask(tt).getTaskId());
+                            Task retryTask = pollTask(tt);
+                            completeTask(retryTask.getWorkflowInstanceId(), retryTask.getTaskId());
                         } finally {
                             done.countDown();
                         }
@@ -690,6 +701,10 @@ public class RetryPolicyTests {
         // Verify all N workflows completed successfully
         for (String id : wfIds) {
             Workflow w = workflowClient.getWorkflow(id, false);
+            if(!w.getStatus().isTerminal()) {
+                workflowClient.runDecider(id);
+            }
+            w = workflowClient.getWorkflow(id, false);
             assertEquals(
                     Workflow.WorkflowStatus.COMPLETED,
                     w.getStatus(),

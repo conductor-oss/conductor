@@ -12,7 +12,7 @@ services:
       dockerfile: docker/server/Dockerfile
       args:
         YARN_OPTS: ${YARN_OPTS}
-        INDEXING_BACKEND: opensearch
+        INDEXING_BACKEND: opensearch3
     networks:
       - internal
     ports:
