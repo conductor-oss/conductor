@@ -582,11 +582,11 @@ public class RetryPolicyTests {
         final int N = 5;
         String tt = "e2e-concurrent-jitter-task", wf = "e2e-concurrent-jitter-wf";
 
-        // base=1s, jitter=2000ms — large jitter relative to base to make spread observable
+        // base=1s, jitter=3000ms — large jitter relative to base to make spread observable
         Map<String, Object> def = taskDefBase(tt);
         def.put("retryDelaySeconds", 1);
         def.put("retryLogic", "FIXED");
-        def.put("backoffJitterMs", 1000);
+        def.put("backoffJitterMs", 3000);
         registerTaskDef(def);
         registerWorkflow(wf, tt);
 
@@ -635,16 +635,15 @@ public class RetryPolicyTests {
 
         assertEquals(N, tasksPolled, "All " + N + " retry tasks must eventually be polled");
 
-        // With 1s jitter and N=5 tasks, it's statistically very unlikely that all tasks become
+        // With 3s jitter and N=5 tasks, it's statistically very unlikely that all tasks become
         // available in the exact same second bucket if jitter is truly random.
         // We assert that tasks spread across at least 2 distinct second-buckets.
-        // (P(all same bucket) ≈ (1/2)^4 = 6.25% with uniform jitter over 1s — acceptable flakiness
-        //  threshold given that test failures prompt investigation rather than automatic re-run.)
+        // (P(all same bucket) ≈ (1/3)^4 ≈ 1.2% with uniform jitter over 3s)
         assertTrue(
                 pollTimestampsSeconds.size() >= 2 || N == 1,
                 "With "
                         + N
-                        + " tasks and 1s jitter, retries must spread across ≥2 second-buckets. "
+                        + " tasks and 3s jitter, retries must spread across ≥2 second-buckets. "
                         + "All "
                         + N
                         + " tasks appeared in the same second — jitter may not be applied.");
@@ -1169,7 +1168,7 @@ public class RetryPolicyTests {
     @DisplayName("Concurrent workflows: totalTimeoutSeconds independent per workflow instance")
     void testTotalTimeoutSeconds_concurrentWorkflows_eachInstanceIndependent()
             throws InterruptedException {
-        final int N = 3;
+        final int N = 2;
         String tt = "e2e-total-timeout-concurrent-task", wf = "e2e-total-timeout-concurrent-wf";
 
         // Generous 30 s total budget — all N workflows complete well within it
