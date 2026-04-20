@@ -959,6 +959,7 @@ class ForkJoinSpec extends AbstractSpecification {
         }
 
         and: "verify that the simple Sub Workflow is in running state and the first task related to it is scheduled"
+        sweep(subWorkflowInstanceId)
         with(workflowExecutionService.getExecutionStatus(subWorkflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 1
@@ -1281,6 +1282,8 @@ class ForkJoinSpec extends AbstractSpecification {
 
         and: "verify that the workflow is in a RUNNING state and sub workflow task is retried"
         sweep(workflowInstanceId)
+        List<String> retriedSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, retriedSubWorkflowIds[0])
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 5

@@ -302,6 +302,8 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
     def "test restart on the parent workflow in a nested fork join workflow"() {
         when:
         workflowExecutor.restart(parentWorkflowId, false)
+        List<String> polledRestartedSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledRestartedSubWorkflowIds[0])
 
         then: "verify that the parent workflow is in RUNNING state"
         with(workflowExecutionService.getExecutionStatus(parentWorkflowId, true)) {
@@ -419,6 +421,8 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
     def "test retry on the parent workflow in a nested fork join workflow"() {
         when:
         workflowExecutor.retry(parentWorkflowId, false)
+        List<String> polledRetriedSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledRetriedSubWorkflowIds[0])
 
         then: "verify that the parent workflow is in RUNNING state"
         with(workflowExecutionService.getExecutionStatus(parentWorkflowId, true)) {
