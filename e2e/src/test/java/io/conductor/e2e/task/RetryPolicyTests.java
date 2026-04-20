@@ -594,7 +594,8 @@ public class RetryPolicyTests {
         List<String> wfIds = new ArrayList<>();
         for (int i = 0; i < N; i++) wfIds.add(startWorkflow(wf));
 
-        // Poll and fail all initial tasks concurrently so retries are scheduled at the same instant.
+        // Poll and fail all initial tasks concurrently so retries are scheduled at the same
+        // instant.
         // Use the task's own workflowInstanceId (not the lambda-captured id) so that the server
         // calls decide() on the correct workflow and schedules the retry.
         ExecutorService pool = Executors.newFixedThreadPool(N);
@@ -668,7 +669,8 @@ public class RetryPolicyTests {
         for (int i = 0; i < N; i++) wfIds.add(startWorkflow(wf));
 
         // Fail each initial task, then complete each retry — all under concurrent conditions.
-        // Poll the task first and derive the workflow ID from it so that failTask, awaitScheduledRetry,
+        // Poll the task first and derive the workflow ID from it so that failTask,
+        // awaitScheduledRetry,
         // and completeTask all operate on the same workflow (not the lambda-captured id which may
         // belong to a different workflow than the one whose task was polled).
         ExecutorService pool = Executors.newFixedThreadPool(N);
@@ -701,7 +703,7 @@ public class RetryPolicyTests {
         // Verify all N workflows completed successfully
         for (String id : wfIds) {
             Workflow w = workflowClient.getWorkflow(id, false);
-            if(!w.getStatus().isTerminal()) {
+            if (!w.getStatus().isTerminal()) {
                 workflowClient.runDecider(id);
             }
             w = workflowClient.getWorkflow(id, false);
