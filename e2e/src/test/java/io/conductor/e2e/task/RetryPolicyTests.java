@@ -26,14 +26,17 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.netflix.conductor.client.automator.TaskRunnerConfigurer;
 import com.netflix.conductor.client.http.MetadataClient;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.http.WorkflowClient;
+import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
@@ -718,5 +721,209 @@ public class RetryPolicyTests {
         assertTrue(elapsed < 20_000,
                 "Task timed out " + elapsed + "ms after polling — poll gap fix must advance the"
                         + " sweep to responseTimeout (~3s), not pollTimeout (~30s)");
+    }
+
+    // =========================================================================
+    // totalTimeoutSeconds — hard wall-clock budget across all retry attempts
+    //
+    // Strategy: we cannot manipulate firstScheduledTime in e2e (no DB access),
+    // so we rely on real wall-clock time:
+    //   - "disabled" (=0) and "not exceeded" tests use manual poll/fail with
+    //     a generous total budget so real time never exceeds it.
+    //   - "exceeded" test uses a very short budget (4 s) and a background
+    //     worker that continuously fails the task; eventually the total budget
+    //     is exhausted and the workflow terminates.
+    // =========================================================================
+
+    /** Helper: starts a background worker that always fails every task of the given type. */
+    private TaskRunnerConfigurer startAlwaysFailingWorker(String taskType) {
+        Worker worker = new Worker() {
+            @Override public String getTaskDefName() { return taskType; }
+            @Override public TaskResult execute(Task task) {
+                TaskResult r = new TaskResult(task);
+                r.setStatus(TaskResult.Status.FAILED);
+                r.setReasonForIncompletion("e2e totalTimeout stress test");
+                return r;
+            }
+            @Override public int getPollingInterval() { return 100; }
+        };
+        TaskRunnerConfigurer configurer =
+                new TaskRunnerConfigurer.Builder(taskClient, List.of(worker))
+                        .withThreadCount(2)
+                        .withTaskPollTimeout(1)
+                        .build();
+        configurer.init();
+        return configurer;
+    }
+
+    @Test
+    @DisplayName("totalTimeoutSeconds=0: disabled — retries continue up to retryCount as normal")
+    void testTotalTimeoutSeconds_zero_disabled() {
+        String tt = "e2e-total-timeout-disabled-task", wf = "e2e-total-timeout-disabled-wf";
+
+        // totalTimeoutSeconds=0 means disabled; timeoutSeconds=0 to avoid constraint violation
+        Map<String, Object> def = new HashMap<>();
+        def.put("name", tt);
+        def.put("ownerEmail", "test@conductor.io");
+        def.put("retryCount", 5);
+        def.put("retryDelaySeconds", 0);
+        def.put("retryLogic", "FIXED");
+        def.put("totalTimeoutSeconds", 0);
+        def.put("timeoutSeconds", 0);
+        def.put("responseTimeoutSeconds", 1);
+        registerTaskDef(def);
+        registerWorkflow(wf, tt);
+
+        String wfId = startWorkflow(wf);
+
+        // Fail twice — total elapsed is well under any real-world constraint
+        failTask(wfId, pollTask(tt).getTaskId());
+        Task retry1 = awaitScheduledRetry(wfId, 2);
+        assertNotNull(retry1, "Retry must be scheduled when totalTimeoutSeconds=0 (disabled)");
+
+        failTask(wfId, pollTask(tt).getTaskId());
+        Task retry2 = awaitScheduledRetry(wfId, 3);
+        assertNotNull(retry2, "Second retry must be scheduled");
+
+        // Complete the third attempt — workflow should finish successfully
+        completeTask(wfId, pollTask(tt).getTaskId());
+        awaitCompleted(wfId);
+    }
+
+    @Test
+    @DisplayName("totalTimeoutSeconds not exceeded: retries complete and workflow succeeds")
+    void testTotalTimeoutSeconds_notExceeded_workflowCompletes() {
+        String tt = "e2e-total-timeout-ok-task", wf = "e2e-total-timeout-ok-wf";
+
+        // Generous 60 s budget; test finishes in << 1 s so budget is never hit
+        Map<String, Object> def = new HashMap<>();
+        def.put("name", tt);
+        def.put("ownerEmail", "test@conductor.io");
+        def.put("retryCount", 5);
+        def.put("retryDelaySeconds", 0);
+        def.put("retryLogic", "FIXED");
+        def.put("totalTimeoutSeconds", 60);
+        def.put("timeoutSeconds", 0);
+        def.put("responseTimeoutSeconds", 1);
+        registerTaskDef(def);
+        registerWorkflow(wf, tt);
+
+        String wfId = startWorkflow(wf);
+
+        failTask(wfId, pollTask(tt).getTaskId());
+        awaitScheduledRetry(wfId, 2);
+        failTask(wfId, pollTask(tt).getTaskId());
+        awaitScheduledRetry(wfId, 3);
+        completeTask(wfId, pollTask(tt).getTaskId());
+
+        awaitCompleted(wfId);
+        Workflow workflow = workflowClient.getWorkflow(wfId, false);
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus(),
+                "Workflow must complete when total budget is not exhausted");
+    }
+
+    @Test
+    @DisplayName("totalTimeoutSeconds exceeded: workflow terminates before retryCount is exhausted")
+    void testTotalTimeoutSeconds_exceeded_workflowTerminates() {
+        String tt = "e2e-total-timeout-exceeded-task", wf = "e2e-total-timeout-exceeded-wf";
+
+        // 4-second budget, 100 retries allowed — total timeout should fire long before 100 retries
+        // timeoutSeconds must be ≤ totalTimeoutSeconds when both > 0, so we disable per-attempt
+        Map<String, Object> def = new HashMap<>();
+        def.put("name", tt);
+        def.put("ownerEmail", "test@conductor.io");
+        def.put("retryCount", 100);
+        def.put("retryDelaySeconds", 0);
+        def.put("retryLogic", "FIXED");
+        def.put("totalTimeoutSeconds", 4);
+        def.put("timeoutSeconds", 0);
+        def.put("responseTimeoutSeconds", 1);
+        def.put("timeoutPolicy", "TIME_OUT_WF");
+        registerTaskDef(def);
+        registerWorkflow(wf, tt);
+
+        // Auto-failing worker: keeps failing every attempt so totalTimeout is the only exit
+        TaskRunnerConfigurer workerConfigurer = startAlwaysFailingWorker(tt);
+        try {
+            String wfId = startWorkflow(wf);
+
+            // The workflow must terminate (FAILED or TIMED_OUT) within a generous window.
+            // With a 4-second total budget and rapid retries the termination should be fast.
+            AtomicReference<Workflow> finalWorkflow = new AtomicReference<>();
+            await().atMost(30, TimeUnit.SECONDS)
+                    .pollInterval(500, TimeUnit.MILLISECONDS)
+                    .untilAsserted(() -> {
+                        Workflow w = workflowClient.getWorkflow(wfId, false);
+                        assertTrue(
+                                w.getStatus() == Workflow.WorkflowStatus.FAILED
+                                        || w.getStatus() == Workflow.WorkflowStatus.TIMED_OUT,
+                                "Workflow must terminate once total timeout is exceeded; status="
+                                        + w.getStatus());
+                        finalWorkflow.set(w);
+                    });
+
+            // The key assertion: far fewer than 100 tasks were scheduled.
+            // If total timeout is enforced, the workflow terminates in a handful of retries.
+            // If it were NOT enforced, 100 retries at ~retryDelay=0 would still take time
+            // but the workflow would only fail at retry exhaustion, not after 4 s.
+            Workflow wf2 = workflowClient.getWorkflow(wfId, true);
+            int taskCount = wf2.getTasks().size();
+            log.info("Workflow terminated after {} task attempts (totalTimeoutSeconds=4, retryCount=100)",
+                    taskCount);
+            assertTrue(taskCount < 100,
+                    "Workflow must terminate before exhausting all 100 retries — "
+                            + "total timeout (4s) should fire first. taskCount=" + taskCount);
+
+        } finally {
+            try { workerConfigurer.shutdown(); } catch (Exception ignored) {}
+        }
+    }
+
+    @Test
+    @DisplayName("Concurrent workflows: totalTimeoutSeconds independent per workflow instance")
+    void testTotalTimeoutSeconds_concurrentWorkflows_eachInstanceIndependent()
+            throws InterruptedException {
+        final int N = 3;
+        String tt = "e2e-total-timeout-concurrent-task", wf = "e2e-total-timeout-concurrent-wf";
+
+        // Generous 30 s total budget — all N workflows complete well within it
+        Map<String, Object> def = new HashMap<>();
+        def.put("name", tt);
+        def.put("ownerEmail", "test@conductor.io");
+        def.put("retryCount", 5);
+        def.put("retryDelaySeconds", 0);
+        def.put("retryLogic", "FIXED");
+        def.put("totalTimeoutSeconds", 30);
+        def.put("timeoutSeconds", 0);
+        def.put("responseTimeoutSeconds", 1);
+        registerTaskDef(def);
+        registerWorkflow(wf, tt);
+
+        List<String> wfIds = new ArrayList<>();
+        for (int i = 0; i < N; i++) wfIds.add(startWorkflow(wf));
+
+        // For each workflow: fail once then complete
+        ExecutorService pool = Executors.newFixedThreadPool(N);
+        CountDownLatch done = new CountDownLatch(N);
+        for (String id : wfIds) {
+            pool.submit(() -> {
+                try {
+                    failTask(id, pollTask(tt).getTaskId());
+                    awaitScheduledRetry(id, 2);
+                    completeTask(id, pollTask(tt).getTaskId());
+                } finally {
+                    done.countDown();
+                }
+            });
+        }
+        assertTrue(done.await(60, TimeUnit.SECONDS));
+        pool.shutdown();
+
+        // All N workflows must complete — totalTimeout (30s) was not reached by any instance
+        for (String id : wfIds) {
+            Workflow w = workflowClient.getWorkflow(id, false);
+            assertEquals(Workflow.WorkflowStatus.COMPLETED, w.getStatus(),
+                    "Every workflow instance must complete when total budget is not exhausted");
+        }
     }
 }
