@@ -250,7 +250,8 @@ public class ConductorProperties {
      * The timeout (in seconds) to wait for in-flight system tasks to complete during graceful
      * shutdown of the {@link com.netflix.conductor.core.execution.tasks.SystemTaskWorker}.
      */
-    private int systemTaskWorkerShutdownTimeout = 30;
+    @DurationUnit(ChronoUnit.SECONDS)
+    private Duration systemTaskWorkerShutdownTimeout = Duration.ofSeconds(30);
 
     public String getStack() {
         return stack;
@@ -610,11 +611,11 @@ public class ConductorProperties {
         this.systemTaskQueuePopTimeout = systemTaskQueuePopTimeout;
     }
 
-    public int getSystemTaskWorkerShutdownTimeout() {
+    public Duration getSystemTaskWorkerShutdownTimeout() {
         return systemTaskWorkerShutdownTimeout;
     }
 
-    public void setSystemTaskWorkerShutdownTimeout(int systemTaskWorkerShutdownTimeout) {
+    public void setSystemTaskWorkerShutdownTimeout(Duration systemTaskWorkerShutdownTimeout) {
         this.systemTaskWorkerShutdownTimeout = systemTaskWorkerShutdownTimeout;
     }
 }

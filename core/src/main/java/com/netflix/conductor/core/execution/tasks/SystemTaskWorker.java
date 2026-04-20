@@ -212,7 +212,7 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
             }
         }
 
-        int shutdownTimeout = properties.getSystemTaskWorkerShutdownTimeout();
+        long shutdownTimeout = properties.getSystemTaskWorkerShutdownTimeout().getSeconds();
         LOGGER.info(
                 "Waiting for in-flight system tasks to complete (timeout: {}s)...",
                 shutdownTimeout);

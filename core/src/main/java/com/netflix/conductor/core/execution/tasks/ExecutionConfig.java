@@ -53,7 +53,7 @@ class ExecutionConfig {
      *
      * @param timeoutSeconds maximum time to wait for tasks to complete
      */
-    public void shutdown(int timeoutSeconds) {
+    public void shutdown(long timeoutSeconds) {
         LOGGER.info("Shutting down executor service: {}", name);
         executorService.shutdown();
         try {
