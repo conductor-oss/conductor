@@ -164,10 +164,10 @@
     "sass": "^1.99.0",
     "styled-components": "^5.3.8",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.58.2",
+    "typescript-eslint": "^8.59.0",
     "vite": "^7.1.11",
     "vite-plugin-svgr": "^4.3.0",
-    "vite-tsconfig-paths": "^5.1.4",
+    "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^3.2.4",
     "yup": "^1.7.0"
   },
