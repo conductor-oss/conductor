@@ -118,6 +118,14 @@ public class TaskModel {
 
     private long callbackAfterSeconds;
 
+    /**
+     * Millisecond-precision delay before this task should next be made visible in the queue.
+     * When greater than zero this takes precedence over {@link #callbackAfterSeconds} so that
+     * sub-second jitter added at retry scheduling time is preserved through to the queue push.
+     * Zero (the default) means fall back to {@link #callbackAfterSeconds}.
+     */
+    private long callbackAfterMs;
+
     private String workerId;
 
     private WorkflowTask workflowTask;
@@ -410,6 +418,14 @@ public class TaskModel {
 
     public void setCallbackAfterSeconds(long callbackAfterSeconds) {
         this.callbackAfterSeconds = callbackAfterSeconds;
+    }
+
+    public long getCallbackAfterMs() {
+        return callbackAfterMs;
+    }
+
+    public void setCallbackAfterMs(long callbackAfterMs) {
+        this.callbackAfterMs = callbackAfterMs;
     }
 
     public String getWorkerId() {

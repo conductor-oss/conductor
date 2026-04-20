@@ -14,6 +14,7 @@ package com.netflix.conductor.core.execution;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -606,6 +607,7 @@ public class DeciderService {
         switch (taskDefinition.getRetryLogic()) {
             case FIXED:
                 startDelay = taskDefinition.getRetryDelaySeconds();
+                startDelay = applyMaxRetryDelayCap(startDelay, taskDefinition);
                 break;
             case LINEAR_BACKOFF:
                 int linearRetryDelaySeconds =
@@ -632,9 +634,17 @@ public class DeciderService {
 
         task.setRetried(true);
 
+        // Compute ms-precision total delay: base delay in seconds + random jitter in [0, maxJitterMs]
+        long jitterMs = 0;
+        if (taskDefinition.getBackoffJitterMs() > 0) {
+            jitterMs = ThreadLocalRandom.current().nextLong(0, taskDefinition.getBackoffJitterMs() + 1);
+        }
+        long totalDelayMs = (long) startDelay * 1000 + jitterMs;
+
         TaskModel rescheduled = task.copy();
         rescheduled.setStartDelayInSeconds(startDelay);
         rescheduled.setCallbackAfterSeconds(startDelay);
+        rescheduled.setCallbackAfterMs(totalDelayMs);
         rescheduled.setRetryCount(task.getRetryCount() + 1);
         rescheduled.setRetried(false);
         rescheduled.setTaskId(idGenerator.generate());

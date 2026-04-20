@@ -128,6 +128,10 @@ public class TaskDef extends Auditable {
     @Min(value = 0, message = "TaskDef maxRetryDelaySeconds: {value} must be >= 0")
     private int maxRetryDelaySeconds = 0;
 
+    @ProtoField(id = 25)
+    @Min(value = 0, message = "TaskDef backoffJitterMs: {value} must be >= 0")
+    private int backoffJitterMs = 0;
+
     @ProtoField(id = 21)
     private String baseType;
 
@@ -459,6 +463,20 @@ public class TaskDef extends Auditable {
         this.maxRetryDelaySeconds = maxRetryDelaySeconds;
     }
 
+    /**
+     * Maximum jitter to add to the retry delay. On each retry a random value in {@code [0,
+     * backoffJitterMs]} milliseconds is added to the computed delay, spreading retries across time
+     * and preventing thundering-herd storms when many tasks fail simultaneously. A value of 0 (the
+     * default) disables jitter.
+     */
+    public int getBackoffJitterMs() {
+        return backoffJitterMs;
+    }
+
+    public void setBackoffJitterMs(int backoffJitterMs) {
+        this.backoffJitterMs = backoffJitterMs;
+    }
+
     public String getBaseType() {
         return baseType;
     }
@@ -542,7 +560,8 @@ public class TaskDef extends Auditable {
                 && Objects.equals(getInputSchema(), taskDef.getInputSchema())
                 && Objects.equals(getOutputSchema(), taskDef.getOutputSchema())
                 && Objects.equals(getTotalTimeoutSeconds(), taskDef.getTotalTimeoutSeconds())
-                && getMaxRetryDelaySeconds() == taskDef.getMaxRetryDelaySeconds();
+                && getMaxRetryDelaySeconds() == taskDef.getMaxRetryDelaySeconds()
+                && getBackoffJitterMs() == taskDef.getBackoffJitterMs();
     }
 
     @Override
@@ -570,6 +589,7 @@ public class TaskDef extends Auditable {
                 getInputSchema(),
                 getOutputSchema(),
                 getTotalTimeoutSeconds(),
-                getMaxRetryDelaySeconds());
+                getMaxRetryDelaySeconds(),
+                getBackoffJitterMs());
     }
 }

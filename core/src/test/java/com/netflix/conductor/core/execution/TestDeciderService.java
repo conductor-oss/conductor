@@ -895,6 +895,195 @@ public class TestDeciderService {
     }
 
     @Test
+    public void testJitterAddedToRetryDelay() {
+        WorkflowModel workflow = createDefaultWorkflow();
+
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10);
+        taskDef.setRetryDelaySeconds(60);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.FIXED);
+        taskDef.setBackoffJitterMs(5000); // up to 5 000 ms of jitter
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        Optional<TaskModel> retried =
+                deciderService.retry(taskDef, workflowTask, task, workflow);
+
+        // callbackAfterSeconds stays at the base delay
+        assertEquals(60, retried.get().getCallbackAfterSeconds());
+        // callbackAfterMs must be in [60_000, 65_000]
+        long callbackMs = retried.get().getCallbackAfterMs();
+        assertTrue(
+                "callbackAfterMs should be >= base delay ms",
+                callbackMs >= 60_000);
+        assertTrue(
+                "callbackAfterMs should be <= base delay ms + maxJitterMs",
+                callbackMs <= 65_000);
+    }
+
+    @Test
+    public void testJitterZeroMeansNoJitter() {
+        WorkflowModel workflow = createDefaultWorkflow();
+
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10);
+        taskDef.setRetryDelaySeconds(60);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.FIXED);
+        taskDef.setBackoffJitterMs(0); // no jitter
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        Optional<TaskModel> retried =
+                deciderService.retry(taskDef, workflowTask, task, workflow);
+
+        assertEquals(60, retried.get().getCallbackAfterSeconds());
+        assertEquals(60_000, retried.get().getCallbackAfterMs());
+    }
+
+    @Test
+    public void testJitterWithExponentialBackoff() {
+        WorkflowModel workflow = createDefaultWorkflow();
+
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10);
+        taskDef.setRetryDelaySeconds(10);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.EXPONENTIAL_BACKOFF);
+        taskDef.setBackoffJitterMs(2000); // up to 2 000 ms of jitter
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        // retry 0: base = 10 * 2^0 = 10 s → callbackAfterMs in [10_000, 12_000]
+        Optional<TaskModel> task2 = deciderService.retry(taskDef, workflowTask, task, workflow);
+        assertEquals(10, task2.get().getCallbackAfterSeconds());
+        assertTrue(task2.get().getCallbackAfterMs() >= 10_000);
+        assertTrue(task2.get().getCallbackAfterMs() <= 12_000);
+
+        // retry 1: base = 10 * 2^1 = 20 s → callbackAfterMs in [20_000, 22_000]
+        Optional<TaskModel> task3 =
+                deciderService.retry(taskDef, workflowTask, task2.get(), workflow);
+        assertEquals(20, task3.get().getCallbackAfterSeconds());
+        assertTrue(task3.get().getCallbackAfterMs() >= 20_000);
+        assertTrue(task3.get().getCallbackAfterMs() <= 22_000);
+    }
+
+    /** Boundary: maxRetryDelaySeconds=0 means cap is disabled — delays grow uncapped. */
+    @Test
+    public void testMaxRetryDelaySeconds_zeroMeansNoCap() {
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10);
+        taskDef.setRetryDelaySeconds(10);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.EXPONENTIAL_BACKOFF);
+        taskDef.setMaxRetryDelaySeconds(0); // disabled
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        // retry 0: 10s; retry 1: 20s; retry 2: 40s — all uncapped
+        Optional<TaskModel> t1 = deciderService.retry(taskDef, workflowTask, task, workflow);
+        assertEquals(10, t1.get().getCallbackAfterSeconds());
+
+        Optional<TaskModel> t2 = deciderService.retry(taskDef, workflowTask, t1.get(), workflow);
+        assertEquals(20, t2.get().getCallbackAfterSeconds());
+
+        Optional<TaskModel> t3 = deciderService.retry(taskDef, workflowTask, t2.get(), workflow);
+        assertEquals("cap=0 must be treated as disabled: 10*2^2=40s is NOT capped",
+                40, t3.get().getCallbackAfterSeconds());
+    }
+
+    /** Boundary: cap < retryDelaySeconds — cap fires immediately from the first retry. */
+    @Test
+    public void testMaxRetryDelaySeconds_capLessThanBaseDelay() {
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10);
+        taskDef.setRetryDelaySeconds(60);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.FIXED);
+        taskDef.setMaxRetryDelaySeconds(10); // cap < base
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        Optional<TaskModel> t1 = deciderService.retry(taskDef, workflowTask, task, workflow);
+        assertEquals("FIXED base=60s must be capped to 10s immediately",
+                10, t1.get().getCallbackAfterSeconds());
+
+        Optional<TaskModel> t2 = deciderService.retry(taskDef, workflowTask, t1.get(), workflow);
+        assertEquals("All subsequent retries must also be capped at 10s",
+                10, t2.get().getCallbackAfterSeconds());
+    }
+
+    /** Boundary: jitterMs=1 (minimum non-zero) — callbackAfterMs is base or base+1. */
+    @Test
+    public void testJitterMs_minimumOneMs() {
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10);
+        taskDef.setRetryDelaySeconds(30);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.FIXED);
+        taskDef.setBackoffJitterMs(1);
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        Optional<TaskModel> retried = deciderService.retry(taskDef, workflowTask, task, workflow);
+        assertEquals(30, retried.get().getCallbackAfterSeconds());
+        // callbackAfterMs must be in [30_000, 30_001]
+        assertTrue(retried.get().getCallbackAfterMs() >= 30_000);
+        assertTrue("With jitter=1ms, callbackAfterMs must be in [30000, 30001]; was "
+                        + retried.get().getCallbackAfterMs(),
+                retried.get().getCallbackAfterMs() <= 30_001);
+    }
+
+    /** Statistical: multiple retries with jitter produce different callbackAfterMs values. */
+    @Test
+    public void testJitter_producesVariance() {
+        WorkflowModel workflow = createDefaultWorkflow();
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(20);
+        taskDef.setRetryDelaySeconds(10);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.FIXED);
+        taskDef.setBackoffJitterMs(2000);
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        // Collect callbackAfterMs from 10 independent retry calls
+        java.util.Set<Long> distinctMs = new java.util.HashSet<>();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t0");
+        task.setRetryCount(0);
+
+        for (int i = 0; i < 10; i++) {
+            TaskModel t = new TaskModel();
+            t.setStatus(TaskModel.Status.FAILED);
+            t.setTaskId("t-" + i);
+            t.setRetryCount(0);
+            distinctMs.add(deciderService.retry(taskDef, workflowTask, t, workflow)
+                    .get().getCallbackAfterMs());
+        }
+
+        // With 2000ms jitter over 10 retries, getting 10 identical values is astronomically unlikely
+        assertTrue("jitter must produce variance across multiple retries; all 10 had same callbackAfterMs",
+                distinctMs.size() > 1);
+    }
+
+    @Test
     public void testFork() throws IOException {
         InputStream stream = TestDeciderService.class.getResourceAsStream("/test.json");
         WorkflowModel workflow = objectMapper.readValue(stream, WorkflowModel.class);
