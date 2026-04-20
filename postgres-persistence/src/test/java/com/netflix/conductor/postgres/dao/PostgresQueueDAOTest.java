@@ -444,7 +444,8 @@ public class PostgresQueueDAOTest {
 
         // Shorten delivery to now (0 s) — should succeed and return true
         boolean shortened = queueDAO.setUnackTimeoutIfShorter(queueName, messageId, 0L);
-        assertTrue("setUnackTimeoutIfShorter should return true when it actually shortens", shortened);
+        assertTrue(
+                "setUnackTimeoutIfShorter should return true when it actually shortens", shortened);
 
         // Message must now be immediately poppable
         List<String> popped = queueDAO.pop(queueName, 1, 100);
@@ -462,7 +463,9 @@ public class PostgresQueueDAOTest {
 
         // Try to push deliver_on far into the future — must be rejected
         boolean extended = queueDAO.setUnackTimeoutIfShorter(queueName, messageId, 3_600_000L);
-        assertFalse("setUnackTimeoutIfShorter must not extend an already-closer delivery time", extended);
+        assertFalse(
+                "setUnackTimeoutIfShorter must not extend an already-closer delivery time",
+                extended);
 
         // Message must still be immediately poppable
         List<String> popped = queueDAO.pop(queueName, 1, 100);
@@ -474,12 +477,13 @@ public class PostgresQueueDAOTest {
     public void setUnackTimeoutIfShorterReturnsFalseForNonExistent() {
         String queueName = "setUnackIfShorter_nonexistent";
         boolean updated = queueDAO.setUnackTimeoutIfShorter(queueName, "no-such-message", 0L);
-        assertFalse("setUnackTimeoutIfShorter must return false for a non-existent message", updated);
+        assertFalse(
+                "setUnackTimeoutIfShorter must return false for a non-existent message", updated);
     }
 
     /**
-     * Boundary: when the new timeout would result in the same delivery time as the current one,
-     * the message is NOT shorter — method must return false and leave deliver_on unchanged.
+     * Boundary: when the new timeout would result in the same delivery time as the current one, the
+     * message is NOT shorter — method must return false and leave deliver_on unchanged.
      */
     @Test
     public void setUnackTimeoutIfShorterReturnsFalseWhenEqualTimeout() {

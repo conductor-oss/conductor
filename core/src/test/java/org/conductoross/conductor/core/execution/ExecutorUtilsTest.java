@@ -129,11 +129,14 @@ public class ExecutorUtilsTest {
 
         WorkflowModel workflow = newWorkflow(Arrays.asList(task), 0);
         Duration result =
-                ExecutorUtils.computePostpone(workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
 
         // Elapsed >> pollTimeout: remaining = 0, clamped to 0
-        assertEquals("When poll window is already elapsed, postpone should be 0",
-                0L, result.getSeconds());
+        assertEquals(
+                "When poll window is already elapsed, postpone should be 0",
+                0L,
+                result.getSeconds());
     }
 
     /** Boundary: IN_PROGRESS task whose response window has already elapsed → remaining = 0. */
@@ -146,13 +149,18 @@ public class ExecutorUtilsTest {
 
         WorkflowModel workflow = newWorkflow(Arrays.asList(task), 0);
         Duration result =
-                ExecutorUtils.computePostpone(workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
 
-        assertEquals("When response window is already elapsed, postpone should be 0",
-                0L, result.getSeconds());
+        assertEquals(
+                "When response window is already elapsed, postpone should be 0",
+                0L,
+                result.getSeconds());
     }
 
-    /** Boundary: taskDef.responseTimeout=0 but taskModel.responseTimeout is non-zero — model wins. */
+    /**
+     * Boundary: taskDef.responseTimeout=0 but taskModel.responseTimeout is non-zero — model wins.
+     */
     @Test
     public void computePostponeUsesTaskModelResponseTimeoutWhenTaskDefIsZero() {
         TaskModel task = newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.IN_PROGRESS);
@@ -167,13 +175,17 @@ public class ExecutorUtilsTest {
 
         WorkflowModel workflow = newWorkflow(Arrays.asList(task), 0);
         Duration result =
-                ExecutorUtils.computePostpone(workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
 
         // Should use task model's 120s, not fall back to workflow offset (30s)
-        assertTrue("When taskDef.responseTimeout=0, taskModel.responseTimeout (120s) should be used; "
-                        + "result=" + result.getSeconds(),
+        assertTrue(
+                "When taskDef.responseTimeout=0, taskModel.responseTimeout (120s) should be used; "
+                        + "result="
+                        + result.getSeconds(),
                 result.getSeconds() > 30);
-        assertTrue("Result should be ~120s remaining; got " + result.getSeconds(),
+        assertTrue(
+                "Result should be ~120s remaining; got " + result.getSeconds(),
                 result.getSeconds() <= 121);
     }
 

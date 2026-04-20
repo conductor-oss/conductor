@@ -134,7 +134,8 @@ public interface QueueDAO {
      * @param unackTimeout timeout in milliseconds
      * @return true if the timeout was updated
      */
-    default boolean setUnackTimeoutIfShorter(String queueName, String messageId, long unackTimeout) {
+    default boolean setUnackTimeoutIfShorter(
+            String queueName, String messageId, long unackTimeout) {
         return setUnackTimeout(queueName, messageId, unackTimeout);
     }
 

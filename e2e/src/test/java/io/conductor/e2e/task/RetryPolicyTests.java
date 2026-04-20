@@ -102,7 +102,8 @@ public class RetryPolicyTests {
                         .POST(HttpRequest.BodyPublishers.ofString(json))
                         .build();
         HttpResponse<String> res = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
-        assertTrue(res.statusCode() < 300,
+        assertTrue(
+                res.statusCode() < 300,
                 "Task def registration failed " + res.statusCode() + ": " + res.body());
     }
 
@@ -144,7 +145,8 @@ public class RetryPolicyTests {
                 .until(
                         () -> {
                             List<Task> t =
-                                    taskClient.batchPollTasksByTaskType(taskType, "e2e-worker", 1, 500);
+                                    taskClient.batchPollTasksByTaskType(
+                                            taskType, "e2e-worker", 1, 500);
                             return t.isEmpty() ? null : t.get(0);
                         },
                         t -> t != null);
@@ -186,10 +188,11 @@ public class RetryPolicyTests {
     private void awaitCompleted(String wfId) {
         await().atMost(20, TimeUnit.SECONDS)
                 .untilAsserted(
-                        () -> assertEquals(
-                                Workflow.WorkflowStatus.COMPLETED,
-                                workflowClient.getWorkflow(wfId, false).getStatus(),
-                                "workflow " + wfId + " did not complete"));
+                        () ->
+                                assertEquals(
+                                        Workflow.WorkflowStatus.COMPLETED,
+                                        workflowClient.getWorkflow(wfId, false).getStatus(),
+                                        "workflow " + wfId + " did not complete"));
     }
 
     // =========================================================================
@@ -211,15 +214,21 @@ public class RetryPolicyTests {
         String wfId = startWorkflow(wf);
 
         failTask(wfId, pollTask(tt).getTaskId());
-        assertEquals(1L, awaitScheduledRetry(wfId, 2).getCallbackAfterSeconds(),
+        assertEquals(
+                1L,
+                awaitScheduledRetry(wfId, 2).getCallbackAfterSeconds(),
                 "retry1: 1×2⁰=1s (below cap 3s)");
 
         failTask(wfId, pollTask(tt).getTaskId());
-        assertEquals(2L, awaitScheduledRetry(wfId, 3).getCallbackAfterSeconds(),
+        assertEquals(
+                2L,
+                awaitScheduledRetry(wfId, 3).getCallbackAfterSeconds(),
                 "retry2: 1×2¹=2s (below cap 3s)");
 
         failTask(wfId, pollTask(tt).getTaskId());
-        assertEquals(3L, awaitScheduledRetry(wfId, 4).getCallbackAfterSeconds(),
+        assertEquals(
+                3L,
+                awaitScheduledRetry(wfId, 4).getCallbackAfterSeconds(),
                 "retry3: 1×2²=4s → capped to 3s");
 
         completeTask(wfId, pollTask(tt).getTaskId());
@@ -242,11 +251,15 @@ public class RetryPolicyTests {
         String wfId = startWorkflow(wf);
 
         failTask(wfId, pollTask(tt).getTaskId());
-        assertEquals(2L, awaitScheduledRetry(wfId, 2).getCallbackAfterSeconds(),
+        assertEquals(
+                2L,
+                awaitScheduledRetry(wfId, 2).getCallbackAfterSeconds(),
                 "retry1: 1×2×1=2s (below cap 3s)");
 
         failTask(wfId, pollTask(tt).getTaskId());
-        assertEquals(3L, awaitScheduledRetry(wfId, 3).getCallbackAfterSeconds(),
+        assertEquals(
+                3L,
+                awaitScheduledRetry(wfId, 3).getCallbackAfterSeconds(),
                 "retry2: 1×2×2=4s → capped to 3s");
 
         completeTask(wfId, pollTask(tt).getTaskId());
@@ -277,7 +290,9 @@ public class RetryPolicyTests {
 
         failTask(wfId, pollTask(tt).getTaskId());
         // Without cap, retry3 = 1×2²=4s (not capped to any lower value)
-        assertEquals(4L, awaitScheduledRetry(wfId, 4).getCallbackAfterSeconds(),
+        assertEquals(
+                4L,
+                awaitScheduledRetry(wfId, 4).getCallbackAfterSeconds(),
                 "cap=0 must be treated as disabled: delay should be uncapped 4s");
 
         completeTask(wfId, pollTask(tt).getTaskId());
@@ -301,11 +316,15 @@ public class RetryPolicyTests {
         String wfId = startWorkflow(wf);
 
         failTask(wfId, pollTask(tt).getTaskId());
-        assertEquals(2L, awaitScheduledRetry(wfId, 2).getCallbackAfterSeconds(),
+        assertEquals(
+                2L,
+                awaitScheduledRetry(wfId, 2).getCallbackAfterSeconds(),
                 "FIXED base=5s capped immediately to 2s");
 
         failTask(wfId, pollTask(tt).getTaskId());
-        assertEquals(2L, awaitScheduledRetry(wfId, 3).getCallbackAfterSeconds(),
+        assertEquals(
+                2L,
+                awaitScheduledRetry(wfId, 3).getCallbackAfterSeconds(),
                 "All retries capped at 2s");
 
         completeTask(wfId, pollTask(tt).getTaskId());
@@ -360,14 +379,18 @@ public class RetryPolicyTests {
         failTask(wfId, pollTask(tt).getTaskId());
 
         Task retry = awaitScheduledRetry(wfId, 2);
-        assertEquals(2L, retry.getCallbackAfterSeconds(),
+        assertEquals(
+                2L,
+                retry.getCallbackAfterSeconds(),
                 "callbackAfterSeconds must equal the base delay; jitter lives in callbackAfterMs");
 
         long scheduledAt = retry.getScheduledTime();
         Task retried = pollTask(tt);
         long queueDelay = System.currentTimeMillis() - scheduledAt;
         assertTrue(queueDelay >= 2000, "Must wait at least base 2s; was " + queueDelay + "ms");
-        assertTrue(queueDelay < 5000, "Must not exceed base+jitter+overhead; was " + queueDelay + "ms");
+        assertTrue(
+                queueDelay < 5000,
+                "Must not exceed base+jitter+overhead; was " + queueDelay + "ms");
 
         completeTask(wfId, retried.getTaskId());
         awaitCompleted(wfId);
@@ -435,7 +458,8 @@ public class RetryPolicyTests {
         long s1 = retry1.getScheduledTime();
         Task t1 = pollTask(tt);
         long d1 = System.currentTimeMillis() - s1;
-        assertTrue(d1 >= 2000 && d1 < 4000,
+        assertTrue(
+                d1 >= 2000 && d1 < 4000,
                 "retry1 queue delay should be in [2s, 4s]; was " + d1 + "ms");
 
         completeTask(wfId, t1.getTaskId());
@@ -492,7 +516,8 @@ public class RetryPolicyTests {
         long s = retry.getScheduledTime();
         Task t = pollTask(tt);
         long d = System.currentTimeMillis() - s;
-        assertTrue(d >= 2000 && d < 4000,
+        assertTrue(
+                d >= 2000 && d < 4000,
                 "1ms jitter should not significantly change timing; was " + d + "ms");
 
         completeTask(wfId, t.getTaskId());
@@ -502,7 +527,8 @@ public class RetryPolicyTests {
     // --- Combined cap + jitter ---
 
     @Test
-    @DisplayName("Cap applied before jitter: callbackAfterSeconds=cap; queue delay in [cap, cap+jitter]")
+    @DisplayName(
+            "Cap applied before jitter: callbackAfterSeconds=cap; queue delay in [cap, cap+jitter]")
     void testMaxRetryDelaySeconds_withJitter() {
         String tt = "e2e-cap-jitter-task", wf = "e2e-cap-jitter-wf";
         // base=1s, cap=3s, jitter=500ms; at retry3: 4s→3s, queue delay in [3s, 3.5s]
@@ -525,7 +551,9 @@ public class RetryPolicyTests {
         // retry 2 → retry 3: raw=4s → capped=3s; queue delay in [3000, 3500]ms
         failTask(wfId, pollTask(tt).getTaskId());
         Task retry3 = awaitScheduledRetry(wfId, 4);
-        assertEquals(3L, retry3.getCallbackAfterSeconds(),
+        assertEquals(
+                3L,
+                retry3.getCallbackAfterSeconds(),
                 "callbackAfterSeconds reflects cap (3s), not raw (4s)");
 
         long s = retry3.getScheduledTime();
@@ -570,13 +598,14 @@ public class RetryPolicyTests {
         ExecutorService pool = Executors.newFixedThreadPool(N);
         CountDownLatch allFailed = new CountDownLatch(N);
         for (String id : wfIds) {
-            pool.submit(() -> {
-                try {
-                    failTask(id, pollTask(tt).getTaskId());
-                } finally {
-                    allFailed.countDown();
-                }
-            });
+            pool.submit(
+                    () -> {
+                        try {
+                            failTask(id, pollTask(tt).getTaskId());
+                        } finally {
+                            allFailed.countDown();
+                        }
+                    });
         }
         assertTrue(allFailed.await(30, TimeUnit.SECONDS), "All tasks failed within timeout");
         pool.shutdown();
@@ -585,7 +614,8 @@ public class RetryPolicyTests {
         Set<Long> pollTimestampsSeconds = ConcurrentHashMap.newKeySet();
         long start = System.currentTimeMillis();
         while (pollTimestampsSeconds.size() < N && System.currentTimeMillis() - start < 15_000) {
-            List<Task> batch = taskClient.batchPollTasksByTaskType(tt, "e2e-concurrency-worker", N, 500);
+            List<Task> batch =
+                    taskClient.batchPollTasksByTaskType(tt, "e2e-concurrency-worker", N, 500);
             long nowSec = System.currentTimeMillis() / 1000;
             for (Task t : batch) {
                 pollTimestampsSeconds.add(nowSec);
@@ -594,7 +624,9 @@ public class RetryPolicyTests {
             if (batch.isEmpty()) Thread.sleep(200);
         }
 
-        assertEquals(N, pollTimestampsSeconds.size() + /* could be in same second with low N */ 0,
+        assertEquals(
+                N,
+                pollTimestampsSeconds.size() + /* could be in same second with low N */ 0,
                 "All " + N + " retry tasks must eventually be polled");
 
         // With 2s jitter and N=5 tasks, it's statistically very unlikely that all tasks become
@@ -602,9 +634,14 @@ public class RetryPolicyTests {
         // We assert that tasks spread across at least 2 distinct second-buckets.
         // (P(all same bucket) ≈ (1/2)^4 = 6.25% with uniform jitter over 2s — acceptable flakiness
         //  threshold given that test failures prompt investigation rather than automatic re-run.)
-        assertTrue(pollTimestampsSeconds.size() >= 2 || N == 1,
-                "With " + N + " tasks and 2s jitter, retries must spread across ≥2 second-buckets. "
-                        + "All " + N + " tasks appeared in the same second — jitter may not be applied.");
+        assertTrue(
+                pollTimestampsSeconds.size() >= 2 || N == 1,
+                "With "
+                        + N
+                        + " tasks and 2s jitter, retries must spread across ≥2 second-buckets. "
+                        + "All "
+                        + N
+                        + " tasks appeared in the same second — jitter may not be applied.");
     }
 
     @Test
@@ -629,21 +666,23 @@ public class RetryPolicyTests {
         ExecutorService pool = Executors.newFixedThreadPool(N);
         CountDownLatch done = new CountDownLatch(N);
         for (String id : wfIds) {
-            pool.submit(() -> {
-                try {
-                    failTask(id, pollTask(tt).getTaskId());
-                    // await and complete the retry
-                    Task retry = awaitScheduledRetry(id, 2);
-                    assertNotNull(retry, "retry task must be scheduled for wf " + id);
-                    // cap applied: base=1s (retry0), raw retry1=2s (2^1 * 1) → capped to 2s
-                    assertTrue(retry.getCallbackAfterSeconds() <= 2,
-                            "callbackAfterSeconds must be ≤ cap (2s); was "
-                                    + retry.getCallbackAfterSeconds());
-                    completeTask(id, pollTask(tt).getTaskId());
-                } finally {
-                    done.countDown();
-                }
-            });
+            pool.submit(
+                    () -> {
+                        try {
+                            failTask(id, pollTask(tt).getTaskId());
+                            // await and complete the retry
+                            Task retry = awaitScheduledRetry(id, 2);
+                            assertNotNull(retry, "retry task must be scheduled for wf " + id);
+                            // cap applied: base=1s (retry0), raw retry1=2s (2^1 * 1) → capped to 2s
+                            assertTrue(
+                                    retry.getCallbackAfterSeconds() <= 2,
+                                    "callbackAfterSeconds must be ≤ cap (2s); was "
+                                            + retry.getCallbackAfterSeconds());
+                            completeTask(id, pollTask(tt).getTaskId());
+                        } finally {
+                            done.countDown();
+                        }
+                    });
         }
         assertTrue(done.await(60, TimeUnit.SECONDS), "All " + N + " retry cycles completed");
         pool.shutdown();
@@ -651,7 +690,9 @@ public class RetryPolicyTests {
         // Verify all N workflows completed successfully
         for (String id : wfIds) {
             Workflow w = workflowClient.getWorkflow(id, false);
-            assertEquals(Workflow.WorkflowStatus.COMPLETED, w.getStatus(),
+            assertEquals(
+                    Workflow.WorkflowStatus.COMPLETED,
+                    w.getStatus(),
                     "Workflow " + id + " must be COMPLETED");
         }
     }
@@ -673,8 +714,9 @@ public class RetryPolicyTests {
     // =========================================================================
 
     @Test
-    @DisplayName("Poll gap fix: response timeout is detected promptly after polling "
-            + "(not delayed until poll timeout expires)")
+    @DisplayName(
+            "Poll gap fix: response timeout is detected promptly after polling "
+                    + "(not delayed until poll timeout expires)")
     void testPollGapFix_responseTimeoutDetectedBeforePollTimeout() {
         String tt = "e2e-poll-gap-task", wf = "e2e-poll-gap-wf";
 
@@ -683,7 +725,7 @@ public class RetryPolicyTests {
         Map<String, Object> def = taskDefBase(tt);
         def.put("retryCount", 0); // no retries — task goes straight to TIMED_OUT
         def.put("retryLogic", "FIXED");
-        def.put("pollTimeoutSeconds", 30);   // long poll window
+        def.put("pollTimeoutSeconds", 30); // long poll window
         def.put("responseTimeoutSeconds", 3); // short response window
         def.put("timeoutSeconds", 600);
         def.put("timeoutPolicy", "TIME_OUT_WF");
@@ -704,22 +746,31 @@ public class RetryPolicyTests {
         // Without fix: would take ~30s (poll timeout) — test would fail at 10s.
         await().atMost(10, TimeUnit.SECONDS)
                 .pollInterval(500, TimeUnit.MILLISECONDS)
-                .untilAsserted(() -> {
-                    Workflow w = workflowClient.getWorkflow(wfId, true);
-                    Task t = w.getTasks().stream()
-                            .filter(tk -> tk.getTaskId().equals(task.getTaskId()))
-                            .findFirst()
-                            .orElseThrow();
-                    assertEquals(Task.Status.TIMED_OUT, t.getStatus(),
-                            "Task must be TIMED_OUT within response timeout window");
-                });
+                .untilAsserted(
+                        () -> {
+                            Workflow w = workflowClient.getWorkflow(wfId, true);
+                            Task t =
+                                    w.getTasks().stream()
+                                            .filter(tk -> tk.getTaskId().equals(task.getTaskId()))
+                                            .findFirst()
+                                            .orElseThrow();
+                            assertEquals(
+                                    Task.Status.TIMED_OUT,
+                                    t.getStatus(),
+                                    "Task must be TIMED_OUT within response timeout window");
+                        });
 
         long elapsed = System.currentTimeMillis() - polledAt;
-        log.info("Task timed out {}ms after being polled (responseTimeout=3s, pollTimeout=30s)", elapsed);
+        log.info(
+                "Task timed out {}ms after being polled (responseTimeout=3s, pollTimeout=30s)",
+                elapsed);
 
         // The key assertion: timed out well before the poll timeout would have fired.
-        assertTrue(elapsed < 20_000,
-                "Task timed out " + elapsed + "ms after polling — poll gap fix must advance the"
+        assertTrue(
+                elapsed < 20_000,
+                "Task timed out "
+                        + elapsed
+                        + "ms after polling — poll gap fix must advance the"
                         + " sweep to responseTimeout (~3s), not pollTimeout (~30s)");
     }
 
@@ -737,16 +788,26 @@ public class RetryPolicyTests {
 
     /** Helper: starts a background worker that always fails every task of the given type. */
     private TaskRunnerConfigurer startAlwaysFailingWorker(String taskType) {
-        Worker worker = new Worker() {
-            @Override public String getTaskDefName() { return taskType; }
-            @Override public TaskResult execute(Task task) {
-                TaskResult r = new TaskResult(task);
-                r.setStatus(TaskResult.Status.FAILED);
-                r.setReasonForIncompletion("e2e totalTimeout stress test");
-                return r;
-            }
-            @Override public int getPollingInterval() { return 100; }
-        };
+        Worker worker =
+                new Worker() {
+                    @Override
+                    public String getTaskDefName() {
+                        return taskType;
+                    }
+
+                    @Override
+                    public TaskResult execute(Task task) {
+                        TaskResult r = new TaskResult(task);
+                        r.setStatus(TaskResult.Status.FAILED);
+                        r.setReasonForIncompletion("e2e totalTimeout stress test");
+                        return r;
+                    }
+
+                    @Override
+                    public int getPollingInterval() {
+                        return 100;
+                    }
+                };
         TaskRunnerConfigurer configurer =
                 new TaskRunnerConfigurer.Builder(taskClient, List.of(worker))
                         .withThreadCount(2)
@@ -818,7 +879,9 @@ public class RetryPolicyTests {
 
         awaitCompleted(wfId);
         Workflow workflow = workflowClient.getWorkflow(wfId, false);
-        assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus(),
+        assertEquals(
+                Workflow.WorkflowStatus.COMPLETED,
+                workflow.getStatus(),
                 "Workflow must complete when total budget is not exhausted");
     }
 
@@ -852,15 +915,17 @@ public class RetryPolicyTests {
             AtomicReference<Workflow> finalWorkflow = new AtomicReference<>();
             await().atMost(30, TimeUnit.SECONDS)
                     .pollInterval(500, TimeUnit.MILLISECONDS)
-                    .untilAsserted(() -> {
-                        Workflow w = workflowClient.getWorkflow(wfId, false);
-                        assertTrue(
-                                w.getStatus() == Workflow.WorkflowStatus.FAILED
-                                        || w.getStatus() == Workflow.WorkflowStatus.TIMED_OUT,
-                                "Workflow must terminate once total timeout is exceeded; status="
-                                        + w.getStatus());
-                        finalWorkflow.set(w);
-                    });
+                    .untilAsserted(
+                            () -> {
+                                Workflow w = workflowClient.getWorkflow(wfId, false);
+                                assertTrue(
+                                        w.getStatus() == Workflow.WorkflowStatus.FAILED
+                                                || w.getStatus()
+                                                        == Workflow.WorkflowStatus.TIMED_OUT,
+                                        "Workflow must terminate once total timeout is exceeded; status="
+                                                + w.getStatus());
+                                finalWorkflow.set(w);
+                            });
 
             // The key assertion: far fewer than 100 tasks were scheduled.
             // If total timeout is enforced, the workflow terminates in a handful of retries.
@@ -868,21 +933,28 @@ public class RetryPolicyTests {
             // but the workflow would only fail at retry exhaustion, not after 4 s.
             Workflow wf2 = workflowClient.getWorkflow(wfId, true);
             int taskCount = wf2.getTasks().size();
-            log.info("Workflow terminated after {} task attempts (totalTimeoutSeconds=4, retryCount=100)",
+            log.info(
+                    "Workflow terminated after {} task attempts (totalTimeoutSeconds=4, retryCount=100)",
                     taskCount);
-            assertTrue(taskCount < 100,
+            assertTrue(
+                    taskCount < 100,
                     "Workflow must terminate before exhausting all 100 retries — "
-                            + "total timeout (4s) should fire first. taskCount=" + taskCount);
+                            + "total timeout (4s) should fire first. taskCount="
+                            + taskCount);
 
         } finally {
-            try { workerConfigurer.shutdown(); } catch (Exception ignored) {}
+            try {
+                workerConfigurer.shutdown();
+            } catch (Exception ignored) {
+            }
         }
     }
 
     // --- interaction: totalTimeout + maxRetryDelayCap ---
 
     @Test
-    @DisplayName("totalTimeout + maxRetryDelayCap: cap applied to retry delay; hard budget still enforced")
+    @DisplayName(
+            "totalTimeout + maxRetryDelayCap: cap applied to retry delay; hard budget still enforced")
     void testTotalTimeoutSeconds_withMaxRetryDelayCap() {
         String tt = "e2e-total-cap-combo-task", wf = "e2e-total-cap-combo-wf";
 
@@ -905,12 +977,16 @@ public class RetryPolicyTests {
         // Fail twice, verify cap is applied AND retries are scheduled (total budget not hit)
         failTask(wfId, pollTask(tt).getTaskId());
         Task retry1 = awaitScheduledRetry(wfId, 2);
-        assertEquals(1L, retry1.getCallbackAfterSeconds(),
+        assertEquals(
+                1L,
+                retry1.getCallbackAfterSeconds(),
                 "retry1: 1×2⁰=1s (below cap 2s, well within totalTimeout 60s)");
 
         failTask(wfId, pollTask(tt).getTaskId());
         Task retry2 = awaitScheduledRetry(wfId, 3);
-        assertEquals(2L, retry2.getCallbackAfterSeconds(),
+        assertEquals(
+                2L,
+                retry2.getCallbackAfterSeconds(),
                 "retry2: 1×2¹=2s = cap, still within totalTimeout 60s");
 
         completeTask(wfId, pollTask(tt).getTaskId());
@@ -920,7 +996,8 @@ public class RetryPolicyTests {
     // --- interaction: totalTimeout + backoffJitterMs ---
 
     @Test
-    @DisplayName("totalTimeout + backoffJitterMs: jitter applies per retry; hard budget still enforced")
+    @DisplayName(
+            "totalTimeout + backoffJitterMs: jitter applies per retry; hard budget still enforced")
     void testTotalTimeoutSeconds_withJitter() {
         String tt = "e2e-total-jitter-combo-task", wf = "e2e-total-jitter-combo-wf";
 
@@ -942,8 +1019,11 @@ public class RetryPolicyTests {
 
         failTask(wfId, pollTask(tt).getTaskId());
         Task retry1 = awaitScheduledRetry(wfId, 2);
-        // callbackAfterSeconds = base delay (jitter is in callbackAfterMs, not visible via HTTP API)
-        assertEquals(1L, retry1.getCallbackAfterSeconds(),
+        // callbackAfterSeconds = base delay (jitter is in callbackAfterMs, not visible via HTTP
+        // API)
+        assertEquals(
+                1L,
+                retry1.getCallbackAfterSeconds(),
                 "callbackAfterSeconds must equal base delay regardless of jitter");
 
         long scheduledAt = retry1.getScheduledTime();
@@ -959,7 +1039,8 @@ public class RetryPolicyTests {
     // --- firstScheduledTime preserved across multiple retries ---
 
     @Test
-    @DisplayName("firstScheduledTime preserved: budget measured from first schedule, not each retry")
+    @DisplayName(
+            "firstScheduledTime preserved: budget measured from first schedule, not each retry")
     void testTotalTimeoutSeconds_firstScheduledTimePreservedAcrossRetries() {
         String tt = "e2e-total-preserve-task", wf = "e2e-total-preserve-wf";
 
@@ -988,10 +1069,15 @@ public class RetryPolicyTests {
         // All 3 retries should have been scheduled — total elapsed is << 60s
         Workflow wf2 = workflowClient.getWorkflow(wfId, true);
         long elapsed = System.currentTimeMillis() - testStart;
-        assertEquals(4, wf2.getTasks().size(),
+        assertEquals(
+                4,
+                wf2.getTasks().size(),
                 "Should have 4 tasks (original + 3 retries) after 3 failures; "
-                        + "elapsed=" + elapsed + "ms");
-        assertTrue(elapsed < 10_000,
+                        + "elapsed="
+                        + elapsed
+                        + "ms");
+        assertTrue(
+                elapsed < 10_000,
                 "Test must complete in << 60s totalTimeout; elapsed=" + elapsed + "ms");
 
         completeTask(wfId, pollTask(tt).getTaskId());
@@ -1001,11 +1087,13 @@ public class RetryPolicyTests {
     // --- ALERT_ONLY policy behavior ---
 
     @Test
-    @DisplayName("ALERT_ONLY policy + totalTimeout exceeded: workflow terminates when task explicitly fails")
+    @DisplayName(
+            "ALERT_ONLY policy + totalTimeout exceeded: workflow terminates when task explicitly fails")
     void testTotalTimeoutSeconds_alertOnlyPolicy_terminatesOnWorkerFailure() {
         // When a worker explicitly fails a task and the total budget is already exhausted,
         // the retry() guard fires and terminates the workflow.
-        // This is intentional: totalTimeoutSeconds is a hard budget regardless of per-attempt policy.
+        // This is intentional: totalTimeoutSeconds is a hard budget regardless of per-attempt
+        // policy.
         // (ALERT_ONLY controls single-attempt timeouts; the total limit is absolute.)
         String tt = "e2e-total-alert-only-task", wf = "e2e-total-alert-only-wf";
 
@@ -1028,26 +1116,34 @@ public class RetryPolicyTests {
             workerConfigurer = startAlwaysFailingWorker(tt);
             String wfId = startWorkflow(wf);
 
-            // Workflow must terminate even with ALERT_ONLY, because the retry() guard is a hard stop
+            // Workflow must terminate even with ALERT_ONLY, because the retry() guard is a hard
+            // stop
             await().atMost(30, TimeUnit.SECONDS)
                     .pollInterval(500, TimeUnit.MILLISECONDS)
-                    .untilAsserted(() -> {
-                        Workflow w = workflowClient.getWorkflow(wfId, false);
-                        assertTrue(
-                                w.getStatus() == Workflow.WorkflowStatus.FAILED
-                                        || w.getStatus() == Workflow.WorkflowStatus.TIMED_OUT,
-                                "ALERT_ONLY with totalTimeout must still terminate after budget exhausted; "
-                                        + "status=" + w.getStatus());
-                    });
+                    .untilAsserted(
+                            () -> {
+                                Workflow w = workflowClient.getWorkflow(wfId, false);
+                                assertTrue(
+                                        w.getStatus() == Workflow.WorkflowStatus.FAILED
+                                                || w.getStatus()
+                                                        == Workflow.WorkflowStatus.TIMED_OUT,
+                                        "ALERT_ONLY with totalTimeout must still terminate after budget exhausted; "
+                                                + "status="
+                                                + w.getStatus());
+                            });
 
             // Fewer tasks than retryCount — proves totalTimeout, not retry exhaustion, stopped it
             Workflow wfFinal = workflowClient.getWorkflow(wfId, true);
-            assertTrue(wfFinal.getTasks().size() < 100,
+            assertTrue(
+                    wfFinal.getTasks().size() < 100,
                     "Must have terminated before retryCount=100 is exhausted");
 
         } finally {
             if (workerConfigurer != null) {
-                try { workerConfigurer.shutdown(); } catch (Exception ignored) {}
+                try {
+                    workerConfigurer.shutdown();
+                } catch (Exception ignored) {
+                }
             }
         }
     }
@@ -1079,15 +1175,16 @@ public class RetryPolicyTests {
         ExecutorService pool = Executors.newFixedThreadPool(N);
         CountDownLatch done = new CountDownLatch(N);
         for (String id : wfIds) {
-            pool.submit(() -> {
-                try {
-                    failTask(id, pollTask(tt).getTaskId());
-                    awaitScheduledRetry(id, 2);
-                    completeTask(id, pollTask(tt).getTaskId());
-                } finally {
-                    done.countDown();
-                }
-            });
+            pool.submit(
+                    () -> {
+                        try {
+                            failTask(id, pollTask(tt).getTaskId());
+                            awaitScheduledRetry(id, 2);
+                            completeTask(id, pollTask(tt).getTaskId());
+                        } finally {
+                            done.countDown();
+                        }
+                    });
         }
         assertTrue(done.await(60, TimeUnit.SECONDS));
         pool.shutdown();
@@ -1095,7 +1192,9 @@ public class RetryPolicyTests {
         // All N workflows must complete — totalTimeout (30s) was not reached by any instance
         for (String id : wfIds) {
             Workflow w = workflowClient.getWorkflow(id, false);
-            assertEquals(Workflow.WorkflowStatus.COMPLETED, w.getStatus(),
+            assertEquals(
+                    Workflow.WorkflowStatus.COMPLETED,
+                    w.getStatus(),
                     "Every workflow instance must complete when total budget is not exhausted");
         }
     }

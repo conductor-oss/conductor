@@ -35,11 +35,11 @@ import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.conductor.redis.jedis.JedisCommands;
 
 import com.github.benmanes.caffeine.cache.Cache;
-import redis.clients.jedis.params.ZAddParams;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.orkes.conductor.mq.ConductorQueue;
 import io.orkes.conductor.mq.QueueMessage;
 import lombok.extern.slf4j.Slf4j;
+import redis.clients.jedis.params.ZAddParams;
 
 @Slf4j
 public abstract class BaseRedisQueueDAO implements QueueDAO {

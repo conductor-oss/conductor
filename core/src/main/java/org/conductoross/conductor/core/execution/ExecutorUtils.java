@@ -39,8 +39,8 @@ public class ExecutorUtils {
      *         <li><b>SCHEDULED</b> – the worker has not polled yet.
      *             <ul>
      *               <li>If the task definition has a non-zero {@code pollTimeoutSeconds}: candidate
-     *                   = remaining seconds until the poll window expires ({@code pollTimeoutSeconds
-     *                   - elapsedSecondsSinceScheduled + 1}), floored at 0.
+     *                   = remaining seconds until the poll window expires ({@code
+     *                   pollTimeoutSeconds - elapsedSecondsSinceScheduled + 1}), floored at 0.
      *               <li>Else if the workflow definition has a non-zero {@code timeoutSeconds}:
      *                   candidate = {@code workflowTimeoutSeconds + 1}.
      *               <li>Otherwise: candidate = {@code workflowOffsetTimeout}.
@@ -59,12 +59,11 @@ public class ExecutorUtils {
      *                   when non-zero, otherwise the task model value (allowing workflow-task-level
      *                   overrides to be honoured even when the task def has no timeout).
      *               <li>If the effective {@code responseTimeoutSeconds} is non-zero: candidate =
-     *                   {@code responseTimeoutSeconds - elapsedSeconds + 1}, floored at 0 (the
-     *                   +1 gives a one-second buffer past the deadline before re-evaluating).
+     *                   {@code responseTimeoutSeconds - elapsedSeconds + 1}, floored at 0 (the +1
+     *                   gives a one-second buffer past the deadline before re-evaluating).
      *               <li>Otherwise: candidate = {@code workflowOffsetTimeout}.
      *             </ul>
-     *         <li><b>Any other status</b> (COMPLETED, FAILED, …): skipped — no candidate
-     *             produced.
+     *         <li><b>Any other status</b> (COMPLETED, FAILED, …): skipped — no candidate produced.
      *       </ul>
      *   <li>Each candidate is clamped to 0 if negative, then capped at {@code maxPostponeDuration}
      *       when {@code maxPostponeDuration > 0}.

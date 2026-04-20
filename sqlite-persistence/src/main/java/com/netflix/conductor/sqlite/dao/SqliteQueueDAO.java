@@ -204,8 +204,7 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
     }
 
     @Override
-    public boolean setUnackTimeoutIfShorter(
-            String queueName, String messageId, long unackTimeout) {
+    public boolean setUnackTimeoutIfShorter(String queueName, String messageId, long unackTimeout) {
         long updatedOffsetTimeInSecond = unackTimeout / 1000;
 
         // Only update when the proposed deliver_on is earlier than what is already set,

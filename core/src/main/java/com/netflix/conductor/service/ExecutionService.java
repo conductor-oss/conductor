@@ -216,9 +216,9 @@ public class ExecutionService {
      * pollTimeoutSeconds to responseTimeoutSeconds. Advance the decider queue entry to fire at the
      * response timeout so the sweeper doesn't wait for the now-stale poll-based postpone.
      *
-     * <p>Uses {@link QueueDAO#setUnackTimeoutIfShorter} so we never push the evaluation further
-     * out than whatever the sweeper already scheduled (e.g. for another in-flight task with a
-     * shorter remaining timeout).
+     * <p>Uses {@link QueueDAO#setUnackTimeoutIfShorter} so we never push the evaluation further out
+     * than whatever the sweeper already scheduled (e.g. for another in-flight task with a shorter
+     * remaining timeout).
      */
     private void adjustDeciderQueuePostpone(TaskModel taskModel, TaskDef taskDef) {
         long responseTimeoutSeconds =

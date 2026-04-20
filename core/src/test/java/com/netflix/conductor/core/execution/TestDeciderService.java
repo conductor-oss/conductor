@@ -909,19 +909,15 @@ public class TestDeciderService {
         taskDef.setBackoffJitterMs(5000); // up to 5 000 ms of jitter
         WorkflowTask workflowTask = new WorkflowTask();
 
-        Optional<TaskModel> retried =
-                deciderService.retry(taskDef, workflowTask, task, workflow);
+        Optional<TaskModel> retried = deciderService.retry(taskDef, workflowTask, task, workflow);
 
         // callbackAfterSeconds stays at the base delay
         assertEquals(60, retried.get().getCallbackAfterSeconds());
         // callbackAfterMs must be in [60_000, 65_000]
         long callbackMs = retried.get().getCallbackAfterMs();
+        assertTrue("callbackAfterMs should be >= base delay ms", callbackMs >= 60_000);
         assertTrue(
-                "callbackAfterMs should be >= base delay ms",
-                callbackMs >= 60_000);
-        assertTrue(
-                "callbackAfterMs should be <= base delay ms + maxJitterMs",
-                callbackMs <= 65_000);
+                "callbackAfterMs should be <= base delay ms + maxJitterMs", callbackMs <= 65_000);
     }
 
     @Test
@@ -939,8 +935,7 @@ public class TestDeciderService {
         taskDef.setBackoffJitterMs(0); // no jitter
         WorkflowTask workflowTask = new WorkflowTask();
 
-        Optional<TaskModel> retried =
-                deciderService.retry(taskDef, workflowTask, task, workflow);
+        Optional<TaskModel> retried = deciderService.retry(taskDef, workflowTask, task, workflow);
 
         assertEquals(60, retried.get().getCallbackAfterSeconds());
         assertEquals(60_000, retried.get().getCallbackAfterMs());
@@ -998,8 +993,10 @@ public class TestDeciderService {
         assertEquals(20, t2.get().getCallbackAfterSeconds());
 
         Optional<TaskModel> t3 = deciderService.retry(taskDef, workflowTask, t2.get(), workflow);
-        assertEquals("cap=0 must be treated as disabled: 10*2^2=40s is NOT capped",
-                40, t3.get().getCallbackAfterSeconds());
+        assertEquals(
+                "cap=0 must be treated as disabled: 10*2^2=40s is NOT capped",
+                40,
+                t3.get().getCallbackAfterSeconds());
     }
 
     /** Boundary: cap < retryDelaySeconds — cap fires immediately from the first retry. */
@@ -1018,12 +1015,16 @@ public class TestDeciderService {
         WorkflowTask workflowTask = new WorkflowTask();
 
         Optional<TaskModel> t1 = deciderService.retry(taskDef, workflowTask, task, workflow);
-        assertEquals("FIXED base=60s must be capped to 10s immediately",
-                10, t1.get().getCallbackAfterSeconds());
+        assertEquals(
+                "FIXED base=60s must be capped to 10s immediately",
+                10,
+                t1.get().getCallbackAfterSeconds());
 
         Optional<TaskModel> t2 = deciderService.retry(taskDef, workflowTask, t1.get(), workflow);
-        assertEquals("All subsequent retries must also be capped at 10s",
-                10, t2.get().getCallbackAfterSeconds());
+        assertEquals(
+                "All subsequent retries must also be capped at 10s",
+                10,
+                t2.get().getCallbackAfterSeconds());
     }
 
     /** Boundary: jitterMs=1 (minimum non-zero) — callbackAfterMs is base or base+1. */
@@ -1045,7 +1046,8 @@ public class TestDeciderService {
         assertEquals(30, retried.get().getCallbackAfterSeconds());
         // callbackAfterMs must be in [30_000, 30_001]
         assertTrue(retried.get().getCallbackAfterMs() >= 30_000);
-        assertTrue("With jitter=1ms, callbackAfterMs must be in [30000, 30001]; was "
+        assertTrue(
+                "With jitter=1ms, callbackAfterMs must be in [30000, 30001]; was "
                         + retried.get().getCallbackAfterMs(),
                 retried.get().getCallbackAfterMs() <= 30_001);
     }
@@ -1074,12 +1076,17 @@ public class TestDeciderService {
             t.setStatus(TaskModel.Status.FAILED);
             t.setTaskId("t-" + i);
             t.setRetryCount(0);
-            distinctMs.add(deciderService.retry(taskDef, workflowTask, t, workflow)
-                    .get().getCallbackAfterMs());
+            distinctMs.add(
+                    deciderService
+                            .retry(taskDef, workflowTask, t, workflow)
+                            .get()
+                            .getCallbackAfterMs());
         }
 
-        // With 2000ms jitter over 10 retries, getting 10 identical values is astronomically unlikely
-        assertTrue("jitter must produce variance across multiple retries; all 10 had same callbackAfterMs",
+        // With 2000ms jitter over 10 retries, getting 10 identical values is astronomically
+        // unlikely
+        assertTrue(
+                "jitter must produce variance across multiple retries; all 10 had same callbackAfterMs",
                 distinctMs.size() > 1);
     }
 
@@ -1121,8 +1128,10 @@ public class TestDeciderService {
         taskDef.setTimeoutPolicy(TaskDef.TimeoutPolicy.RETRY);
 
         deciderService.checkTotalTimeout(taskDef, task);
-        assertEquals("RETRY policy sets task to TIMED_OUT",
-                TaskModel.Status.TIMED_OUT, task.getStatus());
+        assertEquals(
+                "RETRY policy sets task to TIMED_OUT",
+                TaskModel.Status.TIMED_OUT,
+                task.getStatus());
     }
 
     @Test(expected = com.netflix.conductor.core.exception.TerminateWorkflowException.class)
@@ -1156,8 +1165,10 @@ public class TestDeciderService {
         taskDef.setTotalTimeoutSeconds(0); // disabled
 
         deciderService.checkTotalTimeout(taskDef, task);
-        assertEquals("totalTimeoutSeconds=0 means disabled; status must be unchanged",
-                TaskModel.Status.IN_PROGRESS, task.getStatus());
+        assertEquals(
+                "totalTimeoutSeconds=0 means disabled; status must be unchanged",
+                TaskModel.Status.IN_PROGRESS,
+                task.getStatus());
     }
 
     @Test
@@ -1176,8 +1187,10 @@ public class TestDeciderService {
         taskDef.setTotalTimeoutSeconds(1); // very tight budget
 
         deciderService.checkTotalTimeout(taskDef, task);
-        assertEquals("firstScheduledTime=0 must be skipped for backward compat",
-                TaskModel.Status.IN_PROGRESS, task.getStatus());
+        assertEquals(
+                "firstScheduledTime=0 must be skipped for backward compat",
+                TaskModel.Status.IN_PROGRESS,
+                task.getStatus());
     }
 
     @Test(expected = com.netflix.conductor.core.exception.TerminateWorkflowException.class)
@@ -1238,15 +1251,17 @@ public class TestDeciderService {
 
         deciderService.checkTotalTimeout(taskDef, task);
         // ALERT_ONLY must NOT change task status — it only logs
-        assertEquals("ALERT_ONLY must not change task status",
-                TaskModel.Status.IN_PROGRESS, task.getStatus());
+        assertEquals(
+                "ALERT_ONLY must not change task status",
+                TaskModel.Status.IN_PROGRESS,
+                task.getStatus());
     }
 
     /**
-     * When a worker explicitly fails a task and the total budget is already exhausted,
-     * the retry() guard throws TerminateWorkflowException regardless of the per-attempt policy.
-     * This documents the intended behavior: totalTimeoutSeconds is a hard budget; the
-     * per-attempt timeoutPolicy controls single-attempt timeouts, not the total limit.
+     * When a worker explicitly fails a task and the total budget is already exhausted, the retry()
+     * guard throws TerminateWorkflowException regardless of the per-attempt policy. This documents
+     * the intended behavior: totalTimeoutSeconds is a hard budget; the per-attempt timeoutPolicy
+     * controls single-attempt timeouts, not the total limit.
      */
     @Test(expected = com.netflix.conductor.core.exception.TerminateWorkflowException.class)
     public void testRetry_totalTimeoutExceeded_alertOnlyPolicy_stillTerminates() {
@@ -1282,7 +1297,8 @@ public class TestDeciderService {
         task.setFirstScheduledTime(System.currentTimeMillis() - 200_000);
 
         TaskDef taskDef = new TaskDef();
-        taskDef.setRetryCount(0); // no retries — will throw, but due to retryCount=0, not total timeout
+        taskDef.setRetryCount(
+                0); // no retries — will throw, but due to retryCount=0, not total timeout
         taskDef.setTotalTimeoutSeconds(0); // disabled
         WorkflowTask workflowTask = new WorkflowTask();
 

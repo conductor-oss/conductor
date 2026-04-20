@@ -452,8 +452,8 @@ public class TaskDef extends Auditable {
      * delay for {@code EXPONENTIAL_BACKOFF} and {@code LINEAR_BACKOFF} retry logic will be capped
      * at this value. A value of 0 (the default) means no cap is applied.
      *
-     * <p>Example: 20 retries with exponential backoff starting at 1 s and capped at 600 s will
-     * back off as 1, 2, 4, 8, …, 600, 600, 600, … instead of growing unboundedly.
+     * <p>Example: 20 retries with exponential backoff starting at 1 s and capped at 600 s will back
+     * off as 1, 2, 4, 8, …, 600, 600, 600, … instead of growing unboundedly.
      */
     public int getMaxRetryDelaySeconds() {
         return maxRetryDelaySeconds;

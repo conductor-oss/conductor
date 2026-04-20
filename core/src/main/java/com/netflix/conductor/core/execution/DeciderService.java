@@ -662,10 +662,13 @@ public class DeciderService {
 
         task.setRetried(true);
 
-        // Compute ms-precision total delay: base delay in seconds + random jitter in [0, maxJitterMs]
+        // Compute ms-precision total delay: base delay in seconds + random jitter in [0,
+        // maxJitterMs]
         long jitterMs = 0;
         if (taskDefinition.getBackoffJitterMs() > 0) {
-            jitterMs = ThreadLocalRandom.current().nextLong(0, taskDefinition.getBackoffJitterMs() + 1);
+            jitterMs =
+                    ThreadLocalRandom.current()
+                            .nextLong(0, taskDefinition.getBackoffJitterMs() + 1);
         }
         long totalDelayMs = (long) startDelay * 1000 + jitterMs;
 
@@ -756,11 +759,11 @@ public class DeciderService {
      *
      * <p>When the budget is exceeded the task is timed out via the same {@link
      * #timeoutTaskWithTimeoutPolicy} path used for per-attempt timeouts, so the configured {@link
-     * TaskDef.TimeoutPolicy} still applies (ALERT_ONLY logs, RETRY sets TIMED_OUT which then
-     * fails permanently in {@link #retry}, TIME_OUT_WF terminates the workflow).
+     * TaskDef.TimeoutPolicy} still applies (ALERT_ONLY logs, RETRY sets TIMED_OUT which then fails
+     * permanently in {@link #retry}, TIME_OUT_WF terminates the workflow).
      *
-     * <p>Tasks created before {@code firstScheduledTime} was introduced (value == 0) are skipped
-     * to preserve backward compatibility.
+     * <p>Tasks created before {@code firstScheduledTime} was introduced (value == 0) are skipped to
+     * preserve backward compatibility.
      */
     @VisibleForTesting
     void checkTotalTimeout(TaskDef taskDef, TaskModel task) {
