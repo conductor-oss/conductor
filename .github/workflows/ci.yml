@@ -7,6 +7,32 @@ on:
   pull_request:
     paths-ignore:
       - "conductor-clients/**"
+  workflow_dispatch:
+    inputs:
+      redis_es8:
+        description: "Redis + Elasticsearch 8"
+        type: boolean
+        default: true
+      postgres:
+        description: "PostgreSQL"
+        type: boolean
+        default: false
+      mysql:
+        description: "MySQL"
+        type: boolean
+        default: false
+      redis_os3:
+        description: "Redis + OpenSearch 3"
+        type: boolean
+        default: false
+      redis_es7:
+        description: "Redis + Elasticsearch 7"
+        type: boolean
+        default: false
+      cassandra_es7:
+        description: "Cassandra + Elasticsearch 7"
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -175,16 +201,35 @@ jobs:
         with:
           name: test-harness-coverage-report
           path: "test-harness/build/reports/jacoco"
+  generate-e2e-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            items=""
+            [ "${{ inputs.redis_es8 }}"    = "true" ] && items="${items}{\"name\":\"redis-es8\",\"script\":\"./e2e/run_tests-es8.sh\"},"
+            [ "${{ inputs.postgres }}"     = "true" ] && items="${items}{\"name\":\"postgres\",\"script\":\"./e2e/run_tests-postgres.sh\"},"
+            [ "${{ inputs.mysql }}"        = "true" ] && items="${items}{\"name\":\"mysql\",\"script\":\"./e2e/run_tests-mysql.sh\"},"
+            [ "${{ inputs.redis_os3 }}"    = "true" ] && items="${items}{\"name\":\"redis-os3\",\"script\":\"./e2e/run_tests-redis-os3.sh\"},"
+            [ "${{ inputs.redis_es7 }}"    = "true" ] && items="${items}{\"name\":\"redis-es7\",\"script\":\"./e2e/run_tests-redis-es7.sh\"},"
+            [ "${{ inputs.cassandra_es7 }}" = "true" ] && items="${items}{\"name\":\"cassandra-es7\",\"script\":\"./e2e/run_tests-cassandra-es7.sh\"},"
+            items="${items%,}"
+            echo "matrix={\"include\":[${items}]}" >> "$GITHUB_OUTPUT"
+          else
+            echo 'matrix={"include":[{"name":"redis-es8","script":"./e2e/run_tests-es8.sh"}]}' >> "$GITHUB_OUTPUT"
+          fi
+
   e2e:
+    needs: generate-e2e-matrix
+    if: ${{ needs.generate-e2e-matrix.outputs.matrix != '{"include":[]}' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - name: postgres
-            script: ./e2e/run_tests-postgres.sh
-          - name: redis-es8
-            script: ./e2e/run_tests-es8.sh
+      matrix: ${{ fromJson(needs.generate-e2e-matrix.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v6
         with:
