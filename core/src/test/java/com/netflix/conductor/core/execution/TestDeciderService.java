@@ -824,6 +824,77 @@ public class TestDeciderService {
     }
 
     @Test
+    public void testExponentialBackoffWithMaxDelayCap() {
+        WorkflowModel workflow = createDefaultWorkflow();
+
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10);
+        taskDef.setRetryDelaySeconds(60);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.EXPONENTIAL_BACKOFF);
+        taskDef.setMaxRetryDelaySeconds(200); // cap at 200 s
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        // retry 0: 60 * 2^0 = 60 — below cap
+        Optional<TaskModel> task2 = deciderService.retry(taskDef, workflowTask, task, workflow);
+        assertEquals(60, task2.get().getCallbackAfterSeconds());
+
+        // retry 1: 60 * 2^1 = 120 — below cap
+        Optional<TaskModel> task3 =
+                deciderService.retry(taskDef, workflowTask, task2.get(), workflow);
+        assertEquals(120, task3.get().getCallbackAfterSeconds());
+
+        // retry 2: 60 * 2^2 = 240 — exceeds cap, should be clamped to 200
+        Optional<TaskModel> task4 =
+                deciderService.retry(taskDef, workflowTask, task3.get(), workflow);
+        assertEquals(200, task4.get().getCallbackAfterSeconds());
+
+        // retry 3: 60 * 2^3 = 480 — still capped at 200
+        Optional<TaskModel> task5 =
+                deciderService.retry(taskDef, workflowTask, task4.get(), workflow);
+        assertEquals(200, task5.get().getCallbackAfterSeconds());
+    }
+
+    @Test
+    public void testLinearBackoffWithMaxDelayCap() {
+        WorkflowModel workflow = createDefaultWorkflow();
+
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10);
+        taskDef.setRetryDelaySeconds(60);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.LINEAR_BACKOFF);
+        taskDef.setBackoffScaleFactor(2);
+        taskDef.setMaxRetryDelaySeconds(250); // cap at 250 s
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        // retry 0: 60 * 2 * 1 = 120 — below cap
+        Optional<TaskModel> task2 = deciderService.retry(taskDef, workflowTask, task, workflow);
+        assertEquals(120, task2.get().getCallbackAfterSeconds());
+
+        // retry 1: 60 * 2 * 2 = 240 — below cap
+        Optional<TaskModel> task3 =
+                deciderService.retry(taskDef, workflowTask, task2.get(), workflow);
+        assertEquals(240, task3.get().getCallbackAfterSeconds());
+
+        // retry 2: 60 * 2 * 3 = 360 — exceeds cap, should be clamped to 250
+        Optional<TaskModel> task4 =
+                deciderService.retry(taskDef, workflowTask, task3.get(), workflow);
+        assertEquals(250, task4.get().getCallbackAfterSeconds());
+
+        // retry 3: 60 * 2 * 4 = 480 — still capped at 250
+        Optional<TaskModel> task5 =
+                deciderService.retry(taskDef, workflowTask, task4.get(), workflow);
+        assertEquals(250, task5.get().getCallbackAfterSeconds());
+    }
+
+    @Test
     public void testFork() throws IOException {
         InputStream stream = TestDeciderService.class.getResourceAsStream("/test.json");
         WorkflowModel workflow = objectMapper.readValue(stream, WorkflowModel.class);

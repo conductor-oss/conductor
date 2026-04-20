@@ -129,6 +129,7 @@ public class ExecutorUtilsTest {
         task.setTaskType(taskType);
         task.setStatus(status);
         task.setTaskId("taskId-" + taskType + "-" + status);
+        task.setScheduledTime(System.currentTimeMillis());
         return task;
     }
 }

@@ -615,6 +615,7 @@ public class DeciderService {
                 // Reset integer overflow to max value
                 startDelay =
                         linearRetryDelaySeconds < 0 ? Integer.MAX_VALUE : linearRetryDelaySeconds;
+                startDelay = applyMaxRetryDelayCap(startDelay, taskDefinition);
                 break;
             case EXPONENTIAL_BACKOFF:
                 int exponentialRetryDelaySeconds =
@@ -625,6 +626,7 @@ public class DeciderService {
                         exponentialRetryDelaySeconds < 0
                                 ? Integer.MAX_VALUE
                                 : exponentialRetryDelaySeconds;
+                startDelay = applyMaxRetryDelayCap(startDelay, taskDefinition);
                 break;
         }
 
@@ -924,6 +926,11 @@ public class DeciderService {
                 .stream()
                 .filter(task -> !tasksInWorkflow.contains(task.getReferenceTaskName()))
                 .collect(Collectors.toList());
+    }
+
+    private int applyMaxRetryDelayCap(int delaySeconds, TaskDef taskDef) {
+        int cap = taskDef.getMaxRetryDelaySeconds();
+        return (cap > 0 && delaySeconds > cap) ? cap : delaySeconds;
     }
 
     private boolean isTaskSkipped(WorkflowTask taskToSchedule, WorkflowModel workflow) {

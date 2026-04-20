@@ -124,6 +124,10 @@ public class TaskDef extends Auditable {
     @Min(value = 1, message = "Backoff scale factor. Applicable for LINEAR_BACKOFF")
     private Integer backoffScaleFactor = 1;
 
+    @ProtoField(id = 24)
+    @Min(value = 0, message = "TaskDef maxRetryDelaySeconds: {value} must be >= 0")
+    private int maxRetryDelaySeconds = 0;
+
     @ProtoField(id = 21)
     private String baseType;
 
@@ -439,6 +443,22 @@ public class TaskDef extends Auditable {
         return backoffScaleFactor;
     }
 
+    /**
+     * Maximum delay between retries in seconds. When set to a value greater than 0, the computed
+     * delay for {@code EXPONENTIAL_BACKOFF} and {@code LINEAR_BACKOFF} retry logic will be capped
+     * at this value. A value of 0 (the default) means no cap is applied.
+     *
+     * <p>Example: 20 retries with exponential backoff starting at 1 s and capped at 600 s will
+     * back off as 1, 2, 4, 8, …, 600, 600, 600, … instead of growing unboundedly.
+     */
+    public int getMaxRetryDelaySeconds() {
+        return maxRetryDelaySeconds;
+    }
+
+    public void setMaxRetryDelaySeconds(int maxRetryDelaySeconds) {
+        this.maxRetryDelaySeconds = maxRetryDelaySeconds;
+    }
+
     public String getBaseType() {
         return baseType;
     }
@@ -521,7 +541,8 @@ public class TaskDef extends Auditable {
                 && Objects.equals(getBaseType(), taskDef.getBaseType())
                 && Objects.equals(getInputSchema(), taskDef.getInputSchema())
                 && Objects.equals(getOutputSchema(), taskDef.getOutputSchema())
-                && Objects.equals(getTotalTimeoutSeconds(), taskDef.getTotalTimeoutSeconds());
+                && Objects.equals(getTotalTimeoutSeconds(), taskDef.getTotalTimeoutSeconds())
+                && getMaxRetryDelaySeconds() == taskDef.getMaxRetryDelaySeconds();
     }
 
     @Override
@@ -548,6 +569,7 @@ public class TaskDef extends Auditable {
                 getBaseType(),
                 getInputSchema(),
                 getOutputSchema(),
-                getTotalTimeoutSeconds());
+                getTotalTimeoutSeconds(),
+                getMaxRetryDelaySeconds());
     }
 }
