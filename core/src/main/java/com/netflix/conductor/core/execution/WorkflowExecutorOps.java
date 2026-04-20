@@ -1626,6 +1626,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 if (task.getSeq() == 0) { // Set only if the seq was not set
                     task.setSeq(++count);
                 }
+                // Stamp the very first time this task enters the queue. Retried tasks carry
+                // this value forward (via TaskModel.copy()), so it is never overwritten here.
+                if (task.getFirstScheduledTime() == 0) {
+                    task.setFirstScheduledTime(System.currentTimeMillis());
+                }
             }
 
             // metric to track the distribution of number of tasks within a workflow

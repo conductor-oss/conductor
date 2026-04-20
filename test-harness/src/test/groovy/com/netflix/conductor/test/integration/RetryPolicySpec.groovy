@@ -22,6 +22,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.dal.ExecutionDAOFacade
+import com.netflix.conductor.core.exception.TerminateWorkflowException
 import com.netflix.conductor.test.base.AbstractSpecification
 
 /**
@@ -251,6 +252,104 @@ class RetryPolicySpec extends AbstractSpecification {
             def taskModel = executionDAOFacade.getTaskModel(rescheduled.taskId)
             assert taskModel.callbackAfterMs >= 3_000
             assert taskModel.callbackAfterMs <= 5_000
+        }
+    }
+
+    // =========================================================================
+    // totalTimeoutSeconds
+    // =========================================================================
+
+    def "totalTimeoutSeconds=0 is disabled — retries continue as normal"() {
+        given:
+        def taskDef = new TaskDef()
+        taskDef.name = TASK_NAME
+        taskDef.retryCount = 5
+        taskDef.retryDelaySeconds = 0
+        taskDef.retryLogic = TaskDef.RetryLogic.FIXED
+        taskDef.totalTimeoutSeconds = 0 // disabled
+        taskDef.timeoutSeconds = 3600
+        taskDef.responseTimeoutSeconds = 3600
+        metadataService.registerTaskDef([taskDef])
+
+        when:
+        def wfId = startWorkflow(WORKFLOW_NAME, 1, 'total-timeout-disabled', [:], null)
+        workflowExecutionService.updateTask(failedResult(pollUntilAvailable()))
+
+        then: "retry is scheduled (total timeout disabled)"
+        conditions.eventually {
+            def wf = workflowExecutionService.getExecutionStatus(wfId, true)
+            assert wf.tasks.size() >= 2
+            assert wf.tasks.last().status == Task.Status.SCHEDULED
+        }
+    }
+
+    def "totalTimeoutSeconds exceeded on retry — workflow fails with no further retries"() {
+        given: "A task with retries allowed but total budget of 5 s"
+        def taskDef = new TaskDef()
+        taskDef.name = TASK_NAME
+        taskDef.retryCount = 10
+        taskDef.retryDelaySeconds = 0
+        taskDef.retryLogic = TaskDef.RetryLogic.FIXED
+        taskDef.totalTimeoutSeconds = 5
+        taskDef.timeoutSeconds = 0      // disabled so constraint (timeoutSeconds ≤ totalTimeout) passes
+        taskDef.responseTimeoutSeconds = 1
+        taskDef.timeoutPolicy = TaskDef.TimeoutPolicy.TIME_OUT_WF
+        metadataService.registerTaskDef([taskDef])
+
+        when: "Start the workflow, burn some time, then fail the task"
+        def wfId = startWorkflow(WORKFLOW_NAME, 1, 'total-timeout-exceeded', [:], null)
+
+        // Retrieve the internal task model and backdate firstScheduledTime to exceed the budget
+        conditions.eventually {
+            assert workflowExecutionService.getExecutionStatus(wfId, true)
+                    .tasks.find { it.status == Task.Status.SCHEDULED } != null
+        }
+        def scheduled = workflowExecutionService.getExecutionStatus(wfId, true).tasks.first()
+        def taskModel = executionDAOFacade.getTaskModel(scheduled.taskId)
+        taskModel.firstScheduledTime = System.currentTimeMillis() - 60_000 // 60s ago > 5s budget
+        executionDAOFacade.updateTask(taskModel)
+
+        // Now fail the task — retry() should detect total timeout exceeded and terminate workflow
+        workflowExecutionService.updateTask(failedResult(pollUntilAvailable()))
+
+        then: "Workflow fails (total timeout exceeded, no more retries)"
+        conditions.eventually {
+            def wf = workflowExecutionService.getExecutionStatus(wfId, false)
+            assert wf.status == Workflow.WorkflowStatus.TIMED_OUT || wf.status == Workflow.WorkflowStatus.FAILED
+        }
+    }
+
+    def "totalTimeoutSeconds exceeded in checkTotalTimeout — IN_PROGRESS task is timed out"() {
+        given: "A task with RETRY timeout policy and a 5 s total budget"
+        def taskDef = new TaskDef()
+        taskDef.name = TASK_NAME
+        taskDef.retryCount = 10
+        taskDef.retryDelaySeconds = 0
+        taskDef.retryLogic = TaskDef.RetryLogic.FIXED
+        taskDef.totalTimeoutSeconds = 5
+        taskDef.timeoutSeconds = 0      // disabled so constraint passes
+        taskDef.responseTimeoutSeconds = 1
+        taskDef.timeoutPolicy = TaskDef.TimeoutPolicy.RETRY
+        metadataService.registerTaskDef([taskDef])
+
+        when: "Start the workflow, poll the task (IN_PROGRESS), then backdate firstScheduledTime"
+        def wfId = startWorkflow(WORKFLOW_NAME, 1, 'total-timeout-inprogress', [:], null)
+        def polled = pollUntilAvailable()
+
+        // Backdate firstScheduledTime on the IN_PROGRESS task to exceed total budget
+        def taskModel = executionDAOFacade.getTaskModel(polled.taskId)
+        taskModel.firstScheduledTime = System.currentTimeMillis() - 60_000
+        executionDAOFacade.updateTask(taskModel)
+
+        // Trigger a decide cycle (sweep) to fire checkTotalTimeout
+        sweep(wfId)
+
+        then: "Task is TIMED_OUT by checkTotalTimeout (RETRY policy sets status, doesn't terminate wf yet)"
+        conditions.eventually {
+            def wf = workflowExecutionService.getExecutionStatus(wfId, true)
+            def timedOutTask = wf.tasks.find { it.taskId == polled.taskId }
+            assert timedOutTask != null
+            assert timedOutTask.status == Task.Status.TIMED_OUT
         }
     }
 }

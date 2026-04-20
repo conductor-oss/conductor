@@ -126,6 +126,15 @@ public class TaskModel {
      */
     private long callbackAfterMs;
 
+    /**
+     * Epoch-millisecond timestamp of when this task was <em>first</em> scheduled, before any
+     * retries. Preserved across all retry attempts (copied but never reset) so that
+     * {@code totalTimeoutSeconds} on the task definition can be enforced as a hard wall-clock
+     * budget spanning the entire lifetime of the task including retry delays.
+     * Zero means the task was created before this field was introduced.
+     */
+    private long firstScheduledTime;
+
     private String workerId;
 
     private WorkflowTask workflowTask;
@@ -426,6 +435,14 @@ public class TaskModel {
 
     public void setCallbackAfterMs(long callbackAfterMs) {
         this.callbackAfterMs = callbackAfterMs;
+    }
+
+    public long getFirstScheduledTime() {
+        return firstScheduledTime;
+    }
+
+    public void setFirstScheduledTime(long firstScheduledTime) {
+        this.firstScheduledTime = firstScheduledTime;
     }
 
     public String getWorkerId() {

@@ -1083,6 +1083,164 @@ public class TestDeciderService {
                 distinctMs.size() > 1);
     }
 
+    // -------------------------------------------------------------------------
+    // totalTimeoutSeconds
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void testCheckTotalTimeout_notExceeded_noTimeout() {
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        task.setTaskId("t1");
+        task.setTaskDefName("test");
+        task.setWorkflowInstanceId(workflow.getWorkflowId());
+        task.setFirstScheduledTime(System.currentTimeMillis()); // just now — not exceeded
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setTotalTimeoutSeconds(60);
+
+        // Should be a no-op; task status must remain IN_PROGRESS
+        deciderService.checkTotalTimeout(taskDef, task);
+        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
+    }
+
+    @Test
+    public void testCheckTotalTimeout_exceeded_timesOutTask() {
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        task.setTaskId("t1");
+        task.setTaskDefName("test");
+        task.setWorkflowInstanceId(workflow.getWorkflowId());
+        // Push firstScheduledTime far into the past so the budget is exhausted
+        task.setFirstScheduledTime(System.currentTimeMillis() - 120_000); // 120s ago
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setTotalTimeoutSeconds(60); // budget = 60s, elapsed > 60s
+        taskDef.setTimeoutPolicy(TaskDef.TimeoutPolicy.RETRY);
+
+        deciderService.checkTotalTimeout(taskDef, task);
+        assertEquals("RETRY policy sets task to TIMED_OUT",
+                TaskModel.Status.TIMED_OUT, task.getStatus());
+    }
+
+    @Test(expected = com.netflix.conductor.core.exception.TerminateWorkflowException.class)
+    public void testCheckTotalTimeout_exceeded_timeOutWfPolicy_terminatesWorkflow() {
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        task.setTaskId("t1");
+        task.setTaskDefName("test");
+        task.setWorkflowInstanceId(workflow.getWorkflowId());
+        task.setFirstScheduledTime(System.currentTimeMillis() - 120_000);
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setTotalTimeoutSeconds(60);
+        taskDef.setTimeoutPolicy(TaskDef.TimeoutPolicy.TIME_OUT_WF);
+
+        deciderService.checkTotalTimeout(taskDef, task); // must throw
+    }
+
+    @Test
+    public void testCheckTotalTimeout_zeroDisabled_noTimeout() {
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        task.setTaskId("t1");
+        task.setTaskDefName("test");
+        task.setWorkflowInstanceId(workflow.getWorkflowId());
+        task.setFirstScheduledTime(System.currentTimeMillis() - 120_000); // way past any sane limit
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setTotalTimeoutSeconds(0); // disabled
+
+        deciderService.checkTotalTimeout(taskDef, task);
+        assertEquals("totalTimeoutSeconds=0 means disabled; status must be unchanged",
+                TaskModel.Status.IN_PROGRESS, task.getStatus());
+    }
+
+    @Test
+    public void testCheckTotalTimeout_firstScheduledTimeZero_skipped() {
+        // Tasks created before firstScheduledTime was introduced have value 0 —
+        // the check must be skipped for backward compatibility.
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        task.setTaskId("t1");
+        task.setTaskDefName("test");
+        task.setWorkflowInstanceId(workflow.getWorkflowId());
+        task.setFirstScheduledTime(0); // pre-feature task
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setTotalTimeoutSeconds(1); // very tight budget
+
+        deciderService.checkTotalTimeout(taskDef, task);
+        assertEquals("firstScheduledTime=0 must be skipped for backward compat",
+                TaskModel.Status.IN_PROGRESS, task.getStatus());
+    }
+
+    @Test(expected = com.netflix.conductor.core.exception.TerminateWorkflowException.class)
+    public void testRetry_totalTimeoutExceeded_preventsRetry() {
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+        task.setReasonForIncompletion("test failure");
+        task.setFirstScheduledTime(System.currentTimeMillis() - 200_000); // 200s ago
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10); // plenty of retries left
+        taskDef.setRetryDelaySeconds(1);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.FIXED);
+        taskDef.setTotalTimeoutSeconds(60); // budget = 60s, elapsed = 200s → exceeded
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        // Must throw TerminateWorkflowException — total timeout exceeded, no retry
+        deciderService.retry(taskDef, workflowTask, task, workflow);
+    }
+
+    @Test
+    public void testRetry_totalTimeoutNotYetExceeded_retriesNormally() {
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+        task.setReasonForIncompletion("test failure");
+        task.setFirstScheduledTime(System.currentTimeMillis()); // just now — budget not exhausted
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10);
+        taskDef.setRetryDelaySeconds(1);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.FIXED);
+        taskDef.setTotalTimeoutSeconds(3600); // 1 hour budget — far from exceeded
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        Optional<TaskModel> retried = deciderService.retry(taskDef, workflowTask, task, workflow);
+        assertTrue("retry must succeed when total budget is not exhausted", retried.isPresent());
+        assertEquals(1, retried.get().getRetryCount());
+    }
+
+    @Test(expected = com.netflix.conductor.core.exception.TerminateWorkflowException.class)
+    public void testRetry_totalTimeoutZero_doesNotPreventRetry() {
+        // totalTimeoutSeconds=0 means disabled — retries must still be allowed (up to retryCount).
+        // When retryCount is 0, the task fails terminally as usual (TerminateWorkflowException),
+        // but NOT because of total timeout.
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+        task.setReasonForIncompletion("failure");
+        task.setFirstScheduledTime(System.currentTimeMillis() - 200_000);
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(0); // no retries — will throw, but due to retryCount=0, not total timeout
+        taskDef.setTotalTimeoutSeconds(0); // disabled
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        deciderService.retry(taskDef, workflowTask, task, workflow);
+    }
+
     @Test
     public void testFork() throws IOException {
         InputStream stream = TestDeciderService.class.getResourceAsStream("/test.json");
