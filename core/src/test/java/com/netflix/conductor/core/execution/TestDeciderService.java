@@ -1221,6 +1221,54 @@ public class TestDeciderService {
         assertEquals(1, retried.get().getRetryCount());
     }
 
+    /** ALERT_ONLY policy: checkTotalTimeout should only log — task must remain unchanged. */
+    @Test
+    public void testCheckTotalTimeout_alertOnlyPolicy_onlyLogs() {
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        task.setTaskId("t1");
+        task.setTaskDefName("test");
+        task.setWorkflowInstanceId(workflow.getWorkflowId());
+        task.setFirstScheduledTime(System.currentTimeMillis() - 120_000);
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setTotalTimeoutSeconds(60);
+        taskDef.setTimeoutPolicy(TaskDef.TimeoutPolicy.ALERT_ONLY);
+
+        deciderService.checkTotalTimeout(taskDef, task);
+        // ALERT_ONLY must NOT change task status — it only logs
+        assertEquals("ALERT_ONLY must not change task status",
+                TaskModel.Status.IN_PROGRESS, task.getStatus());
+    }
+
+    /**
+     * When a worker explicitly fails a task and the total budget is already exhausted,
+     * the retry() guard throws TerminateWorkflowException regardless of the per-attempt policy.
+     * This documents the intended behavior: totalTimeoutSeconds is a hard budget; the
+     * per-attempt timeoutPolicy controls single-attempt timeouts, not the total limit.
+     */
+    @Test(expected = com.netflix.conductor.core.exception.TerminateWorkflowException.class)
+    public void testRetry_totalTimeoutExceeded_alertOnlyPolicy_stillTerminates() {
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED); // worker explicitly failed it
+        task.setTaskId("t1");
+        task.setReasonForIncompletion("worker failure");
+        task.setFirstScheduledTime(System.currentTimeMillis() - 200_000);
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10);
+        taskDef.setRetryDelaySeconds(1);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.FIXED);
+        taskDef.setTotalTimeoutSeconds(60);
+        taskDef.setTimeoutPolicy(TaskDef.TimeoutPolicy.ALERT_ONLY);
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        // Must throw — total budget exhausted regardless of ALERT_ONLY policy
+        deciderService.retry(taskDef, workflowTask, task, workflow);
+    }
+
     @Test(expected = com.netflix.conductor.core.exception.TerminateWorkflowException.class)
     public void testRetry_totalTimeoutZero_doesNotPreventRetry() {
         // totalTimeoutSeconds=0 means disabled — retries must still be allowed (up to retryCount).

@@ -136,7 +136,7 @@ public class TaskDef extends Auditable {
     private String baseType;
 
     @ProtoField(id = 22)
-    @NotNull
+    @Min(value = 0, message = "TaskDef totalTimeoutSeconds: {value} must be >= 0")
     private long totalTimeoutSeconds;
 
     @ProtoField(id = 23)

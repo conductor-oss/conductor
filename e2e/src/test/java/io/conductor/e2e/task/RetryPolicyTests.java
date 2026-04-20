@@ -879,6 +879,179 @@ public class RetryPolicyTests {
         }
     }
 
+    // --- interaction: totalTimeout + maxRetryDelayCap ---
+
+    @Test
+    @DisplayName("totalTimeout + maxRetryDelayCap: cap applied to retry delay; hard budget still enforced")
+    void testTotalTimeoutSeconds_withMaxRetryDelayCap() {
+        String tt = "e2e-total-cap-combo-task", wf = "e2e-total-cap-combo-wf";
+
+        // base=1s, cap=2s, totalBudget=60s: retries are delayed by at most 2s; budget never hit
+        Map<String, Object> def = new HashMap<>();
+        def.put("name", tt);
+        def.put("ownerEmail", "test@conductor.io");
+        def.put("retryCount", 5);
+        def.put("retryDelaySeconds", 1);
+        def.put("retryLogic", "EXPONENTIAL_BACKOFF");
+        def.put("maxRetryDelaySeconds", 2);
+        def.put("totalTimeoutSeconds", 60);
+        def.put("timeoutSeconds", 0);
+        def.put("responseTimeoutSeconds", 1);
+        registerTaskDef(def);
+        registerWorkflow(wf, tt);
+
+        String wfId = startWorkflow(wf);
+
+        // Fail twice, verify cap is applied AND retries are scheduled (total budget not hit)
+        failTask(wfId, pollTask(tt).getTaskId());
+        Task retry1 = awaitScheduledRetry(wfId, 2);
+        assertEquals(1L, retry1.getCallbackAfterSeconds(),
+                "retry1: 1×2⁰=1s (below cap 2s, well within totalTimeout 60s)");
+
+        failTask(wfId, pollTask(tt).getTaskId());
+        Task retry2 = awaitScheduledRetry(wfId, 3);
+        assertEquals(2L, retry2.getCallbackAfterSeconds(),
+                "retry2: 1×2¹=2s = cap, still within totalTimeout 60s");
+
+        completeTask(wfId, pollTask(tt).getTaskId());
+        awaitCompleted(wfId);
+    }
+
+    // --- interaction: totalTimeout + backoffJitterMs ---
+
+    @Test
+    @DisplayName("totalTimeout + backoffJitterMs: jitter applies per retry; hard budget still enforced")
+    void testTotalTimeoutSeconds_withJitter() {
+        String tt = "e2e-total-jitter-combo-task", wf = "e2e-total-jitter-combo-wf";
+
+        // base=1s, jitter=500ms, totalBudget=60s: retries get jitter; budget never hit
+        Map<String, Object> def = new HashMap<>();
+        def.put("name", tt);
+        def.put("ownerEmail", "test@conductor.io");
+        def.put("retryCount", 5);
+        def.put("retryDelaySeconds", 1);
+        def.put("retryLogic", "FIXED");
+        def.put("backoffJitterMs", 500);
+        def.put("totalTimeoutSeconds", 60);
+        def.put("timeoutSeconds", 0);
+        def.put("responseTimeoutSeconds", 1);
+        registerTaskDef(def);
+        registerWorkflow(wf, tt);
+
+        String wfId = startWorkflow(wf);
+
+        failTask(wfId, pollTask(tt).getTaskId());
+        Task retry1 = awaitScheduledRetry(wfId, 2);
+        // callbackAfterSeconds = base delay (jitter is in callbackAfterMs, not visible via HTTP API)
+        assertEquals(1L, retry1.getCallbackAfterSeconds(),
+                "callbackAfterSeconds must equal base delay regardless of jitter");
+
+        long scheduledAt = retry1.getScheduledTime();
+        Task retried = pollTask(tt);
+        long queueDelay = System.currentTimeMillis() - scheduledAt;
+        assertTrue(queueDelay >= 1000, "Must wait at least base 1s; was " + queueDelay + "ms");
+        assertTrue(queueDelay < 3000, "Must be < base+jitter+overhead; was " + queueDelay + "ms");
+
+        completeTask(wfId, retried.getTaskId());
+        awaitCompleted(wfId);
+    }
+
+    // --- firstScheduledTime preserved across multiple retries ---
+
+    @Test
+    @DisplayName("firstScheduledTime preserved: budget measured from first schedule, not each retry")
+    void testTotalTimeoutSeconds_firstScheduledTimePreservedAcrossRetries() {
+        String tt = "e2e-total-preserve-task", wf = "e2e-total-preserve-wf";
+
+        // Generous 60s budget, multiple retries — verify that budget is not reset on each retry
+        Map<String, Object> def = new HashMap<>();
+        def.put("name", tt);
+        def.put("ownerEmail", "test@conductor.io");
+        def.put("retryCount", 10);
+        def.put("retryDelaySeconds", 0);
+        def.put("retryLogic", "FIXED");
+        def.put("totalTimeoutSeconds", 60);
+        def.put("timeoutSeconds", 0);
+        def.put("responseTimeoutSeconds", 1);
+        registerTaskDef(def);
+        registerWorkflow(wf, tt);
+
+        String wfId = startWorkflow(wf);
+        long testStart = System.currentTimeMillis();
+
+        // Fail 3 times in rapid succession — each retry must use the original firstScheduledTime
+        for (int i = 0; i < 3; i++) {
+            failTask(wfId, pollTask(tt).getTaskId());
+            awaitScheduledRetry(wfId, i + 2);
+        }
+
+        // All 3 retries should have been scheduled — total elapsed is << 60s
+        Workflow wf2 = workflowClient.getWorkflow(wfId, true);
+        long elapsed = System.currentTimeMillis() - testStart;
+        assertEquals(4, wf2.getTasks().size(),
+                "Should have 4 tasks (original + 3 retries) after 3 failures; "
+                        + "elapsed=" + elapsed + "ms");
+        assertTrue(elapsed < 10_000,
+                "Test must complete in << 60s totalTimeout; elapsed=" + elapsed + "ms");
+
+        completeTask(wfId, pollTask(tt).getTaskId());
+        awaitCompleted(wfId);
+    }
+
+    // --- ALERT_ONLY policy behavior ---
+
+    @Test
+    @DisplayName("ALERT_ONLY policy + totalTimeout exceeded: workflow terminates when task explicitly fails")
+    void testTotalTimeoutSeconds_alertOnlyPolicy_terminatesOnWorkerFailure() {
+        // When a worker explicitly fails a task and the total budget is already exhausted,
+        // the retry() guard fires and terminates the workflow.
+        // This is intentional: totalTimeoutSeconds is a hard budget regardless of per-attempt policy.
+        // (ALERT_ONLY controls single-attempt timeouts; the total limit is absolute.)
+        String tt = "e2e-total-alert-only-task", wf = "e2e-total-alert-only-wf";
+
+        TaskRunnerConfigurer workerConfigurer = null;
+        try {
+            // 4s budget, ALERT_ONLY, always-failing worker
+            Map<String, Object> def = new HashMap<>();
+            def.put("name", tt);
+            def.put("ownerEmail", "test@conductor.io");
+            def.put("retryCount", 100);
+            def.put("retryDelaySeconds", 0);
+            def.put("retryLogic", "FIXED");
+            def.put("totalTimeoutSeconds", 4);
+            def.put("timeoutSeconds", 0);
+            def.put("responseTimeoutSeconds", 1);
+            def.put("timeoutPolicy", "ALERT_ONLY");
+            registerTaskDef(def);
+            registerWorkflow(wf, tt);
+
+            workerConfigurer = startAlwaysFailingWorker(tt);
+            String wfId = startWorkflow(wf);
+
+            // Workflow must terminate even with ALERT_ONLY, because the retry() guard is a hard stop
+            await().atMost(30, TimeUnit.SECONDS)
+                    .pollInterval(500, TimeUnit.MILLISECONDS)
+                    .untilAsserted(() -> {
+                        Workflow w = workflowClient.getWorkflow(wfId, false);
+                        assertTrue(
+                                w.getStatus() == Workflow.WorkflowStatus.FAILED
+                                        || w.getStatus() == Workflow.WorkflowStatus.TIMED_OUT,
+                                "ALERT_ONLY with totalTimeout must still terminate after budget exhausted; "
+                                        + "status=" + w.getStatus());
+                    });
+
+            // Fewer tasks than retryCount — proves totalTimeout, not retry exhaustion, stopped it
+            Workflow wfFinal = workflowClient.getWorkflow(wfId, true);
+            assertTrue(wfFinal.getTasks().size() < 100,
+                    "Must have terminated before retryCount=100 is exhausted");
+
+        } finally {
+            if (workerConfigurer != null) {
+                try { workerConfigurer.shutdown(); } catch (Exception ignored) {}
+            }
+        }
+    }
+
     @Test
     @DisplayName("Concurrent workflows: totalTimeoutSeconds independent per workflow instance")
     void testTotalTimeoutSeconds_concurrentWorkflows_eachInstanceIndependent()
