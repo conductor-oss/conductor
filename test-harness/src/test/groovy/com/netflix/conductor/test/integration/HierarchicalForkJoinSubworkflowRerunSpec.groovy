@@ -226,6 +226,8 @@ class HierarchicalForkJoinSubworkflowRerunSpec extends AbstractSpecification {
         def reRunWorkflowRequest = new RerunWorkflowRequest()
         reRunWorkflowRequest.reRunFromWorkflowId = rootWorkflowId
         workflowExecutor.rerun(reRunWorkflowRequest)
+        List<String> polledRerunRootSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledRerunRootSubWorkflowIds[0])
 
         then: "verify that the root workflow created a new execution"
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
@@ -244,6 +246,7 @@ class HierarchicalForkJoinSubworkflowRerunSpec extends AbstractSpecification {
         when: "poll and complete integration_task_2 in root and mid level workflow"
         def rootJoinId = workflowExecutionService.getExecutionStatus(rootWorkflowId, true).getTaskByRefName("fanouttask_join").taskId
         def newMidLevelWorkflowId = workflowExecutionService.getExecutionStatus(rootWorkflowId, true).getTasks().get(1).subWorkflowId
+        sweep(newMidLevelWorkflowId)
         // The root workflow has an integration_task_2. Its subworkflow also has an integration_task_2.
         // We have NO guarantees which will be polled and completed first, so the assertions done in previous versions of this test were wrong.
         await().atMost(10, TimeUnit.SECONDS).until {
@@ -258,10 +261,11 @@ class HierarchicalForkJoinSubworkflowRerunSpec extends AbstractSpecification {
             midWf.tasks[2].taskType == 'integration_task_2' &&
             midWf.tasks[2].status == Task.Status.COMPLETED
         }
+        List<String> polledNewMidSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledNewMidSubWorkflowIds[0])
 
         then: "verify that a new mid level workflow is created and is in RUNNING state"
         newMidLevelWorkflowId != midLevelWorkflowId
-        workflowExecutor.decide(newMidLevelWorkflowId)
         with(workflowExecutionService.getExecutionStatus(newMidLevelWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -278,6 +282,7 @@ class HierarchicalForkJoinSubworkflowRerunSpec extends AbstractSpecification {
         when: "mid level workflow is in RUNNING state"
         def midJoinId = workflowExecutionService.getExecutionStatus(newMidLevelWorkflowId, true).getTaskByRefName("fanouttask_join").taskId
         def newLeafWorkflowId = workflowExecutionService.getExecutionStatus(newMidLevelWorkflowId, true).getTasks().get(1).subWorkflowId
+        sweep(newLeafWorkflowId)
 
         then: "verify that a new leaf workflow is created and is in RUNNING state"
         newLeafWorkflowId != leafWorkflowId
@@ -333,6 +338,8 @@ class HierarchicalForkJoinSubworkflowRerunSpec extends AbstractSpecification {
         def reRunWorkflowRequest = new RerunWorkflowRequest()
         reRunWorkflowRequest.reRunFromWorkflowId = midLevelWorkflowId
         workflowExecutor.rerun(reRunWorkflowRequest)
+        List<String> polledRerunMidSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledRerunMidSubWorkflowIds[0])
 
         then: "verify that the mid workflow created a new execution"
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
@@ -367,6 +374,7 @@ class HierarchicalForkJoinSubworkflowRerunSpec extends AbstractSpecification {
         def rootJoinId = workflowExecutionService.getExecutionStatus(rootWorkflowId, true).getTaskByRefName("fanouttask_join").taskId
         workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker', ['op': 'task2.done'])
         def newLeafWorkflowId = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true).getTasks().get(1).subWorkflowId
+        sweep(newLeafWorkflowId)
 
         then: "verify that a new leaf workflow is created and is in RUNNING state"
         newLeafWorkflowId != leafWorkflowId

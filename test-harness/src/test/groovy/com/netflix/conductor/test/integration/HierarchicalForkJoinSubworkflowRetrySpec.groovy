@@ -216,6 +216,8 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         //region Test case
         when: "do a retry on the root workflow"
         workflowExecutor.retry(rootWorkflowId, false)
+        List<String> polledRetriedRootSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledRetriedRootSubWorkflowIds[0])
 
         then: "verify that the root workflow created a new SUB_WORKFLOW task"
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
@@ -238,6 +240,9 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         when: "the subworkflow task should be in SCHEDULED state and is started by issuing a system task call"
         def newMidLevelWorkflowId = workflowExecutionService.getExecutionStatus(rootWorkflowId, true).getTasks().get(4).subWorkflowId
         def rootJoinId = workflowExecutionService.getExecutionStatus(rootWorkflowId, true).getTaskByRefName("fanouttask_join").taskId
+        sweep(newMidLevelWorkflowId)
+        List<String> polledNewMidSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledNewMidSubWorkflowIds[0])
 
         then: "verify that a new mid level workflow is created and is in RUNNING state"
         newMidLevelWorkflowId != midLevelWorkflowId
@@ -258,6 +263,7 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker', ['op': 'task2.done'])
         def midJoinId = workflowExecutionService.getExecutionStatus(newMidLevelWorkflowId, true).getTaskByRefName("fanouttask_join").taskId
         def newLeafWorkflowId = workflowExecutionService.getExecutionStatus(newMidLevelWorkflowId, true).getTasks().get(1).subWorkflowId
+        sweep(newLeafWorkflowId)
 
         then: "verify that a new leaf workflow is created and is in RUNNING state"
         newLeafWorkflowId != leafWorkflowId
