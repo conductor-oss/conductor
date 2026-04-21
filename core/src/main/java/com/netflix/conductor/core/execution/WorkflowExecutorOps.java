@@ -490,6 +490,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                             taskToBeRetried.getTaskId());
             taskToBeRetried.getInputData().putAll(taskInput);
         }
+        clearLegacySubWorkflowId(taskToBeRetried);
 
         task.setRetried(true);
         // since this task is being retried and a retry has been computed, task
@@ -497,6 +498,12 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         // complete
         task.setExecuted(true);
         return taskToBeRetried;
+    }
+
+    private void clearLegacySubWorkflowId(TaskModel task) {
+        task.setSubWorkflowId(null);
+        task.getInputData().remove("subWorkflowId");
+        task.getOutputData().remove("subWorkflowId");
     }
 
     private void endExecution(WorkflowModel workflow, TaskModel terminateTask) {

@@ -1537,6 +1537,59 @@ public class TestWorkflowExecutor {
         assertEquals(1, updateTasksCalledCounter.get());
     }
 
+    @Test
+    public void testRetryWorkflowClearsLegacySubWorkflowIdFromRetriedTask() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("testRetryWorkflowClearsLegacySubWorkflowIdFromRetriedTask");
+        workflow.setStatus(WorkflowModel.Status.FAILED);
+        workflow.setPriority(0);
+        workflow.setReasonForIncompletion("subworkflow failed");
+
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("testRetryWorkflowClearsLegacySubWorkflowIdFromRetriedTask");
+        workflowDef.setVersion(1);
+        workflow.setWorkflowDefinition(workflowDef);
+
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("integration_test_wf");
+        workflowTask.setTaskReferenceName("sub1");
+        workflowTask.setType(SUB_WORKFLOW.name());
+        workflowTask.setTaskDefinition(new TaskDef("integration_test_wf"));
+
+        TaskModel failedSubWorkflowTask = new TaskModel();
+        failedSubWorkflowTask.setTaskId("failed-subworkflow-task");
+        failedSubWorkflowTask.setTaskType(TaskType.TASK_TYPE_SUB_WORKFLOW);
+        failedSubWorkflowTask.setTaskDefName("integration_test_wf");
+        failedSubWorkflowTask.setReferenceTaskName("sub1");
+        failedSubWorkflowTask.setWorkflowTask(workflowTask);
+        failedSubWorkflowTask.setWorkflowInstanceId(workflow.getWorkflowId());
+        failedSubWorkflowTask.setStatus(TaskModel.Status.FAILED);
+        failedSubWorkflowTask.setSeq(1);
+        failedSubWorkflowTask.setReasonForIncompletion("subworkflow failed");
+        failedSubWorkflowTask.setSubWorkflowId("old-subworkflow-id");
+        failedSubWorkflowTask.getInputData().put("subWorkflowId", "old-subworkflow-id");
+        failedSubWorkflowTask.getOutputData().put("subWorkflowId", "old-subworkflow-id");
+
+        workflow.getTasks().add(failedSubWorkflowTask);
+
+        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+        when(metadataDAO.getWorkflowDef(anyString(), anyInt()))
+                .thenReturn(Optional.of(workflowDef));
+
+        workflowExecutor.retry(workflow.getWorkflowId(), false);
+
+        TaskModel retriedTask =
+                workflow.getTasks().stream()
+                        .filter(task -> "sub1".equals(task.getReferenceTaskName()))
+                        .filter(task -> !task.isRetried())
+                        .findFirst()
+                        .orElseThrow();
+
+        assertNull(retriedTask.getSubWorkflowId());
+        assertFalse(retriedTask.getInputData().containsKey("subWorkflowId"));
+        assertFalse(retriedTask.getOutputData().containsKey("subWorkflowId"));
+    }
+
     @Test(expected = ConflictException.class)
     public void testRerunNonTerminalWorkflow() {
         WorkflowModel workflow = new WorkflowModel();

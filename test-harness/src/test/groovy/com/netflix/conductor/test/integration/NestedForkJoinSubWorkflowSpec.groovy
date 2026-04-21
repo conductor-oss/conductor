@@ -477,6 +477,7 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
         and: "verify that a new instance of the sub workflow is created"
         def newSubWorkflowId = parentWorkflowInstance.tasks[7].subWorkflowId
         newSubWorkflowId != subworkflowId
+        sweep(newSubWorkflowId)
         with(workflowExecutionService.getExecutionStatus(newSubWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 1
