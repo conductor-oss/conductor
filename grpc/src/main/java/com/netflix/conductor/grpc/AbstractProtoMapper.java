@@ -1544,6 +1544,9 @@ public abstract class AbstractProtoMapper {
         if (from.getCreateTime() != null) {
             to.setCreateTime( from.getCreateTime() );
         }
+        if (from.getUpdateTime() != null) {
+            to.setUpdateTime( from.getUpdateTime() );
+        }
         return to.build();
     }
 
@@ -1552,6 +1555,7 @@ public abstract class AbstractProtoMapper {
         to.setName( from.getName() );
         to.setVersion( from.getVersion() );
         to.setCreateTime( from.getCreateTime() );
+        to.setUpdateTime( from.getUpdateTime() );
         return to;
     }
 

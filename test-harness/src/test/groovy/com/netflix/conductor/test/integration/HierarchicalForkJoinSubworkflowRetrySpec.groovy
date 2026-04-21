@@ -317,6 +317,8 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         //region Test case
         when: "do a retry on the mid level workflow"
         workflowExecutor.retry(midLevelWorkflowId, false)
+        List<String> polledRetriedMidSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledRetriedMidSubWorkflowIds[0])
 
         then: "verify that the mid workflow created a new SUB_WORKFLOW task"
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
@@ -352,6 +354,7 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
 
         when: "the SUB_WORKFLOW task in mid level workflow is started by issuing a system task call"
         def newLeafWorkflowId = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true).getTasks().get(4).subWorkflowId
+        sweep(newLeafWorkflowId)
 
         then: "verify that a new leaf workflow is created and is in RUNNING state"
         newLeafWorkflowId != leafWorkflowId
