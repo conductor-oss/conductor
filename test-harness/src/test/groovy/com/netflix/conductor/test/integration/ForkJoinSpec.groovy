@@ -1324,6 +1324,7 @@ class ForkJoinSpec extends AbstractSpecification {
         when: "sub workflow is retrieved"
         workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         subWorkflowInstanceId = workflow.getTaskByRefName('st1').subWorkflowId
+        sweep(subWorkflowInstanceId)
 
         then: "verify that the sub workflow is in a RUNNING state"
         with(workflowExecutionService.getExecutionStatus(subWorkflowInstanceId, true)) {

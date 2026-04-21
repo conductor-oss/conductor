@@ -947,6 +947,45 @@ public class TestDeciderService {
     }
 
     @Test
+    public void testDecideDoesNotFailScheduledSubWorkflowTask() {
+        WorkflowTask subWorkflowTask = new WorkflowTask();
+        subWorkflowTask.setName("child_workflow");
+        subWorkflowTask.setTaskReferenceName("sub1");
+        subWorkflowTask.setType(SUB_WORKFLOW.name());
+        subWorkflowTask.setTaskDefinition(new TaskDef("child_workflow"));
+        subWorkflowTask.setSubWorkflowParam(new SubWorkflowParams());
+
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("scheduled_subworkflow_workflow");
+        workflowDef.setVersion(1);
+        workflowDef.setTasks(Collections.singletonList(subWorkflowTask));
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+
+        TaskModel task = new TaskModel();
+        task.setTaskType(TaskType.TASK_TYPE_SUB_WORKFLOW);
+        task.setTaskDefName("child_workflow");
+        task.setReferenceTaskName("sub1");
+        task.setSeq(1);
+        task.setRetried(false);
+        task.setExecuted(false);
+        task.setStatus(TaskModel.Status.SCHEDULED);
+        task.setWorkflowTask(subWorkflowTask);
+
+        workflow.getTasks().add(task);
+
+        DeciderOutcome outcome = deciderService.decide(workflow);
+
+        assertNotNull(outcome);
+        assertFalse(outcome.isComplete);
+        assertTrue(outcome.tasksToBeUpdated.isEmpty());
+        assertEquals(1, outcome.tasksToBeScheduled.size());
+        assertEquals("sub1", outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
+    }
+
+    @Test
     public void testGetTasksToBeScheduled() {
         WorkflowDef workflowDef = createLinearWorkflow();
 

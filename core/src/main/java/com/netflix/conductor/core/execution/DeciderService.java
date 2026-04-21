@@ -210,7 +210,7 @@ public class DeciderService {
                 }
             }
 
-            if (!pendingTask.getStatus().isSuccessful()) {
+            if (pendingTask.getStatus().isTerminal() && !pendingTask.getStatus().isSuccessful()) {
                 WorkflowTask workflowTask = pendingTask.getWorkflowTask();
                 if (workflowTask == null) {
                     workflowTask =
