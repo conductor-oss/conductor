@@ -40,6 +40,27 @@ public class Es8SearchSupportTest {
     }
 
     @Test
+    public void doubleQuotedStructuredQueryUsesTermQuery() throws Exception {
+        String uuid = "09d13af8-3a2a-48bf-a91d-ef0a9114f07a";
+        Query query = support.boolQueryBuilder("workflowId=\"" + uuid + "\"", "*");
+
+        assertTrue(query.isTerm());
+        assertEquals("workflowId", query.term().field());
+        assertEquals(uuid, query.term().value().stringValue());
+    }
+
+    @Test
+    public void andConditionStructuredQueryUsesBoolMustQuery() throws Exception {
+        Query query =
+                support.boolQueryBuilder(
+                        "correlationId='corr-abc' AND workflowType='MyWorkflow'", "*");
+
+        assertTrue(query.isBool());
+        assertEquals(2, query.bool().must().size());
+        assertTrue(query.bool().must().stream().anyMatch(Query::isTerm));
+    }
+
+    @Test
     public void explicitFreeTextAddsSimpleQueryStringClause() throws Exception {
         Query query = support.boolQueryBuilder("status='RUNNING'", "workflowId:abc");
 

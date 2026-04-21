@@ -260,6 +260,49 @@ jobs:
         if: always()
         with:
           report_paths: "e2e/build/test-results/test/TEST-*.xml"
+      - name: Generate test summary table
+        if: always()
+        shell: python3 {0}
+        run: |
+          import os, glob, xml.etree.ElementTree as ET
+
+          xml_files = glob.glob("e2e/build/test-results/test/TEST-*.xml")
+          rows = []
+          totals = {"passed": 0, "failed": 0, "skipped": 0}
+
+          for f in sorted(xml_files):
+              try:
+                  root = ET.parse(f).getroot()
+              except ET.ParseError:
+                  continue
+              for tc in root.iter("testcase"):
+                  name = tc.get("name", "?")
+                  classname = tc.get("classname", "").split(".")[-1]
+                  duration = float(tc.get("time", 0))
+                  if tc.find("skipped") is not None:
+                      status, totals["skipped"] = "⏭ skip", totals["skipped"] + 1
+                  elif tc.find("failure") is not None or tc.find("error") is not None:
+                      node = tc.find("failure") or tc.find("error")
+                      msg = (node.get("message") or "")[:120]
+                      status, totals["failed"] = f"❌ `{msg}`", totals["failed"] + 1
+                  else:
+                      status, totals["passed"] = "✅", totals["passed"] + 1
+                  rows.append((classname, name, f"{duration:.1f}s", status))
+
+          backend = "${{ matrix.name }}"
+          lines = [
+              f"## E2E results — {backend}",
+              f"**✅ {totals['passed']} passed · ❌ {totals['failed']} failed · ⏭ {totals['skipped']} skipped**",
+              "",
+              "| Class | Test | Duration | Result |",
+              "|-------|------|----------|--------|",
+          ]
+          for cls, name, dur, status in rows:
+              lines.append(f"| {cls} | {name} | {dur} | {status} |")
+
+          summary = os.environ.get("GITHUB_STEP_SUMMARY", "/dev/null")
+          with open(summary, "a") as fh:
+              fh.write("\n".join(lines) + "\n")
       - name: Upload E2E reports
         uses: actions/upload-artifact@v6
         if: always()
