@@ -215,7 +215,7 @@ public class NameValue extends AbstractNode implements FilterProvider {
         }
 
         try {
-            if (token.contains(".") || token.contains("e") || token.contains("E")) {
+            if (token.contains(".")) {
                 return FieldValue.of(Double.parseDouble(token));
             }
             return FieldValue.of(Long.parseLong(token));
