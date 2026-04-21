@@ -2,6 +2,8 @@ name: CI
 
 on:
   push:
+    branches:
+      - main
     paths-ignore:
       - "conductor-clients/**"
   pull_request:
@@ -33,6 +35,10 @@ on:
         description: "Cassandra + Elasticsearch 7"
         type: boolean
         default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   build:
