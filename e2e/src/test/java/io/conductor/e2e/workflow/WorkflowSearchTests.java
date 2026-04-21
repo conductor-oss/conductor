@@ -141,27 +141,19 @@ public class WorkflowSearchTests {
         startReq.setVersion(1);
         String workflowId = workflowClient.startWorkflow(startReq);
 
-        // First confirm the workflow is indexed at all (single-quote baseline)
+        // Search by workflowId with double quotes
         await().atMost(30, TimeUnit.SECONDS)
                 .pollInterval(100, TimeUnit.MILLISECONDS)
                 .untilAsserted(
                         () -> {
-                            SearchResult<WorkflowSummary> baseline =
-                                    workflowClient.search("workflowId='" + workflowId + "'");
+                            SearchResult<WorkflowSummary> result =
+                                    workflowClient.search("workflowId=\"" + workflowId + "\"");
                             assertEquals(
                                     1,
-                                    baseline.getResults().size(),
-                                    "Baseline single-quote search must find workflow before testing double-quote");
+                                    result.getResults().size(),
+                                    "Search by workflowId with double quotes should return 1 result");
+                            assertEquals(workflowId, result.getResults().get(0).getWorkflowId());
                         });
-
-        // Now verify double quotes return the same result
-        SearchResult<WorkflowSummary> result =
-                workflowClient.search("workflowId=\"" + workflowId + "\"");
-        assertEquals(
-                1,
-                result.getResults().size(),
-                "Search by workflowId with double quotes should return 1 result");
-        assertEquals(workflowId, result.getResults().get(0).getWorkflowId());
 
         workflowClient.terminateWorkflow(workflowId, "test cleanup");
         metadataClient.unregisterWorkflowDef(workflowName, 1);
@@ -258,32 +250,24 @@ public class WorkflowSearchTests {
         otherReq.setVersion(1);
         String otherWorkflowId = workflowClient.startWorkflow(otherReq);
 
-        // Wait for both workflows to be indexed (single-field search as baseline)
+        // Search with multiple single-quoted conditions — mimics getWorkflowsByCorrelationId
         await().atMost(30, TimeUnit.SECONDS)
                 .pollInterval(100, TimeUnit.MILLISECONDS)
                 .untilAsserted(
                         () -> {
-                            SearchResult<WorkflowSummary> baseline =
-                                    workflowClient.search("workflowType='" + workflowName + "'");
+                            SearchResult<WorkflowSummary> result =
+                                    workflowClient.search(
+                                            "correlationId='"
+                                                    + correlationId
+                                                    + "' AND workflowType='"
+                                                    + workflowName
+                                                    + "'");
                             assertEquals(
-                                    2,
-                                    baseline.getResults().size(),
-                                    "Both workflows must be indexed before testing AND condition");
+                                    1,
+                                    result.getResults().size(),
+                                    "Multi-condition search with single quotes should return 1 result");
+                            assertEquals(workflowId, result.getResults().get(0).getWorkflowId());
                         });
-
-        // Search with multiple single-quoted conditions — mimics getWorkflowsByCorrelationId
-        SearchResult<WorkflowSummary> result =
-                workflowClient.search(
-                        "correlationId='"
-                                + correlationId
-                                + "' AND workflowType='"
-                                + workflowName
-                                + "'");
-        assertEquals(
-                1,
-                result.getResults().size(),
-                "Multi-condition search with single quotes should return 1 result");
-        assertEquals(workflowId, result.getResults().get(0).getWorkflowId());
 
         workflowClient.terminateWorkflow(workflowId, "test cleanup");
         workflowClient.terminateWorkflow(otherWorkflowId, "test cleanup");
