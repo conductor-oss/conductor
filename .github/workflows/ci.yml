@@ -258,6 +258,12 @@ jobs:
           update-comment: true
           min-coverage-overall: 0
           min-coverage-changed-files: 0
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: build/reports/jacoco/aggregated/jacoco.xml
+          fail_ci_if_error: false
+          verbose: false
       - name: Upload merged coverage report
         uses: actions/upload-artifact@v6
         if: always()
