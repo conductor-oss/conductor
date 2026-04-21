@@ -176,6 +176,17 @@ public class WorkflowTask {
     @ProtoField(id = 34)
     private JoinMode joinMode;
 
+    private String boundaryTimerDuration;
+    private String boundaryTimerCompletionStatus;
+    private Map<String, Object> boundaryTimerOutput;
+
+    public String getBoundaryTimerDuration() { return boundaryTimerDuration; }
+    public void setBoundaryTimerDuration(String boundaryTimerDuration) { this.boundaryTimerDuration = boundaryTimerDuration; }
+    public String getBoundaryTimerCompletionStatus() { return boundaryTimerCompletionStatus; }
+    public void setBoundaryTimerCompletionStatus(String boundaryTimerCompletionStatus) { this.boundaryTimerCompletionStatus = boundaryTimerCompletionStatus; }
+    public Map<String, Object> getBoundaryTimerOutput() { return boundaryTimerOutput; }
+    public void setBoundaryTimerOutput(Map<String, Object> boundaryTimerOutput) { this.boundaryTimerOutput = boundaryTimerOutput; }
+
     /**
      * @return the name
      */

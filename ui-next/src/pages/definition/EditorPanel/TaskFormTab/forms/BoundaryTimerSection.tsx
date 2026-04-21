@@ -23,13 +23,10 @@ const BoundaryTimerSection = () => {
     (state) => state.context.taskChanges,
   );
 
-  const inputParameters = (task?.inputParameters as any) ?? {};
-  const boundaryTimerDuration: string =
-    inputParameters.boundaryTimerDuration ?? "";
-  const completionStatus: string =
-    inputParameters.boundaryTimerCompletionStatus ?? "";
+  const boundaryTimerDuration: string = task?.boundaryTimerDuration ?? "";
+  const completionStatus: string = task?.boundaryTimerCompletionStatus ?? "";
 
-  const rawOutput = inputParameters.boundaryTimerOutput;
+  const rawOutput = task?.boundaryTimerOutput;
   const boundaryTimerOutput: string = rawOutput
     ? typeof rawOutput === "string"
       ? rawOutput
@@ -50,7 +47,7 @@ const BoundaryTimerSection = () => {
     } catch {
       // keep as string if not valid JSON yet
     }
-    sendUpdate("inputParameters.boundaryTimerOutput", parsed);
+    sendUpdate("boundaryTimerOutput", parsed);
   };
 
   return (
@@ -67,18 +64,14 @@ const BoundaryTimerSection = () => {
           </MuiTypography>
           <DurationWaitTaskForm
             value={boundaryTimerDuration}
-            onChange={(val) =>
-              sendUpdate("inputParameters.boundaryTimerDuration", val)
-            }
+            onChange={(val) => sendUpdate("boundaryTimerDuration", val)}
           />
         </Grid>
         <Grid size={12}>
           <ConductorAutocompleteVariables
             label="Completion Status"
             value={completionStatus}
-            onChange={(val) =>
-              sendUpdate("inputParameters.boundaryTimerCompletionStatus", val)
-            }
+            onChange={(val) => sendUpdate("boundaryTimerCompletionStatus", val)}
             otherOptions={BOUNDARY_TIMER_STATUSES}
           />
         </Grid>
