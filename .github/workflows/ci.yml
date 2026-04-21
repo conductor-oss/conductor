@@ -2,6 +2,8 @@ name: CI
 
 on:
   push:
+    branches:
+      - main
     paths-ignore:
       - "conductor-clients/**"
   pull_request:
@@ -33,6 +35,10 @@ on:
         description: "Cassandra + Elasticsearch 7"
         type: boolean
         default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   build:
@@ -106,9 +112,6 @@ jobs:
           fi
           printf '%s\n' "${images[@]}"
           docker save -o /tmp/docker-images-build.tar "${images[@]}"
-      - name: Generate aggregated coverage report
-        if: always()
-        run: ./gradlew jacocoAggregatedReport -x test || true
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v6
         if: always()
@@ -119,12 +122,13 @@ jobs:
         with:
           name: build-artifacts
           path: "**/build/reports"
-      - name: Upload coverage report
+      - name: Upload unit test exec files
         uses: actions/upload-artifact@v6
         if: always()
         with:
-          name: coverage-report
-          path: build/reports/jacoco/aggregated
+          name: unit-coverage-exec
+          path: "**/build/jacoco/*.exec"
+          if-no-files-found: warn
       - name: Store Buildscan URL
         uses: actions/upload-artifact@v6
         with:
@@ -169,6 +173,9 @@ jobs:
       - name: Run test-harness tests
         run: |
           ./gradlew :conductor-test-harness:test
+      - name: Run functional tests (e2e against embedded server)
+        run: |
+          ./gradlew :conductor-test-harness:functionalTest
       - name: Save Docker images for cache
         if: steps.docker-cache.outputs.cache-hit != 'true'
         run: |
@@ -195,12 +202,69 @@ jobs:
         with:
           name: test-harness-reports
           path: "test-harness/build/reports"
-      - name: Upload test-harness coverage report
+      - name: Upload test-harness exec files
         uses: actions/upload-artifact@v6
         if: always()
         with:
-          name: test-harness-coverage-report
-          path: "test-harness/build/reports/jacoco"
+          name: test-harness-coverage-exec
+          path: "test-harness/build/jacoco/**/*.exec"
+          if-no-files-found: warn
+
+  coverage:
+    needs: [build, test-harness]
+    runs-on: ubuntu-latest
+    if: always()
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Set up Zulu JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: "zulu"
+          java-version: "21"
+      - name: Cache Gradle packages
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
+      - name: Download unit test exec files
+        uses: actions/download-artifact@v4
+        with:
+          name: unit-coverage-exec
+          path: .
+        continue-on-error: true
+      - name: Download test-harness exec files
+        uses: actions/download-artifact@v4
+        with:
+          name: test-harness-coverage-exec
+          path: test-harness/build/jacoco/
+        continue-on-error: true
+      - name: Generate merged coverage report
+        run: ./gradlew jacocoAggregatedReport -x test --no-daemon || true
+      - name: Post coverage comment to PR
+        uses: Madrapps/jacoco-report@v1.6.0
+        if: github.event_name == 'pull_request'
+        with:
+          paths: build/reports/jacoco/aggregated/jacoco.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: "Code Coverage"
+          update-comment: true
+          min-coverage-overall: 0
+          min-coverage-changed-files: 0
+      - name: Upload merged coverage report
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: coverage-report
+          path: build/reports/jacoco/aggregated
+
   generate-e2e-matrix:
     runs-on: ubuntu-latest
     outputs:

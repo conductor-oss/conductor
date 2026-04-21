@@ -198,6 +198,7 @@ task jacocoAggregatedReport(type: JacocoReport) {
 
     reports {
         xml.required = true
+        xml.outputLocation = layout.buildDirectory.file('reports/jacoco/aggregated/jacoco.xml')
         html.required = true
         html.outputLocation = layout.buildDirectory.dir('reports/jacoco/aggregated')
     }
