@@ -86,22 +86,24 @@ public class DoWhileEdgeCasesTests {
 
     @AfterAll
     public static void cleanup() {
-        try {
-            workflowIdsToTerminate.forEach(
-                    id -> {
-                        workflowClient.terminateWorkflow(
-                                id,
-                                String.format(
-                                        "Terminated by cleanup in %s",
-                                        DoWhileEdgeCasesTests.class.getSimpleName()));
-                    });
-        } catch (Exception e) {
-            if (!e.getMessage().contains("Cannot terminate a COMPLETED workflow.")) {
-                log.error(
-                        "Error while cleaning up in {} : {}",
-                        DoWhileEdgeCasesTests.class.getSimpleName(),
-                        e.getMessage(),
-                        e);
+        for (String id : workflowIdsToTerminate) {
+            try {
+                workflowClient.terminateWorkflow(
+                        id,
+                        String.format(
+                                "Terminated by cleanup in %s",
+                                DoWhileEdgeCasesTests.class.getSimpleName()));
+            } catch (Exception e) {
+                String msg = e.getMessage() != null ? e.getMessage() : "";
+                if (!msg.contains("Cannot terminate a COMPLETED workflow.")
+                        && !msg.contains("COMPLETED")
+                        && !msg.contains("409")) {
+                    log.error(
+                            "Error while cleaning up in {} : {}",
+                            DoWhileEdgeCasesTests.class.getSimpleName(),
+                            msg,
+                            e);
+                }
             }
         }
     }
@@ -186,17 +188,17 @@ public class DoWhileEdgeCasesTests {
                                     "Workflow should be completed");
                         });
 
-        // Assert that the do_while iterated 10 times
+        // Assert that the do_while iterated 10 times.
+        // Use task.getIteration() — a first-class Task field set directly by the server —
+        // rather than outputData.get("iteration"), which may be absent when the large DO_WHILE
+        // output (10 HTTP-response iterations) is externalized past the payload size threshold.
         Workflow finalWorkflow = workflowClient.getWorkflow(workflowId, true);
         Task doWhileTask = finalWorkflow.getTaskByRefName("do_while_ref");
         assertNotNull(doWhileTask, "do_while task should exist");
-
-        // Check the iteration count in the output
-        Object iteration = doWhileTask.getOutputData().get("iteration");
-        assertNotNull(iteration, "iteration field should exist in do_while task output");
-        assertEquals(10, iteration, "do_while should have iterated 10 times");
-
-        log.info("Test completed successfully. Do-while iterated {} times", iteration);
+        assertEquals(10, doWhileTask.getIteration(), "do_while should have iterated 10 times");
+        log.info(
+                "Test completed successfully. Do-while iterated {} times",
+                doWhileTask.getIteration());
     }
 
     @Test

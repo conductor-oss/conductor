@@ -503,7 +503,9 @@ public class DynamicForkTests {
         startWorkflowRequest.setWorkflowDef(workflowDef);
         String workflowId = workflowAdminClient.startWorkflow(startWorkflowRequest);
 
-        await().atMost(10, TimeUnit.SECONDS)
+        // Complete SCHEDULED tasks as they appear. Two sequential dynamic forks means the server
+        // needs time to schedule fork2 after fork1 joins, so allow up to 30s.
+        await().atMost(30, TimeUnit.SECONDS)
                 .pollInterval(500, TimeUnit.MILLISECONDS)
                 .untilAsserted(
                         () -> {
