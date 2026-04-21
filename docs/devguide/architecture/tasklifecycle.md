@@ -23,9 +23,9 @@ stateDiagram-v2
     FAILED --> SCHEDULED : Retry (after delay)
     TIMED_OUT --> SCHEDULED : Retry (after delay)
     COMPLETED --> [*]
-    FAILED --> [*] : Retries exhausted
+    FAILED --> [*] : Retries exhausted or totalTimeoutSeconds exceeded
     FAILED_WITH_TERMINAL_ERROR --> [*]
-    TIMED_OUT --> [*] : Retries exhausted
+    TIMED_OUT --> [*] : Retries exhausted or totalTimeoutSeconds exceeded
     CANCELED --> [*]
     SKIPPED --> [*]
     COMPLETED_WITH_ERRORS --> [*]
@@ -75,8 +75,11 @@ Retry behavior is controlled by the task definition:
 | Parameter | Description |
 | :--- | :--- |
 | `retryCount` | Maximum number of retry attempts. |
-| `retryLogic` | `FIXED` (constant delay) or `EXPONENTIAL_BACKOFF`. |
-| `retryDelaySeconds` | Delay between retries. For exponential backoff, this is the base delay. |
+| `retryLogic` | `FIXED`, `EXPONENTIAL_BACKOFF`, or `LINEAR_BACKOFF`. See [Retry Logic](../../../documentation/configuration/taskdef.md#retry-logic). |
+| `retryDelaySeconds` | Base delay between retries. |
+| `maxRetryDelaySeconds` | Caps the computed delay. Prevents exponential growth from becoming arbitrarily large. |
+| `backoffJitterMs` | Adds random milliseconds to each delay to spread concurrent retries over time. |
+| `totalTimeoutSeconds` | Hard wall-clock budget across all attempts. See [Total timeout](#total-timeout). |
 
 
 ## Timeout scenarios
@@ -145,11 +148,36 @@ sequenceDiagram
     Note over C: Ignored — T1 already terminal
 ```
 
+### Total timeout
+
+`totalTimeoutSeconds` limits the total wall-clock time across **all** retry attempts. Once this budget is consumed, no further retries are scheduled regardless of how many remain in `retryCount`.
+
+```mermaid
+sequenceDiagram
+    participant W as Worker
+    participant C as Conductor Server
+
+    Note over C: totalTimeoutSeconds = 30s
+    C->>W: Task T1 (attempt 1)
+    W->>C: FAILED (at t=5s)
+    Note over C: Retry delay 5s
+    C->>W: Task T1 (attempt 2, at t=10s)
+    W->>C: FAILED (at t=20s)
+    Note over C: Retry delay 5s
+    C->>W: Task T1 (attempt 3, at t=25s)
+    W->>C: FAILED (at t=28s)
+    Note over C: t=28s ≥ 30s → total budget exhausted
+    C->>C: Mark workflow FAILED — no more retries
+```
+
+This is useful when you need a hard SLA on how long a task can run across all its attempts, independent of how many retries are configured.
+
 ## Timeout configuration summary
 
 | Parameter | Description | Default |
 | :--- | :--- | :--- |
 | `pollTimeoutSeconds` | Max time for a worker to poll the task. | No timeout |
-| `responseTimeoutSeconds` | Max time for a worker to respond after polling. | No timeout |
-| `timeoutSeconds` | Overall SLA for the task to reach a terminal state. | No timeout |
+| `responseTimeoutSeconds` | Max time for a worker to respond after polling. | 600s |
+| `timeoutSeconds` | SLA per individual attempt (from first `IN_PROGRESS` to terminal). | No timeout |
+| `totalTimeoutSeconds` | Hard budget across all attempts combined. Overrides `retryCount`. | No timeout |
 | `timeoutPolicy` | Action on timeout: `RETRY`, `TIME_OUT_WF` (fail workflow), or `ALERT_ONLY`. | `TIME_OUT_WF` |
