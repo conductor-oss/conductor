@@ -26,7 +26,7 @@ public class ApiUtil {
     private static final String SERVER_HOST =
             System.getProperty(
                     "SERVER_ROOT_URI",
-                    System.getenv().getOrDefault("SERVER_ROOT_URI", "http://localhost:8000"));
+                    System.getenv().getOrDefault("SERVER_ROOT_URI", "http://localhost:8000/api"));
 
     public static final String SERVER_ROOT_URI =
             SERVER_HOST.endsWith("/api") ? SERVER_HOST : SERVER_HOST + "/api";

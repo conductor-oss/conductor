@@ -980,6 +980,8 @@ public abstract class AbstractProtoMapper {
         if (from.getBackoffScaleFactor() != null) {
             to.setBackoffScaleFactor( from.getBackoffScaleFactor() );
         }
+        to.setMaxRetryDelaySeconds( from.getMaxRetryDelaySeconds() );
+        to.setBackoffJitterMs( from.getBackoffJitterMs() );
         if (from.getBaseType() != null) {
             to.setBaseType( from.getBaseType() );
         }
@@ -1013,6 +1015,8 @@ public abstract class AbstractProtoMapper {
         to.setOwnerEmail( from.getOwnerEmail() );
         to.setPollTimeoutSeconds( from.getPollTimeoutSeconds() );
         to.setBackoffScaleFactor( from.getBackoffScaleFactor() );
+        to.setMaxRetryDelaySeconds( from.getMaxRetryDelaySeconds() );
+        to.setBackoffJitterMs( from.getBackoffJitterMs() );
         to.setBaseType( from.getBaseType() );
         to.setTotalTimeoutSeconds( from.getTotalTimeoutSeconds() );
         to.setTaskStatusListenerEnabled( from.getTaskStatusListenerEnabled() );
