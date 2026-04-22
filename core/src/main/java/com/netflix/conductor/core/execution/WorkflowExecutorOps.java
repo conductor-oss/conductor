@@ -1513,7 +1513,14 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     private void addTaskToQueue(TaskModel task) {
         // put in queue
         String taskQueueName = QueueUtils.getQueueName(task);
-        if (task.getCallbackAfterSeconds() > 0) {
+        if (task.getCallbackAfterMs() > 0) {
+            // Use ms-precision Duration overload to preserve sub-second jitter
+            queueDAO.push(
+                    taskQueueName,
+                    task.getTaskId(),
+                    task.getWorkflowPriority(),
+                    Duration.ofMillis(task.getCallbackAfterMs()));
+        } else if (task.getCallbackAfterSeconds() > 0) {
             queueDAO.push(
                     taskQueueName,
                     task.getTaskId(),
@@ -1618,6 +1625,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             for (TaskModel task : tasks) {
                 if (task.getSeq() == 0) { // Set only if the seq was not set
                     task.setSeq(++count);
+                }
+                // Stamp the very first time this task enters the queue. Retried tasks carry
+                // this value forward (via TaskModel.copy()), so it is never overwritten here.
+                if (task.getFirstScheduledTime() == 0) {
+                    task.setFirstScheduledTime(System.currentTimeMillis());
                 }
             }
 
