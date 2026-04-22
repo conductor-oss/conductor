@@ -341,7 +341,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
     @Override
     public List<String> getAllWorkflowIds(int offset, int limit) {
         return queryWithTransaction(
-                "SELECT workflow_id FROM workflow ORDER BY id LIMIT ? OFFSET ?",
+                "SELECT workflow_id FROM workflow ORDER BY workflow_id LIMIT ? OFFSET ?",
                 q -> q.addParameter(limit).addParameter(offset).executeScalarList(String.class));
     }
 
