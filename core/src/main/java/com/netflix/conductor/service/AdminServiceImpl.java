@@ -28,8 +28,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.stereotype.Service;
 
-import com.google.common.util.concurrent.RateLimiter;
-
 import com.netflix.conductor.annotations.Audit;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -44,6 +42,8 @@ import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+
+import com.google.common.util.concurrent.RateLimiter;
 
 @Audit
 @Trace
@@ -255,8 +255,7 @@ public class AdminServiceImpl implements AdminService {
             LOGGER.info("Reindex: {} workflows to process", total);
 
             while (true) {
-                List<String> workflowIds =
-                        executionDAO.getAllWorkflowIdsAfter(cursor, batchSize);
+                List<String> workflowIds = executionDAO.getAllWorkflowIdsAfter(cursor, batchSize);
                 if (workflowIds.isEmpty()) {
                     break;
                 }
