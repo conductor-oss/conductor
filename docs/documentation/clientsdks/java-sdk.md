@@ -41,10 +41,10 @@ The SDK requires Java 17+. Add the following dependency to your project:
 
 ```gradle
 dependencies {
-    implementation 'org.conductoross:conductor-client:5.0.0'
+    implementation 'org.conductoross:conductor-client:5.0.1'
 
     // Optionally, you can also add spring module for auto configuration
-    // implementation 'org.conductoross:conductor-client-spring:5.0.0'
+    // implementation 'org.conductoross:conductor-client-spring:5.0.1'
 }
 ```
 
@@ -54,7 +54,7 @@ dependencies {
 <dependency>
     <groupId>org.conductoross</groupId>
     <artifactId>conductor-client</artifactId>
-    <version>5.0.0</version>
+    <version>5.0.1</version>
 </dependency>
 ```
 *Optionally, you can also add spring module for auto configuration*
@@ -62,31 +62,14 @@ dependencies {
 <dependency>
     <groupId>org.conductoross</groupId>
     <artifactId>conductor-client-spring</artifactId>
-    <version>5.0.0</version>
+    <version>5.0.1</version>
 </dependency>
 ```
 
 
 ## 60-Second Quickstart
 
-**Step 1: Create a workflow**
-
-Workflows are definitions that reference task types (e.g., a SIMPLE task called `greet`). We'll build a workflow called
-`greetings` that runs one task and returns its output.
-
-```java
-ConductorWorkflow<WorkflowInput> workflow = new ConductorWorkflow<>(executor);
-workflow.setName("greetings");
-workflow.setVersion(1);
-
-SimpleTask greetTask = new SimpleTask("greet", "greet_ref");
-greetTask.input("name", "${workflow.input.name}");
-
-workflow.add(greetTask);
-workflow.registerWorkflow(true, true);
-```
-
-**Step 2: Write worker**
+**Step 1: Write a worker**
 
 Workers are Java classes that implement the `Worker` interface and poll Conductor for tasks to execute.
 
@@ -109,15 +92,17 @@ public class GreetWorker implements Worker {
 }
 ```
 
-**Step 3: Run your first workflow app**
+**Step 2: Run your first workflow app**
 
 Create a `Main.java` with the following:
 
 ```java
+import io.orkes.conductor.client.ApiClient;
+import io.orkes.conductor.client.OrkesClients;
 import com.netflix.conductor.client.automator.TaskRunnerConfigurer;
-import com.netflix.conductor.client.http.ConductorClient;
-import com.netflix.conductor.client.http.TaskClient;
-import com.netflix.conductor.client.http.WorkflowClient;
+import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
+import com.netflix.conductor.sdk.workflow.def.ConductorWorkflow;
+import com.netflix.conductor.sdk.workflow.def.tasks.SimpleTask;
 import com.netflix.conductor.sdk.workflow.executor.WorkflowExecutor;
 
 import java.util.List;
@@ -125,39 +110,39 @@ import java.util.Map;
 
 public class Main {
     public static void main(String[] args) {
-        // Configure the SDK (reads CONDUCTOR_SERVER_URL from env, defaults to localhost:8080)
-        String serverUrl = System.getenv().getOrDefault("CONDUCTOR_SERVER_URL", "http://localhost:8080/api");
-        ConductorClient client = ConductorClient.builder()
-            .basePath(serverUrl)
-            .build();
+        // Configure the SDK via ApiClient (enterprise-compatible path)
+        ApiClient apiClient = ApiClient.builder().build();
+        OrkesClients clients = new OrkesClients(apiClient);
 
         // Create workflow executor
-        WorkflowExecutor executor = new WorkflowExecutor(client);
-        
+        WorkflowExecutor executor = new WorkflowExecutor(apiClient, 100);
+
         // Build and register the workflow
         ConductorWorkflow<Map> workflow = new ConductorWorkflow<>(executor);
         workflow.setName("greetings");
         workflow.setVersion(1);
-        
+
         SimpleTask greetTask = new SimpleTask("greet", "greet_ref");
         greetTask.input("name", "${workflow.input.name}");
         workflow.add(greetTask);
         workflow.registerWorkflow(true, true);
 
-        // Start polling for tasks
-        TaskClient taskClient = new TaskClient(client);
+        // Start polling for tasks using OrkesTaskClient
         TaskRunnerConfigurer configurer = new TaskRunnerConfigurer.Builder(
-            taskClient,
-            List.of(new GreetWorker())
+                clients.getTaskClient(),
+                List.of(new GreetWorker())
         ).withThreadCount(10).build();
         configurer.init();
 
-        // Run the workflow and get the result
-        WorkflowClient workflowClient = new WorkflowClient(client);
-        String workflowId = workflowClient.startWorkflow("greetings", 1, "", Map.of("name", "Conductor"));
-        
+        // Run the workflow using OrkesWorkflowClient
+        StartWorkflowRequest request = new StartWorkflowRequest();
+        request.setName("greetings");
+        request.setVersion(1);
+        request.setInput(Map.of("name", "Conductor"));
+        String workflowId = clients.getWorkflowClient().startWorkflow(request);
+
         System.out.println("Started workflow: " + workflowId);
-        System.out.println("View execution at: " + serverUrl.replace("/api", "") + "/execution/" + workflowId);
+        System.out.println("View execution at: " + apiClient.getBasePath().replace("/api", "") + "/execution/" + workflowId);
     }
 }
 ```
@@ -184,7 +169,7 @@ That's it -- you just defined a worker, built a workflow, and executed it. Open 
 
 ## Comprehensive worker example
 
-See [examples/src/main/java/com/netflix/conductor/sdk/examples/helloworld/](https://github.com/conductor-oss/java-sdk/blob/main/examples/src/main/java/com/netflix/conductor/sdk/examples/helloworld/) for a complete working example with:
+See [examples/basics/hello-world/](https://github.com/conductor-oss/java-sdk/tree/main/examples/basics/hello-world) for a complete working example with:
 - Workflow definition using the SDK
 - Worker implementation with annotations
 - Workflow execution and monitoring
@@ -238,9 +223,11 @@ public class Workers {
 
 ```java
 // Option 1: Using TaskRunnerConfigurer
-TaskClient taskClient = new TaskClient(client);
+ApiClient apiClient = ApiClient.builder().build();
+OrkesClients clients = new OrkesClients(apiClient);
+
 TaskRunnerConfigurer configurer = new TaskRunnerConfigurer.Builder(
-    taskClient,
+    clients.getTaskClient(),
     List.of(new MyWorker(), new AnotherWorker())
 )
 .withThreadCount(10)
@@ -248,7 +235,7 @@ TaskRunnerConfigurer configurer = new TaskRunnerConfigurer.Builder(
 configurer.init();
 
 // Option 2: Using WorkflowExecutor (auto-discovers @WorkerTask annotations)
-WorkflowExecutor executor = new WorkflowExecutor(client, 10);
+WorkflowExecutor executor = new WorkflowExecutor(apiClient, 10);
 executor.initWorkers("com.mycompany.workers");  // Package to scan for @WorkerTask
 ```
 
@@ -279,7 +266,7 @@ Enable metrics collection for monitoring workers:
 ```java
 // Using conductor-client-metrics module
 dependencies {
-    implementation 'org.conductoross:conductor-client-metrics:4.0.1'
+    implementation 'org.conductoross:conductor-client-metrics:5.0.1'
 }
 ```
 
@@ -316,7 +303,9 @@ workflow.registerWorkflow(true, true);
 **Execute workflows:**
 
 ```java
-WorkflowClient workflowClient = new WorkflowClient(client);
+ApiClient apiClient = ApiClient.builder().build();
+OrkesClients clients = new OrkesClients(apiClient);
+WorkflowClient workflowClient = clients.getWorkflowClient();
 
 // Synchronous (start and poll for completion)
 CompletableFuture<Workflow> future = workflow.execute(input);
@@ -324,7 +313,11 @@ Workflow result = future.get(30, TimeUnit.SECONDS);
 System.out.println("Output: " + result.getOutput());
 
 // Asynchronous (returns workflow ID immediately)
-String workflowId = workflowClient.startWorkflow("my_workflow", 1, "", Map.of("key", "value"));
+StartWorkflowRequest request = new StartWorkflowRequest();
+request.setName("my_workflow");
+request.setVersion(1);
+request.setInput(Map.of("key", "value"));
+String workflowId = workflowClient.startWorkflow(request);
 
 // Dynamic execution (sends workflow definition with request)
 CompletableFuture<Workflow> dynamicRun = workflow.executeDynamic(input);
@@ -333,8 +326,6 @@ CompletableFuture<Workflow> dynamicRun = workflow.executeDynamic(input);
 **Manage running workflows:**
 
 ```java
-WorkflowClient workflowClient = new WorkflowClient(client);
-
 // Get workflow status
 Workflow wf = workflowClient.getWorkflow(workflowId, true);
 System.out.println("Status: " + wf.getStatus());
@@ -389,7 +380,7 @@ Conductor supports AI-native workflows including agentic tool calling, RAG pipel
 
 **Agentic Workflows**
 
-Build AI agents where LLMs dynamically select and call Java workers as tools. All agentic examples live in [`AgenticExamplesRunner.java`](https://github.com/conductor-oss/java-sdk/blob/main/examples/src/main/java/io/orkes/conductor/sdk/examples/agentic/AgenticExamplesRunner.java) — a single unified runner.
+Build AI agents where LLMs dynamically select and call Java workers as tools. All agentic examples live in [`AgenticExamplesRunner.java`](https://github.com/conductor-oss/java-sdk/blob/main/examples/old/src/main/java/io/orkes/conductor/sdk/examples/agentic/AgenticExamplesRunner.java) — a single unified runner.
 
 | Workflow | Description |
 |----------|-------------|
@@ -403,8 +394,8 @@ Build AI agents where LLMs dynamically select and call Java workers as tools. Al
 
 | Example | Description |
 |---------|-------------|
-| [RagWorkflowExample.java](https://github.com/conductor-oss/java-sdk/blob/main/examples/src/main/java/io/orkes/conductor/sdk/examples/agentic/RagWorkflowExample.java) | End-to-end RAG: document indexing, semantic search, answer generation |
-| [VectorDbExample.java](https://github.com/conductor-oss/java-sdk/blob/main/examples/src/main/java/io/orkes/conductor/sdk/examples/agentic/VectorDbExample.java) | Vector database operations: text indexing, embedding generation, and semantic search |
+| [RagWorkflowExample.java](https://github.com/conductor-oss/java-sdk/blob/main/examples/old/src/main/java/io/orkes/conductor/sdk/examples/agentic/RagWorkflowExample.java) | End-to-end RAG: document indexing, semantic search, answer generation |
+| [VectorDbExample.java](https://github.com/conductor-oss/java-sdk/blob/main/examples/old/src/main/java/io/orkes/conductor/sdk/examples/agentic/VectorDbExample.java) | Vector database operations: text indexing, embedding generation, and semantic search |
 
 **Using LLM Tasks in Workflows:**
 
@@ -477,12 +468,12 @@ See the [Examples Guide](https://github.com/conductor-oss/java-sdk/blob/main/exa
 
 | Example | Description | Run |
 |---------|-------------|-----|
-| [Hello World](https://github.com/conductor-oss/java-sdk/blob/main/examples/src/main/java/com/netflix/conductor/sdk/examples/helloworld/) | Minimal workflow with worker | `./gradlew :examples:run -PmainClass=com.netflix.conductor.sdk.examples.helloworld.Main` |
-| [Workflow Operations](https://github.com/conductor-oss/java-sdk/blob/main/examples/src/main/java/io/orkes/conductor/sdk/examples/workflowops/) | Pause, resume, terminate workflows | `./gradlew :examples:run -PmainClass=io.orkes.conductor.sdk.examples.workflowops.Main` |
-| [Shipment Workflow](https://github.com/conductor-oss/java-sdk/blob/main/examples/src/main/java/com/netflix/conductor/sdk/examples/shipment/) | Real-world order processing | `./gradlew :examples:run -PmainClass=com.netflix.conductor.sdk.examples.shipment.Main` |
-| [Events](https://github.com/conductor-oss/java-sdk/blob/main/examples/src/main/java/com/netflix/conductor/sdk/examples/events/) | Event-driven workflows | `./gradlew :examples:run -PmainClass=com.netflix.conductor.sdk.examples.events.EventHandlerExample` |
-| [All AI examples](https://github.com/conductor-oss/java-sdk/blob/main/examples/src/main/java/io/orkes/conductor/sdk/examples/agentic/AgenticExamplesRunner.java) | All agentic/LLM workflows | `./gradlew :examples:run --args="--all"` |
-| [RAG Workflow](https://github.com/conductor-oss/java-sdk/blob/main/examples/src/main/java/io/orkes/conductor/sdk/examples/agentic/RagWorkflowExample.java) | RAG pipeline (index → search → answer) | `./gradlew :examples:run -PmainClass=io.orkes.conductor.sdk.examples.agentic.RagWorkflowExample` |
+| [Hello World](https://github.com/conductor-oss/java-sdk/tree/main/examples/basics/hello-world) | Minimal workflow with worker | `./gradlew :examples:run -PmainClass=com.netflix.conductor.sdk.examples.helloworld.Main` |
+| [Workflow Operations](https://github.com/conductor-oss/java-sdk/tree/main/examples/old/src/main/java/io/orkes/conductor/sdk/examples/workflowops) | Pause, resume, terminate workflows | `./gradlew :examples:run -PmainClass=io.orkes.conductor.sdk.examples.workflowops.Main` |
+| [Shipment Workflow](https://github.com/conductor-oss/java-sdk/tree/main/examples/old/src/main/java/com/netflix/conductor/sdk/examples/shipment) | Real-world order processing | `./gradlew :examples:run -PmainClass=com.netflix.conductor.sdk.examples.shipment.Main` |
+| [Events](https://github.com/conductor-oss/java-sdk/tree/main/examples/old/src/main/java/com/netflix/conductor/sdk/examples/events) | Event-driven workflows | `./gradlew :examples:run -PmainClass=com.netflix.conductor.sdk.examples.events.EventHandlerExample` |
+| [All AI examples](https://github.com/conductor-oss/java-sdk/blob/main/examples/old/src/main/java/io/orkes/conductor/sdk/examples/agentic/AgenticExamplesRunner.java) | All agentic/LLM workflows | `./gradlew :examples:run --args="--all"` |
+| [RAG Workflow](https://github.com/conductor-oss/java-sdk/blob/main/examples/old/src/main/java/io/orkes/conductor/sdk/examples/agentic/RagWorkflowExample.java) | RAG pipeline (index → search → answer) | `./gradlew :examples:run -PmainClass=io.orkes.conductor.sdk.examples.agentic.RagWorkflowExample` |
 
 ## API Journey Examples
 
@@ -490,10 +481,10 @@ End-to-end examples covering all APIs for each domain:
 
 | Example | APIs | Run |
 |---------|------|-----|
-| [Metadata Management](https://github.com/conductor-oss/java-sdk/blob/main/examples/src/main/java/io/orkes/conductor/sdk/examples/MetadataManagement.java) | Task & workflow definitions | `./gradlew :examples:run -PmainClass=io.orkes.conductor.sdk.examples.MetadataManagement` |
-| [Workflow Management](https://github.com/conductor-oss/java-sdk/blob/main/examples/src/main/java/io/orkes/conductor/sdk/examples/WorkflowManagement.java) | Start, monitor, control workflows | `./gradlew :examples:run -PmainClass=io.orkes.conductor.sdk.examples.WorkflowManagement` |
-| [Authorization Management](https://github.com/conductor-oss/java-sdk/blob/main/examples/src/main/java/io/orkes/conductor/sdk/examples/AuthorizationManagement.java) | Users, groups, permissions | `./gradlew :examples:run -PmainClass=io.orkes.conductor.sdk.examples.AuthorizationManagement` |
-| [Scheduler Management](https://github.com/conductor-oss/java-sdk/blob/main/examples/src/main/java/io/orkes/conductor/sdk/examples/SchedulerManagement.java) | Workflow scheduling | `./gradlew :examples:run -PmainClass=io.orkes.conductor.sdk.examples.SchedulerManagement` |
+| [Metadata Management](https://github.com/conductor-oss/java-sdk/blob/main/examples/old/src/main/java/io/orkes/conductor/sdk/examples/MetadataManagement.java) | Task & workflow definitions | `./gradlew :examples:run -PmainClass=io.orkes.conductor.sdk.examples.MetadataManagement` |
+| [Workflow Management](https://github.com/conductor-oss/java-sdk/blob/main/examples/old/src/main/java/io/orkes/conductor/sdk/examples/WorkflowManagement.java) | Start, monitor, control workflows | `./gradlew :examples:run -PmainClass=io.orkes.conductor.sdk.examples.WorkflowManagement` |
+| [Authorization Management](https://github.com/conductor-oss/java-sdk/blob/main/examples/old/src/main/java/io/orkes/conductor/sdk/examples/AuthorizationManagement.java) | Users, groups, permissions | `./gradlew :examples:run -PmainClass=io.orkes.conductor.sdk.examples.AuthorizationManagement` |
+| [Scheduler Management](https://github.com/conductor-oss/java-sdk/blob/main/examples/old/src/main/java/io/orkes/conductor/sdk/examples/SchedulerManagement.java) | Workflow scheduling | `./gradlew :examples:run -PmainClass=io.orkes.conductor.sdk.examples.SchedulerManagement` |
 
 ## Documentation
 
@@ -572,4 +563,4 @@ Browse all examples on GitHub: [conductor-oss/java-sdk/examples](https://github.
 | Example | Type |
 |---|---|
 | [Readme](https://github.com/conductor-oss/java-sdk/blob/main/examples/README.md) | file |
-| [Src](https://github.com/conductor-oss/java-sdk/tree/main/examples/src) | directory |
+| [Examples](https://github.com/conductor-oss/java-sdk/tree/main/examples) | directory |

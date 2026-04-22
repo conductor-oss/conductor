@@ -12,16 +12,13 @@
  */
 package com.netflix.conductor.dao;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-
-import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.core.events.queue.Message;
 
 /** DAO responsible for managing queuing for the tasks. */
-@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
-@Component
 public interface QueueDAO {
 
     /**
@@ -40,6 +37,16 @@ public interface QueueDAO {
      *     (for timed queues)
      */
     void push(String queueName, String id, int priority, long offsetTimeInSecond);
+
+    /**
+     * @param queueName name of the queue
+     * @param id message id
+     * @param priority message priority (between 0 and 99)
+     * @param offsetTime time after which the message should be marked visible.
+     */
+    default void push(String queueName, String id, int priority, Duration offsetTime) {
+        push(queueName, id, priority, offsetTime.getSeconds());
+    }
 
     /**
      * @param queueName Name of the queue

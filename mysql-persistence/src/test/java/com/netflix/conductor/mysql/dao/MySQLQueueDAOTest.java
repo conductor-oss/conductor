@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
@@ -42,6 +43,7 @@ import com.netflix.conductor.mysql.util.Query;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -235,7 +237,7 @@ public class MySQLQueueDAOTest {
      * @since 1.8.2-rc5
      */
     @Test
-    public void pollDeferredMessagesTest() throws InterruptedException {
+    public void pollDeferredMessagesTest() {
         final List<Message> messages = new ArrayList<>();
         final String queueName = "issue448_testQueue";
         final int totalSize = 10;
@@ -283,9 +285,20 @@ public class MySQLQueueDAOTest {
 
         final int secondPollSize = 3;
 
-        // Sleep a bit to get the next batch of messages
-        LOGGER.debug("Sleeping for second poll...");
-        Thread.sleep(5_000);
+        // Wait for delayed messages to become available for polling
+        final String COUNT_READY =
+                "SELECT COUNT(*) FROM queue_message WHERE queue_name = ? AND popped = false AND deliver_on <= CURRENT_TIMESTAMP";
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(500, TimeUnit.MILLISECONDS)
+                .until(
+                        () -> {
+                            try (Connection c = dataSource.getConnection()) {
+                                try (Query q = new Query(objectMapper, c, COUNT_READY)) {
+                                    return q.addParameter(queueName).executeCount()
+                                            >= secondPollSize;
+                                }
+                            }
+                        });
 
         // Poll for many more messages than expected
         List<Message> secondPoll = queueDAO.pollMessages(queueName, secondPollSize + 10, 100);

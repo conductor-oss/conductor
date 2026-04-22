@@ -1,0 +1,46 @@
+plugins {
+    id 'java'
+}
+
+dependencies {
+    testImplementation 'org.conductoross:conductor-client:5.0.1'
+    testImplementation 'org.conductoross:java-sdk:5.0.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api'
+    testRuntimeOnly  'org.junit.jupiter:junit-jupiter-engine'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params'
+    testImplementation 'org.awaitility:awaitility:4.2.0'
+    testImplementation 'org.apache.logging.log4j:log4j-slf4j2-impl'
+    testImplementation 'org.projectlombok:lombok:1.18.30'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
+    testImplementation 'org.apache.commons:commons-lang3:3.14.0'
+    testImplementation 'org.apache.commons:commons-compress:1.26.1'
+}
+
+test {
+    useJUnitPlatform()
+    maxParallelForks = 4
+    minHeapSize = '512m'
+    maxHeapSize = '2g'
+    testLogging {
+        events = ['SKIPPED', 'FAILED']
+        exceptionFormat = 'short'
+        showStandardStreams = true
+    }
+    // Forward SERVER_ROOT_URI if explicitly set via -D
+    if (System.getProperty('SERVER_ROOT_URI')) {
+        systemProperty 'SERVER_ROOT_URI', System.getProperty('SERVER_ROOT_URI')
+    }
+
+    // Skip during normal ./gradlew build
+    // Enable with: RUN_E2E=true ./gradlew :e2e:test
+    // or: ./gradlew :e2e:test -PrunE2E
+    onlyIf { System.getenv('RUN_E2E') == 'true' || project.hasProperty('runE2E') }
+
+    // Support excluding specific tests:
+    // ./gradlew :e2e:test -PrunE2E -PexcludeTests="**/HTTPTaskTests*"
+    if (project.hasProperty('excludeTests')) {
+        project.property('excludeTests').toString().split(',').each { pattern ->
+            exclude pattern.trim()
+        }
+    }
+}

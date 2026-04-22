@@ -1,5 +1,5 @@
 import { Box, Grid } from "@mui/material";
-import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import { path as _path } from "lodash/fp";
 import { updateField } from "utils/fieldHelpers";
 import { Optional } from "./OptionalFieldForm";

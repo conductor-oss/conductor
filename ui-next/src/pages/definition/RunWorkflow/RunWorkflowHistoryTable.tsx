@@ -6,7 +6,7 @@ import {
   Trash,
 } from "@phosphor-icons/react";
 import { Button, DataTable, Paper } from "components";
-import ConfirmChoiceDialog from "components/ConfirmChoiceDialog";
+import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
 import _difference from "lodash/difference";
 import _isEmpty from "lodash/isEmpty";
 import _isEqual from "lodash/isEqual";

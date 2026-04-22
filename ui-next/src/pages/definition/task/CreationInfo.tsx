@@ -1,7 +1,7 @@
 import { FunctionComponent } from "react";
 import { Stack } from "@mui/material";
 import { TaskDefinitionDto } from "types";
-import MuiTypography from "components/MuiTypography";
+import MuiTypography from "components/ui/MuiTypography";
 import { FORMAT_TIME_TO_LONG } from "utils/constants/common";
 import { formatInTimeZone } from "utils/date";
 import _isUndefined from "lodash/isUndefined";

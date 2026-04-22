@@ -1,12 +1,12 @@
 import { Box, Stack, Tooltip } from "@mui/material";
 import { useSelector } from "@xstate/react";
-import Button, { MuiButtonProps } from "components/MuiButton";
-import SplitButton from "components/v1/ConductorSplitButton";
-import DownloadIcon from "components/v1/icons/DownloadIcon";
-import ResetIcon from "components/v1/icons/ResetIcon";
-import SaveIcon from "components/v1/icons/SaveIcon";
-import TrashIcon from "components/v1/icons/TrashIcon";
-import XCloseIcon from "components/v1/icons/XCloseIcon";
+import Button, { MuiButtonProps } from "components/ui/buttons/MuiButton";
+import SplitButton from "components/ui/buttons/ConductorSplitButton";
+import DownloadIcon from "components/icons/DownloadIcon";
+import ResetIcon from "components/icons/ResetIcon";
+import SaveIcon from "components/icons/SaveIcon";
+import TrashIcon from "components/icons/TrashIcon";
+import XCloseIcon from "components/icons/XCloseIcon";
 import fastDeepEqual from "fast-deep-equal";
 import { TaskDefinitionFormMachineEvent } from "pages/definition/task/form/state/types";
 import { TASK_FORM_MACHINE_ID } from "pages/definition/task/state/helpers";
@@ -17,7 +17,7 @@ import {
   TaskDefinitionMachineState,
 } from "pages/definition/task/state/types";
 import { FunctionComponent, useMemo } from "react";
-import { useAuth } from "shared/auth";
+import { useAuth } from "components/features/auth";
 import { colors } from "theme/tokens/variables";
 import { ActorRef } from "xstate";
 import { OpenTestTaskButton } from "../EditorPanel/TaskFormTab/forms/TestTaskButton/OpenTestTaskButton";

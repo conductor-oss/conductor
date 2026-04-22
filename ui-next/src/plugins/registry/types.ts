@@ -96,6 +96,7 @@ export interface TaskMenuItemRegistration {
 export type SidebarMenuTarget =
   | "executionsSubMenu"
   | "definitionsSubMenu"
+  | "integrationsSubMenu"
   | "apiSubMenu"
   | "adminSubMenu"
   | "helpMenu"

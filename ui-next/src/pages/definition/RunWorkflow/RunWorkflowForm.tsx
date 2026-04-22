@@ -1,10 +1,10 @@
 import { Box, Grid } from "@mui/material";
 import { Button } from "components";
-import Paper from "components/Paper";
-import { SnackbarMessage } from "components/SnackbarMessage";
-import { ConductorCodeBlockInput } from "components/v1/ConductorCodeBlockInput";
-import ConductorInput from "components/v1/ConductorInput";
-import ResetIcon from "components/v1/icons/ResetIcon";
+import Paper from "components/ui/Paper";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import ResetIcon from "components/icons/ResetIcon";
 import IdempotencyForm from "pages/runWorkflow/IdempotencyForm";
 import { editor, type EditorOptions } from "shared/editor";
 import { SMALL_EDITOR_DEFAULT_OPTIONS } from "utils/constants";

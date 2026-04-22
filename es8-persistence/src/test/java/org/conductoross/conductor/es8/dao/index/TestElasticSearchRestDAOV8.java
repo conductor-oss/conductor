@@ -13,6 +13,7 @@
 package org.conductoross.conductor.es8.dao.index;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
@@ -21,6 +22,8 @@ import java.util.function.Supplier;
 
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.es8.utils.TestUtils;
+import org.elasticsearch.client.Request;
+import org.elasticsearch.client.Response;
 import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
@@ -31,6 +34,7 @@ import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.events.queue.Message;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
 
 import static org.junit.Assert.assertEquals;
@@ -121,6 +125,49 @@ public class TestElasticSearchRestDAOV8 extends ElasticSearchRestDaoBaseTest {
                 "Index template for 'task_log' should exist",
                 indexDAO.doesResourceExist(
                         "/_index_template/" + resourceName("template_" + LOG_DOC_TYPE)));
+    }
+
+    @Test
+    public void shouldConfigureRolloverAliasWithoutTemplateAlias() throws Exception {
+        String workflowAlias = indexName(WORKFLOW_DOC_TYPE);
+        String workflowTemplate = resourceName("template_" + WORKFLOW_DOC_TYPE);
+
+        Response templateResponse =
+                restClient.performRequest(
+                        new Request("GET", "/_index_template/" + workflowTemplate));
+        JsonNode templateJson;
+        try (InputStream content = templateResponse.getEntity().getContent()) {
+            templateJson = objectMapper.readTree(content);
+        }
+
+        JsonNode indexTemplate =
+                templateJson.path("index_templates").get(0).path("index_template").path("template");
+        assertEquals(
+                workflowAlias,
+                indexTemplate
+                        .path("settings")
+                        .path("index")
+                        .path("lifecycle")
+                        .path("rollover_alias")
+                        .asText());
+        assertFalse(
+                "Composable template must not declare the rollover alias under template.aliases",
+                indexTemplate.has("aliases"));
+
+        Response aliasResponse =
+                restClient.performRequest(new Request("GET", "/_alias/" + workflowAlias));
+        JsonNode aliasJson;
+        try (InputStream content = aliasResponse.getEntity().getContent()) {
+            aliasJson = objectMapper.readTree(content);
+        }
+
+        JsonNode bootstrapAlias = aliasJson.path(workflowAlias + "-000001").path("aliases");
+        assertTrue(
+                "Bootstrap write index should retain the write alias",
+                bootstrapAlias.has(workflowAlias));
+        assertTrue(
+                "Bootstrap write index should be marked as the write index",
+                bootstrapAlias.path(workflowAlias).path("is_write_index").asBoolean(false));
     }
 
     @Test

@@ -4,7 +4,7 @@ import {
   TaskFormEvents,
   TaskFormMachineContext,
 } from "./types";
-import { FlowActionTypes } from "components/flow/state";
+import { FlowActionTypes } from "components/features/flow/state";
 import * as actions from "./actions";
 import * as guards from "./guards";
 import { taskStatsMachine } from "../TaskStats/state";

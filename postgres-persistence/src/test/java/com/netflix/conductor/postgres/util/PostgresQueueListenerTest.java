@@ -15,6 +15,7 @@ package com.netflix.conductor.postgres.util;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
 
@@ -35,6 +36,7 @@ import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.postgres.config.PostgresConfiguration;
 import com.netflix.conductor.postgres.config.PostgresProperties;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.*;
 
 @ContextConfiguration(
@@ -157,12 +159,13 @@ public class PostgresQueueListenerTest {
     }
 
     @Test
-    public void testHasReadyMessagesInFuture() throws InterruptedException {
+    public void testHasReadyMessagesInFuture() {
         assertFalse(listener.hasMessagesReady("dummy-task"));
         sendNotification("dummy-task", 3, System.currentTimeMillis() + 100);
         assertFalse(listener.hasMessagesReady("dummy-task"));
-        Thread.sleep(101);
-        assertTrue(listener.hasMessagesReady("dummy-task"));
+        await().atMost(500, TimeUnit.MILLISECONDS)
+                .pollInterval(20, TimeUnit.MILLISECONDS)
+                .until(() -> listener.hasMessagesReady("dummy-task"));
     }
 
     @Test

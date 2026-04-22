@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
+import com.netflix.conductor.model.WorkflowModel
 import com.netflix.conductor.test.base.AbstractSpecification
 
 import spock.lang.Shared
@@ -66,8 +67,8 @@ class FailureWorkflowSpec extends AbstractSpecification {
             def failedWorkflowId = output['conductor.failure_workflow'] as String
             def workflowCorrelationId = correlationId
             def workflowFailureTaskId = tasks[1].taskId
-            with(workflowExecutionService.getExecutionStatus(failedWorkflowId, true)) {
-                status == Workflow.WorkflowStatus.COMPLETED
+            with(workflowExecutionService.getWorkflowModel(failedWorkflowId, true)) {
+                status == WorkflowModel.Status.COMPLETED
                 correlationId == workflowCorrelationId
                 input['workflowId'] == workflowInstanceId
                 input['failureTaskId'] == workflowFailureTaskId
@@ -116,8 +117,8 @@ class FailureWorkflowSpec extends AbstractSpecification {
             def failedWorkflowId = output['conductor.failure_workflow'] as String
             def workflowCorrelationId = correlationId
             def workflowFailureTaskId = tasks[1].taskId
-            with(workflowExecutionService.getExecutionStatus(failedWorkflowId, true)) {
-                status == Workflow.WorkflowStatus.COMPLETED
+            with(workflowExecutionService.getWorkflowModel(failedWorkflowId, true)) {
+                status == WorkflowModel.Status.COMPLETED
                 correlationId == workflowCorrelationId
                 input['workflowId'] == workflowInstanceId
                 input['failureTaskId'] == workflowFailureTaskId

@@ -131,6 +131,9 @@ public class TaskDef extends Auditable {
     @NotNull
     private long totalTimeoutSeconds;
 
+    @ProtoField(id = 23)
+    private boolean taskStatusListenerEnabled = true;
+
     private SchemaDef inputSchema;
     private SchemaDef outputSchema;
     private boolean enforceSchema;
@@ -474,6 +477,14 @@ public class TaskDef extends Auditable {
 
     public void setTotalTimeoutSeconds(long totalTimeoutSeconds) {
         this.totalTimeoutSeconds = totalTimeoutSeconds;
+    }
+
+    public boolean isTaskStatusListenerEnabled() {
+        return taskStatusListenerEnabled;
+    }
+
+    public void setTaskStatusListenerEnabled(boolean taskStatusListenerEnabled) {
+        this.taskStatusListenerEnabled = taskStatusListenerEnabled;
     }
 
     @Override

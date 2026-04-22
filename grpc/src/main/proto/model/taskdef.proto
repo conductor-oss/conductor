@@ -39,4 +39,5 @@ message TaskDef {
     int32 backoff_scale_factor = 20;
     string base_type = 21;
     int64 total_timeout_seconds = 22;
+    bool task_status_listener_enabled = 23;
 }

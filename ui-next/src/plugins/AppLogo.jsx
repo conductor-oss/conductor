@@ -1,4 +1,4 @@
-import { OpenedLogo } from "components/Sidebar/OpenedLogo";
+import { OpenedLogo } from "components/providers/sidebar/OpenedLogo";
 import { useContext, useMemo } from "react";
 import { ColorModeContext } from "theme/material/ColorModeContext";
 import { FEATURES, featureFlags } from "utils";

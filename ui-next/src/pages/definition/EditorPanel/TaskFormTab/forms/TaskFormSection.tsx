@@ -3,7 +3,7 @@ import Accordion, { AccordionProps } from "@mui/material/Accordion";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import { CaretDown } from "@phosphor-icons/react";
-import MuiTypography from "components/MuiTypography";
+import MuiTypography from "components/ui/MuiTypography";
 import _isString from "lodash/isString";
 import React, { useContext } from "react";
 import { ColorModeContext } from "theme/material/ColorModeContext";
