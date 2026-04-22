@@ -9,9 +9,9 @@ import {
   Theme,
 } from "@mui/material";
 import { useMachine } from "@xstate/react";
-import { DocLink } from "components/DocLink";
-import { MessageContext } from "components/v1/layout/MessageContext";
-import { ConductorSectionHeader } from "components/v1/layout/section/ConductorSectionHeader";
+import { DocLink } from "components/ui/DocLink";
+import { MessageContext } from "components/providers/messageContext";
+import { ConductorSectionHeader } from "components/layout/section/ConductorSectionHeader";
 import _get from "lodash/get";
 import _isString from "lodash/isString";
 import TaskDefinitionDialogs from "pages/definition/task/dialogs/TaskDefinitionDialogs";
@@ -25,8 +25,8 @@ import {
 import { useContext, useEffect, useMemo, useRef } from "react";
 import { Helmet } from "react-helmet";
 import { useLocation, useParams } from "react-router";
-import SectionContainer from "shared/SectionContainer";
-import { useAuth } from "shared/auth";
+import SectionContainer from "components/ui/layout/SectionContainer";
+import { useAuth } from "components/features/auth";
 import { newTaskTemplate } from "templates/JSONSchemaWorkflow";
 import { colors } from "theme/tokens/variables";
 import { TaskDefinitionDto } from "types";

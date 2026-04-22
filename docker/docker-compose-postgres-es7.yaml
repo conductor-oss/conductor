@@ -14,7 +14,7 @@ services:
     networks:
       - internal
     ports:
-      - 8080:8080
+      - 8000:8080
       - 8127:5000
     healthcheck:
       test: [ "CMD", "curl","-I" ,"-XGET", "http://localhost:8080/health" ]
@@ -44,8 +44,6 @@ services:
       - pgdata-conductor:/var/lib/postgresql/data
     networks:
       - internal
-    ports:
-      - 6432:5432
     healthcheck:
       test: timeout 5 bash -c 'cat < /dev/null > /dev/tcp/localhost/5432'
       interval: 5s
@@ -67,8 +65,6 @@ services:
       - esdata-conductor:/usr/share/elasticsearch/data
     networks:
       - internal
-    ports:
-      - 9201:9200
     healthcheck:
       test: curl http://localhost:9200/_cluster/health -o /dev/null
       interval: 5s

@@ -1,4 +1,4 @@
-import { ApiSearchModal } from "components/v1/ApiSearchModal/ApiSearchModal";
+import { ApiSearchModal } from "components/ApiSearchModal";
 import { toCodeT, useParamsToSdk } from "shared/CodeModal/hook";
 import { SupportedDisplayTypes } from "shared/CodeModal/types";
 import { curlHeaders } from "shared/CodeModal/curlHeader";

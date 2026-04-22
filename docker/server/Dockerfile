@@ -24,7 +24,7 @@ RUN if [ "$PREBUILT" = "true" ]; then \
       cp docker/server/libs/conductor-server.jar server/build/libs/conductor-server-boot.jar && \
       echo "Using pre-built server JAR"; \
     else \
-      ./gradlew build -x test -x spotlessCheck -x shadowJar -x :conductor-os-persistence-v3:build \
+      ./gradlew build -x test -x spotlessCheck -x shadowJar \
         -PindexingBackend=${INDEXING_BACKEND} \
         -Dorg.gradle.jvmargs=-Xmx2g \
         --no-daemon --no-parallel; \

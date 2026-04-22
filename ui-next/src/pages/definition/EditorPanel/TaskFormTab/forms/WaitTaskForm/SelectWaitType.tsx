@@ -3,8 +3,8 @@ import { WaitType } from "pages/definition/EditorPanel/TaskFormTab/forms/WaitTas
 import { FormControl } from "@mui/material";
 import { colors } from "theme/tokens/variables";
 import _capitalize from "lodash/capitalize";
-import Button from "components/MuiButton";
-import ButtonGroup from "components/MuiButtonGroup";
+import Button from "components/ui/buttons/MuiButton";
+import ButtonGroup from "components/ui/buttons/MuiButtonGroup";
 
 const SelectWaitType: FunctionComponent<{
   options: WaitType[];

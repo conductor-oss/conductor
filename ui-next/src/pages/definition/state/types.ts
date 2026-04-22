@@ -12,7 +12,7 @@ import {
   WorkflowMetadataI,
   User,
 } from "types";
-import { FlowEvents } from "components/flow/state";
+import { FlowEvents } from "components/features/flow/state";
 import { CodeTextReference } from "../EditorPanel/CodeEditorTab/state";
 import {
   SavedCancelledEvent,

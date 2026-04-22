@@ -4,7 +4,7 @@
  * This simplified version removes auth token handling since
  * OSS mode does not use authentication.
  */
-import { MessageContext } from "components/v1/layout/MessageContext";
+import { MessageContext } from "components/providers/messageContext";
 import { useContext } from "react";
 import { IObject } from "types/common";
 import { getErrorMessage, tryToJson } from "utils/utils";

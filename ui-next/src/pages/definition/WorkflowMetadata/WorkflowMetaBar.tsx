@@ -1,11 +1,11 @@
 import { Box, Grid } from "@mui/material";
 import { useSelector } from "@xstate/react";
 import { Text } from "components";
-import { selectIsOpenedEdge } from "components/flow/state/selectors";
-import { HeadBarSelect } from "components/v1";
-import ConductorBreadcrumbs from "components/v1/ConductorBreadcrumbs";
-import DoubleArrowLeftIcon from "components/v1/icons/DoubleArrowLeftIcon";
-import ButtonLinks from "components/v1/layout/header/ButtonLinks";
+import { selectIsOpenedEdge } from "components/features/flow/state/selectors";
+import { HeadBarSelect } from "components/ui/inputs";
+import ConductorBreadcrumbs from "components/ui/layout/ConductorBreadcrumbs";
+import DoubleArrowLeftIcon from "components/icons/DoubleArrowLeftIcon";
+import ButtonLinks from "components/layout/header/ButtonLinks";
 import _isString from "lodash/isString";
 import _isUndefined from "lodash/isUndefined";
 import _uniq from "lodash/uniq";
@@ -141,6 +141,7 @@ export const WorkflowMetaBar: FunctionComponent<WorkflowMetaBarProps> = ({
                 display: "flex",
                 gap: 2,
                 flexWrap: "wrap",
+                alignItems: "center",
                 justifyContent: ["flex-start", "flex-end"],
               }}
             >

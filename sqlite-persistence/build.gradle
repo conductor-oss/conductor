@@ -24,12 +24,12 @@ dependencies {
 
     testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
     testImplementation project(':conductor-server')
-    implementation "org.conductoross:conductor-client:${revConductorClient}"
     testImplementation project(':conductor-grpc-client')
     testImplementation project(':conductor-es7-persistence')
 
     testImplementation project(':conductor-test-util').sourceSets.test.output
     testImplementation project(':conductor-common-persistence').sourceSets.test.output
+    testImplementation "org.awaitility:awaitility:${revAwaitility}"
 }
 
 test {

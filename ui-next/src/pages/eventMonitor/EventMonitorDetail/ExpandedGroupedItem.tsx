@@ -1,7 +1,7 @@
 import { Grid } from "@mui/material";
 import { Button, DataTable, NavLink } from "components";
-import { LegacyColumn } from "components/DataTable/types";
-import TagChip from "components/TagChip";
+import { LegacyColumn } from "components/ui/DataTable/types";
+import TagChip from "components/ui/TagChip";
 import { useMemo } from "react";
 import { ExpanderComponentProps } from "react-data-table-component";
 import { colors } from "theme/tokens/variables";

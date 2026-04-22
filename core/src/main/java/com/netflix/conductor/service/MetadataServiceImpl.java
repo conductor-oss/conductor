@@ -247,6 +247,7 @@ public class MetadataServiceImpl implements MetadataService {
         summary.setName(def.getName());
         summary.setVersion(def.getVersion());
         summary.setCreateTime(def.getCreateTime());
+        summary.setUpdateTime(def.getUpdateTime());
 
         return summary;
     }

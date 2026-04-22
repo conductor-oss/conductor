@@ -1,6 +1,6 @@
 import Editor, { Monaco } from "@monaco-editor/react";
 import { Box, IconButton, Tooltip } from "@mui/material";
-import CopyIcon from "components/v1/icons/CopyIcon";
+import CopyIcon from "components/icons/CopyIcon";
 import _isNil from "lodash/isNil";
 import {
   FunctionComponent,

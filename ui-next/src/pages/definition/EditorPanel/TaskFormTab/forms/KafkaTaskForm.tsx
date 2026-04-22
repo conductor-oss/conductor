@@ -6,9 +6,9 @@ import { MaybeVariable } from "./MaybeVariable";
 import { useGetSetHandler } from "./useGetSetHandler";
 import { TaskType } from "types";
 import { Optional } from "./OptionalFieldForm";
-import { ConductorFlatMapForm } from "components/v1/FlatMapForm/ConductorFlatMapForm";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
-import { ConductorKeyValueInput } from "components/v1/FlatMapForm/ConductorKeyValueInput";
+import { ConductorFlatMapForm } from "components/FlatMapForm/ConductorFlatMapForm";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorKeyValueInput } from "components/FlatMapForm/ConductorKeyValueInput";
 
 const KAFKA_REQUEST = "inputParameters.kafka_request";
 const TOPIC_PATH = `${KAFKA_REQUEST}.topic`;

@@ -2,11 +2,6 @@ import React, { useMemo, useState } from "react";
 import { timestampRendererLocal } from "utils/date";
 import { getTemplateFromInputParams } from "../../runWorkflow/runWorkflowUtils";
 import { ScheduleType } from "../Schedule";
-import {
-  DEFAULT_CRON_ZONE,
-  getNormalizedCronSchedules,
-  hasMultiCronSchedules,
-} from "../utils/cronSchedules";
 
 export interface UseScheduleStateReturn {
   scheduleState: ScheduleType;
@@ -36,9 +31,7 @@ const initialState: ScheduleType = {
   scheduleStartTime: "",
   scheduleEndTime: "",
   priority: "",
-  zoneId: DEFAULT_CRON_ZONE,
-  cronSchedules: [],
-  cronMode: "single",
+  zoneId: "UTC",
 };
 
 export function useScheduleState(
@@ -76,7 +69,7 @@ export function useScheduleState(
     cronExpression: "",
     scheduleStartTime: "",
     scheduleEndTime: "",
-    cronSchedules: [],
+    zoneId: "UTC",
     startWorkflowRequest: {
       name: null,
       version: null,
@@ -100,8 +93,6 @@ export function useScheduleState(
       if (cronExpression === null) {
         cronExpression = "";
       }
-      const cronSchedules = getNormalizedCronSchedules(schedule.cronSchedules);
-      const isMultiCron = hasMultiCronSchedules(schedule.cronSchedules);
 
       const newState = {
         name: schedule.name,
@@ -126,9 +117,7 @@ export function useScheduleState(
         scheduleEndTime: schedule.scheduleEndTime
           ? timestampRendererLocal(schedule.scheduleEndTime)
           : "",
-        zoneId: schedule.zoneId || DEFAULT_CRON_ZONE,
-        cronSchedules,
-        cronMode: isMultiCron ? ("multi" as const) : ("single" as const),
+        zoneId: schedule.zoneId,
       };
 
       setScheduleState((prevState) => ({ ...prevState, ...newState }));
@@ -137,18 +126,13 @@ export function useScheduleState(
         runCatchupScheduleInstances: schedule.runCatchupScheduleInstances,
         name: schedule.name,
         description: schedule.description,
+        cronExpression: cronExpression,
         scheduleStartTime: schedule.scheduleStartTime
           ? schedule.scheduleStartTime
           : "",
         scheduleEndTime: schedule.scheduleEndTime
           ? schedule.scheduleEndTime
           : "",
-        ...(isMultiCron
-          ? { cronSchedules }
-          : {
-              cronExpression: cronExpression,
-              zoneId: schedule.zoneId || DEFAULT_CRON_ZONE,
-            }),
         startWorkflowRequest: {
           name: swr.name,
           version: swr.version ? `${swr.version}` : "",
@@ -160,6 +144,7 @@ export function useScheduleState(
           externalInputPayloadStoragePath: swr.externalInputPayloadStoragePath,
           priority: swr.priority,
         },
+        zoneId: schedule.zoneId,
       });
     },
     [],

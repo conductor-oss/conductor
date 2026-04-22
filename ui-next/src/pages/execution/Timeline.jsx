@@ -7,7 +7,7 @@ import _identity from "lodash/identity";
 import _last from "lodash/last";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Timeline from "react-vis-timeline";
-import { ZoomControlsButton } from "shared/ZoomControlsButton";
+import { ZoomControlsButton } from "components/ZoomControlsButton";
 import { colors } from "theme/tokens/variables";
 import { formatDate } from "utils";
 import NoAnimRangeSlider from "./NoAnimRangeSlider";

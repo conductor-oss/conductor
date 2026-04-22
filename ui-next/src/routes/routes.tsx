@@ -30,7 +30,7 @@
  */
 
 import { App } from "components/App";
-import DefaultAuthGuard from "components/auth/AuthGuard";
+import DefaultAuthGuard from "components/features/auth/AuthGuard";
 import ApiReferencePage from "pages/apiDocs/ApiReferencePage";
 import { CreatorFlags } from "pages/creatorFlags/CreatorFlags";
 import { TaskDefinition } from "pages/definition/task";
@@ -54,7 +54,6 @@ import {
   NEW_TASK_DEF_URL,
   RUN_WORKFLOW_URL,
   SCHEDULER_DEFINITION_URL,
-  TAGS_DASHBOARD_URL,
   TASK_DEF_URL,
   TASK_QUEUE_URL,
   WORKFLOW_DEFINITION_URL,
@@ -67,7 +66,6 @@ import KitchenSink from "../pages/kitchensink/KitchenSink";
 import ThemeSampler from "../pages/kitchensink/ThemeSampler";
 import TaskQueue from "../pages/queueMonitor/TaskQueue";
 import { Schedule } from "../pages/scheduler";
-import TagsDashboard from "pages/tags/TagsDashboard";
 
 /**
  * Core authenticated routes (OSS)
@@ -162,12 +160,6 @@ const getCoreAuthenticatedRoutes = () => [
   {
     path: EVENT_MONITOR_URL.NAME,
     element: <EventMonitorDetail />,
-  },
-
-  // Tags Dashboard
-  {
-    path: TAGS_DASHBOARD_URL.BASE,
-    element: <TagsDashboard />,
   },
 
   // API Reference

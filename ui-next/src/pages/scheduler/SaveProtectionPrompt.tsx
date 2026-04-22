@@ -1,7 +1,7 @@
 import fastDeepEqual from "fast-deep-equal";
 import _isEmpty from "lodash/isEmpty";
 import { FunctionComponent, useMemo } from "react";
-import BlockNavigationWithConfirmation from "shared/BlockNavigationWithConfirmation";
+import BlockNavigationWithConfirmation from "components/BlockNavigationWithConfirmation";
 import { useSaveProtection } from "shared/useSaveProtection";
 import { ActorRef, AnyEventObject, EventObject } from "xstate";
 

@@ -2,7 +2,7 @@ import { FunctionComponent } from "react";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import { Box, Chip, Stack } from "@mui/material";
 import { CaretRight, CaretDown } from "@phosphor-icons/react";
-import MuiTypography from "components/MuiTypography";
+import MuiTypography from "components/ui/MuiTypography";
 
 interface AccordionErrorSummaryProps {
   title: string;
