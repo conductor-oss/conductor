@@ -13,7 +13,7 @@ dependencies {
     testImplementation project(':conductor-json-jq-task')
     testImplementation project(':conductor-http-task')
 
-    implementation "org.conductoross:conductor-client:${revConductorClient}"
+    testImplementation "org.conductoross:conductor-client:${revConductorClient}"
 
     testImplementation "org.springframework.retry:spring-retry"
 
