@@ -942,6 +942,32 @@ public class TestDeciderService {
     }
 
     @Test
+    public void testRetryClearsStaleOutputArtifacts() {
+        WorkflowModel workflow = createDefaultWorkflow();
+
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+        task.setUpdateTime(12345L);
+        task.setExternalOutputPayloadStoragePath("old-output.json");
+        task.getOutputData().put("result", "stale");
+        task.getInputData().put("subWorkflowId", "old-subworkflow-id");
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10);
+        taskDef.setRetryDelaySeconds(0);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.FIXED);
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        Optional<TaskModel> retried = deciderService.retry(taskDef, workflowTask, task, workflow);
+
+        assertEquals(0, retried.get().getUpdateTime());
+        assertNull(retried.get().getExternalOutputPayloadStoragePath());
+        assertTrue(retried.get().getOutputData().isEmpty());
+        assertFalse(retried.get().getInputData().containsKey("subWorkflowId"));
+    }
+
+    @Test
     public void testJitterWithExponentialBackoff() {
         WorkflowModel workflow = createDefaultWorkflow();
 

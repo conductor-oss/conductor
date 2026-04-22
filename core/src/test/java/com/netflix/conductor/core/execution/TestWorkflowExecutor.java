@@ -1567,8 +1567,10 @@ public class TestWorkflowExecutor {
         failedSubWorkflowTask.setSeq(1);
         failedSubWorkflowTask.setReasonForIncompletion("subworkflow failed");
         failedSubWorkflowTask.setSubWorkflowId("old-subworkflow-id");
+        failedSubWorkflowTask.setExternalOutputPayloadStoragePath("old-output.json");
         failedSubWorkflowTask.getInputData().put("subWorkflowId", "old-subworkflow-id");
         failedSubWorkflowTask.getOutputData().put("subWorkflowId", "old-subworkflow-id");
+        failedSubWorkflowTask.getOutputData().put("result", "stale");
 
         workflow.getTasks().add(failedSubWorkflowTask);
 
@@ -1588,6 +1590,8 @@ public class TestWorkflowExecutor {
         assertNull(retriedTask.getSubWorkflowId());
         assertFalse(retriedTask.getInputData().containsKey("subWorkflowId"));
         assertFalse(retriedTask.getOutputData().containsKey("subWorkflowId"));
+        assertNull(retriedTask.getExternalOutputPayloadStoragePath());
+        assertTrue(retriedTask.getOutputData().isEmpty());
     }
 
     @Test(expected = ConflictException.class)

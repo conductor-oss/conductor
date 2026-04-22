@@ -479,6 +479,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         taskToBeRetried.setWorkerId(null);
         taskToBeRetried.setReasonForIncompletion(null);
         taskToBeRetried.setSeq(0);
+        clearRetriedTaskRuntimeState(taskToBeRetried);
 
         // perform parameter replacement for retried task
         if (taskToBeRetried.getWorkflowTask() != null) {
@@ -498,6 +499,14 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         // complete
         task.setExecuted(true);
         return taskToBeRetried;
+    }
+
+    private void clearRetriedTaskRuntimeState(TaskModel task) {
+        task.setUpdateTime(0);
+        task.setCallbackAfterMs(0);
+        task.setOutputData(new HashMap<>());
+        task.setExternalOutputPayloadStoragePath(null);
+        task.setOutputMessage(null);
     }
 
     private void clearLegacySubWorkflowId(TaskModel task) {

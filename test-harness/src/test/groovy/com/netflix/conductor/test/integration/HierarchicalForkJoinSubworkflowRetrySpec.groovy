@@ -118,9 +118,9 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         then: "verify that the 'integration_task_2' was polled and acknowledged"
         verifyPolledAndAcknowledgedTask(pollAndCompleteTask)
 
-        and: "verify that the mid-level workflow is RUNNING, and first task is in SCHEDULED state"
-        polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
+        and: "start the exact mid-level SUB_WORKFLOW task to avoid re-executing a stale parent queue item"
+        def midLevelSubWorkflowTaskId = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true).tasks[1].taskId
+        asyncSystemTaskExecutor.execute(subWorkflowTask, midLevelSubWorkflowTaskId)
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -151,6 +151,7 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
 
         when: "poll and fail the integration_task_2 task"
         workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker', ['op': 'task1.done'])
+        sweep(leafWorkflowId)
         workflowTestUtil.pollAndFailTask('integration_task_2', 'task2.integration.worker', 'failed')
 
         then: "the leaf workflow ends up in a FAILED state"
