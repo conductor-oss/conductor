@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
@@ -182,5 +183,40 @@ public class AdminServiceImplReindexTest {
         verify(executionDAO).getAllWorkflowIdsAfter("", 100);
         verify(executionDAO).getAllWorkflowIdsAfter(lastId, 100);
         verify(indexDAO, times(100)).indexWorkflow(any());
+    }
+
+    @Test
+    public void testRateLimiterNotCreatedWhenRateIsZero() throws Exception {
+        // default rate is 0 — no limiter, reindexRateLimiter field stays null
+        WorkflowModel wf = stubWorkflow();
+        when(executionDAO.getWorkflowCount()).thenReturn(1L);
+        when(executionDAO.getAllWorkflowIdsAfter("", 100))
+                .thenReturn(Collections.singletonList("wf1"));
+        when(executionDAO.getAllWorkflowIdsAfter("wf1", 100)).thenReturn(Collections.emptyList());
+        when(executionDAO.getWorkflow("wf1", true)).thenReturn(wf);
+
+        adminService.startReindex();
+        waitForReindex();
+
+        assertEquals(null, ReflectionTestUtils.getField(adminService, "reindexRateLimiter"));
+    }
+
+    @Test
+    public void testRateLimiterCreatedWhenRateIsPositive() throws Exception {
+        ReflectionTestUtils.setField(adminService, "reindexRateLimitPerSecond", 50.0);
+        WorkflowModel wf = stubWorkflow();
+        when(executionDAO.getWorkflowCount()).thenReturn(1L);
+        when(executionDAO.getAllWorkflowIdsAfter("", 100))
+                .thenReturn(Collections.singletonList("wf1"));
+        when(executionDAO.getAllWorkflowIdsAfter("wf1", 100)).thenReturn(Collections.emptyList());
+        when(executionDAO.getWorkflow("wf1", true)).thenReturn(wf);
+
+        adminService.startReindex();
+        waitForReindex();
+
+        Object limiter = ReflectionTestUtils.getField(adminService, "reindexRateLimiter");
+        assertEquals("COMPLETED", adminService.getReindexStatus().get("state"));
+        // limiter was created (non-null) and job still completed successfully
+        org.junit.Assert.assertNotNull(limiter);
     }
 }

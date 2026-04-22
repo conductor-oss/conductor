@@ -24,8 +24,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.stereotype.Service;
+
+import com.google.common.util.concurrent.RateLimiter;
 
 import com.netflix.conductor.annotations.Audit;
 import com.netflix.conductor.annotations.Trace;
@@ -63,6 +66,7 @@ public class AdminServiceImpl implements AdminService {
     private final AtomicLong reindexErrors = new AtomicLong(0);
     private final AtomicLong reindexTotal = new AtomicLong(0);
     private volatile String reindexMessage = "";
+    private volatile RateLimiter reindexRateLimiter = null;
     private final ExecutorService reindexExecutor =
             Executors.newSingleThreadExecutor(
                     r -> {
@@ -79,6 +83,9 @@ public class AdminServiceImpl implements AdminService {
     private final WorkflowRepairService workflowRepairService;
     private final EventQueueManager eventQueueManager;
     private final BuildProperties buildProperties;
+
+    @Value("${conductor.reindex.rateLimitPerSecond:0}")
+    private double reindexRateLimitPerSecond;
 
     public AdminServiceImpl(
             ConductorProperties properties,
@@ -209,6 +216,10 @@ public class AdminServiceImpl implements AdminService {
         reindexErrors.set(0);
         reindexTotal.set(0);
         reindexMessage = "Starting...";
+        reindexRateLimiter =
+                reindexRateLimitPerSecond > 0
+                        ? RateLimiter.create(reindexRateLimitPerSecond)
+                        : null;
 
         reindexExecutor.submit(this::doReindex);
 
@@ -252,6 +263,9 @@ public class AdminServiceImpl implements AdminService {
                 cursor = workflowIds.get(workflowIds.size() - 1);
 
                 for (String workflowId : workflowIds) {
+                    if (reindexRateLimiter != null) {
+                        reindexRateLimiter.acquire();
+                    }
                     try {
                         WorkflowModel wfModel = executionDAO.getWorkflow(workflowId, true);
                         if (wfModel == null) {
