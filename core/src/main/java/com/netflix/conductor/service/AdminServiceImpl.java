@@ -183,6 +183,7 @@ public class AdminServiceImpl implements AdminService {
         // Fail fast if the DAO doesn't support reindexing
         try {
             executionDAO.getWorkflowCount();
+            executionDAO.getAllWorkflowIdsAfter("", 1);
         } catch (UnsupportedOperationException e) {
             Map<String, Object> result = new HashMap<>();
             result.put("state", "UNSUPPORTED");
@@ -233,7 +234,7 @@ public class AdminServiceImpl implements AdminService {
     private void doReindex() {
         LOGGER.info("Reindex job started");
         int batchSize = 100;
-        int offset = 0;
+        String cursor = "";
 
         try {
             // Count total using lightweight COUNT query (no heap allocation)
@@ -243,10 +244,12 @@ public class AdminServiceImpl implements AdminService {
             LOGGER.info("Reindex: {} workflows to process", total);
 
             while (true) {
-                List<String> workflowIds = executionDAO.getAllWorkflowIds(offset, batchSize);
+                List<String> workflowIds =
+                        executionDAO.getAllWorkflowIdsAfter(cursor, batchSize);
                 if (workflowIds.isEmpty()) {
                     break;
                 }
+                cursor = workflowIds.get(workflowIds.size() - 1);
 
                 for (String workflowId : workflowIds) {
                     try {
@@ -268,7 +271,6 @@ public class AdminServiceImpl implements AdminService {
                     }
                 }
 
-                offset += batchSize;
                 LOGGER.info("Reindex progress: {}/{}", reindexProcessed.get(), reindexTotal.get());
             }
 

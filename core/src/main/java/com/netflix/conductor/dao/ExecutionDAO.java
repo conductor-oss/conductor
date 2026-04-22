@@ -217,6 +217,19 @@ public interface ExecutionDAO {
                 getClass().getSimpleName() + " does not support getWorkflowCount");
     }
 
+    /**
+     * Return workflow ids whose workflow_id is strictly greater than {@code cursor}, ordered by
+     * workflow_id, up to {@code limit} entries. Pass an empty string as the initial cursor.
+     *
+     * @param cursor exclusive lower bound (empty string to start from the beginning)
+     * @param limit max number of ids to return
+     * @return list of workflow ids
+     */
+    default List<String> getAllWorkflowIdsAfter(String cursor, int limit) {
+        throw new UnsupportedOperationException(
+                getClass().getSimpleName() + " does not support getAllWorkflowIdsAfter");
+    }
+
     // Events
 
     /**

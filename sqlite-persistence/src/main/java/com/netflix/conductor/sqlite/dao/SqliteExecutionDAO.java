@@ -386,6 +386,13 @@ public class SqliteExecutionDAO extends SqliteBaseDAO
         return queryWithTransaction("SELECT COUNT(*) FROM workflow", q -> q.executeCount());
     }
 
+    @Override
+    public List<String> getAllWorkflowIdsAfter(String cursor, int limit) {
+        return queryWithTransaction(
+                "SELECT workflow_id FROM workflow WHERE workflow_id > ? ORDER BY workflow_id LIMIT ?",
+                q -> q.addParameter(cursor).addParameter(limit).executeScalarList(String.class));
+    }
+
     /**
      * @param workflowName name of the workflow
      * @param version the workflow version

@@ -39,7 +39,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -94,8 +93,8 @@ public class AdminServiceImplReindexTest {
     public void testIdleToCompleted() throws Exception {
         WorkflowModel wf = stubWorkflow();
         when(executionDAO.getWorkflowCount()).thenReturn(2L);
-        when(executionDAO.getAllWorkflowIds(0, 100)).thenReturn(Arrays.asList("wf1", "wf2"));
-        when(executionDAO.getAllWorkflowIds(100, 100)).thenReturn(Collections.emptyList());
+        when(executionDAO.getAllWorkflowIdsAfter("", 100)).thenReturn(Arrays.asList("wf1", "wf2"));
+        when(executionDAO.getAllWorkflowIdsAfter("wf2", 100)).thenReturn(Collections.emptyList());
         when(executionDAO.getWorkflow("wf1", true)).thenReturn(wf);
         when(executionDAO.getWorkflow("wf2", true)).thenReturn(wf);
 
@@ -115,8 +114,9 @@ public class AdminServiceImplReindexTest {
     public void testCompletedToRunningResetsCounters() throws Exception {
         WorkflowModel wf = stubWorkflow();
         when(executionDAO.getWorkflowCount()).thenReturn(1L);
-        when(executionDAO.getAllWorkflowIds(0, 100)).thenReturn(Collections.singletonList("wf1"));
-        when(executionDAO.getAllWorkflowIds(100, 100)).thenReturn(Collections.emptyList());
+        when(executionDAO.getAllWorkflowIdsAfter("", 100))
+                .thenReturn(Collections.singletonList("wf1"));
+        when(executionDAO.getAllWorkflowIdsAfter("wf1", 100)).thenReturn(Collections.emptyList());
         when(executionDAO.getWorkflow("wf1", true)).thenReturn(wf);
 
         adminService.startReindex();
@@ -137,7 +137,7 @@ public class AdminServiceImplReindexTest {
     public void testDoublePostReturnsAlreadyRunning() {
         when(executionDAO.getWorkflowCount()).thenReturn(0L);
         // make background thread block so state stays RUNNING during second call
-        when(executionDAO.getAllWorkflowIds(anyInt(), anyInt()))
+        when(executionDAO.getAllWorkflowIdsAfter(anyString(), anyInt()))
                 .thenAnswer(
                         inv -> {
                             try {
@@ -164,21 +164,23 @@ public class AdminServiceImplReindexTest {
     }
 
     @Test
-    public void testPaginationCallsCorrectOffsets() throws Exception {
+    public void testKeysetCursorAdvancesCorrectly() throws Exception {
+        // batch1: 100 items wf000..wf099, batch2: empty — verifies cursor = last id of batch1
         List<String> batch1 = new ArrayList<>();
-        for (int i = 0; i < 100; i++) batch1.add("wf" + i);
+        for (int i = 0; i < 100; i++) batch1.add(String.format("wf%03d", i));
+        String lastId = batch1.get(batch1.size() - 1); // "wf099"
         WorkflowModel wf = stubWorkflow();
 
         when(executionDAO.getWorkflowCount()).thenReturn(100L);
-        when(executionDAO.getAllWorkflowIds(0, 100)).thenReturn(batch1);
-        when(executionDAO.getAllWorkflowIds(100, 100)).thenReturn(Collections.emptyList());
+        when(executionDAO.getAllWorkflowIdsAfter("", 100)).thenReturn(batch1);
+        when(executionDAO.getAllWorkflowIdsAfter(lastId, 100)).thenReturn(Collections.emptyList());
         when(executionDAO.getWorkflow(anyString(), eq(true))).thenReturn(wf);
 
         adminService.startReindex();
         waitForReindex();
 
-        verify(executionDAO).getAllWorkflowIds(0, 100);
-        verify(executionDAO).getAllWorkflowIds(100, 100);
+        verify(executionDAO).getAllWorkflowIdsAfter("", 100);
+        verify(executionDAO).getAllWorkflowIdsAfter(lastId, 100);
         verify(indexDAO, times(100)).indexWorkflow(any());
     }
 }
