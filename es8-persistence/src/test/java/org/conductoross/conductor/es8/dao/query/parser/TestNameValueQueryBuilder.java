@@ -69,6 +69,19 @@ public class TestNameValueQueryBuilder extends AbstractParserTest {
     }
 
     @Test
+    public void equalsWithDoubleQuotesUsesTermQuery() throws Exception {
+        String uuid = "09d13af8-3a2a-48bf-a91d-ef0a9114f07a";
+        NameValue nameValue = new NameValue(getInputStream("workflowId=\"" + uuid + "\""));
+
+        Query query = nameValue.getFilterBuilder();
+
+        assertTrue(query.isTerm());
+        assertEquals("workflowId", query.term().field());
+        assertTrue(query.term().value().isString());
+        assertEquals(uuid, query.term().value().stringValue());
+    }
+
+    @Test
     public void equalsNullUsesMissingFieldQuery() throws Exception {
         NameValue nameValue = new NameValue(getInputStream("archived = null"));
 

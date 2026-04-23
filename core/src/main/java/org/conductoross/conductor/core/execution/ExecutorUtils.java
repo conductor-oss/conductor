@@ -26,6 +26,59 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_WAI
 @Slf4j
 public class ExecutorUtils {
 
+    /**
+     * Computes how long to postpone the next sweep/re-check of a workflow so that the scheduler
+     * does not poll more frequently than necessary.
+     *
+     * <p>Algorithm:
+     *
+     * <ol>
+     *   <li>Iterate over every task in the workflow and derive a <em>candidate</em> postpone
+     *       duration based on the task's status and type:
+     *       <ul>
+     *         <li><b>SCHEDULED</b> – the worker has not polled yet.
+     *             <ul>
+     *               <li>If the task definition has a non-zero {@code pollTimeoutSeconds}: candidate
+     *                   = remaining seconds until the poll window expires ({@code
+     *                   pollTimeoutSeconds - elapsedSecondsSinceScheduled + 1}), floored at 0.
+     *               <li>Else if the workflow definition has a non-zero {@code timeoutSeconds}:
+     *                   candidate = {@code workflowTimeoutSeconds + 1}.
+     *               <li>Otherwise: candidate = {@code workflowOffsetTimeout}.
+     *             </ul>
+     *         <li><b>IN_PROGRESS / WAIT task</b>
+     *             <ul>
+     *               <li>{@code waitTimeout == 0} (indefinite wait): candidate = {@code
+     *                   workflowOffsetTimeout}.
+     *               <li>{@code waitTimeout > 0}: candidate = remaining milliseconds until {@code
+     *                   waitTimeout} converted to seconds, floored at 0.
+     *             </ul>
+     *         <li><b>IN_PROGRESS / HUMAN task</b>: candidate = {@code workflowOffsetTimeout}.
+     *         <li><b>IN_PROGRESS / all other tasks</b>
+     *             <ul>
+     *               <li>The effective {@code responseTimeoutSeconds} is the task definition value
+     *                   when non-zero, otherwise the task model value (allowing workflow-task-level
+     *                   overrides to be honoured even when the task def has no timeout).
+     *               <li>If the effective {@code responseTimeoutSeconds} is non-zero: candidate =
+     *                   {@code responseTimeoutSeconds - elapsedSeconds + 1}, floored at 0 (the +1
+     *                   gives a one-second buffer past the deadline before re-evaluating).
+     *               <li>Otherwise: candidate = {@code workflowOffsetTimeout}.
+     *             </ul>
+     *         <li><b>Any other status</b> (COMPLETED, FAILED, …): skipped — no candidate produced.
+     *       </ul>
+     *   <li>Each candidate is clamped to 0 if negative, then capped at {@code maxPostponeDuration}
+     *       when {@code maxPostponeDuration > 0}.
+     *   <li>The final postpone duration is the <em>minimum</em> of all candidates, so the workflow
+     *       is re-checked as soon as the soonest task needs attention.
+     *   <li>If no eligible tasks produced a candidate (e.g. all tasks are terminal), fall back to
+     *       {@code workflowOffsetTimeout}.
+     * </ol>
+     *
+     * @param workflowModel the workflow whose tasks are inspected
+     * @param workflowOffsetTimeout default postpone used when no task-level deadline is available
+     * @param maxPostponeDuration hard upper bound on the returned duration (ignored when zero or
+     *     negative)
+     * @return the duration to wait before the next workflow sweep, never negative
+     */
     public static Duration computePostpone(
             WorkflowModel workflowModel,
             Duration workflowOffsetTimeout,
@@ -51,7 +104,7 @@ public class ExecutorUtils {
                 } else {
                     TaskDef taskDef = taskModel.getTaskDefinition().orElse(null);
                     long responseTimeoutSeconds =
-                            taskDef != null
+                            (taskDef != null && taskDef.getResponseTimeoutSeconds() != 0)
                                     ? taskDef.getResponseTimeoutSeconds()
                                     : taskModel.getResponseTimeoutSeconds();
                     if (responseTimeoutSeconds != 0) {
@@ -68,7 +121,11 @@ public class ExecutorUtils {
                 if (taskDef != null
                         && taskDef.getPollTimeoutSeconds() != null
                         && taskDef.getPollTimeoutSeconds() != 0) {
-                    candidateSeconds = taskDef.getPollTimeoutSeconds().longValue() + 1;
+                    long scheduledElapsedSeconds =
+                            Math.max(0, (currentTimeMillis - taskModel.getScheduledTime()) / 1000);
+                    long remainingPollSeconds =
+                            taskDef.getPollTimeoutSeconds() - scheduledElapsedSeconds + 1;
+                    candidateSeconds = Math.max(0, remainingPollSeconds);
                 } else {
                     long workflowTimeoutSeconds =
                             workflowModel.getWorkflowDefinition() != null

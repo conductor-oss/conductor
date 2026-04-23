@@ -18,6 +18,7 @@ import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskResult
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
+import com.netflix.conductor.model.WorkflowModel
 import com.netflix.conductor.test.base.AbstractSpecification
 
 import spock.lang.Shared
@@ -103,8 +104,8 @@ class LambdaAndTerminateTaskSpec extends AbstractSpecification {
             tasks[1].seq == 2
             output
             def failedWorkflowId = output['conductor.failure_workflow'] as String
-            with(workflowExecutionService.getExecutionStatus(failedWorkflowId, true)) {
-                status == Workflow.WorkflowStatus.COMPLETED
+            with(workflowExecutionService.getWorkflowModel(failedWorkflowId, true)) {
+                status == WorkflowModel.Status.COMPLETED
                 input['workflowId'] == workflowInstanceId
                 tasks.size() == 1
                 tasks[0].taskType == 'LAMBDA'
