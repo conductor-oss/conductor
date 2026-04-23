@@ -1170,9 +1170,11 @@ public class DoWhileTest {
      * Regression test for GitHub issue #895.
      *
      * <p>Scenario: DO_WHILE.loopOver = [SWITCH], SWITCH.defaultCase = [task1,
-     * jq_transform(asyncComplete=true), task2]. When jq_transform completes but task2 has not yet
-     * been scheduled into the workflow, isIterationComplete must return false so the iteration does
-     * not advance prematurely.
+     * asyncTask(asyncComplete=true), task2]. asyncComplete is valid only on SIMPLE (worker) tasks —
+     * when the worker marks the task COMPLETED via the task-update API there is a window before
+     * decide() runs where asyncTask is COMPLETED but task2 has not yet been scheduled. When that
+     * state is observed by isIterationComplete it must return false so the iteration does not
+     * advance prematurely.
      */
     @Test
     public void
@@ -1182,10 +1184,11 @@ public class DoWhileTest {
         task1Def.setTaskReferenceName("task1");
         task1Def.setType("SIMPLE");
 
-        WorkflowTask jqTransformDef = new WorkflowTask();
-        jqTransformDef.setTaskReferenceName("jq_transform");
-        jqTransformDef.setType("JSON_JQ_TRANSFORM");
-        jqTransformDef.setAsyncComplete(true);
+        // asyncComplete=true is a SIMPLE-task concept: the worker completes the task externally.
+        WorkflowTask asyncTaskDef = new WorkflowTask();
+        asyncTaskDef.setTaskReferenceName("async_task");
+        asyncTaskDef.setType("SIMPLE");
+        asyncTaskDef.setAsyncComplete(true);
 
         WorkflowTask task2Def = new WorkflowTask();
         task2Def.setTaskReferenceName("task2");
@@ -1194,7 +1197,7 @@ public class DoWhileTest {
         WorkflowTask switchDef = new WorkflowTask();
         switchDef.setTaskReferenceName("switchTask");
         switchDef.setType("SWITCH");
-        switchDef.setDefaultCase(List.of(task1Def, jqTransformDef, task2Def));
+        switchDef.setDefaultCase(List.of(task1Def, asyncTaskDef, task2Def));
 
         WorkflowTask doWhileDef = new WorkflowTask();
         doWhileDef.setTaskReferenceName("loopTask");
@@ -1231,17 +1234,17 @@ public class DoWhileTest {
         task1.setIteration(1);
         task1.setWorkflowTask(task1Def);
 
-        // Build jq_transform model (COMPLETED — simulating asyncComplete execution done)
-        TaskModel jqTransform = new TaskModel();
-        jqTransform.setTaskId("jq-id");
-        jqTransform.setReferenceTaskName("jq_transform__1");
-        jqTransform.setTaskType("JSON_JQ_TRANSFORM");
-        jqTransform.setStatus(TaskModel.Status.COMPLETED);
-        jqTransform.setIteration(1);
-        jqTransform.setWorkflowTask(jqTransformDef);
+        // asyncTask is COMPLETED — worker updated it via the task-update API.
+        TaskModel asyncTask = new TaskModel();
+        asyncTask.setTaskId("async-task-id");
+        asyncTask.setReferenceTaskName("async_task__1");
+        asyncTask.setTaskType("SIMPLE");
+        asyncTask.setStatus(TaskModel.Status.COMPLETED);
+        asyncTask.setIteration(1);
+        asyncTask.setWorkflowTask(asyncTaskDef);
 
         // NOTE: task2 is intentionally NOT added to the workflow tasks list yet.
-        // This simulates the window where jq_transform has completed but task2
+        // This simulates the window where async_task has completed but task2
         // has not been scheduled yet (the exact scenario from issue #895).
 
         WorkflowModel workflow = createWorkflowWithDef();
@@ -1249,14 +1252,14 @@ public class DoWhileTest {
         tasks.add(doWhileTask);
         tasks.add(switchTask);
         tasks.add(task1);
-        tasks.add(jqTransform);
+        tasks.add(asyncTask);
         workflow.setTasks(tasks);
 
         // execute() must return false — iteration should NOT advance yet
         boolean result = doWhile.execute(workflow, doWhileTask, workflowExecutor);
 
         assertFalse(
-                "execute() must return false when task2 (successor of jq_transform inside SWITCH) "
+                "execute() must return false when task2 (successor of async_task inside SWITCH) "
                         + "has not yet been scheduled into the workflow",
                 result);
         assertEquals(
@@ -1277,10 +1280,10 @@ public class DoWhileTest {
         task1Def.setTaskReferenceName("task1");
         task1Def.setType("SIMPLE");
 
-        WorkflowTask jqTransformDef = new WorkflowTask();
-        jqTransformDef.setTaskReferenceName("jq_transform");
-        jqTransformDef.setType("JSON_JQ_TRANSFORM");
-        jqTransformDef.setAsyncComplete(true);
+        WorkflowTask asyncTaskDef = new WorkflowTask();
+        asyncTaskDef.setTaskReferenceName("async_task");
+        asyncTaskDef.setType("SIMPLE");
+        asyncTaskDef.setAsyncComplete(true);
 
         WorkflowTask task2Def = new WorkflowTask();
         task2Def.setTaskReferenceName("task2");
@@ -1289,7 +1292,7 @@ public class DoWhileTest {
         WorkflowTask switchDef = new WorkflowTask();
         switchDef.setTaskReferenceName("switchTask");
         switchDef.setType("SWITCH");
-        switchDef.setDefaultCase(List.of(task1Def, jqTransformDef, task2Def));
+        switchDef.setDefaultCase(List.of(task1Def, asyncTaskDef, task2Def));
 
         WorkflowTask doWhileDef = new WorkflowTask();
         doWhileDef.setTaskReferenceName("loopTask");
@@ -1323,13 +1326,13 @@ public class DoWhileTest {
         task1.setIteration(1);
         task1.setWorkflowTask(task1Def);
 
-        TaskModel jqTransform = new TaskModel();
-        jqTransform.setTaskId("jq-id");
-        jqTransform.setReferenceTaskName("jq_transform__1");
-        jqTransform.setTaskType("JSON_JQ_TRANSFORM");
-        jqTransform.setStatus(TaskModel.Status.COMPLETED);
-        jqTransform.setIteration(1);
-        jqTransform.setWorkflowTask(jqTransformDef);
+        TaskModel asyncTask = new TaskModel();
+        asyncTask.setTaskId("async-task-id");
+        asyncTask.setReferenceTaskName("async_task__1");
+        asyncTask.setTaskType("SIMPLE");
+        asyncTask.setStatus(TaskModel.Status.COMPLETED);
+        asyncTask.setIteration(1);
+        asyncTask.setWorkflowTask(asyncTaskDef);
 
         // task2 IS now scheduled and completed — iteration should advance
         TaskModel task2 = new TaskModel();
@@ -1345,7 +1348,7 @@ public class DoWhileTest {
         tasks.add(doWhileTask);
         tasks.add(switchTask);
         tasks.add(task1);
-        tasks.add(jqTransform);
+        tasks.add(asyncTask);
         tasks.add(task2);
         workflow.setTasks(tasks);
 
