@@ -7,6 +7,32 @@ on:
   pull_request:
     paths-ignore:
       - "conductor-clients/**"
+  workflow_dispatch:
+    inputs:
+      redis_es8:
+        description: "Redis + Elasticsearch 8"
+        type: boolean
+        default: true
+      postgres:
+        description: "PostgreSQL"
+        type: boolean
+        default: false
+      mysql:
+        description: "MySQL"
+        type: boolean
+        default: false
+      redis_os3:
+        description: "Redis + OpenSearch 3"
+        type: boolean
+        default: false
+      redis_es7:
+        description: "Redis + Elasticsearch 7"
+        type: boolean
+        default: false
+      cassandra_es7:
+        description: "Cassandra + Elasticsearch 7"
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -16,6 +42,11 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
       - name: Gradle wrapper validation
         uses: gradle/wrapper-validation-action@v3
       - name: Set up Zulu JDK 21
@@ -44,7 +75,7 @@ jobs:
         id: docker-cache
         with:
           path: /tmp/docker-images-build.tar
-          key: docker-build-v1
+          key: docker-build-v2
       - name: Load cached Docker images
         if: steps.docker-cache.outputs.cache-hit == 'true'
         run: docker load -i /tmp/docker-images-build.tar || true
@@ -63,7 +94,18 @@ jobs:
       - name: Save Docker images for cache
         if: steps.docker-cache.outputs.cache-hit != 'true'
         run: |
-          docker images --format '{{.Repository}}:{{.Tag}}' | grep -v '<none>' | xargs -r docker save -o /tmp/docker-images-build.tar
+          set -euo pipefail
+          docker image prune -f
+          mapfile -t images < <((docker images --format '{{.Repository}}:{{.Tag}}' \
+            | grep -v '<none>' \
+            | grep -E '(^|/)(elasticsearch|redis|postgres|mysql|mongo|cassandra)(:|/)|mockserver/mockserver|opensearchproject/opensearch|testcontainers/|orkesio/') || true)
+          if [ "${#images[@]}" -eq 0 ]; then
+            echo "No Testcontainers-related images to cache; writing empty tar for cache action."
+            tar -cf /tmp/docker-images-build.tar --files-from /dev/null
+            exit 0
+          fi
+          printf '%s\n' "${images[@]}"
+          docker save -o /tmp/docker-images-build.tar "${images[@]}"
       - name: Generate aggregated coverage report
         if: always()
         run: ./gradlew jacocoAggregatedReport -x test || true
@@ -95,6 +137,11 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
       - name: Set up Zulu JDK 21
         uses: actions/setup-java@v5
         with:
@@ -115,7 +162,7 @@ jobs:
         id: docker-cache
         with:
           path: /tmp/docker-images-test-harness.tar
-          key: docker-test-harness-v1
+          key: docker-test-harness-v2
       - name: Load cached Docker images
         if: steps.docker-cache.outputs.cache-hit == 'true'
         run: docker load -i /tmp/docker-images-test-harness.tar || true
@@ -125,7 +172,18 @@ jobs:
       - name: Save Docker images for cache
         if: steps.docker-cache.outputs.cache-hit != 'true'
         run: |
-          docker images --format '{{.Repository}}:{{.Tag}}' | grep -v '<none>' | xargs -r docker save -o /tmp/docker-images-test-harness.tar
+          set -euo pipefail
+          docker image prune -f
+          mapfile -t images < <((docker images --format '{{.Repository}}:{{.Tag}}' \
+            | grep -v '<none>' \
+            | grep -E '(^|/)(elasticsearch|redis|postgres|mysql|mongo|cassandra)(:|/)|mockserver/mockserver|opensearchproject/opensearch|testcontainers/|orkesio/') || true)
+          if [ "${#images[@]}" -eq 0 ]; then
+            echo "No Testcontainers-related images to cache; writing empty tar for cache action."
+            tar -cf /tmp/docker-images-test-harness.tar --files-from /dev/null
+            exit 0
+          fi
+          printf '%s\n' "${images[@]}"
+          docker save -o /tmp/docker-images-test-harness.tar "${images[@]}"
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v6
         if: always()
@@ -143,6 +201,115 @@ jobs:
         with:
           name: test-harness-coverage-report
           path: "test-harness/build/reports/jacoco"
+  generate-e2e-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            items=""
+            [ "${{ inputs.redis_es8 }}"    = "true" ] && items="${items}{\"name\":\"redis-es8\",\"script\":\"./e2e/run_tests-es8.sh\"},"
+            [ "${{ inputs.postgres }}"     = "true" ] && items="${items}{\"name\":\"postgres\",\"script\":\"./e2e/run_tests-postgres.sh\"},"
+            [ "${{ inputs.mysql }}"        = "true" ] && items="${items}{\"name\":\"mysql\",\"script\":\"./e2e/run_tests-mysql.sh\"},"
+            [ "${{ inputs.redis_os3 }}"    = "true" ] && items="${items}{\"name\":\"redis-os3\",\"script\":\"./e2e/run_tests-redis-os3.sh\"},"
+            [ "${{ inputs.redis_es7 }}"    = "true" ] && items="${items}{\"name\":\"redis-es7\",\"script\":\"./e2e/run_tests-redis-es7.sh\"},"
+            [ "${{ inputs.cassandra_es7 }}" = "true" ] && items="${items}{\"name\":\"cassandra-es7\",\"script\":\"./e2e/run_tests-cassandra-es7.sh\"},"
+            items="${items%,}"
+            echo "matrix={\"include\":[${items}]}" >> "$GITHUB_OUTPUT"
+          else
+            echo 'matrix={"include":[{"name":"redis-es8","script":"./e2e/run_tests-es8.sh"}]}' >> "$GITHUB_OUTPUT"
+          fi
+
+  e2e:
+    needs: generate-e2e-matrix
+    if: ${{ needs.generate-e2e-matrix.outputs.matrix != '{"include":[]}' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.generate-e2e-matrix.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+      - name: Set up Zulu JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: "zulu"
+          java-version: "21"
+      - name: Cache Gradle packages
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
+      - name: Run E2E tests (${{ matrix.name }})
+        run: ${{ matrix.script }}
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v6
+        if: always()
+        with:
+          report_paths: "e2e/build/test-results/test/TEST-*.xml"
+      - name: Generate test summary table
+        if: always()
+        shell: python3 {0}
+        run: |
+          import os, glob, xml.etree.ElementTree as ET
+
+          xml_files = glob.glob("e2e/build/test-results/test/TEST-*.xml")
+          rows = []
+          totals = {"passed": 0, "failed": 0, "skipped": 0}
+
+          for f in sorted(xml_files):
+              try:
+                  root = ET.parse(f).getroot()
+              except ET.ParseError:
+                  continue
+              for tc in root.iter("testcase"):
+                  name = tc.get("name", "?")
+                  classname = tc.get("classname", "").split(".")[-1]
+                  duration = float(tc.get("time", 0))
+                  if tc.find("skipped") is not None:
+                      status, totals["skipped"] = "⏭ skip", totals["skipped"] + 1
+                  elif tc.find("failure") is not None or tc.find("error") is not None:
+                      node = tc.find("failure") or tc.find("error")
+                      msg = (node.get("message") or "")[:120]
+                      status, totals["failed"] = f"❌ `{msg}`", totals["failed"] + 1
+                  else:
+                      status, totals["passed"] = "✅", totals["passed"] + 1
+                  rows.append((classname, name, f"{duration:.1f}s", status))
+
+          backend = "${{ matrix.name }}"
+          lines = [
+              f"## E2E results — {backend}",
+              f"**✅ {totals['passed']} passed · ❌ {totals['failed']} failed · ⏭ {totals['skipped']} skipped**",
+              "",
+              "| Class | Test | Duration | Result |",
+              "|-------|------|----------|--------|",
+          ]
+          for cls, name, dur, status in rows:
+              lines.append(f"| {cls} | {name} | {dur} | {status} |")
+
+          summary = os.environ.get("GITHUB_STEP_SUMMARY", "/dev/null")
+          with open(summary, "a") as fh:
+              fh.write("\n".join(lines) + "\n")
+      - name: Upload E2E reports
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: e2e-reports-${{ matrix.name }}
+          path: "e2e/build/reports"
+
   build-ui:
     runs-on: ubuntu-latest
     container: cypress/browsers:node-22.11.0-chrome-130.0.6723.116-1-ff-132.0.1-edge-130.0.2849.68-1

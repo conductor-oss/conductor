@@ -64,6 +64,9 @@ def process_payment(orderId: str, amount: float) -> dict:
   "retryCount": 3,
   "retryLogic": "EXPONENTIAL_BACKOFF",
   "retryDelaySeconds": 5,
+  "maxRetryDelaySeconds": 60,
+  "backoffJitterMs": 2000,
+  "totalTimeoutSeconds": 300,
   "timeoutSeconds": 120,
   "responseTimeoutSeconds": 60,
   "pollTimeoutSeconds": 30
@@ -71,7 +74,10 @@ def process_payment(orderId: str, amount: float) -> dict:
 ```
 
 - **retryCount / retryLogic / retryDelaySeconds** — How many times to retry a failed task, the backoff strategy, and the initial delay between retries.
-- **timeoutSeconds** — Maximum wall-clock time before the task is marked `TIMED_OUT`.
+- **maxRetryDelaySeconds** — Caps the computed backoff delay. Prevents exponential growth from becoming arbitrarily large.
+- **backoffJitterMs** — Adds random milliseconds to each retry delay to spread concurrent retries over time (thundering herd prevention).
+- **totalTimeoutSeconds** — Hard wall-clock budget across all retry attempts combined. Once exceeded, no further retries are attempted regardless of `retryCount`.
+- **timeoutSeconds** — Maximum wall-clock time per individual attempt before the task is marked `TIMED_OUT`.
 - **responseTimeoutSeconds** — Maximum time to wait for a worker to respond after picking up a task. Useful for detecting unresponsive workers.
 - **pollTimeoutSeconds** — Maximum time a worker can hold a long-poll connection before the server releases it.
 

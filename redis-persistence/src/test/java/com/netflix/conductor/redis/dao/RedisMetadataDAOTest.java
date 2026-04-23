@@ -367,4 +367,54 @@ class RedisMetadataDAOTest {
         List<String> names = redisMetadataDAO.findAll();
         assertEquals(3, names.size());
     }
+
+    private RedisMetadataDAO newCacheEnabledDAO() {
+        JedisProxy jedisProxy = new JedisProxy(new JedisStandalone(jedisPool));
+        ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
+        ConductorProperties conductorProperties = new ConductorProperties();
+        RedisProperties redisProperties = new RedisProperties(conductorProperties);
+        redisProperties.setWorkflowDefCacheEnabled(true);
+        return new RedisMetadataDAO(jedisProxy, objectMapper, conductorProperties, redisProperties);
+    }
+
+    @Test
+    void testWorkflowDefCacheReflectsCreateAndRemove() {
+        RedisMetadataDAO dao = newCacheEnabledDAO();
+        assertEquals(0, dao.getAllWorkflowDefs().size());
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName("cachedWf");
+        def.setVersion(1);
+        dao.createWorkflowDef(def);
+
+        List<WorkflowDef> all = dao.getAllWorkflowDefs();
+        assertEquals(1, all.size());
+        assertEquals("cachedWf", all.get(0).getName());
+
+        dao.removeWorkflowDef("cachedWf", 1);
+        assertEquals(0, dao.getAllWorkflowDefs().size());
+    }
+
+    @Test
+    void testGetAllWorkflowDefsLatestVersionsFromCache() {
+        RedisMetadataDAO dao = newCacheEnabledDAO();
+        for (int version = 1; version <= 3; version++) {
+            WorkflowDef def = new WorkflowDef();
+            def.setName("wfA");
+            def.setVersion(version);
+            dao.createWorkflowDef(def);
+        }
+        WorkflowDef defB = new WorkflowDef();
+        defB.setName("wfB");
+        defB.setVersion(1);
+        dao.createWorkflowDef(defB);
+
+        Map<String, WorkflowDef> latestByName =
+                dao.getAllWorkflowDefsLatestVersions().stream()
+                        .collect(Collectors.toMap(WorkflowDef::getName, d -> d));
+
+        assertEquals(2, latestByName.size());
+        assertEquals(3, latestByName.get("wfA").getVersion());
+        assertEquals(1, latestByName.get("wfB").getVersion());
+    }
 }

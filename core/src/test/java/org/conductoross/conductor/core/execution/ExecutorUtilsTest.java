@@ -26,6 +26,7 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ExecutorUtilsTest {
 
@@ -114,6 +115,80 @@ public class ExecutorUtilsTest {
         assertEquals(30, result.getSeconds());
     }
 
+    /** Boundary: SCHEDULED task whose poll window has already elapsed → remaining = 0. */
+    @Test
+    public void computePostponeScheduledElapsedExceedsTimeout() {
+        TaskModel task = newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.SCHEDULED);
+        TaskDef taskDef = new TaskDef();
+        taskDef.setPollTimeoutSeconds(1); // 1-second poll window
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setTaskDefinition(taskDef);
+        task.setWorkflowTask(workflowTask);
+        // Push scheduledTime far into the past so elapsed >> pollTimeout
+        task.setScheduledTime(System.currentTimeMillis() - 60_000);
+
+        WorkflowModel workflow = newWorkflow(Arrays.asList(task), 0);
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
+
+        // Elapsed >> pollTimeout: remaining = 0, clamped to 0
+        assertEquals(
+                "When poll window is already elapsed, postpone should be 0",
+                0L,
+                result.getSeconds());
+    }
+
+    /** Boundary: IN_PROGRESS task whose response window has already elapsed → remaining = 0. */
+    @Test
+    public void computePostponeInProgressElapsedExceedsResponseTimeout() {
+        TaskModel task = newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.IN_PROGRESS);
+        task.setResponseTimeoutSeconds(1); // 1-second response window
+        // Push startTime far into the past so elapsed >> responseTimeout
+        task.setStartTime(System.currentTimeMillis() - 60_000);
+
+        WorkflowModel workflow = newWorkflow(Arrays.asList(task), 0);
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
+
+        assertEquals(
+                "When response window is already elapsed, postpone should be 0",
+                0L,
+                result.getSeconds());
+    }
+
+    /**
+     * Boundary: taskDef.responseTimeout=0 but taskModel.responseTimeout is non-zero — model wins.
+     */
+    @Test
+    public void computePostponeUsesTaskModelResponseTimeoutWhenTaskDefIsZero() {
+        TaskModel task = newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.IN_PROGRESS);
+        // taskDef has responseTimeoutSeconds=0 (not set), taskModel has 120s
+        TaskDef taskDef = new TaskDef();
+        taskDef.setResponseTimeoutSeconds(0); // explicitly zero
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setTaskDefinition(taskDef);
+        task.setWorkflowTask(workflowTask);
+        task.setResponseTimeoutSeconds(120);
+        task.setStartTime(System.currentTimeMillis());
+
+        WorkflowModel workflow = newWorkflow(Arrays.asList(task), 0);
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
+
+        // Should use task model's 120s, not fall back to workflow offset (30s)
+        assertTrue(
+                "When taskDef.responseTimeout=0, taskModel.responseTimeout (120s) should be used; "
+                        + "result="
+                        + result.getSeconds(),
+                result.getSeconds() > 30);
+        assertTrue(
+                "Result should be ~120s remaining; got " + result.getSeconds(),
+                result.getSeconds() <= 121);
+    }
+
     private WorkflowModel newWorkflow(List<TaskModel> tasks, long timeoutSeconds) {
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setTimeoutSeconds(timeoutSeconds);
@@ -129,6 +204,7 @@ public class ExecutorUtilsTest {
         task.setTaskType(taskType);
         task.setStatus(status);
         task.setTaskId("taskId-" + taskType + "-" + status);
+        task.setScheduledTime(System.currentTimeMillis());
         return task;
     }
 }

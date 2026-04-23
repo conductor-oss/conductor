@@ -4,6 +4,7 @@ import { colors } from "theme/tokens/variables";
 const DEFAULT_NODE_WIDTH = 350;
 const DEFAULT_NODE_HEIGHT = 100;
 const DO_WHILE_PADDING = 30;
+export const DO_WHILE_MIN_WIDTH = 570;
 
 export const getFlowTheme = (mode = "light") => ({
   nodeTypes: {
@@ -13,7 +14,7 @@ export const getFlowTheme = (mode = "light") => ({
     },
     [TaskType.DO_WHILE]: {
       padding: DO_WHILE_PADDING,
-      width: DEFAULT_NODE_WIDTH + DO_WHILE_PADDING * 2,
+      width: DO_WHILE_MIN_WIDTH,
       height: 450,
       itemHeight: 150,
     },

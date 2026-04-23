@@ -1,36 +1,57 @@
-version: '2.3'
-
 services:
   conductor-server:
     environment:
-      - CONFIG_PROP=config-redis-os3.properties
+      - CONFIG_PROP=config-cassandra-es7.properties
       - JAVA_OPTS=-Dpolyglot.engine.WarnInterpreterOnly=false
+      - conductor.app.ownerEmailMandatory=false
     image: conductor:server
-    container_name: conductor-server-os3
+    container_name: conductor-server
     build:
       context: ../
       dockerfile: docker/server/Dockerfile
       args:
         YARN_OPTS: ${YARN_OPTS}
-        INDEXING_BACKEND: opensearch3
     networks:
       - internal
     ports:
       - 8000:8080
-      - 8128:5000
+      - 8127:5000
     healthcheck:
-      test: ["CMD", "curl","-I" ,"-XGET", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-I", "-XGET", "http://localhost:8080/health"]
       interval: 60s
       timeout: 30s
       retries: 12
     links:
-      - conductor-opensearch:os
+      - conductor-cassandra:cassandradb
       - conductor-redis:rs
+      - conductor-elasticsearch:es
     depends_on:
-      conductor-opensearch:
+      conductor-cassandra:
         condition: service_healthy
       conductor-redis:
         condition: service_healthy
+      conductor-elasticsearch:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"
+
+  conductor-cassandra:
+    image: cassandra:4
+    environment:
+      - CASSANDRA_CLUSTER_NAME=conductor
+      - CASSANDRA_NUM_TOKENS=4
+      - MAX_HEAP_SIZE=512M
+      - HEAP_NEWSIZE=128M
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
     logging:
       driver: "json-file"
       options:
@@ -44,20 +65,14 @@ services:
     networks:
       - internal
     healthcheck:
-      test: [ "CMD", "redis-cli","ping" ]
+      test: ["CMD", "redis-cli", "ping"]
 
-  conductor-opensearch:
-    image: opensearchproject/opensearch:3.0.0
-    container_name: opensearch-3
+  conductor-elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.11
     environment:
-      - plugins.security.disabled=true
-      - cluster.name=opensearch-cluster # Name the cluster
-      - node.name=conductor-opensearch # Name the node that will run in this container
-      - discovery.seed_hosts=conductor-opensearch # Nodes to look for when discovering the cluster
-      - cluster.initial_cluster_manager_nodes=conductor-opensearch # Nodes eligible to serve as cluster manager
-      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=P4zzW)rd>>123_
-    volumes:
-      - osdata3-conductor:/usr/share/opensearch/data
+      - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
+      - xpack.security.enabled=false
+      - discovery.type=single-node
     networks:
       - internal
     healthcheck:
@@ -70,10 +85,6 @@ services:
       options:
         max-size: "1k"
         max-file: "3"
-
-volumes:
-  osdata3-conductor:
-    driver: local
 
 networks:
   internal:

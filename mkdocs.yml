@@ -41,6 +41,7 @@ nav:
     - Microservice Orchestration: devguide/cookbook/microservice-orchestration.md
     - Dynamic Parallelism: devguide/cookbook/dynamic-parallelism.md
     - Wait & Timer Patterns: devguide/cookbook/wait-and-timers.md
+    - Task Timeouts & Retries: devguide/cookbook/task-timeouts-and-retries.md
     - Event-Driven Recipes: devguide/cookbook/event-driven.md
     - AI & LLM Recipes: devguide/cookbook/ai-llm.md
     - Dynamic Workflows in Code: devguide/cookbook/dynamic-workflows.md
