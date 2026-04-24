@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.test.integration
 
+import java.util.concurrent.TimeUnit
+
 import org.apache.commons.lang3.StringUtils
 import org.springframework.beans.factory.annotation.Autowired
 
@@ -30,6 +32,8 @@ import com.netflix.conductor.test.base.AbstractSpecification
 import spock.lang.Shared
 
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
+
+import static org.awaitility.Awaitility.await
 
 class SimpleWorkflowSpec extends AbstractSpecification {
 
@@ -268,7 +272,8 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         workflowExecutor.decide(workflowInstanceId)
 
         then: "Expect a new task to be added to the queue in place of the timed out task"
-        queueDAO.getSize('task_rt') == 1
+        // Background sweeper/timer threads may briefly produce an extra queue entry; wait to settle.
+        await().atMost(5, TimeUnit.SECONDS).until { queueDAO.getSize('task_rt') == 1 }
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 2
