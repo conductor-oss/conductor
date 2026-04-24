@@ -39,6 +39,7 @@ public class ElasticSearchConditionsTest {
 
     @Test
     public void shouldActivateWhenVersionIsImplicit() {
+        // The ES7 condition treats conductor.elasticsearch.version as version 7 when omitted.
         contextRunner
                 .withPropertyValues(
                         "conductor.indexing.enabled=true", "conductor.indexing.type=elasticsearch")
@@ -76,10 +77,10 @@ public class ElasticSearchConditionsTest {
     static class ConditionalTestConfiguration {
 
         @Bean
-        Marker es7Marker() {
-            return new Marker();
+        Es7Marker es7Marker() {
+            return new Es7Marker();
         }
     }
 
-    static class Marker {}
+    static class Es7Marker {}
 }
