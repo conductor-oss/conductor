@@ -24,17 +24,21 @@ nginx
 cd /app/libs
 echo "Property file: $CONFIG_PROP"
 echo $CONFIG_PROP
-export config_file=
 
-if [ -z "$CONFIG_PROP" ];
-  then
-    echo "Using default configuration file";
-    export config_file=/app/config/config.properties
-  else
-    echo "Using '$CONFIG_PROP'";
-    export config_file=/app/config/$CONFIG_PROP
-fi
-
+# Only pass -DCONDUCTOR_CONFIG_FILE when the operator explicitly set
+# $CONFIG_PROP. The bundled /app/config/config.properties ships with
+# everything commented out, so passing it suppresses the JAR's built-in
+# defaults (SQLite persistence + in-memory queues) and the server fails
+# to initialize on `docker run conductoross/conductor:latest` with no
+# overrides. Letting the flag fall off matches the CLI path
+# (`conductor server start`) which relies on the JAR defaults too.
+# See https://github.com/conductor-oss/conductor/issues/1041.
 echo "Using java options config: $JAVA_OPTS"
 
-java ${JAVA_OPTS} -jar -DCONDUCTOR_CONFIG_FILE=$config_file conductor-server.jar 2>&1 | tee -a /app/logs/server.log
+if [ -z "$CONFIG_PROP" ]; then
+  echo "No CONFIG_PROP supplied — using JAR built-in defaults"
+  java ${JAVA_OPTS} -jar conductor-server.jar 2>&1 | tee -a /app/logs/server.log
+else
+  echo "Using '$CONFIG_PROP'"
+  java ${JAVA_OPTS} -jar -DCONDUCTOR_CONFIG_FILE=/app/config/$CONFIG_PROP conductor-server.jar 2>&1 | tee -a /app/logs/server.log
+fi
