@@ -319,9 +319,11 @@ public class DoWhile extends WorkflowSystemTask {
         }
 
         // Check that every terminal task's successor within the DO_WHILE hierarchy has been
-        // scheduled. This guards against premature iteration advancement when a task inside a
-        // SWITCH/DECISION completes but its next sibling in the case sequence hasn't been
-        // scheduled yet (e.g., when asyncComplete=true is used on a task inside a SWITCH).
+        // scheduled. This guards against premature iteration advancement caused by intra-loop
+        // ordering in decide(): INLINE (and other sync system tasks) share the
+        // tasksToBeScheduled loop with DO_WHILE. If the sync task executes first it becomes
+        // terminal in memory, but the decider hasn't yet run to schedule its successor. Without
+        // this check DO_WHILE would declare the iteration complete and advance.
         // loopOver -> [SWITCH -> COMPLETED [ task1 -> COMPLETED, task2 -> NOT_YET_SCHEDULED ]]
         String doWhileRef = doWhileTaskModel.getWorkflowTask().getTaskReferenceName();
         for (TaskModel task : referenceNameToModel.values()) {

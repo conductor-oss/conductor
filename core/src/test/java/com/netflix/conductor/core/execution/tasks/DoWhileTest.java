@@ -1163,32 +1163,35 @@ public class DoWhileTest {
     }
 
     // -------------------------------------------------------------------------
-    // Issue #895: DO_WHILE with SWITCH + async task prematurely advances iteration
+    // Issue #895 / #1001: DO_WHILE + SWITCH + sync system task premature iteration advancement
+    // Root cause: intra-loop ordering in decide(). INLINE (and other sync system tasks) share the
+    // outcome.tasksToBeScheduled loop with DO_WHILE. If an INLINE task appears before DO_WHILE in
+    // that list (dependent on workflow.getTasks() / DB row order), it completes in memory before
+    // the decider has run to schedule its successor. The pre-fix code saw all present tasks as
+    // terminal and declared the iteration complete, advancing prematurely.
     // -------------------------------------------------------------------------
 
     /**
      * Regression test for GitHub issue #895.
      *
-     * <p>Scenario: DO_WHILE.loopOver = [SWITCH], SWITCH.defaultCase = [task1,
-     * asyncTask(asyncComplete=true), task2]. asyncComplete is valid only on SIMPLE (worker) tasks —
-     * when the worker marks the task COMPLETED via the task-update API there is a window before
-     * decide() runs where asyncTask is COMPLETED but task2 has not yet been scheduled. When that
-     * state is observed by isIterationComplete it must return false so the iteration does not
-     * advance prematurely.
+     * <p>Scenario: DO_WHILE.loopOver = [SWITCH], SWITCH.defaultCase = [task1, inlineTask(INLINE),
+     * task2]. INLINE is a sync system task — it completes inside execute() in the same
+     * decide()-loop iteration as DO_WHILE. If INLINE appears before DO_WHILE in
+     * workflow.getTasks(), it is COMPLETED when DO_WHILE evaluates but its successor (task2) has
+     * not yet been scheduled. isIterationComplete must return false in this state.
      */
     @Test
     public void
-            testExecute_SwitchWithAsyncTask_DoesNotAdvanceIterationUntilLastCaseTaskScheduled() {
+            testExecute_SwitchWithInlineTask_DoesNotAdvanceIterationUntilSuccessorScheduled() {
         // Build workflow-task definitions
         WorkflowTask task1Def = new WorkflowTask();
         task1Def.setTaskReferenceName("task1");
         task1Def.setType("SIMPLE");
 
-        // asyncComplete=true is a SIMPLE-task concept: the worker completes the task externally.
-        WorkflowTask asyncTaskDef = new WorkflowTask();
-        asyncTaskDef.setTaskReferenceName("async_task");
-        asyncTaskDef.setType("SIMPLE");
-        asyncTaskDef.setAsyncComplete(true);
+        // INLINE is a sync OSS system task: execute() always sets COMPLETED inline.
+        WorkflowTask inlineTaskDef = new WorkflowTask();
+        inlineTaskDef.setTaskReferenceName("inline_task");
+        inlineTaskDef.setType("INLINE");
 
         WorkflowTask task2Def = new WorkflowTask();
         task2Def.setTaskReferenceName("task2");
@@ -1197,7 +1200,7 @@ public class DoWhileTest {
         WorkflowTask switchDef = new WorkflowTask();
         switchDef.setTaskReferenceName("switchTask");
         switchDef.setType("SWITCH");
-        switchDef.setDefaultCase(List.of(task1Def, asyncTaskDef, task2Def));
+        switchDef.setDefaultCase(List.of(task1Def, inlineTaskDef, task2Def));
 
         WorkflowTask doWhileDef = new WorkflowTask();
         doWhileDef.setTaskReferenceName("loopTask");
@@ -1234,17 +1237,17 @@ public class DoWhileTest {
         task1.setIteration(1);
         task1.setWorkflowTask(task1Def);
 
-        // asyncTask is COMPLETED — worker updated it via the task-update API.
-        TaskModel asyncTask = new TaskModel();
-        asyncTask.setTaskId("async-task-id");
-        asyncTask.setReferenceTaskName("async_task__1");
-        asyncTask.setTaskType("SIMPLE");
-        asyncTask.setStatus(TaskModel.Status.COMPLETED);
-        asyncTask.setIteration(1);
-        asyncTask.setWorkflowTask(asyncTaskDef);
+        // inlineTask is COMPLETED — it executed first in the decide() loop.
+        TaskModel inlineTask = new TaskModel();
+        inlineTask.setTaskId("inline-task-id");
+        inlineTask.setReferenceTaskName("inline_task__1");
+        inlineTask.setTaskType("INLINE");
+        inlineTask.setStatus(TaskModel.Status.COMPLETED);
+        inlineTask.setIteration(1);
+        inlineTask.setWorkflowTask(inlineTaskDef);
 
         // NOTE: task2 is intentionally NOT added to the workflow tasks list yet.
-        // This simulates the window where async_task has completed but task2
+        // This simulates the intra-loop state where inline_task has completed but task2
         // has not been scheduled yet (the exact scenario from issue #895).
 
         WorkflowModel workflow = createWorkflowWithDef();
@@ -1252,14 +1255,14 @@ public class DoWhileTest {
         tasks.add(doWhileTask);
         tasks.add(switchTask);
         tasks.add(task1);
-        tasks.add(asyncTask);
+        tasks.add(inlineTask);
         workflow.setTasks(tasks);
 
         // execute() must return false — iteration should NOT advance yet
         boolean result = doWhile.execute(workflow, doWhileTask, workflowExecutor);
 
         assertFalse(
-                "execute() must return false when task2 (successor of async_task inside SWITCH) "
+                "execute() must return false when task2 (successor of inline_task inside SWITCH) "
                         + "has not yet been scheduled into the workflow",
                 result);
         assertEquals(
@@ -1274,16 +1277,15 @@ public class DoWhileTest {
      * iteration SHOULD advance (assuming the loop condition permits it).
      */
     @Test
-    public void testExecute_SwitchWithAsyncTask_AdvancesIterationOnceAllCaseTasksComplete() {
+    public void testExecute_SwitchWithInlineTask_AdvancesIterationOnceAllCaseTasksComplete() {
         // Build workflow-task definitions (same structure as the regression test)
         WorkflowTask task1Def = new WorkflowTask();
         task1Def.setTaskReferenceName("task1");
         task1Def.setType("SIMPLE");
 
-        WorkflowTask asyncTaskDef = new WorkflowTask();
-        asyncTaskDef.setTaskReferenceName("async_task");
-        asyncTaskDef.setType("SIMPLE");
-        asyncTaskDef.setAsyncComplete(true);
+        WorkflowTask inlineTaskDef = new WorkflowTask();
+        inlineTaskDef.setTaskReferenceName("inline_task");
+        inlineTaskDef.setType("INLINE");
 
         WorkflowTask task2Def = new WorkflowTask();
         task2Def.setTaskReferenceName("task2");
@@ -1292,7 +1294,7 @@ public class DoWhileTest {
         WorkflowTask switchDef = new WorkflowTask();
         switchDef.setTaskReferenceName("switchTask");
         switchDef.setType("SWITCH");
-        switchDef.setDefaultCase(List.of(task1Def, asyncTaskDef, task2Def));
+        switchDef.setDefaultCase(List.of(task1Def, inlineTaskDef, task2Def));
 
         WorkflowTask doWhileDef = new WorkflowTask();
         doWhileDef.setTaskReferenceName("loopTask");
@@ -1326,13 +1328,13 @@ public class DoWhileTest {
         task1.setIteration(1);
         task1.setWorkflowTask(task1Def);
 
-        TaskModel asyncTask = new TaskModel();
-        asyncTask.setTaskId("async-task-id");
-        asyncTask.setReferenceTaskName("async_task__1");
-        asyncTask.setTaskType("SIMPLE");
-        asyncTask.setStatus(TaskModel.Status.COMPLETED);
-        asyncTask.setIteration(1);
-        asyncTask.setWorkflowTask(asyncTaskDef);
+        TaskModel inlineTask = new TaskModel();
+        inlineTask.setTaskId("inline-task-id");
+        inlineTask.setReferenceTaskName("inline_task__1");
+        inlineTask.setTaskType("INLINE");
+        inlineTask.setStatus(TaskModel.Status.COMPLETED);
+        inlineTask.setIteration(1);
+        inlineTask.setWorkflowTask(inlineTaskDef);
 
         // task2 IS now scheduled and completed — iteration should advance
         TaskModel task2 = new TaskModel();
@@ -1348,7 +1350,7 @@ public class DoWhileTest {
         tasks.add(doWhileTask);
         tasks.add(switchTask);
         tasks.add(task1);
-        tasks.add(asyncTask);
+        tasks.add(inlineTask);
         tasks.add(task2);
         workflow.setTasks(tasks);
 
