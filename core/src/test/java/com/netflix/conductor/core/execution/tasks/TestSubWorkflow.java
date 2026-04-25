@@ -85,6 +85,28 @@ public class TestSubWorkflow {
     }
 
     @Test
+    public void testStartSubWorkflowWithNullVersionUsesLatest() {
+        WorkflowModel workflowInstance = newParentWorkflow();
+        TaskModel task = newTask();
+        Map<String, Object> inputData = inputData("UnitWorkFlow", null);
+        task.setInputData(inputData);
+
+        WorkflowModel subWorkflowInstance = new WorkflowModel();
+        subWorkflowInstance.setWorkflowId(RESERVED_SUB_WORKFLOW_ID);
+        subWorkflowInstance.setStatus(WorkflowModel.Status.RUNNING);
+
+        StartWorkflowInput startWorkflowInput =
+                expectedStartWorkflowInput(
+                        workflowInstance, task, "UnitWorkFlow", null, inputData, null, null);
+        mockSubWorkflowLaunch(workflowInstance, task, startWorkflowInput, subWorkflowInstance);
+
+        subWorkflow.start(workflowInstance, task, workflowExecutor);
+
+        verify(workflowExecutor).startWorkflowIdempotent(startWorkflowInput);
+        assertEquals(RESERVED_SUB_WORKFLOW_ID, task.getSubWorkflowId());
+    }
+
+    @Test
     public void testStartSubWorkflowQueueFailure() {
         WorkflowModel workflowInstance = newParentWorkflow();
         TaskModel task = newTask();
@@ -400,7 +422,7 @@ public class TestSubWorkflow {
         return task;
     }
 
-    private Map<String, Object> inputData(String subWorkflowName, int subWorkflowVersion) {
+    private Map<String, Object> inputData(String subWorkflowName, Integer subWorkflowVersion) {
         Map<String, Object> inputData = new HashMap<>();
         inputData.put("subWorkflowName", subWorkflowName);
         inputData.put("subWorkflowVersion", subWorkflowVersion);
@@ -422,7 +444,7 @@ public class TestSubWorkflow {
             WorkflowModel workflowInstance,
             TaskModel task,
             String subWorkflowName,
-            int subWorkflowVersion,
+            Integer subWorkflowVersion,
             Map<String, Object> workflowInput,
             Map<String, String> taskToDomain,
             WorkflowDef workflowDef) {
@@ -441,7 +463,7 @@ public class TestSubWorkflow {
             WorkflowModel workflowInstance,
             TaskModel task,
             String subWorkflowName,
-            int subWorkflowVersion,
+            Integer subWorkflowVersion,
             Map<String, Object> workflowInput,
             Map<String, String> taskToDomain,
             WorkflowDef workflowDef,

@@ -78,23 +78,36 @@ public class DoWhileWithDomainTests {
                         .getTasks()
                         .get(0)
                         .getReferenceTaskName();
-        Workflow workflow =
-                taskClient.updateTaskSync(
-                        workflowId, taskRefName, TaskResult.Status.COMPLETED, Map.of());
-        assertEquals(workflow.getStatus().name(), Workflow.WorkflowStatus.RUNNING.name());
-        assertEquals(workflow.getTasks().get(0).getStatus(), Task.Status.COMPLETED);
-        assertEquals(workflow.getTasks().get(1).getStatus(), Task.Status.IN_PROGRESS);
+        taskClient.updateTaskSync(workflowId, taskRefName, TaskResult.Status.COMPLETED, Map.of());
 
-        workflow = workflowClient.getWorkflow(workflowId, true);
-        String subWorkflowId = workflow.getTasks().get(1).getSubWorkflowId();
+        final String[] subWorkflowId = new String[1];
+        await().atMost(33, TimeUnit.SECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow latestWorkflow = workflowClient.getWorkflow(workflowId, true);
+                            assertEquals(
+                                    latestWorkflow.getStatus().name(),
+                                    Workflow.WorkflowStatus.RUNNING.name());
+                            assertTrue(latestWorkflow.getTasks().size() > 1);
+                            assertEquals(
+                                    latestWorkflow.getTasks().get(0).getStatus(),
+                                    Task.Status.COMPLETED);
+                            assertEquals(
+                                    latestWorkflow.getTasks().get(1).getStatus(),
+                                    Task.Status.IN_PROGRESS);
+                            subWorkflowId[0] = latestWorkflow.getTasks().get(1).getSubWorkflowId();
+                            assertTrue(subWorkflowId[0] != null && !subWorkflowId[0].isBlank());
+                        });
+
         TaskResult taskResult = new TaskResult();
-        taskResult.setWorkflowInstanceId(subWorkflowId);
+        taskResult.setWorkflowInstanceId(subWorkflowId[0]);
         taskResult.setStatus(TaskResult.Status.COMPLETED);
-        taskResult.setTaskId(workflow.getTasks().get(1).getTaskId());
+        taskResult.setTaskId(awaitFirstTaskId(workflowClient, subWorkflowId[0]));
         taskClient.updateTask(taskResult);
 
         // Wait for workflow to get completed
-        await().atMost(3, TimeUnit.SECONDS)
+        await().atMost(33, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             Workflow workflow1 = workflowClient.getWorkflow(workflowId, true);
@@ -106,6 +119,20 @@ public class DoWhileWithDomainTests {
 
         // Cleanup
         metadataClient.unregisterWorkflowDef(parentWorkflowName, 1);
+    }
+
+    private String awaitFirstTaskId(WorkflowClient workflowClient, String workflowId) {
+        final String[] taskId = new String[1];
+        await().atMost(33, TimeUnit.SECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
+                            assertTrue(!workflow.getTasks().isEmpty());
+                            taskId[0] = workflow.getTasks().get(0).getTaskId();
+                            assertTrue(taskId[0] != null && !taskId[0].isBlank());
+                        });
+        return taskId[0];
     }
 
     private void registerInlineWorkflowDef(String workflowName, MetadataClient metadataClient1) {

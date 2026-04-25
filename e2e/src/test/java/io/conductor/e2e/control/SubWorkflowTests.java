@@ -309,7 +309,11 @@ public class SubWorkflowTests {
         // Use unique prefix to prevent conflicts with other test classes
         String uniquePrefix = "SubWorkflowTests_" + UUID.randomUUID().toString().substring(0, 8);
         for (String task : tasks) {
-            workers.add(new TestWorker(task));
+            // SUB_WORKFLOW is a server-side system task; an external worker can steal it before
+            // the system task attaches the child workflow id.
+            if (!"SUB_WORKFLOW".equals(task)) {
+                workers.add(new TestWorker(task));
+            }
             taskToDomainMap.put(task, uniquePrefix + "_" + UUID.randomUUID().toString());
         }
         configurer =
