@@ -1181,8 +1181,7 @@ public class DoWhileTest {
      * not yet been scheduled. isIterationComplete must return false in this state.
      */
     @Test
-    public void
-            testExecute_SwitchWithInlineTask_DoesNotAdvanceIterationUntilSuccessorScheduled() {
+    public void testExecute_SwitchWithInlineTask_DoesNotAdvanceIterationUntilSuccessorScheduled() {
         // Build workflow-task definitions
         WorkflowTask task1Def = new WorkflowTask();
         task1Def.setTaskReferenceName("task1");
