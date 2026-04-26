@@ -1525,19 +1525,18 @@ public class WorkflowRerunTests {
                             });
 
             RerunWorkflowRequest rerunRequest = new RerunWorkflowRequest();
-            rerunRequest.setReRunFromWorkflowId(workflowId);
+            rerunRequest.setReRunFromWorkflowId(subWfId2);
             rerunRequest.setReRunFromTaskId(innerFailedTaskId);
             workflowClient.rerunWorkflow(workflowId, rerunRequest);
 
-            try {
-                Thread.sleep(2000L);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                assertEquals(
+                                        Workflow.WorkflowStatus.RUNNING,
+                                        workflowClient.getWorkflow(workflowId, true).getStatus());
+                            });
             workflow = workflowClient.getWorkflow(workflowId, true);
-
-            assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
 
             Task taskBeforeAfterRerun =
                     workflow.getTasks().stream()
