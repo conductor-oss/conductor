@@ -220,8 +220,7 @@ public class WorkflowRerunTests {
         Workflow workflow = workflowClient.getWorkflow(workflowId, true);
         // Fail the simple task
         String subworkflowId = workflow.getTasks().get(0).getSubWorkflowId();
-        Workflow subWorkflow = workflowClient.getWorkflow(subworkflowId, true);
-        Task task = subWorkflow.getTasks().get(0);
+        Task task = awaitFirstTask(subworkflowId);
         workflow = completeTask(task, TaskResult.Status.FAILED);
         assertEquals(Workflow.WorkflowStatus.FAILED, workflow.getStatus());
 
@@ -231,11 +230,25 @@ public class WorkflowRerunTests {
         rerunWorkflowRequest.setReRunFromTaskId(task.getTaskId());
         workflowClient.rerunWorkflow(subworkflowId, rerunWorkflowRequest);
         // Check the workflow status and few other parameters
-        subWorkflow = workflowClient.getWorkflow(subworkflowId, true);
+        Workflow subWorkflow = workflowClient.getWorkflow(subworkflowId, true);
         assertEquals(Workflow.WorkflowStatus.RUNNING, subWorkflow.getStatus());
-        assertEquals(Task.Status.SCHEDULED, subWorkflow.getTasks().get(0).getStatus());
+        Task scheduledTask =
+                awaitTaskWithStatus(
+                        subworkflowId,
+                        Task.Status.SCHEDULED,
+                        "Child rerun task should be scheduled");
 
-        subWorkflow = completeTask(subWorkflow.getTasks().get(0), TaskResult.Status.COMPLETED);
+        await().atMost(30, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow parent = workflowClient.getWorkflow(workflowId, true);
+                            assertEquals(
+                                    Workflow.WorkflowStatus.RUNNING,
+                                    parent.getStatus(),
+                                    "Parent should be RUNNING after child rerun");
+                        });
+
+        subWorkflow = completeTask(scheduledTask, TaskResult.Status.COMPLETED);
         assertEquals(Workflow.WorkflowStatus.COMPLETED, subWorkflow.getStatus());
 
         await().pollInterval(Duration.ofSeconds(1))
@@ -392,8 +405,7 @@ public class WorkflowRerunTests {
         Workflow workflow = workflowClient.getWorkflow(workflowId, true);
         // Fail the simple task
         String subworkflowId = workflow.getTasks().get(0).getSubWorkflowId();
-        Workflow subWorkflow = workflowClient.getWorkflow(subworkflowId, true);
-        Task task = subWorkflow.getTasks().get(0);
+        Task task = awaitFirstTask(subworkflowId);
         workflow = completeTask(task, TaskResult.Status.FAILED);
         assertEquals(Workflow.WorkflowStatus.FAILED, workflow.getStatus());
 
@@ -413,14 +425,13 @@ public class WorkflowRerunTests {
         rerunWorkflowRequest.setReRunFromTaskId(task.getTaskId());
         workflowClient.rerunWorkflow(workflowId, rerunWorkflowRequest);
         // SubworkflowId will be changed since we are rerunning from parent workflow
-        workflow = workflowClient.getWorkflow(workflowId, true);
-        subworkflowId = workflow.getTasks().get(0).getSubWorkflowId();
+        subworkflowId = awaitSubWorkflowId(workflowId);
         // Check the workflow status and few other parameters
-        subWorkflow = workflowClient.getWorkflow(subworkflowId, true);
+        Workflow subWorkflow = workflowClient.getWorkflow(subworkflowId, true);
         assertEquals(Workflow.WorkflowStatus.RUNNING, subWorkflow.getStatus());
-        assertEquals(Task.Status.SCHEDULED, subWorkflow.getTasks().get(0).getStatus());
+        assertEquals(Task.Status.SCHEDULED, awaitFirstTask(subworkflowId).getStatus());
 
-        subWorkflow = completeTask(subWorkflow.getTasks().get(0), TaskResult.Status.COMPLETED);
+        subWorkflow = completeTask(awaitFirstTask(subworkflowId), TaskResult.Status.COMPLETED);
         assertEquals(Workflow.WorkflowStatus.COMPLETED, subWorkflow.getStatus());
 
         await().pollInterval(Duration.ofSeconds(1))
@@ -2183,6 +2194,23 @@ public class WorkflowRerunTests {
                             Workflow workflow = workflowClient.getWorkflow(workflowId, true);
                             assertFalse(workflow.getTasks().isEmpty(), "Child should have tasks");
                             task[0] = workflow.getTasks().get(0);
+                        });
+        return task[0];
+    }
+
+    private Task awaitTaskWithStatus(String workflowId, Task.Status status, String message) {
+        final Task[] task = new Task[1];
+        await().atMost(30, TimeUnit.SECONDS)
+                .pollInterval(Duration.ofMillis(500))
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
+                            task[0] =
+                                    workflow.getTasks().stream()
+                                            .filter(t -> t.getStatus() == status)
+                                            .findFirst()
+                                            .orElse(null);
+                            assertNotNull(task[0], message);
                         });
         return task[0];
     }

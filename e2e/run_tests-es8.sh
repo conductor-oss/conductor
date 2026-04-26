@@ -31,6 +31,6 @@ done
 
 cd "$SCRIPT_DIR/.."
 set +e
-./gradlew :conductor-e2e:test --fail-fast -PrunE2E -DSERVER_ROOT_URI="$SERVER_ROOT_URI" "$@"
+./gradlew :conductor-e2e:test -PrunE2E -DSERVER_ROOT_URI="$SERVER_ROOT_URI" "$@"
 EXIT_CODE=$?
 exit $EXIT_CODE
