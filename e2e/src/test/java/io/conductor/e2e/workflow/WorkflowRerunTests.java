@@ -1508,46 +1508,13 @@ public class WorkflowRerunTests {
                                                 >= 5);
                             });
 
-            workflow = workflowClient.getWorkflow(workflowId, true);
+            String subWfId1 = awaitSubWorkflowId(workflowId, subWfFork1Ref);
+            completeTask(awaitFirstTask(subWfId1), TaskResult.Status.COMPLETED);
 
-            Task subWfTask1Instance =
-                    workflow.getTasks().stream()
-                            .filter(t -> t.getReferenceTaskName().equals(subWfFork1Ref))
-                            .findFirst()
-                            .orElseThrow();
-            Task subWfTask2Instance =
-                    workflow.getTasks().stream()
-                            .filter(t -> t.getReferenceTaskName().equals(subWfFork2Ref))
-                            .findFirst()
-                            .orElseThrow();
-
-            String subWfId1 = subWfTask1Instance.getSubWorkflowId();
-            await().atMost(10, TimeUnit.SECONDS)
-                    .untilAsserted(
-                            () -> {
-                                assertFalse(
-                                        workflowClient
-                                                .getWorkflow(subWfId1, true)
-                                                .getTasks()
-                                                .isEmpty());
-                            });
-            completeTask(
-                    workflowClient.getWorkflow(subWfId1, true).getTasks().get(0),
-                    TaskResult.Status.COMPLETED);
-
-            String subWfId2 = subWfTask2Instance.getSubWorkflowId();
-            await().atMost(10, TimeUnit.SECONDS)
-                    .untilAsserted(
-                            () -> {
-                                assertFalse(
-                                        workflowClient
-                                                .getWorkflow(subWfId2, true)
-                                                .getTasks()
-                                                .isEmpty());
-                            });
-            Workflow subWf2 = workflowClient.getWorkflow(subWfId2, true);
-            String innerFailedTaskId = subWf2.getTasks().get(0).getTaskId();
-            completeTask(subWf2.getTasks().get(0), TaskResult.Status.FAILED);
+            String subWfId2 = awaitSubWorkflowId(workflowId, subWfFork2Ref);
+            Task innerFailedTask = awaitFirstTask(subWfId2);
+            String innerFailedTaskId = innerFailedTask.getTaskId();
+            completeTask(innerFailedTask, TaskResult.Status.FAILED);
 
             await().atMost(10, TimeUnit.SECONDS)
                     .untilAsserted(
@@ -2185,6 +2152,10 @@ public class WorkflowRerunTests {
     }
 
     private String awaitSubWorkflowId(String workflowId) {
+        return awaitSubWorkflowId(workflowId, null);
+    }
+
+    private String awaitSubWorkflowId(String workflowId, String referenceTaskName) {
         final String[] subWorkflowId = new String[1];
         await().atMost(30, TimeUnit.SECONDS)
                 .pollInterval(Duration.ofMillis(500))
@@ -2192,7 +2163,12 @@ public class WorkflowRerunTests {
                         () -> {
                             Workflow workflow = workflowClient.getWorkflow(workflowId, true);
                             assertFalse(workflow.getTasks().isEmpty());
-                            subWorkflowId[0] = workflow.getTasks().get(0).getSubWorkflowId();
+                            Task task =
+                                    referenceTaskName == null
+                                            ? workflow.getTasks().get(0)
+                                            : workflow.getTaskByRefName(referenceTaskName);
+                            assertNotNull(task, "Task " + referenceTaskName + " should exist");
+                            subWorkflowId[0] = task.getSubWorkflowId();
                             assertNotNull(subWorkflowId[0], "Child workflow ID should not be null");
                             assertFalse(subWorkflowId[0].isBlank());
                         });
