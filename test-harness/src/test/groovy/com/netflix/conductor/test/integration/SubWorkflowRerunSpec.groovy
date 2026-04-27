@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.test.integration
 
+import java.util.concurrent.TimeUnit
+
 import org.springframework.beans.factory.annotation.Autowired
 
 import com.netflix.conductor.common.metadata.tasks.Task
@@ -26,6 +28,7 @@ import spock.lang.Shared
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
+import static org.awaitility.Awaitility.await
 
 class SubWorkflowRerunSpec extends AbstractSpecification {
 
@@ -573,6 +576,11 @@ class SubWorkflowRerunSpec extends AbstractSpecification {
         }
 
         then: "verify that the mid-level workflow is updated"
+        // Rerun propagates the leaf status to parent SUB_WORKFLOW tasks asynchronously.
+        await().atMost(10, TimeUnit.SECONDS).until {
+            workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
+                    .tasks[1].status == Task.Status.IN_PROGRESS
+        }
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 2
@@ -583,6 +591,10 @@ class SubWorkflowRerunSpec extends AbstractSpecification {
         }
 
         and: "verify that the root workflow's SUB_WORKFLOW is updated"
+        await().atMost(10, TimeUnit.SECONDS).until {
+            workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
+                    .tasks[1].status == Task.Status.IN_PROGRESS
+        }
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 2
@@ -659,6 +671,11 @@ class SubWorkflowRerunSpec extends AbstractSpecification {
         }
 
         then: "verify that the mid-level workflow is updated"
+        // Rerun propagates the leaf status to parent SUB_WORKFLOW tasks asynchronously.
+        await().atMost(10, TimeUnit.SECONDS).until {
+            workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
+                    .tasks[1].status == Task.Status.IN_PROGRESS
+        }
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 2
@@ -669,6 +686,10 @@ class SubWorkflowRerunSpec extends AbstractSpecification {
         }
 
         and: "verify that the root workflow's SUB_WORKFLOW is updated"
+        await().atMost(10, TimeUnit.SECONDS).until {
+            workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
+                    .tasks[1].status == Task.Status.IN_PROGRESS
+        }
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 2
