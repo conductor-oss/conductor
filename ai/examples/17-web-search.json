@@ -1,0 +1,34 @@
+{
+  "name": "web_search_workflow",
+  "description": "Chat completion with built-in web search — the LLM can search the web for real-time information",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["question"],
+  "tasks": [
+    {
+      "name": "web_search_chat",
+      "taskReferenceName": "chat",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "gpt-4o-mini",
+        "messages": [
+          {
+            "role": "system",
+            "message": "You are a helpful research assistant. Use web search to find current information."
+          },
+          {
+            "role": "user",
+            "message": "${workflow.input.question}"
+          }
+        ],
+        "webSearch": true,
+        "temperature": 0.3,
+        "maxTokens": 1000
+      }
+    }
+  ],
+  "outputParameters": {
+    "answer": "${chat.output.result}"
+  }
+}
