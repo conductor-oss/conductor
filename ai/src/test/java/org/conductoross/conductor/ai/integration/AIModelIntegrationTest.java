@@ -13,12 +13,14 @@
 package org.conductoross.conductor.ai.integration;
 
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.models.AudioGenRequest;
 import org.conductoross.conductor.ai.models.ChatCompletion;
 import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.models.LLMResponse;
+import org.conductoross.conductor.ai.models.ToolSpec;
 import org.conductoross.conductor.ai.providers.anthropic.Anthropic;
 import org.conductoross.conductor.ai.providers.anthropic.AnthropicConfiguration;
 import org.conductoross.conductor.ai.providers.azureopenai.AzureOpenAI;
@@ -49,9 +51,9 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.image.ImageModel;
+import org.springframework.ai.image.ImageOptionsBuilder;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
-import org.springframework.ai.openai.OpenAiImageOptions;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -88,6 +90,12 @@ public class AIModelIntegrationTest {
     }
 
     static boolean isGeminiConfigured() {
+        // API key path (Google AI Studio)
+        String apiKey = System.getenv("GEMINI_API_KEY");
+        if (StringUtils.isNotBlank(apiKey) && !apiKey.equals("your-gemini-api-key")) {
+            return true;
+        }
+        // Vertex AI path (GCP project + credentials)
         String projectId = System.getenv("GOOGLE_PROJECT_ID");
         String creds = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
         String vertexCreds = System.getenv("VERTEX_AI_CREDENTIALS");
@@ -187,17 +195,16 @@ public class AIModelIntegrationTest {
             ImageModel imageModel = openAI.getImageModel();
             assertNotNull(imageModel);
 
-            // Use OpenAiImageOptions to set model and parameters
-            OpenAiImageOptions imageOptions =
-                    OpenAiImageOptions.builder()
+            // Use generic ImageOptions to set model and parameters
+            var imageOptions =
+                    ImageOptionsBuilder.builder()
                             .model("dall-e-3")
-                            .quality("standard")
                             .height(1024)
                             .width(1024)
                             .build();
 
             ImagePrompt prompt =
-                    new ImagePrompt("A simple red circle on white background", imageOptions);
+                    new ImagePrompt("A simple blue circle on white background", imageOptions);
             ImageResponse response = imageModel.call(prompt);
 
             assertNotNull(response);
@@ -245,6 +252,189 @@ public class AIModelIntegrationTest {
             assertNotNull(embeddings);
             assertFalse(embeddings.isEmpty());
             assertEquals(1536, embeddings.size(), "Expected 1536 dimensions");
+        }
+
+        @Test
+        @DisplayName("Chat completion with Codex model")
+        void testChatCompletion_codex() {
+            ChatModel chatModel = openAI.getChatModel();
+            assertNotNull(chatModel);
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gpt-5.3-codex");
+            input.setMaxTokens(200);
+
+            var chatOptions = openAI.getChatOptions(input);
+            Prompt prompt =
+                    new Prompt(
+                            "Write a Python function that returns the factorial of n", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertFalse(text.isEmpty(), "Expected code output from Codex model");
+            assertTrue(
+                    text.contains("def") || text.contains("factorial"),
+                    "Expected Python code with 'def' or 'factorial', got: " + text);
+        }
+
+        @Test
+        @DisplayName("Chat completion with web_search tool")
+        void testChatCompletion_webSearch() {
+            ChatModel chatModel = openAI.getChatModel();
+            assertNotNull(chatModel);
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gpt-4o-mini");
+            input.setMaxTokens(200);
+            input.setTemperature(0.0);
+            input.setWebSearch(true);
+
+            var chatOptions = openAI.getChatOptions(input);
+            Prompt prompt =
+                    new Prompt("What is the current weather in San Francisco?", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            System.out.println(text);
+            assertFalse(text.isEmpty(), "Expected a response with web search results");
+        }
+
+        @Test
+        @DisplayName("Function tool calling - model returns tool_use, not result")
+        void testFunctionToolCalling() {
+            ChatModel chatModel = openAI.getChatModel();
+
+            ToolSpec weatherTool = new ToolSpec();
+            weatherTool.setName("get_weather");
+            weatherTool.setDescription("Get the current weather for a location");
+            weatherTool.setInputSchema(
+                    Map.of(
+                            "type", "object",
+                            "properties",
+                                    Map.of(
+                                            "location",
+                                            Map.of("type", "string", "description", "City name")),
+                            "required", List.of("location")));
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gpt-4o-mini");
+            input.setMaxTokens(200);
+            input.setTemperature(0.0);
+            input.setTools(List.of(weatherTool));
+
+            var chatOptions = openAI.getChatOptions(input);
+            Prompt prompt = new Prompt("What is the weather in Tokyo?", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+
+            var output = response.getResult().getOutput();
+            // Model should return a tool call, not execute it
+            assertNotNull(output.getToolCalls(), "Expected tool calls in response");
+            assertFalse(output.getToolCalls().isEmpty(), "Expected at least one tool call");
+
+            var toolCall = output.getToolCalls().getFirst();
+            assertEquals("get_weather", toolCall.name(), "Expected get_weather tool call");
+            assertNotNull(toolCall.arguments(), "Expected arguments in tool call");
+            assertTrue(
+                    toolCall.arguments().toLowerCase().contains("tokyo"),
+                    "Expected 'tokyo' in arguments: " + toolCall.arguments());
+
+            // Finish reason should indicate tool calls
+            String finishReason = response.getResult().getMetadata().getFinishReason();
+            assertEquals(
+                    "TOOL_CALLS",
+                    finishReason,
+                    "Expected TOOL_CALLS finish reason, got: " + finishReason);
+        }
+
+        @Test
+        @DisplayName("Built-in code_interpreter - server-side execution, returns text")
+        void testCodeInterpreter() {
+            ChatModel chatModel = openAI.getChatModel();
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gpt-4o-mini");
+            input.setMaxTokens(500);
+            input.setTemperature(0.0);
+            input.setCodeInterpreter(true);
+
+            var chatOptions = openAI.getChatOptions(input);
+            Prompt prompt =
+                    new Prompt(
+                            "Calculate the first 10 prime numbers using code. Return ONLY the list.",
+                            chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertFalse(text.isEmpty(), "Expected text result from code_interpreter");
+            System.out.println(text);
+            // Server-side tool: should return computed text, NOT a tool_call
+            assertTrue(
+                    text.contains("2") && text.contains("29"),
+                    "Expected prime numbers including 2 and 29, got: " + text);
+        }
+
+        @Test
+        @DisplayName("Multi-turn conversation with previousResponseId")
+        void testPreviousResponseId() {
+            ChatModel chatModel = openAI.getChatModel();
+
+            // Turn 1: establish context
+            ChatCompletion turn1Input = new ChatCompletion();
+            turn1Input.setModel("gpt-4o-mini");
+            turn1Input.setMaxTokens(200);
+            turn1Input.setTemperature(0.0);
+
+            var turn1Options = openAI.getChatOptions(turn1Input);
+            Prompt turn1Prompt = new Prompt("My name is Conductor. Remember that.", turn1Options);
+
+            ChatResponse turn1Response = chatModel.call(turn1Prompt);
+            assertNotNull(turn1Response);
+            assertNotNull(turn1Response.getResult());
+
+            // Extract response_id from metadata
+            String responseId = (String) turn1Response.getMetadata().get("response_id");
+            assertNotNull(responseId, "Expected response_id in metadata for chaining");
+            assertFalse(responseId.isBlank(), "response_id must not be blank");
+
+            // Turn 2: reference previous response — only send follow-up, no history
+            ChatCompletion turn2Input = new ChatCompletion();
+            turn2Input.setModel("gpt-4o-mini");
+            turn2Input.setMaxTokens(200);
+            turn2Input.setTemperature(0.0);
+            turn2Input.setPreviousResponseId(responseId);
+
+            var turn2Options = openAI.getChatOptions(turn2Input);
+            Prompt turn2Prompt = new Prompt("What is my name?", turn2Options);
+
+            ChatResponse turn2Response = chatModel.call(turn2Prompt);
+            assertNotNull(turn2Response);
+            assertNotNull(turn2Response.getResult());
+
+            String text = turn2Response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertTrue(
+                    text.toLowerCase().contains("conductor"),
+                    "Expected model to recall 'Conductor' from previous turn, got: " + text);
+
+            // Second response should also have its own response_id
+            String turn2ResponseId = (String) turn2Response.getMetadata().get("response_id");
+            assertNotNull(turn2ResponseId, "Expected response_id in turn 2 metadata");
         }
 
         @Test
@@ -346,6 +536,56 @@ public class AIModelIntegrationTest {
         }
 
         @Test
+        @DisplayName("Function tool calling - model returns tool_use, not result")
+        void testFunctionToolCalling() {
+            ChatModel chatModel = anthropic.getChatModel();
+
+            ToolSpec weatherTool = new ToolSpec();
+            weatherTool.setName("get_weather");
+            weatherTool.setDescription("Get the current weather for a location");
+            weatherTool.setInputSchema(
+                    Map.of(
+                            "type", "object",
+                            "properties",
+                                    Map.of(
+                                            "location",
+                                            Map.of("type", "string", "description", "City name")),
+                            "required", List.of("location")));
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("claude-haiku-4-5");
+            input.setMaxTokens(200);
+            input.setTemperature(0.0);
+            input.setTools(List.of(weatherTool));
+
+            var chatOptions = anthropic.getChatOptions(input);
+            Prompt prompt = new Prompt("What is the weather in Tokyo?", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+
+            var output = response.getResult().getOutput();
+            assertNotNull(output.getToolCalls(), "Expected tool calls in response");
+            assertFalse(output.getToolCalls().isEmpty(), "Expected at least one tool call");
+
+            var toolCall = output.getToolCalls().getFirst();
+            assertEquals("get_weather", toolCall.name(), "Expected get_weather tool call");
+            assertNotNull(toolCall.arguments(), "Expected arguments in tool call");
+            assertTrue(
+                    toolCall.arguments().toLowerCase().contains("tokyo"),
+                    "Expected 'tokyo' in arguments: " + toolCall.arguments());
+
+            // Finish reason should indicate tool calls
+            String finishReason = response.getResult().getMetadata().getFinishReason();
+            assertEquals(
+                    "TOOL_CALLS",
+                    finishReason,
+                    "Expected TOOL_CALLS finish reason, got: " + finishReason);
+        }
+
+        @Test
         @DisplayName("Model provider name")
         void testModelProviderName() {
             assertEquals("anthropic", anthropic.getModelProvider());
@@ -368,18 +608,26 @@ public class AIModelIntegrationTest {
         @BeforeAll
         void setup() throws Exception {
             GeminiVertexConfiguration config = new GeminiVertexConfiguration();
-            config.setProjectId(System.getenv("GOOGLE_PROJECT_ID"));
-            config.setLocation(System.getenv("GOOGLE_LOCATION"));
 
-            // Try to load credentials from VERTEX_AI_CREDENTIALS env var (JSON string)
-            String vertexCreds = System.getenv("VERTEX_AI_CREDENTIALS");
-            if (StringUtils.isNotBlank(vertexCreds)) {
-                var credentials =
-                        com.google.auth.oauth2.GoogleCredentials.fromStream(
-                                new java.io.ByteArrayInputStream(
-                                        vertexCreds.getBytes(
-                                                java.nio.charset.StandardCharsets.UTF_8)));
-                config.setGoogleCredentials(credentials);
+            // Prefer API key path (Google AI Studio) if available
+            String apiKey = System.getenv("GEMINI_API_KEY");
+            if (StringUtils.isNotBlank(apiKey)) {
+                config.setApiKey(apiKey);
+            } else {
+                // Vertex AI path (GCP project + credentials)
+                config.setProjectId(System.getenv("GOOGLE_PROJECT_ID"));
+                config.setLocation(System.getenv("GOOGLE_CLOUD_LOCATION"));
+
+                // Try to load credentials from VERTEX_AI_CREDENTIALS env var (JSON string)
+                String vertexCreds = System.getenv("VERTEX_AI_CREDENTIALS");
+                if (StringUtils.isNotBlank(vertexCreds)) {
+                    var credentials =
+                            com.google.auth.oauth2.GoogleCredentials.fromStream(
+                                    new java.io.ByteArrayInputStream(
+                                            vertexCreds.getBytes(
+                                                    java.nio.charset.StandardCharsets.UTF_8)));
+                    config.setGoogleCredentials(credentials);
+                }
             }
 
             gemini = new GeminiVertex(config);
@@ -392,8 +640,8 @@ public class AIModelIntegrationTest {
             assertNotNull(chatModel);
 
             ChatCompletion input = new ChatCompletion();
-            input.setModel("gemini-2.0-flash-001");
-            input.setMaxTokens(50);
+            input.setModel("gemini-2.5-flash");
+            input.setMaxTokens(500);
             input.setTemperature(0.0);
 
             var chatOptions = gemini.getChatOptions(input);
@@ -413,13 +661,82 @@ public class AIModelIntegrationTest {
         void testEmbeddings() {
             EmbeddingGenRequest request = new EmbeddingGenRequest();
             request.setText(EMBEDDING_TEXT);
-            request.setModel("text-embedding-005");
+            request.setModel("gemini-embedding-001");
 
             List<Float> embeddings = gemini.generateEmbeddings(request);
 
             assertNotNull(embeddings);
             assertFalse(embeddings.isEmpty());
-            assertEquals(768, embeddings.size(), "Expected 768 dimensions");
+            assertEquals(3072, embeddings.size(), "Expected 3072 dimensions");
+        }
+
+        @Test
+        @DisplayName("Function tool calling - model returns tool_use, not result")
+        void testFunctionToolCalling() {
+            ChatModel chatModel = gemini.getChatModel();
+
+            ToolSpec weatherTool = new ToolSpec();
+            weatherTool.setName("get_weather");
+            weatherTool.setDescription("Get the current weather for a location");
+            weatherTool.setInputSchema(
+                    Map.of(
+                            "type",
+                            "object",
+                            "properties",
+                            Map.of(
+                                    "location",
+                                    Map.of("type", "string", "description", "City name")),
+                            "required",
+                            List.of("location")));
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gemini-2.5-flash");
+            input.setMaxTokens(200);
+            input.setTemperature(0.0);
+            input.setTools(List.of(weatherTool));
+
+            var chatOptions = gemini.getChatOptions(input);
+            Prompt prompt = new Prompt("What is the weather in Tokyo?", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+
+            var output = response.getResult().getOutput();
+            assertNotNull(output.getToolCalls(), "Expected tool calls in response");
+            assertFalse(output.getToolCalls().isEmpty(), "Expected at least one tool call");
+
+            var toolCall = output.getToolCalls().getFirst();
+            assertEquals("get_weather", toolCall.name(), "Expected get_weather tool call");
+            assertNotNull(toolCall.arguments(), "Expected arguments in tool call");
+            assertTrue(
+                    toolCall.arguments().toLowerCase().contains("tokyo"),
+                    "Expected 'tokyo' in arguments: " + toolCall.arguments());
+        }
+
+        @Test
+        @DisplayName("Web search via Google Search Retrieval")
+        void testWebSearch() {
+            ChatModel chatModel = gemini.getChatModel();
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gemini-2.5-flash");
+            input.setMaxTokens(200);
+            input.setTemperature(0.0);
+            input.setWebSearch(true);
+
+            var chatOptions = gemini.getChatOptions(input);
+            Prompt prompt =
+                    new Prompt("What is the current weather in San Francisco?", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertFalse(text.isEmpty(), "Expected a response with web search results");
         }
 
         @Test
@@ -536,6 +853,51 @@ public class AIModelIntegrationTest {
             assertNotNull(embeddings);
             assertFalse(embeddings.isEmpty());
             assertEquals(1024, embeddings.size(), "Expected 1024 dimensions");
+        }
+
+        @Test
+        @DisplayName("Function tool calling - model returns tool_use, not result")
+        void testFunctionToolCalling() {
+            ChatModel chatModel = mistral.getChatModel();
+
+            ToolSpec weatherTool = new ToolSpec();
+            weatherTool.setName("get_weather");
+            weatherTool.setDescription("Get the current weather for a location");
+            weatherTool.setInputSchema(
+                    Map.of(
+                            "type",
+                            "object",
+                            "properties",
+                            Map.of(
+                                    "location",
+                                    Map.of("type", "string", "description", "City name")),
+                            "required",
+                            List.of("location")));
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("mistral-small-latest");
+            input.setMaxTokens(200);
+            input.setTemperature(0.0);
+            input.setTools(List.of(weatherTool));
+
+            var chatOptions = mistral.getChatOptions(input);
+            Prompt prompt = new Prompt("What is the weather in Tokyo?", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+
+            var output = response.getResult().getOutput();
+            assertNotNull(output.getToolCalls(), "Expected tool calls in response");
+            assertFalse(output.getToolCalls().isEmpty(), "Expected at least one tool call");
+
+            var toolCall = output.getToolCalls().getFirst();
+            assertEquals("get_weather", toolCall.name(), "Expected get_weather tool call");
+            assertNotNull(toolCall.arguments(), "Expected arguments in tool call");
+            assertTrue(
+                    toolCall.arguments().toLowerCase().contains("tokyo"),
+                    "Expected 'tokyo' in arguments: " + toolCall.arguments());
         }
 
         @Test
@@ -698,6 +1060,51 @@ public class AIModelIntegrationTest {
             String text = response.getResult().getOutput().getText();
             assertNotNull(text);
             assertTrue(text.contains("4"), "Expected response to contain '4', got: " + text);
+        }
+
+        @Test
+        @DisplayName("Function tool calling - model returns tool_use, not result")
+        void testFunctionToolCalling() {
+            ChatModel chatModel = grok.getChatModel();
+
+            ToolSpec weatherTool = new ToolSpec();
+            weatherTool.setName("get_weather");
+            weatherTool.setDescription("Get the current weather for a location");
+            weatherTool.setInputSchema(
+                    Map.of(
+                            "type",
+                            "object",
+                            "properties",
+                            Map.of(
+                                    "location",
+                                    Map.of("type", "string", "description", "City name")),
+                            "required",
+                            List.of("location")));
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("grok-3-mini");
+            input.setMaxTokens(200);
+            input.setTemperature(0.0);
+            input.setTools(List.of(weatherTool));
+
+            var chatOptions = grok.getChatOptions(input);
+            Prompt prompt = new Prompt("What is the weather in Tokyo?", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+
+            var output = response.getResult().getOutput();
+            assertNotNull(output.getToolCalls(), "Expected tool calls in response");
+            assertFalse(output.getToolCalls().isEmpty(), "Expected at least one tool call");
+
+            var toolCall = output.getToolCalls().getFirst();
+            assertEquals("get_weather", toolCall.name(), "Expected get_weather tool call");
+            assertNotNull(toolCall.arguments(), "Expected arguments in tool call");
+            assertTrue(
+                    toolCall.arguments().toLowerCase().contains("tokyo"),
+                    "Expected 'tokyo' in arguments: " + toolCall.arguments());
         }
 
         @Test
@@ -890,7 +1297,7 @@ public class AIModelIntegrationTest {
 
             ChatCompletion input = new ChatCompletion();
             // Use US cross-region inference profile (required for API key auth)
-            input.setModel("us.anthropic.claude-haiku-4-5-20251001-v1:0");
+            input.setModel("us.anthropic.claude-sonnet-4-6");
             input.setMaxTokens(50);
             input.setTemperature(0.0);
 
