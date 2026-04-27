@@ -1773,7 +1773,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             LOGGER.error(errorMsg);
             throw new ConflictException(errorMsg);
         }
-        updateAndPushParents(workflow, "reran");
 
         // If the task Id is null it implies that the entire workflow has to be rerun
         if (taskId == null) {
@@ -1802,6 +1801,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     properties.getWorkflowOffsetTimeout().getSeconds());
             executionDAOFacade.updateWorkflow(workflow);
             notifyWorkflowStatusListener(workflow, WorkflowEventType.RERAN);
+            // Notify parents only after this workflow is persisted as RUNNING, so the sweeper
+            // cannot read a stale FAILED status when it evaluates the parent's SUB_WORKFLOW task.
+            updateAndPushParents(workflow, "reran");
             decide(workflowId);
             return true;
         }
@@ -1851,6 +1853,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     properties.getWorkflowOffsetTimeout().getSeconds());
             executionDAOFacade.updateWorkflow(workflow);
             notifyWorkflowStatusListener(workflow, WorkflowEventType.RETRIED);
+            // Notify parents only after this workflow is persisted as RUNNING, so the sweeper
+            // cannot read a stale FAILED status when it evaluates the parent's SUB_WORKFLOW task.
+            updateAndPushParents(workflow, "reran");
 
             // update tasks in datastore to update workflow-tasks relationship for archived
             // workflows

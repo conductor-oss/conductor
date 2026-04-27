@@ -28,6 +28,7 @@ import spock.lang.Shared
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
+
 import static org.awaitility.Awaitility.await
 
 class SubWorkflowRerunSpec extends AbstractSpecification {
