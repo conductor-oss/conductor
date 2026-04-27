@@ -1162,6 +1162,205 @@ public class DoWhileTest {
         verify(workflowExecutor, never()).scheduleNextIteration(any(), any());
     }
 
+    // -------------------------------------------------------------------------
+    // Issue #895 / #1001: DO_WHILE + SWITCH + sync system task premature iteration advancement
+    // Root cause: intra-loop ordering in decide(). INLINE (and other sync system tasks) share the
+    // outcome.tasksToBeScheduled loop with DO_WHILE. If an INLINE task appears before DO_WHILE in
+    // that list (dependent on workflow.getTasks() / DB row order), it completes in memory before
+    // the decider has run to schedule its successor. The pre-fix code saw all present tasks as
+    // terminal and declared the iteration complete, advancing prematurely.
+    // -------------------------------------------------------------------------
+
+    /**
+     * Regression test for GitHub issue #895.
+     *
+     * <p>Scenario: DO_WHILE.loopOver = [SWITCH], SWITCH.defaultCase = [task1, inlineTask(INLINE),
+     * task2]. INLINE is a sync system task — it completes inside execute() in the same
+     * decide()-loop iteration as DO_WHILE. If INLINE appears before DO_WHILE in
+     * workflow.getTasks(), it is COMPLETED when DO_WHILE evaluates but its successor (task2) has
+     * not yet been scheduled. isIterationComplete must return false in this state.
+     */
+    @Test
+    public void testExecute_SwitchWithInlineTask_DoesNotAdvanceIterationUntilSuccessorScheduled() {
+        // Build workflow-task definitions
+        WorkflowTask task1Def = new WorkflowTask();
+        task1Def.setTaskReferenceName("task1");
+        task1Def.setType("SIMPLE");
+
+        // INLINE is a sync OSS system task: execute() always sets COMPLETED inline.
+        WorkflowTask inlineTaskDef = new WorkflowTask();
+        inlineTaskDef.setTaskReferenceName("inline_task");
+        inlineTaskDef.setType("INLINE");
+
+        WorkflowTask task2Def = new WorkflowTask();
+        task2Def.setTaskReferenceName("task2");
+        task2Def.setType("SIMPLE");
+
+        WorkflowTask switchDef = new WorkflowTask();
+        switchDef.setTaskReferenceName("switchTask");
+        switchDef.setType("SWITCH");
+        switchDef.setDefaultCase(List.of(task1Def, inlineTaskDef, task2Def));
+
+        WorkflowTask doWhileDef = new WorkflowTask();
+        doWhileDef.setTaskReferenceName("loopTask");
+        doWhileDef.setType("DO_WHILE");
+        doWhileDef.setLoopOver(List.of(switchDef));
+        doWhileDef.setLoopCondition("$.loopTask['iteration'] < 2");
+
+        // Build the DO_WHILE task model
+        TaskModel doWhileTask = new TaskModel();
+        doWhileTask.setTaskId("dw-task-id");
+        doWhileTask.setReferenceTaskName("loopTask");
+        doWhileTask.setTaskType("DO_WHILE");
+        doWhileTask.setStatus(TaskModel.Status.IN_PROGRESS);
+        doWhileTask.setIteration(1);
+        doWhileTask.setWorkflowTask(doWhileDef);
+        doWhileTask.addOutput("iteration", 1);
+
+        // Build SWITCH task model (COMPLETED, with hasChildren set)
+        TaskModel switchTask = new TaskModel();
+        switchTask.setTaskId("switch-task-id");
+        switchTask.setReferenceTaskName("switchTask__1");
+        switchTask.setTaskType("SWITCH");
+        switchTask.setStatus(TaskModel.Status.COMPLETED);
+        switchTask.setIteration(1);
+        switchTask.setWorkflowTask(switchDef);
+        switchTask.getInputData().put("hasChildren", "true");
+
+        // Build task1 model (COMPLETED)
+        TaskModel task1 = new TaskModel();
+        task1.setTaskId("task1-id");
+        task1.setReferenceTaskName("task1__1");
+        task1.setTaskType("SIMPLE");
+        task1.setStatus(TaskModel.Status.COMPLETED);
+        task1.setIteration(1);
+        task1.setWorkflowTask(task1Def);
+
+        // inlineTask is COMPLETED — it executed first in the decide() loop.
+        TaskModel inlineTask = new TaskModel();
+        inlineTask.setTaskId("inline-task-id");
+        inlineTask.setReferenceTaskName("inline_task__1");
+        inlineTask.setTaskType("INLINE");
+        inlineTask.setStatus(TaskModel.Status.COMPLETED);
+        inlineTask.setIteration(1);
+        inlineTask.setWorkflowTask(inlineTaskDef);
+
+        // NOTE: task2 is intentionally NOT added to the workflow tasks list yet.
+        // This simulates the intra-loop state where inline_task has completed but task2
+        // has not been scheduled yet (the exact scenario from issue #895).
+
+        WorkflowModel workflow = createWorkflowWithDef();
+        List<TaskModel> tasks = new ArrayList<>();
+        tasks.add(doWhileTask);
+        tasks.add(switchTask);
+        tasks.add(task1);
+        tasks.add(inlineTask);
+        workflow.setTasks(tasks);
+
+        // execute() must return false — iteration should NOT advance yet
+        boolean result = doWhile.execute(workflow, doWhileTask, workflowExecutor);
+
+        assertFalse(
+                "execute() must return false when task2 (successor of inline_task inside SWITCH) "
+                        + "has not yet been scheduled into the workflow",
+                result);
+        assertEquals(
+                "Iteration must remain at 1 — premature advancement is the bug from issue #895",
+                1,
+                doWhileTask.getIteration());
+        verify(workflowExecutor, never()).scheduleNextIteration(any(), any());
+    }
+
+    /**
+     * Complement to the regression test above: once task2 IS in the workflow and completed, the
+     * iteration SHOULD advance (assuming the loop condition permits it).
+     */
+    @Test
+    public void testExecute_SwitchWithInlineTask_AdvancesIterationOnceAllCaseTasksComplete() {
+        // Build workflow-task definitions (same structure as the regression test)
+        WorkflowTask task1Def = new WorkflowTask();
+        task1Def.setTaskReferenceName("task1");
+        task1Def.setType("SIMPLE");
+
+        WorkflowTask inlineTaskDef = new WorkflowTask();
+        inlineTaskDef.setTaskReferenceName("inline_task");
+        inlineTaskDef.setType("INLINE");
+
+        WorkflowTask task2Def = new WorkflowTask();
+        task2Def.setTaskReferenceName("task2");
+        task2Def.setType("SIMPLE");
+
+        WorkflowTask switchDef = new WorkflowTask();
+        switchDef.setTaskReferenceName("switchTask");
+        switchDef.setType("SWITCH");
+        switchDef.setDefaultCase(List.of(task1Def, inlineTaskDef, task2Def));
+
+        WorkflowTask doWhileDef = new WorkflowTask();
+        doWhileDef.setTaskReferenceName("loopTask");
+        doWhileDef.setType("DO_WHILE");
+        doWhileDef.setLoopOver(List.of(switchDef));
+        doWhileDef.setLoopCondition("$.loopTask['iteration'] < 2");
+
+        TaskModel doWhileTask = new TaskModel();
+        doWhileTask.setTaskId("dw-task-id");
+        doWhileTask.setReferenceTaskName("loopTask");
+        doWhileTask.setTaskType("DO_WHILE");
+        doWhileTask.setStatus(TaskModel.Status.IN_PROGRESS);
+        doWhileTask.setIteration(1);
+        doWhileTask.setWorkflowTask(doWhileDef);
+        doWhileTask.addOutput("iteration", 1);
+
+        TaskModel switchTask = new TaskModel();
+        switchTask.setTaskId("switch-task-id");
+        switchTask.setReferenceTaskName("switchTask__1");
+        switchTask.setTaskType("SWITCH");
+        switchTask.setStatus(TaskModel.Status.COMPLETED);
+        switchTask.setIteration(1);
+        switchTask.setWorkflowTask(switchDef);
+        switchTask.getInputData().put("hasChildren", "true");
+
+        TaskModel task1 = new TaskModel();
+        task1.setTaskId("task1-id");
+        task1.setReferenceTaskName("task1__1");
+        task1.setTaskType("SIMPLE");
+        task1.setStatus(TaskModel.Status.COMPLETED);
+        task1.setIteration(1);
+        task1.setWorkflowTask(task1Def);
+
+        TaskModel inlineTask = new TaskModel();
+        inlineTask.setTaskId("inline-task-id");
+        inlineTask.setReferenceTaskName("inline_task__1");
+        inlineTask.setTaskType("INLINE");
+        inlineTask.setStatus(TaskModel.Status.COMPLETED);
+        inlineTask.setIteration(1);
+        inlineTask.setWorkflowTask(inlineTaskDef);
+
+        // task2 IS now scheduled and completed — iteration should advance
+        TaskModel task2 = new TaskModel();
+        task2.setTaskId("task2-id");
+        task2.setReferenceTaskName("task2__1");
+        task2.setTaskType("SIMPLE");
+        task2.setStatus(TaskModel.Status.COMPLETED);
+        task2.setIteration(1);
+        task2.setWorkflowTask(task2Def);
+
+        WorkflowModel workflow = createWorkflowWithDef();
+        List<TaskModel> tasks = new ArrayList<>();
+        tasks.add(doWhileTask);
+        tasks.add(switchTask);
+        tasks.add(task1);
+        tasks.add(inlineTask);
+        tasks.add(task2);
+        workflow.setTasks(tasks);
+
+        boolean result = doWhile.execute(workflow, doWhileTask, workflowExecutor);
+
+        assertTrue("execute() should return true when all case tasks are complete", result);
+        // Iteration advances from 1 to 2 (loop condition: iteration < 2 is still true at i=1)
+        assertEquals("Iteration should advance to 2", 2, doWhileTask.getIteration());
+        verify(workflowExecutor, times(1)).scheduleNextIteration(any(), any());
+    }
+
     @Test
     public void testListIteration_VerifiesLOCReduction() {
         // This test demonstrates the LOC reduction from counter-based to list iteration
