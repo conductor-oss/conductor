@@ -60,6 +60,13 @@ class GeminiVertexTest {
             var options = geminiVertex.getChatOptions(input);
 
             assertNotNull(options);
+            assertInstanceOf(GeminiChatOptions.class, options);
+            GeminiChatOptions opts = (GeminiChatOptions) options;
+            assertEquals("gemini-1.5-flash", opts.getModel());
+            assertEquals(1000, opts.getMaxTokens());
+            assertEquals(0.7, opts.getTemperature());
+            assertEquals(0.9, opts.getTopP());
+            assertEquals(40, opts.getTopK());
         }
 
         @Test
@@ -72,12 +79,74 @@ class GeminiVertexTest {
             var options = geminiVertex.getChatOptions(input);
 
             assertNotNull(options);
+            assertInstanceOf(GeminiChatOptions.class, options);
+            GeminiChatOptions opts = (GeminiChatOptions) options;
+            assertTrue(opts.isGoogleSearchRetrieval());
+        }
+
+        @Test
+        void testGetChatOptions_withWebSearchFlag() {
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gemini-2.5-flash");
+            input.setMaxTokens(500);
+            input.setWebSearch(true);
+
+            var options = geminiVertex.getChatOptions(input);
+
+            assertNotNull(options);
+            assertInstanceOf(GeminiChatOptions.class, options);
+            GeminiChatOptions opts = (GeminiChatOptions) options;
+            assertTrue(opts.isGoogleSearchRetrieval());
+        }
+
+        @Test
+        void testGetChatOptions_withWebSearchFlag_apiKeyPath() {
+            GeminiVertexConfiguration apiKeyConfig = new GeminiVertexConfiguration();
+            apiKeyConfig.setApiKey("test-api-key");
+            GeminiVertex apiKeyGemini = new GeminiVertex(apiKeyConfig);
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gemini-2.5-flash");
+            input.setMaxTokens(500);
+            input.setWebSearch(true);
+
+            var options = apiKeyGemini.getChatOptions(input);
+
+            assertNotNull(options);
+            assertInstanceOf(GeminiChatOptions.class, options);
+            GeminiChatOptions opts = (GeminiChatOptions) options;
+            assertTrue(opts.isGoogleSearchRetrieval());
+        }
+
+        @Test
+        void testGetChatOptions_withCodeExecution() {
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gemini-2.5-flash");
+            input.setMaxTokens(500);
+            input.setCodeInterpreter(true);
+
+            var options = geminiVertex.getChatOptions(input);
+
+            assertInstanceOf(GeminiChatOptions.class, options);
+            GeminiChatOptions opts = (GeminiChatOptions) options;
+            assertTrue(opts.isCodeExecution());
         }
 
         @Test
         void testGetChatModel_createsModel() {
-            var chatModel = geminiVertex.getChatModel();
-            assertNotNull(chatModel);
+            // getChatModel() creates a real GenAI Client which requires either an API key
+            // or GCP Application Default Credentials. Skip gracefully when neither is available.
+            try {
+                var chatModel = geminiVertex.getChatModel();
+                assertNotNull(chatModel);
+                assertInstanceOf(GeminiChatModel.class, chatModel);
+            } catch (Exception e) {
+                if (e.getMessage() != null && e.getMessage().contains("credentials")) {
+                    org.junit.jupiter.api.Assumptions.assumeTrue(
+                            false, "Skipping: no GCP credentials available");
+                }
+                throw e;
+            }
         }
     }
 

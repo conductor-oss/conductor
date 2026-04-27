@@ -12,47 +12,33 @@
  */
 package org.conductoross.conductor.ai.providers.openai;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.models.AudioGenRequest;
 import org.conductoross.conductor.ai.models.ChatCompletion;
 import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.models.LLMResponse;
 import org.conductoross.conductor.ai.models.Media;
+import org.conductoross.conductor.ai.models.ToolSpec;
 import org.conductoross.conductor.ai.models.VideoGenRequest;
+import org.conductoross.conductor.ai.providers.openai.api.OpenAIEmbeddingsApi;
+import org.conductoross.conductor.ai.providers.openai.api.OpenAIImageGenApi;
+import org.conductoross.conductor.ai.providers.openai.api.OpenAIResponsesApi;
+import org.conductoross.conductor.ai.providers.openai.api.OpenAIResponsesApi.Tool;
+import org.conductoross.conductor.ai.providers.openai.api.OpenAISpeechApi;
 import org.conductoross.conductor.ai.providers.openai.api.OpenAIVideoApi;
-import org.conductoross.conductor.ai.video.Video;
-import org.conductoross.conductor.ai.video.VideoGeneration;
 import org.conductoross.conductor.ai.video.VideoModel;
 import org.conductoross.conductor.ai.video.VideoOptions;
 import org.conductoross.conductor.ai.video.VideoPrompt;
 import org.conductoross.conductor.ai.video.VideoResponse;
-import org.springframework.ai.audio.tts.Speech;
-import org.springframework.ai.audio.tts.TextToSpeechPrompt;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.embedding.EmbeddingRequest;
-import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.image.ImageModel;
-import org.springframework.ai.openai.OpenAiAudioSpeechModel;
-import org.springframework.ai.openai.OpenAiAudioSpeechOptions;
-import org.springframework.ai.openai.api.OpenAiAudioApi;
-import org.springframework.ai.openaisdk.OpenAiSdkChatModel;
-import org.springframework.ai.openaisdk.OpenAiSdkChatOptions;
-import org.springframework.ai.openaisdk.OpenAiSdkEmbeddingModel;
-import org.springframework.ai.openaisdk.OpenAiSdkEmbeddingOptions;
-import org.springframework.ai.openaisdk.OpenAiSdkImageModel;
-import org.springframework.ai.openaisdk.OpenAiSdkImageOptions;
-import org.springframework.ai.tool.ToolCallback;
-import org.springframework.util.LinkedMultiValueMap;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -61,22 +47,38 @@ public class OpenAI implements AIModel {
     public static final String NAME = "openai";
     private final OpenAIConfiguration config;
 
-    // Cached instances
-    private final OpenAiSdkChatModel chatModel;
-    private final OpenAiSdkEmbeddingModel embeddingModel;
-    private final OpenAiSdkImageModel imageModel;
-    private final OpenAiAudioApi audioApi;
-    private final OpenAiAudioSpeechModel speechModel;
+    // OkHttp-based API clients
+    private final OpenAIResponsesApi responsesApi;
+    private final OpenAIEmbeddingsApi embeddingsApi;
+    private final OpenAIImageGenApi imageGenApi;
+    private final OpenAISpeechApi speechApi;
+    private final OpenAIVideoApi videoApi;
+
+    // Spring AI adapter
+    private final OpenAIResponsesChatModel chatModel;
+    private final OpenAIHttpImageModel imageModel;
     private final OpenAIVideoModel videoModel;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public OpenAI(OpenAIConfiguration config) {
         this.config = config;
-        this.chatModel = createChatModel();
-        this.embeddingModel = createEmbeddingModel();
-        this.imageModel = createImageModel();
-        this.audioApi = createAudioApi();
-        this.speechModel = new OpenAiAudioSpeechModel(this.audioApi);
-        this.videoModel = createVideoModel();
+        long timeoutSecs = config.getTimeout() != null ? config.getTimeout().getSeconds() : 600;
+        String baseUrl = config.getBaseURL();
+
+        this.responsesApi = new OpenAIResponsesApi(config.getApiKey(), baseUrl, false, timeoutSecs);
+        this.embeddingsApi =
+                new OpenAIEmbeddingsApi(config.getApiKey(), baseUrl, false, timeoutSecs);
+        this.imageGenApi = new OpenAIImageGenApi(config.getApiKey(), baseUrl, false, timeoutSecs);
+
+        // Audio and Video APIs need base URL without /v1 suffix
+        String baseUrlNoV1 = stripV1(baseUrl);
+        this.speechApi = new OpenAISpeechApi(config.getApiKey(), baseUrl, false, timeoutSecs);
+        this.videoApi = new OpenAIVideoApi(config.getApiKey(), baseUrlNoV1);
+
+        this.chatModel = new OpenAIResponsesChatModel(responsesApi);
+        this.imageModel = new OpenAIHttpImageModel(imageGenApi);
+        this.videoModel = new OpenAIVideoModel(videoApi);
     }
 
     @Override
@@ -86,79 +88,46 @@ public class OpenAI implements AIModel {
 
     @Override
     public List<Float> generateEmbeddings(EmbeddingGenRequest embeddingGenRequest) {
-        OpenAiSdkEmbeddingOptions options =
-                OpenAiSdkEmbeddingOptions.builder()
-                        .model(embeddingGenRequest.getModel())
-                        .dimensions(embeddingGenRequest.getDimensions())
-                        .build();
-        EmbeddingRequest request =
-                new EmbeddingRequest(List.of(embeddingGenRequest.getText()), options);
-        EmbeddingResponse response = embeddingModel.call(request);
-        return List.of(ArrayUtils.toObject(response.getResult().getOutput()));
+        try {
+            var request =
+                    new OpenAIEmbeddingsApi.EmbeddingRequest(
+                            embeddingGenRequest.getModel(),
+                            embeddingGenRequest.getText(),
+                            embeddingGenRequest.getDimensions());
+            var result = embeddingsApi.createEmbeddings(request);
+            if (result.data() != null && !result.data().isEmpty()) {
+                return result.data().getFirst().embedding();
+            }
+            return List.of();
+        } catch (IOException e) {
+            throw new RuntimeException("Embeddings API call failed: " + e.getMessage(), e);
+        }
     }
 
     @Override
     public ChatOptions getChatOptions(ChatCompletion input) {
-        List<ToolCallback> toolCallbacks = getToolCallback(input);
-        Set<String> toolNames =
-                toolCallbacks.stream()
-                        .map(tc -> tc.getToolDefinition().name())
-                        .collect(Collectors.toSet());
+        List<Tool> tools = convertTools(input);
 
-        List<String> outputModalities = null;
-        OpenAiSdkChatOptions.AudioParameters audioParameters = null;
-        if (input.getOutputMimeType() != null && input.getOutputMimeType().startsWith("audio/")) {
-            outputModalities = new ArrayList<>();
-            outputModalities.add("text");
-            outputModalities.add("audio");
-            OpenAiSdkChatOptions.AudioParameters.AudioResponseFormat responseFormat =
-                    OpenAiSdkChatOptions.AudioParameters.AudioResponseFormat.MP3;
-            OpenAiSdkChatOptions.AudioParameters.Voice voice =
-                    OpenAiSdkChatOptions.AudioParameters.Voice.ALLOY;
-            try {
-                responseFormat =
-                        OpenAiSdkChatOptions.AudioParameters.AudioResponseFormat.valueOf(
-                                input.getOutputMimeType().replace("audio/", ""));
-            } catch (Exception ignored) {
-            }
-
-            try {
-                voice = OpenAiSdkChatOptions.AudioParameters.Voice.valueOf(input.getVoice());
-            } catch (Exception ignored) {
-            }
-
-            audioParameters = new OpenAiSdkChatOptions.AudioParameters(voice, responseFormat);
-        }
-
-        OpenAiSdkChatOptions.Builder builder =
-                OpenAiSdkChatOptions.builder()
+        OpenAIResponsesChatOptions.OpenAIResponsesChatOptionsBuilder builder =
+                OpenAIResponsesChatOptions.builder()
                         .model(input.getModel())
                         .topP(input.getTopP())
-                        .stop(input.getStopWords())
-                        .outputModalities(outputModalities)
-                        .outputAudio(audioParameters)
                         .frequencyPenalty(input.getFrequencyPenalty())
-                        .maxCompletionTokens(input.getMaxTokens())
-                        .toolCallbacks(toolCallbacks)
-                        .toolNames(toolNames)
-                        .model(input.getModel())
-                        .internalToolExecutionEnabled(false)
+                        .presencePenalty(input.getPresencePenalty())
+                        .maxTokens(input.getMaxTokens())
+                        .stopSequences(input.getStopWords())
+                        .previousResponseId(input.getPreviousResponseId())
                         .reasoningEffort(input.getReasoningEffort())
-                        .presencePenalty(input.getPresencePenalty());
+                        .jsonOutput(input.isJsonOutput())
+                        .responsesApiTools(tools.isEmpty() ? null : tools);
 
-        if (input.isJsonOutput()) {
-            builder.responseFormat(
-                    OpenAiSdkChatModel.ResponseFormat.builder()
-                            .type(OpenAiSdkChatModel.ResponseFormat.Type.JSON_OBJECT)
-                            .build());
-        }
-
-        // remove temperature, stop and topP for reasoning models
+        // Reasoning models don't support temperature/topP/stop
         if (isReasoningModel(input.getModel())) {
             builder.temperature(null);
             builder.topP(null);
-            builder.stop(null);
+            builder.stopSequences(null);
         }
+
         return builder.build();
     }
 
@@ -174,35 +143,27 @@ public class OpenAI implements AIModel {
 
     @Override
     public LLMResponse generateAudio(AudioGenRequest request) {
-        var options = getSpeechOptions(request);
-
-        var prompt = new TextToSpeechPrompt(request.getText(), options);
-        var response = speechModel.call(prompt);
-        List<Media> media = new ArrayList<>();
-        for (Speech result : response.getResults()) {
-            byte[] data = result.getOutput();
-            media.add(Media.builder().data(data).mimeType("audio/*").build());
-        }
-        return LLMResponse.builder().media(media).build();
-    }
-
-    public OpenAiAudioSpeechOptions getSpeechOptions(AudioGenRequest request) {
-        OpenAiAudioApi.SpeechRequest.AudioResponseFormat responseFormat =
-                OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3;
         try {
-            if (request.getResponseFormat() != null) {
-                responseFormat =
-                        OpenAiAudioApi.SpeechRequest.AudioResponseFormat.valueOf(
-                                request.getResponseFormat().toUpperCase());
-            }
-        } catch (IllegalArgumentException ignored) {
+            String responseFormat =
+                    request.getResponseFormat() != null
+                            ? request.getResponseFormat().toLowerCase()
+                            : "mp3";
+
+            var speechRequest =
+                    new OpenAISpeechApi.SpeechRequest(
+                            request.getModel(),
+                            request.getText(),
+                            request.getVoice(),
+                            responseFormat,
+                            request.getSpeed());
+            byte[] audioData = speechApi.createSpeech(speechRequest);
+
+            List<Media> media = new ArrayList<>();
+            media.add(Media.builder().data(audioData).mimeType("audio/*").build());
+            return LLMResponse.builder().media(media).build();
+        } catch (IOException e) {
+            throw new RuntimeException("Speech API call failed: " + e.getMessage(), e);
         }
-        return OpenAiAudioSpeechOptions.builder()
-                .responseFormat(responseFormat)
-                .speed(request.getSpeed())
-                .model(request.getModel())
-                .voice(request.getVoice())
-                .build();
     }
 
     @Override
@@ -231,16 +192,13 @@ public class OpenAI implements AIModel {
 
         if ("COMPLETED".equals(status)) {
             List<Media> mediaList = new ArrayList<>();
-            for (VideoGeneration gen : response.getResults()) {
-                Video video = gen.getOutput();
-                // Use the mime type from the Video if set, default to video/mp4
+            for (var gen : response.getResults()) {
+                var video = gen.getOutput();
                 String mimeType = video.getMimeType() != null ? video.getMimeType() : "video/mp4";
 
-                // Prefer direct byte data to avoid redundant base64 decode
                 if (video.getData() != null) {
                     mediaList.add(Media.builder().data(video.getData()).mimeType(mimeType).build());
                 } else if (video.getB64Json() != null) {
-                    // Fallback to base64 decoding if data field not populated
                     mediaList.add(
                             Media.builder()
                                     .data(java.util.Base64.getDecoder().decode(video.getB64Json()))
@@ -254,78 +212,53 @@ public class OpenAI implements AIModel {
         return builder.build();
     }
 
-    // Initialization helpers
+    // -- Helpers --
 
-    private OpenAiSdkEmbeddingModel createEmbeddingModel() {
-        return new OpenAiSdkEmbeddingModel(
-                OpenAiSdkEmbeddingOptions.builder()
-                        .apiKey(config.getApiKey())
-                        .baseUrl(config.getBaseURL())
-                        .organizationId(config.getOrganizationId())
-                        .timeout(config.getTimeout())
-                        .build());
-    }
+    private List<Tool> convertTools(ChatCompletion input) {
+        List<Tool> tools = new ArrayList<>();
 
-    private OpenAiSdkChatModel createChatModel() {
-        OpenAiSdkChatOptions opts =
-                OpenAiSdkChatOptions.builder()
-                        .temperature(null)
-                        .topP(null)
-                        .stop(null)
-                        .organizationId(config.getOrganizationId())
-                        .apiKey(config.getApiKey())
-                        .baseUrl(config.getBaseURL())
-                        .timeout(config.getTimeout())
-                        .customHeaders(Map.of())
-                        .build();
-        return new OpenAiSdkChatModel(opts);
-    }
-
-    private OpenAiSdkImageModel createImageModel() {
-        return new OpenAiSdkImageModel(
-                OpenAiSdkImageOptions.builder()
-                        .organizationId(config.getOrganizationId())
-                        .apiKey(config.getApiKey())
-                        .baseUrl(config.getBaseURL())
-                        .build());
-    }
-
-    private OpenAiAudioApi createAudioApi() {
-        LinkedMultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
-        if (StringUtils.isNotBlank(config.getOrganizationId())) {
-            headers.put("OpenAI-Organization", List.of(config.getOrganizationId()));
+        // OpenAI Responses API built-in tools
+        if (input.isWebSearch()) {
+            tools.add(Tool.webSearch());
+        }
+        if (input.isCodeInterpreter()) {
+            tools.add(Tool.codeInterpreter());
+        }
+        if (input.getFileSearchVectorStoreIds() != null
+                && !input.getFileSearchVectorStoreIds().isEmpty()) {
+            tools.add(Tool.fileSearch(input.getFileSearchVectorStoreIds()));
         }
 
-        // OpenAiAudioApi appends /v1 automatically, so we must remove it if present to
-        // avoid 404
-        String baseURL = config.getBaseURL();
-        if (baseURL != null && baseURL.endsWith("/v1")) {
-            baseURL = baseURL.substring(0, baseURL.length() - 3);
+        // Convert Conductor ToolSpecs to Responses API function tools
+        if (input.getTools() != null) {
+            for (ToolSpec toolSpec : input.getTools()) {
+                try {
+                    Object params = toolSpec.getInputSchema();
+                    tools.add(Tool.function(toolSpec.getName(), toolSpec.getDescription(), params));
+                } catch (Exception e) {
+                    log.warn("Failed to convert tool spec: {}", toolSpec.getName(), e);
+                }
+            }
         }
 
-        return OpenAiAudioApi.builder()
-                .apiKey(config.getApiKey())
-                .baseUrl(baseURL)
-                .headers(headers)
-                .build();
+        return tools;
     }
 
-    private OpenAIVideoModel createVideoModel() {
-        // OpenAIVideoApi manages its own /v1/ path, so strip /v1 from base URL
-        String baseUrl = config.getBaseURL();
-        if (baseUrl != null && baseUrl.endsWith("/v1")) {
-            baseUrl = baseUrl.substring(0, baseUrl.length() - 3);
-        }
-        OpenAIVideoApi videoApi = new OpenAIVideoApi(config.getApiKey(), baseUrl);
-        return new OpenAIVideoModel(videoApi);
-    }
-
-    // Private methods
     private boolean isReasoningModel(String modelName) {
         if (modelName == null) {
             return false;
         }
         String model = modelName.toLowerCase();
-        return model.startsWith("o1") || model.startsWith("o3") || model.startsWith("gpt-5");
+        return model.startsWith("o1")
+                || model.startsWith("o3")
+                || model.startsWith("o4")
+                || model.startsWith("gpt-5");
+    }
+
+    private static String stripV1(String baseUrl) {
+        if (baseUrl != null && baseUrl.endsWith("/v1")) {
+            return baseUrl.substring(0, baseUrl.length() - 3);
+        }
+        return baseUrl;
     }
 }
