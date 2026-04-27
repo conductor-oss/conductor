@@ -401,16 +401,14 @@ public class AIModelIntegrationTest {
             turn1Input.setTemperature(0.0);
 
             var turn1Options = openAI.getChatOptions(turn1Input);
-            Prompt turn1Prompt =
-                    new Prompt("My name is Conductor. Remember that.", turn1Options);
+            Prompt turn1Prompt = new Prompt("My name is Conductor. Remember that.", turn1Options);
 
             ChatResponse turn1Response = chatModel.call(turn1Prompt);
             assertNotNull(turn1Response);
             assertNotNull(turn1Response.getResult());
 
             // Extract response_id from metadata
-            String responseId =
-                    (String) turn1Response.getMetadata().get("response_id");
+            String responseId = (String) turn1Response.getMetadata().get("response_id");
             assertNotNull(responseId, "Expected response_id in metadata for chaining");
             assertFalse(responseId.isBlank(), "response_id must not be blank");
 
@@ -435,8 +433,7 @@ public class AIModelIntegrationTest {
                     "Expected model to recall 'Conductor' from previous turn, got: " + text);
 
             // Second response should also have its own response_id
-            String turn2ResponseId =
-                    (String) turn2Response.getMetadata().get("response_id");
+            String turn2ResponseId = (String) turn2Response.getMetadata().get("response_id");
             assertNotNull(turn2ResponseId, "Expected response_id in turn 2 metadata");
         }
 

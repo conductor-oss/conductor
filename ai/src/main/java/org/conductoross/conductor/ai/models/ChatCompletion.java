@@ -77,9 +77,7 @@ public class ChatCompletion extends LLMWorkerInput {
                     "Token budget for extended thinking/reasoning before the model generates its final response. Supported by Anthropic and Google Gemini.")
     private int thinkingTokenLimit;
 
-    @Documented(
-            usage =
-                    "Reasoning effort level: low, medium, or high. Supported by OpenAI models.")
+    @Documented(usage = "Reasoning effort level: low, medium, or high. Supported by OpenAI models.")
     private String reasoningEffort;
 
     @Documented(usage = "Location where the results should be stored.  Useful for media generation")

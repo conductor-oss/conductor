@@ -35,11 +35,9 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class ExampleWorkflowValidationTest {
 
-    private static final ObjectMapper objectMapper =
-            new ObjectMapperProvider().getObjectMapper();
+    private static final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
 
-    private static final Path EXAMPLES_DIR =
-            Paths.get(System.getProperty("user.dir"), "examples");
+    private static final Path EXAMPLES_DIR = Paths.get(System.getProperty("user.dir"), "examples");
 
     @Test
     void allExampleJsonFilesDeserializeToWorkflowDef() throws IOException {
@@ -73,8 +71,7 @@ class ExampleWorkflowValidationTest {
                 String taskCtx = fileName + " task[" + i + "]";
                 assertNotNull(task.getName(), taskCtx + " must have a name");
                 assertNotNull(
-                        task.getTaskReferenceName(),
-                        taskCtx + " must have a taskReferenceName");
+                        task.getTaskReferenceName(), taskCtx + " must have a taskReferenceName");
                 assertNotNull(task.getType(), taskCtx + " must have a type");
             }
         }
