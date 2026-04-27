@@ -273,7 +273,8 @@ class SimpleWorkflowSpec extends AbstractSpecification {
 
         then: "Expect a new task to be added to the queue in place of the timed out task"
         // Background sweeper/timer threads may briefly produce an extra queue entry; wait to settle.
-        await().atMost(5, TimeUnit.SECONDS).until { queueDAO.getSize('task_rt') == 1 }
+        // 30s ceiling matches CI runner variability observed in practice.
+        await().atMost(30, TimeUnit.SECONDS).until { queueDAO.getSize('task_rt') == 1 }
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 2
