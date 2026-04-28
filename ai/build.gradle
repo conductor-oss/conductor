@@ -16,19 +16,12 @@ dependencies {
     api "org.springframework.ai:spring-ai-commons:${revSpringAI}"
     api "org.springframework.ai:spring-ai-model:${revSpringAI}"
     api "org.springframework.ai:spring-ai-client-chat:${revSpringAI}"
-    api "org.springframework.ai:spring-ai-openai:${revSpringAI}"
-    api "org.springframework.ai:spring-ai-openai-sdk:${revSpringAI}"
-    api "org.springframework.ai:spring-ai-anthropic:${revSpringAI}"
     api "org.springframework.ai:spring-ai-mistral-ai:${revSpringAI}"
     api "org.springframework.ai:spring-ai-huggingface:${revSpringAI}"
-    api "org.springframework.ai:spring-ai-coherence-store:${revSpringAI}"
-    api "org.springframework.ai:spring-ai-vertex-ai-gemini:${revSpringAI}"
-    api "org.springframework.ai:spring-ai-google-genai:${revSpringAI}"
     api "org.springframework.ai:spring-ai-bedrock-converse:${revSpringAI}"
-    api "org.springframework.ai:spring-ai-vertex-ai-embedding:${revSpringAI}"
-    api "org.springframework.ai:spring-ai-azure-openai:${revSpringAI}"
     api "org.springframework.ai:spring-ai-ollama:${revSpringAI}"
-    api "com.google.genai:google-genai:1.18.0"
+
+    api "com.google.genai:google-genai:1.28.0"
     api "com.networknt:json-schema-validator:${revJSonSchemaValidator}"
 
     api("io.modelcontextprotocol.sdk:mcp-core:${revMCP}")
