@@ -45,9 +45,21 @@ dependencies {
     testImplementation "org.glassfish.jersey.core:jersey-common:${revJerseyCommon}"
     testImplementation "org.awaitility:awaitility:${revAwaitility}"
     testImplementation "io.projectreactor.netty:reactor-netty-http:${revReactor}"
+    testImplementation "io.projectreactor.netty:reactor-netty-core:${revReactor}"
 
     // S3 and AWS dependencies for LocalStack testing
     testImplementation project(':conductor-awss3-storage')
+    testImplementation project(':conductor-azureblob-storage')
+    testImplementation("com.azure:azure-storage-blob:${revAzureStorageBlobSdk}") {
+        // Use the JDK HTTP client provider for tests; default azure-core-http-netty needs
+        // a netty version that conflicts with the one already on the test-harness classpath.
+        exclude group: 'com.azure', module: 'azure-core-http-netty'
+    }
+    testImplementation 'com.azure:azure-core-http-jdk-httpclient:1.0.3'
+    testImplementation 'com.google.cloud:google-cloud-storage:2.36.1'
+    testImplementation 'com.google.http-client:google-http-client:1.44.1'
+    testImplementation project(':conductor-gcs-storage')
+    testImplementation project(':conductor-local-file-storage')
     testImplementation project(':conductor-awssqs-event-queue')
     testImplementation project(':conductor-workflow-event-listener')
     testImplementation "software.amazon.awssdk:s3:${revAwsSdk}"
@@ -57,6 +69,25 @@ dependencies {
 }
 
 tasks.withType(Test)  {
+    maxParallelForks = 1
+}
+
+// File-storage backend integration tests (S3/Azure/GCS) require Docker. Exclude
+// from the default :test task and expose them under a dedicated task instead.
+tasks.named('test') {
+    useJUnitPlatform {
+        excludeTags 'file-storage-integration'
+    }
+}
+
+task fileStorageIntegrationTest(type: Test) {
+    description = 'Integration tests for S3/Azure/GCS file-storage backends (requires Docker)'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'file-storage-integration'
+    }
     maxParallelForks = 1
 }
 
