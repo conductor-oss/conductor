@@ -364,7 +364,7 @@ export const WorkflowPropertiesForm: FunctionComponent<
                             value: workflowStatusListenerEnabledValue,
                           }) => (
                             <FormControlLabel
-                              checked={workflowStatusListenerEnabledValue}
+                              checked={!!workflowStatusListenerEnabledValue}
                               control={
                                 <Switch
                                   color="primary"
@@ -461,7 +461,7 @@ export const WorkflowPropertiesForm: FunctionComponent<
                         <ActorToHandlerValue actor={restartableActors}>
                           {({ onChange, value: restartable }) => (
                             <FormControlLabel
-                              checked={restartable}
+                              checked={!!restartable}
                               control={
                                 <Switch
                                   color="primary"
