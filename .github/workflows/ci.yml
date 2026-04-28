@@ -282,7 +282,7 @@ jobs:
                   if tc.find("skipped") is not None:
                       status, totals["skipped"] = "⏭ skip", totals["skipped"] + 1
                   elif tc.find("failure") is not None or tc.find("error") is not None:
-                      node = tc.find("failure") or tc.find("error")
+                      node = tc.find("failure") if tc.find("failure") is not None else tc.find("error")
                       msg = (node.get("message") or "")[:120]
                       status, totals["failed"] = f"❌ `{msg}`", totals["failed"] + 1
                   else:
