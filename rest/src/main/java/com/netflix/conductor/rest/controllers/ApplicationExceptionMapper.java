@@ -15,6 +15,7 @@ package com.netflix.conductor.rest.controllers;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.conductoross.conductor.core.exception.FileStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.netflix.conductor.common.validation.ErrorResponse;
+import com.netflix.conductor.core.exception.AccessForbiddenException;
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TransientException;
@@ -51,6 +53,8 @@ public class ApplicationExceptionMapper {
         EXCEPTION_STATUS_MAP.put(IllegalArgumentException.class, HttpStatus.BAD_REQUEST);
         EXCEPTION_STATUS_MAP.put(InvalidFormatException.class, HttpStatus.INTERNAL_SERVER_ERROR);
         EXCEPTION_STATUS_MAP.put(NoResourceFoundException.class, HttpStatus.NOT_FOUND);
+        EXCEPTION_STATUS_MAP.put(FileStorageException.class, HttpStatus.PAYLOAD_TOO_LARGE);
+        EXCEPTION_STATUS_MAP.put(AccessForbiddenException.class, HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler(Throwable.class)
