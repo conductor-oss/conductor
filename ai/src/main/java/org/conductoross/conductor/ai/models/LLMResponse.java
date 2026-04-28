@@ -35,6 +35,7 @@ public class LLMResponse {
     private List<ToolCall> toolCalls;
     private WorkflowDef workflow;
     private String jobId;
+    private String responseId;
 
     public boolean hasToolCalls() {
         return toolCalls != null && !toolCalls.isEmpty();

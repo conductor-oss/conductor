@@ -242,4 +242,4 @@ Every task type here — `LIST_MCP_TOOLS`, `LLM_CHAT_COMPLETE`, `CALL_MCP_TOOL`,
 - **[Build Your First AI Agent](first-ai-agent.md)** — Step-by-step tutorial using MCP.
 - **[Dynamic Workflows](dynamic-workflows.md)** — Agents that generate their own execution plans.
 - **[Human-in-the-Loop](human-in-the-loop.md)** — Approval patterns for MCP tool calls.
-- **[LLM Orchestration](llm-orchestration.md)** — 14+ native LLM providers, vector databases, content generation.
+- **[LLM Orchestration](llm-orchestration.md)** — 12 native LLM providers, vector databases, content generation.

@@ -80,6 +80,13 @@ Multi-turn conversational AI with support for tool calling.
 | `topP` | Number | ❌ | Nucleus sampling parameter |
 | `stopSequences` | Array | ❌ | Sequences that stop generation |
 | `tools` | Array | ❌ | Tool definitions for function calling |
+| `webSearch` | Boolean | ❌ | Enable provider-native web search (OpenAI, Anthropic, Gemini) |
+| `codeInterpreter` | Boolean | ❌ | Enable sandboxed code execution (OpenAI, Anthropic, Gemini) |
+| `fileSearchVectorStoreIds` | Array | ❌ | Vector store IDs for OpenAI file search |
+| `thinkingTokenLimit` | Integer | ❌ | Token budget for extended thinking (Anthropic, Gemini) |
+| `reasoningEffort` | String | ❌ | Reasoning effort: `low`, `medium`, `high` (OpenAI) |
+| `googleSearchRetrieval` | Boolean | ❌ | Enable Google Search grounding (Gemini only) |
+| `previousResponseId` | String | ❌ | Chain multi-turn conversations without resending history (OpenAI/Azure) |
 
 **Outputs:**
 

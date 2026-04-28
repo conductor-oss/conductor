@@ -430,11 +430,20 @@ public class LLMHelper {
             result = responses.getFirst();
         }
         finishReason = finishReasonMap.getOrDefault(finishReason, finishReason).toUpperCase();
+
+        // Extract response_id if present (set by OpenAI Responses API for chaining)
+        String responseId = null;
+        Object respIdObj = chatResponse.getMetadata().get("response_id");
+        if (respIdObj instanceof String rid) {
+            responseId = rid;
+        }
+
         return LLMResponse.builder()
                 .result(result)
                 .media(media)
                 .toolCalls(tools)
                 .finishReason(finishReason)
+                .responseId(responseId)
                 .completionTokens(chatResponse.getMetadata().getUsage().getCompletionTokens())
                 .promptTokens(chatResponse.getMetadata().getUsage().getPromptTokens())
                 .tokenUsed(chatResponse.getMetadata().getUsage().getTotalTokens())
