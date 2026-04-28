@@ -3,7 +3,12 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_FILE="$SCRIPT_DIR/../docker/docker-compose-es8.yaml"
+STORAGE_DIR="/tmp/conductor-file-storage-e2e"
 export SERVER_ROOT_URI="${SERVER_ROOT_URI:-http://localhost:8000}"
+
+echo "Preparing shared storage dir at $STORAGE_DIR ..."
+rm -rf "$STORAGE_DIR"
+mkdir -p "$STORAGE_DIR"
 
 echo "Starting Conductor (Redis + Elasticsearch 8)..."
 docker compose -f "$COMPOSE_FILE" build conductor-server
