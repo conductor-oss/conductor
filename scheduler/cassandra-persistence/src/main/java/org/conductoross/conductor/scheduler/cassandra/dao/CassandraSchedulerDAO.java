@@ -313,15 +313,24 @@ public class CassandraSchedulerDAO extends CassandraBaseDAO implements Scheduler
     public List<WorkflowScheduleModel> findAllSchedules(String orgId, String workflowName) {
         Monitors.recordDaoRequests(DAO_NAME, "findAllSchedules", "n/a", "n/a");
         List<Row> lookupRows = session.execute(selectSchedByWorkflowStmt.bind(workflowName)).all();
-        List<WorkflowScheduleModel> result = new ArrayList<>();
-        for (Row lookupRow : lookupRows) {
-            String schedulerName = lookupRow.getString("scheduler_name");
-            Row schedRow = session.execute(selectScheduleByNameStmt.bind(schedulerName)).one();
-            if (schedRow != null) {
-                result.add(fromJson(schedRow.getString("json_data"), WorkflowScheduleModel.class));
-            }
+        if (lookupRows.isEmpty()) {
+            return new ArrayList<>();
         }
-        return result;
+        // Batch-fetch schedules using IN clause instead of N+1 individual queries
+        List<String> schedulerNames =
+                lookupRows.stream()
+                        .map(row -> row.getString("scheduler_name"))
+                        .collect(Collectors.toList());
+        String cql =
+                "SELECT json_data FROM "
+                        + properties.getKeyspace()
+                        + "."
+                        + TABLE_SCHEDULES
+                        + " WHERE scheduler_name IN ?";
+        ResultSet rs = session.execute(cql, schedulerNames);
+        return rs.all().stream()
+                .map(row -> fromJson(row.getString("json_data"), WorkflowScheduleModel.class))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -366,21 +375,36 @@ public class CassandraSchedulerDAO extends CassandraBaseDAO implements Scheduler
 
         // Delete all executions for this schedule using the lookup table
         List<Row> execRows = session.execute(selectExecByScheduleStmt.bind(name)).all();
-        for (Row row : execRows) {
-            String execId = row.getString("execution_id");
-            // Read execution to get its state for the state lookup cleanup
-            Row execRow = session.execute(selectExecutionByIdStmt.bind(execId)).one();
-            if (execRow != null) {
-                WorkflowScheduleExecutionModel exec =
-                        fromJson(
-                                execRow.getString("json_data"),
-                                WorkflowScheduleExecutionModel.class);
-                if (exec.getState() != null) {
-                    session.execute(deleteExecByStateStmt.bind(exec.getState().name(), execId));
-                }
+        if (!execRows.isEmpty()) {
+            // Batch-fetch execution states using IN clause (avoids N+1 reads)
+            List<String> execIds =
+                    execRows.stream()
+                            .map(row -> row.getString("execution_id"))
+                            .collect(Collectors.toList());
+            String cql =
+                    "SELECT execution_id, state FROM "
+                            + properties.getKeyspace()
+                            + "."
+                            + TABLE_EXECUTIONS
+                            + " WHERE execution_id IN ?";
+            Map<String, String> statesByExecId = new HashMap<>();
+            for (Row r : session.execute(cql, execIds)) {
+                statesByExecId.put(
+                        r.getString("execution_id"),
+                        r.isNull("state") ? null : r.getString("state"));
             }
-            session.execute(deleteExecutionStmt.bind(execId));
-            session.execute(deleteExecByScheduleStmt.bind(name, execId));
+
+            // Batch all deletes (state lookup + execution + schedule lookup)
+            BatchStatement batch = new BatchStatement(BatchStatement.Type.UNLOGGED);
+            for (String execId : execIds) {
+                String state = statesByExecId.get(execId);
+                if (state != null) {
+                    batch.add(deleteExecByStateStmt.bind(state, execId));
+                }
+                batch.add(deleteExecutionStmt.bind(execId));
+                batch.add(deleteExecByScheduleStmt.bind(name, execId));
+            }
+            session.execute(batch);
         }
         session.execute(deleteScheduleStmt.bind(name));
     }

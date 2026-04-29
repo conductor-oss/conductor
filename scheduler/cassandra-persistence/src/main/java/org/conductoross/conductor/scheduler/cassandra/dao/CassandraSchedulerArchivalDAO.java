@@ -48,6 +48,14 @@ public class CassandraSchedulerArchivalDAO extends CassandraBaseDAO
     private static final String TABLE_ARCHIVAL = "scheduler_archival_executions";
     private static final String TABLE_ARCHIVAL_BY_ID = "scheduler_archival_by_id";
 
+    // Max rows per UNLOGGED batch during cleanup. Each row produces 2 mutations
+    // (archival + by_id), so 100 rows = 200 mutations — well within Cassandra's
+    // default batch_size_warn_threshold_in_kb (128 KB).
+    private static final int CLEANUP_BATCH_CHUNK_SIZE = 100;
+
+    // Safety cap on full-table scan in the free-text search fallback path
+    private static final int FREE_TEXT_SCAN_LIMIT = 10_000;
+
     // objectMapper is private in CassandraBaseDAO; keep a local reference for serialization
     private final ObjectMapper objectMapper;
 
@@ -217,13 +225,15 @@ public class CassandraSchedulerArchivalDAO extends CassandraBaseDAO
             return new SearchResult<>(totalHits, ids);
         }
 
-        // Free text search: scan the by-id table and filter in memory
+        // Free text search: scan the by-id table and filter in memory (capped)
         List<Row> allRows =
                 session.execute(
                                 "SELECT * FROM "
                                         + properties.getKeyspace()
                                         + "."
-                                        + TABLE_ARCHIVAL_BY_ID)
+                                        + TABLE_ARCHIVAL_BY_ID
+                                        + " LIMIT "
+                                        + FREE_TEXT_SCAN_LIMIT)
                         .all();
         List<Row> filtered = allRows;
         if (freeText != null && !freeText.isEmpty() && !"*".equals(freeText)) {
@@ -320,7 +330,7 @@ public class CassandraSchedulerArchivalDAO extends CassandraBaseDAO
 
             // Delete rows beyond the keep limit, chunked to avoid exceeding batch size thresholds
             List<Row> toDelete = rows.subList(archivalMaxRecords, rows.size());
-            int chunkSize = 250;
+            int chunkSize = CLEANUP_BATCH_CHUNK_SIZE;
             for (int i = 0; i < toDelete.size(); i += chunkSize) {
                 int end = Math.min(i + chunkSize, toDelete.size());
                 BatchStatement batch = new BatchStatement(BatchStatement.Type.UNLOGGED);

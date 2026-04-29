@@ -25,6 +25,6 @@ public class SchedulerConditions extends AllNestedConditions {
     @ConditionalOnProperty(
             name = "conductor.scheduler.enabled",
             havingValue = "true",
-            matchIfMissing = true)
+            matchIfMissing = false)
     static class SchedulerEnabled {}
 }

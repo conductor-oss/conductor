@@ -222,8 +222,13 @@ public class PostgresSchedulerDAO extends PostgresBaseDAO implements SchedulerDA
             params.add(workflowName);
         }
         if (scheduleName != null && !scheduleName.isEmpty()) {
-            where.append(" AND scheduler_name ILIKE ?");
-            params.add("%" + scheduleName + "%");
+            where.append(" AND scheduler_name ILIKE ? ESCAPE '\\'");
+            String escaped =
+                    scheduleName
+                            .replace("\\", "\\\\")
+                            .replace("%", "\\%")
+                            .replace("_", "\\_");
+            params.add("%" + escaped + "%");
         }
         if (paused != null) {
             where.append(" AND (json_data::jsonb->>'paused')::boolean = ?");

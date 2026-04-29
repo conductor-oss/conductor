@@ -71,11 +71,7 @@ public class MySQLSchedulerDAO extends MySQLBaseDAO implements SchedulerDAO {
                                             ? schedule.getStartWorkflowRequest().getName()
                                             : null)
                             .addParameter(toJson(schedule));
-                    if (schedule.getNextRunTime() != null) {
-                        q.addParameter(schedule.getNextRunTime().longValue());
-                    } else {
-                        q.addParameter((String) null);
-                    }
+                    q.addParameter(schedule.getNextRunTime());
                     q.executeUpdate();
                 });
     }
@@ -237,10 +233,15 @@ public class MySQLSchedulerDAO extends MySQLBaseDAO implements SchedulerDAO {
             countParams.add(workflowName);
         }
         if (scheduleName != null && !scheduleName.isEmpty()) {
-            sql.append(" AND scheduler_name LIKE ?");
-            countSql.append(" AND scheduler_name LIKE ?");
-            params.add("%" + scheduleName + "%");
-            countParams.add("%" + scheduleName + "%");
+            sql.append(" AND scheduler_name LIKE ? ESCAPE '\\\\'");
+            countSql.append(" AND scheduler_name LIKE ? ESCAPE '\\\\'");
+            String escaped =
+                    scheduleName
+                            .replace("\\", "\\\\")
+                            .replace("%", "\\%")
+                            .replace("_", "\\_");
+            params.add("%" + escaped + "%");
+            countParams.add("%" + escaped + "%");
         }
         if (paused != null) {
             sql.append(" AND JSON_EXTRACT(json_data, '$.paused') = ?");
