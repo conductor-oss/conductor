@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.scheduler.mysql.dao;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,18 +21,19 @@ import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
-import org.conductoross.conductor.scheduler.dao.SchedulerDAO;
-import org.conductoross.conductor.scheduler.model.WorkflowSchedule;
-import org.conductoross.conductor.scheduler.model.WorkflowScheduleExecution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
+import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.core.exception.NonTransientException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.orkes.conductor.dao.scheduler.SchedulerDAO;
+import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
+import io.orkes.conductor.scheduler.model.WorkflowScheduleModel;
 
 /**
  * MySQL implementation of {@link SchedulerDAO}.
@@ -55,7 +57,7 @@ public class MySQLSchedulerDAO implements SchedulerDAO {
     }
 
     @Override
-    public void updateSchedule(WorkflowSchedule schedule) {
+    public void updateSchedule(WorkflowScheduleModel schedule) {
         String sql =
                 "INSERT INTO scheduler (scheduler_name, workflow_name, json_data, next_run_time) "
                         + "VALUES (?, ?, ?, ?) "
@@ -74,47 +76,48 @@ public class MySQLSchedulerDAO implements SchedulerDAO {
     }
 
     @Override
-    public WorkflowSchedule findScheduleByName(String name) {
+    public WorkflowScheduleModel findScheduleByName(String orgId, String name) {
         String sql = "SELECT json_data FROM scheduler WHERE scheduler_name = ?";
-        List<WorkflowSchedule> results = jdbc.query(sql, scheduleRowMapper(), name);
+        List<WorkflowScheduleModel> results = jdbc.query(sql, scheduleRowMapper(), name);
         return results.isEmpty() ? null : results.get(0);
     }
 
     @Override
-    public List<WorkflowSchedule> getAllSchedules() {
+    public List<WorkflowScheduleModel> getAllSchedules(String orgId) {
         return jdbc.query("SELECT json_data FROM scheduler", scheduleRowMapper());
     }
 
     @Override
-    public List<WorkflowSchedule> findAllSchedules(String workflowName) {
+    public List<WorkflowScheduleModel> findAllSchedules(String orgId, String workflowName) {
         String sql = "SELECT json_data FROM scheduler WHERE workflow_name = ?";
         return jdbc.query(sql, scheduleRowMapper(), workflowName);
     }
 
     @Override
-    public Map<String, WorkflowSchedule> findAllByNames(Set<String> names) {
+    public Map<String, WorkflowScheduleModel> findAllByNames(String orgId, Set<String> names) {
         if (names == null || names.isEmpty()) {
             return new HashMap<>();
         }
         String placeholders = names.stream().map(n -> "?").collect(Collectors.joining(","));
         String sql =
                 "SELECT json_data FROM scheduler WHERE scheduler_name IN (" + placeholders + ")";
-        List<WorkflowSchedule> schedules = jdbc.query(sql, scheduleRowMapper(), names.toArray());
-        Map<String, WorkflowSchedule> result = new HashMap<>();
-        for (WorkflowSchedule s : schedules) {
+        List<WorkflowScheduleModel> schedules =
+                jdbc.query(sql, scheduleRowMapper(), names.toArray());
+        Map<String, WorkflowScheduleModel> result = new HashMap<>();
+        for (WorkflowScheduleModel s : schedules) {
             result.put(s.getName(), s);
         }
         return result;
     }
 
     @Override
-    public void deleteWorkflowSchedule(String name) {
+    public void deleteWorkflowSchedule(String orgId, String name) {
         jdbc.update("DELETE FROM scheduler_execution WHERE schedule_name = ?", name);
         jdbc.update("DELETE FROM scheduler WHERE scheduler_name = ?", name);
     }
 
     @Override
-    public void saveExecutionRecord(WorkflowScheduleExecution execution) {
+    public void saveExecutionRecord(WorkflowScheduleExecutionModel execution) {
         String sql =
                 "INSERT INTO scheduler_execution (execution_id, schedule_name, state, json_data) "
                         + "VALUES (?, ?, ?, ?) "
@@ -130,37 +133,27 @@ public class MySQLSchedulerDAO implements SchedulerDAO {
     }
 
     @Override
-    public WorkflowScheduleExecution readExecutionRecord(String executionId) {
+    public WorkflowScheduleExecutionModel readExecutionRecord(String orgId, String executionId) {
         String sql = "SELECT json_data FROM scheduler_execution WHERE execution_id = ?";
-        List<WorkflowScheduleExecution> results =
+        List<WorkflowScheduleExecutionModel> results =
                 jdbc.query(sql, executionRowMapper(), executionId);
         return results.isEmpty() ? null : results.get(0);
     }
 
     @Override
-    public void removeExecutionRecord(String executionId) {
+    public void removeExecutionRecord(String orgId, String executionId) {
         jdbc.update("DELETE FROM scheduler_execution WHERE execution_id = ?", executionId);
     }
 
     @Override
-    public List<String> getPendingExecutionRecordIds() {
+    public List<String> getPendingExecutionRecordIds(String orgId) {
         return jdbc.queryForList(
                 "SELECT execution_id FROM scheduler_execution WHERE state = 'POLLED'",
                 String.class);
     }
 
     @Override
-    public List<WorkflowScheduleExecution> getExecutionRecords(String scheduleName, int limit) {
-        String sql =
-                "SELECT json_data FROM scheduler_execution "
-                        + "WHERE schedule_name = ? "
-                        + "ORDER BY json_extract(json_data, '$.executionTime') DESC "
-                        + "LIMIT ?";
-        return jdbc.query(sql, executionRowMapper(), scheduleName, limit);
-    }
-
-    @Override
-    public long getNextRunTimeInEpoch(String scheduleName) {
+    public long getNextRunTimeInEpoch(String orgId, String scheduleName) {
         String sql = "SELECT next_run_time FROM scheduler WHERE scheduler_name = ?";
         List<Long> results = jdbc.queryForList(sql, Long.class, scheduleName);
         if (results.isEmpty() || results.get(0) == null) {
@@ -170,31 +163,81 @@ public class MySQLSchedulerDAO implements SchedulerDAO {
     }
 
     @Override
-    public void setNextRunTimeInEpoch(String scheduleName, long epochMillis) {
+    public void setNextRunTimeInEpoch(String orgId, String scheduleName, long epochMillis) {
         jdbc.update(
                 "UPDATE scheduler SET next_run_time = ? WHERE scheduler_name = ?",
                 epochMillis,
                 scheduleName);
     }
 
-    private RowMapper<WorkflowSchedule> scheduleRowMapper() {
+    @Override
+    public SearchResult<WorkflowScheduleModel> searchSchedules(
+            String orgId,
+            String workflowName,
+            String scheduleName,
+            Boolean paused,
+            String freeText,
+            int start,
+            int size,
+            List<String> sortOptions) {
+
+        StringBuilder sql = new StringBuilder("SELECT json_data FROM scheduler WHERE 1=1");
+        StringBuilder countSql = new StringBuilder("SELECT COUNT(*) FROM scheduler WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+        List<Object> countParams = new ArrayList<>();
+
+        if (workflowName != null && !workflowName.isEmpty()) {
+            sql.append(" AND workflow_name = ?");
+            countSql.append(" AND workflow_name = ?");
+            params.add(workflowName);
+            countParams.add(workflowName);
+        }
+        if (scheduleName != null && !scheduleName.isEmpty()) {
+            sql.append(" AND scheduler_name LIKE ?");
+            countSql.append(" AND scheduler_name LIKE ?");
+            params.add("%" + scheduleName + "%");
+            countParams.add("%" + scheduleName + "%");
+        }
+        if (paused != null) {
+            sql.append(" AND JSON_EXTRACT(json_data, '$.paused') = ?");
+            countSql.append(" AND JSON_EXTRACT(json_data, '$.paused') = ?");
+            params.add(paused);
+            countParams.add(paused);
+        }
+
+        long totalHits =
+                jdbc.queryForObject(countSql.toString(), Long.class, countParams.toArray());
+
+        sql.append(" ORDER BY scheduler_name ASC");
+        sql.append(" LIMIT ? OFFSET ?");
+        params.add(size);
+        params.add(start);
+
+        List<WorkflowScheduleModel> results =
+                jdbc.query(sql.toString(), scheduleRowMapper(), params.toArray());
+
+        return new SearchResult<>(totalHits, results);
+    }
+
+    private RowMapper<WorkflowScheduleModel> scheduleRowMapper() {
         return (rs, rowNum) -> {
             try {
-                return objectMapper.readValue(rs.getString("json_data"), WorkflowSchedule.class);
+                return objectMapper.readValue(
+                        rs.getString("json_data"), WorkflowScheduleModel.class);
             } catch (Exception e) {
-                throw new NonTransientException("Failed to deserialize WorkflowSchedule", e);
+                throw new NonTransientException("Failed to deserialize WorkflowScheduleModel", e);
             }
         };
     }
 
-    private RowMapper<WorkflowScheduleExecution> executionRowMapper() {
+    private RowMapper<WorkflowScheduleExecutionModel> executionRowMapper() {
         return (rs, rowNum) -> {
             try {
                 return objectMapper.readValue(
-                        rs.getString("json_data"), WorkflowScheduleExecution.class);
+                        rs.getString("json_data"), WorkflowScheduleExecutionModel.class);
             } catch (Exception e) {
                 throw new NonTransientException(
-                        "Failed to deserialize WorkflowScheduleExecution", e);
+                        "Failed to deserialize WorkflowScheduleExecutionModel", e);
             }
         };
     }

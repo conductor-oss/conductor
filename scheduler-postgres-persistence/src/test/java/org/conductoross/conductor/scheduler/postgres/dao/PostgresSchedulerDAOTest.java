@@ -14,8 +14,6 @@ package org.conductoross.conductor.scheduler.postgres.dao;
 
 import javax.sql.DataSource;
 
-import org.conductoross.conductor.scheduler.dao.AbstractSchedulerDAOTest;
-import org.conductoross.conductor.scheduler.dao.SchedulerDAO;
 import org.flywaydb.core.Flyway;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +30,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.orkes.conductor.dao.scheduler.SchedulerDAO;
+import io.orkes.conductor.scheduler.dao.AbstractSchedulerDAOTest;
 
 /**
  * Runs the full {@link AbstractSchedulerDAOTest} contract suite against a PostgreSQL database

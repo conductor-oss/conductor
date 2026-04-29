@@ -12,9 +12,10 @@
  */
 package org.conductoross.conductor.scheduler.mysql.config;
 
-import org.conductoross.conductor.scheduler.config.AbstractSchedulerAutoConfigurationSmokeTest;
-import org.conductoross.conductor.scheduler.dao.SchedulerDAO;
 import org.conductoross.conductor.scheduler.mysql.dao.MySQLSchedulerDAO;
+
+import io.orkes.conductor.dao.scheduler.SchedulerDAO;
+import io.orkes.conductor.scheduler.config.AbstractSchedulerAutoConfigurationSmokeTest;
 
 /**
  * Smoke-tests {@link MySQLSchedulerConfiguration} auto-configuration conditions.

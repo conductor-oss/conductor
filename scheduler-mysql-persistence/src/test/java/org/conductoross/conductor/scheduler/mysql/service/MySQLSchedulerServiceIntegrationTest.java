@@ -14,9 +14,7 @@ package org.conductoross.conductor.scheduler.mysql.service;
 
 import javax.sql.DataSource;
 
-import org.conductoross.conductor.scheduler.dao.SchedulerDAO;
 import org.conductoross.conductor.scheduler.mysql.dao.MySQLSchedulerDAO;
-import org.conductoross.conductor.scheduler.service.AbstractSchedulerServiceIntegrationTest;
 import org.flywaydb.core.Flyway;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,12 +31,12 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.orkes.conductor.dao.scheduler.SchedulerDAO;
+import io.orkes.conductor.scheduler.service.AbstractSchedulerServiceIntegrationTest;
 
 /**
  * Runs the full {@link AbstractSchedulerServiceIntegrationTest} suite against a MySQL database
  * provisioned by Testcontainers.
- *
- * <p>No test logic lives here — all tests are inherited from the abstract class.
  */
 @ContextConfiguration(
         classes = {
@@ -50,7 +48,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @SpringBootTest
 @TestPropertySource(
         properties = {
-            "spring.datasource.url=jdbc:tc:mysql:8.0:///scheduler_service_test",
+            "spring.datasource.url=jdbc:tc:mysql:8.0:///scheduler_svc_test",
             "spring.datasource.username=test",
             "spring.datasource.password=test",
             "spring.datasource.hikari.maximum-pool-size=4",

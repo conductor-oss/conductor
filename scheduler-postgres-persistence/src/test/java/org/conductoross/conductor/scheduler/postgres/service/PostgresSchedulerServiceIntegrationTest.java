@@ -14,9 +14,7 @@ package org.conductoross.conductor.scheduler.postgres.service;
 
 import javax.sql.DataSource;
 
-import org.conductoross.conductor.scheduler.dao.SchedulerDAO;
 import org.conductoross.conductor.scheduler.postgres.dao.PostgresSchedulerDAO;
-import org.conductoross.conductor.scheduler.service.AbstractSchedulerServiceIntegrationTest;
 import org.flywaydb.core.Flyway;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,12 +31,12 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.orkes.conductor.dao.scheduler.SchedulerDAO;
+import io.orkes.conductor.scheduler.service.AbstractSchedulerServiceIntegrationTest;
 
 /**
  * Runs the full {@link AbstractSchedulerServiceIntegrationTest} suite against a PostgreSQL database
  * provisioned by Testcontainers.
- *
- * <p>No test logic lives here — all tests are inherited from the abstract class.
  */
 @ContextConfiguration(
         classes = {
@@ -50,7 +48,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @SpringBootTest
 @TestPropertySource(
         properties = {
-            "spring.datasource.url=jdbc:tc:postgresql:15-alpine:///conductor_scheduler_service_test",
+            "spring.datasource.url=jdbc:tc:postgresql:15-alpine:///conductor_scheduler_svc_test",
             "spring.datasource.username=postgres",
             "spring.datasource.password=postgres",
             "spring.datasource.hikari.maximum-pool-size=4",

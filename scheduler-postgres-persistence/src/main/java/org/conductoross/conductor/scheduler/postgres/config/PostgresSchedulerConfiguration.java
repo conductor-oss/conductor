@@ -14,7 +14,6 @@ package org.conductoross.conductor.scheduler.postgres.config;
 
 import javax.sql.DataSource;
 
-import org.conductoross.conductor.scheduler.dao.SchedulerDAO;
 import org.conductoross.conductor.scheduler.postgres.dao.PostgresSchedulerDAO;
 import org.flywaydb.core.Flyway;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -23,6 +22,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.DependsOn;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.orkes.conductor.dao.scheduler.SchedulerDAO;
 
 /**
  * Spring auto-configuration that registers a PostgreSQL-backed {@link SchedulerDAO}.

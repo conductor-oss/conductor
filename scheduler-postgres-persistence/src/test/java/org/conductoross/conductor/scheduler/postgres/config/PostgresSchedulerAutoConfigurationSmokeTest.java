@@ -12,9 +12,10 @@
  */
 package org.conductoross.conductor.scheduler.postgres.config;
 
-import org.conductoross.conductor.scheduler.config.AbstractSchedulerAutoConfigurationSmokeTest;
-import org.conductoross.conductor.scheduler.dao.SchedulerDAO;
 import org.conductoross.conductor.scheduler.postgres.dao.PostgresSchedulerDAO;
+
+import io.orkes.conductor.dao.scheduler.SchedulerDAO;
+import io.orkes.conductor.scheduler.config.AbstractSchedulerAutoConfigurationSmokeTest;
 
 /**
  * Smoke-tests {@link PostgresSchedulerConfiguration} auto-configuration conditions.
