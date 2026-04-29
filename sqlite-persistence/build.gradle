@@ -2,7 +2,7 @@ dependencies {
     implementation project(':conductor-common-persistence')
     implementation project(':conductor-common')
     implementation project(':conductor-core')
-    implementation project(':conductor-scheduler')
+    implementation project(':conductor-scheduler-core')
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.retry:spring-retry'

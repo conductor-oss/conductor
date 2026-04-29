@@ -1,0 +1,346 @@
+/*
+ * Copyright 2026 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+package org.conductoross.conductor.scheduler.redis.dao;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.netflix.conductor.common.run.SearchResult;
+import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.exception.NonTransientException;
+import com.netflix.conductor.redis.config.RedisProperties;
+import com.netflix.conductor.redis.jedis.JedisProxy;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.orkes.conductor.dao.scheduler.SchedulerDAO;
+import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
+import io.orkes.conductor.scheduler.model.WorkflowScheduleModel;
+
+/**
+ * Redis implementation of {@link SchedulerDAO}.
+ *
+ * <p>Data model:
+ *
+ * <ul>
+ *   <li>{prefix}:DEFS — Hash: scheduleName → JSON
+ *   <li>{prefix}:ALL — Set: all schedule names
+ *   <li>{prefix}:WF:{workflowName} — Set: schedule names using this workflow
+ *   <li>{prefix}:NEXT_RUN — Hash: scheduleName → epoch millis string
+ *   <li>{prefix}:EXEC — Hash: executionId → JSON
+ *   <li>{prefix}:EXEC_SCHED:{scheduleName} — Set: execution IDs for this schedule
+ *   <li>{prefix}:PENDING — Set: execution IDs in POLLED state
+ * </ul>
+ */
+public class RedisSchedulerDAO implements SchedulerDAO {
+
+    private static final Logger log = LoggerFactory.getLogger(RedisSchedulerDAO.class);
+
+    private final JedisProxy jedisProxy;
+    private final ObjectMapper objectMapper;
+    private final String keyPrefix;
+
+    private final String keyDefs;
+    private final String keyAll;
+    private final String keyNextRun;
+    private final String keyExec;
+    private final String keyPending;
+
+    public RedisSchedulerDAO(
+            JedisProxy jedisProxy,
+            ObjectMapper objectMapper,
+            ConductorProperties conductorProperties,
+            RedisProperties redisProperties) {
+        this.jedisProxy = jedisProxy;
+        this.objectMapper = objectMapper;
+        this.keyPrefix = buildKeyPrefix(conductorProperties, redisProperties);
+        this.keyDefs = keyPrefix + ":DEFS";
+        this.keyAll = keyPrefix + ":ALL";
+        this.keyNextRun = keyPrefix + ":NEXT_RUN";
+        this.keyExec = keyPrefix + ":EXEC";
+        this.keyPending = keyPrefix + ":PENDING";
+    }
+
+    private String wfIndexKey(String workflowName) {
+        return keyPrefix + ":WF:" + workflowName;
+    }
+
+    private String execSchedKey(String scheduleName) {
+        return keyPrefix + ":EXEC_SCHED:" + scheduleName;
+    }
+
+    // =========================================================================
+    // Schedule CRUD
+    // =========================================================================
+
+    @Override
+    public void updateSchedule(WorkflowScheduleModel schedule) {
+        String name = schedule.getName();
+
+        // Remove from old workflow index if workflow name changed
+        String oldJson = jedisProxy.hget(keyDefs, name);
+        if (oldJson != null) {
+            WorkflowScheduleModel old = fromJson(oldJson, WorkflowScheduleModel.class);
+            if (old.getStartWorkflowRequest() != null) {
+                String oldWfName = old.getStartWorkflowRequest().getName();
+                String newWfName =
+                        schedule.getStartWorkflowRequest() != null
+                                ? schedule.getStartWorkflowRequest().getName()
+                                : null;
+                if (oldWfName != null && !oldWfName.equals(newWfName)) {
+                    jedisProxy.srem(wfIndexKey(oldWfName), name);
+                }
+            }
+        }
+
+        jedisProxy.hset(keyDefs, name, toJson(schedule));
+        jedisProxy.sadd(keyAll, name);
+
+        if (schedule.getStartWorkflowRequest() != null
+                && schedule.getStartWorkflowRequest().getName() != null) {
+            jedisProxy.sadd(wfIndexKey(schedule.getStartWorkflowRequest().getName()), name);
+        }
+
+        // Sync next_run_time
+        if (schedule.getNextRunTime() != null) {
+            jedisProxy.hset(keyNextRun, name, String.valueOf(schedule.getNextRunTime()));
+        } else {
+            jedisProxy.hdel(keyNextRun, name);
+        }
+    }
+
+    @Override
+    public WorkflowScheduleModel findScheduleByName(String orgId, String name) {
+        String json = jedisProxy.hget(keyDefs, name);
+        return json == null ? null : fromJson(json, WorkflowScheduleModel.class);
+    }
+
+    @Override
+    public List<WorkflowScheduleModel> getAllSchedules(String orgId) {
+        Map<String, String> all = jedisProxy.hgetAll(keyDefs);
+        return all.values().stream()
+                .map(json -> fromJson(json, WorkflowScheduleModel.class))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<WorkflowScheduleModel> findAllSchedules(String orgId, String workflowName) {
+        Set<String> names = jedisProxy.smembers(wfIndexKey(workflowName));
+        if (names == null || names.isEmpty()) {
+            return List.of();
+        }
+        List<WorkflowScheduleModel> result = new ArrayList<>();
+        for (String name : names) {
+            String json = jedisProxy.hget(keyDefs, name);
+            if (json != null) {
+                result.add(fromJson(json, WorkflowScheduleModel.class));
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public Map<String, WorkflowScheduleModel> findAllByNames(String orgId, Set<String> names) {
+        if (names == null || names.isEmpty()) {
+            return new HashMap<>();
+        }
+        Map<String, WorkflowScheduleModel> result = new HashMap<>();
+        for (String name : names) {
+            String json = jedisProxy.hget(keyDefs, name);
+            if (json != null) {
+                result.put(name, fromJson(json, WorkflowScheduleModel.class));
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public void deleteWorkflowSchedule(String orgId, String name) {
+        // Remove from workflow index
+        String json = jedisProxy.hget(keyDefs, name);
+        if (json != null) {
+            WorkflowScheduleModel schedule = fromJson(json, WorkflowScheduleModel.class);
+            if (schedule.getStartWorkflowRequest() != null
+                    && schedule.getStartWorkflowRequest().getName() != null) {
+                jedisProxy.srem(wfIndexKey(schedule.getStartWorkflowRequest().getName()), name);
+            }
+        }
+
+        // Delete all executions for this schedule
+        Set<String> execIds = jedisProxy.smembers(execSchedKey(name));
+        if (execIds != null) {
+            for (String execId : execIds) {
+                jedisProxy.hdel(keyExec, execId);
+                jedisProxy.srem(keyPending, execId);
+            }
+        }
+        jedisProxy.del(execSchedKey(name));
+
+        // Delete the schedule itself
+        jedisProxy.hdel(keyDefs, name);
+        jedisProxy.srem(keyAll, name);
+        jedisProxy.hdel(keyNextRun, name);
+    }
+
+    // =========================================================================
+    // Execution records
+    // =========================================================================
+
+    @Override
+    public void saveExecutionRecord(WorkflowScheduleExecutionModel execution) {
+        String execId = execution.getExecutionId();
+        jedisProxy.hset(keyExec, execId, toJson(execution));
+        jedisProxy.sadd(execSchedKey(execution.getScheduleName()), execId);
+
+        if (execution.getState() == WorkflowScheduleExecutionModel.State.POLLED) {
+            jedisProxy.sadd(keyPending, execId);
+        } else {
+            jedisProxy.srem(keyPending, execId);
+        }
+    }
+
+    @Override
+    public WorkflowScheduleExecutionModel readExecutionRecord(String orgId, String executionId) {
+        String json = jedisProxy.hget(keyExec, executionId);
+        return json == null ? null : fromJson(json, WorkflowScheduleExecutionModel.class);
+    }
+
+    @Override
+    public void removeExecutionRecord(String orgId, String executionId) {
+        String json = jedisProxy.hget(keyExec, executionId);
+        if (json != null) {
+            WorkflowScheduleExecutionModel exec =
+                    fromJson(json, WorkflowScheduleExecutionModel.class);
+            jedisProxy.srem(execSchedKey(exec.getScheduleName()), executionId);
+        }
+        jedisProxy.hdel(keyExec, executionId);
+        jedisProxy.srem(keyPending, executionId);
+    }
+
+    @Override
+    public List<String> getPendingExecutionRecordIds(String orgId) {
+        Set<String> pending = jedisProxy.smembers(keyPending);
+        return pending == null ? List.of() : new ArrayList<>(pending);
+    }
+
+    // =========================================================================
+    // Next-run time
+    // =========================================================================
+
+    @Override
+    public long getNextRunTimeInEpoch(String orgId, String scheduleName) {
+        String val = jedisProxy.hget(keyNextRun, scheduleName);
+        if (val == null) {
+            return -1L;
+        }
+        return Long.parseLong(val);
+    }
+
+    @Override
+    public void setNextRunTimeInEpoch(String orgId, String scheduleName, long epochMillis) {
+        // Only set if the schedule exists
+        if (!jedisProxy.hexists(keyDefs, scheduleName)) {
+            return;
+        }
+        jedisProxy.hset(keyNextRun, scheduleName, String.valueOf(epochMillis));
+    }
+
+    // =========================================================================
+    // Search
+    // =========================================================================
+
+    @Override
+    public SearchResult<WorkflowScheduleModel> searchSchedules(
+            String orgId,
+            String workflowName,
+            String scheduleName,
+            Boolean paused,
+            String freeText,
+            int start,
+            int size,
+            List<String> sortOptions) {
+        List<WorkflowScheduleModel> all = getAllSchedules(orgId);
+        List<WorkflowScheduleModel> filtered =
+                all.stream()
+                        .filter(
+                                s -> {
+                                    if (workflowName != null
+                                            && !workflowName.isEmpty()
+                                            && s.getStartWorkflowRequest() != null
+                                            && !workflowName.equals(
+                                                    s.getStartWorkflowRequest().getName())) {
+                                        return false;
+                                    }
+                                    if (scheduleName != null
+                                            && !scheduleName.isEmpty()
+                                            && !s.getName().contains(scheduleName)) {
+                                        return false;
+                                    }
+                                    if (paused != null && s.isPaused() != paused) {
+                                        return false;
+                                    }
+                                    return true;
+                                })
+                        .sorted(Comparator.comparing(WorkflowScheduleModel::getName))
+                        .collect(Collectors.toList());
+
+        long totalHits = filtered.size();
+        int end = Math.min(start + size, filtered.size());
+        List<WorkflowScheduleModel> page =
+                start < filtered.size() ? filtered.subList(start, end) : List.of();
+        return new SearchResult<>(totalHits, page);
+    }
+
+    // =========================================================================
+    // Helpers
+    // =========================================================================
+
+    private static String buildKeyPrefix(
+            ConductorProperties conductorProperties, RedisProperties redisProperties) {
+        StringBuilder sb = new StringBuilder();
+        String ns = redisProperties.getWorkflowNamespacePrefix();
+        if (StringUtils.isNotBlank(ns)) {
+            sb.append(ns).append(".");
+        }
+        String stack = conductorProperties.getStack();
+        if (StringUtils.isNotBlank(stack)) {
+            sb.append(stack).append(".");
+        }
+        String domain = redisProperties.getKeyspaceDomain();
+        if (StringUtils.isNotBlank(domain)) {
+            sb.append(domain).append(".");
+        }
+        sb.append("SCHEDULER");
+        return sb.toString();
+    }
+
+    private String toJson(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException e) {
+            throw new NonTransientException("Failed to serialize to JSON", e);
+        }
+    }
+
+    private <T> T fromJson(String json, Class<T> clazz) {
+        try {
+            return objectMapper.readValue(json, clazz);
+        } catch (Exception e) {
+            throw new NonTransientException("Failed to deserialize JSON", e);
+        }
+    }
+}
