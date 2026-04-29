@@ -89,6 +89,16 @@ export interface MutateParams {
 // FetchError is any Response-like object with status - kept permissive for backward compatibility
 type FetchError = any;
 
+/** Options for {@link useFetch} — extends react-query options with enterprise API gating. */
+export type UseFetchQueryOptions<T = unknown> = Partial<
+  UseQueryOptions<T, FetchError>
+> & {
+  /** When set, request runs only if this feature flag is on (AND with normal fetch/auth readiness). */
+  enterpriseApiFeature?: string;
+  /** AND with the resolved enabled state (e.g. `Boolean(id)` for keyed routes). Default true. */
+  when?: boolean;
+};
+
 // Constants
 export const STALE_TIME_DROPDOWN = 600000; // 10 mins
 export const STALE_TIME_WORKFLOW_DEFS = 600000; // 10 mins
@@ -97,9 +107,21 @@ export const STALE_TIME_SEARCH = 60000; // 1 min
 export const DEFAULT_STALE_TIME = 5000; // 5 Seconds
 export const AUTH_HEADER_NAME = "X-Authorization";
 
+/** Same predicate as the default `enabled` option inside {@link useFetch} (fetch ready + auth rules). */
+export function computeFetchBaseEnabled(
+  fetchContext: { ready: boolean },
+  headers: AuthHeaders,
+): boolean {
+  return (
+    fetchContext.ready &&
+    (headers[AUTH_HEADER_NAME] !== undefined ||
+      !featureFlags.isEnabled(FEATURES.ACCESS_MANAGEMENT))
+  );
+}
+
 export function useFetch<T = any>(
   path: string,
-  reactQueryOptions?: Partial<UseQueryOptions<T, FetchError>>,
+  reactQueryOptions?: UseFetchQueryOptions<T>,
   fetchOptions: IObject = {},
   optionalKey?: string,
 ): UseQueryResult<T, FetchError> {
@@ -107,6 +129,25 @@ export function useFetch<T = any>(
   const fetchParams = { headers: useAuthHeaders() };
   const navigate = useNavigate();
   const location = useLocation();
+  const {
+    enterpriseApiFeature,
+    when = true,
+    enabled: enabledOption,
+    ...queryOpts
+  } = reactQueryOptions ?? {};
+
+  const baseEnabled = computeFetchBaseEnabled(
+    fetchContext,
+    fetchParams.headers,
+  );
+  const featureGated =
+    enterpriseApiFeature != null
+      ? baseEnabled && featureFlags.isEnabled(enterpriseApiFeature)
+      : baseEnabled;
+  const mergedEnabled = featureGated && when;
+  const resolvedEnabled =
+    enabledOption !== undefined ? enabledOption : mergedEnabled;
+
   const query = useQuery<T, FetchError>(
     optionalKey == null
       ? [fetchContext.stack, path]
@@ -115,17 +156,14 @@ export function useFetch<T = any>(
       fetchWithContext(path, fetchContext, { ...fetchParams, ...fetchOptions }),
     {
       // In OSS mode (ACCESS_MANAGEMENT disabled), always enabled when fetchContext is ready
-      enabled:
-        fetchContext.ready &&
-        (fetchParams.headers[AUTH_HEADER_NAME] !== undefined ||
-          !featureFlags.isEnabled(FEATURES.ACCESS_MANAGEMENT)),
       keepPreviousData: true,
       retry: (failureCount: number, error: FetchError) => {
         // Don't retry on 403 or 401
         if (error?.status === 403 || error?.status === 401) return false;
         return failureCount < 3;
       },
-      ...reactQueryOptions,
+      ...queryOpts,
+      enabled: resolvedEnabled,
     },
   );
 
@@ -648,6 +686,7 @@ export function useSecretNames(): string[] {
 export function useAppListing() {
   const { data, ...rest } = useFetch("/applications", {
     staleTime: DEFAULT_STALE_TIME,
+    enterpriseApiFeature: FEATURES.ACCESS_MANAGEMENT,
   });
   return {
     data: data || [],
@@ -658,6 +697,8 @@ export function useAppListing() {
 export function useApplicationById(id: string) {
   const { data, ...rest } = useFetch(`/applications/${id}`, {
     staleTime: DEFAULT_STALE_TIME,
+    enterpriseApiFeature: FEATURES.ACCESS_MANAGEMENT,
+    when: Boolean(id),
   });
   return {
     data: data || {},
@@ -670,6 +711,8 @@ export function useAccessKeysListing(applicationId: string) {
     `/applications/${applicationId}/accessKeys`,
     {
       staleTime: DEFAULT_STALE_TIME,
+      enterpriseApiFeature: FEATURES.ACCESS_MANAGEMENT,
+      when: Boolean(applicationId),
     },
   );
   return {
