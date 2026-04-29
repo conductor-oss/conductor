@@ -114,20 +114,21 @@ public class ScriptEvaluator {
     }
 
     private static Context createNewContext() {
-        HostAccess hostAccess = HostAccess.newBuilder(HostAccess.ALL)
-                .denyAccess(Class.class)
-                .denyAccess(ClassLoader.class)
-                .denyAccess(java.lang.reflect.Method.class)
-                .denyAccess(java.lang.reflect.Field.class)
-                .denyAccess(java.lang.reflect.Constructor.class)
-                .denyAccess(java.lang.reflect.Array.class)
-                .denyAccess(Runtime.class)
-                .denyAccess(ProcessBuilder.class)
-                .denyAccess(Process.class)
-                .denyAccess(System.class)
-                .denyAccess(Thread.class)
-                .denyAccess(ThreadGroup.class)
-                .build();
+        HostAccess hostAccess =
+                HostAccess.newBuilder(HostAccess.ALL)
+                        .denyAccess(Class.class)
+                        .denyAccess(ClassLoader.class)
+                        .denyAccess(java.lang.reflect.Method.class)
+                        .denyAccess(java.lang.reflect.Field.class)
+                        .denyAccess(java.lang.reflect.Constructor.class)
+                        .denyAccess(java.lang.reflect.Array.class)
+                        .denyAccess(Runtime.class)
+                        .denyAccess(ProcessBuilder.class)
+                        .denyAccess(Process.class)
+                        .denyAccess(System.class)
+                        .denyAccess(Thread.class)
+                        .denyAccess(ThreadGroup.class)
+                        .build();
         return Context.newBuilder("js")
                 .allowHostAccess(hostAccess)
                 .option("engine.WarnInterpreterOnly", "false")
