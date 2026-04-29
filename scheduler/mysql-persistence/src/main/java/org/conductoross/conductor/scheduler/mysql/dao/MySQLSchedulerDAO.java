@@ -236,10 +236,7 @@ public class MySQLSchedulerDAO extends MySQLBaseDAO implements SchedulerDAO {
             sql.append(" AND scheduler_name LIKE ? ESCAPE '\\\\'");
             countSql.append(" AND scheduler_name LIKE ? ESCAPE '\\\\'");
             String escaped =
-                    scheduleName
-                            .replace("\\", "\\\\")
-                            .replace("%", "\\%")
-                            .replace("_", "\\_");
+                    scheduleName.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
             params.add("%" + escaped + "%");
             countParams.add("%" + escaped + "%");
         }

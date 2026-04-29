@@ -224,10 +224,7 @@ public class PostgresSchedulerDAO extends PostgresBaseDAO implements SchedulerDA
         if (scheduleName != null && !scheduleName.isEmpty()) {
             where.append(" AND scheduler_name ILIKE ? ESCAPE '\\'");
             String escaped =
-                    scheduleName
-                            .replace("\\", "\\\\")
-                            .replace("%", "\\%")
-                            .replace("_", "\\_");
+                    scheduleName.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
             params.add("%" + escaped + "%");
         }
         if (paused != null) {
