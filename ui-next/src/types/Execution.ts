@@ -84,18 +84,23 @@ export interface WorkflowExecution {
   endTime: string;
   executionTime: number;
   failedReferenceTaskNames: string;
-  input: string;
+  input: Record<string, unknown>;
   inputSize: number;
   output: Record<string, unknown>;
   outputSize: number;
   priority: number;
+  rateLimited?: boolean;
   reasonForIncompletion: string;
   startTime: string;
   status: WorkflowExecutionStatus;
+  taskToDomain?: Record<string, unknown>;
   updateTime: string;
   version: number;
   workflowId: string;
+  workflowName?: string;
+  parentWorkflowId?: string;
   workflowType: string;
+  workflowVersion?: number;
   variables?: Record<string, unknown>;
   workflowIntrospection?: WorkflowIntrospectionRecord[];
 }

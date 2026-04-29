@@ -7,7 +7,7 @@ import { useAtom } from "jotai";
 
 export interface LeftPanelTabsProps {
   execution: WorkflowExecution;
-  openedTab: boolean;
+  openedTab: ExecutionTabs;
   onChangeExecutionTab: (tab: ExecutionTabs) => void;
   onToggleAssistant: () => void;
 }
