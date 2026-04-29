@@ -19,11 +19,7 @@ import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 
-/**
- * Minimal Spring Boot application for scheduler integration tests. Uses SQLite persistence. The
- * QueueDAO bean conflict (from ForkJoinSyncModeIntegrationTest's inner TestConfig) is resolved by a
- * {@code @Primary} bean in the test class itself.
- */
+/** Minimal Spring Boot application for scheduler integration tests. Uses SQLite persistence. */
 @SpringBootApplication(
         exclude = {DataSourceAutoConfiguration.class, MongoAutoConfiguration.class},
         scanBasePackages = {})
