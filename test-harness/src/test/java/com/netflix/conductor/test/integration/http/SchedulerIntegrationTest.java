@@ -21,6 +21,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -46,18 +47,6 @@ import static org.junit.Assert.*;
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT, classes = SchedulerTestApp.class)
 @TestPropertySource(locations = "classpath:application-scheduler-test.properties")
 public class SchedulerIntegrationTest {
-
-    /**
-     * Resolves the QueueDAO ambiguity when component scan picks up both SQLite and in-memory beans.
-     */
-    @TestConfiguration
-    static class QueueDAOConfig {
-        @Bean
-        @Primary
-        public QueueDAO primaryQueueDAO(@Qualifier("sqliteQueueDAO") QueueDAO sqliteQueue) {
-            return sqliteQueue;
-        }
-    }
 
     @LocalServerPort private int port;
 

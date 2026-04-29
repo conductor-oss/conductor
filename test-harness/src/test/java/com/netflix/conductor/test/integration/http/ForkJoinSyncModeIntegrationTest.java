@@ -26,6 +26,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -93,6 +94,7 @@ public class ForkJoinSyncModeIntegrationTest {
     @TestConfiguration
     static class TestConfig {
         @Bean
+        @ConditionalOnMissingBean(QueueDAO.class)
         public QueueDAO inMemoryQueueDAO() {
             return new InMemoryQueueDAO();
         }
