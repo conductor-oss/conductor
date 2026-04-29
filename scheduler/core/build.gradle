@@ -33,6 +33,7 @@ dependencies {
     testFixturesImplementation 'org.mockito:mockito-core'
     testFixturesImplementation 'org.springframework.boot:spring-boot-test-autoconfigure'
     testFixturesImplementation 'org.springframework.boot:spring-boot-autoconfigure'
+    testFixturesImplementation 'org.springframework.retry:spring-retry'
     testFixturesImplementation "com.fasterxml.jackson.core:jackson-databind"
 }
 

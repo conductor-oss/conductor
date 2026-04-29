@@ -19,9 +19,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.cassandra.config.CassandraProperties;
+import com.netflix.conductor.cassandra.dao.CassandraBaseDAO;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.core.exception.NonTransientException;
+import com.netflix.conductor.metrics.Monitors;
 
 import com.datastax.driver.core.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -32,21 +34,22 @@ import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
 /**
  * Cassandra implementation of {@link SchedulerArchivalDAO}.
  *
- * <p>Archival execution records are stored in {@code scheduler_archival_executions} with
- * schedule_name as the partition key and scheduled_time as a clustering column for efficient
- * per-schedule queries sorted by time. A secondary lookup table {@code scheduler_archival_by_id}
- * supports fetches by execution_id.
+ * <p>Extends {@link CassandraBaseDAO} for session/properties management. Archival execution records
+ * are stored in {@code scheduler_archival_executions} with schedule_name as the partition key and
+ * scheduled_time as a clustering column for efficient per-schedule queries sorted by time. A
+ * secondary lookup table {@code scheduler_archival_by_id} supports fetches by execution_id.
  */
-public class CassandraSchedulerArchivalDAO implements SchedulerArchivalDAO {
+public class CassandraSchedulerArchivalDAO extends CassandraBaseDAO
+        implements SchedulerArchivalDAO {
 
     private static final Logger log = LoggerFactory.getLogger(CassandraSchedulerArchivalDAO.class);
+    private static final String DAO_NAME = "cassandra";
 
     private static final String TABLE_ARCHIVAL = "scheduler_archival_executions";
     private static final String TABLE_ARCHIVAL_BY_ID = "scheduler_archival_by_id";
 
-    private final Session session;
+    // objectMapper is private in CassandraBaseDAO; keep a local reference for serialization
     private final ObjectMapper objectMapper;
-    private final CassandraProperties properties;
 
     private PreparedStatement upsertArchivalStmt;
     private PreparedStatement upsertByIdStmt;
@@ -58,9 +61,8 @@ public class CassandraSchedulerArchivalDAO implements SchedulerArchivalDAO {
 
     public CassandraSchedulerArchivalDAO(
             Session session, ObjectMapper objectMapper, CassandraProperties properties) {
-        this.session = session;
+        super(session, objectMapper, properties);
         this.objectMapper = objectMapper;
-        this.properties = properties;
         ensureTables();
         prepareStatements();
     }
@@ -164,6 +166,7 @@ public class CassandraSchedulerArchivalDAO implements SchedulerArchivalDAO {
 
     @Override
     public void saveExecutionRecord(WorkflowScheduleExecutionModel model) {
+        Monitors.recordDaoRequests(DAO_NAME, "saveArchivalRecord", "n/a", "n/a");
         String swrJson = serializeStartWorkflowRequest(model.getStartWorkflowRequest());
         String stateStr = model.getState() != null ? model.getState().name() : null;
         long scheduledTime = model.getScheduledTime() != null ? model.getScheduledTime() : 0L;
@@ -201,6 +204,7 @@ public class CassandraSchedulerArchivalDAO implements SchedulerArchivalDAO {
     @Override
     public SearchResult<String> searchScheduledExecutions(
             String orgId, String query, String freeText, int start, int count, List<String> sort) {
+        Monitors.recordDaoRequests(DAO_NAME, "searchScheduledExecutions", "n/a", "n/a");
         // If query (schedule_name) is provided, use the partitioned table directly
         if (query != null && !query.isEmpty()) {
             List<Row> rows = session.execute(selectByScheduleStmt.bind(query)).all();
@@ -262,6 +266,7 @@ public class CassandraSchedulerArchivalDAO implements SchedulerArchivalDAO {
     @Override
     public Map<String, WorkflowScheduleExecutionModel> getExecutionsByIds(
             String orgId, Set<String> executionIds) {
+        Monitors.recordDaoRequests(DAO_NAME, "getExecutionsByIds", "n/a", "n/a");
         if (executionIds == null || executionIds.isEmpty()) {
             return new HashMap<>();
         }
@@ -282,12 +287,14 @@ public class CassandraSchedulerArchivalDAO implements SchedulerArchivalDAO {
 
     @Override
     public WorkflowScheduleExecutionModel getExecutionById(String orgId, String executionId) {
+        Monitors.recordDaoRequests(DAO_NAME, "getExecutionById", "n/a", "n/a");
         Row row = session.execute(selectByIdStmt.bind(executionId)).one();
         return row == null ? null : rowToModel(row);
     }
 
     @Override
     public void cleanupOldRecords(int archivalMaxRecords, int archivalMaxRecordThreshold) {
+        Monitors.recordDaoRequests(DAO_NAME, "cleanupOldRecords", "n/a", "n/a");
         // Get all distinct schedule names from the by-id table
         List<Row> allRows =
                 session.execute(
@@ -311,18 +318,22 @@ public class CassandraSchedulerArchivalDAO implements SchedulerArchivalDAO {
                 continue;
             }
 
-            // Delete rows beyond the keep limit
+            // Delete rows beyond the keep limit, chunked to avoid exceeding batch size thresholds
             List<Row> toDelete = rows.subList(archivalMaxRecords, rows.size());
-            BatchStatement batch = new BatchStatement(BatchStatement.Type.UNLOGGED);
-            for (Row row : toDelete) {
-                batch.add(
-                        deleteByScheduleAndTimeStmt.bind(
-                                scheduleName,
-                                row.getLong("scheduled_time"),
-                                row.getString("execution_id")));
-                batch.add(deleteByIdStmt.bind(row.getString("execution_id")));
+            int chunkSize = 250;
+            for (int i = 0; i < toDelete.size(); i += chunkSize) {
+                int end = Math.min(i + chunkSize, toDelete.size());
+                BatchStatement batch = new BatchStatement(BatchStatement.Type.UNLOGGED);
+                for (Row row : toDelete.subList(i, end)) {
+                    batch.add(
+                            deleteByScheduleAndTimeStmt.bind(
+                                    scheduleName,
+                                    row.getLong("scheduled_time"),
+                                    row.getString("execution_id")));
+                    batch.add(deleteByIdStmt.bind(row.getString("execution_id")));
+                }
+                session.execute(batch);
             }
-            session.execute(batch);
             log.info(
                     "Cleaned up {} old archival records for schedule: {}",
                     toDelete.size(),

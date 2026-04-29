@@ -14,6 +14,7 @@ package org.conductoross.conductor.scheduler.postgres.config;
 
 import javax.sql.DataSource;
 
+import org.conductoross.conductor.scheduler.postgres.dao.PostgresSchedulerArchivalDAO;
 import org.conductoross.conductor.scheduler.postgres.dao.PostgresSchedulerDAO;
 import org.flywaydb.core.Flyway;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -23,10 +24,12 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.retry.support.RetryTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.orkes.conductor.dao.archive.SchedulerArchivalDAO;
 import io.orkes.conductor.dao.scheduler.SchedulerDAO;
 
 /**
- * Spring auto-configuration that registers a PostgreSQL-backed {@link SchedulerDAO}.
+ * Spring auto-configuration that registers PostgreSQL-backed {@link SchedulerDAO} and {@link
+ * SchedulerArchivalDAO}.
  *
  * <p>Active when {@code conductor.db.type=postgres} AND {@code conductor.scheduler.enabled=true}.
  * Runs Flyway migrations for the scheduler tables in a dedicated history table so they do not
@@ -54,5 +57,12 @@ public class PostgresSchedulerConfiguration {
     public SchedulerDAO schedulerDAO(
             RetryTemplate retryTemplate, DataSource dataSource, ObjectMapper objectMapper) {
         return new PostgresSchedulerDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn("flywayForScheduler")
+    public SchedulerArchivalDAO schedulerArchivalDAO(
+            RetryTemplate retryTemplate, DataSource dataSource, ObjectMapper objectMapper) {
+        return new PostgresSchedulerArchivalDAO(retryTemplate, objectMapper, dataSource);
     }
 }

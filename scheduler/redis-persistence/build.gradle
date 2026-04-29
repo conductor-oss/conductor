@@ -3,6 +3,7 @@ dependencies {
     implementation project(':conductor-common')
     implementation project(':conductor-core')
     implementation project(':conductor-redis-configuration')
+    implementation project(':conductor-redis-persistence')
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
 

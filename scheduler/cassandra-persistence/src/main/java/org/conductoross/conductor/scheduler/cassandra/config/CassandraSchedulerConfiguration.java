@@ -33,7 +33,7 @@ public class CassandraSchedulerConfiguration {
     @ConditionalOnProperty(
             name = "conductor.scheduler.enabled",
             havingValue = "true",
-            matchIfMissing = true)
+            matchIfMissing = false)
     public SchedulerDAO cassandraSchedulerDAO(
             Session session, ObjectMapper objectMapper, CassandraProperties properties) {
         return new CassandraSchedulerDAO(session, objectMapper, properties);
@@ -43,7 +43,7 @@ public class CassandraSchedulerConfiguration {
     @ConditionalOnProperty(
             name = "conductor.scheduler.enabled",
             havingValue = "true",
-            matchIfMissing = true)
+            matchIfMissing = false)
     public SchedulerArchivalDAO cassandraSchedulerArchivalDAO(
             Session session, ObjectMapper objectMapper, CassandraProperties properties) {
         return new CassandraSchedulerArchivalDAO(session, objectMapper, properties);

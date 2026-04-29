@@ -87,7 +87,7 @@ public class JedisClusterCommandsBatchTest {
         List<String> results = commands.mget(keys);
 
         assertEquals(keyCount, results.size());
-        // All expected values should be present (order may differ due to null filtering)
+        // All expected values should be present in positional order
         Set<String> resultSet = new HashSet<>(results);
         for (String value : expected.values()) {
             assertTrue(resultSet.contains(value), "Missing value: " + value);
@@ -95,7 +95,7 @@ public class JedisClusterCommandsBatchTest {
     }
 
     @Test
-    void mget_withMissingKeys_filtersNulls() {
+    void mget_withMissingKeys_preservesNulls() {
         int existingCount = 1000;
         int missingCount = 500;
         String[] keys = new String[existingCount + missingCount];
@@ -110,7 +110,14 @@ public class JedisClusterCommandsBatchTest {
 
         List<String> results = commands.mget(keys);
 
-        assertEquals(existingCount, results.size());
+        // Result list preserves positional index — nulls for missing keys are included
+        assertEquals(existingCount + missingCount, results.size());
+        for (int i = 0; i < existingCount; i++) {
+            assertNotNull(results.get(i), "Existing key at index " + i + " should not be null");
+        }
+        for (int i = existingCount; i < existingCount + missingCount; i++) {
+            assertNull(results.get(i), "Missing key at index " + i + " should be null");
+        }
     }
 
     @Test
@@ -138,7 +145,7 @@ public class JedisClusterCommandsBatchTest {
     }
 
     @Test
-    void mgetBytes_withMissingKeys_filtersNullsAndEmpty() {
+    void mgetBytes_withMissingKeys_preservesNulls() {
         int existingCount = 1000;
         int missingCount = 500;
         byte[][] keys = new byte[existingCount + missingCount][];
@@ -155,7 +162,14 @@ public class JedisClusterCommandsBatchTest {
 
         List<byte[]> results = commands.mgetBytes(keys);
 
-        assertEquals(existingCount, results.size());
+        // Result list preserves positional index — nulls for missing keys are included
+        assertEquals(existingCount + missingCount, results.size());
+        for (int i = 0; i < existingCount; i++) {
+            assertNotNull(results.get(i), "Existing key at index " + i + " should not be null");
+        }
+        for (int i = existingCount; i < existingCount + missingCount; i++) {
+            assertNull(results.get(i), "Missing key at index " + i + " should be null");
+        }
     }
 
     @Test

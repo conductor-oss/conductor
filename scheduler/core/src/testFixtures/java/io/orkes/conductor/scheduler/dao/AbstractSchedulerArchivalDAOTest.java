@@ -10,84 +10,56 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.scheduler.redis.dao;
+package io.orkes.conductor.scheduler.dao;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
-import org.junit.*;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.utility.DockerImageName;
+import org.junit.Test;
 
-import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.run.SearchResult;
-import com.netflix.conductor.core.config.ConductorProperties;
-import com.netflix.conductor.redis.config.RedisProperties;
-import com.netflix.conductor.redis.jedis.JedisProxy;
-import com.netflix.conductor.redis.jedis.UnifiedJedisCommands;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.orkes.conductor.dao.archive.SchedulerArchivalDAO;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
-import redis.clients.jedis.JedisPooled;
 
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-public class RedisSchedulerArchivalDAOTest {
+/**
+ * Shared contract test suite for all {@link SchedulerArchivalDAO} implementations.
+ *
+ * <p>Every persistence module subclasses this and provides the wired DAO via {@link
+ * #archivalDao()}. Subclasses are responsible for clearing state between tests (typically in a
+ * {@code @Before} method).
+ *
+ * <p><b>Test categories:</b>
+ *
+ * <ol>
+ *   <li>Save and retrieve — single and batch lookups
+ *   <li>Round-trip fidelity — all model fields survive serialization
+ *   <li>Search — by schedule name, free text, wildcard, pagination
+ *   <li>Cleanup — threshold-based record pruning
+ *   <li>Edge cases — empty/null inputs
+ * </ol>
+ */
+public abstract class AbstractSchedulerArchivalDAOTest {
 
-    private static final String ORG_ID = "0000";
+    protected static final String ORG_ID = "0000";
 
-    @ClassRule
-    public static final GenericContainer<?> redis =
-            new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
-
-    private static JedisPooled jedisPooled;
-    private static JedisProxy jedisProxy;
-    private static ObjectMapper objectMapper;
-    private static ConductorProperties conductorProperties;
-    private static RedisProperties redisProperties;
-    private RedisSchedulerArchivalDAO dao;
-
-    @BeforeClass
-    public static void setUpOnce() {
-        jedisPooled = new JedisPooled(redis.getHost(), redis.getMappedPort(6379));
-        jedisProxy = new JedisProxy(new UnifiedJedisCommands(jedisPooled));
-        objectMapper = new ObjectMapperProvider().getObjectMapper();
-
-        conductorProperties = mock(ConductorProperties.class);
-        when(conductorProperties.getStack()).thenReturn("");
-
-        redisProperties = mock(RedisProperties.class);
-        when(redisProperties.getWorkflowNamespacePrefix()).thenReturn("test");
-        when(redisProperties.getKeyspaceDomain()).thenReturn("");
-    }
-
-    @Before
-    public void setUp() {
-        jedisPooled.flushAll();
-        dao =
-                new RedisSchedulerArchivalDAO(
-                        jedisProxy, objectMapper, conductorProperties, redisProperties);
-    }
-
-    @AfterClass
-    public static void tearDown() {
-        if (jedisPooled != null) {
-            jedisPooled.close();
-        }
-    }
+    /** Returns the archival DAO under test. */
+    protected abstract SchedulerArchivalDAO archivalDao();
 
     // =========================================================================
-    // Save and retrieve
+    // 1. Save and retrieve
     // =========================================================================
 
     @Test
     public void testSaveAndGetById() {
         WorkflowScheduleExecutionModel model = buildExecution("sched-1", "exec-1");
-        dao.saveExecutionRecord(model);
+        archivalDao().saveExecutionRecord(model);
 
-        WorkflowScheduleExecutionModel found = dao.getExecutionById(ORG_ID, "exec-1");
+        WorkflowScheduleExecutionModel found = archivalDao().getExecutionById(ORG_ID, "exec-1");
         assertNotNull(found);
         assertEquals("exec-1", found.getExecutionId());
         assertEquals("sched-1", found.getScheduleName());
@@ -97,17 +69,17 @@ public class RedisSchedulerArchivalDAOTest {
 
     @Test
     public void testGetById_notFound_returnsNull() {
-        assertNull(dao.getExecutionById(ORG_ID, "no-such-id"));
+        assertNull(archivalDao().getExecutionById(ORG_ID, "no-such-id"));
     }
 
     @Test
     public void testSaveAndGetByIds() {
-        dao.saveExecutionRecord(buildExecution("sched-1", "exec-a"));
-        dao.saveExecutionRecord(buildExecution("sched-1", "exec-b"));
-        dao.saveExecutionRecord(buildExecution("sched-2", "exec-c"));
+        archivalDao().saveExecutionRecord(buildExecution("sched-1", "exec-a"));
+        archivalDao().saveExecutionRecord(buildExecution("sched-1", "exec-b"));
+        archivalDao().saveExecutionRecord(buildExecution("sched-2", "exec-c"));
 
         Map<String, WorkflowScheduleExecutionModel> result =
-                dao.getExecutionsByIds(ORG_ID, Set.of("exec-a", "exec-c", "no-such"));
+                archivalDao().getExecutionsByIds(ORG_ID, Set.of("exec-a", "exec-c", "no-such"));
         assertEquals(2, result.size());
         assertTrue(result.containsKey("exec-a"));
         assertTrue(result.containsKey("exec-c"));
@@ -115,16 +87,32 @@ public class RedisSchedulerArchivalDAOTest {
 
     @Test
     public void testGetByIds_emptySet_returnsEmpty() {
-        assertTrue(dao.getExecutionsByIds(ORG_ID, Set.of()).isEmpty());
+        assertTrue(archivalDao().getExecutionsByIds(ORG_ID, Set.of()).isEmpty());
     }
 
     @Test
     public void testGetByIds_nullSet_returnsEmpty() {
-        assertTrue(dao.getExecutionsByIds(ORG_ID, null).isEmpty());
+        assertTrue(archivalDao().getExecutionsByIds(ORG_ID, null).isEmpty());
+    }
+
+    @Test
+    public void testSaveExecutionRecord_upsert() {
+        WorkflowScheduleExecutionModel model = buildExecution("upsert-sched", "upsert-exec");
+        archivalDao().saveExecutionRecord(model);
+
+        model.setReason("updated reason");
+        model.setState(WorkflowScheduleExecutionModel.State.FAILED);
+        archivalDao().saveExecutionRecord(model);
+
+        WorkflowScheduleExecutionModel found =
+                archivalDao().getExecutionById(ORG_ID, "upsert-exec");
+        assertNotNull(found);
+        assertEquals("updated reason", found.getReason());
+        assertEquals(WorkflowScheduleExecutionModel.State.FAILED, found.getState());
     }
 
     // =========================================================================
-    // Round-trip fidelity
+    // 2. Round-trip fidelity
     // =========================================================================
 
     @Test
@@ -145,9 +133,9 @@ public class RedisSchedulerArchivalDAOTest {
         model.setExecutionTime(1000500L);
         model.setStartWorkflowRequest(req);
 
-        dao.saveExecutionRecord(model);
+        archivalDao().saveExecutionRecord(model);
 
-        WorkflowScheduleExecutionModel found = dao.getExecutionById(ORG_ID, "rt-exec");
+        WorkflowScheduleExecutionModel found = archivalDao().getExecutionById(ORG_ID, "rt-exec");
         assertNotNull(found);
         assertEquals("rt-sched", found.getScheduleName());
         assertEquals("my-wf", found.getWorkflowName());
@@ -163,17 +151,17 @@ public class RedisSchedulerArchivalDAOTest {
     }
 
     // =========================================================================
-    // Search
+    // 3. Search
     // =========================================================================
 
     @Test
     public void testSearch_byScheduleName() {
-        dao.saveExecutionRecord(buildExecution("sched-a", "e1"));
-        dao.saveExecutionRecord(buildExecution("sched-a", "e2"));
-        dao.saveExecutionRecord(buildExecution("sched-b", "e3"));
+        archivalDao().saveExecutionRecord(buildExecution("sched-a", "e1"));
+        archivalDao().saveExecutionRecord(buildExecution("sched-a", "e2"));
+        archivalDao().saveExecutionRecord(buildExecution("sched-b", "e3"));
 
         SearchResult<String> result =
-                dao.searchScheduledExecutions(ORG_ID, "sched-a", null, 0, 10, null);
+                archivalDao().searchScheduledExecutions(ORG_ID, "sched-a", null, 0, 10, null);
         assertEquals(2, result.getTotalHits());
         assertTrue(result.getResults().contains("e1"));
         assertTrue(result.getResults().contains("e2"));
@@ -181,45 +169,55 @@ public class RedisSchedulerArchivalDAOTest {
 
     @Test
     public void testSearch_freeText() {
-        dao.saveExecutionRecord(buildExecution("alpha-schedule", "e-alpha"));
-        dao.saveExecutionRecord(buildExecution("beta-schedule", "e-beta"));
+        archivalDao().saveExecutionRecord(buildExecution("alpha-schedule", "e-alpha"));
+        archivalDao().saveExecutionRecord(buildExecution("beta-schedule", "e-beta"));
 
         SearchResult<String> result =
-                dao.searchScheduledExecutions(ORG_ID, null, "alpha", 0, 10, null);
+                archivalDao().searchScheduledExecutions(ORG_ID, null, "alpha", 0, 10, null);
         assertEquals(1, result.getTotalHits());
         assertEquals("e-alpha", result.getResults().get(0));
     }
 
     @Test
     public void testSearch_wildcard_returnsAll() {
-        dao.saveExecutionRecord(buildExecution("sched-1", "e1"));
-        dao.saveExecutionRecord(buildExecution("sched-2", "e2"));
+        archivalDao().saveExecutionRecord(buildExecution("sched-1", "e1"));
+        archivalDao().saveExecutionRecord(buildExecution("sched-2", "e2"));
 
-        SearchResult<String> result = dao.searchScheduledExecutions(ORG_ID, null, "*", 0, 10, null);
+        SearchResult<String> result =
+                archivalDao().searchScheduledExecutions(ORG_ID, null, "*", 0, 10, null);
         assertEquals(2, result.getTotalHits());
     }
 
     @Test
     public void testSearch_pagination() {
         for (int i = 0; i < 5; i++) {
-            WorkflowScheduleExecutionModel exec = buildExecution("page-sched", "page-" + i);
+            WorkflowScheduleExecutionModel exec =
+                    buildExecution("page-sched", "page-" + UUID.randomUUID());
             exec.setScheduledTime(System.currentTimeMillis() + i * 1000L);
-            dao.saveExecutionRecord(exec);
+            archivalDao().saveExecutionRecord(exec);
         }
 
         SearchResult<String> page1 =
-                dao.searchScheduledExecutions(ORG_ID, "page-sched", null, 0, 2, null);
+                archivalDao().searchScheduledExecutions(ORG_ID, "page-sched", null, 0, 2, null);
         assertEquals(5, page1.getTotalHits());
         assertEquals(2, page1.getResults().size());
 
         SearchResult<String> page2 =
-                dao.searchScheduledExecutions(ORG_ID, "page-sched", null, 2, 2, null);
+                archivalDao().searchScheduledExecutions(ORG_ID, "page-sched", null, 2, 2, null);
         assertEquals(5, page2.getTotalHits());
         assertEquals(2, page2.getResults().size());
     }
 
+    @Test
+    public void testSearch_noResults_returnsEmpty() {
+        SearchResult<String> result =
+                archivalDao().searchScheduledExecutions(ORG_ID, "nonexistent", null, 0, 10, null);
+        assertEquals(0, result.getTotalHits());
+        assertTrue(result.getResults().isEmpty());
+    }
+
     // =========================================================================
-    // Cleanup
+    // 4. Cleanup
     // =========================================================================
 
     @Test
@@ -227,51 +225,15 @@ public class RedisSchedulerArchivalDAOTest {
         for (int i = 0; i < 10; i++) {
             WorkflowScheduleExecutionModel exec = buildExecution("cleanup-sched", "cleanup-" + i);
             exec.setScheduledTime(1000000L + i * 1000L);
-            dao.saveExecutionRecord(exec);
+            archivalDao().saveExecutionRecord(exec);
         }
 
         // Keep only 3 records, threshold at 5 (count=10 > threshold=5, so cleanup triggers)
-        dao.cleanupOldRecords(3, 5);
+        archivalDao().cleanupOldRecords(3, 5);
 
         SearchResult<String> result =
-                dao.searchScheduledExecutions(ORG_ID, "cleanup-sched", null, 0, 20, null);
+                archivalDao().searchScheduledExecutions(ORG_ID, "cleanup-sched", null, 0, 20, null);
         assertEquals(3, result.getTotalHits());
-    }
-
-    // =========================================================================
-    // TTL
-    // =========================================================================
-
-    @Test
-    public void testTtl_recordsExpireAfterTtl() throws Exception {
-        // Create a DAO with 2-second TTL
-        RedisSchedulerArchivalDAO shortTtlDao =
-                new RedisSchedulerArchivalDAO(
-                        jedisProxy, objectMapper, conductorProperties, redisProperties, 2);
-
-        shortTtlDao.saveExecutionRecord(buildExecution("ttl-sched", "ttl-exec"));
-        assertNotNull(shortTtlDao.getExecutionById(ORG_ID, "ttl-exec"));
-
-        // Wait for expiry
-        Thread.sleep(3000);
-
-        assertNull(
-                "Record should have expired after TTL",
-                shortTtlDao.getExecutionById(ORG_ID, "ttl-exec"));
-
-        // Search should also reflect expiry
-        SearchResult<String> result =
-                shortTtlDao.searchScheduledExecutions(ORG_ID, "ttl-sched", null, 0, 10, null);
-        assertEquals(0, result.getTotalHits());
-    }
-
-    @Test
-    public void testTtl_defaultIs7Days() {
-        dao.saveExecutionRecord(buildExecution("ttl-check", "ttl-check-exec"));
-
-        // Verify the key has a TTL set (should be close to 7 days = 604800 seconds)
-        Long ttl = jedisProxy.ttl("test.SCHEDULER.ARCHIVAL.ttl-check-exec");
-        assertTrue("TTL should be set and > 604700", ttl > 604700);
     }
 
     @Test
@@ -279,22 +241,41 @@ public class RedisSchedulerArchivalDAOTest {
         for (int i = 0; i < 3; i++) {
             WorkflowScheduleExecutionModel exec = buildExecution("noclean-sched", "noclean-" + i);
             exec.setScheduledTime(1000000L + i * 1000L);
-            dao.saveExecutionRecord(exec);
+            archivalDao().saveExecutionRecord(exec);
         }
 
         // Threshold is 5, count is 3 — should not clean up
-        dao.cleanupOldRecords(2, 5);
+        archivalDao().cleanupOldRecords(2, 5);
 
         SearchResult<String> result =
-                dao.searchScheduledExecutions(ORG_ID, "noclean-sched", null, 0, 20, null);
+                archivalDao().searchScheduledExecutions(ORG_ID, "noclean-sched", null, 0, 20, null);
         assertEquals(3, result.getTotalHits());
+    }
+
+    // =========================================================================
+    // 5. Volume
+    // =========================================================================
+
+    @Test
+    public void testVolume_manyRecordsSameSchedule() {
+        int count = 50;
+        for (int i = 0; i < count; i++) {
+            WorkflowScheduleExecutionModel exec = buildExecution("volume-sched", "vol-" + i);
+            exec.setScheduledTime(1000000L + i * 1000L);
+            archivalDao().saveExecutionRecord(exec);
+        }
+
+        SearchResult<String> result =
+                archivalDao().searchScheduledExecutions(ORG_ID, "volume-sched", null, 0, 100, null);
+        assertEquals(count, result.getTotalHits());
     }
 
     // =========================================================================
     // Helpers
     // =========================================================================
 
-    private WorkflowScheduleExecutionModel buildExecution(String scheduleName, String executionId) {
+    protected WorkflowScheduleExecutionModel buildExecution(
+            String scheduleName, String executionId) {
         StartWorkflowRequest req = new StartWorkflowRequest();
         req.setName("test-wf");
         req.setVersion(1);

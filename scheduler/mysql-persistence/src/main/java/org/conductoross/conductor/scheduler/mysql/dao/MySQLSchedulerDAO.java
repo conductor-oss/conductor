@@ -23,6 +23,7 @@ import javax.sql.DataSource;
 import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.common.run.SearchResult;
+import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.mysql.dao.MySQLBaseDAO;
 import com.netflix.conductor.mysql.util.Query;
 
@@ -44,6 +45,8 @@ import io.orkes.conductor.scheduler.model.WorkflowScheduleModel;
  */
 public class MySQLSchedulerDAO extends MySQLBaseDAO implements SchedulerDAO {
 
+    private static final String DAO_NAME = "mysql";
+
     public MySQLSchedulerDAO(
             RetryTemplate retryTemplate, ObjectMapper objectMapper, DataSource dataSource) {
         super(retryTemplate, objectMapper, dataSource);
@@ -51,6 +54,7 @@ public class MySQLSchedulerDAO extends MySQLBaseDAO implements SchedulerDAO {
 
     @Override
     public void updateSchedule(WorkflowScheduleModel schedule) {
+        Monitors.recordDaoRequests(DAO_NAME, "updateSchedule", "n/a", "n/a");
         String sql =
                 "INSERT INTO scheduler (scheduler_name, workflow_name, json_data, next_run_time) "
                         + "VALUES (?, ?, ?, ?) "
@@ -78,6 +82,7 @@ public class MySQLSchedulerDAO extends MySQLBaseDAO implements SchedulerDAO {
 
     @Override
     public WorkflowScheduleModel findScheduleByName(String orgId, String name) {
+        Monitors.recordDaoRequests(DAO_NAME, "findScheduleByName", "n/a", "n/a");
         String sql = "SELECT json_data FROM scheduler WHERE scheduler_name = ?";
         return queryWithTransaction(
                 sql, q -> q.addParameter(name).executeAndFetchFirst(WorkflowScheduleModel.class));
@@ -85,6 +90,7 @@ public class MySQLSchedulerDAO extends MySQLBaseDAO implements SchedulerDAO {
 
     @Override
     public List<WorkflowScheduleModel> getAllSchedules(String orgId) {
+        Monitors.recordDaoRequests(DAO_NAME, "getAllSchedules", "n/a", "n/a");
         return queryWithTransaction(
                 "SELECT json_data FROM scheduler",
                 q -> q.executeAndFetch(WorkflowScheduleModel.class));
@@ -92,6 +98,7 @@ public class MySQLSchedulerDAO extends MySQLBaseDAO implements SchedulerDAO {
 
     @Override
     public List<WorkflowScheduleModel> findAllSchedules(String orgId, String workflowName) {
+        Monitors.recordDaoRequests(DAO_NAME, "findAllSchedules", "n/a", "n/a");
         String sql = "SELECT json_data FROM scheduler WHERE workflow_name = ?";
         return queryWithTransaction(
                 sql,
@@ -100,6 +107,7 @@ public class MySQLSchedulerDAO extends MySQLBaseDAO implements SchedulerDAO {
 
     @Override
     public Map<String, WorkflowScheduleModel> findAllByNames(String orgId, Set<String> names) {
+        Monitors.recordDaoRequests(DAO_NAME, "findAllByNames", "n/a", "n/a");
         if (names == null || names.isEmpty()) {
             return new HashMap<>();
         }
@@ -124,6 +132,7 @@ public class MySQLSchedulerDAO extends MySQLBaseDAO implements SchedulerDAO {
 
     @Override
     public void deleteWorkflowSchedule(String orgId, String name) {
+        Monitors.recordDaoRequests(DAO_NAME, "deleteWorkflowSchedule", "n/a", "n/a");
         withTransaction(
                 tx -> {
                     execute(
@@ -139,6 +148,7 @@ public class MySQLSchedulerDAO extends MySQLBaseDAO implements SchedulerDAO {
 
     @Override
     public void saveExecutionRecord(WorkflowScheduleExecutionModel execution) {
+        Monitors.recordDaoRequests(DAO_NAME, "saveExecutionRecord", "n/a", "n/a");
         String sql =
                 "INSERT INTO scheduler_execution (execution_id, schedule_name, state, json_data) "
                         + "VALUES (?, ?, ?, ?) "
@@ -160,6 +170,7 @@ public class MySQLSchedulerDAO extends MySQLBaseDAO implements SchedulerDAO {
 
     @Override
     public WorkflowScheduleExecutionModel readExecutionRecord(String orgId, String executionId) {
+        Monitors.recordDaoRequests(DAO_NAME, "readExecutionRecord", "n/a", "n/a");
         String sql = "SELECT json_data FROM scheduler_execution WHERE execution_id = ?";
         return queryWithTransaction(
                 sql,
@@ -170,6 +181,7 @@ public class MySQLSchedulerDAO extends MySQLBaseDAO implements SchedulerDAO {
 
     @Override
     public void removeExecutionRecord(String orgId, String executionId) {
+        Monitors.recordDaoRequests(DAO_NAME, "removeExecutionRecord", "n/a", "n/a");
         executeWithTransaction(
                 "DELETE FROM scheduler_execution WHERE execution_id = ?",
                 q -> q.addParameter(executionId).executeDelete());
@@ -177,6 +189,7 @@ public class MySQLSchedulerDAO extends MySQLBaseDAO implements SchedulerDAO {
 
     @Override
     public List<String> getPendingExecutionRecordIds(String orgId) {
+        Monitors.recordDaoRequests(DAO_NAME, "getPendingExecutionRecordIds", "n/a", "n/a");
         return queryWithTransaction(
                 "SELECT execution_id FROM scheduler_execution WHERE state = 'POLLED'",
                 q -> q.executeScalarList(String.class));
@@ -184,6 +197,7 @@ public class MySQLSchedulerDAO extends MySQLBaseDAO implements SchedulerDAO {
 
     @Override
     public long getNextRunTimeInEpoch(String orgId, String scheduleName) {
+        Monitors.recordDaoRequests(DAO_NAME, "getNextRunTimeInEpoch", "n/a", "n/a");
         String sql = "SELECT next_run_time FROM scheduler WHERE scheduler_name = ?";
         Long result =
                 queryWithTransaction(
@@ -193,6 +207,7 @@ public class MySQLSchedulerDAO extends MySQLBaseDAO implements SchedulerDAO {
 
     @Override
     public void setNextRunTimeInEpoch(String orgId, String scheduleName, long epochMillis) {
+        Monitors.recordDaoRequests(DAO_NAME, "setNextRunTimeInEpoch", "n/a", "n/a");
         executeWithTransaction(
                 "UPDATE scheduler SET next_run_time = ? WHERE scheduler_name = ?",
                 q -> q.addParameter(epochMillis).addParameter(scheduleName).executeUpdate());
@@ -209,6 +224,7 @@ public class MySQLSchedulerDAO extends MySQLBaseDAO implements SchedulerDAO {
             int size,
             List<String> sortOptions) {
 
+        Monitors.recordDaoRequests(DAO_NAME, "searchSchedules", "n/a", "n/a");
         StringBuilder sql = new StringBuilder("SELECT json_data FROM scheduler WHERE 1=1");
         StringBuilder countSql = new StringBuilder("SELECT COUNT(*) FROM scheduler WHERE 1=1");
         List<Object> params = new ArrayList<>();

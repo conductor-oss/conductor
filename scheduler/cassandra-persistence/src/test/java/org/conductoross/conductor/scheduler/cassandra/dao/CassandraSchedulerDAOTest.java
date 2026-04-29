@@ -57,6 +57,9 @@ public class CassandraSchedulerDAOTest {
         // Drop and recreate tables to get a clean state
         session.execute("DROP TABLE IF EXISTS " + KEYSPACE + ".scheduler_schedules");
         session.execute("DROP TABLE IF EXISTS " + KEYSPACE + ".scheduler_executions");
+        session.execute("DROP TABLE IF EXISTS " + KEYSPACE + ".scheduler_exec_by_schedule");
+        session.execute("DROP TABLE IF EXISTS " + KEYSPACE + ".scheduler_exec_by_state");
+        session.execute("DROP TABLE IF EXISTS " + KEYSPACE + ".scheduler_sched_by_workflow");
         CassandraProperties properties = new CassandraProperties();
         properties.setKeyspace(KEYSPACE);
         dao = new CassandraSchedulerDAO(session, objectMapper, properties);
@@ -310,6 +313,22 @@ public class CassandraSchedulerDAOTest {
         assertEquals(2, pendingIds.size());
         assertTrue(pendingIds.contains(polled1.getExecutionId()));
         assertTrue(pendingIds.contains(polled2.getExecutionId()));
+    }
+
+    @Test
+    public void testGetPendingExecutionRecordIds_afterTransition() {
+        dao.updateSchedule(buildSchedule("transition-test", "wf"));
+
+        WorkflowScheduleExecutionModel exec = buildExecution("transition-test");
+        dao.saveExecutionRecord(exec);
+        assertTrue(dao.getPendingExecutionRecordIds(ORG_ID).contains(exec.getExecutionId()));
+
+        exec.setState(WorkflowScheduleExecutionModel.State.EXECUTED);
+        dao.saveExecutionRecord(exec);
+
+        assertFalse(
+                "EXECUTED record must not appear in pending list",
+                dao.getPendingExecutionRecordIds(ORG_ID).contains(exec.getExecutionId()));
     }
 
     // =========================================================================

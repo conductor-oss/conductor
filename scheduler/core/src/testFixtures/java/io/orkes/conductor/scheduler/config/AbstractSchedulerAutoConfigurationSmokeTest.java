@@ -18,6 +18,7 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
@@ -49,6 +50,11 @@ public abstract class AbstractSchedulerAutoConfigurationSmokeTest {
         @Bean
         public ObjectMapper objectMapper() {
             return new ObjectMapperProvider().getObjectMapper();
+        }
+
+        @Bean
+        public RetryTemplate retryTemplate() {
+            return new RetryTemplate();
         }
     }
 

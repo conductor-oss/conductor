@@ -70,13 +70,13 @@ public class CassandraSchedulerAutoConfigurationTest {
     }
 
     @Test
-    public void testBeansRegistered_whenSchedulerEnabledMissing_matchIfMissing() {
+    public void testNoBeansRegistered_whenSchedulerEnabledMissing() {
         baseRunner()
                 .withPropertyValues("conductor.db.type=cassandra")
                 .run(
                         ctx -> {
-                            assertThat(ctx).hasSingleBean(SchedulerDAO.class);
-                            assertThat(ctx).hasSingleBean(SchedulerArchivalDAO.class);
+                            assertThat(ctx).doesNotHaveBean(SchedulerDAO.class);
+                            assertThat(ctx).doesNotHaveBean(SchedulerArchivalDAO.class);
                         });
     }
 

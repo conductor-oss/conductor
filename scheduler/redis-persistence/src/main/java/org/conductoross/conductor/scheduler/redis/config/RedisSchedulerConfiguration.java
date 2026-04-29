@@ -37,7 +37,7 @@ public class RedisSchedulerConfiguration {
     @ConditionalOnProperty(
             name = "conductor.scheduler.enabled",
             havingValue = "true",
-            matchIfMissing = true)
+            matchIfMissing = false)
     public SchedulerDAO redisSchedulerDAO(
             JedisProxy jedisProxy,
             ObjectMapper objectMapper,
@@ -51,7 +51,7 @@ public class RedisSchedulerConfiguration {
     @ConditionalOnProperty(
             name = "conductor.scheduler.enabled",
             havingValue = "true",
-            matchIfMissing = true)
+            matchIfMissing = false)
     public SchedulerArchivalDAO redisSchedulerArchivalDAO(
             JedisProxy jedisProxy,
             ObjectMapper objectMapper,
