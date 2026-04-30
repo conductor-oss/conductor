@@ -36,7 +36,10 @@ import { ExecutionTabs } from "./state/types";
 import { WorkflowIntrospection } from "pages/execution/WorkflowIntrospection";
 import Agent from "components/features/agent/Agent";
 import { AgentDisplayMode } from "components/features/agent/agent-types";
-import { agentFirstUseAtom } from "components/features/agent/agentAtomsStore";
+import {
+  agentDisplayModeAtom,
+  agentFirstUseAtom,
+} from "components/features/agent/agentAtomsStore";
 import { useAtom } from "jotai";
 
 const SecondaryActions = ({
@@ -275,7 +278,6 @@ export default function Execution() {
       refetch,
       handleUpdateVariables,
       selectNode,
-      toggleAssistantPanel,
     },
     {
       flowActor,
@@ -293,7 +295,6 @@ export default function Execution() {
       isNoAccess,
       doWhileSelection,
       nodes,
-      isAssistantPanelOpen,
     },
   ] = useExecutionMachine();
   const location = useLocation();
@@ -301,6 +302,13 @@ export default function Execution() {
   const { open: isSideBarOpen } = useContext(SidebarContext);
 
   const [, setAgentFirstUse] = useAtom(agentFirstUseAtom);
+  const [agentDisplayMode, setAgentDisplayMode] = useAtom(agentDisplayModeAtom);
+
+  // The assistant panel is open whenever the agent is in expanded mode.
+  // Deriving from the atom (rather than XState) means the sidebar button and
+  // cross-page navigation drive this panel without any extra sync effect.
+  const isAssistantPanelOpen =
+    agentDisplayMode === AgentDisplayMode.FLOATING_EXPANDED;
 
   const isFailure = (workflow) => {
     const workflowInput = workflow?.input;
@@ -669,7 +677,11 @@ export default function Execution() {
                 onChangeExecutionTab={changeExecutionTab}
                 onToggleAssistant={() => {
                   setAgentFirstUse(true);
-                  toggleAssistantPanel();
+                  setAgentDisplayMode(
+                    isAssistantPanelOpen
+                      ? AgentDisplayMode.CLOSED
+                      : AgentDisplayMode.FLOATING_EXPANDED,
+                  );
                 }}
               />
             </Box>
