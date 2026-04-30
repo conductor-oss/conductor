@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.sqlite.dao;
+package org.conductoross.conductor.scheduler.sqlite.dao;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,8 +21,6 @@ import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
@@ -43,11 +41,9 @@ import io.orkes.conductor.scheduler.model.WorkflowScheduleModel;
  * scheduler_execution} table additionally carries {@code schedule_name} and {@code state} columns
  * to support efficient queries (OSS has no queue infrastructure to offload this work).
  *
- * <p>Managed by Flyway ({@code db/migration_sqlite}).
+ * <p>Managed by Flyway ({@code db/migration_scheduler_sqlite}).
  */
 public class SqliteSchedulerDAO implements SchedulerDAO {
-
-    private static final Logger log = LoggerFactory.getLogger(SqliteSchedulerDAO.class);
 
     private final JdbcTemplate jdbc;
     private final ObjectMapper objectMapper;
@@ -95,7 +91,6 @@ public class SqliteSchedulerDAO implements SchedulerDAO {
         if (names == null || names.isEmpty()) {
             return new HashMap<>();
         }
-        // SQLite does not support array parameters; use IN clause with placeholders
         String placeholders = names.stream().map(n -> "?").collect(Collectors.joining(", "));
         String sql =
                 "SELECT json_data FROM scheduler WHERE scheduler_name IN (" + placeholders + ")";

@@ -29,6 +29,7 @@ import com.datastax.driver.core.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.orkes.conductor.dao.archive.SchedulerArchivalDAO;
+import io.orkes.conductor.dao.archive.SchedulerSearchQuery;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
 
 /**
@@ -213,62 +214,106 @@ public class CassandraSchedulerArchivalDAO extends CassandraBaseDAO
     public SearchResult<String> searchScheduledExecutions(
             String orgId, String query, String freeText, int start, int count, List<String> sort) {
         Monitors.recordDaoRequests(DAO_NAME, "searchScheduledExecutions", "n/a", "n/a");
-        // If query (schedule_name) is provided, use the partitioned table directly
-        if (query != null && !query.isEmpty()) {
-            List<Row> rows = session.execute(selectByScheduleStmt.bind(query)).all();
-            long totalHits = rows.size();
-            int end = Math.min(start + count, rows.size());
-            List<String> ids =
-                    rows.subList(start < rows.size() ? start : rows.size(), end).stream()
-                            .map(r -> r.getString("execution_id"))
+
+        SchedulerSearchQuery parsed = SchedulerSearchQuery.parse(query);
+
+        // Determine which schedule names to query
+        List<String> targetScheduleNames;
+        if (parsed.hasScheduleNames()) {
+            targetScheduleNames = parsed.getScheduleNames();
+        } else {
+            // Get all distinct schedule names from the partitioned table
+            List<Row> distinctRows =
+                    session.execute(
+                                    "SELECT DISTINCT schedule_name FROM "
+                                            + properties.getKeyspace()
+                                            + "."
+                                            + TABLE_ARCHIVAL)
+                            .all();
+            targetScheduleNames =
+                    distinctRows.stream()
+                            .map(r -> r.getString("schedule_name"))
                             .collect(Collectors.toList());
-            return new SearchResult<>(totalHits, ids);
         }
 
-        // Free text search: scan the by-id table and filter in memory (capped)
-        List<Row> allRows =
-                session.execute(
-                                "SELECT * FROM "
-                                        + properties.getKeyspace()
-                                        + "."
-                                        + TABLE_ARCHIVAL_BY_ID
-                                        + " LIMIT "
-                                        + FREE_TEXT_SCAN_LIMIT)
-                        .all();
-        List<Row> filtered = allRows;
-        if (freeText != null && !freeText.isEmpty() && !"*".equals(freeText)) {
-            String term = freeText.toLowerCase();
-            filtered =
-                    allRows.stream()
+        // Collect rows from each schedule partition
+        List<WorkflowScheduleExecutionModel> allModels = new ArrayList<>();
+        for (String scheduleName : targetScheduleNames) {
+            List<Row> rows = session.execute(selectByScheduleStmt.bind(scheduleName)).all();
+            for (Row row : rows) {
+                allModels.add(rowToModel(row));
+            }
+        }
+
+        // Filter by state
+        if (parsed.hasStates()) {
+            Set<String> stateSet = new HashSet<>(parsed.getStates());
+            allModels =
+                    allModels.stream()
                             .filter(
-                                    r -> {
-                                        String sn =
-                                                r.isNull("schedule_name")
-                                                        ? ""
-                                                        : r.getString("schedule_name");
-                                        String wn =
-                                                r.isNull("workflow_name")
-                                                        ? ""
-                                                        : r.getString("workflow_name");
-                                        String wid =
-                                                r.isNull("workflow_id")
-                                                        ? ""
-                                                        : r.getString("workflow_id");
-                                        return sn.toLowerCase().contains(term)
-                                                || wn.toLowerCase().contains(term)
-                                                || wid.toLowerCase().contains(term);
-                                    })
+                                    m ->
+                                            m.getState() != null
+                                                    && stateSet.contains(m.getState().name()))
                             .collect(Collectors.toList());
         }
-        // Sort by scheduled_time DESC
-        filtered.sort(
-                (a, b) -> Long.compare(b.getLong("scheduled_time"), a.getLong("scheduled_time")));
 
-        long totalHits = filtered.size();
-        int end = Math.min(start + count, filtered.size());
+        // Filter by time range
+        if (parsed.getScheduledTimeAfter() != null) {
+            long after = parsed.getScheduledTimeAfter();
+            allModels =
+                    allModels.stream()
+                            .filter(
+                                    m ->
+                                            m.getScheduledTime() != null
+                                                    && m.getScheduledTime() > after)
+                            .collect(Collectors.toList());
+        }
+        if (parsed.getScheduledTimeBefore() != null) {
+            long before = parsed.getScheduledTimeBefore();
+            allModels =
+                    allModels.stream()
+                            .filter(
+                                    m ->
+                                            m.getScheduledTime() != null
+                                                    && m.getScheduledTime() < before)
+                            .collect(Collectors.toList());
+        }
+
+        // Filter by workflow name (substring match)
+        if (parsed.hasWorkflowName()) {
+            String term = parsed.getWorkflowName().toLowerCase();
+            allModels =
+                    allModels.stream()
+                            .filter(
+                                    m ->
+                                            m.getWorkflowName() != null
+                                                    && m.getWorkflowName()
+                                                            .toLowerCase()
+                                                            .contains(term))
+                            .collect(Collectors.toList());
+        }
+
+        // Filter by execution ID (exact match)
+        if (parsed.hasExecutionId()) {
+            String execId = parsed.getExecutionId();
+            allModels =
+                    allModels.stream()
+                            .filter(m -> execId.equals(m.getExecutionId()))
+                            .collect(Collectors.toList());
+        }
+
+        // Sort by scheduled_time DESC
+        allModels.sort(
+                (a, b) ->
+                        Long.compare(
+                                b.getScheduledTime() != null ? b.getScheduledTime() : 0,
+                                a.getScheduledTime() != null ? a.getScheduledTime() : 0));
+
+        long totalHits = allModels.size();
+        int end = Math.min(start + count, allModels.size());
         List<String> ids =
-                filtered.subList(start < filtered.size() ? start : filtered.size(), end).stream()
-                        .map(r -> r.getString("execution_id"))
+                allModels.subList(start < allModels.size() ? start : allModels.size(), end).stream()
+                        .map(WorkflowScheduleExecutionModel::getExecutionId)
                         .collect(Collectors.toList());
         return new SearchResult<>(totalHits, ids);
     }

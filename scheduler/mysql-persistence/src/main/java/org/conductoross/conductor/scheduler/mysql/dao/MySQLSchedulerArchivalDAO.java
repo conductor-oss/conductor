@@ -29,6 +29,7 @@ import com.netflix.conductor.mysql.util.Query;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.orkes.conductor.dao.archive.SchedulerArchivalDAO;
+import io.orkes.conductor.dao.archive.SchedulerSearchQuery;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
 
 /**
@@ -105,32 +106,47 @@ public class MySQLSchedulerArchivalDAO extends MySQLBaseDAO implements Scheduler
         StringBuilder where = new StringBuilder(" WHERE 1=1");
         List<Object> params = new ArrayList<>();
 
-        if (query != null && !query.isEmpty()) {
-            where.append(" AND schedule_name = ?");
-            params.add(query);
+        SchedulerSearchQuery parsed = SchedulerSearchQuery.parse(query);
+        if (parsed.hasScheduleNames()) {
+            String placeholders =
+                    String.join(",", Collections.nCopies(parsed.getScheduleNames().size(), "?"));
+            where.append(" AND schedule_name IN (").append(placeholders).append(")");
+            params.addAll(parsed.getScheduleNames());
         }
-        if (freeText != null && !freeText.isEmpty() && !"*".equals(freeText)) {
-            where.append(
-                    " AND (schedule_name LIKE ? OR workflow_name LIKE ? OR workflow_id LIKE ?)");
-            String like = "%" + freeText + "%";
-            params.add(like);
-            params.add(like);
-            params.add(like);
+        if (parsed.hasStates()) {
+            String placeholders =
+                    String.join(",", Collections.nCopies(parsed.getStates().size(), "?"));
+            where.append(" AND state IN (").append(placeholders).append(")");
+            params.addAll(parsed.getStates());
+        }
+        if (parsed.getScheduledTimeAfter() != null) {
+            where.append(" AND scheduled_time > ?");
+            params.add(parsed.getScheduledTimeAfter());
+        }
+        if (parsed.getScheduledTimeBefore() != null) {
+            where.append(" AND scheduled_time < ?");
+            params.add(parsed.getScheduledTimeBefore());
+        }
+        if (parsed.hasWorkflowName()) {
+            where.append(" AND workflow_name LIKE ?");
+            params.add("%" + parsed.getWorkflowName() + "%");
+        }
+        if (parsed.hasExecutionId()) {
+            where.append(" AND execution_id = ?");
+            params.add(parsed.getExecutionId());
         }
 
         String countSql = "SELECT COUNT(*) FROM workflow_scheduled_executions" + where;
         long totalHits =
                 queryWithTransaction(
-                        countSql,
-                        q -> {
-                            q.addParameters(params.toArray());
-                            return q.executeCount();
-                        });
+                        countSql, q -> q.addParameters(params.toArray()).executeCount());
 
+        String orderBy = buildOrderByClause(sort);
         String dataSql =
                 "SELECT execution_id FROM workflow_scheduled_executions"
                         + where
-                        + " ORDER BY scheduled_time DESC LIMIT ? OFFSET ?";
+                        + orderBy
+                        + " LIMIT ? OFFSET ?";
         List<Object> dataParams = new ArrayList<>(params);
         dataParams.add(count);
         dataParams.add(start);
@@ -138,12 +154,25 @@ public class MySQLSchedulerArchivalDAO extends MySQLBaseDAO implements Scheduler
         List<String> ids =
                 queryWithTransaction(
                         dataSql,
-                        q -> {
-                            q.addParameters(dataParams.toArray());
-                            return q.executeScalarList(String.class);
-                        });
+                        q -> q.addParameters(dataParams.toArray()).executeScalarList(String.class));
 
         return new SearchResult<>(totalHits, ids);
+    }
+
+    private static String buildOrderByClause(List<String> sortOptions) {
+        if (sortOptions == null || sortOptions.isEmpty()) {
+            return " ORDER BY scheduled_time DESC";
+        }
+        List<String> orderClauses = new ArrayList<>();
+        for (String sortOption : sortOptions) {
+            String[] parts = sortOption.split(":");
+            String field = parts[0].trim();
+            String direction =
+                    parts.length > 1 && "ASC".equalsIgnoreCase(parts[1].trim()) ? "ASC" : "DESC";
+            String column = SchedulerSearchQuery.resolveColumnName(field);
+            orderClauses.add(column + " " + direction);
+        }
+        return " ORDER BY " + String.join(", ", orderClauses);
     }
 
     @Override

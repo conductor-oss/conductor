@@ -75,6 +75,7 @@ include 'scheduler-postgres-persistence'
 include 'scheduler-mysql-persistence'
 include 'scheduler-cassandra-persistence'
 include 'scheduler-redis-persistence'
+include 'scheduler-sqlite-persistence'
 
 include 'e2e'
 
@@ -86,3 +87,4 @@ project(':conductor-scheduler-postgres-persistence').projectDir = file('schedule
 project(':conductor-scheduler-mysql-persistence').projectDir = file('scheduler/mysql-persistence')
 project(':conductor-scheduler-cassandra-persistence').projectDir = file('scheduler/cassandra-persistence')
 project(':conductor-scheduler-redis-persistence').projectDir = file('scheduler/redis-persistence')
+project(':conductor-scheduler-sqlite-persistence').projectDir = file('scheduler/sqlite-persistence')

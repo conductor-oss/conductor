@@ -9,6 +9,7 @@ import NavLink from "./components/NavLink";
 
 import WorkflowSearch from "./pages/executions/WorkflowSearch";
 import TaskSearch from "./pages/executions/TaskSearch";
+import SchedulerSearch from "./pages/executions/SchedulerSearch";
 
 import Execution from "./pages/execution/Execution";
 import WorkflowDefinitions from "./pages/definitions/Workflow";
@@ -17,6 +18,8 @@ import TaskDefinitions from "./pages/definitions/Task";
 import TaskDefinition from "./pages/definition/TaskDefinition";
 import EventHandlerDefinitions from "./pages/definitions/EventHandler";
 import EventHandlerDefinition from "./pages/definition/EventHandlerDefinition";
+import SchedulerDefinitions from "./pages/definitions/Scheduler";
+import SchedulerDefinition from "./pages/definition/SchedulerDefinition";
 import TaskQueue from "./pages/misc/TaskQueue";
 import KitchenSink from "./pages/kitchensink/KitchenSink";
 import DiagramTest from "./pages/kitchensink/DiagramTest";
@@ -107,6 +110,9 @@ export default function App() {
             <Route exact path="/search/tasks">
               <TaskSearch />
             </Route>
+            <Route exact path="/search/schedulers">
+              <SchedulerSearch />
+            </Route>
             <Route path="/execution/:id/:taskId?">
               <Execution />
             </Route>
@@ -127,6 +133,12 @@ export default function App() {
             </Route>
             <Route exact path="/eventHandlerDef/:event?/:name?">
               <EventHandlerDefinition />
+            </Route>
+            <Route exact path="/schedulerDefs">
+              <SchedulerDefinitions />
+            </Route>
+            <Route exact path="/schedulerDef/:name?">
+              <SchedulerDefinition />
             </Route>
             <Route exact path="/taskQueue/:name?">
               <TaskQueue />

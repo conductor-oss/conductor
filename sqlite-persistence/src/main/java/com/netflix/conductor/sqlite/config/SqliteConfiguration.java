@@ -45,8 +45,6 @@ import com.netflix.conductor.sqlite.dao.metadata.SqliteTaskMetadataDAO;
 import com.netflix.conductor.sqlite.dao.metadata.SqliteWorkflowMetadataDAO;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.orkes.conductor.dao.archive.SchedulerArchivalDAO;
-import io.orkes.conductor.dao.scheduler.SchedulerDAO;
 import jakarta.annotation.PostConstruct;
 
 @Configuration(proxyBeanMethods = false)
@@ -190,26 +188,6 @@ public class SqliteConfiguration {
             @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper) {
         return new SqliteFileMetadataDAO(retryTemplate, objectMapper, dataSource);
-    }
-
-    @Bean
-    @DependsOn({"flywayForPrimaryDb"})
-    @ConditionalOnProperty(
-            name = "conductor.scheduler.enabled",
-            havingValue = "true",
-            matchIfMissing = true)
-    public SchedulerDAO sqliteSchedulerDAO(ObjectMapper objectMapper) {
-        return new SqliteSchedulerDAO(dataSource, objectMapper);
-    }
-
-    @Bean
-    @DependsOn({"flywayForPrimaryDb"})
-    @ConditionalOnProperty(
-            name = "conductor.scheduler.enabled",
-            havingValue = "true",
-            matchIfMissing = true)
-    public SchedulerArchivalDAO sqliteSchedulerArchivalDAO(ObjectMapper objectMapper) {
-        return new SqliteSchedulerArchivalDAO(dataSource, objectMapper);
     }
 
     @Bean

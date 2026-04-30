@@ -169,14 +169,31 @@ public class CassandraSchedulerArchivalDAOTest {
     }
 
     @Test
-    public void testSearch_freeText() {
-        dao.saveExecutionRecord(buildExecution("alpha-schedule", "e-alpha"));
-        dao.saveExecutionRecord(buildExecution("beta-schedule", "e-beta"));
+    public void testSearch_byWorkflowName() {
+        WorkflowScheduleExecutionModel e1 = buildExecution("wn-sched", "e-wn1");
+        e1.setWorkflowName("payment-processor");
+        dao.saveExecutionRecord(e1);
+
+        WorkflowScheduleExecutionModel e2 = buildExecution("wn-sched", "e-wn2");
+        e2.setWorkflowName("order-fulfillment");
+        dao.saveExecutionRecord(e2);
 
         SearchResult<String> result =
-                dao.searchScheduledExecutions(ORG_ID, null, "alpha", 0, 10, null);
+                dao.searchScheduledExecutions(ORG_ID, "workflowName=payment", null, 0, 10, null);
         assertEquals(1, result.getTotalHits());
-        assertEquals("e-alpha", result.getResults().get(0));
+        assertEquals("e-wn1", result.getResults().get(0));
+    }
+
+    @Test
+    public void testSearch_byExecutionId() {
+        dao.saveExecutionRecord(buildExecution("eid-sched", "exact-id-123"));
+        dao.saveExecutionRecord(buildExecution("eid-sched", "exact-id-456"));
+
+        SearchResult<String> result =
+                dao.searchScheduledExecutions(
+                        ORG_ID, "executionId=exact-id-123", null, 0, 10, null);
+        assertEquals(1, result.getTotalHits());
+        assertEquals("exact-id-123", result.getResults().get(0));
     }
 
     @Test

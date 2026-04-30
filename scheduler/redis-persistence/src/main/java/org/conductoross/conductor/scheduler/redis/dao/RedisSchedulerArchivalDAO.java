@@ -30,6 +30,7 @@ import com.netflix.conductor.redis.jedis.JedisProxy;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.orkes.conductor.dao.archive.SchedulerArchivalDAO;
+import io.orkes.conductor.dao.archive.SchedulerSearchQuery;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
 
 /**
@@ -140,26 +141,21 @@ public class RedisSchedulerArchivalDAO extends BaseDynoDAO implements SchedulerA
     public SearchResult<String> searchScheduledExecutions(
             String orgId, String query, String freeText, int start, int count, List<String> sort) {
         Monitors.recordDaoRequests(DAO_NAME, "searchScheduledExecutions", "n/a", "n/a");
-        if (query != null && !query.isEmpty()) {
-            // Get IDs from sorted set, filter out expired
-            List<String> allIds = jedisProxy.zrange(archivalSchedKey(query), 0, -1);
-            List<String> liveIds = filterLive(allIds);
-            Collections.reverse(liveIds); // DESC by scheduledTime
 
-            long totalHits = liveIds.size();
-            int end = Math.min(start + count, liveIds.size());
-            List<String> page = start < liveIds.size() ? liveIds.subList(start, end) : List.of();
-            return new SearchResult<>(totalHits, page);
+        SchedulerSearchQuery parsed = SchedulerSearchQuery.parse(query);
+
+        // Determine which schedule names to query
+        Collection<String> targetScheduleNames;
+        if (parsed.hasScheduleNames()) {
+            targetScheduleNames = parsed.getScheduleNames();
+        } else {
+            Set<String> all = jedisProxy.smembers(keySchedNames());
+            targetScheduleNames = all != null ? all : Set.of();
         }
 
-        // Free text search: iterate all schedules, fetch live records, filter
-        Set<String> scheduleNames = jedisProxy.smembers(keySchedNames());
-        if (scheduleNames == null) {
-            scheduleNames = Set.of();
-        }
-
+        // Collect all live models from targeted schedules
         List<WorkflowScheduleExecutionModel> allModels = new ArrayList<>();
-        for (String schedName : scheduleNames) {
+        for (String schedName : targetScheduleNames) {
             List<String> ids = jedisProxy.zrange(archivalSchedKey(schedName), 0, -1);
             for (String id : ids) {
                 String json = jedisProxy.get(archivalKey(id));
@@ -169,26 +165,60 @@ public class RedisSchedulerArchivalDAO extends BaseDynoDAO implements SchedulerA
             }
         }
 
-        if (freeText != null && !freeText.isEmpty() && !"*".equals(freeText)) {
-            String term = freeText.toLowerCase();
+        // Filter by state
+        if (parsed.hasStates()) {
+            Set<String> stateSet = new HashSet<>(parsed.getStates());
             allModels =
                     allModels.stream()
                             .filter(
-                                    m -> {
-                                        String sn =
-                                                m.getScheduleName() != null
-                                                        ? m.getScheduleName()
-                                                        : "";
-                                        String wn =
-                                                m.getWorkflowName() != null
-                                                        ? m.getWorkflowName()
-                                                        : "";
-                                        String wid =
-                                                m.getWorkflowId() != null ? m.getWorkflowId() : "";
-                                        return sn.toLowerCase().contains(term)
-                                                || wn.toLowerCase().contains(term)
-                                                || wid.toLowerCase().contains(term);
-                                    })
+                                    m ->
+                                            m.getState() != null
+                                                    && stateSet.contains(m.getState().name()))
+                            .collect(Collectors.toList());
+        }
+
+        // Filter by time range
+        if (parsed.getScheduledTimeAfter() != null) {
+            long after = parsed.getScheduledTimeAfter();
+            allModels =
+                    allModels.stream()
+                            .filter(
+                                    m ->
+                                            m.getScheduledTime() != null
+                                                    && m.getScheduledTime() > after)
+                            .collect(Collectors.toList());
+        }
+        if (parsed.getScheduledTimeBefore() != null) {
+            long before = parsed.getScheduledTimeBefore();
+            allModels =
+                    allModels.stream()
+                            .filter(
+                                    m ->
+                                            m.getScheduledTime() != null
+                                                    && m.getScheduledTime() < before)
+                            .collect(Collectors.toList());
+        }
+
+        // Filter by workflow name (substring match)
+        if (parsed.hasWorkflowName()) {
+            String term = parsed.getWorkflowName().toLowerCase();
+            allModels =
+                    allModels.stream()
+                            .filter(
+                                    m ->
+                                            m.getWorkflowName() != null
+                                                    && m.getWorkflowName()
+                                                            .toLowerCase()
+                                                            .contains(term))
+                            .collect(Collectors.toList());
+        }
+
+        // Filter by execution ID (exact match)
+        if (parsed.hasExecutionId()) {
+            String execId = parsed.getExecutionId();
+            allModels =
+                    allModels.stream()
+                            .filter(m -> execId.equals(m.getExecutionId()))
                             .collect(Collectors.toList());
         }
 

@@ -6,6 +6,7 @@ export default function SearchTabs({ tabIndex }) {
     <Tabs value={tabIndex}>
       <Tab label="Workflows" component={NavLink} path="/" />
       <Tab label="Tasks" component={NavLink} path="/search/tasks" />
+      <Tab label="Schedulers" component={NavLink} path="/search/schedulers" />
     </Tabs>
   );
 }

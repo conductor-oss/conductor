@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.sqlite.dao;
+package org.conductoross.conductor.scheduler.sqlite.dao;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -29,13 +29,15 @@ import com.netflix.conductor.core.exception.NonTransientException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.orkes.conductor.dao.archive.SchedulerArchivalDAO;
+import io.orkes.conductor.dao.archive.SchedulerSearchQuery;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
 
 /**
  * SQLite implementation of {@link SchedulerArchivalDAO}.
  *
  * <p>Stores execution records in the {@code workflow_scheduled_executions} table with individual
- * columns for efficient querying and filtering. Managed by Flyway ({@code db/migration_sqlite}).
+ * columns for efficient querying and filtering. Managed by Flyway ({@code
+ * db/migration_scheduler_sqlite}).
  */
 public class SqliteSchedulerArchivalDAO implements SchedulerArchivalDAO {
 
@@ -81,27 +83,55 @@ public class SqliteSchedulerArchivalDAO implements SchedulerArchivalDAO {
         List<Object> params = new ArrayList<>();
         List<Object> countParams = new ArrayList<>();
 
-        if (query != null && !query.isEmpty()) {
-            sql.append(" AND schedule_name = ?");
-            countSql.append(" AND schedule_name = ?");
-            params.add(query);
-            countParams.add(query);
+        SchedulerSearchQuery parsed = SchedulerSearchQuery.parse(query);
+        if (parsed.hasScheduleNames()) {
+            String placeholders =
+                    String.join(",", Collections.nCopies(parsed.getScheduleNames().size(), "?"));
+            sql.append(" AND schedule_name IN (").append(placeholders).append(")");
+            countSql.append(" AND schedule_name IN (").append(placeholders).append(")");
+            params.addAll(parsed.getScheduleNames());
+            countParams.addAll(parsed.getScheduleNames());
         }
-
-        if (freeText != null && !freeText.isEmpty() && !"*".equals(freeText)) {
-            sql.append(" AND (schedule_name LIKE ? OR workflow_name LIKE ? OR workflow_id LIKE ?)");
-            countSql.append(
-                    " AND (schedule_name LIKE ? OR workflow_name LIKE ? OR workflow_id LIKE ?)");
-            String like = "%" + freeText + "%";
-            params.addAll(List.of(like, like, like));
-            countParams.addAll(List.of(like, like, like));
+        if (parsed.hasStates()) {
+            String placeholders =
+                    String.join(",", Collections.nCopies(parsed.getStates().size(), "?"));
+            sql.append(" AND state IN (").append(placeholders).append(")");
+            countSql.append(" AND state IN (").append(placeholders).append(")");
+            params.addAll(parsed.getStates());
+            countParams.addAll(parsed.getStates());
+        }
+        if (parsed.getScheduledTimeAfter() != null) {
+            sql.append(" AND scheduled_time > ?");
+            countSql.append(" AND scheduled_time > ?");
+            params.add(parsed.getScheduledTimeAfter());
+            countParams.add(parsed.getScheduledTimeAfter());
+        }
+        if (parsed.getScheduledTimeBefore() != null) {
+            sql.append(" AND scheduled_time < ?");
+            countSql.append(" AND scheduled_time < ?");
+            params.add(parsed.getScheduledTimeBefore());
+            countParams.add(parsed.getScheduledTimeBefore());
+        }
+        if (parsed.hasWorkflowName()) {
+            sql.append(" AND workflow_name LIKE ?");
+            countSql.append(" AND workflow_name LIKE ?");
+            String like = "%" + parsed.getWorkflowName() + "%";
+            params.add(like);
+            countParams.add(like);
+        }
+        if (parsed.hasExecutionId()) {
+            sql.append(" AND execution_id = ?");
+            countSql.append(" AND execution_id = ?");
+            params.add(parsed.getExecutionId());
+            countParams.add(parsed.getExecutionId());
         }
 
         long totalHits =
                 jdbc.queryForObject(
                         countSql.toString(), Long.class, countParams.toArray(new Object[0]));
 
-        sql.append(" ORDER BY scheduled_time DESC LIMIT ? OFFSET ?");
+        String orderBy = buildOrderByClause(sort);
+        sql.append(orderBy).append(" LIMIT ? OFFSET ?");
         params.add(count);
         params.add(start);
 
@@ -109,6 +139,22 @@ public class SqliteSchedulerArchivalDAO implements SchedulerArchivalDAO {
                 jdbc.queryForList(sql.toString(), String.class, params.toArray(new Object[0]));
 
         return new SearchResult<>(totalHits, executionIds);
+    }
+
+    private static String buildOrderByClause(List<String> sortOptions) {
+        if (sortOptions == null || sortOptions.isEmpty()) {
+            return " ORDER BY scheduled_time DESC";
+        }
+        List<String> orderClauses = new ArrayList<>();
+        for (String sortOption : sortOptions) {
+            String[] parts = sortOption.split(":");
+            String field = parts[0].trim();
+            String direction =
+                    parts.length > 1 && "ASC".equalsIgnoreCase(parts[1].trim()) ? "ASC" : "DESC";
+            String column = SchedulerSearchQuery.resolveColumnName(field);
+            orderClauses.add(column + " " + direction);
+        }
+        return " ORDER BY " + String.join(", ", orderClauses);
     }
 
     @Override

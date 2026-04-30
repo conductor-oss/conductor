@@ -4,7 +4,7 @@ description: "Schedule workflows to run on a cron expression using Conductor's b
 
 # Scheduling Workflows
 
-Conductor includes a built-in scheduler that triggers workflow executions on a cron schedule. Schedules are managed entirely through the REST API — no external cron daemon or job scheduler is needed.
+Conductor includes a built-in scheduler that triggers workflow executions on a cron schedule. Schedules are managed through the REST API — no external cron daemon or job scheduler is needed.
 
 ## How it works
 

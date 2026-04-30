@@ -12,6 +12,7 @@
  */
 package io.orkes.conductor.scheduler.dao;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -168,14 +169,35 @@ public abstract class AbstractSchedulerArchivalDAOTest {
     }
 
     @Test
-    public void testSearch_freeText() {
-        archivalDao().saveExecutionRecord(buildExecution("alpha-schedule", "e-alpha"));
-        archivalDao().saveExecutionRecord(buildExecution("beta-schedule", "e-beta"));
+    public void testSearch_byWorkflowName() {
+        WorkflowScheduleExecutionModel e1 = buildExecution("wn-sched", "e-wn1");
+        e1.setWorkflowName("payment-processor");
+        archivalDao().saveExecutionRecord(e1);
+
+        WorkflowScheduleExecutionModel e2 = buildExecution("wn-sched", "e-wn2");
+        e2.setWorkflowName("order-fulfillment");
+        archivalDao().saveExecutionRecord(e2);
+
+        // Substring match on workflow name
+        SearchResult<String> result =
+                archivalDao()
+                        .searchScheduledExecutions(
+                                ORG_ID, "workflowName=payment", null, 0, 10, null);
+        assertEquals(1, result.getTotalHits());
+        assertEquals("e-wn1", result.getResults().get(0));
+    }
+
+    @Test
+    public void testSearch_byExecutionId() {
+        archivalDao().saveExecutionRecord(buildExecution("eid-sched", "exact-id-123"));
+        archivalDao().saveExecutionRecord(buildExecution("eid-sched", "exact-id-456"));
 
         SearchResult<String> result =
-                archivalDao().searchScheduledExecutions(ORG_ID, null, "alpha", 0, 10, null);
+                archivalDao()
+                        .searchScheduledExecutions(
+                                ORG_ID, "executionId=exact-id-123", null, 0, 10, null);
         assertEquals(1, result.getTotalHits());
-        assertEquals("e-alpha", result.getResults().get(0));
+        assertEquals("exact-id-123", result.getResults().get(0));
     }
 
     @Test
@@ -214,6 +236,152 @@ public abstract class AbstractSchedulerArchivalDAOTest {
                 archivalDao().searchScheduledExecutions(ORG_ID, "nonexistent", null, 0, 10, null);
         assertEquals(0, result.getTotalHits());
         assertTrue(result.getResults().isEmpty());
+    }
+
+    // -------------------------------------------------------------------------
+    // 3b. Search — UI query syntax (SchedulerSearchQuery.parse)
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void testSearch_scheduleNameInSyntax() {
+        archivalDao().saveExecutionRecord(buildExecution("sched-x", "e1"));
+        archivalDao().saveExecutionRecord(buildExecution("sched-y", "e2"));
+        archivalDao().saveExecutionRecord(buildExecution("sched-z", "e3"));
+
+        SearchResult<String> result =
+                archivalDao()
+                        .searchScheduledExecutions(
+                                ORG_ID, "scheduleName IN (sched-x,sched-y)", null, 0, 10, null);
+        assertEquals(2, result.getTotalHits());
+        assertTrue(result.getResults().contains("e1"));
+        assertTrue(result.getResults().contains("e2"));
+        assertFalse(result.getResults().contains("e3"));
+    }
+
+    @Test
+    public void testSearch_stateInSyntax() {
+        WorkflowScheduleExecutionModel executed = buildExecution("state-sched", "e-exec");
+        executed.setState(WorkflowScheduleExecutionModel.State.EXECUTED);
+        archivalDao().saveExecutionRecord(executed);
+
+        WorkflowScheduleExecutionModel polled = buildExecution("state-sched", "e-poll");
+        polled.setState(WorkflowScheduleExecutionModel.State.POLLED);
+        archivalDao().saveExecutionRecord(polled);
+
+        WorkflowScheduleExecutionModel failed = buildExecution("state-sched", "e-fail");
+        failed.setState(WorkflowScheduleExecutionModel.State.FAILED);
+        archivalDao().saveExecutionRecord(failed);
+
+        SearchResult<String> result =
+                archivalDao()
+                        .searchScheduledExecutions(
+                                ORG_ID, "state IN (POLLED,FAILED)", null, 0, 10, null);
+        assertEquals(2, result.getTotalHits());
+        assertTrue(result.getResults().contains("e-poll"));
+        assertTrue(result.getResults().contains("e-fail"));
+        assertFalse(result.getResults().contains("e-exec"));
+    }
+
+    @Test
+    public void testSearch_scheduledTimeRange() {
+        WorkflowScheduleExecutionModel early = buildExecution("time-sched", "e-early");
+        early.setScheduledTime(1000L);
+        archivalDao().saveExecutionRecord(early);
+
+        WorkflowScheduleExecutionModel mid = buildExecution("time-sched", "e-mid");
+        mid.setScheduledTime(5000L);
+        archivalDao().saveExecutionRecord(mid);
+
+        WorkflowScheduleExecutionModel late = buildExecution("time-sched", "e-late");
+        late.setScheduledTime(9000L);
+        archivalDao().saveExecutionRecord(late);
+
+        // scheduledTime>2000 AND scheduledTime<8000 => only "mid"
+        SearchResult<String> result =
+                archivalDao()
+                        .searchScheduledExecutions(
+                                ORG_ID,
+                                "scheduledTime>2000 AND scheduledTime<8000",
+                                null,
+                                0,
+                                10,
+                                null);
+        assertEquals(1, result.getTotalHits());
+        assertEquals("e-mid", result.getResults().get(0));
+    }
+
+    @Test
+    public void testSearch_combinedFilters() {
+        WorkflowScheduleExecutionModel e1 = buildExecution("combo-a", "c1");
+        e1.setState(WorkflowScheduleExecutionModel.State.EXECUTED);
+        e1.setScheduledTime(5000L);
+        archivalDao().saveExecutionRecord(e1);
+
+        WorkflowScheduleExecutionModel e2 = buildExecution("combo-a", "c2");
+        e2.setState(WorkflowScheduleExecutionModel.State.FAILED);
+        e2.setScheduledTime(5000L);
+        archivalDao().saveExecutionRecord(e2);
+
+        WorkflowScheduleExecutionModel e3 = buildExecution("combo-b", "c3");
+        e3.setState(WorkflowScheduleExecutionModel.State.EXECUTED);
+        e3.setScheduledTime(5000L);
+        archivalDao().saveExecutionRecord(e3);
+
+        WorkflowScheduleExecutionModel e4 = buildExecution("combo-a", "c4");
+        e4.setState(WorkflowScheduleExecutionModel.State.EXECUTED);
+        e4.setScheduledTime(1000L);
+        archivalDao().saveExecutionRecord(e4);
+
+        // schedule=combo-a AND state=EXECUTED AND scheduledTime>2000
+        String query = "scheduleName IN (combo-a) AND state IN (EXECUTED) AND scheduledTime>2000";
+        SearchResult<String> result =
+                archivalDao().searchScheduledExecutions(ORG_ID, query, null, 0, 10, null);
+        assertEquals(1, result.getTotalHits());
+        assertEquals("c1", result.getResults().get(0));
+    }
+
+    @Test
+    public void testSearch_withSort() {
+        WorkflowScheduleExecutionModel older = buildExecution("sort-sched", "s-old");
+        older.setScheduledTime(1000L);
+        archivalDao().saveExecutionRecord(older);
+
+        WorkflowScheduleExecutionModel newer = buildExecution("sort-sched", "s-new");
+        newer.setScheduledTime(9000L);
+        archivalDao().saveExecutionRecord(newer);
+
+        // Default sort: scheduledTime DESC => newer first
+        SearchResult<String> descResult =
+                archivalDao().searchScheduledExecutions(ORG_ID, "sort-sched", null, 0, 10, null);
+        assertEquals("s-new", descResult.getResults().get(0));
+
+        // Explicit ASC sort
+        SearchResult<String> ascResult =
+                archivalDao()
+                        .searchScheduledExecutions(
+                                ORG_ID, "sort-sched", null, 0, 10, List.of("scheduledTime:ASC"));
+        assertEquals("s-old", ascResult.getResults().get(0));
+    }
+
+    @Test
+    public void testSearch_emptyQuery_returnsAll() {
+        archivalDao().saveExecutionRecord(buildExecution("all-a", "a1"));
+        archivalDao().saveExecutionRecord(buildExecution("all-b", "a2"));
+
+        // Empty query string => no filters, returns everything
+        SearchResult<String> result =
+                archivalDao().searchScheduledExecutions(ORG_ID, "", "*", 0, 10, null);
+        assertEquals(2, result.getTotalHits());
+    }
+
+    @Test
+    public void testSearch_nullQuery_returnsAll() {
+        archivalDao().saveExecutionRecord(buildExecution("null-a", "n1"));
+        archivalDao().saveExecutionRecord(buildExecution("null-b", "n2"));
+
+        SearchResult<String> result =
+                archivalDao().searchScheduledExecutions(ORG_ID, null, "*", 0, 10, null);
+        assertEquals(2, result.getTotalHits());
     }
 
     // =========================================================================
