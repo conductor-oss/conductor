@@ -28,8 +28,8 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Verifies that MetricsCollector correctly wires Spring-managed MeterRegistry instances
- * into Monitors at startup, and that meters recorded via Monitors are visible in those registries.
+ * Verifies that MetricsCollector correctly wires Spring-managed MeterRegistry instances into
+ * Monitors at startup, and that meters recorded via Monitors are visible in those registries.
  */
 @SpringBootTest(classes = MetricsCollectorIntegrationTest.TestConfig.class)
 class MetricsCollectorIntegrationTest {
@@ -47,8 +47,7 @@ class MetricsCollectorIntegrationTest {
         }
     }
 
-    @Autowired
-    private SimpleMeterRegistry simpleMeterRegistry;
+    @Autowired private SimpleMeterRegistry simpleMeterRegistry;
 
     @Test
     void monitorsRegistry_isNotNull() {

@@ -20,9 +20,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Spring component that registers all available {@link MeterRegistry} instances with
- * {@link Monitors} at startup. Monitors owns the composite registry; this class is
- * purely a wiring point between Spring-managed registries and the static Monitors API.
+ * Spring component that registers all available {@link MeterRegistry} instances with {@link
+ * Monitors} at startup. Monitors owns the composite registry; this class is purely a wiring point
+ * between Spring-managed registries and the static Monitors API.
  */
 @Slf4j
 @Component
@@ -40,7 +40,9 @@ public class MetricsCollector {
         log.info("=========");
     }
 
-    /** @deprecated Use {@link Monitors#getRegistry()} directly. */
+    /**
+     * @deprecated Use {@link Monitors#getRegistry()} directly.
+     */
     @Deprecated
     public static MeterRegistry getMeterRegistry() {
         return Monitors.getRegistry();
