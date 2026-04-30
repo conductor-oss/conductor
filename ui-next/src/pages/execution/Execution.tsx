@@ -733,6 +733,7 @@ export default function Execution() {
                 execution={execution}
                 openedTab={openedTab}
                 onChangeExecutionTab={changeExecutionTab}
+                isAssistantOpen={isAssistantPanelOpen}
                 onToggleAssistant={() => {
                   setAgentFirstUse(true);
                   setAgentDisplayMode(
