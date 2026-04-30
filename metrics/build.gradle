@@ -31,6 +31,7 @@ dependencies {
     implementation "io.micrometer:micrometer-registry-influx:${revMicrometer}"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation "org.testcontainers:mockserver:${revTestContainer}"
     testImplementation "org.mock-server:mockserver-client-java:${revMockServerClient}"
 
