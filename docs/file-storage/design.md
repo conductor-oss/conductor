@@ -160,7 +160,6 @@ Content-Type: application/json
 {
     "fileName": "report.pdf",
     "contentType": "application/pdf",
-    "fileSize": 1048576,
     "workflowId": "wf-uuid",
     "taskId": "task-uuid"
 }
@@ -168,9 +167,8 @@ Content-Type: application/json
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `fileName` | String | Yes | Original file name |
-| `contentType` | String | Yes | MIME type |
-| `fileSize` | long | Yes | File size in bytes |
+| `fileName` | String | No | Original file name |
+| `contentType` | String | No | MIME type |
 | `workflowId` | String | Yes | Workflow ID — required, must not be blank |
 | `taskId` | String | No | Task ID (when file is task output) |
 
@@ -181,10 +179,9 @@ Content-Type: application/json
     "fileHandleId": "conductor://file/d6a4e5f7-8b9c-4a1d-b2e3-f4a5b6c7d8e9",
     "fileName": "report.pdf",
     "contentType": "application/pdf",
-    "fileSize": 1048576,
     "storageType": "S3",
     "uploadStatus": "UPLOADING",
-    "uploadUrl": "https://s3.amazonaws.com/bucket/files/d6a4e5f7-.../report.pdf?X-Amz-...",
+    "uploadUrl": "https://s3.amazonaws.com/bucket/conductor/wf-uuid/d6a4e5f7-...?X-Amz-...",
     "uploadUrlExpiresAt": 1760522460000,
     "createdAt": 1760522400000
 }
@@ -192,18 +189,18 @@ Content-Type: application/json
 
 **Errors:**
 
-| Status | Code | Condition |
-|--------|------|-----------|
-| 400 | `INVALID_REQUEST` | Missing required fields, invalid content type |
-| 413 | `FILE_TOO_LARGE` | `fileSize` exceeds `conductor.file-storage.max-file-size` |
+Errors flow through the existing `ApplicationExceptionMapper` → `ErrorResponse` (status, message, instance, retryable). No file-storage-specific error codes; the HTTP status is the contract:
+
+| Status | Exception | Condition |
+|--------|-----------|-----------|
+| 400 | `IllegalArgumentException` | Missing/blank `workflowId` |
 
 **Server logic:**
-1. Validate request — file size against configured max
-2. Generate fileId (random identifier) → `conductor://file/<fileId>`
-3. Generate storage path: `files/<fileId>/<fileName>`
-4. Persist `FileModel` with status UPLOADING via `FileMetadataDAO`
-5. Generate presigned upload URL via `FileStorage.generateUploadUrl()`
-6. Return `FileUploadResponse`
+1. Generate fileId (random identifier) → `conductor://file/<fileId>`
+2. Generate storage path: `conductor/<workflowId>/<fileId>`
+3. Persist `FileModel` with status UPLOADING via `FileMetadataDAO`
+4. Generate presigned upload URL via `FileStorage.generateUploadUrl()`
+5. Return `FileUploadResponse`
 
 ---
 
@@ -223,9 +220,9 @@ Returns a presigned upload URL. Used on retry when original URL from create has 
 
 **Errors:**
 
-| Status | Code | Condition |
-|--------|------|-----------|
-| 404 | `FILE_NOT_FOUND` | File ID does not exist |
+| Status | Exception | Condition |
+|--------|-----------|-----------|
+| 404 | `NotFoundException` | File ID does not exist |
 
 **Server logic:**
 1. Look up `FileModel` by fileId
@@ -250,18 +247,19 @@ reads content hash and actual size from storage provider, persists both.
 
 **Errors:**
 
-| Status | Code | Condition |
-|--------|------|-----------|
-| 404 | `FILE_NOT_FOUND` | File ID does not exist |
-| 409 | `ALREADY_UPLOADED` | File already in UPLOADED status |
-| 500 | `VERIFICATION_FAILED` | File not found on storage backend |
+| Status | Exception | Condition |
+|--------|-----------|-----------|
+| 404 | `NotFoundException` | File ID does not exist |
+| 409 | `ConflictException` | File already in UPLOADED status |
+| 500 | `NonTransientException` | File not found on storage backend |
 
 **Server logic:**
 1. Look up `FileModel` by fileId
-2. Single call: `FileStorage.getStorageFileInfo(storagePath)` — verifies file exists, reads hash + size
-3. If not exists → 500 VERIFICATION_FAILED
-4. Persist via `FileMetadataDAO.updateUploadComplete(fileId, UPLOADED, contentHash, contentSize)`
-5. Return `FileUploadCompleteResponse` (includes `contentHash`)
+2. If status is already `UPLOADED` → 409
+3. Single call: `FileStorage.getStorageFileInfo(storagePath)` — verifies file exists, reads hash + size
+4. If not exists → 500
+5. Persist via `FileMetadataDAO.updateUploadComplete(fileId, UPLOADED, contentHash, contentSize)`
+6. Return `FileUploadCompleteResponse` (includes `contentHash`)
 
 ---
 
@@ -281,18 +279,17 @@ Returns a presigned download URL.
 
 **Errors:**
 
-| Status | Code | Condition |
-|--------|------|-----------|
-| 404 | `FILE_NOT_FOUND` | File ID does not exist |
-| 400 | `UPLOAD_NOT_COMPLETE` | File status is not UPLOADED |
-| 403 | `ACCESS_FORBIDDEN` | Caller's `workflowId` is not in the file's workflow family |
+| Status | Exception | Condition |
+|--------|-----------|-----------|
+| 404 | `NotFoundException` | File ID does not exist |
+| 400 | `IllegalArgumentException` | File status is not UPLOADED |
+| 403 | `AccessForbiddenException` | Caller's `workflowId` is not in the file's workflow family |
 
 **Server logic:**
 1. Look up `FileModel` — verify status is UPLOADED
-2. If file has no `workflowId` → 403 ACCESS_FORBIDDEN
-3. If caller's `workflowId` equals `conductor.file-storage.default-workflow-id` → skip family check
-4. Otherwise: resolve workflow family via `WorkflowFamilyResolver.getFamily(callerWorkflowId)`; if file's `workflowId` not in family → 403 ACCESS_FORBIDDEN
-5. Generate fresh URL via `FileStorage.generateDownloadUrl()`, return
+2. If file has no `workflowId` → 403
+3. Resolve workflow family via `WorkflowFamilyResolver.getFamily(callerWorkflowId)`; if file's `workflowId` not in family → 403
+4. Generate fresh URL via `FileStorage.generateDownloadUrl()`, return
 
 ---
 
@@ -307,7 +304,6 @@ Returns full file metadata.
     "fileHandleId": "conductor://file/d6a4e5f7-...",
     "fileName": "report.pdf",
     "contentType": "application/pdf",
-    "fileSize": 1048576,
     "contentHash": "d41d8cd98f00b204e9800998ecf8427e",
     "storageType": "S3",
     "uploadStatus": "UPLOADED",
@@ -322,9 +318,9 @@ Returns full file metadata.
 
 **Errors:**
 
-| Status | Code | Condition |
-|--------|------|-----------|
-| 404 | `FILE_NOT_FOUND` | File ID does not exist |
+| Status | Exception | Condition |
+|--------|-----------|-----------|
+| 404 | `NotFoundException` | File ID does not exist |
 
 ---
 
@@ -338,8 +334,7 @@ Initiates a multipart upload on the storage backend.
 {
     "fileHandleId": "conductor://file/d6a4e5f7-...",
     "uploadId": "abc123-multipart-upload-id",
-    "uploadUrl": null,
-    "partSize": 5242880
+    "uploadUrl": null
 }
 ```
 
@@ -347,14 +342,14 @@ Initiates a multipart upload on the storage backend.
 |-------|-------------|
 | `uploadId` | Backend-specific multipart upload ID |
 | `uploadUrl` | Resumable URL for GCS/Azure. Null for S3 (uses per-part URLs). |
-| `partSize` | Recommended part size in bytes |
+
+Part size is chosen client-side from `conductor.file-client.multipart-part-size` (default 10 MiB) — the server does not return one.
 
 **Server logic:**
 1. Look up `FileModel` — verify status is UPLOADING
 2. Call `FileStorage.initiateMultipartUpload()` → returns upload ID
 3. For GCS/Azure: generate resumable URL
-4. Calculate part size from file size and backend constraints
-5. Return `MultipartInitResponse`
+4. Return `MultipartInitResponse`
 
 ---
 
@@ -404,7 +399,7 @@ Finalizes a multipart upload after all parts have been uploaded.
 **Server logic:**
 1. Call `FileStorage.completeMultipartUpload(storagePath, uploadId, partETags)`
 2. Call `FileStorage.getStorageFileInfo(storagePath)` — verify file exists, read content hash + actual size
-3. If not exists → 500 VERIFICATION_FAILED
+3. If not exists → 500 (`NonTransientException`)
 4. Persist `storageContentHash` + `storageContentSize` via `FileMetadataDAO.updateUploadComplete()`
 5. Return `FileUploadCompleteResponse` (includes `contentHash`)
 
@@ -428,8 +423,7 @@ public class FileUploadRequest {
 
     private String contentType;
 
-    private long fileSize;
-
+    @NotBlank(message = "workflowId is required")
     private String workflowId;
 
     private String taskId;
@@ -440,9 +434,6 @@ public class FileUploadRequest {
     public String getContentType() { return contentType; }
     public void setContentType(String contentType) { this.contentType = contentType; }
 
-    public long getFileSize() { return fileSize; }
-    public void setFileSize(long fileSize) { this.fileSize = fileSize; }
-
     public String getWorkflowId() { return workflowId; }
     public void setWorkflowId(String workflowId) { this.workflowId = workflowId; }
 
@@ -451,25 +442,25 @@ public class FileUploadRequest {
 
     @Override
     public String toString() {
-        return "FileUploadRequest{fileName='" + fileName + "', contentType='" + contentType
-                + "', fileSize=" + fileSize + "}";
+        return "FileUploadRequest{fileName='" + fileName + "', contentType='" + contentType + "'}";
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof FileUploadRequest that)) return false;
-        return fileSize == that.fileSize
-                && Objects.equals(fileName, that.fileName)
+        return Objects.equals(fileName, that.fileName)
                 && Objects.equals(contentType, that.contentType);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(fileName, contentType, fileSize);
+        return Objects.hash(fileName, contentType);
     }
 }
 ```
+
+`workflowId` is required (`@NotBlank`); `FileStorageServiceImpl.createFile()` also re-asserts the guard before persisting.
 
 ### FileUploadResponse
 
@@ -481,7 +472,6 @@ public class FileUploadResponse {
     private String fileHandleId;
     private String fileName;
     private String contentType;
-    private long fileSize;
     private StorageType storageType;
     private FileUploadStatus uploadStatus;
     private String uploadUrl;
@@ -509,7 +499,6 @@ public class FileHandle {
     private String fileHandleId;
     private String fileName;
     private String contentType;
-    private long fileSize;
     private String contentHash;         // from storage provider — null until upload confirmed
     private StorageType storageType;
     private FileUploadStatus uploadStatus;
@@ -527,6 +516,8 @@ public class FileHandle {
     }
 }
 ```
+
+The SDK-side mirror (`org.conductoross.conductor.client.model.file.FileHandle`) keeps a `long fileSize` field for now — populated from the local file at upload time on `ManagedFileHandler` instances built from `FileUploadResponse` (see `FileHandlerConverter.toManagedFileHandler`). The server does not return it.
 
 ### FileUploadUrlResponse
 
@@ -588,11 +579,12 @@ public class MultipartInitResponse {
     private String fileHandleId;
     private String uploadId;
     private String uploadUrl;       // resumable URL for GCS/Azure; null for S3
-    private long partSize;
 
     // getters and setters
 }
 ```
+
+Part size is not returned by the server — clients chunk the file using their own `multipart-part-size` config.
 
 ### MultipartCompleteRequest
 
@@ -636,7 +628,7 @@ public final class FileIdToFileHandleIdConverter {
 }
 ```
 
-Mirrored in the SDK at `org.conductoross.conductor.client.model.file.FileIdToFileHandleIdConverter`.
+Server-only. The SDK does not mirror this class — equivalent helpers (`toFileId`, `toFileHandleId`, `isFileHandleId`, `extractFileHandleId`, plus the `PREFIX` constant) live as static methods on the `FileHandler` interface so worker-facing code only needs the one type.
 
 ---
 
@@ -954,37 +946,41 @@ public class WorkflowFamilyResolverImpl implements WorkflowFamilyResolver {
     @Override
     public Set<String> getFamily(String workflowId) {
         Set<String> family = new HashSet<>();
+        if (workflowId == null) return family;
+        family.add(workflowId);
         collectAncestors(workflowId, family);
-        if (executionDAO.canSearchAcrossWorkflows()) {
-            collectDescendants(workflowId, family);
-        }
+        collectDescendants(workflowId, family);
         return family;
     }
 
+    /** Walks the parent chain. Stops at the first missing record — its parent pointer is gone. */
     private void collectAncestors(String workflowId, Set<String> visited) {
-        if (workflowId == null || visited.contains(workflowId)) return;
         WorkflowModel workflow = executionDAO.getWorkflow(workflowId, false);
         if (workflow == null) return;
-        visited.add(workflowId);
-        if (workflow.getParentWorkflowId() != null) {
-            collectAncestors(workflow.getParentWorkflowId(), visited);
+        String parentId = workflow.getParentWorkflowId();
+        if (StringUtils.isNotBlank(parentId) && visited.add(parentId)) {
+            collectAncestors(parentId, visited);
         }
     }
 
+    /**
+     * Walks SUB_WORKFLOW children. Loads the workflow with includeTasks=true and follows
+     * TaskModel.getSubWorkflowId() — this works on every backend (no cross-workflow query needed).
+     */
     private void collectDescendants(String workflowId, Set<String> visited) {
-        if (workflowId == null) return;
-        List<WorkflowModel> children = executionDAO.getWorkflowsByParentId(workflowId);
-        for (WorkflowModel child : children) {
-            if (!visited.contains(child.getWorkflowId())) {
-                visited.add(child.getWorkflowId());
-                collectDescendants(child.getWorkflowId(), visited);
+        WorkflowModel workflow = executionDAO.getWorkflow(workflowId, true);
+        if (workflow == null) return;
+        for (TaskModel task : workflow.getTasks()) {
+            String childId = task.getSubWorkflowId();
+            if (StringUtils.isNotBlank(childId) && visited.add(childId)) {
+                collectDescendants(childId, visited);
             }
         }
     }
 }
 ```
 
-`collectDescendants` is only called when `executionDAO.canSearchAcrossWorkflows()` returns true (Redis/SQL backends). Cassandra does not support this query; on that backend only ancestors are resolved.
+Self is added before any DAO lookup so an archived workflow never loses access to files it owns. Descendants are discovered by walking SUB_WORKFLOW tasks rather than via a parent-id query — that traversal works on every backend, including Cassandra.
 
 ---
 
@@ -1005,7 +1001,6 @@ public class FileModel {
     private String fileId;
     private String fileName;
     private String contentType;
-    private long fileSize;              // declared size from FileUploadRequest
     private String storageContentHash;  // hash from storage provider — set on upload-complete, null for local
     private long storageContentSize;    // actual size from storage provider — set on upload-complete
     private StorageType storageType;
@@ -1033,11 +1028,10 @@ public class FileModel {
 ### Postgres — `V15__file_metadata.sql`
 
 ```sql
-CREATE TABLE file_metadata (
+CREATE TABLE IF NOT EXISTS file_metadata (
     file_id                 VARCHAR(255)  NOT NULL PRIMARY KEY,
     file_name               VARCHAR(1024) NOT NULL,
     content_type            VARCHAR(255)  NOT NULL,
-    file_size               BIGINT        NOT NULL,
     storage_content_hash    VARCHAR(255),
     storage_content_size    BIGINT,
     storage_type            VARCHAR(50)   NOT NULL,
@@ -1059,11 +1053,10 @@ Location: `postgres-persistence/src/main/resources/db/migration_postgres/V15__fi
 ### MySQL — `V9__file_metadata.sql`
 
 ```sql
-CREATE TABLE file_metadata (
-    file_id         VARCHAR(255)  NOT NULL,
+CREATE TABLE IF NOT EXISTS file_metadata (
+    file_id                 VARCHAR(255)  NOT NULL,
     file_name               VARCHAR(1024) NOT NULL,
     content_type            VARCHAR(255)  NOT NULL,
-    file_size               BIGINT        NOT NULL,
     storage_content_hash    VARCHAR(255),
     storage_content_size    BIGINT,
     storage_type            VARCHAR(50)   NOT NULL,
@@ -1088,11 +1081,10 @@ MySQL difference: `ON UPDATE CURRENT_TIMESTAMP` for `updated_at`, `ENGINE=InnoDB
 ### SQLite — `V3__file_metadata.sql`
 
 ```sql
-CREATE TABLE file_metadata (
+CREATE TABLE IF NOT EXISTS file_metadata (
     file_id                 VARCHAR(255)  NOT NULL PRIMARY KEY,
     file_name               VARCHAR(1024) NOT NULL,
     content_type            VARCHAR(255)  NOT NULL,
-    file_size               BIGINT        NOT NULL,
     storage_content_hash    VARCHAR(255),
     storage_content_size    BIGINT,
     storage_type            VARCHAR(50)   NOT NULL,
@@ -1140,9 +1132,6 @@ public class FileStorageProperties {
     /** Storage backend type: local, s3, azure-blob, gcs */
     private String type = "local";
 
-    /** Maximum file size allowed */
-    private DataSize maxFileSize = DataSize.ofGigabytes(5);
-
     /** Presigned URL TTL */
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration signedUrlExpiration = Duration.ofSeconds(60);
@@ -1153,26 +1142,14 @@ public class FileStorageProperties {
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }
 
-    public DataSize getMaxFileSize() { return maxFileSize; }
-    public void setMaxFileSize(DataSize maxFileSize) { this.maxFileSize = maxFileSize; }
-
     public Duration getSignedUrlExpiration() { return signedUrlExpiration; }
     public void setSignedUrlExpiration(Duration signedUrlExpiration) {
         this.signedUrlExpiration = signedUrlExpiration;
     }
-
-    /**
-     * When set, any download request presenting this workflowId bypasses family scoping. Useful for
-     * shared reference files. Default: {@code null} (disabled).
-     */
-    private String defaultWorkflowId = null;
-
-    public String getDefaultWorkflowId() { return defaultWorkflowId; }
-    public void setDefaultWorkflowId(String defaultWorkflowId) {
-        this.defaultWorkflowId = defaultWorkflowId;
-    }
 }
 ```
+
+No `maxFileSize` or `defaultWorkflowId` in this iteration — file-size validation and shared-file bypass are deferred. Add them only when there is a concrete need.
 
 ### S3FileStorageProperties
 
@@ -1254,16 +1231,14 @@ public class FileClientProperties {
     private String localCacheDirectory =
             Path.of(System.getProperty("java.io.tmpdir"), "conductor", "files-cache").toString();
 
-    /** File size threshold above which multipart upload is used (default: 100 MB) */
-    private long multipartThreshold = 100 * 1024 * 1024;
+    /** Multipart upload part size in bytes (default: 10 MiB — S3 minimum). */
+    private long multipartPartSize = 10L * 1024 * 1024;
 
     // getters and setters
 }
 ```
 
-Unlike the server-side `FileStorageProperties`, the SDK does not have a `type` field — storage type selection
-happens automatically: `FileClient` looks up the registered backend by the `StorageType` returned in
-`FileUploadResponse`.
+Multipart is opt-in per upload via `FileUploadOptions.setMultipart(true)`; when enabled, the file is chunked into `multipartPartSize`-byte parts. Unlike the server-side `FileStorageProperties`, the SDK does not have a `type` field — storage type selection happens automatically: `FileClient` looks up the registered backend by the `StorageType` returned in `FileUploadResponse`.
 
 ---
 
@@ -1408,6 +1383,17 @@ public interface FileStorageBackend {
 }
 ```
 
+### FileHandlerSerializer / FileHandlerDeserializer
+
+`conductor-client` — `org.conductoross.conductor.sdk.file`
+
+Jackson serializer + deserializer registered on the `FileHandler` interface via `@JsonSerialize(using = FileHandlerSerializer.class)` / `@JsonDeserialize(using = FileHandlerDeserializer.class)`. Together they fix the on-the-wire JSON shape for any `FileHandler` value — workers and the framework never have to think about it.
+
+- **Serializer** — emits a fixed three-field object: `{ "fileHandleId": "conductor://file/<fileId>", "contentType": "...", "fileName": "..." }`. Used everywhere a `FileHandler` ends up in `outputData` (whether the developer puts it there directly or `TaskRunner` upgrades a `LocalFileHandler` after auto-upload).
+- **Deserializer** — accepts either the three-field object or a bare `conductor://file/<fileId>` string and returns a `ManagedFileHandler` bound to the active `WorkflowFileClient`. The client is read out of the `DeserializationContext` attribute `FileHandlerDeserializer.WORKFLOW_FILE_CLIENT_ATTR`, which `AnnotatedWorker` populates before deserializing POJO inputs (see `AnnotatedWorker.getInputValue()` below).
+
+`task.getInputFileHandler(key)` and `@InputParam FileHandler` accept either form; a worker that wants to emit the bare string can do so by writing `uploaded.getFileHandleId()` into `outputData` directly.
+
 ---
 
 ## SDK Internal Classes
@@ -1417,8 +1403,9 @@ public interface FileStorageBackend {
 `conductor-client` — `org.conductoross.conductor.client`
 
 Does NOT implement `FileUploader` — callers should use `WorkflowFileClient`, which binds a `workflowId` and
-delegates here. Composes `ConductorClient` + a `Map<StorageType, FileStorageBackend>` — supports multiple
-backends registered via the builder, and validates the server-reported storage type against the registered keys.
+delegates here. Composes `ConductorClient` + a `Map<StorageType, FileStorageBackend>` populated with the
+four built-in backends (`LOCAL`, `S3`, `AZURE_BLOB`, `GCS`) and any extras registered via the builder; on
+upload, the server-reported storage type must be in the map or the client fails fast.
 Follows existing client pattern (`TaskClient`, `WorkflowClient`) — constructor takes `ConductorClient`, makes
 REST calls via `client.execute(ConductorClientRequest)`.
 
@@ -1610,7 +1597,8 @@ public class WorkflowFileClient implements FileUploader {
 
 Optional metadata for a file upload. `workflowId` is passed as the explicit first argument
 on `FileClient.upload()` — this type carries everything else. When uploading inside a worker,
-`taskId` is auto-filled from the active `TaskContext` if not set here.
+`taskId` is auto-filled from the active `TaskContext` if not set here. Set `multipart=true` to
+force a multipart upload when the backend supports it; otherwise the SDK uploads in a single PUT.
 
 ```java
 package org.conductoross.conductor.sdk.file;
@@ -1620,20 +1608,20 @@ public class FileUploadOptions {
     private String taskId;
     private String fileName;
     private String contentType;
-    private long fileSize;
+    private boolean multipart;
 
     // fluent setters + getters
     public FileUploadOptions setTaskId(String taskId) { this.taskId = taskId; return this; }
     public FileUploadOptions setFileName(String fileName) { this.fileName = fileName; return this; }
     public FileUploadOptions setContentType(String contentType) { this.contentType = contentType; return this; }
-    public FileUploadOptions setFileSize(long fileSize) { this.fileSize = fileSize; return this; }
+    public FileUploadOptions setMultipart(boolean multipart) { this.multipart = multipart; return this; }
 
     // getters ...
 }
 ```
 
-All fields default to `null`/`0` — `FileClient.upload()` fills in `fileName` from the path,
-`fileSize` from `Files.size()`, and `contentType` from `"application/octet-stream"` when
+All fields default to `null`/`false` — `FileClient.upload()` fills in `fileName` from the path,
+`contentType` from `"application/octet-stream"`, and `taskId` from the active `TaskContext` when
 the caller does not set them.
 
 ### FileStorageException
@@ -1655,7 +1643,7 @@ public class FileStorageException extends RuntimeException {
 
 ### LocalFileHandler
 
-`conductor-client` — `org.conductoross.conductor.sdk.file` (package-private)
+`conductor-client` — `org.conductoross.conductor.sdk.file`
 
 ```java
 package org.conductoross.conductor.sdk.file;
@@ -1667,7 +1655,7 @@ import java.nio.file.*;
  * Wraps a local file before upload. No file handle ID, no network calls.
  * Created by {@link FileHandler#fromLocalFile(Path)}.
  */
-class LocalFileHandler implements FileHandler {
+public class LocalFileHandler implements FileHandler {
 
     private final Path path;
     private final String contentType;
@@ -1704,13 +1692,15 @@ class LocalFileHandler implements FileHandler {
         }
     }
 
-    Path getPath() { return path; }
+    public Path getPath() { return path; }
 }
 ```
 
+The class is `public` (so `TaskRunner` in another package can cast and call `getPath()`); the constructor stays package-private — callers create instances only through `FileHandler.fromLocalFile(Path)`.
+
 ### ManagedFileHandler
 
-`conductor-client` — `org.conductoross.conductor.sdk.file` (package-private)
+`conductor-client` — `org.conductoross.conductor.sdk.file`
 
 ```java
 package org.conductoross.conductor.sdk.file;
@@ -1723,10 +1713,13 @@ import org.conductoross.conductor.client.model.file.*;
 
 /**
  * SDK-internal FileHandler for files with a server-assigned conductor://file/<fileId>.
- * Handles lazy download, local file caching, and retry.
- * Thread-safe via ReentrantLock.
+ * Handles lazy download, local file caching, and retry. Thread-safe via ReentrantLock.
+ *
+ * <p>Class is public so it can be constructed from sibling packages (e.g. AnnotatedWorker,
+ * FileHandlerConverter); package-private setters are used by the converter to populate metadata
+ * without a server round-trip when the handler is built straight after upload.
  */
-class ManagedFileHandler implements FileHandler {
+public class ManagedFileHandler implements FileHandler {
 
     private final String fileHandleId;
     private String fileName;
@@ -1822,9 +1815,17 @@ class ManagedFileHandler implements FileHandler {
         // Predictable path based on file ID — enables cross-task reuse on same worker node
         // Format: <cacheDir>/<fileId>_<fileName>
         // fileId extracted by stripping the conductor://file/ prefix
-        String fileId = FileIdToFileHandleIdConverter.toFileId(fileHandleId);
+        String fileId = FileHandler.toFileId(fileHandleId);
         return Path.of(workflowFileClient.getCacheDirectory(), fileId + "_" + fileName);
     }
+
+    // Package-private setters used by FileHandlerConverter to populate metadata immediately
+    // after upload, skipping the lazy server fetch.
+    void setFileName(String fileName) { this.fileName = fileName; }
+    void setContentType(String contentType) { this.contentType = contentType; }
+    void setFileSize(long fileSize) { this.fileSize = fileSize; }
+    void setStorageType(StorageType storageType) { this.storageType = storageType; }
+    void setLocalPath(Path localPath) { this.localPath = localPath; }
 }
 ```
 
@@ -1870,7 +1871,7 @@ sequenceDiagram
     Note over W: LocalFileHandler created
     W->>W: Task completes (or explicit upload)
     W->>FC: upload(localFile)
-    FC->>S: POST /api/files {fileName, fileSize, ...}
+    FC->>S: POST /api/files {fileName, contentType, workflowId, taskId}
     S-->>FC: {fileHandleId, uploadUrl, uploadUrlExpiresAt}
     FC->>SB: upload(uploadUrl, localFile)
     SB->>ST: HTTP PUT (file bytes)
@@ -1894,7 +1895,7 @@ sequenceDiagram
     FC->>S: POST /api/files/{fileId}/multipart
     S->>ST: initiateMultipartUpload
     ST-->>S: uploadId
-    S-->>FC: {uploadId, uploadUrl, partSize}
+    S-->>FC: {uploadId, uploadUrl}
 
     alt S3 (uploadUrl is null)
         loop Each part
@@ -2079,11 +2080,9 @@ skips download.
 
 **What happens:** Workflow A uploads a file → `conductor://file/d6a4e5f7`. A worker in Workflow B tries to download it via `GET /api/files/{workflowBId}/{fileId}/download-url`.
 
-**System behavior:** The server checks whether Workflow B is in Workflow A's family (self, ancestors, or descendants via `WorkflowFamilyResolver`). If not, `AccessForbiddenException` → 403. If B is a sub-workflow of A (or vice versa), access is granted.
+**System behavior:** The server checks whether Workflow B is in Workflow A's family — self, ancestors (parent chain), or descendants (walked via SUB_WORKFLOW tasks; works on every backend including Cassandra). If not, `AccessForbiddenException` → 403. If B is a sub-workflow of A (or vice versa), access is granted.
 
-**Exception:** If `conductor.file-storage.default-workflow-id` is configured and the caller presents that ID, the family check is skipped — useful for shared reference files.
-
-**Developer sees:** 403 if the workflows are unrelated. Pass files between workflows only through parent/child relationships, or use `defaultWorkflowId` for truly shared files.
+**Developer sees:** 403 if the workflows are unrelated. Pass files between workflows only through parent/child relationships.
 
 ## 6. Presigned URL expires during multipart upload
 
@@ -2114,10 +2113,9 @@ with clear error message — no silent data corruption.
 execution (each file ID is generated once).
 
 **System behavior:** First upload completes → `upload-complete` → status UPLOADED. Second upload's
-`upload-complete` call → 409 ALREADY_UPLOADED. The SDK receives the 409, recognizes the file is already uploaded,
-and returns the existing `ManagedFileHandler`.
+`upload-complete` call → 409 (`ConflictException`). The SDK surfaces the failure as `FileStorageException` so the worker can decide whether to retry or treat the existing handle as authoritative.
 
-**Developer sees:** No error. Both workers end up with a valid `FileHandler` pointing to the same file.
+**Developer sees:** Failure on the losing worker; the winning worker's `FileHandler` is the canonical reference.
 
 ## 9. Worker restart mid-download
 
@@ -2131,16 +2129,7 @@ presigned URL. The old partial temp file is orphaned (never cleaned up per const
 
 ## 10. File size exceeds limit after partial upload
 
-**What happens:** File is larger than declared in `FileUploadRequest.fileSize`. The actual bytes uploaded exceed
-the declared size.
-
-**System behavior:** For cloud backends, the presigned URL may enforce content-length (S3 does). The upload
-fails with a 400 from the storage backend. For local backend, the SDK writes directly to the local directory.
-In both cases, `upload-complete` verification via `getStorageFileInfo()` catches size mismatches — server reads
-actual size from storage and compares against declared `fileSize`.
-
-**Developer sees:** `FileStorageException("Upload failed: file size mismatch")`. Status remains UPLOADING →
-eventually marked FAILED by audit.
+**Not enforced in this iteration.** `FileUploadRequest` no longer carries `fileSize` and there is no `maxFileSize` server config — so there is nothing to compare against and no 413 path. Storage-backend caps (S3 5 TB, etc.) still apply and surface as backend errors via `upload-complete` verification, but the server does not police a per-file size limit. Add `maxFileSize` to `FileStorageProperties` and a `FileTooLargeException` only when there is a concrete need.
 
 ---
 
@@ -2171,7 +2160,6 @@ public class FileModelConverter {
         model.setFileId(fileId);
         model.setFileName(request.getFileName());
         model.setContentType(request.getContentType());
-        model.setFileSize(request.getFileSize());
         model.setStorageType(storageType);
         model.setStoragePath(storagePath);
         model.setUploadStatus(FileUploadStatus.UPLOADING);
@@ -2185,10 +2173,9 @@ public class FileModelConverter {
     /** FileModel → FileHandle (API response DTO) */
     public static FileHandle toFileHandle(FileModel model) {
         FileHandle handle = new FileHandle();
-        handle.setFileHandleId(model.getFileId());
+        handle.setFileHandleId(FileIdToFileHandleIdConverter.toFileHandleId(model.getFileId()));
         handle.setFileName(model.getFileName());
         handle.setContentType(model.getContentType());
-        handle.setFileSize(model.getFileSize());
         handle.setContentHash(model.getStorageContentHash());
         handle.setStorageType(model.getStorageType());
         handle.setUploadStatus(model.getUploadStatus());
@@ -2201,25 +2188,22 @@ public class FileModelConverter {
 
     /** FileModel + upload URL → FileUploadResponse */
     public static FileUploadResponse toFileUploadResponse(FileModel model, String uploadUrl,
-            Instant uploadUrlExpiresAt) {
+            long uploadUrlExpiresAt) {
         FileUploadResponse response = new FileUploadResponse();
-        response.setFileHandleId(model.getFileId());
+        response.setFileHandleId(FileIdToFileHandleIdConverter.toFileHandleId(model.getFileId()));
         response.setFileName(model.getFileName());
         response.setContentType(model.getContentType());
-        response.setFileSize(model.getFileSize());
         response.setStorageType(model.getStorageType());
         response.setUploadStatus(model.getUploadStatus());
         response.setUploadUrl(uploadUrl);
-        response.setUploadUrlExpiresAt(uploadUrlExpiresAt.toEpochMilli());
+        response.setUploadUrlExpiresAt(uploadUrlExpiresAt);
         response.setCreatedAt(model.getCreatedAt().toEpochMilli());
         return response;
     }
 }
 ```
 
-Note: `FileModel` retains `Instant createdAt/updatedAt` internally; the converter maps to epoch millis when
-populating DTOs. DTO setters for `fileHandleId` write the prefixed handle string (the model still stores it
-in `fileId` internally).
+Note: `FileModel` retains `Instant createdAt/updatedAt` internally; the converter maps to epoch millis when populating DTOs. The model stores the bare `fileId`; the converter wraps it as `conductor://file/<fileId>` via `FileIdToFileHandleIdConverter` when filling DTO `fileHandleId` fields. Neither the model nor the response carries `fileSize` — the SDK's `ManagedFileHandler` reads it from the local file at upload time.
 
 ## FileStorageServiceImpl
 
@@ -2258,12 +2242,16 @@ public class FileStorageServiceImpl implements FileStorageService {
         this.workflowFamilyResolver = workflowFamilyResolver;
     }
 
+    private static final String STORAGE_PATH = "conductor/%s/%s";
+
     @Override
     public FileUploadResponse createFile(FileUploadRequest request) {
-        validateFileSize(request.getFileSize());
+        if (request.getWorkflowId() == null || request.getWorkflowId().isBlank()) {
+            throw new IllegalArgumentException("workflowId is required");
+        }
 
-        String fileId = generateFileId();
-        String storagePath = "files/%s/%s".formatted(fileId, request.getFileName());
+        String fileId = UUID.randomUUID().toString();
+        String storagePath = STORAGE_PATH.formatted(request.getWorkflowId(), fileId);
 
         FileModel model = FileModelConverter.toFileModel(
                 request, fileId, storagePath, fileStorage.getStorageType());
@@ -2289,12 +2277,12 @@ public class FileStorageServiceImpl implements FileStorageService {
 ```
 
 **Key behaviors:**
-- `createFile()` — validates size, generates fileId, converts to model, persists, converts to response
+- `createFile()` — guards `workflowId`, generates fileId, builds storage path `conductor/<workflowId>/<fileId>`, persists `FileModel`, returns presigned upload URL
 - `getUploadUrl()` — generates fresh URL on each call
-- `confirmUpload()` — single call to `getStorageFileInfo()`, persists hash + size + status via `updateUploadComplete()`
-- `getDownloadUrl()` — verifies status is UPLOADED; checks file has a workflowId; if caller's workflowId equals `defaultWorkflowId` skips family check; otherwise resolves family via `WorkflowFamilyResolver.getFamily(callerWorkflowId)` and throws `AccessForbiddenException` if file's workflowId not in family
+- `confirmUpload()` — rejects with 409 if already `UPLOADED`; otherwise single call to `getStorageFileInfo()`, persists hash + size + status via `updateUploadComplete()`
+- `getDownloadUrl()` — verifies status is `UPLOADED`; checks the file has a `workflowId`; resolves the caller's workflow family via `WorkflowFamilyResolver.getFamily(callerWorkflowId)` and throws `AccessForbiddenException` if the file's `workflowId` is not in the family
 - `getFileMetadata()` — DAO lookup, converts via `FileModelConverter.toFileHandle()`
-- `initiateMultipartUpload()` — delegates to `FileStorage`, returns upload ID + URL + part size
+- `initiateMultipartUpload()` — delegates to `FileStorage`, returns upload ID and (for GCS/Azure) a resumable URL
 - `getPartUploadUrl()` — delegates to `FileStorage.generatePartUploadUrl()`
 - `completeMultipartUpload()` — delegates to `FileStorage`, verifies via `getStorageFileInfo()`, persists hash + size + status via `updateUploadComplete()`
 
@@ -2303,41 +2291,32 @@ avoids cache invalidation complexity.
 
 ## Exception Handling
 
-Reuses existing Conductor exception hierarchy in `com.netflix.conductor.core.exception` — no new exception
-classes. Exceptions are mapped to HTTP status codes via the existing `ApplicationExceptionMapper`
-(`@RestControllerAdvice`).
+Reuses existing Conductor exception hierarchy in `com.netflix.conductor.core.exception`. Exceptions are mapped to HTTP status codes via the existing `ApplicationExceptionMapper` (`@RestControllerAdvice`); no new mapper entries needed.
 
 | Exception | HTTP Status | Usage |
 |-----------|-------------|-------|
 | `NotFoundException` | 404 | File ID not found |
 | `ConflictException` | 409 | File already uploaded (duplicate upload-complete) |
-| `IllegalArgumentException` | 400 | Invalid request, bad file ID format, upload not complete |
+| `IllegalArgumentException` | 400 | Invalid request (missing `workflowId`, file not yet uploaded, etc.) |
 | `NonTransientException` | 500 | Storage backend error, verification failed |
 | `AccessForbiddenException` | 403 | Caller workflow not in file's workflow family |
 
-`FileStorageServiceImpl` throws these directly — they flow through `ApplicationExceptionMapper` to
-`ErrorResponse` DTO (status, message, instance, retryable flag). No `@ResponseStatus` on controller
-methods — the existing `@RestControllerAdvice` handles all error mapping.
+`FileStorageServiceImpl` throws these directly — they flow through `ApplicationExceptionMapper` to `ErrorResponse` DTO (status, message, instance, retryable flag). No `@ResponseStatus` on controller methods — the existing `@RestControllerAdvice` handles all error mapping.
 
-For file size exceeded (413), add one entry to `ApplicationExceptionMapper`:
-
-```java
-// In ApplicationExceptionMapper static block:
-EXCEPTION_STATUS_MAP.put(FileTooLargeException.class, HttpStatus.PAYLOAD_TOO_LARGE);
-```
-
-`FileTooLargeException` extends `NonTransientException` — the only new exception class, needed because
-no existing exception maps to 413.
+There is one file-storage-specific exception class, `org.conductoross.conductor.core.exception.FileStorageException` (extends `NonTransientException`) — used for storage-backend failures such as a missing object after `upload-complete`. It is not the same class as the SDK-side `org.conductoross.conductor.sdk.file.FileStorageException` (which extends `RuntimeException`); the names match by convention only.
 
 ```java
 package org.conductoross.conductor.core.exception;
 
 import com.netflix.conductor.core.exception.NonTransientException;
 
-public class FileTooLargeException extends NonTransientException {
-    public FileTooLargeException(String message) { super(message); }
+public class FileStorageException extends NonTransientException {
+    public FileStorageException(String message) { super(message); }
+    public FileStorageException(String message, Throwable cause) { super(message, cause); }
 }
 ```
+
+There is no `FileTooLargeException` and no 413 path — file-size validation is deferred (see `FileStorageProperties`).
 
 ## FileResource Controller
 
@@ -2496,11 +2475,11 @@ New module: `gcs-storage`.
 @ConditionalOnProperty(name = "conductor.file-storage.type", havingValue = "local")
 ```
 
-- `generateUploadUrl()` — returns the local storage path (e.g. `files/<fileId>/<fileName>`). SDK's
+- `generateUploadUrl()` — returns the local storage path (e.g. `conductor/<workflowId>/<fileId>`). SDK's
   `LocalFileStorageBackend` resolves this against the configured directory and writes directly — server
   never receives file content.
 - `generateDownloadUrl()` — returns the local storage path. SDK reads directly from local disk.
-- `getStorageFileInfo()` — `Files.exists(path)` → returns `StorageFileInfo(exists, null, fileSize)`
+- `getStorageFileInfo()` — `Files.exists(path)` → returns a `StorageFileInfo` with `exists=true`, `contentHash=null`, and `contentSize` set from `Files.size(path)`
 - Multipart methods — not applicable (local files written directly). `initiateMultipartUpload()` returns a no-op
   upload ID; `completeMultipartUpload()` is a no-op.
 
@@ -2536,9 +2515,9 @@ public class PostgresFileMetadataDAO extends PostgresBaseDAO implements FileMeta
     }
 
     private static final String INSERT_FILE =
-            "INSERT INTO file_metadata (file_id, file_name, content_type, file_size, "
+            "INSERT INTO file_metadata (file_id, file_name, content_type, "
             + "storage_type, storage_path, upload_status, workflow_id, task_id, "
-            + "created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            + "created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     private static final String SELECT_FILE_BY_ID =
             "SELECT * FROM file_metadata WHERE file_id = ?";
@@ -2578,16 +2557,17 @@ with `@DependsOn({"flyway", "flywayInitializer"})`.
 
 ### SqliteFileMetadataDAO
 
-Follows SQLite's facade/delegate pattern (same as `SqliteMetadataDAO`).
+Single class extending `SqliteBaseDAO` directly (no facade/sub-DAO split — `FileMetadataDAO` is a small,
+self-contained surface, so the indirection that `SqliteMetadataDAO` uses for the larger metadata API is
+unnecessary here). SQL closely mirrors `PostgresFileMetadataDAO`.
 
-- `SqliteFileMetadataDAO` — facade implementing `FileMetadataDAO`, delegates to sub-DAO
-- `SqliteFileMetadataSubDAO` — extends `SqliteBaseDAO`, contains actual SQL logic
-
-Bean in `SqliteConfiguration` with `@DependsOn({"flywayForPrimaryDb"})`.
-Migration: `sqlite-persistence/src/main/resources/db/migration_sqlite/V<next>__file_metadata.sql`
+Package: `org.conductoross.conductor.sqlite.dao`. Bean in `SqliteConfiguration` with
+`@DependsOn({"flywayForPrimaryDb"})`. Migration:
+`sqlite-persistence/src/main/resources/db/migration_sqlite/V3__file_metadata.sql`
 
 ### RedisFileMetadataDAO
 
+Package: `com.netflix.conductor.redis.dao` (kept under the existing module's package root).
 `@Component` + `@Conditional(AnyRedisCondition.class)` on DAO class directly (not in a Configuration class).
 Extends `BaseDynoDAO`.
 
@@ -2607,6 +2587,7 @@ No migration — hash keys created on first write. JSON serialization via `toJso
 
 ### CassandraFileMetadataDAO
 
+Package: `com.netflix.conductor.cassandra.dao` (kept under the existing module's package root).
 Extends `CassandraBaseDAO`. Bean in `CassandraConfiguration`.
 
 ```java
@@ -2628,8 +2609,7 @@ Detects orphaned files — UPLOADING status never completed.
 - Marks stale records as FAILED via `FileMetadataDAO.updateUploadStatus()`
 - Requires DAO query: `getStaleUploads(Instant olderThan)` — not in initial `FileMetadataDAO` interface,
   added when audit is implemented
-- Storage usage tracking: `SELECT SUM(file_size) FROM file_metadata WHERE workflow_id = ?` — query-based,
-  no new interface method needed initially
+- Storage usage tracking: `SELECT SUM(storage_content_size) FROM file_metadata WHERE workflow_id = ?` — query-based, no new interface method needed initially
 
 Not part of initial implementation — captured here for completeness. Spec's Audit & Tracking section
 defines the requirement.
@@ -2657,13 +2637,14 @@ public class FileHandlerConverter {
     /**
      * Builds a {@link ManagedFileHandler} from a completed upload response. The handler already
      * has its metadata and {@code localPath} populated — no server round-trip needed on first access.
+     * {@code fileSize} is taken from the local file (the server response no longer carries it).
      */
     public static ManagedFileHandler toManagedFileHandler(FileUploadResponse response,
-            WorkflowFileClient workflowFileClient, Path localPath) {
+            WorkflowFileClient workflowFileClient, Path localPath, long fileSize) {
         ManagedFileHandler handler = new ManagedFileHandler(response.getFileHandleId(), workflowFileClient);
         handler.setFileName(response.getFileName());
         handler.setContentType(response.getContentType());
-        handler.setFileSize(response.getFileSize());
+        handler.setFileSize(fileSize);
         handler.setStorageType(response.getStorageType());
         handler.setLocalPath(localPath);
         return handler;
@@ -2674,7 +2655,6 @@ public class FileHandlerConverter {
         FileUploadRequest request = new FileUploadRequest();
         request.setFileName(options.getFileName());
         request.setContentType(options.getContentType());
-        request.setFileSize(options.getFileSize());
         request.setWorkflowId(workflowId);
         request.setTaskId(options.getTaskId());
         return request;
@@ -2705,49 +2685,48 @@ public FileHandler upload(String workflowId, Path localFile, FileUploadOptions o
                 + " but SDK only supports: " + fileStorageBackendsByStorageType.keySet());
     }
 
-    // 5. Decide single-part vs multipart
-    if (options.getFileSize() > properties.getMultipartThreshold() && storageBackend.hasMultipartSupport()) {
+    // 5. Single-part vs multipart — opt-in via FileUploadOptions, gated by backend support
+    if (options.isMultipart() && storageBackend.hasMultipartSupport()) {
         uploadMultipart(response.getFileHandleId(), response.getStorageType(), localFile);
     } else {
         storageBackend.upload(response.getUploadUrl(), localFile);
         confirmUpload(response.getFileHandleId());
     }
 
+    long fileSize = Files.size(localFile);
+
     // 6. Build ManagedFileHandler scoped to this workflowId for future downloads
     return FileHandlerConverter.toManagedFileHandler(
-            response, new WorkflowFileClient(this, workflowId), localFile);
+            response, new WorkflowFileClient(this, workflowId), localFile, fileSize);
 }
 ```
 
 ## Multipart Upload — FileClient
 
 ```java
-private void uploadMultipart(String fileHandleId, Path localFile, FileStorageBackend backend) {
+private void uploadMultipart(String fileHandleId, StorageType storageType, Path localFile) {
     // 1. Initiate
     MultipartInitResponse init = initiateMultipartUpload(fileHandleId);
     String uploadId = init.getUploadId();
-    long partSize = init.getPartSize();
+    long partSize = properties.getMultipartPartSize();   // client-side config — server doesn't return one
     long fileSize = Files.size(localFile);
     int totalParts = (int) Math.ceil((double) fileSize / partSize);
 
     List<String> partETags = new ArrayList<>();
+    FileStorageBackend backend = fileStorageBackendsByStorageType.get(storageType);
 
-    // 2. Upload parts
+    // 2. Upload parts — single resumable URL for GCS/Azure, per-part presigned URLs for S3.
+    //    The branch is driven by `init.getUploadUrl() != null`, not by an explicit StorageType
+    //    check: GCS/Azure return a URL from initiate, S3 returns null.
     for (int part = 1; part <= totalParts; part++) {
-        long offset = (part - 1) * partSize;
+        long offset = (long) (part - 1) * partSize;
         long length = Math.min(partSize, fileSize - offset);
 
-        String url;
-        if (init.getUploadUrl() != null) {
-            // GCS/Azure — reuse resumable URL
-            url = init.getUploadUrl();
-        } else {
-            // S3 — per-part presigned URL
-            url = getPartUploadUrl(fileHandleId, uploadId, part);
-        }
+        String url = init.getUploadUrl() != null
+                ? init.getUploadUrl()                                 // GCS/Azure — reuse
+                : getPartUploadUrl(fileHandleId, uploadId, part);     // S3 — per-part
 
-        String etag = backend.uploadPart(url, localFile, offset, length);
-        partETags.add(etag);
+        partETags.add(backend.uploadPart(url, localFile, offset, length));
     }
 
     // 3. Complete
@@ -2759,19 +2738,22 @@ private void uploadMultipart(String fileHandleId, Path localFile, FileStorageBac
 
 ### Input: getInputValue()
 
-When parameter type is `FileHandler` and `inputData` value is a `fileHandleId` (starts with `conductor://file/`):
+When the parameter type is `FileHandler`, the inbound value can be either the raw `conductor://file/<fileId>` string or the `{fileHandleId, contentType, fileName}` JSON object emitted by `FileHandlerSerializer`. `FileHandler.extractFileHandleId(value)` accepts both shapes:
 
 ```java
 // In AnnotatedWorker.getInputValue() — add before ObjectMapper deserialization:
 if (parameterType == FileHandler.class) {
     Object value = task.getInputData().get(paramName);
-    if (FileIdToFileHandleIdConverter.isFileHandleId(value)) {
-        return new ManagedFileHandler((String) value, task.getFileClient());
+    String fileHandleId = FileHandler.extractFileHandleId(value);
+    if (FileHandler.isFileHandleId(fileHandleId)) {
+        return new ManagedFileHandler(fileHandleId, task.getWorkflowFileClient());
     }
-    throw new FileStorageException("Expected conductor://file/ reference for param '" + paramName
-            + "', got: " + value);
+    throw new FileStorageException("Expected " + FileHandler.PREFIX
+            + " reference for param '" + paramName + "', got: " + value);
 }
 ```
+
+For nested fields (e.g. a `FileHandler` inside a POJO `@InputParam`), `FileHandlerDeserializer` performs the same resolution during ObjectMapper deserialization, picking up the active `WorkflowFileClient` from the deserialization context.
 
 ### Output: setValue()
 
@@ -2820,16 +2802,14 @@ void uploadFilesToFileStorage(TaskResult result, String workflowId, String taskI
 ```
 
 Changes across 4 files (~30 lines total):
-- `TaskRunner` — scan loop + `FileClient` field (insert alongside existing external payload upload logic in `updateTaskResult()`)
+- `TaskRunner` — scan loop + `FileClient` field (insert alongside existing external payload upload logic in `updateTaskResult()`); per-task it constructs a `WorkflowFileClient` bound to the running workflow and stores it on the `Task` before `worker.execute(task)`
 - `TaskRunnerConfigurer` — accept + pass `FileClient`
 - `TaskRunnerConfigurer.Builder` — `withFileClient(FileClient)`
-- `Task` — `@JsonIgnore private transient FileClient fileClient;` + getter/setter (Task uses Lombok `@Data`/`@Builder` — transient field excluded from builder/serialization)
+- `Task` — `@JsonIgnore private transient WorkflowFileClient workflowFileClient;` + `setWorkflowFileClient(...)` and developer-facing `getFileUploader()` returning the same instance as `FileUploader` (Task uses Lombok `@Data`/`@Builder` — transient field excluded from builder/serialization). Workers read inputs via `task.getInputFileHandler(key)` and uploads via `task.getFileUploader().upload(...)`.
 
 ## OrkesClients Integration
 
-Follows existing pattern — `OrkesClients` gets a factory method, `OrkesFileClient` extends `FileClient`. The
-factory method does not require a `FileStorageBackend` parameter; `FileClient` registers default backends
-internally.
+`OrkesClients` gets a factory method that returns a plain `FileClient` — there is no `OrkesFileClient` subclass (no Orkes-specific REST surface to wrap). The factory takes no `FileStorageBackend` parameter; `FileClient` registers the four default backends internally.
 
 ```java
 // In OrkesClients — add factory method (follows getTaskClient(), getWorkflowClient() pattern):
@@ -2838,24 +2818,12 @@ public FileClient getFileClient() {
 }
 ```
 
-```java
-// OrkesFileClient — follows OrkesTaskClient extends TaskClient pattern:
-package io.orkes.conductor.client.http;
-
-public class OrkesFileClient extends FileClient {
-    public OrkesFileClient(ConductorClient client) {
-        super(client);
-    }
-}
-```
-
 ## Spring Auto-Configuration
 
-Wired in `ConductorClientAutoConfiguration` (in the `conductor-client-spring` module). The impl does not
-register individual backend beans — `FileClient` constructs default backends (LOCAL/S3/AZURE_BLOB/GCS)
-internally.
+Wired in `ConductorClientAutoConfiguration` (in the `conductor-client-spring` module) for the OSS path, and in `OrkesConductorClientAutoConfiguration` for the Orkes path. The impl does not register individual backend beans — `FileClient` constructs default backends (LOCAL/S3/AZURE_BLOB/GCS) internally.
 
 ```java
+// ConductorClientAutoConfiguration:
 @Bean
 @ConditionalOnMissingBean
 public FileClientProperties fileClientProperties() {
@@ -2867,6 +2835,16 @@ public FileClientProperties fileClientProperties() {
 @ConditionalOnMissingBean
 public FileClient fileClient(ConductorClient client, FileClientProperties properties) {
     return new FileClient(client, properties, null); // null → default backends
+}
+```
+
+```java
+// OrkesConductorClientAutoConfiguration:
+@Bean
+@ConditionalOnBean(ApiClient.class)
+@ConditionalOnMissingBean
+public FileClient fileClient(ApiClient client) {
+    return new FileClient(client);
 }
 ```
 
@@ -2890,7 +2868,10 @@ public class StubFileStorage implements FileStorage {
     @Override public StorageFileInfo getStorageFileInfo(String path) {
         if (!files.containsKey(path)) return null;
         byte[] data = files.get(path);
-        return new StorageFileInfo(true, null, data.length);
+        StorageFileInfo info = new StorageFileInfo();
+        info.setExists(true);
+        info.setContentSize(data.length);
+        return info;
     }
     // multipart methods — simple no-op implementations
 }
@@ -2981,7 +2962,6 @@ ConfigMap: `deploy/k8s/conductor-config.yaml`
 conductor.db.type=postgres
 conductor.file-storage.enabled=true
 conductor.file-storage.type=s3
-conductor.file-storage.max-file-size=5GB
 conductor.file-storage.signed-url-expiration=60s
 conductor.file-storage.s3.bucket-name=conductor-files
 conductor.file-storage.s3.region=us-east-1
@@ -3042,13 +3022,11 @@ kubectl delete namespace conductor-file-storage
 | `testGetUploadUrlReturnsFreshUrl` | GET /upload-url → fresh presigned URL |
 | `testGetFileMetadata` | GET /api/files/{id} → correct fields |
 | `testFileNotFoundReturns404` | GET unknown file → 404 |
-| `testFileTooLargeRejected` | POST with 6GB → 413 |
-| `testInitiateMultipartUpload` | POST /multipart → uploadId + partSize |
+| `testInitiateMultipartUpload` | POST /multipart → uploadId (and resumable URL for GCS/Azure) |
 | `testDownloadUrlRequiresUploadedStatus` | GET /{workflowId}/{fileId}/download-url before upload → 400 |
 | `testDownloadUrlSameWorkflow` | workflow owner can download its own file → 200 |
 | `testDownloadUrlChildWorkflow` | child workflow can download parent's file → 200 |
 | `testDownloadUrlUnrelatedWorkflow` | unrelated workflow → 403 |
-| `testDownloadUrlDefaultWorkflowId` | defaultWorkflowId bypasses family check → 200 |
 | `testStorageTypeInMetadata` | Metadata includes storageType field |
 
 Uses `Map<String, Object>` responses for compatibility with published SDK jar (DTOs not yet
