@@ -21,7 +21,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.netflix.conductor.contribs.metrics.MetricsCollector;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -33,13 +32,31 @@ import io.micrometer.core.instrument.ImmutableTag;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Monitors {
     public static final String NO_DOMAIN = "NO_DOMAIN";
 
-    private static final MeterRegistry registry = MetricsCollector.getMeterRegistry();
+    private static final CompositeMeterRegistry registry = new CompositeMeterRegistry();
+
+    static {
+        // Always include an in-process registry so meters are never dropped
+        // before a real registry is wired in by MetricsCollector.
+        registry.add(new SimpleMeterRegistry());
+    }
+
+    /** Returns the shared composite registry. Callers may add common tags via {@code getRegistry().config()}. */
+    public static MeterRegistry getRegistry() {
+        return registry;
+    }
+
+    /** Register an additional {@link MeterRegistry}. Called by MetricsCollector on startup. */
+    public static void addMeterRegistry(MeterRegistry meterRegistry) {
+        registry.add(meterRegistry);
+    }
 
     private static final double[] percentiles = new double[] {0.5, 0.75, 0.90, 0.95, 0.99};
     private static final Map<String, AtomicDouble> gauges = new ConcurrentHashMap<>();
@@ -88,6 +105,16 @@ public class Monitors {
                     Gauge.builder(name, () -> value).tags(toTags(tags)).register(registry);
                     return value;
                 });
+    }
+
+    /** Alias for {@link #gauge(String, String...)} — preferred name for new call sites. */
+    public static AtomicDouble getGauge(String name, String... tags) {
+        return gauge(name, tags);
+    }
+
+    /** Alias for {@link #distributionSummary(String, String...)} — preferred name for new call sites. */
+    public static DistributionSummary getDistributionSummary(String name, String... tags) {
+        return distributionSummary(name, tags);
     }
 
     private static Iterable<Tag> toTags(String... kv) {
