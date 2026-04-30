@@ -341,7 +341,20 @@ const TaskFormContent: FunctionComponent = () => {
     });
   };
 
+  const mcpIntegrationType =
+    taskType === TaskType.MCP
+      ? (task?.inputParameters?.integrationType as string | undefined)
+      : undefined;
+  const taskTypeLabelForDoc = mcpIntegrationType
+    ? mcpIntegrationType.replace(/-mcp$/i, "").replace(/-/g, " ").toUpperCase()
+    : taskType === TaskType.MCP
+      ? "CONNECTED APP"
+      : taskType;
   const taskTypeLabel = taskType === TaskType.MCP ? "CONNECTED APP" : taskType;
+  const taskDocUrl =
+    taskType === TaskType.MCP && mcpIntegrationType
+      ? getTaskDocUrl(mcpIntegrationType) || getTaskDocUrl(TaskType.HTTP)
+      : "";
 
   return (
     <Box
@@ -427,9 +440,7 @@ const TaskFormContent: FunctionComponent = () => {
                   placement="left"
                   children={
                     <Link
-                      href={
-                        getTaskDocUrl(taskType) || getTaskDocUrl(TaskType.HTTP)
-                      }
+                      href={taskDocUrl}
                       tabIndex={-1}
                       target="_blank"
                       rel="noreferrer"
@@ -455,7 +466,7 @@ const TaskFormContent: FunctionComponent = () => {
                 />
               ) : (
                 <Link
-                  href={getTaskDocUrl(taskType) || getTaskDocUrl(TaskType.HTTP)}
+                  href={taskDocUrl}
                   tabIndex={-1}
                   target="_blank"
                   rel="noreferrer"
@@ -474,7 +485,7 @@ const TaskFormContent: FunctionComponent = () => {
                       color: colors.blueLightMode,
                     }}
                   >
-                    {taskTypeLabel}
+                    {taskTypeLabelForDoc}
                     {" Docs"}
                   </div>
                 </Link>
