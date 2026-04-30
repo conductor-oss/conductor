@@ -48,7 +48,10 @@ public class Monitors {
         registry.add(new SimpleMeterRegistry());
     }
 
-    /** Returns the shared composite registry. Callers may add common tags via {@code getRegistry().config()}. */
+    /**
+     * Returns the shared composite registry. Callers may add common tags via {@code
+     * getRegistry().config()}.
+     */
     public static MeterRegistry getRegistry() {
         return registry;
     }
@@ -112,7 +115,10 @@ public class Monitors {
         return gauge(name, tags);
     }
 
-    /** Alias for {@link #distributionSummary(String, String...)} — preferred name for new call sites. */
+    /**
+     * Alias for {@link #distributionSummary(String, String...)} — preferred name for new call
+     * sites.
+     */
     public static DistributionSummary getDistributionSummary(String name, String... tags) {
         return distributionSummary(name, tags);
     }
