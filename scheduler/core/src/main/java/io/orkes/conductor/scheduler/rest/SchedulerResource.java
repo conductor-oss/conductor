@@ -31,7 +31,6 @@ import com.netflix.conductor.common.run.SearchResult;
 
 import io.orkes.conductor.scheduler.model.WorkflowSchedule;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
-import io.orkes.conductor.scheduler.model.WorkflowScheduleModel;
 import io.orkes.conductor.scheduler.service.SchedulerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -69,7 +68,7 @@ public class SchedulerResource {
 
     @GetMapping(value = "/schedules", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "List all schedules, optionally filtered by workflow name")
-    public List<WorkflowScheduleModel> getAllSchedules(
+    public List<? extends WorkflowSchedule> getAllSchedules(
             @RequestParam(value = "workflowName", required = false) String workflowName) {
         if (workflowName != null && !workflowName.isBlank()) {
             return schedulerService.getAllSchedules(workflowName);
@@ -79,7 +78,7 @@ public class SchedulerResource {
 
     @GetMapping(value = "/schedules/search", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Search for workflow schedules")
-    public SearchResult<WorkflowScheduleModel> searchSchedules(
+    public SearchResult<? extends WorkflowSchedule> searchSchedules(
             @RequestParam(value = "workflowName", required = false) String workflowName,
             @RequestParam(value = "scheduleName", required = false) String scheduleName,
             @RequestParam(value = "paused", required = false) Boolean paused,

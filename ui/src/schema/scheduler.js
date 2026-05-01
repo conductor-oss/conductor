@@ -1,7 +1,11 @@
 export const NEW_SCHEDULER_TEMPLATE = {
   name: "",
-  cronExpression: "0 * * * * *",
-  zoneId: "UTC",
+  cronSchedules: [
+    {
+      cronExpression: "0 * * * * *",
+      zoneId: "UTC",
+    },
+  ],
   startWorkflowRequest: {
     name: "",
     version: 1,

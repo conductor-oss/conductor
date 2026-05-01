@@ -38,7 +38,11 @@ import SectionHeaderActions from "components/ui/layout/SectionHeaderActions";
 import { useAuth } from "components/features/auth";
 import { colors } from "theme/tokens/variables";
 import { PopoverMessage } from "types/Messages";
-import { IScheduleDto, IStartWorkflowRequest } from "types/Schedulers";
+import {
+  ICronSchedule,
+  IScheduleDto,
+  IStartWorkflowRequest,
+} from "types/Schedulers";
 import { TagDto } from "types/Tag";
 import { HTTPMethods } from "types/TaskType";
 import { getSequentiallySuffix, logger } from "utils";
@@ -104,13 +108,46 @@ const columns = [
     id: "cronExpression",
     name: "cronExpression",
     label: "Cron expression",
-    renderer: (cron: string) => {
+    renderer: (cron: string, row: IScheduleDto) => {
+      const schedules = row.cronSchedules;
+      if (schedules && schedules.length > 0) {
+        return (
+          <Box>
+            {schedules.map((cs: ICronSchedule, i: number) => {
+              let label = cs.cronExpression;
+              try {
+                label = cronstrue.toString(cs.cronExpression);
+              } catch {
+                /* keep raw */
+              }
+              return (
+                <Tooltip
+                  key={i}
+                  title={`${cs.cronExpression} (${cs.zoneId || "UTC"})`}
+                >
+                  <Box component="span" sx={{ display: "block" }}>
+                    {label}
+                    {cs.zoneId && cs.zoneId !== "UTC" && (
+                      <Box
+                        component="span"
+                        sx={{ ml: 0.5, opacity: 0.6, fontSize: "0.85em" }}
+                      >
+                        ({cs.zoneId})
+                      </Box>
+                    )}
+                  </Box>
+                </Tooltip>
+              );
+            })}
+          </Box>
+        );
+      }
       if (!cron) {
         return "";
       }
       return (
         <Tooltip title={cron}>
-          <span>{cron ? cronstrue.toString(cron) : ""}</span>
+          <span>{cronstrue.toString(cron)}</span>
         </Tooltip>
       );
     },

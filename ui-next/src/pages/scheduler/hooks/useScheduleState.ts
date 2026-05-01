@@ -16,6 +16,7 @@ const initialState: ScheduleType = {
   name: "",
   description: "",
   cronExpression: "",
+  cronSchedules: undefined,
   paused: false,
   runCatchupScheduleInstances: false,
   workflowType: null,
@@ -89,15 +90,26 @@ export function useScheduleState(
       const taskToDomainStr = swr.taskToDomain
         ? JSON.stringify(swr.taskToDomain, null, 2)
         : "";
-      let cronExpression = schedule.cronExpression;
-      if (cronExpression === null) {
-        cronExpression = "";
-      }
+
+      // Extract primary cron from cronSchedules[0], fall back to legacy cronExpression
+      const serverCronSchedules =
+        schedule.cronSchedules && schedule.cronSchedules.length > 0
+          ? schedule.cronSchedules
+          : null;
+      const primaryCron = serverCronSchedules?.[0];
+      const cronExpression =
+        primaryCron?.cronExpression ?? schedule.cronExpression ?? "";
+      const zoneId = primaryCron?.zoneId ?? schedule.zoneId ?? "UTC";
+      const additionalSchedules =
+        serverCronSchedules && serverCronSchedules.length > 1
+          ? serverCronSchedules.slice(1)
+          : undefined;
 
       const newState = {
         name: schedule.name,
         description: schedule.description || "",
-        cronExpression: cronExpression,
+        cronExpression,
+        cronSchedules: additionalSchedules,
         runCatchupScheduleInstances: schedule.runCatchupScheduleInstances,
         paused: schedule.paused,
         workflowType: swr.name,
@@ -117,7 +129,7 @@ export function useScheduleState(
         scheduleEndTime: schedule.scheduleEndTime
           ? timestampRendererLocal(schedule.scheduleEndTime)
           : "",
-        zoneId: schedule.zoneId,
+        zoneId,
       };
 
       setScheduleState((prevState) => ({ ...prevState, ...newState }));
@@ -126,7 +138,8 @@ export function useScheduleState(
         runCatchupScheduleInstances: schedule.runCatchupScheduleInstances,
         name: schedule.name,
         description: schedule.description,
-        cronExpression: cronExpression,
+        cronExpression,
+        cronSchedules: additionalSchedules,
         scheduleStartTime: schedule.scheduleStartTime
           ? schedule.scheduleStartTime
           : "",
@@ -144,7 +157,7 @@ export function useScheduleState(
           externalInputPayloadStoragePath: swr.externalInputPayloadStoragePath,
           priority: swr.priority,
         },
-        zoneId: schedule.zoneId,
+        zoneId,
       });
     },
     [],

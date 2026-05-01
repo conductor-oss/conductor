@@ -19,6 +19,19 @@ const columns = [
   },
   {
     name: "cronExpression",
+    renderer: (val, row) => {
+      if (row.cronSchedules && row.cronSchedules.length > 0) {
+        return row.cronSchedules
+          .map((cs) =>
+            cs.zoneId && cs.zoneId !== "UTC"
+              ? `${cs.cronExpression} (${cs.zoneId})`
+              : cs.cronExpression,
+          )
+          .join("; ");
+      }
+      return val;
+    },
+    searchable: "calculated",
   },
   {
     name: "zoneId",

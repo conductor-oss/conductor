@@ -40,16 +40,23 @@ import ScheduleButtons from "./ScheduleButtons";
 import ScheduleDiffEditor from "./ScheduleDiffEditor";
 import { useSaveSchedule, useSchedule } from "./schedulerHooks";
 import {
+  buildCronSchedules,
   codeToFormData,
   formToCodeData,
   getDateFromField,
   JSONParse,
 } from "./utils/scheduleTransformers";
 
+export type CronScheduleEntry = {
+  cronExpression: string;
+  zoneId: string;
+};
+
 export type ScheduleType = {
   name: string;
   description?: string;
   cronExpression: string;
+  cronSchedules?: CronScheduleEntry[];
   paused: boolean;
   runCatchupScheduleInstances: boolean;
   workflowType: string | null;
@@ -306,7 +313,7 @@ export function Schedule() {
       runCatchupScheduleInstances: scheduleState.runCatchupScheduleInstances,
       name: scheduleState.name,
       description: scheduleState.description,
-      cronExpression: scheduleState.cronExpression,
+      cronSchedules: buildCronSchedules(scheduleState),
       scheduleStartTime: start,
       scheduleEndTime: to,
       startWorkflowRequest: {
@@ -322,7 +329,6 @@ export function Schedule() {
           scheduleState.externalInputPayloadStoragePath,
         priority: scheduleState.priority,
       },
-      zoneId: scheduleState.zoneId,
     });
 
     saveSchedule({ body } as any);
@@ -337,6 +343,7 @@ export function Schedule() {
         name: "",
         description: "",
         cronExpression: "",
+        cronSchedules: undefined,
         paused: false,
         runCatchupScheduleInstances: false,
         workflowType: null,
@@ -411,7 +418,7 @@ export function Schedule() {
             scheduleState.runCatchupScheduleInstances,
           name: scheduleState.name,
           description: scheduleState.description,
-          cronExpression: scheduleState.cronExpression,
+          cronSchedules: buildCronSchedules(scheduleState),
           scheduleStartTime: start,
           scheduleEndTime: to,
           startWorkflowRequest: {
@@ -426,7 +433,6 @@ export function Schedule() {
               scheduleState.externalInputPayloadStoragePath,
             priority: scheduleState.priority,
           },
-          zoneId: scheduleState.zoneId,
         },
         null,
         2,
@@ -688,6 +694,13 @@ export function Schedule() {
                           setZoneId={handleZoneIdChange}
                           cronError={errors?.cronExpression}
                           minWidthCronExpression={minWidthCronExpression}
+                          cronSchedules={scheduleState.cronSchedules}
+                          onCronSchedulesChange={(schedules) =>
+                            setScheduleState((prev) => ({
+                              ...prev,
+                              cronSchedules: schedules,
+                            }))
+                          }
                         />
                         <WorkflowConfigSection
                           workflowType={scheduleState.workflowType || null}

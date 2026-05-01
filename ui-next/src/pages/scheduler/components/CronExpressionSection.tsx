@@ -1,17 +1,22 @@
 import {
   Box,
+  Button,
   Grid,
+  IconButton,
   MenuItem,
   Paper,
   SxProps,
   Theme,
+  Tooltip,
   useMediaQuery,
 } from "@mui/material";
+import { Plus as AddIcon, Trash as DeleteIcon } from "@phosphor-icons/react";
 import { Text } from "components";
 import MuiTypography from "components/ui/MuiTypography";
 import ConductorInput from "components/ui/inputs/ConductorInput";
 import ConductorSelect from "components/ui/inputs/ConductorSelect";
 import cronstrue from "cronstrue";
+import { CronScheduleEntry } from "../Schedule";
 import {
   formatInTimeZone,
   guessUserTimeZone,
@@ -57,6 +62,14 @@ const cronSamples = [
 const utcWinWidth = "180px";
 const browserTimeMinWidth = "230px";
 
+function humanizeCron(cron: string): string {
+  try {
+    return cronstrue.toString(cron);
+  } catch {
+    return "";
+  }
+}
+
 interface CronExpressionSectionProps {
   cronExpression: string;
   setCronExpression: (value: string, timezone: string) => void;
@@ -71,6 +84,8 @@ interface CronExpressionSectionProps {
   setZoneId: (value: string) => void;
   cronError?: string;
   minWidthCronExpression: string;
+  cronSchedules?: CronScheduleEntry[];
+  onCronSchedulesChange?: (schedules: CronScheduleEntry[] | undefined) => void;
 }
 
 export function CronExpressionSection({
@@ -87,6 +102,8 @@ export function CronExpressionSection({
   setZoneId,
   cronError,
   minWidthCronExpression,
+  cronSchedules,
+  onCronSchedulesChange,
 }: CronExpressionSectionProps) {
   const isMDWidth = useMediaQuery((theme: Theme) => theme.breakpoints.up("md"));
 
@@ -323,6 +340,92 @@ export function CronExpressionSection({
             </Grid>
           </Grid>
         </Grid>
+
+        {/* Additional Cron Schedules */}
+        {cronSchedules && cronSchedules.length > 0 && (
+          <Box sx={{ px: 6, pb: 4 }}>
+            <MuiTypography
+              fontWeight={600}
+              marginBottom="12px"
+              marginTop="8px"
+            >
+              Additional Cron Schedules
+            </MuiTypography>
+            {cronSchedules.map((entry, index) => (
+              <Paper
+                key={index}
+                variant="outlined"
+                sx={{ p: 3, mb: 2, display: "flex", gap: 2, alignItems: "flex-start" }}
+              >
+                <Box sx={{ flex: 1 }}>
+                  <ConductorInput
+                    fullWidth
+                    label={`Cron expression #${index + 2}`}
+                    value={entry.cronExpression}
+                    onTextInputChange={(value) => {
+                      const updated = [...cronSchedules];
+                      updated[index] = { ...entry, cronExpression: value };
+                      onCronSchedulesChange?.(updated);
+                    }}
+                    inputProps={{ sx: { fontSize: "1.1rem" } }}
+                  />
+                  {entry.cronExpression && humanizeCron(entry.cronExpression) && (
+                    <MuiTypography
+                      sx={{ mt: 1, opacity: 0.7, fontSize: "0.85rem" }}
+                    >
+                      {humanizeCron(entry.cronExpression)}
+                    </MuiTypography>
+                  )}
+                </Box>
+                <Box sx={{ minWidth: 200 }}>
+                  <TimezonePicker
+                    timezone={entry.zoneId || "UTC"}
+                    error={false}
+                    helperText=""
+                    onChange={(value) => {
+                      const updated = [...cronSchedules];
+                      updated[index] = { ...entry, zoneId: value };
+                      onCronSchedulesChange?.(updated);
+                    }}
+                  />
+                </Box>
+                <Tooltip title="Remove this cron schedule">
+                  <IconButton
+                    onClick={() => {
+                      const updated = cronSchedules.filter(
+                        (_, i) => i !== index,
+                      );
+                      onCronSchedulesChange?.(
+                        updated.length > 0 ? updated : undefined,
+                      );
+                    }}
+                    sx={{ mt: 1 }}
+                  >
+                    <DeleteIcon size={20} />
+                  </IconButton>
+                </Tooltip>
+              </Paper>
+            ))}
+          </Box>
+        )}
+
+        <Box sx={{ px: 6, pb: 4 }}>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<AddIcon size={16} />}
+            onClick={() => {
+              const newEntry: CronScheduleEntry = {
+                cronExpression: "",
+                zoneId: timezone || "UTC",
+              };
+              const current = cronSchedules || [];
+              onCronSchedulesChange?.([...current, newEntry]);
+            }}
+          >
+            Add cron schedule
+          </Button>
+        </Box>
       </Paper>
     </Grid>
   );

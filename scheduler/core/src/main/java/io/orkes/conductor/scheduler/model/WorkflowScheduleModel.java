@@ -14,6 +14,7 @@ package io.orkes.conductor.scheduler.model;
 
 import org.springframework.beans.BeanUtils;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 @Getter
@@ -29,6 +30,7 @@ public class WorkflowScheduleModel extends WorkflowSchedule {
         return model;
     }
 
+    @JsonIgnore
     public String getQueueMsgId() {
         return getName();
     }

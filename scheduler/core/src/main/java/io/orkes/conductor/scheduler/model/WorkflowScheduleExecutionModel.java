@@ -14,6 +14,7 @@ package io.orkes.conductor.scheduler.model;
 
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 @Getter
@@ -41,6 +42,7 @@ public class WorkflowScheduleExecutionModel {
     private State state;
     private String zoneId = "UTC";
 
+    @JsonIgnore
     public String getQueueMsgId() {
         return executionId;
     }

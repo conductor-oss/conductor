@@ -2,7 +2,7 @@ import _get from "lodash/get";
 import { timestampRendererLocal } from "utils/index";
 import { tryToJson } from "utils/index";
 import { WorkflowDef } from "types/WorkflowDef";
-import { ScheduleType } from "../Schedule";
+import { CronScheduleEntry, ScheduleType } from "../Schedule";
 
 /**
  * Parse JSON string safely, returning null for empty strings
@@ -22,6 +22,21 @@ export function getDateFromField(d1: string | number | Date) {
     return new Date(d1).valueOf();
   }
   return "";
+}
+
+/**
+ * Build the cronSchedules array from form state.
+ * The primary cron (cronExpression + zoneId) becomes the first entry;
+ * any additional entries follow.
+ */
+export function buildCronSchedules(
+  scheduleState: Pick<ScheduleType, "cronExpression" | "zoneId" | "cronSchedules">,
+): CronScheduleEntry[] {
+  const primary: CronScheduleEntry = {
+    cronExpression: scheduleState.cronExpression || "",
+    zoneId: scheduleState.zoneId || "UTC",
+  };
+  return [primary, ...(scheduleState.cronSchedules || [])];
 }
 
 /**
@@ -48,13 +63,13 @@ export function formToCodeData(
     return null;
   }
 
-  const body = {
+  const body: Record<string, any> = {
     id: _get(schedule, "id"),
     paused: scheduleState.paused,
     runCatchupScheduleInstances: scheduleState.runCatchupScheduleInstances,
     name: scheduleState.name,
     description: scheduleState.description,
-    cronExpression: scheduleState.cronExpression,
+    cronSchedules: buildCronSchedules(scheduleState),
     scheduleStartTime: start,
     scheduleEndTime: to,
     startWorkflowRequest: {
@@ -70,7 +85,6 @@ export function formToCodeData(
         scheduleState.externalInputPayloadStoragePath,
       priority: scheduleState.priority,
     },
-    zoneId: scheduleState.zoneId,
   };
 
   return body;
@@ -84,10 +98,27 @@ export function codeToFormData(
   scheduleState: ScheduleType,
 ): ScheduleType {
   const changedData = tryToJson<any>(data);
+
+  // Extract primary cron from cronSchedules[0], fall back to legacy cronExpression
+  const cronSchedules: CronScheduleEntry[] | undefined =
+    changedData?.cronSchedules && changedData.cronSchedules.length > 0
+      ? changedData.cronSchedules
+      : undefined;
+
+  const primaryCron = cronSchedules?.[0];
+  const cronExpression =
+    primaryCron?.cronExpression ?? changedData?.cronExpression ?? "";
+  const zoneId = primaryCron?.zoneId ?? changedData?.zoneId ?? "UTC";
+  const additionalSchedules =
+    cronSchedules && cronSchedules.length > 1
+      ? cronSchedules.slice(1)
+      : undefined;
+
   const body = {
     name: changedData?.name || "",
     description: changedData?.description || "",
-    cronExpression: changedData?.cronExpression || "",
+    cronExpression,
+    cronSchedules: additionalSchedules,
     runCatchupScheduleInstances: !!changedData?.runCatchupScheduleInstances,
     paused: !!changedData?.paused,
     workflowType: changedData?.startWorkflowRequest?.name,
@@ -121,7 +152,7 @@ export function codeToFormData(
     scheduleEndTime: changedData?.scheduleEndTime
       ? timestampRendererLocal(changedData?.scheduleEndTime)
       : "",
-    zoneId: changedData?.zoneId,
+    zoneId,
   };
 
   return body;
