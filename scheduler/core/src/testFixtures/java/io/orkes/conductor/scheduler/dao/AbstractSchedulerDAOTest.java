@@ -531,18 +531,18 @@ public abstract class AbstractSchedulerDAOTest {
      * BUG REGRESSION — multi-cron next-run-time must survive a DAO round-trip.
      *
      * <p>When a schedule carries multiple cron expressions, {@code SchedulerService} keys
-     * next-run-time entries by a JSON payload string (e.g.
-     * {@code {"name":"s","cron":"0 0 8 * * ? UTC","id":0}}) rather than by the schedule name.
-     * The DAO must store and retrieve that value transparently.
+     * next-run-time entries by a JSON payload string (e.g. {@code {"name":"s","cron":"0 0 8 * * ?
+     * UTC","id":0}}) rather than by the schedule name. The DAO must store and retrieve that value
+     * transparently.
      *
      * <p>SQL backends ({@code UPDATE scheduler SET next_run_time = ? WHERE scheduler_name = ?})
      * silently update 0 rows for a JSON payload key, so {@code getNextRunTimeInEpoch} returns
-     * {@code -1}. {@code SchedulerService} then maps {@code -1} to epoch 1970 and deduces that
-     * the schedule is perpetually overdue, causing every multi-cron message to fire on every poll
-     * cycle instead of waiting for its cron time.
+     * {@code -1}. {@code SchedulerService} then maps {@code -1} to epoch 1970 and deduces that the
+     * schedule is perpetually overdue, causing every multi-cron message to fire on every poll cycle
+     * instead of waiting for its cron time.
      *
-     * <p>This test will FAIL against the current SQL DAO implementations, confirming the bug.
-     * It should pass once the DAO is fixed to support arbitrary payload keys.
+     * <p>This test will FAIL against the current SQL DAO implementations, confirming the bug. It
+     * should pass once the DAO is fixed to support arbitrary payload keys.
      */
     @Test
     public void testSetAndGetNextRunTime_withMultiCronPayloadKey() {

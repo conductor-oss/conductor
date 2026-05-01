@@ -1269,21 +1269,21 @@ class SchedulerServiceTest {
      * BUG REGRESSION — multi-cron per-cron next-run-time must be stored in the DAO and must not
      * cause the schedule to fire on every poll cycle.
      *
-     * <p>After a multi-cron message fires, {@code SchedulerService} calls
-     * {@code schedulerDAO.setNextRunTimeInEpoch(jsonPayload, nextEpoch)} where {@code jsonPayload}
-     * is a JSON string like {@code {"name":"s","cron":"... UTC","id":0}} — not the schedule name.
-     * The DAO must persist that value.
+     * <p>After a multi-cron message fires, {@code SchedulerService} calls {@code
+     * schedulerDAO.setNextRunTimeInEpoch(jsonPayload, nextEpoch)} where {@code jsonPayload} is a
+     * JSON string like {@code {"name":"s","cron":"... UTC","id":0}} — not the schedule name. The
+     * DAO must persist that value.
      *
-     * <p>Redis and SQL DAO implementations silently drop this write (hexists guard / UPDATE with
-     * 0 rows matched), so a subsequent {@code getNextRunTimeInEpoch(jsonPayload)} returns {@code
-     * -1}. {@code SchedulerService} interprets -1 as epoch 1970, deduces the schedule is
-     * perpetually overdue, and fires the workflow on every poll cycle.
+     * <p>Redis and SQL DAO implementations silently drop this write (hexists guard / UPDATE with 0
+     * rows matched), so a subsequent {@code getNextRunTimeInEpoch(jsonPayload)} returns {@code -1}.
+     * {@code SchedulerService} interprets -1 as epoch 1970, deduces the schedule is perpetually
+     * overdue, and fires the workflow on every poll cycle.
      *
-     * <p>This test runs with {@code InMemorySchedulerDAO}, which correctly supports arbitrary
-     * keys. It documents what correct behavior looks like and serves as a regression test once
-     * the Redis/SQL DAOs are fixed. The companion DAO-level tests
-     * ({@code testSetAndGetNextRunTime_withMultiCronPayloadKey}) directly reproduce the bug in
-     * each storage backend.
+     * <p>This test runs with {@code InMemorySchedulerDAO}, which correctly supports arbitrary keys.
+     * It documents what correct behavior looks like and serves as a regression test once the
+     * Redis/SQL DAOs are fixed. The companion DAO-level tests ({@code
+     * testSetAndGetNextRunTime_withMultiCronPayloadKey}) directly reproduce the bug in each storage
+     * backend.
      */
     @Test
     @DisplayName(

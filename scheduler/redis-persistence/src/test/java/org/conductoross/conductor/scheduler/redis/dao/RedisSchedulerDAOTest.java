@@ -399,22 +399,24 @@ public class RedisSchedulerDAOTest {
      * BUG REGRESSION — multi-cron next-run-time must survive a Redis DAO round-trip.
      *
      * <p>When a schedule carries multiple cron expressions, {@code SchedulerService} keys
-     * next-run-time entries by a JSON payload string (e.g.
-     * {@code {"name":"s","cron":"0 0 8 * * ? UTC","id":0}}) rather than by the schedule name.
-     * The DAO must store and retrieve that value transparently.
+     * next-run-time entries by a JSON payload string (e.g. {@code {"name":"s","cron":"0 0 8 * * ?
+     * UTC","id":0}}) rather than by the schedule name. The DAO must store and retrieve that value
+     * transparently.
      *
      * <p>{@code RedisSchedulerDAO.setNextRunTimeInEpoch} guards against writes with:
+     *
      * <pre>
      *   if (!jedisProxy.hexists(keyDefs(), scheduleName)) { return; }
      * </pre>
+     *
      * A JSON payload is not a key in {@code SCHEDULER.DEFS}, so the guard fires, the value is
      * silently dropped, and {@code getNextRunTimeInEpoch} returns {@code -1}. {@code
      * SchedulerService} then maps {@code -1} to epoch 1970 and deduces that the schedule is
      * perpetually overdue, causing every multi-cron message to fire on every poll cycle instead of
      * waiting for its cron time.
      *
-     * <p>This test will FAIL against the current Redis DAO, confirming the bug. It should pass
-     * once the {@code hexists} guard is removed from {@code setNextRunTimeInEpoch}.
+     * <p>This test will FAIL against the current Redis DAO, confirming the bug. It should pass once
+     * the {@code hexists} guard is removed from {@code setNextRunTimeInEpoch}.
      */
     @Test
     public void testSetAndGetNextRunTime_withMultiCronPayloadKey() {
