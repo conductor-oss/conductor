@@ -81,7 +81,7 @@ export interface WorkflowExecution {
   workflowDefinition: WorkflowDef;
   correlationId: string;
   createdBy: string;
-  endTime: string;
+  endTime: number | string;
   executionTime: number;
   failedReferenceTaskNames: string;
   input: Record<string, unknown>;
@@ -91,7 +91,7 @@ export interface WorkflowExecution {
   priority: number;
   rateLimited?: boolean;
   reasonForIncompletion: string;
-  startTime: string;
+  startTime: number | string;
   status: WorkflowExecutionStatus;
   taskToDomain?: Record<string, unknown>;
   updateTime: string;
@@ -99,8 +99,11 @@ export interface WorkflowExecution {
   workflowId: string;
   workflowName?: string;
   parentWorkflowId?: string;
+  parentWorkflowTaskId?: string;
   workflowType: string;
   workflowVersion?: number;
+  idempotencyKey?: string;
+  event?: string;
   variables?: Record<string, unknown>;
   workflowIntrospection?: WorkflowIntrospectionRecord[];
 }
