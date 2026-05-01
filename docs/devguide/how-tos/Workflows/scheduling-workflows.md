@@ -113,13 +113,13 @@ Returns an array of epoch-millisecond timestamps for the next 5 execution times.
 
 ```shell
 # Pause
-curl 'http://localhost:8080/api/scheduler/schedules/daily-report-schedule/pause'
+curl -X PUT 'http://localhost:8080/api/scheduler/schedules/daily-report-schedule/pause'
 
 # Pause with a reason
-curl 'http://localhost:8080/api/scheduler/schedules/daily-report-schedule/pause?reason=maintenance+window'
+curl -X PUT 'http://localhost:8080/api/scheduler/schedules/daily-report-schedule/pause?reason=maintenance+window'
 
 # Resume
-curl 'http://localhost:8080/api/scheduler/schedules/daily-report-schedule/resume'
+curl -X PUT 'http://localhost:8080/api/scheduler/schedules/daily-report-schedule/resume'
 ```
 
 ## Listing and searching schedules

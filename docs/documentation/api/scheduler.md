@@ -165,7 +165,7 @@ DELETE /api/scheduler/schedules/{name}
 ## Pause a schedule
 
 ```
-GET /api/scheduler/schedules/{name}/pause
+PUT /api/scheduler/schedules/{name}/pause
 ```
 
 **Query parameters:**
@@ -178,7 +178,7 @@ GET /api/scheduler/schedules/{name}/pause
 
 ??? note "Example using cURL"
     ```shell
-    curl 'http://localhost:8080/api/scheduler/schedules/daily-report-schedule/pause?reason=maintenance+window'
+    curl -X PUT 'http://localhost:8080/api/scheduler/schedules/daily-report-schedule/pause?reason=maintenance+window'
     ```
 
 ---
@@ -186,14 +186,14 @@ GET /api/scheduler/schedules/{name}/pause
 ## Resume a schedule
 
 ```
-GET /api/scheduler/schedules/{name}/resume
+PUT /api/scheduler/schedules/{name}/resume
 ```
 
 **Response:** `200 OK`
 
 ??? note "Example using cURL"
     ```shell
-    curl 'http://localhost:8080/api/scheduler/schedules/daily-report-schedule/resume'
+    curl -X PUT 'http://localhost:8080/api/scheduler/schedules/daily-report-schedule/resume'
     ```
 
 ---

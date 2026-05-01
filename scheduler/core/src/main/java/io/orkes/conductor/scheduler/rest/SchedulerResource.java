@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -107,7 +108,7 @@ public class SchedulerResource {
     // Pause / Resume
     // -------------------------------------------------------------------------
 
-    @GetMapping("/schedules/{name}/pause")
+    @PutMapping("/schedules/{name}/pause")
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Pause a schedule")
     public void pauseSchedule(
@@ -116,7 +117,7 @@ public class SchedulerResource {
         schedulerService.pauseSchedule(name, reason);
     }
 
-    @GetMapping("/schedules/{name}/resume")
+    @PutMapping("/schedules/{name}/resume")
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Resume a paused schedule")
     public void resumeSchedule(@PathVariable("name") String name) {

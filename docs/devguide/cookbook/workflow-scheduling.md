@@ -351,13 +351,13 @@ curl 'http://localhost:8080/api/scheduler/nextFewSchedules?cronExpression=0+0+9+
 curl 'http://localhost:8080/api/scheduler/search/executions?freeText=daily-report-schedule&size=10'
 
 # Pause
-curl 'http://localhost:8080/api/scheduler/schedules/daily-report-schedule/pause?reason=maintenance'
+curl -X PUT 'http://localhost:8080/api/scheduler/schedules/daily-report-schedule/pause?reason=maintenance'
 
 # Verify paused state
 curl 'http://localhost:8080/api/scheduler/schedules/daily-report-schedule'
 
 # Resume
-curl 'http://localhost:8080/api/scheduler/schedules/daily-report-schedule/resume'
+curl -X PUT 'http://localhost:8080/api/scheduler/schedules/daily-report-schedule/resume'
 
 # Delete
 curl -X DELETE 'http://localhost:8080/api/scheduler/schedules/daily-report-schedule'

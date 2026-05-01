@@ -161,8 +161,11 @@ public class SchedulerIntegrationTest {
                 .untilAsserted(() -> assertTrue(countWorkflowExecutions() >= 3));
 
         // Pause the schedule
-        rest.getForEntity(
-                baseUrl + "/api/scheduler/schedules/" + SCHEDULE_NAME + "/pause", Void.class);
+        rest.exchange(
+                baseUrl + "/api/scheduler/schedules/" + SCHEDULE_NAME + "/pause",
+                HttpMethod.PUT,
+                null,
+                Void.class);
 
         // Verify schedule is paused
         ResponseEntity<Map> schedule =
@@ -223,8 +226,11 @@ public class SchedulerIntegrationTest {
         assertEquals("No workflows should start while paused", 0, countWhilePaused);
 
         // Resume the schedule
-        rest.getForEntity(
-                baseUrl + "/api/scheduler/schedules/" + SCHEDULE_NAME + "/resume", Void.class);
+        rest.exchange(
+                baseUrl + "/api/scheduler/schedules/" + SCHEDULE_NAME + "/resume",
+                HttpMethod.PUT,
+                null,
+                Void.class);
 
         // Wait for executions
         await().atMost(30, TimeUnit.SECONDS)
