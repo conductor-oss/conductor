@@ -344,18 +344,20 @@ export function CronExpressionSection({
         {/* Additional Cron Schedules */}
         {cronSchedules && cronSchedules.length > 0 && (
           <Box sx={{ px: 6, pb: 4 }}>
-            <MuiTypography
-              fontWeight={600}
-              marginBottom="12px"
-              marginTop="8px"
-            >
+            <MuiTypography fontWeight={600} marginBottom="12px" marginTop="8px">
               Additional Cron Schedules
             </MuiTypography>
             {cronSchedules.map((entry, index) => (
               <Paper
                 key={index}
                 variant="outlined"
-                sx={{ p: 3, mb: 2, display: "flex", gap: 2, alignItems: "flex-start" }}
+                sx={{
+                  p: 3,
+                  mb: 2,
+                  display: "flex",
+                  gap: 2,
+                  alignItems: "flex-start",
+                }}
               >
                 <Box sx={{ flex: 1 }}>
                   <ConductorInput
@@ -369,13 +371,14 @@ export function CronExpressionSection({
                     }}
                     inputProps={{ sx: { fontSize: "1.1rem" } }}
                   />
-                  {entry.cronExpression && humanizeCron(entry.cronExpression) && (
-                    <MuiTypography
-                      sx={{ mt: 1, opacity: 0.7, fontSize: "0.85rem" }}
-                    >
-                      {humanizeCron(entry.cronExpression)}
-                    </MuiTypography>
-                  )}
+                  {entry.cronExpression &&
+                    humanizeCron(entry.cronExpression) && (
+                      <MuiTypography
+                        sx={{ mt: 1, opacity: 0.7, fontSize: "0.85rem" }}
+                      >
+                        {humanizeCron(entry.cronExpression)}
+                      </MuiTypography>
+                    )}
                 </Box>
                 <Box sx={{ minWidth: 200 }}>
                   <TimezonePicker

@@ -12,6 +12,10 @@
  */
 package com.netflix.conductor.test.integration.http;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -24,6 +28,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.*;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestTemplate;
@@ -39,6 +44,7 @@ import static org.junit.Assert.*;
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT, classes = SchedulerTestApp.class)
 @TestPropertySource(locations = "classpath:application-scheduler-test.properties")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class SchedulerIntegrationTest {
 
     @LocalServerPort private int port;
@@ -47,6 +53,7 @@ public class SchedulerIntegrationTest {
     private String baseUrl;
 
     private static final String SCHEDULE_NAME = "scheduler-integ-test";
+    private static final String MULTI_CRON_SCHEDULE_NAME = "scheduler-integ-test-multicron";
     private static final String WORKFLOW_NAME = "scheduler_integ_test_wf";
 
     @Before
@@ -54,9 +61,13 @@ public class SchedulerIntegrationTest {
         rest = new RestTemplate();
         baseUrl = "http://localhost:" + port;
 
-        // Clean up any leftover schedule from previous runs
+        // Clean up any leftover schedules from previous runs
         try {
             rest.delete(baseUrl + "/api/scheduler/schedules/" + SCHEDULE_NAME);
+        } catch (Exception ignored) {
+        }
+        try {
+            rest.delete(baseUrl + "/api/scheduler/schedules/" + MULTI_CRON_SCHEDULE_NAME);
         } catch (Exception ignored) {
         }
 
@@ -81,9 +92,13 @@ public class SchedulerIntegrationTest {
 
     @After
     public void tearDown() {
-        // Clean up: delete the schedule if it exists
+        // Clean up: delete schedules if they exist
         try {
             rest.delete(baseUrl + "/api/scheduler/schedules/" + SCHEDULE_NAME);
+        } catch (Exception ignored) {
+        }
+        try {
+            rest.delete(baseUrl + "/api/scheduler/schedules/" + MULTI_CRON_SCHEDULE_NAME);
         } catch (Exception ignored) {
         }
     }
@@ -321,8 +336,7 @@ public class SchedulerIntegrationTest {
                 rest.getForEntity(
                         baseUrl
                                 + "/api/scheduler/nextFewSchedules?cronExpression="
-                                + java.net.URLEncoder.encode(
-                                        "* * * * * *", java.nio.charset.StandardCharsets.UTF_8)
+                                + URLEncoder.encode("* * * * * *", StandardCharsets.UTF_8)
                                 + "&limit=5",
                         List.class);
         assertEquals(HttpStatus.OK, result.getStatusCode());
@@ -330,15 +344,139 @@ public class SchedulerIntegrationTest {
         assertEquals(5, result.getBody().size());
     }
 
+    @Test
+    public void testStaggeredMultiCronEachCronFiresIndependently() {
+        // Create 3 cron expressions, each firing at a specific second ~4 seconds apart.
+        // This proves each cron in the cronSchedules array fires independently.
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
+        int sec1 = (now.getSecond() + 4) % 60;
+        int sec2 = (now.getSecond() + 8) % 60;
+        int sec3 = (now.getSecond() + 12) % 60;
+
+        String cron1 = sec1 + " * * * * *"; // fires once/minute at sec1
+        String cron2 = sec2 + " * * * * *"; // fires once/minute at sec2
+        String cron3 = sec3 + " * * * * *"; // fires once/minute at sec3
+
+        String scheduleJson =
+                "{"
+                        + "\"name\": \""
+                        + MULTI_CRON_SCHEDULE_NAME
+                        + "\","
+                        + "\"cronSchedules\": ["
+                        + "  {\"cronExpression\": \""
+                        + cron1
+                        + "\", \"zoneId\": \"UTC\"},"
+                        + "  {\"cronExpression\": \""
+                        + cron2
+                        + "\", \"zoneId\": \"UTC\"},"
+                        + "  {\"cronExpression\": \""
+                        + cron3
+                        + "\", \"zoneId\": \"UTC\"}"
+                        + "],"
+                        + "\"paused\": false,"
+                        + "\"startWorkflowRequest\": {"
+                        + "  \"name\": \""
+                        + WORKFLOW_NAME
+                        + "\","
+                        + "  \"version\": 1"
+                        + "}"
+                        + "}";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        ResponseEntity<Map> createResp =
+                rest.exchange(
+                        baseUrl + "/api/scheduler/schedules",
+                        HttpMethod.POST,
+                        new HttpEntity<>(scheduleJson, headers),
+                        Map.class);
+        assertEquals(HttpStatus.OK, createResp.getStatusCode());
+        assertNotNull(createResp.getBody());
+        assertEquals(MULTI_CRON_SCHEDULE_NAME, createResp.getBody().get("name"));
+
+        // Verify cronSchedules is returned with 3 entries
+        List<?> cronSchedules = (List<?>) createResp.getBody().get("cronSchedules");
+        assertNotNull("cronSchedules should be in response", cronSchedules);
+        assertEquals("Should have 3 cron schedules", 3, cronSchedules.size());
+
+        // Verify queueMsgId is NOT in the response (internal field)
+        assertFalse(
+                "queueMsgId should not be in API response",
+                createResp.getBody().containsKey("queueMsgId"));
+
+        // Wait for all 3 staggered crons to fire (each ~4s apart, so ~13s total)
+        await().atMost(20, TimeUnit.SECONDS)
+                .pollInterval(2, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            int count = countExecutions(MULTI_CRON_SCHEDULE_NAME);
+                            assertTrue(
+                                    "Expected at least 3 executions (one per cron), got " + count,
+                                    count >= 3);
+                        });
+    }
+
+    @Test
+    public void testResponseDoesNotContainQueueMsgId() {
+        // Create a simple schedule
+        String scheduleJson =
+                "{"
+                        + "\"name\": \""
+                        + SCHEDULE_NAME
+                        + "\","
+                        + "\"cronExpression\": \"0 * * * * *\","
+                        + "\"zoneId\": \"UTC\","
+                        + "\"paused\": true,"
+                        + "\"startWorkflowRequest\": {"
+                        + "  \"name\": \""
+                        + WORKFLOW_NAME
+                        + "\","
+                        + "  \"version\": 1"
+                        + "}"
+                        + "}";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // Check POST response
+        ResponseEntity<Map> createResp =
+                rest.exchange(
+                        baseUrl + "/api/scheduler/schedules",
+                        HttpMethod.POST,
+                        new HttpEntity<>(scheduleJson, headers),
+                        Map.class);
+        assertFalse(
+                "POST response should not contain queueMsgId",
+                createResp.getBody().containsKey("queueMsgId"));
+
+        // Check GET response
+        ResponseEntity<Map> getResp =
+                rest.getForEntity(baseUrl + "/api/scheduler/schedules/" + SCHEDULE_NAME, Map.class);
+        assertFalse(
+                "GET response should not contain queueMsgId",
+                getResp.getBody().containsKey("queueMsgId"));
+
+        // Check list response
+        ResponseEntity<List> listResp =
+                rest.getForEntity(baseUrl + "/api/scheduler/schedules", List.class);
+        for (Object item : listResp.getBody()) {
+            Map<?, ?> schedule = (Map<?, ?>) item;
+            assertFalse(
+                    "List response items should not contain queueMsgId",
+                    schedule.containsKey("queueMsgId"));
+        }
+    }
+
     private int countWorkflowExecutions() {
+        return countExecutions(SCHEDULE_NAME);
+    }
+
+    private int countExecutions(String scheduleName) {
         try {
-            // Use the scheduler execution search endpoint
             ResponseEntity<Map> response =
                     rest.getForEntity(
                             baseUrl
                                     + "/api/scheduler/search/executions?freeText="
-                                    + java.net.URLEncoder.encode(
-                                            SCHEDULE_NAME, java.nio.charset.StandardCharsets.UTF_8)
+                                    + URLEncoder.encode(scheduleName, StandardCharsets.UTF_8)
                                     + "&size=1000",
                             Map.class);
             if (response.getBody() != null && response.getBody().containsKey("totalHits")) {

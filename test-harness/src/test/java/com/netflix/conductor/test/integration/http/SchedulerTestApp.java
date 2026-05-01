@@ -25,7 +25,15 @@ import org.springframework.context.annotation.FilterType;
         scanBasePackages = {})
 @ComponentScan(
         basePackages = {
-            "com.netflix.conductor",
+            "com.netflix.conductor.core",
+            "com.netflix.conductor.rest",
+            "com.netflix.conductor.service",
+            "com.netflix.conductor.model",
+            "com.netflix.conductor.common",
+            "com.netflix.conductor.contribs",
+            "com.netflix.conductor.sqlite",
+            "com.netflix.conductor.dao",
+            "com.netflix.conductor.tasks",
             "io.orkes.conductor",
             "org.conductoross.conductor"
         },

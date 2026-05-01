@@ -30,7 +30,10 @@ export function getDateFromField(d1: string | number | Date) {
  * any additional entries follow.
  */
 export function buildCronSchedules(
-  scheduleState: Pick<ScheduleType, "cronExpression" | "zoneId" | "cronSchedules">,
+  scheduleState: Pick<
+    ScheduleType,
+    "cronExpression" | "zoneId" | "cronSchedules"
+  >,
 ): CronScheduleEntry[] {
   const primary: CronScheduleEntry = {
     cronExpression: scheduleState.cronExpression || "",
