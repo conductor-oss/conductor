@@ -70,8 +70,9 @@ dependencies {
     implementation project(':conductor-json-jq-task')
     implementation project(':conductor-kafka')
 
-    //Metrics
-    implementation project(':conductor-metrics')
+    //Metrics — registry configs moved here from retired conductor-metrics module
+    implementation "io.micrometer:micrometer-registry-cloudwatch2:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-azure-monitor:${revMicrometer}"
 
     //Event Listener
     implementation project(':conductor-workflow-event-listener')
