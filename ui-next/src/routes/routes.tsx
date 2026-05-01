@@ -46,7 +46,6 @@ import { EventMonitor } from "pages/eventMonitor/EventMonitor";
 import { EventMonitorDetail } from "pages/eventMonitor/EventMonitorDetail/EventMonitorDetail";
 import { SchedulerExecutions, WorkflowSearch } from "pages/executions";
 import { pluginRegistry } from "plugins/registry";
-import { RouteObject } from "react-router-dom";
 import { featureFlags, FEATURES } from "utils";
 import {
   API_REFERENCE_URL,
@@ -209,7 +208,7 @@ const getIndexRoute = (isPlayground: boolean) => {
 /**
  * Build the complete route configuration
  */
-export const getRoutes = (): RouteObject[] => {
+export const getRoutes = () => {
   const isPlayground = featureFlags.isEnabled(FEATURES.PLAYGROUND);
 
   // Get routes from plugins

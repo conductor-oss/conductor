@@ -19,6 +19,9 @@ export interface CommonTaskDef {
   taskDefinition?: TaskDefinitionDto;
   description?: string;
   optional?: boolean;
+  boundaryTimerDuration?: string;
+  boundaryTimerCompletionStatus?: string;
+  boundaryTimerOutput?: Record<string, unknown>;
 }
 
 export interface JoinTaskDef extends CommonTaskDef {

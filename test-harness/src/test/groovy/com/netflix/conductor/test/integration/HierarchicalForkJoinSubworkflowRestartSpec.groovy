@@ -382,19 +382,11 @@ class HierarchicalForkJoinSubworkflowRestartSpec extends AbstractSpecification {
             tasks[1].status == Task.Status.COMPLETED
         }
 
-        when: "the mid level and root workflows are sweeped"
+        when: "the mid level and root workflows are 'decided'"
         sweep(midLevelWorkflowId)
         sweep(rootWorkflowId)
 
-        then: "wait for mid-level SUB_WORKFLOW task to reflect the completed leaf before executing JOINs"
-        // Leaf completion propagates to the parent SUB_WORKFLOW task asynchronously;
-        // the explicit sweeps above are not sufficient on their own.
-        await().atMost(10, TimeUnit.SECONDS).until {
-            workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
-                    .getTaskByRefName('st1').status == Task.Status.COMPLETED
-        }
-
-        when: "JOIN tasks are executed"
+        and: "JOIN tasks are executed"
         asyncSystemTaskExecutor.execute(joinTask, midJoinId)
         asyncSystemTaskExecutor.execute(joinTask, rootJoinId)
 

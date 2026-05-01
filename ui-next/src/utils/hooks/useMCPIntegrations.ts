@@ -1,23 +1,14 @@
 import { useMemo } from "react";
-import { FEATURES } from "utils/flags";
 import { useFetch } from "utils/query";
 
 export const useMCPIntegrations = () => {
   const integrationsUrl = `/integrations/def`;
   const providersUrl = `/integrations/provider?category=MCP&activeOnly=false`;
 
-  const { data: integrationsData, isLoading: isLoadingIntegrations } = useFetch(
-    integrationsUrl,
-    {
-      enterpriseApiFeature: FEATURES.INTEGRATIONS,
-    },
-  );
-  const { data: providersData, isLoading: isLoadingProviders } = useFetch(
-    providersUrl,
-    {
-      enterpriseApiFeature: FEATURES.INTEGRATIONS,
-    },
-  );
+  const { data: integrationsData, isLoading: isLoadingIntegrations } =
+    useFetch(integrationsUrl);
+  const { data: providersData, isLoading: isLoadingProviders } =
+    useFetch(providersUrl);
 
   const combinedIntegrations = useMemo(() => {
     if (!providersData) return [];
@@ -55,12 +46,9 @@ export const useMCPIntegrations = () => {
 export const useMCPTools = (integrationName?: string) => {
   const toolsUrl = integrationName
     ? `/integrations/${integrationName}/def/apis`
-    : "";
+    : null;
 
-  const { data: tools, isLoading } = useFetch(toolsUrl, {
-    enterpriseApiFeature: FEATURES.INTEGRATIONS,
-    when: Boolean(integrationName),
-  });
+  const { data: tools, isLoading } = useFetch(toolsUrl || "");
 
   return {
     tools: tools || [],

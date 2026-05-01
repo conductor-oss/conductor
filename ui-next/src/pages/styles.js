@@ -164,4 +164,10 @@ export default {
       fontSize: "14px",
     },
   },
+  switch: {
+    "& .MuiSwitch-thumb": {
+      position: "relative",
+      top: "-2px",
+    },
+  },
 };

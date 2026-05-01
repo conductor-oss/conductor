@@ -51,6 +51,7 @@ class GeminiVertexConfigurationTest {
         assertNull(config.getLocation());
         assertNull(config.getPublisher());
         assertNull(config.getGoogleCredentials());
+        assertNull(config.getPredictionServiceClient());
     }
 
     @Test

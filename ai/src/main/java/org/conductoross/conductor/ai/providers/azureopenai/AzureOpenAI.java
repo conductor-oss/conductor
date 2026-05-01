@@ -12,107 +12,85 @@
  */
 package org.conductoross.conductor.ai.providers.azureopenai;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.models.ChatCompletion;
 import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
-import org.conductoross.conductor.ai.models.ToolSpec;
-import org.conductoross.conductor.ai.providers.openai.OpenAIHttpImageModel;
-import org.conductoross.conductor.ai.providers.openai.OpenAIResponsesChatModel;
-import org.conductoross.conductor.ai.providers.openai.OpenAIResponsesChatOptions;
-import org.conductoross.conductor.ai.providers.openai.api.OpenAIEmbeddingsApi;
-import org.conductoross.conductor.ai.providers.openai.api.OpenAIImageGenApi;
-import org.conductoross.conductor.ai.providers.openai.api.OpenAIResponsesApi;
-import org.conductoross.conductor.ai.providers.openai.api.OpenAIResponsesApi.Tool;
+import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
+import org.springframework.ai.azure.openai.AzureOpenAiChatOptions;
+import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingModel;
+import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingOptions;
+import org.springframework.ai.azure.openai.AzureOpenAiImageModel;
+import org.springframework.ai.azure.openai.AzureOpenAiImageOptions;
+import org.springframework.ai.azure.openai.AzureOpenAiResponseFormat;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.image.ImageModel;
 
-import lombok.extern.slf4j.Slf4j;
+import com.azure.ai.openai.OpenAIClient;
+import com.azure.ai.openai.OpenAIClientBuilder;
+import com.azure.core.credential.AzureKeyCredential;
+import com.azure.core.util.HttpClientOptions;
+import com.google.common.primitives.Floats;
 
-/**
- * Azure OpenAI provider backed by OkHttp calls to the Azure OpenAI Responses API.
- *
- * <p>Uses the same API classes as the OpenAI provider but with Azure-specific authentication
- * (api-key header) and base URL format.
- */
-@Slf4j
 public class AzureOpenAI implements AIModel {
 
     public static final String NAME = "azure_openai";
     private final AzureOpenAIConfiguration config;
 
-    private final OpenAIResponsesApi responsesApi;
-    private final OpenAIEmbeddingsApi embeddingsApi;
-    private final OpenAIImageGenApi imageGenApi;
-    private final OpenAIResponsesChatModel chatModel;
-    private final OpenAIHttpImageModel imageModel;
-
     public AzureOpenAI(AzureOpenAIConfiguration config) {
         this.config = config;
-        long timeoutSecs = config.getTimeout() != null ? config.getTimeout().getSeconds() : 600;
-
-        // Azure base URL format: https://RESOURCE.openai.azure.com/openai/v1
-        String baseUrl = toAzureV1Url(config.getBaseURL());
-
-        this.responsesApi = new OpenAIResponsesApi(config.getApiKey(), baseUrl, true, timeoutSecs);
-        this.embeddingsApi =
-                new OpenAIEmbeddingsApi(config.getApiKey(), baseUrl, true, timeoutSecs);
-        this.imageGenApi = new OpenAIImageGenApi(config.getApiKey(), baseUrl, true, timeoutSecs);
-        this.chatModel = new OpenAIResponsesChatModel(responsesApi);
-        this.imageModel = new OpenAIHttpImageModel(imageGenApi);
     }
 
-    @Override
     public String getModelProvider() {
         return NAME;
     }
 
     @Override
     public List<Float> generateEmbeddings(EmbeddingGenRequest embeddingGenRequest) {
-        try {
-            var request =
-                    new OpenAIEmbeddingsApi.EmbeddingRequest(
-                            embeddingGenRequest.getModel(),
-                            embeddingGenRequest.getText(),
-                            embeddingGenRequest.getDimensions());
-            var result = embeddingsApi.createEmbeddings(request);
-            if (result.data() != null && !result.data().isEmpty()) {
-                return result.data().getFirst().embedding();
-            }
-            return List.of();
-        } catch (IOException e) {
-            throw new RuntimeException("Embeddings API call failed: " + e.getMessage(), e);
-        }
+        AzureOpenAiEmbeddingOptions options =
+                AzureOpenAiEmbeddingOptions.builder()
+                        .deploymentName(embeddingGenRequest.getModel())
+                        .dimensions(embeddingGenRequest.getDimensions())
+                        .build();
+
+        OpenAIClient client = getOpenAIClientBuilder().buildClient();
+        AzureOpenAiEmbeddingModel model = new AzureOpenAiEmbeddingModel(client);
+
+        EmbeddingRequest embeddingRequest =
+                new EmbeddingRequest(List.of(embeddingGenRequest.getText()), options);
+
+        float[] embeddingsResponse = model.call(embeddingRequest).getResult().getOutput();
+        return Floats.asList(embeddingsResponse);
     }
 
     @Override
     public ChatOptions getChatOptions(ChatCompletion input) {
-        List<Tool> tools = convertTools(input);
-
-        // Azure uses deployment name as the model
-        String model = input.getModel();
-
-        OpenAIResponsesChatOptions.OpenAIResponsesChatOptionsBuilder builder =
-                OpenAIResponsesChatOptions.builder()
-                        .model(model)
+        AzureOpenAiChatOptions.Builder builder =
+                AzureOpenAiChatOptions.builder()
+                        .deploymentName(input.getModel())
                         .topP(input.getTopP())
+                        .stop(input.getStopWords())
                         .frequencyPenalty(input.getFrequencyPenalty())
-                        .presencePenalty(input.getPresencePenalty())
                         .maxTokens(input.getMaxTokens())
-                        .stopSequences(input.getStopWords())
-                        .previousResponseId(input.getPreviousResponseId())
-                        .reasoningEffort(input.getReasoningEffort())
-                        .jsonOutput(input.isJsonOutput())
-                        .responsesApiTools(tools.isEmpty() ? null : tools);
+                        .toolCallbacks(getToolCallback(input))
+                        .internalToolExecutionEnabled(false)
+                        .presencePenalty(input.getPresencePenalty());
 
-        if (isReasoningModel(model)) {
+        if (input.isJsonOutput()) {
+            builder.responseFormat(
+                    AzureOpenAiResponseFormat.builder()
+                            .type(AzureOpenAiResponseFormat.Type.JSON_OBJECT)
+                            .build());
+        }
+
+        // remove temperature, stop and topP for reasoning models
+        if (isReasoningModel(input.getModel())) {
             builder.temperature(null);
             builder.topP(null);
-            builder.stopSequences(null);
+            builder.stop(null);
         }
 
         return builder.build();
@@ -120,28 +98,19 @@ public class AzureOpenAI implements AIModel {
 
     @Override
     public ChatModel getChatModel() {
-        return this.chatModel;
+        return AzureOpenAiChatModel.builder().openAIClientBuilder(getOpenAIClientBuilder()).build();
     }
 
-    @Override
-    public ImageModel getImageModel() {
-        return this.imageModel;
-    }
+    private OpenAIClientBuilder getOpenAIClientBuilder() {
+        HttpClientOptions clientOptions =
+                new HttpClientOptions()
+                        .setReadTimeout(config.getTimeout())
+                        .setResponseTimeout(config.getTimeout());
 
-    // -- Helpers --
-
-    private List<Tool> convertTools(ChatCompletion input) {
-        List<Tool> tools = new ArrayList<>();
-        if (input.getTools() != null) {
-            for (ToolSpec toolSpec : input.getTools()) {
-                tools.add(
-                        Tool.function(
-                                toolSpec.getName(),
-                                toolSpec.getDescription(),
-                                toolSpec.getInputSchema()));
-            }
-        }
-        return tools;
+        return new OpenAIClientBuilder()
+                .endpoint(config.getBaseURL())
+                .credential(new AzureKeyCredential(config.getApiKey()))
+                .clientOptions(clientOptions);
     }
 
     private boolean isReasoningModel(String modelName) {
@@ -149,22 +118,17 @@ public class AzureOpenAI implements AIModel {
             return false;
         }
         String model = modelName.toLowerCase();
-        return model.startsWith("o1")
-                || model.startsWith("o3")
-                || model.startsWith("o4")
-                || model.startsWith("gpt-5");
+        return model.startsWith("o1") || model.startsWith("o3") || model.startsWith("gpt-5");
     }
 
-    /**
-     * Converts an Azure OpenAI endpoint to the v1 URL format expected by the Responses API. Input:
-     * "https://resource.openai.azure.com" → Output: "https://resource.openai.azure.com/openai/v1"
-     */
-    private static String toAzureV1Url(String baseUrl) {
-        if (baseUrl == null) return null;
-        // If already has /openai/v1, return as-is
-        if (baseUrl.endsWith("/openai/v1")) return baseUrl;
-        // Strip trailing slash
-        String url = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
-        return url + "/openai/v1";
+    @Override
+    public ImageModel getImageModel() {
+        OpenAIClient client = getOpenAIClientBuilder().buildClient();
+        AzureOpenAiImageOptions options =
+                AzureOpenAiImageOptions.builder()
+                        .deploymentName(config.getDeploymentName())
+                        .user(config.getUser())
+                        .build();
+        return new AzureOpenAiImageModel(client, options);
     }
 }

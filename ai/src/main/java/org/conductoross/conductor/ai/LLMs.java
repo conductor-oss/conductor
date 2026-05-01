@@ -44,7 +44,7 @@ public class LLMs {
     protected String payloadStoreLocation;
     protected Consumer<TokenUsageLog> tokenUsageLogger =
             (tokenUsageLog) -> {
-                log.debug("{}", tokenUsageLog);
+                log.info("{}", tokenUsageLog);
             };
 
     public LLMs(

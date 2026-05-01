@@ -102,6 +102,8 @@ function createPluginRegistry(): PluginRegistry {
           );
         }
       }
+
+      console.log(`Plugin registered: ${plugin.name} (${plugin.id})`);
     },
 
     /**

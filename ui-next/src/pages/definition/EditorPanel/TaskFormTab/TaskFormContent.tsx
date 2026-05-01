@@ -50,6 +50,7 @@ import { FormTaskType, TaskDef, TaskType } from "types";
 import { updateField } from "utils/fieldHelpers";
 import { FEATURES, featureFlags } from "utils/flags";
 import { TaskStats } from "./TaskStats/TaskStats";
+import BoundaryTimerSection from "./forms/BoundaryTimerSection";
 import { ConductorCacheOutput } from "./forms/ConductorCacheOutputForm";
 import { MCPTaskForm } from "./forms/MCPTaskForm";
 import { MaybeVariable } from "./forms/MaybeVariable";
@@ -341,20 +342,7 @@ const TaskFormContent: FunctionComponent = () => {
     });
   };
 
-  const mcpIntegrationType =
-    taskType === TaskType.MCP
-      ? (task?.inputParameters?.integrationType as string | undefined)
-      : undefined;
-  const taskTypeLabelForDoc = mcpIntegrationType
-    ? mcpIntegrationType.replace(/-mcp$/i, "").replace(/-/g, " ").toUpperCase()
-    : taskType === TaskType.MCP
-      ? "CONNECTED APP"
-      : taskType;
   const taskTypeLabel = taskType === TaskType.MCP ? "CONNECTED APP" : taskType;
-  const taskDocUrl =
-    taskType === TaskType.MCP && mcpIntegrationType
-      ? getTaskDocUrl(mcpIntegrationType) || getTaskDocUrl(TaskType.HTTP)
-      : "";
 
   return (
     <Box
@@ -440,7 +428,9 @@ const TaskFormContent: FunctionComponent = () => {
                   placement="left"
                   children={
                     <Link
-                      href={taskDocUrl}
+                      href={
+                        getTaskDocUrl(taskType) || getTaskDocUrl(TaskType.HTTP)
+                      }
                       tabIndex={-1}
                       target="_blank"
                       rel="noreferrer"
@@ -466,7 +456,7 @@ const TaskFormContent: FunctionComponent = () => {
                 />
               ) : (
                 <Link
-                  href={taskDocUrl}
+                  href={getTaskDocUrl(taskType) || getTaskDocUrl(TaskType.HTTP)}
                   tabIndex={-1}
                   target="_blank"
                   rel="noreferrer"
@@ -485,7 +475,7 @@ const TaskFormContent: FunctionComponent = () => {
                       color: colors.blueLightMode,
                     }}
                   >
-                    {taskTypeLabelForDoc}
+                    {taskTypeLabel}
                     {" Docs"}
                   </div>
                 </Link>
@@ -527,6 +517,7 @@ const TaskFormContent: FunctionComponent = () => {
           )}
         </Box>
         {ENABLE_TASK_STATS && <TaskStats />}
+        <BoundaryTimerSection />
         {/*<TaskFormFooter {...{ selectedNode, onChange }} />*/}
       </Box>
     </Box>

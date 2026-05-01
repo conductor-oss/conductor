@@ -26,11 +26,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -85,16 +84,15 @@ import static org.junit.Assert.fail;
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         classes = ConductorTestApp.class)
 @TestPropertySource(locations = "classpath:application-integrationtest.properties")
-@Import(ForkJoinSyncModeIntegrationTest.TestConfig.class)
 public class ForkJoinSyncModeIntegrationTest {
 
     // =========================================================================
     // Test configuration: in-memory QueueDAO (no Redis / Docker required)
     // =========================================================================
 
+    @TestConfiguration
     static class TestConfig {
         @Bean
-        @ConditionalOnMissingBean(QueueDAO.class)
         public QueueDAO inMemoryQueueDAO() {
             return new InMemoryQueueDAO();
         }

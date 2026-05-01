@@ -331,7 +331,10 @@ public class JedisClusterCommands implements JedisCommands {
         }
         List<String> values = new ArrayList<>(keys.length);
         for (Response<String> response : responses) {
-            values.add(response.get());
+            String value = response.get();
+            if (value != null) {
+                values.add(value);
+            }
         }
         return values;
     }
@@ -347,7 +350,10 @@ public class JedisClusterCommands implements JedisCommands {
         }
         List<byte[]> values = new ArrayList<>(keys.length);
         for (Response<byte[]> response : responses) {
-            values.add(response.get());
+            byte[] value = response.get();
+            if (value != null && value.length > 0) {
+                values.add(value);
+            }
         }
         return values;
     }

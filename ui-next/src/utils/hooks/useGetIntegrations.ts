@@ -1,12 +1,10 @@
 import { fetchWithContext, useFetchContext } from "plugins/fetch";
-import { FEATURES, featureFlags } from "utils/flags";
-import { toMaybeQueryString } from "utils";
 import {
-  computeFetchBaseEnabled,
-  DEFAULT_STALE_TIME,
-  STALE_TIME_WORKFLOW_DEFS,
   useAuthHeaders,
-} from "utils/query";
+  STALE_TIME_WORKFLOW_DEFS,
+  toMaybeQueryString,
+  DEFAULT_STALE_TIME,
+} from "utils";
 import { useQuery } from "react-query";
 import { IntegrationDef, IntegrationI } from "types";
 
@@ -23,8 +21,7 @@ export const useGetIntegration = ({
   ...restProps
 }: GetIntegrationsProps) => {
   const fetchContext = useFetchContext();
-  const headers = useAuthHeaders();
-  const fetchParams = { headers };
+  const fetchParams = { headers: useAuthHeaders() };
   const props = { activeOnly, ...restProps };
 
   return useQuery<IntegrationI[]>(
@@ -35,9 +32,7 @@ export const useGetIntegration = ({
       // staletime to ensure stable view when paginating back and forth (even if underlying results change)
     },
     {
-      enabled:
-        computeFetchBaseEnabled(fetchContext, headers) &&
-        featureFlags.isEnabled(FEATURES.INTEGRATIONS),
+      enabled: fetchContext.ready,
       keepPreviousData: true,
       staleTime: DEFAULT_STALE_TIME,
       retry: (failureCount: number, error: any) => {
@@ -52,8 +47,7 @@ export const useGetIntegration = ({
 
 export const useGetIntegrationDef = () => {
   const fetchContext = useFetchContext();
-  const headers = useAuthHeaders();
-  const fetchParams = { headers };
+  const fetchParams = { headers: useAuthHeaders() };
   return useQuery<IntegrationDef[]>(
     [fetchContext.stack, INTEGRATION_DEF_PATH],
     () => {
@@ -62,9 +56,7 @@ export const useGetIntegrationDef = () => {
       // staletime to ensure stable view when paginating back and forth (even if underlying results change)
     },
     {
-      enabled:
-        computeFetchBaseEnabled(fetchContext, headers) &&
-        featureFlags.isEnabled(FEATURES.INTEGRATIONS),
+      enabled: fetchContext.ready,
       staleTime: STALE_TIME_WORKFLOW_DEFS,
     },
   );
