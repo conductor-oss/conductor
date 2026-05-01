@@ -45,7 +45,7 @@ dependencies {
     implementation project(':conductor-json-jq-task')
     implementation project(':conductor-kafka')
 
-    //Metrics — registry configs moved here from retired conductor-metrics module
+    //Metrics
     implementation "io.micrometer:micrometer-registry-cloudwatch2:${revMicrometer}"
     implementation "io.micrometer:micrometer-registry-azure-monitor:${revMicrometer}"
     implementation "io.micrometer:micrometer-registry-prometheus:${revMicrometer}"
