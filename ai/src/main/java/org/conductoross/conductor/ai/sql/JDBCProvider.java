@@ -13,7 +13,6 @@
 package org.conductoross.conductor.ai.sql;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.PreDestroy;
@@ -56,12 +55,10 @@ public class JDBCProvider {
     /**
      * Retrieves a DataSource by its configured name.
      *
-     * @param input input
+     * @param name The name of the JDBC instance as configured
      * @return The DataSource, or null if not found
      */
-    public DataSource get(JDBCInput input) {
-        String name =
-                Optional.ofNullable(input.getConnectionId()).orElse(input.getIntegrationName());
+    public DataSource get(String name) {
         if (name == null) {
             log.warn("JDBC instance name is null");
             return null;

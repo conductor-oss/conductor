@@ -17,6 +17,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.vertexai.api.PredictionServiceClient;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -34,6 +35,7 @@ public class GeminiVertexConfiguration implements ModelConfiguration<GeminiVerte
     private String publisher;
     private String apiKey;
     GoogleCredentials googleCredentials;
+    PredictionServiceClient predictionServiceClient;
 
     public String getBaseURL() {
         return baseURL == null

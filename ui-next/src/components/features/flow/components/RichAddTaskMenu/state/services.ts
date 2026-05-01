@@ -48,12 +48,6 @@ export const fetchForWorkflowDefinitions = async ({
 export const fetchForMCPIntegrations = async ({
   authHeaders: headers,
 }: RichAddTaskMenuMachineContext) => {
-  if (!featureFlags.isEnabled(FEATURES.INTEGRATIONS)) {
-    return {
-      supportedIntegrations: [],
-      availableIntegrations: [],
-    };
-  }
   const integrationsUrl = `/integrations/def`;
   const providersUrl = `/integrations/provider?category=MCP&activeOnly=false`;
 

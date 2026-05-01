@@ -1,7 +1,6 @@
 import { fetchContextNonHook, fetchWithContext } from "plugins/fetch";
 import { HasAuthHeaders } from "types/common";
 import type { EnvironmentVariables } from "types/EnvVariables";
-import { FEATURES, featureFlags } from "utils/flags";
 import { AUTH_HEADER_NAME, logger } from "utils";
 import {
   WORKFLOW_METADATA_BASE_URL,
@@ -55,10 +54,6 @@ export const getWorkflowDefinitionByNameAndVersion = async ({
 export const getEnvVariables = async ({
   authHeaders: headers,
 }: HasAuthHeaders): Promise<Record<string, string>> => {
-  // OSS: `INTEGRATIONS: false` in public/context.js — no hosted /environment API.
-  if (!featureFlags.isEnabled(FEATURES.INTEGRATIONS)) {
-    return {};
-  }
   const url = `/environment`;
   try {
     const result: EnvironmentVariables[] = await queryClient.fetchQuery(

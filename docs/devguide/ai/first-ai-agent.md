@@ -21,7 +21,7 @@ pip install mcp-testkit
 mcp-testkit --transport http
 ```
 
-This starts an MCP server at `http://localhost:3001/mcp` with deterministic tools for testing. You'll use this URL in the workflow definition.
+This starts an MCP server at `http://localhost:3001/mcp` with 65 deterministic tools for testing. You'll use this URL in the workflow definition.
 
 !!! tip "Any MCP server works"
     Conductor connects to any MCP-compatible server. Use community MCP servers for GitHub, Slack, databases, or any API — or build your own. See the [MCP integration guide](mcp-guide.md) for details.
@@ -29,15 +29,17 @@ This starts an MCP server at `http://localhost:3001/mcp` with deterministic tool
 
 ## Step 2: Configure your LLM provider
 
-Set your API key as an environment variable before starting the server:
+Add your API key to Conductor's configuration. If you started with the CLI, edit `~/.conductor/config.properties`:
 
-```bash
+```properties
+conductor.integrations.ai.enabled=true
+
 # Choose one (or both):
-export OPENAI_API_KEY=sk-your-openai-key
-export ANTHROPIC_API_KEY=sk-ant-your-anthropic-key
+conductor.ai.openai.apiKey=sk-your-openai-key
+conductor.ai.anthropic.apiKey=sk-ant-your-anthropic-key
 ```
 
-Then start (or restart) the server. Conductor auto-enables providers when their API key is set.
+Restart the server after updating the configuration.
 
 
 ## Step 3: Create the agent workflow
@@ -291,4 +293,4 @@ All of this with zero custom code. The entire agent is a JSON workflow definitio
 - **[Human-in-the-Loop](human-in-the-loop.md)** — Advanced approval patterns: conditional review, LLM-as-judge.
 - **[Dynamic Workflows](dynamic-workflows.md)** — Agents that generate their own execution plans as JSON.
 - **[Token Efficiency](token-efficiency.md)** — How durable execution saves tokens and reduces LLM costs.
-- **[LLM Orchestration](llm-orchestration.md)** — 12 native LLM providers, vector databases, content generation.
+- **[LLM Orchestration](llm-orchestration.md)** — 14+ native LLM providers, vector databases, content generation.

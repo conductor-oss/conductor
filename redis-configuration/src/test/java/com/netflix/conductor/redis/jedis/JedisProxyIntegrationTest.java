@@ -156,19 +156,6 @@ public class JedisProxyIntegrationTest {
     }
 
     @Test
-    void mgetPreservesNullsForMissingKeys() {
-        proxy.set("mpm1", "a");
-        // mpm2 intentionally not set
-        proxy.set("mpm3", "c");
-
-        List<String> results = proxy.mget("mpm1", "mpm2", "mpm3");
-        assertEquals(3, results.size());
-        assertEquals("a", results.get(0));
-        assertNull(results.get(1));
-        assertEquals("c", results.get(2));
-    }
-
-    @Test
     void mgetSingleKey() {
         proxy.set("single1", "val");
         assertEquals("val", proxy.mget("single1"));

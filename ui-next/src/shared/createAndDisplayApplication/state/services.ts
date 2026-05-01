@@ -1,6 +1,5 @@
 import { fetchWithContext } from "plugins/fetch";
 import { CreateAndDisplayApplicationMachineContext } from "./types";
-import { FEATURES, featureFlags } from "utils/flags";
 import { getErrorMessage } from "utils/utils";
 import { AccessRole, User } from "types/User";
 // const fetchContext = fetchContextNonHook();
@@ -51,10 +50,6 @@ export const fetchForAppDetails = async (
 export const checkIfAppExistsAndCompatible = async (
   context: CreateAndDisplayApplicationMachineContext,
 ) => {
-  // Workflow metadata always spawns this machine; OSS has no applications API.
-  if (!featureFlags.isEnabled(FEATURES.ACCESS_MANAGEMENT)) {
-    return { id: null };
-  }
   const { authHeaders, applicationName } = context;
   try {
     const appList = await fetchWithContext(

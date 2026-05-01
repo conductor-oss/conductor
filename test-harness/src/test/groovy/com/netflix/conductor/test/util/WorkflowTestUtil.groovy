@@ -185,14 +185,9 @@ class WorkflowTestUtil {
             int version = Integer.parseInt(StringUtils.substringAfter(workflowWithVersion, ":"))
             List<String> running = workflowExecutionService.getRunningWorkflows(workflowName, version)
             for (String workflowId : running) {
-                try {
-                    WorkflowModel workflow = workflowExecutor.getWorkflow(workflowId, false)
-                    if (!workflow.getStatus().isTerminal()) {
-                        workflowExecutor.terminateWorkflow(workflowId, "cleanup")
-                    }
-                } catch (Exception e) {
-                    // payload may be missing from external storage; force-terminate to unblock cleanup
-                    try { workflowExecutor.terminateWorkflow(workflowId, "cleanup") } catch (Exception ignored) {}
+                WorkflowModel workflow = workflowExecutor.getWorkflow(workflowId, false)
+                if (!workflow.getStatus().isTerminal()) {
+                    workflowExecutor.terminateWorkflow(workflowId, "cleanup")
                 }
             }
         }
