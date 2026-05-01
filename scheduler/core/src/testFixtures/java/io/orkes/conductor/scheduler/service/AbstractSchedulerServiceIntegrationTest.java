@@ -58,7 +58,6 @@ public abstract class AbstractSchedulerServiceIntegrationTest {
 
     protected abstract DataSource dataSource();
 
-    private static final String ORG_ID = SchedulerService.DEFAULT_ORG_ID;
     private static final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
 
     protected WorkflowService workflowService;
@@ -117,7 +116,7 @@ public abstract class AbstractSchedulerServiceIntegrationTest {
         when(timeProvider.getUtcTime(any())).thenReturn(utcTime(fixedTime + 5000));
         WorkflowSchedule saved2 = service.createOrUpdateWorkflowSchedule(schedule);
 
-        WorkflowScheduleModel found = dao().findScheduleByName(ORG_ID, scheduleName);
+        WorkflowScheduleModel found = dao().findScheduleByName(scheduleName);
         assertNotNull(found);
         assertEquals(
                 "createTime must not change on subsequent saves",
@@ -141,7 +140,7 @@ public abstract class AbstractSchedulerServiceIntegrationTest {
         WorkflowSchedule schedule = buildSchedule(scheduleName, "nrt-wf");
         service.createOrUpdateWorkflowSchedule(schedule);
 
-        long stored = dao().getNextRunTimeInEpoch(ORG_ID, scheduleName);
+        long stored = dao().getNextRunTimeInEpoch(scheduleName);
         assertTrue("DAO-stored next-run time must be positive after create", stored > 0);
     }
 
@@ -161,7 +160,7 @@ public abstract class AbstractSchedulerServiceIntegrationTest {
 
         // Move nextRunTime to the past so the schedule is due
         long pastTime = System.currentTimeMillis() - 5000;
-        dao().setNextRunTimeInEpoch(ORG_ID, scheduleName, pastTime);
+        dao().setNextRunTimeInEpoch(scheduleName, pastTime);
 
         // Advance time to "now" so the schedule fires
         when(timeProvider.getUtcTime(any())).thenReturn(utcTime(System.currentTimeMillis()));
@@ -200,14 +199,14 @@ public abstract class AbstractSchedulerServiceIntegrationTest {
 
         // Set nextRunTime to past
         long pastTime = System.currentTimeMillis() - 5000;
-        dao().setNextRunTimeInEpoch(ORG_ID, scheduleName, pastTime);
+        dao().setNextRunTimeInEpoch(scheduleName, pastTime);
 
         when(timeProvider.getUtcTime(any())).thenReturn(utcTime(System.currentTimeMillis()));
         when(workflowService.startWorkflow(any())).thenReturn("wf-id");
 
         service.handleSchedules(List.of(scheduleName));
 
-        long newNextRun = dao().getNextRunTimeInEpoch(ORG_ID, scheduleName);
+        long newNextRun = dao().getNextRunTimeInEpoch(scheduleName);
         assertTrue(
                 "Next-run pointer must be advanced to a future time after handling",
                 newNextRun > System.currentTimeMillis() - 1000);
@@ -224,12 +223,11 @@ public abstract class AbstractSchedulerServiceIntegrationTest {
 
         WorkflowSchedule schedule = buildSchedule(scheduleName, "del-wf");
         service.createOrUpdateWorkflowSchedule(schedule);
-        assertNotNull(dao().findScheduleByName(ORG_ID, scheduleName));
+        assertNotNull(dao().findScheduleByName(scheduleName));
 
         service.deleteSchedule(scheduleName);
         assertNull(
-                "Schedule must be removed after deletion",
-                dao().findScheduleByName(ORG_ID, scheduleName));
+                "Schedule must be removed after deletion", dao().findScheduleByName(scheduleName));
     }
 
     // =========================================================================
@@ -244,15 +242,15 @@ public abstract class AbstractSchedulerServiceIntegrationTest {
         WorkflowSchedule schedule = buildSchedule(scheduleName, "pr-wf");
         service.createOrUpdateWorkflowSchedule(schedule);
 
-        WorkflowScheduleModel found = dao().findScheduleByName(ORG_ID, scheduleName);
+        WorkflowScheduleModel found = dao().findScheduleByName(scheduleName);
         assertFalse("Schedule should not be paused after creation", found.isPaused());
 
         service.pauseSchedule(scheduleName);
-        found = dao().findScheduleByName(ORG_ID, scheduleName);
+        found = dao().findScheduleByName(scheduleName);
         assertTrue("Schedule must be paused after pauseSchedule()", found.isPaused());
 
         service.resumeSchedule(scheduleName);
-        found = dao().findScheduleByName(ORG_ID, scheduleName);
+        found = dao().findScheduleByName(scheduleName);
         assertFalse("Schedule must be unpaused after resumeSchedule()", found.isPaused());
     }
 
@@ -304,7 +302,7 @@ public abstract class AbstractSchedulerServiceIntegrationTest {
         service.pauseSchedule(scheduleName);
 
         // Set nextRunTime to the past
-        dao().setNextRunTimeInEpoch(ORG_ID, scheduleName, System.currentTimeMillis() - 5000);
+        dao().setNextRunTimeInEpoch(scheduleName, System.currentTimeMillis() - 5000);
         when(timeProvider.getUtcTime(any())).thenReturn(utcTime(System.currentTimeMillis()));
 
         service.handleSchedules(List.of(scheduleName));

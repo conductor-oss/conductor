@@ -74,7 +74,7 @@ public class SqliteSchedulerArchivalDAO implements SchedulerArchivalDAO {
 
     @Override
     public SearchResult<String> searchScheduledExecutions(
-            String orgId, String query, String freeText, int start, int count, List<String> sort) {
+            String query, String freeText, int start, int count, List<String> sort) {
         StringBuilder sql =
                 new StringBuilder(
                         "SELECT execution_id FROM workflow_scheduled_executions WHERE 1=1");
@@ -159,7 +159,7 @@ public class SqliteSchedulerArchivalDAO implements SchedulerArchivalDAO {
 
     @Override
     public Map<String, WorkflowScheduleExecutionModel> getExecutionsByIds(
-            String orgId, Set<String> executionIds) {
+            Set<String> executionIds) {
         if (executionIds == null || executionIds.isEmpty()) {
             return new HashMap<>();
         }
@@ -183,7 +183,7 @@ public class SqliteSchedulerArchivalDAO implements SchedulerArchivalDAO {
     }
 
     @Override
-    public WorkflowScheduleExecutionModel getExecutionById(String orgId, String executionId) {
+    public WorkflowScheduleExecutionModel getExecutionById(String executionId) {
         String sql =
                 "SELECT execution_id, schedule_name, workflow_name, workflow_id, reason, "
                         + "stack_trace, state, scheduled_time, execution_time, start_workflow_request "

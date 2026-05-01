@@ -170,14 +170,14 @@ public class RedisSchedulerDAO extends BaseDynoDAO implements SchedulerDAO {
     }
 
     @Override
-    public WorkflowScheduleModel findScheduleByName(String orgId, String name) {
+    public WorkflowScheduleModel findScheduleByName(String name) {
         Monitors.recordDaoRequests(DAO_NAME, "findScheduleByName", "n/a", "n/a");
         String json = jedisProxy.hget(keyDefs(), name);
         return json == null ? null : fromJson(json, WorkflowScheduleModel.class);
     }
 
     @Override
-    public List<WorkflowScheduleModel> getAllSchedules(String orgId) {
+    public List<WorkflowScheduleModel> getAllSchedules() {
         Monitors.recordDaoRequests(DAO_NAME, "getAllSchedules", "n/a", "n/a");
         Map<String, String> all = jedisProxy.hgetAll(keyDefs());
         return all.values().stream()
@@ -186,7 +186,7 @@ public class RedisSchedulerDAO extends BaseDynoDAO implements SchedulerDAO {
     }
 
     @Override
-    public List<WorkflowScheduleModel> findAllSchedules(String orgId, String workflowName) {
+    public List<WorkflowScheduleModel> findAllSchedules(String workflowName) {
         Monitors.recordDaoRequests(DAO_NAME, "findAllSchedules", "n/a", "n/a");
         Set<String> names = jedisProxy.smembers(wfIndexKey(workflowName));
         if (names == null || names.isEmpty()) {
@@ -203,7 +203,7 @@ public class RedisSchedulerDAO extends BaseDynoDAO implements SchedulerDAO {
     }
 
     @Override
-    public Map<String, WorkflowScheduleModel> findAllByNames(String orgId, Set<String> names) {
+    public Map<String, WorkflowScheduleModel> findAllByNames(Set<String> names) {
         Monitors.recordDaoRequests(DAO_NAME, "findAllByNames", "n/a", "n/a");
         if (names == null || names.isEmpty()) {
             return new HashMap<>();
@@ -219,7 +219,7 @@ public class RedisSchedulerDAO extends BaseDynoDAO implements SchedulerDAO {
     }
 
     @Override
-    public void deleteWorkflowSchedule(String orgId, String name) {
+    public void deleteWorkflowSchedule(String name) {
         Monitors.recordDaoRequests(DAO_NAME, "deleteWorkflowSchedule", "n/a", "n/a");
 
         // NOTE: This method performs multiple independent Redis commands without transactional
@@ -273,14 +273,14 @@ public class RedisSchedulerDAO extends BaseDynoDAO implements SchedulerDAO {
     }
 
     @Override
-    public WorkflowScheduleExecutionModel readExecutionRecord(String orgId, String executionId) {
+    public WorkflowScheduleExecutionModel readExecutionRecord(String executionId) {
         Monitors.recordDaoRequests(DAO_NAME, "readExecutionRecord", "n/a", "n/a");
         String json = jedisProxy.hget(keyExec(), executionId);
         return json == null ? null : fromJson(json, WorkflowScheduleExecutionModel.class);
     }
 
     @Override
-    public void removeExecutionRecord(String orgId, String executionId) {
+    public void removeExecutionRecord(String executionId) {
         Monitors.recordDaoRequests(DAO_NAME, "removeExecutionRecord", "n/a", "n/a");
         String json = jedisProxy.hget(keyExec(), executionId);
         if (json != null) {
@@ -293,7 +293,7 @@ public class RedisSchedulerDAO extends BaseDynoDAO implements SchedulerDAO {
     }
 
     @Override
-    public List<String> getPendingExecutionRecordIds(String orgId) {
+    public List<String> getPendingExecutionRecordIds() {
         Monitors.recordDaoRequests(DAO_NAME, "getPendingExecutionRecordIds", "n/a", "n/a");
         Set<String> pending = jedisProxy.smembers(keyPending());
         return pending == null ? List.of() : new ArrayList<>(pending);
@@ -304,7 +304,7 @@ public class RedisSchedulerDAO extends BaseDynoDAO implements SchedulerDAO {
     // =========================================================================
 
     @Override
-    public long getNextRunTimeInEpoch(String orgId, String scheduleName) {
+    public long getNextRunTimeInEpoch(String scheduleName) {
         Monitors.recordDaoRequests(DAO_NAME, "getNextRunTimeInEpoch", "n/a", "n/a");
         String val = jedisProxy.hget(keyNextRun(), scheduleName);
         if (val == null) {
@@ -314,7 +314,7 @@ public class RedisSchedulerDAO extends BaseDynoDAO implements SchedulerDAO {
     }
 
     @Override
-    public void setNextRunTimeInEpoch(String orgId, String scheduleName, long epochMillis) {
+    public void setNextRunTimeInEpoch(String scheduleName, long epochMillis) {
         Monitors.recordDaoRequests(DAO_NAME, "setNextRunTimeInEpoch", "n/a", "n/a");
         // Only set if the schedule exists
         if (!jedisProxy.hexists(keyDefs(), scheduleName)) {
@@ -329,7 +329,6 @@ public class RedisSchedulerDAO extends BaseDynoDAO implements SchedulerDAO {
 
     @Override
     public SearchResult<WorkflowScheduleModel> searchSchedules(
-            String orgId,
             String workflowName,
             String scheduleName,
             Boolean paused,
@@ -338,7 +337,7 @@ public class RedisSchedulerDAO extends BaseDynoDAO implements SchedulerDAO {
             int size,
             List<String> sortOptions) {
         Monitors.recordDaoRequests(DAO_NAME, "searchSchedules", "n/a", "n/a");
-        List<WorkflowScheduleModel> all = getAllSchedules(orgId);
+        List<WorkflowScheduleModel> all = getAllSchedules();
         List<WorkflowScheduleModel> filtered =
                 all.stream()
                         .filter(

@@ -27,29 +27,27 @@ public interface SchedulerDAO {
 
     void saveExecutionRecord(WorkflowScheduleExecutionModel executionModel);
 
-    WorkflowScheduleExecutionModel readExecutionRecord(String orgId, String executionId);
+    WorkflowScheduleExecutionModel readExecutionRecord(String executionId);
 
-    void removeExecutionRecord(String orgId, String executionId);
+    void removeExecutionRecord(String executionId);
 
-    WorkflowScheduleModel findScheduleByName(String orgId, String name);
+    WorkflowScheduleModel findScheduleByName(String name);
 
-    List<WorkflowScheduleModel> findAllSchedules(String orgId, String workflowName);
+    List<WorkflowScheduleModel> findAllSchedules(String workflowName);
 
-    void deleteWorkflowSchedule(String orgId, String name);
+    void deleteWorkflowSchedule(String name);
 
-    List<String> getPendingExecutionRecordIds(String orgId);
+    List<String> getPendingExecutionRecordIds();
 
-    List<WorkflowScheduleModel> getAllSchedules(String orgId);
+    List<WorkflowScheduleModel> getAllSchedules();
 
-    Map<String, WorkflowScheduleModel> findAllByNames(
-            String orgId, Set<String> workflowScheduleNames);
+    Map<String, WorkflowScheduleModel> findAllByNames(Set<String> workflowScheduleNames);
 
-    long getNextRunTimeInEpoch(String orgId, String scheduleName);
+    long getNextRunTimeInEpoch(String scheduleName);
 
-    void setNextRunTimeInEpoch(String orgId, String name, long toEpochMilli);
+    void setNextRunTimeInEpoch(String name, long toEpochMilli);
 
     SearchResult<WorkflowScheduleModel> searchSchedules(
-            String orgId,
             String workflowName,
             String scheduleName,
             Boolean paused,

@@ -22,7 +22,6 @@ import lombok.*;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class WorkflowScheduleModel extends WorkflowSchedule {
-    private String orgId;
 
     public static WorkflowScheduleModel from(WorkflowSchedule schedule) {
         WorkflowScheduleModel model = new WorkflowScheduleModel();
@@ -31,6 +30,6 @@ public class WorkflowScheduleModel extends WorkflowSchedule {
     }
 
     public String getQueueMsgId() {
-        return orgId == null || "0000".equals(orgId) ? getName() : orgId + ":" + getName();
+        return getName();
     }
 }

@@ -68,8 +68,6 @@ import lombok.extern.slf4j.Slf4j;
 public class SchedulerService extends LifecycleAwareComponent {
 
     public static final String LOCK_CLEANUP_KEY = "SCHEDULER_ARCHIVAL_RECORDS_CLEANUP";
-    // Matches OrkesRequestContext.DEFAULT_ORG_ID — used for single-tenant OSS deployments
-    public static final String DEFAULT_ORG_ID = "0000";
     public final ZoneId zoneId;
     private final Lock conductorLock;
 
@@ -78,8 +76,6 @@ public class SchedulerService extends LifecycleAwareComponent {
     public static final String CONDUCTOR_SYSTEM_SCHEDULER_QUEUE_NAME = "conductor_system_scheduler";
     public static final String CONDUCTOR_SYSTEM_SCHEDULER_ARCHIVAL_QUEUE_NAME =
             "conductor_system_scheduler_archival";
-
-    private static final int ORG_ID_LENGTH = 4;
 
     private final SchedulerArchivalDAO schedulerArchivalDAO;
     protected final SchedulerDAO schedulerDAO;
@@ -139,20 +135,16 @@ public class SchedulerService extends LifecycleAwareComponent {
     // Enterprise hook methods — override in EnterpriseSchedulerService
     // -------------------------------------------------------------------------
 
-    protected String getOrgId() {
-        return DEFAULT_ORG_ID;
+    protected void setRequestOrgId(String orgId) {
+        // no-op in OSS — enterprise overrides to set OrkesRequestContext
+    }
+
+    protected void clearRequestOrgId() {
+        // no-op in OSS — enterprise overrides to clear OrkesRequestContext
     }
 
     protected String getCurrentUserId() {
         return "";
-    }
-
-    protected void setRequestOrgId(String orgId) {
-        // no-op in OSS
-    }
-
-    protected void clearRequestOrgId() {
-        // no-op in OSS
     }
 
     protected void checkExecutionPermission(WorkflowScheduleModel schedule) {
@@ -169,7 +161,6 @@ public class SchedulerService extends LifecycleAwareComponent {
     }
 
     protected SearchResult<WorkflowScheduleModel> doSearchSchedules(
-            String orgId,
             String workflowName,
             String scheduleName,
             Boolean paused,
@@ -178,7 +169,7 @@ public class SchedulerService extends LifecycleAwareComponent {
             int size,
             List<String> sortOptions) {
         return schedulerDAO.searchSchedules(
-                orgId, workflowName, scheduleName, paused, freeText, start, size, sortOptions);
+                workflowName, scheduleName, paused, freeText, start, size, sortOptions);
     }
 
     // -------------------------------------------------------------------------
@@ -377,20 +368,22 @@ public class SchedulerService extends LifecycleAwareComponent {
             if (StringUtils.isBlank(msgId)) {
                 continue;
             }
-            String[] orgAndId = getOrgAndName(msgId);
-            String orgId = orgAndId[0];
-            String scheduleExecutionId = orgAndId[1];
+            String[] parts = getOrgAndPayload(msgId);
+            String orgId = parts[0];
+            String executionId = parts[1];
             Monitors.getTimer("scheduler_archival")
                     .record(
                             () -> {
                                 try {
+                                    if (orgId != null) {
+                                        setRequestOrgId(orgId);
+                                    }
                                     log.trace(
                                             "Schedule execution id: {} from queue: {} being sent to the archival",
-                                            scheduleExecutionId,
+                                            executionId,
                                             CONDUCTOR_SYSTEM_SCHEDULER_ARCHIVAL_QUEUE_NAME);
                                     WorkflowScheduleExecutionModel model =
-                                            schedulerDAO.readExecutionRecord(
-                                                    orgId, scheduleExecutionId);
+                                            schedulerDAO.readExecutionRecord(executionId);
                                     if (model != null) {
                                         try {
                                             schedulerArchivalDAO.saveExecutionRecord(model);
@@ -399,13 +392,15 @@ public class SchedulerService extends LifecycleAwareComponent {
                                             throw e;
                                         }
                                     }
-                                    schedulerDAO.removeExecutionRecord(orgId, scheduleExecutionId);
+                                    schedulerDAO.removeExecutionRecord(executionId);
                                     queueDAO.ack(
                                             CONDUCTOR_SYSTEM_SCHEDULER_ARCHIVAL_QUEUE_NAME, msgId);
                                 } catch (Exception e) {
                                     log.error("Error handling archival record", e);
                                     Monitors.error(
                                             this.getClass().getSimpleName(), "handleArchival");
+                                } finally {
+                                    clearRequestOrgId();
                                 }
                             });
         }
@@ -455,13 +450,18 @@ public class SchedulerService extends LifecycleAwareComponent {
         return Duration.ofSeconds(offsetSeconds).plusMillis(jitter);
     }
 
-    protected String[] getOrgAndName(String msgId) {
-        if (msgId.length() > ORG_ID_LENGTH && msgId.charAt(ORG_ID_LENGTH) == ':') {
-            return new String[] {
-                msgId.substring(0, ORG_ID_LENGTH), msgId.substring(ORG_ID_LENGTH + 1)
-            };
+    /**
+     * Extracts an optional orgId prefix from a queue message ID. Enterprise overrides {@link
+     * #getQueueMsgId} on models to produce "{orgId}:{payload}" format; OSS messages have no prefix.
+     * Returns {@code [orgId, payload]} — for OSS the orgId will always be {@code null} and payload
+     * equals msgId.
+     */
+    protected String[] getOrgAndPayload(String msgId) {
+        // Enterprise org IDs are 4 chars; check for "XXXX:" prefix
+        if (msgId.length() > 4 && msgId.charAt(4) == ':') {
+            return new String[] {msgId.substring(0, 4), msgId.substring(5)};
         }
-        return new String[] {DEFAULT_ORG_ID, msgId};
+        return new String[] {null, msgId};
     }
 
     // --- Multi-cron queue message support ---
@@ -489,9 +489,9 @@ public class SchedulerService extends LifecycleAwareComponent {
     }
 
     private SchedulerQueueMessage parseQueueMessage(String msgId) {
-        String[] orgAndPayload = getOrgAndName(msgId);
-        String orgId = orgAndPayload[0];
-        String payload = orgAndPayload[1];
+        String[] parts = getOrgAndPayload(msgId);
+        String orgId = parts[0];
+        String payload = parts[1];
 
         if (payload.startsWith("{")) {
             try {
@@ -518,10 +518,7 @@ public class SchedulerService extends LifecycleAwareComponent {
 
     private String buildMultiCronMsgId(
             WorkflowScheduleModel schedule, String cronWithTz, int index) {
-        String payload = buildMultiCronPayload(schedule.getName(), cronWithTz, index);
-        return DEFAULT_ORG_ID.equals(schedule.getOrgId())
-                ? payload
-                : schedule.getOrgId() + ":" + payload;
+        return buildMultiCronPayload(schedule.getName(), cronWithTz, index);
     }
 
     private List<String> buildAllMultiCronMsgIds(WorkflowScheduleModel schedule) {
@@ -562,18 +559,17 @@ public class SchedulerService extends LifecycleAwareComponent {
 
             Stopwatch timer = Stopwatch.createStarted();
             SchedulerQueueMessage queueMsg = parseQueueMessage(msgId);
-            String orgId = queueMsg.orgId;
             String scheduleName = queueMsg.name;
 
             try {
-                log.trace("Got orgId from queue as {}, message = {}", orgId, msgId);
-                setRequestOrgId(orgId);
+                if (queueMsg.orgId != null) {
+                    setRequestOrgId(queueMsg.orgId);
+                }
                 log.debug(
                         "Schedule name: {} from queue: {} being sent to the workflow executor",
                         scheduleName,
                         CONDUCTOR_SYSTEM_SCHEDULER_QUEUE_NAME);
-                WorkflowScheduleModel schedule =
-                        schedulerDAO.findScheduleByName(orgId, scheduleName);
+                WorkflowScheduleModel schedule = schedulerDAO.findScheduleByName(scheduleName);
                 if (schedule == null) {
                     log.warn(
                             "Schedule {} has been deleted, removing from processing", scheduleName);
@@ -588,9 +584,6 @@ public class SchedulerService extends LifecycleAwareComponent {
                     continue;
                 }
 
-                if (schedule.getOrgId() == null) {
-                    schedule.setOrgId(orgId);
-                }
                 checkExecutionPermission(schedule);
 
                 // For multi-cron messages, validate the cron index is still valid
@@ -607,11 +600,6 @@ public class SchedulerService extends LifecycleAwareComponent {
                     }
                 }
 
-                // msgPayload is the key used for next-run-time lookups:
-                // schedule name for single-cron, JSON payload for multi-cron
-                String msgPayload =
-                        DEFAULT_ORG_ID.equals(orgId) ? msgId : msgId.substring(orgId.length() + 1);
-
                 String schedulerCron;
                 String executionZoneId;
                 if (queueMsg.isMultiCron()) {
@@ -624,8 +612,8 @@ public class SchedulerService extends LifecycleAwareComponent {
                 }
 
                 // "is it due" guard — same logic for single and multi-cron,
-                // keyed by msgPayload (schedule name or JSON payload respectively)
-                long scheduledTime = schedulerDAO.getNextRunTimeInEpoch(orgId, msgPayload);
+                // keyed by msgId (schedule name or JSON payload respectively)
+                long scheduledTime = schedulerDAO.getNextRunTimeInEpoch(msgId);
                 ZonedDateTime newRunTime =
                         getZonedDateTimeFromEpoch(scheduledTime, executionZoneId);
                 ZonedDateTime currentSystemTime =
@@ -635,7 +623,7 @@ public class SchedulerService extends LifecycleAwareComponent {
                 if (offsetSeconds > 1) {
                     log.warn(
                             "Schedule {} is not due for running, will move back into the queue",
-                            msgPayload);
+                            msgId);
                     queueDAO.push(
                             CONDUCTOR_SYSTEM_SCHEDULER_QUEUE_NAME,
                             msgId,
@@ -656,8 +644,7 @@ public class SchedulerService extends LifecycleAwareComponent {
                                 null,
                                 schedule.getStartWorkflowRequest(),
                                 WorkflowScheduleExecutionModel.State.POLLED,
-                                executionZoneId,
-                                orgId);
+                                executionZoneId);
 
                 StartWorkflowRequest request =
                         swrFrom(schedule, scheduledExecutionRecord, schedulerCron);
@@ -730,7 +717,7 @@ public class SchedulerService extends LifecycleAwareComponent {
         }
 
         schedulerDAO.setNextRunTimeInEpoch(
-                schedule.getOrgId(), schedule.getName(), nextRuntime.toInstant().toEpochMilli());
+                schedule.getName(), nextRuntime.toInstant().toEpochMilli());
 
         long offsetSeconds = getOffsetSeconds(currentSystemTime, nextRuntime);
         if (!schedule.isPaused()) {
@@ -773,7 +760,7 @@ public class SchedulerService extends LifecycleAwareComponent {
                     String payload = buildMultiCronPayload(schedule.getName(), cronWithTz, i);
                     // Store per-cron next run time for the "is it due" guard
                     schedulerDAO.setNextRunTimeInEpoch(
-                            schedule.getOrgId(), payload, nextTime.toInstant().toEpochMilli());
+                            payload, nextTime.toInstant().toEpochMilli());
 
                     if (!schedule.isPaused()) {
                         long offsetSeconds = getOffsetSeconds(currentSystemTime, nextTime);
@@ -799,9 +786,7 @@ public class SchedulerService extends LifecycleAwareComponent {
         }
 
         schedulerDAO.setNextRunTimeInEpoch(
-                schedule.getOrgId(),
-                schedule.getName(),
-                earliestNextTime.toInstant().toEpochMilli());
+                schedule.getName(), earliestNextTime.toInstant().toEpochMilli());
         return true;
     }
 
@@ -831,8 +816,7 @@ public class SchedulerService extends LifecycleAwareComponent {
 
         // Store per-cron next run time for the "is it due" guard (keyed by JSON payload)
         String payload = buildMultiCronPayload(schedule.getName(), cronWithTz, cronIndex);
-        schedulerDAO.setNextRunTimeInEpoch(
-                schedule.getOrgId(), payload, nextRuntime.toInstant().toEpochMilli());
+        schedulerDAO.setNextRunTimeInEpoch(payload, nextRuntime.toInstant().toEpochMilli());
 
         // Also update the schedule-level next_run_time to the earliest across all crons (for
         // display)
@@ -840,9 +824,7 @@ public class SchedulerService extends LifecycleAwareComponent {
                 computeNextScheduleWithZone(schedule, currentSystemTime, currentSystemTime);
         if (earliestResult != null) {
             schedulerDAO.setNextRunTimeInEpoch(
-                    schedule.getOrgId(),
-                    schedule.getName(),
-                    earliestResult.getNextRunTime().toInstant().toEpochMilli());
+                    schedule.getName(), earliestResult.getNextRunTime().toInstant().toEpochMilli());
         }
 
         long offsetSeconds = getOffsetSeconds(currentSystemTime, nextRuntime);
@@ -976,18 +958,11 @@ public class SchedulerService extends LifecycleAwareComponent {
     private void triggerWorkflowRequest(
             WorkflowScheduleExecutionModel scheduledExecutionRecord, StartWorkflowRequest request) {
         try {
-            log.trace(
-                    "triggerWorkflowRequest - Setting orgId to {}",
-                    scheduledExecutionRecord.getOrgId());
-            setRequestOrgId(scheduledExecutionRecord.getOrgId());
             String workflowId = workflowService.startWorkflow(request);
             scheduledExecutionRecord.setWorkflowId(workflowId);
             scheduledExecutionRecord.setState(WorkflowScheduleExecutionModel.State.EXECUTED);
         } catch (Exception e) {
-            log.error(
-                    "Error running workflow - {}, {}",
-                    scheduledExecutionRecord.getOrgId(),
-                    e.getMessage());
+            log.error("Error running workflow - {}", e.getMessage());
             scheduledExecutionRecord.setState(WorkflowScheduleExecutionModel.State.FAILED);
             String reason = e.getMessage();
             if (reason.length() > 999) {
@@ -999,14 +974,11 @@ public class SchedulerService extends LifecycleAwareComponent {
                 stackTrace = stackTrace.substring(0, 2000);
             }
             scheduledExecutionRecord.setStackTrace(stackTrace);
-        } finally {
-            clearRequestOrgId();
         }
     }
 
     public Map<String, Object> requeueAllExecutionRecords() {
-        String orgId = getOrgId();
-        List<String> recordIds = schedulerDAO.getPendingExecutionRecordIds(orgId);
+        List<String> recordIds = schedulerDAO.getPendingExecutionRecordIds();
         Map<String, Object> result = new HashMap<>();
         result.put("recordIds.size", recordIds.size());
         result.put("sampleIds", recordIds.stream().limit(10).collect(Collectors.toList()));
@@ -1014,7 +986,7 @@ public class SchedulerService extends LifecycleAwareComponent {
                 id -> {
                     try {
                         WorkflowScheduleExecutionModel record =
-                                schedulerDAO.readExecutionRecord(orgId, id);
+                                schedulerDAO.readExecutionRecord(id);
                         if (record != null) {
                             queueDAO.push(
                                     CONDUCTOR_SYSTEM_SCHEDULER_ARCHIVAL_QUEUE_NAME,
@@ -1066,20 +1038,18 @@ public class SchedulerService extends LifecycleAwareComponent {
     }
 
     public WorkflowSchedule createOrUpdateWorkflowSchedule(WorkflowSchedule workflowSchedule) {
-        String orgId = getOrgId();
         String userId = getCurrentUserId();
         checkScheduleLimit(workflowSchedule);
 
         Stopwatch sw = Stopwatch.createStarted();
         log.debug("Saving workflow schedule from user {} : {}", userId, workflowSchedule);
         WorkflowScheduleModel existingSchedule =
-                schedulerDAO.findScheduleByName(orgId, workflowSchedule.getName());
+                schedulerDAO.findScheduleByName(workflowSchedule.getName());
         log.debug(
                 "Schedule exists : {}: loaded in {} ms",
                 existingSchedule != null,
                 sw.elapsed(TimeUnit.MILLISECONDS));
         WorkflowScheduleModel updateModel = WorkflowScheduleModel.from(workflowSchedule);
-        updateModel.setOrgId(orgId);
 
         String effectiveZoneId = getEffectiveZoneId(workflowSchedule);
         ZonedDateTime now = schedulerTimeProvider.getUtcTime(ZoneId.of(effectiveZoneId));
@@ -1115,29 +1085,24 @@ public class SchedulerService extends LifecycleAwareComponent {
     }
 
     public WorkflowSchedule getSchedule(String name) {
-        String orgId = getOrgId();
-        return schedulerDAO.findScheduleByName(orgId, name);
+        return schedulerDAO.findScheduleByName(name);
     }
 
     public List<WorkflowScheduleModel> getAllSchedules(String workflowName) {
-        String orgId = getOrgId();
-        return schedulerDAO.findAllSchedules(orgId, workflowName);
+        return schedulerDAO.findAllSchedules(workflowName);
     }
 
     public List<WorkflowScheduleModel> getAllSchedules() {
-        String orgId = getOrgId();
-        return schedulerDAO.getAllSchedules(orgId);
+        return schedulerDAO.getAllSchedules();
     }
 
     public void deleteSchedule(String name) {
-        String orgId = getOrgId();
-        WorkflowScheduleModel wsm = schedulerDAO.findScheduleByName(orgId, name);
+        WorkflowScheduleModel wsm = schedulerDAO.findScheduleByName(name);
         if (wsm == null) {
             return;
         }
-        wsm.setOrgId(orgId);
         removeScheduleQueueMessages(wsm);
-        schedulerDAO.deleteWorkflowSchedule(orgId, wsm.getName());
+        schedulerDAO.deleteWorkflowSchedule(wsm.getName());
     }
 
     public void pauseSchedule(String name) {
@@ -1145,13 +1110,11 @@ public class SchedulerService extends LifecycleAwareComponent {
     }
 
     public void pauseSchedule(String name, String pausedReason) {
-        String orgId = getOrgId();
         String userId = getCurrentUserId();
-        WorkflowScheduleModel wsm = schedulerDAO.findScheduleByName(orgId, name);
+        WorkflowScheduleModel wsm = schedulerDAO.findScheduleByName(name);
         if (wsm == null) {
             throw new NotFoundException(String.format("Schedule '%s' not found", name));
         }
-        wsm.setOrgId(orgId);
         wsm.setPaused(true);
         wsm.setUpdatedBy(userId);
         wsm.setUpdatedTime(System.currentTimeMillis());
@@ -1161,14 +1124,12 @@ public class SchedulerService extends LifecycleAwareComponent {
     }
 
     public void resumeSchedule(String name) {
-        String orgId = getOrgId();
-        WorkflowScheduleModel wsm = schedulerDAO.findScheduleByName(orgId, name);
+        WorkflowScheduleModel wsm = schedulerDAO.findScheduleByName(name);
         if (wsm == null || !wsm.isPaused()) {
             throw new NotFoundException(String.format("Schedule '%s' not found", name));
         }
         wsm.setPaused(false);
         wsm.setPausedReason(null);
-        wsm.setOrgId(orgId);
         createOrUpdateWorkflowSchedule(wsm);
     }
 
@@ -1178,12 +1139,11 @@ public class SchedulerService extends LifecycleAwareComponent {
 
     public SearchResult<WorkflowScheduleExecutionModel> searchScheduledExecutions(
             String query, String freeText, int start, int size, List<String> sortOptions) {
-        final String orgId = getOrgId();
         SearchResult<String> result =
                 schedulerArchivalDAO.searchScheduledExecutions(
-                        orgId, query, freeText, start, size, sortOptions);
+                        query, freeText, start, size, sortOptions);
         Map<String, WorkflowScheduleExecutionModel> mapOfExecutionsById =
-                schedulerArchivalDAO.getExecutionsByIds(orgId, new HashSet<>(result.getResults()));
+                schedulerArchivalDAO.getExecutionsByIds(new HashSet<>(result.getResults()));
         List<WorkflowScheduleExecutionModel> workflows =
                 result.getResults().stream()
                         .map(mapOfExecutionsById::get)
@@ -1202,7 +1162,7 @@ public class SchedulerService extends LifecycleAwareComponent {
             int size,
             List<String> sortOptions) {
         return doSearchSchedules(
-                getOrgId(), workflowName, scheduleName, paused, freeText, start, size, sortOptions);
+                workflowName, scheduleName, paused, freeText, start, size, sortOptions);
     }
 
     public List<Long> getListOfNextSchedules(

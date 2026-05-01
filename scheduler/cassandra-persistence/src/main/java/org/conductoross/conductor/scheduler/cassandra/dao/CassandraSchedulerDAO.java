@@ -293,7 +293,7 @@ public class CassandraSchedulerDAO extends CassandraBaseDAO implements Scheduler
     }
 
     @Override
-    public WorkflowScheduleModel findScheduleByName(String orgId, String name) {
+    public WorkflowScheduleModel findScheduleByName(String name) {
         Monitors.recordDaoRequests(DAO_NAME, "findScheduleByName", "n/a", "n/a");
         Row row = session.execute(selectScheduleByNameStmt.bind(name)).one();
         return row == null
@@ -302,7 +302,7 @@ public class CassandraSchedulerDAO extends CassandraBaseDAO implements Scheduler
     }
 
     @Override
-    public List<WorkflowScheduleModel> getAllSchedules(String orgId) {
+    public List<WorkflowScheduleModel> getAllSchedules() {
         Monitors.recordDaoRequests(DAO_NAME, "getAllSchedules", "n/a", "n/a");
         return session.execute(selectAllSchedulesStmt.bind()).all().stream()
                 .map(row -> fromJson(row.getString("json_data"), WorkflowScheduleModel.class))
@@ -310,7 +310,7 @@ public class CassandraSchedulerDAO extends CassandraBaseDAO implements Scheduler
     }
 
     @Override
-    public List<WorkflowScheduleModel> findAllSchedules(String orgId, String workflowName) {
+    public List<WorkflowScheduleModel> findAllSchedules(String workflowName) {
         Monitors.recordDaoRequests(DAO_NAME, "findAllSchedules", "n/a", "n/a");
         List<Row> lookupRows = session.execute(selectSchedByWorkflowStmt.bind(workflowName)).all();
         if (lookupRows.isEmpty()) {
@@ -334,7 +334,7 @@ public class CassandraSchedulerDAO extends CassandraBaseDAO implements Scheduler
     }
 
     @Override
-    public Map<String, WorkflowScheduleModel> findAllByNames(String orgId, Set<String> names) {
+    public Map<String, WorkflowScheduleModel> findAllByNames(Set<String> names) {
         Monitors.recordDaoRequests(DAO_NAME, "findAllByNames", "n/a", "n/a");
         if (names == null || names.isEmpty()) {
             return new HashMap<>();
@@ -357,7 +357,7 @@ public class CassandraSchedulerDAO extends CassandraBaseDAO implements Scheduler
     }
 
     @Override
-    public void deleteWorkflowSchedule(String orgId, String name) {
+    public void deleteWorkflowSchedule(String name) {
         Monitors.recordDaoRequests(DAO_NAME, "deleteWorkflowSchedule", "n/a", "n/a");
 
         // Remove workflow lookup entry
@@ -436,7 +436,7 @@ public class CassandraSchedulerDAO extends CassandraBaseDAO implements Scheduler
     }
 
     @Override
-    public WorkflowScheduleExecutionModel readExecutionRecord(String orgId, String executionId) {
+    public WorkflowScheduleExecutionModel readExecutionRecord(String executionId) {
         Monitors.recordDaoRequests(DAO_NAME, "readExecutionRecord", "n/a", "n/a");
         Row row = session.execute(selectExecutionByIdStmt.bind(executionId)).one();
         return row == null
@@ -445,7 +445,7 @@ public class CassandraSchedulerDAO extends CassandraBaseDAO implements Scheduler
     }
 
     @Override
-    public void removeExecutionRecord(String orgId, String executionId) {
+    public void removeExecutionRecord(String executionId) {
         Monitors.recordDaoRequests(DAO_NAME, "removeExecutionRecord", "n/a", "n/a");
         // Read execution to get schedule_name and state for lookup table cleanup
         Row row = session.execute(selectExecutionByIdStmt.bind(executionId)).one();
@@ -461,7 +461,7 @@ public class CassandraSchedulerDAO extends CassandraBaseDAO implements Scheduler
     }
 
     @Override
-    public List<String> getPendingExecutionRecordIds(String orgId) {
+    public List<String> getPendingExecutionRecordIds() {
         Monitors.recordDaoRequests(DAO_NAME, "getPendingExecutionRecordIds", "n/a", "n/a");
         return session.execute(selectExecByStateStmt.bind("POLLED")).all().stream()
                 .map(row -> row.getString("execution_id"))
@@ -469,7 +469,7 @@ public class CassandraSchedulerDAO extends CassandraBaseDAO implements Scheduler
     }
 
     @Override
-    public long getNextRunTimeInEpoch(String orgId, String scheduleName) {
+    public long getNextRunTimeInEpoch(String scheduleName) {
         Monitors.recordDaoRequests(DAO_NAME, "getNextRunTimeInEpoch", "n/a", "n/a");
         Row row = session.execute(selectNextRunTimeStmt.bind(scheduleName)).one();
         if (row == null || row.isNull("next_run_time")) {
@@ -479,14 +479,13 @@ public class CassandraSchedulerDAO extends CassandraBaseDAO implements Scheduler
     }
 
     @Override
-    public void setNextRunTimeInEpoch(String orgId, String scheduleName, long epochMillis) {
+    public void setNextRunTimeInEpoch(String scheduleName, long epochMillis) {
         Monitors.recordDaoRequests(DAO_NAME, "setNextRunTimeInEpoch", "n/a", "n/a");
         session.execute(updateNextRunTimeStmt.bind(epochMillis, scheduleName));
     }
 
     @Override
     public SearchResult<WorkflowScheduleModel> searchSchedules(
-            String orgId,
             String workflowName,
             String scheduleName,
             Boolean paused,
@@ -497,7 +496,7 @@ public class CassandraSchedulerDAO extends CassandraBaseDAO implements Scheduler
         Monitors.recordDaoRequests(DAO_NAME, "searchSchedules", "n/a", "n/a");
         // Cassandra doesn't support complex queries; fetch all and filter in-memory.
         // Acceptable for schedule counts (typically < 1000 per deployment).
-        List<WorkflowScheduleModel> all = getAllSchedules(orgId);
+        List<WorkflowScheduleModel> all = getAllSchedules();
         List<WorkflowScheduleModel> filtered =
                 all.stream()
                         .filter(

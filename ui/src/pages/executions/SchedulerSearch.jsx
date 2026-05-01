@@ -15,7 +15,12 @@ import SearchTabs from "./SearchTabs";
 import SchedulerExecutionResultsTable from "./SchedulerExecutionResultsTable";
 import DateRangePicker from "../../components/DateRangePicker";
 import { DEFAULT_ROWS_PER_PAGE } from "../../components/DataTable";
-import { useSchedulerExecutionSearch, useSchedulerNames } from "../../data/scheduler";
+import {
+  useSchedulerExecutionSearch,
+  useSchedulerNames,
+  useSchedulerEnabled,
+} from "../../data/scheduler";
+import SchedulerDisabledBanner from "../../components/SchedulerDisabledBanner";
 
 import { makeStyles } from "@material-ui/styles";
 import clsx from "clsx";
@@ -34,6 +39,8 @@ const MS_IN_DAY = 86400000;
 export default function SchedulerSearch() {
   const classes = useStyles();
 
+  const { enabled: schedulerEnabled, isLoading: checkingEnabled } =
+    useSchedulerEnabled();
   const schedulerNames = useSchedulerNames();
 
   const [state, setState] = useQueryState("state", []);
@@ -150,6 +157,20 @@ export default function SchedulerSearch() {
     setLookback("");
     setStartTo(val);
   };
+
+  if (!checkingEnabled && !schedulerEnabled) {
+    return (
+      <div className={clsx([classes.wrapper, classes.padded])}>
+        <Heading level={3} className={classes.heading}>
+          Search Executions
+        </Heading>
+        <Paper className={classes.paper}>
+          <SearchTabs tabIndex={2} />
+          <SchedulerDisabledBanner />
+        </Paper>
+      </div>
+    );
+  }
 
   return (
     <div className={clsx([classes.wrapper, classes.padded])}>

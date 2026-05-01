@@ -37,8 +37,6 @@ import static org.mockito.Mockito.when;
 
 public class RedisSchedulerDAOTest {
 
-    private static final String ORG_ID = "0000";
-
     @ClassRule
     public static final GenericContainer<?> redis =
             new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
@@ -87,7 +85,7 @@ public class RedisSchedulerDAOTest {
         WorkflowScheduleModel schedule = buildSchedule("test-schedule", "my-workflow");
         dao.updateSchedule(schedule);
 
-        WorkflowScheduleModel found = dao.findScheduleByName(ORG_ID, "test-schedule");
+        WorkflowScheduleModel found = dao.findScheduleByName("test-schedule");
 
         assertNotNull(found);
         assertEquals("test-schedule", found.getName());
@@ -98,7 +96,7 @@ public class RedisSchedulerDAOTest {
 
     @Test
     public void testFindScheduleByName_notFound_returnsNull() {
-        assertNull(dao.findScheduleByName(ORG_ID, "no-such-schedule"));
+        assertNull(dao.findScheduleByName("no-such-schedule"));
     }
 
     @Test
@@ -109,7 +107,7 @@ public class RedisSchedulerDAOTest {
         schedule.setCronExpression("0 0 10 * * *");
         dao.updateSchedule(schedule);
 
-        WorkflowScheduleModel found = dao.findScheduleByName(ORG_ID, "upsert-schedule");
+        WorkflowScheduleModel found = dao.findScheduleByName("upsert-schedule");
         assertEquals("0 0 10 * * *", found.getCronExpression());
     }
 
@@ -119,7 +117,7 @@ public class RedisSchedulerDAOTest {
         dao.updateSchedule(buildSchedule("sched-b", "wf-b"));
         dao.updateSchedule(buildSchedule("sched-c", "wf-c"));
 
-        assertEquals(3, dao.getAllSchedules(ORG_ID).size());
+        assertEquals(3, dao.getAllSchedules().size());
     }
 
     @Test
@@ -128,7 +126,7 @@ public class RedisSchedulerDAOTest {
         dao.updateSchedule(buildSchedule("s2", "target-wf"));
         dao.updateSchedule(buildSchedule("s3", "other-wf"));
 
-        List<WorkflowScheduleModel> results = dao.findAllSchedules(ORG_ID, "target-wf");
+        List<WorkflowScheduleModel> results = dao.findAllSchedules("target-wf");
         assertEquals(2, results.size());
         assertTrue(
                 results.stream()
@@ -138,14 +136,14 @@ public class RedisSchedulerDAOTest {
     @Test
     public void testFindAllSchedulesByWorkflow_updatesIndex() {
         dao.updateSchedule(buildSchedule("index-test", "wf-old"));
-        assertEquals(1, dao.findAllSchedules(ORG_ID, "wf-old").size());
+        assertEquals(1, dao.findAllSchedules("wf-old").size());
 
         // Change workflow name
         WorkflowScheduleModel updated = buildSchedule("index-test", "wf-new");
         dao.updateSchedule(updated);
 
-        assertEquals(0, dao.findAllSchedules(ORG_ID, "wf-old").size());
-        assertEquals(1, dao.findAllSchedules(ORG_ID, "wf-new").size());
+        assertEquals(0, dao.findAllSchedules("wf-old").size());
+        assertEquals(1, dao.findAllSchedules("wf-new").size());
     }
 
     @Test
@@ -155,7 +153,7 @@ public class RedisSchedulerDAOTest {
         dao.updateSchedule(buildSchedule("find-c", "wf-c"));
 
         Map<String, WorkflowScheduleModel> result =
-                dao.findAllByNames(ORG_ID, Set.of("find-a", "find-c", "no-such-schedule"));
+                dao.findAllByNames(Set.of("find-a", "find-c", "no-such-schedule"));
         assertEquals(2, result.size());
         assertTrue(result.containsKey("find-a"));
         assertTrue(result.containsKey("find-c"));
@@ -163,12 +161,12 @@ public class RedisSchedulerDAOTest {
 
     @Test
     public void testFindAllByNames_emptySet_returnsEmpty() {
-        assertTrue(dao.findAllByNames(ORG_ID, Set.of()).isEmpty());
+        assertTrue(dao.findAllByNames(Set.of()).isEmpty());
     }
 
     @Test
     public void testFindAllByNames_nullSet_returnsEmpty() {
-        assertTrue(dao.findAllByNames(ORG_ID, null).isEmpty());
+        assertTrue(dao.findAllByNames(null).isEmpty());
     }
 
     @Test
@@ -177,16 +175,16 @@ public class RedisSchedulerDAOTest {
         WorkflowScheduleExecutionModel exec = buildExecution("to-delete");
         dao.saveExecutionRecord(exec);
 
-        dao.deleteWorkflowSchedule(ORG_ID, "to-delete");
+        dao.deleteWorkflowSchedule("to-delete");
 
-        assertNull(dao.findScheduleByName(ORG_ID, "to-delete"));
-        assertNull(dao.readExecutionRecord(ORG_ID, exec.getExecutionId()));
-        assertEquals(0, dao.findAllSchedules(ORG_ID, "some-wf").size());
+        assertNull(dao.findScheduleByName("to-delete"));
+        assertNull(dao.readExecutionRecord(exec.getExecutionId()));
+        assertEquals(0, dao.findAllSchedules("some-wf").size());
     }
 
     @Test
     public void testDeleteSchedule_nonExistent_doesNotThrow() {
-        dao.deleteWorkflowSchedule(ORG_ID, "does-not-exist");
+        dao.deleteWorkflowSchedule("does-not-exist");
     }
 
     // =========================================================================
@@ -210,7 +208,7 @@ public class RedisSchedulerDAOTest {
         schedule.setNextRunTime(99999L);
         dao.updateSchedule(schedule);
 
-        WorkflowScheduleModel found = dao.findScheduleByName(ORG_ID, "round-trip-schedule");
+        WorkflowScheduleModel found = dao.findScheduleByName("round-trip-schedule");
 
         assertNotNull(found);
         assertEquals("America/New_York", found.getZoneId());
@@ -245,8 +243,7 @@ public class RedisSchedulerDAOTest {
         exec.setStartWorkflowRequest(req);
         dao.saveExecutionRecord(exec);
 
-        WorkflowScheduleExecutionModel found =
-                dao.readExecutionRecord(ORG_ID, exec.getExecutionId());
+        WorkflowScheduleExecutionModel found = dao.readExecutionRecord(exec.getExecutionId());
 
         assertNotNull(found);
         assertEquals("wf-instance-456", found.getWorkflowId());
@@ -270,8 +267,7 @@ public class RedisSchedulerDAOTest {
         WorkflowScheduleExecutionModel exec = buildExecution("exec-test");
         dao.saveExecutionRecord(exec);
 
-        WorkflowScheduleExecutionModel found =
-                dao.readExecutionRecord(ORG_ID, exec.getExecutionId());
+        WorkflowScheduleExecutionModel found = dao.readExecutionRecord(exec.getExecutionId());
         assertNotNull(found);
         assertEquals(exec.getExecutionId(), found.getExecutionId());
         assertEquals("exec-test", found.getScheduleName());
@@ -285,7 +281,7 @@ public class RedisSchedulerDAOTest {
         dao.saveExecutionRecord(exec);
         dao.saveExecutionRecord(exec);
 
-        List<String> pending = dao.getPendingExecutionRecordIds(ORG_ID);
+        List<String> pending = dao.getPendingExecutionRecordIds();
         assertEquals(1, pending.size());
     }
 
@@ -299,8 +295,7 @@ public class RedisSchedulerDAOTest {
         exec.setWorkflowId("conductor-wf-123");
         dao.saveExecutionRecord(exec);
 
-        WorkflowScheduleExecutionModel found =
-                dao.readExecutionRecord(ORG_ID, exec.getExecutionId());
+        WorkflowScheduleExecutionModel found = dao.readExecutionRecord(exec.getExecutionId());
         assertEquals(WorkflowScheduleExecutionModel.State.EXECUTED, found.getState());
         assertEquals("conductor-wf-123", found.getWorkflowId());
     }
@@ -311,9 +306,9 @@ public class RedisSchedulerDAOTest {
         WorkflowScheduleExecutionModel exec = buildExecution("remove-exec");
         dao.saveExecutionRecord(exec);
 
-        dao.removeExecutionRecord(ORG_ID, exec.getExecutionId());
+        dao.removeExecutionRecord(exec.getExecutionId());
 
-        assertNull(dao.readExecutionRecord(ORG_ID, exec.getExecutionId()));
+        assertNull(dao.readExecutionRecord(exec.getExecutionId()));
     }
 
     @Test
@@ -329,7 +324,7 @@ public class RedisSchedulerDAOTest {
         dao.saveExecutionRecord(polled2);
         dao.saveExecutionRecord(executed);
 
-        List<String> pendingIds = dao.getPendingExecutionRecordIds(ORG_ID);
+        List<String> pendingIds = dao.getPendingExecutionRecordIds();
         assertEquals(2, pendingIds.size());
         assertTrue(pendingIds.contains(polled1.getExecutionId()));
         assertTrue(pendingIds.contains(polled2.getExecutionId()));
@@ -341,12 +336,12 @@ public class RedisSchedulerDAOTest {
 
         WorkflowScheduleExecutionModel exec = buildExecution("transition-test");
         dao.saveExecutionRecord(exec);
-        assertTrue(dao.getPendingExecutionRecordIds(ORG_ID).contains(exec.getExecutionId()));
+        assertTrue(dao.getPendingExecutionRecordIds().contains(exec.getExecutionId()));
 
         exec.setState(WorkflowScheduleExecutionModel.State.EXECUTED);
         dao.saveExecutionRecord(exec);
 
-        assertFalse(dao.getPendingExecutionRecordIds(ORG_ID).contains(exec.getExecutionId()));
+        assertFalse(dao.getPendingExecutionRecordIds().contains(exec.getExecutionId()));
     }
 
     // =========================================================================
@@ -358,20 +353,20 @@ public class RedisSchedulerDAOTest {
         dao.updateSchedule(buildSchedule("next-run-test", "wf"));
 
         long epochMillis = System.currentTimeMillis() + 60_000;
-        dao.setNextRunTimeInEpoch(ORG_ID, "next-run-test", epochMillis);
+        dao.setNextRunTimeInEpoch("next-run-test", epochMillis);
 
-        assertEquals(epochMillis, dao.getNextRunTimeInEpoch(ORG_ID, "next-run-test"));
+        assertEquals(epochMillis, dao.getNextRunTimeInEpoch("next-run-test"));
     }
 
     @Test
     public void testGetNextRunTime_notSet_returnsMinusOne() {
         dao.updateSchedule(buildSchedule("no-next-run", "wf"));
-        assertEquals(-1L, dao.getNextRunTimeInEpoch(ORG_ID, "no-next-run"));
+        assertEquals(-1L, dao.getNextRunTimeInEpoch("no-next-run"));
     }
 
     @Test
     public void testGetNextRunTime_nonExistent_returnsMinusOne() {
-        assertEquals(-1L, dao.getNextRunTimeInEpoch(ORG_ID, "non-existent-schedule"));
+        assertEquals(-1L, dao.getNextRunTimeInEpoch("non-existent-schedule"));
     }
 
     @Test
@@ -380,20 +375,20 @@ public class RedisSchedulerDAOTest {
         dao.updateSchedule(schedule);
 
         long epoch = System.currentTimeMillis() + 60_000;
-        dao.setNextRunTimeInEpoch(ORG_ID, "nrt-reset-test", epoch);
-        assertEquals(epoch, dao.getNextRunTimeInEpoch(ORG_ID, "nrt-reset-test"));
+        dao.setNextRunTimeInEpoch("nrt-reset-test", epoch);
+        assertEquals(epoch, dao.getNextRunTimeInEpoch("nrt-reset-test"));
 
         schedule.setCronExpression("0 0 10 * * *");
         schedule.setNextRunTime(null);
         dao.updateSchedule(schedule);
 
-        assertEquals(-1L, dao.getNextRunTimeInEpoch(ORG_ID, "nrt-reset-test"));
+        assertEquals(-1L, dao.getNextRunTimeInEpoch("nrt-reset-test"));
     }
 
     @Test
     public void testSetNextRunTime_nonExistentSchedule_noOp() {
-        dao.setNextRunTimeInEpoch(ORG_ID, "non-existent-schedule", System.currentTimeMillis());
-        assertEquals(-1L, dao.getNextRunTimeInEpoch(ORG_ID, "non-existent-schedule"));
+        dao.setNextRunTimeInEpoch("non-existent-schedule", System.currentTimeMillis());
+        assertEquals(-1L, dao.getNextRunTimeInEpoch("non-existent-schedule"));
     }
 
     // =========================================================================
@@ -407,7 +402,7 @@ public class RedisSchedulerDAOTest {
         dao.updateSchedule(buildSchedule("search-3", "other-wf"));
 
         SearchResult<WorkflowScheduleModel> result =
-                dao.searchSchedules(ORG_ID, "search-wf", null, null, null, 0, 10, null);
+                dao.searchSchedules("search-wf", null, null, null, 0, 10, null);
         assertEquals(2, result.getTotalHits());
     }
 
@@ -419,7 +414,7 @@ public class RedisSchedulerDAOTest {
         dao.updateSchedule(buildSchedule("active-sched", "wf"));
 
         SearchResult<WorkflowScheduleModel> result =
-                dao.searchSchedules(ORG_ID, null, null, true, null, 0, 10, null);
+                dao.searchSchedules(null, null, true, null, 0, 10, null);
         assertEquals(1, result.getTotalHits());
         assertEquals("paused-sched", result.getResults().get(0).getName());
     }
@@ -435,7 +430,7 @@ public class RedisSchedulerDAOTest {
             dao.updateSchedule(buildSchedule("volume-sched-" + i, "wf-" + (i % 10)));
         }
 
-        List<WorkflowScheduleModel> all = dao.getAllSchedules(ORG_ID);
+        List<WorkflowScheduleModel> all = dao.getAllSchedules();
         assertEquals(count, all.size());
     }
 
@@ -449,7 +444,6 @@ public class RedisSchedulerDAOTest {
         startReq.setVersion(1);
 
         WorkflowScheduleModel schedule = new WorkflowScheduleModel();
-        schedule.setOrgId(ORG_ID);
         schedule.setName(name);
         schedule.setCronExpression("0 0 9 * * MON-FRI");
         schedule.setZoneId("UTC");
@@ -467,7 +461,6 @@ public class RedisSchedulerDAOTest {
         exec.setExecutionTime(System.currentTimeMillis());
         exec.setState(WorkflowScheduleExecutionModel.State.POLLED);
         exec.setZoneId("UTC");
-        exec.setOrgId(ORG_ID);
         return exec;
     }
 }

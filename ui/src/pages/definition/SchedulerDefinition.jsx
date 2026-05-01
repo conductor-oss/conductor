@@ -10,10 +10,11 @@ import {
   configureMonaco,
   NEW_SCHEDULER_TEMPLATE,
 } from "../../schema/scheduler";
-import { useScheduler } from "../../data/scheduler";
+import { useScheduler, useSchedulerEnabled } from "../../data/scheduler";
 import ResetConfirmationDialog from "./ResetConfirmationDialog";
 import { usePushHistory } from "../../components/NavLink";
 import SaveSchedulerDialog from "./SaveSchedulerDialog";
+import SchedulerDisabledBanner from "../../components/SchedulerDisabledBanner";
 
 const useStyles = makeStyles({
   wrapper: {
@@ -46,6 +47,8 @@ export default function SchedulerDefinition() {
   const editorRef = useRef();
   const schedulerName = _.get(match, "params.name");
 
+  const { enabled: schedulerEnabled, isLoading: checkingEnabled } =
+    useSchedulerEnabled();
   const {
     scheduler: schedulerDef,
     isFetching,
@@ -100,6 +103,14 @@ export default function SchedulerDefinition() {
   const handleChange = (v) => {
     setIsModified(v !== schedulerJson);
   };
+
+  if (!checkingEnabled && !schedulerEnabled) {
+    return (
+      <div style={{ padding: 30 }}>
+        <SchedulerDisabledBanner />
+      </div>
+    );
+  }
 
   return (
     <>

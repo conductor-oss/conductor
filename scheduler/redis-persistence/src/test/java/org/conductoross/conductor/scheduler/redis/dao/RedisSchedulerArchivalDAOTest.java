@@ -36,8 +36,6 @@ import static org.mockito.Mockito.when;
 
 public class RedisSchedulerArchivalDAOTest {
 
-    private static final String ORG_ID = "0000";
-
     @ClassRule
     public static final GenericContainer<?> redis =
             new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
@@ -87,7 +85,7 @@ public class RedisSchedulerArchivalDAOTest {
         WorkflowScheduleExecutionModel model = buildExecution("sched-1", "exec-1");
         dao.saveExecutionRecord(model);
 
-        WorkflowScheduleExecutionModel found = dao.getExecutionById(ORG_ID, "exec-1");
+        WorkflowScheduleExecutionModel found = dao.getExecutionById("exec-1");
         assertNotNull(found);
         assertEquals("exec-1", found.getExecutionId());
         assertEquals("sched-1", found.getScheduleName());
@@ -97,7 +95,7 @@ public class RedisSchedulerArchivalDAOTest {
 
     @Test
     public void testGetById_notFound_returnsNull() {
-        assertNull(dao.getExecutionById(ORG_ID, "no-such-id"));
+        assertNull(dao.getExecutionById("no-such-id"));
     }
 
     @Test
@@ -107,7 +105,7 @@ public class RedisSchedulerArchivalDAOTest {
         dao.saveExecutionRecord(buildExecution("sched-2", "exec-c"));
 
         Map<String, WorkflowScheduleExecutionModel> result =
-                dao.getExecutionsByIds(ORG_ID, Set.of("exec-a", "exec-c", "no-such"));
+                dao.getExecutionsByIds(Set.of("exec-a", "exec-c", "no-such"));
         assertEquals(2, result.size());
         assertTrue(result.containsKey("exec-a"));
         assertTrue(result.containsKey("exec-c"));
@@ -115,12 +113,12 @@ public class RedisSchedulerArchivalDAOTest {
 
     @Test
     public void testGetByIds_emptySet_returnsEmpty() {
-        assertTrue(dao.getExecutionsByIds(ORG_ID, Set.of()).isEmpty());
+        assertTrue(dao.getExecutionsByIds(Set.of()).isEmpty());
     }
 
     @Test
     public void testGetByIds_nullSet_returnsEmpty() {
-        assertTrue(dao.getExecutionsByIds(ORG_ID, null).isEmpty());
+        assertTrue(dao.getExecutionsByIds(null).isEmpty());
     }
 
     // =========================================================================
@@ -147,7 +145,7 @@ public class RedisSchedulerArchivalDAOTest {
 
         dao.saveExecutionRecord(model);
 
-        WorkflowScheduleExecutionModel found = dao.getExecutionById(ORG_ID, "rt-exec");
+        WorkflowScheduleExecutionModel found = dao.getExecutionById("rt-exec");
         assertNotNull(found);
         assertEquals("rt-sched", found.getScheduleName());
         assertEquals("my-wf", found.getWorkflowName());
@@ -172,8 +170,7 @@ public class RedisSchedulerArchivalDAOTest {
         dao.saveExecutionRecord(buildExecution("sched-a", "e2"));
         dao.saveExecutionRecord(buildExecution("sched-b", "e3"));
 
-        SearchResult<String> result =
-                dao.searchScheduledExecutions(ORG_ID, "sched-a", null, 0, 10, null);
+        SearchResult<String> result = dao.searchScheduledExecutions("sched-a", null, 0, 10, null);
         assertEquals(2, result.getTotalHits());
         assertTrue(result.getResults().contains("e1"));
         assertTrue(result.getResults().contains("e2"));
@@ -190,7 +187,7 @@ public class RedisSchedulerArchivalDAOTest {
         dao.saveExecutionRecord(e2);
 
         SearchResult<String> result =
-                dao.searchScheduledExecutions(ORG_ID, "workflowName=payment", null, 0, 10, null);
+                dao.searchScheduledExecutions("workflowName=payment", null, 0, 10, null);
         assertEquals(1, result.getTotalHits());
         assertEquals("e-wn1", result.getResults().get(0));
     }
@@ -201,8 +198,7 @@ public class RedisSchedulerArchivalDAOTest {
         dao.saveExecutionRecord(buildExecution("eid-sched", "exact-id-456"));
 
         SearchResult<String> result =
-                dao.searchScheduledExecutions(
-                        ORG_ID, "executionId=exact-id-123", null, 0, 10, null);
+                dao.searchScheduledExecutions("executionId=exact-id-123", null, 0, 10, null);
         assertEquals(1, result.getTotalHits());
         assertEquals("exact-id-123", result.getResults().get(0));
     }
@@ -212,7 +208,7 @@ public class RedisSchedulerArchivalDAOTest {
         dao.saveExecutionRecord(buildExecution("sched-1", "e1"));
         dao.saveExecutionRecord(buildExecution("sched-2", "e2"));
 
-        SearchResult<String> result = dao.searchScheduledExecutions(ORG_ID, null, "*", 0, 10, null);
+        SearchResult<String> result = dao.searchScheduledExecutions(null, "*", 0, 10, null);
         assertEquals(2, result.getTotalHits());
     }
 
@@ -224,13 +220,11 @@ public class RedisSchedulerArchivalDAOTest {
             dao.saveExecutionRecord(exec);
         }
 
-        SearchResult<String> page1 =
-                dao.searchScheduledExecutions(ORG_ID, "page-sched", null, 0, 2, null);
+        SearchResult<String> page1 = dao.searchScheduledExecutions("page-sched", null, 0, 2, null);
         assertEquals(5, page1.getTotalHits());
         assertEquals(2, page1.getResults().size());
 
-        SearchResult<String> page2 =
-                dao.searchScheduledExecutions(ORG_ID, "page-sched", null, 2, 2, null);
+        SearchResult<String> page2 = dao.searchScheduledExecutions("page-sched", null, 2, 2, null);
         assertEquals(5, page2.getTotalHits());
         assertEquals(2, page2.getResults().size());
     }
@@ -251,7 +245,7 @@ public class RedisSchedulerArchivalDAOTest {
         dao.cleanupOldRecords(3, 5);
 
         SearchResult<String> result =
-                dao.searchScheduledExecutions(ORG_ID, "cleanup-sched", null, 0, 20, null);
+                dao.searchScheduledExecutions("cleanup-sched", null, 0, 20, null);
         assertEquals(3, result.getTotalHits());
     }
 
@@ -267,18 +261,17 @@ public class RedisSchedulerArchivalDAOTest {
                         jedisProxy, objectMapper, conductorProperties, redisProperties, 2);
 
         shortTtlDao.saveExecutionRecord(buildExecution("ttl-sched", "ttl-exec"));
-        assertNotNull(shortTtlDao.getExecutionById(ORG_ID, "ttl-exec"));
+        assertNotNull(shortTtlDao.getExecutionById("ttl-exec"));
 
         // Wait for expiry
         Thread.sleep(3000);
 
         assertNull(
-                "Record should have expired after TTL",
-                shortTtlDao.getExecutionById(ORG_ID, "ttl-exec"));
+                "Record should have expired after TTL", shortTtlDao.getExecutionById("ttl-exec"));
 
         // Search should also reflect expiry
         SearchResult<String> result =
-                shortTtlDao.searchScheduledExecutions(ORG_ID, "ttl-sched", null, 0, 10, null);
+                shortTtlDao.searchScheduledExecutions("ttl-sched", null, 0, 10, null);
         assertEquals(0, result.getTotalHits());
     }
 
@@ -303,7 +296,7 @@ public class RedisSchedulerArchivalDAOTest {
         dao.cleanupOldRecords(2, 5);
 
         SearchResult<String> result =
-                dao.searchScheduledExecutions(ORG_ID, "noclean-sched", null, 0, 20, null);
+                dao.searchScheduledExecutions("noclean-sched", null, 0, 20, null);
         assertEquals(3, result.getTotalHits());
     }
 

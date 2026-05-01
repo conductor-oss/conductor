@@ -40,13 +40,8 @@ public class WorkflowScheduleExecutionModel {
     private StartWorkflowRequest startWorkflowRequest;
     private State state;
     private String zoneId = "UTC";
-    private String orgId;
-
-    public String getOrgId() {
-        return orgId == null ? "0000" : orgId;
-    }
 
     public String getQueueMsgId() {
-        return orgId == null || "0000".equals(orgId) ? executionId : orgId + ":" + executionId;
+        return executionId;
     }
 }

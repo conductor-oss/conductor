@@ -101,7 +101,7 @@ public class PostgresSchedulerArchivalDAO extends PostgresBaseDAO implements Sch
 
     @Override
     public SearchResult<String> searchScheduledExecutions(
-            String orgId, String query, String freeText, int start, int count, List<String> sort) {
+            String query, String freeText, int start, int count, List<String> sort) {
         Monitors.recordDaoRequests(DAO_NAME, "searchScheduledExecutions", "n/a", "n/a");
         StringBuilder where = new StringBuilder(" WHERE 1=1");
         List<Object> params = new ArrayList<>();
@@ -177,7 +177,7 @@ public class PostgresSchedulerArchivalDAO extends PostgresBaseDAO implements Sch
 
     @Override
     public Map<String, WorkflowScheduleExecutionModel> getExecutionsByIds(
-            String orgId, Set<String> executionIds) {
+            Set<String> executionIds) {
         Monitors.recordDaoRequests(DAO_NAME, "getExecutionsByIds", "n/a", "n/a");
         if (executionIds == null || executionIds.isEmpty()) {
             return new HashMap<>();
@@ -201,7 +201,7 @@ public class PostgresSchedulerArchivalDAO extends PostgresBaseDAO implements Sch
     }
 
     @Override
-    public WorkflowScheduleExecutionModel getExecutionById(String orgId, String executionId) {
+    public WorkflowScheduleExecutionModel getExecutionById(String executionId) {
         Monitors.recordDaoRequests(DAO_NAME, "getExecutionById", "n/a", "n/a");
         String sql =
                 "SELECT "

@@ -46,8 +46,6 @@ import static org.junit.Assert.*;
  */
 public abstract class AbstractSchedulerArchivalDAOTest {
 
-    protected static final String ORG_ID = "0000";
-
     /** Returns the archival DAO under test. */
     protected abstract SchedulerArchivalDAO archivalDao();
 
@@ -60,7 +58,7 @@ public abstract class AbstractSchedulerArchivalDAOTest {
         WorkflowScheduleExecutionModel model = buildExecution("sched-1", "exec-1");
         archivalDao().saveExecutionRecord(model);
 
-        WorkflowScheduleExecutionModel found = archivalDao().getExecutionById(ORG_ID, "exec-1");
+        WorkflowScheduleExecutionModel found = archivalDao().getExecutionById("exec-1");
         assertNotNull(found);
         assertEquals("exec-1", found.getExecutionId());
         assertEquals("sched-1", found.getScheduleName());
@@ -70,7 +68,7 @@ public abstract class AbstractSchedulerArchivalDAOTest {
 
     @Test
     public void testGetById_notFound_returnsNull() {
-        assertNull(archivalDao().getExecutionById(ORG_ID, "no-such-id"));
+        assertNull(archivalDao().getExecutionById("no-such-id"));
     }
 
     @Test
@@ -80,7 +78,7 @@ public abstract class AbstractSchedulerArchivalDAOTest {
         archivalDao().saveExecutionRecord(buildExecution("sched-2", "exec-c"));
 
         Map<String, WorkflowScheduleExecutionModel> result =
-                archivalDao().getExecutionsByIds(ORG_ID, Set.of("exec-a", "exec-c", "no-such"));
+                archivalDao().getExecutionsByIds(Set.of("exec-a", "exec-c", "no-such"));
         assertEquals(2, result.size());
         assertTrue(result.containsKey("exec-a"));
         assertTrue(result.containsKey("exec-c"));
@@ -88,12 +86,12 @@ public abstract class AbstractSchedulerArchivalDAOTest {
 
     @Test
     public void testGetByIds_emptySet_returnsEmpty() {
-        assertTrue(archivalDao().getExecutionsByIds(ORG_ID, Set.of()).isEmpty());
+        assertTrue(archivalDao().getExecutionsByIds(Set.of()).isEmpty());
     }
 
     @Test
     public void testGetByIds_nullSet_returnsEmpty() {
-        assertTrue(archivalDao().getExecutionsByIds(ORG_ID, null).isEmpty());
+        assertTrue(archivalDao().getExecutionsByIds(null).isEmpty());
     }
 
     @Test
@@ -105,8 +103,7 @@ public abstract class AbstractSchedulerArchivalDAOTest {
         model.setState(WorkflowScheduleExecutionModel.State.FAILED);
         archivalDao().saveExecutionRecord(model);
 
-        WorkflowScheduleExecutionModel found =
-                archivalDao().getExecutionById(ORG_ID, "upsert-exec");
+        WorkflowScheduleExecutionModel found = archivalDao().getExecutionById("upsert-exec");
         assertNotNull(found);
         assertEquals("updated reason", found.getReason());
         assertEquals(WorkflowScheduleExecutionModel.State.FAILED, found.getState());
@@ -136,7 +133,7 @@ public abstract class AbstractSchedulerArchivalDAOTest {
 
         archivalDao().saveExecutionRecord(model);
 
-        WorkflowScheduleExecutionModel found = archivalDao().getExecutionById(ORG_ID, "rt-exec");
+        WorkflowScheduleExecutionModel found = archivalDao().getExecutionById("rt-exec");
         assertNotNull(found);
         assertEquals("rt-sched", found.getScheduleName());
         assertEquals("my-wf", found.getWorkflowName());
@@ -162,7 +159,7 @@ public abstract class AbstractSchedulerArchivalDAOTest {
         archivalDao().saveExecutionRecord(buildExecution("sched-b", "e3"));
 
         SearchResult<String> result =
-                archivalDao().searchScheduledExecutions(ORG_ID, "sched-a", null, 0, 10, null);
+                archivalDao().searchScheduledExecutions("sched-a", null, 0, 10, null);
         assertEquals(2, result.getTotalHits());
         assertTrue(result.getResults().contains("e1"));
         assertTrue(result.getResults().contains("e2"));
@@ -180,9 +177,7 @@ public abstract class AbstractSchedulerArchivalDAOTest {
 
         // Substring match on workflow name
         SearchResult<String> result =
-                archivalDao()
-                        .searchScheduledExecutions(
-                                ORG_ID, "workflowName=payment", null, 0, 10, null);
+                archivalDao().searchScheduledExecutions("workflowName=payment", null, 0, 10, null);
         assertEquals(1, result.getTotalHits());
         assertEquals("e-wn1", result.getResults().get(0));
     }
@@ -194,8 +189,7 @@ public abstract class AbstractSchedulerArchivalDAOTest {
 
         SearchResult<String> result =
                 archivalDao()
-                        .searchScheduledExecutions(
-                                ORG_ID, "executionId=exact-id-123", null, 0, 10, null);
+                        .searchScheduledExecutions("executionId=exact-id-123", null, 0, 10, null);
         assertEquals(1, result.getTotalHits());
         assertEquals("exact-id-123", result.getResults().get(0));
     }
@@ -206,7 +200,7 @@ public abstract class AbstractSchedulerArchivalDAOTest {
         archivalDao().saveExecutionRecord(buildExecution("sched-2", "e2"));
 
         SearchResult<String> result =
-                archivalDao().searchScheduledExecutions(ORG_ID, null, "*", 0, 10, null);
+                archivalDao().searchScheduledExecutions(null, "*", 0, 10, null);
         assertEquals(2, result.getTotalHits());
     }
 
@@ -220,12 +214,12 @@ public abstract class AbstractSchedulerArchivalDAOTest {
         }
 
         SearchResult<String> page1 =
-                archivalDao().searchScheduledExecutions(ORG_ID, "page-sched", null, 0, 2, null);
+                archivalDao().searchScheduledExecutions("page-sched", null, 0, 2, null);
         assertEquals(5, page1.getTotalHits());
         assertEquals(2, page1.getResults().size());
 
         SearchResult<String> page2 =
-                archivalDao().searchScheduledExecutions(ORG_ID, "page-sched", null, 2, 2, null);
+                archivalDao().searchScheduledExecutions("page-sched", null, 2, 2, null);
         assertEquals(5, page2.getTotalHits());
         assertEquals(2, page2.getResults().size());
     }
@@ -233,7 +227,7 @@ public abstract class AbstractSchedulerArchivalDAOTest {
     @Test
     public void testSearch_noResults_returnsEmpty() {
         SearchResult<String> result =
-                archivalDao().searchScheduledExecutions(ORG_ID, "nonexistent", null, 0, 10, null);
+                archivalDao().searchScheduledExecutions("nonexistent", null, 0, 10, null);
         assertEquals(0, result.getTotalHits());
         assertTrue(result.getResults().isEmpty());
     }
@@ -251,7 +245,7 @@ public abstract class AbstractSchedulerArchivalDAOTest {
         SearchResult<String> result =
                 archivalDao()
                         .searchScheduledExecutions(
-                                ORG_ID, "scheduleName IN (sched-x,sched-y)", null, 0, 10, null);
+                                "scheduleName IN (sched-x,sched-y)", null, 0, 10, null);
         assertEquals(2, result.getTotalHits());
         assertTrue(result.getResults().contains("e1"));
         assertTrue(result.getResults().contains("e2"));
@@ -274,8 +268,7 @@ public abstract class AbstractSchedulerArchivalDAOTest {
 
         SearchResult<String> result =
                 archivalDao()
-                        .searchScheduledExecutions(
-                                ORG_ID, "state IN (POLLED,FAILED)", null, 0, 10, null);
+                        .searchScheduledExecutions("state IN (POLLED,FAILED)", null, 0, 10, null);
         assertEquals(2, result.getTotalHits());
         assertTrue(result.getResults().contains("e-poll"));
         assertTrue(result.getResults().contains("e-fail"));
@@ -300,12 +293,7 @@ public abstract class AbstractSchedulerArchivalDAOTest {
         SearchResult<String> result =
                 archivalDao()
                         .searchScheduledExecutions(
-                                ORG_ID,
-                                "scheduledTime>2000 AND scheduledTime<8000",
-                                null,
-                                0,
-                                10,
-                                null);
+                                "scheduledTime>2000 AND scheduledTime<8000", null, 0, 10, null);
         assertEquals(1, result.getTotalHits());
         assertEquals("e-mid", result.getResults().get(0));
     }
@@ -335,7 +323,7 @@ public abstract class AbstractSchedulerArchivalDAOTest {
         // schedule=combo-a AND state=EXECUTED AND scheduledTime>2000
         String query = "scheduleName IN (combo-a) AND state IN (EXECUTED) AND scheduledTime>2000";
         SearchResult<String> result =
-                archivalDao().searchScheduledExecutions(ORG_ID, query, null, 0, 10, null);
+                archivalDao().searchScheduledExecutions(query, null, 0, 10, null);
         assertEquals(1, result.getTotalHits());
         assertEquals("c1", result.getResults().get(0));
     }
@@ -352,14 +340,14 @@ public abstract class AbstractSchedulerArchivalDAOTest {
 
         // Default sort: scheduledTime DESC => newer first
         SearchResult<String> descResult =
-                archivalDao().searchScheduledExecutions(ORG_ID, "sort-sched", null, 0, 10, null);
+                archivalDao().searchScheduledExecutions("sort-sched", null, 0, 10, null);
         assertEquals("s-new", descResult.getResults().get(0));
 
         // Explicit ASC sort
         SearchResult<String> ascResult =
                 archivalDao()
                         .searchScheduledExecutions(
-                                ORG_ID, "sort-sched", null, 0, 10, List.of("scheduledTime:ASC"));
+                                "sort-sched", null, 0, 10, List.of("scheduledTime:ASC"));
         assertEquals("s-old", ascResult.getResults().get(0));
     }
 
@@ -369,8 +357,7 @@ public abstract class AbstractSchedulerArchivalDAOTest {
         archivalDao().saveExecutionRecord(buildExecution("all-b", "a2"));
 
         // Empty query string => no filters, returns everything
-        SearchResult<String> result =
-                archivalDao().searchScheduledExecutions(ORG_ID, "", "*", 0, 10, null);
+        SearchResult<String> result = archivalDao().searchScheduledExecutions("", "*", 0, 10, null);
         assertEquals(2, result.getTotalHits());
     }
 
@@ -380,7 +367,7 @@ public abstract class AbstractSchedulerArchivalDAOTest {
         archivalDao().saveExecutionRecord(buildExecution("null-b", "n2"));
 
         SearchResult<String> result =
-                archivalDao().searchScheduledExecutions(ORG_ID, null, "*", 0, 10, null);
+                archivalDao().searchScheduledExecutions(null, "*", 0, 10, null);
         assertEquals(2, result.getTotalHits());
     }
 
@@ -400,7 +387,7 @@ public abstract class AbstractSchedulerArchivalDAOTest {
         archivalDao().cleanupOldRecords(3, 5);
 
         SearchResult<String> result =
-                archivalDao().searchScheduledExecutions(ORG_ID, "cleanup-sched", null, 0, 20, null);
+                archivalDao().searchScheduledExecutions("cleanup-sched", null, 0, 20, null);
         assertEquals(3, result.getTotalHits());
     }
 
@@ -416,7 +403,7 @@ public abstract class AbstractSchedulerArchivalDAOTest {
         archivalDao().cleanupOldRecords(2, 5);
 
         SearchResult<String> result =
-                archivalDao().searchScheduledExecutions(ORG_ID, "noclean-sched", null, 0, 20, null);
+                archivalDao().searchScheduledExecutions("noclean-sched", null, 0, 20, null);
         assertEquals(3, result.getTotalHits());
     }
 
@@ -434,7 +421,7 @@ public abstract class AbstractSchedulerArchivalDAOTest {
         }
 
         SearchResult<String> result =
-                archivalDao().searchScheduledExecutions(ORG_ID, "volume-sched", null, 0, 100, null);
+                archivalDao().searchScheduledExecutions("volume-sched", null, 0, 100, null);
         assertEquals(count, result.getTotalHits());
     }
 

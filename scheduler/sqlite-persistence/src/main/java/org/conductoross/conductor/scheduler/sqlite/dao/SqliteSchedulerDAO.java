@@ -69,25 +69,25 @@ public class SqliteSchedulerDAO implements SchedulerDAO {
     }
 
     @Override
-    public WorkflowScheduleModel findScheduleByName(String orgId, String name) {
+    public WorkflowScheduleModel findScheduleByName(String name) {
         String sql = "SELECT json_data FROM scheduler WHERE scheduler_name = ?";
         List<WorkflowScheduleModel> results = jdbc.query(sql, scheduleRowMapper(), name);
         return results.isEmpty() ? null : results.get(0);
     }
 
     @Override
-    public List<WorkflowScheduleModel> getAllSchedules(String orgId) {
+    public List<WorkflowScheduleModel> getAllSchedules() {
         return jdbc.query("SELECT json_data FROM scheduler", scheduleRowMapper());
     }
 
     @Override
-    public List<WorkflowScheduleModel> findAllSchedules(String orgId, String workflowName) {
+    public List<WorkflowScheduleModel> findAllSchedules(String workflowName) {
         String sql = "SELECT json_data FROM scheduler WHERE workflow_name = ?";
         return jdbc.query(sql, scheduleRowMapper(), workflowName);
     }
 
     @Override
-    public Map<String, WorkflowScheduleModel> findAllByNames(String orgId, Set<String> names) {
+    public Map<String, WorkflowScheduleModel> findAllByNames(Set<String> names) {
         if (names == null || names.isEmpty()) {
             return new HashMap<>();
         }
@@ -104,7 +104,7 @@ public class SqliteSchedulerDAO implements SchedulerDAO {
     }
 
     @Override
-    public void deleteWorkflowSchedule(String orgId, String name) {
+    public void deleteWorkflowSchedule(String name) {
         jdbc.update("DELETE FROM scheduler_execution WHERE schedule_name = ?", name);
         jdbc.update("DELETE FROM scheduler WHERE scheduler_name = ?", name);
     }
@@ -123,7 +123,7 @@ public class SqliteSchedulerDAO implements SchedulerDAO {
     }
 
     @Override
-    public WorkflowScheduleExecutionModel readExecutionRecord(String orgId, String executionId) {
+    public WorkflowScheduleExecutionModel readExecutionRecord(String executionId) {
         String sql = "SELECT json_data FROM scheduler_execution WHERE execution_id = ?";
         List<WorkflowScheduleExecutionModel> results =
                 jdbc.query(sql, executionRowMapper(), executionId);
@@ -131,19 +131,19 @@ public class SqliteSchedulerDAO implements SchedulerDAO {
     }
 
     @Override
-    public void removeExecutionRecord(String orgId, String executionId) {
+    public void removeExecutionRecord(String executionId) {
         jdbc.update("DELETE FROM scheduler_execution WHERE execution_id = ?", executionId);
     }
 
     @Override
-    public List<String> getPendingExecutionRecordIds(String orgId) {
+    public List<String> getPendingExecutionRecordIds() {
         return jdbc.queryForList(
                 "SELECT execution_id FROM scheduler_execution WHERE state = 'POLLED'",
                 String.class);
     }
 
     @Override
-    public long getNextRunTimeInEpoch(String orgId, String scheduleName) {
+    public long getNextRunTimeInEpoch(String scheduleName) {
         String sql = "SELECT next_run_time FROM scheduler WHERE scheduler_name = ?";
         List<Long> results = jdbc.queryForList(sql, Long.class, scheduleName);
         if (results.isEmpty() || results.get(0) == null) {
@@ -153,7 +153,7 @@ public class SqliteSchedulerDAO implements SchedulerDAO {
     }
 
     @Override
-    public void setNextRunTimeInEpoch(String orgId, String scheduleName, long epochMillis) {
+    public void setNextRunTimeInEpoch(String scheduleName, long epochMillis) {
         jdbc.update(
                 "UPDATE scheduler SET next_run_time = ? WHERE scheduler_name = ?",
                 epochMillis,
@@ -162,7 +162,6 @@ public class SqliteSchedulerDAO implements SchedulerDAO {
 
     @Override
     public SearchResult<WorkflowScheduleModel> searchSchedules(
-            String orgId,
             String workflowName,
             String scheduleName,
             Boolean paused,

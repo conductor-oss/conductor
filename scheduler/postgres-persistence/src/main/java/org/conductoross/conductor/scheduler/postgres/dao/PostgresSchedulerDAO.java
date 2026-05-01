@@ -73,7 +73,7 @@ public class PostgresSchedulerDAO extends PostgresBaseDAO implements SchedulerDA
     }
 
     @Override
-    public WorkflowScheduleModel findScheduleByName(String orgId, String name) {
+    public WorkflowScheduleModel findScheduleByName(String name) {
         Monitors.recordDaoRequests(DAO_NAME, "findScheduleByName", "n/a", "n/a");
         String sql = "SELECT json_data FROM scheduler WHERE scheduler_name = ?";
         return queryWithTransaction(
@@ -81,7 +81,7 @@ public class PostgresSchedulerDAO extends PostgresBaseDAO implements SchedulerDA
     }
 
     @Override
-    public List<WorkflowScheduleModel> getAllSchedules(String orgId) {
+    public List<WorkflowScheduleModel> getAllSchedules() {
         Monitors.recordDaoRequests(DAO_NAME, "getAllSchedules", "n/a", "n/a");
         return queryWithTransaction(
                 "SELECT json_data FROM scheduler",
@@ -89,7 +89,7 @@ public class PostgresSchedulerDAO extends PostgresBaseDAO implements SchedulerDA
     }
 
     @Override
-    public List<WorkflowScheduleModel> findAllSchedules(String orgId, String workflowName) {
+    public List<WorkflowScheduleModel> findAllSchedules(String workflowName) {
         Monitors.recordDaoRequests(DAO_NAME, "findAllSchedules", "n/a", "n/a");
         String sql = "SELECT json_data FROM scheduler WHERE workflow_name = ?";
         return queryWithTransaction(
@@ -98,7 +98,7 @@ public class PostgresSchedulerDAO extends PostgresBaseDAO implements SchedulerDA
     }
 
     @Override
-    public Map<String, WorkflowScheduleModel> findAllByNames(String orgId, Set<String> names) {
+    public Map<String, WorkflowScheduleModel> findAllByNames(Set<String> names) {
         Monitors.recordDaoRequests(DAO_NAME, "findAllByNames", "n/a", "n/a");
         if (names == null || names.isEmpty()) {
             return new HashMap<>();
@@ -119,7 +119,7 @@ public class PostgresSchedulerDAO extends PostgresBaseDAO implements SchedulerDA
     }
 
     @Override
-    public void deleteWorkflowSchedule(String orgId, String name) {
+    public void deleteWorkflowSchedule(String name) {
         Monitors.recordDaoRequests(DAO_NAME, "deleteWorkflowSchedule", "n/a", "n/a");
         withTransaction(
                 tx -> {
@@ -159,7 +159,7 @@ public class PostgresSchedulerDAO extends PostgresBaseDAO implements SchedulerDA
     }
 
     @Override
-    public WorkflowScheduleExecutionModel readExecutionRecord(String orgId, String executionId) {
+    public WorkflowScheduleExecutionModel readExecutionRecord(String executionId) {
         Monitors.recordDaoRequests(DAO_NAME, "readExecutionRecord", "n/a", "n/a");
         String sql = "SELECT json_data FROM scheduler_execution WHERE execution_id = ?";
         return queryWithTransaction(
@@ -170,7 +170,7 @@ public class PostgresSchedulerDAO extends PostgresBaseDAO implements SchedulerDA
     }
 
     @Override
-    public void removeExecutionRecord(String orgId, String executionId) {
+    public void removeExecutionRecord(String executionId) {
         Monitors.recordDaoRequests(DAO_NAME, "removeExecutionRecord", "n/a", "n/a");
         executeWithTransaction(
                 "DELETE FROM scheduler_execution WHERE execution_id = ?",
@@ -178,7 +178,7 @@ public class PostgresSchedulerDAO extends PostgresBaseDAO implements SchedulerDA
     }
 
     @Override
-    public List<String> getPendingExecutionRecordIds(String orgId) {
+    public List<String> getPendingExecutionRecordIds() {
         Monitors.recordDaoRequests(DAO_NAME, "getPendingExecutionRecordIds", "n/a", "n/a");
         return queryWithTransaction(
                 "SELECT execution_id FROM scheduler_execution WHERE state = 'POLLED'",
@@ -186,7 +186,7 @@ public class PostgresSchedulerDAO extends PostgresBaseDAO implements SchedulerDA
     }
 
     @Override
-    public long getNextRunTimeInEpoch(String orgId, String scheduleName) {
+    public long getNextRunTimeInEpoch(String scheduleName) {
         Monitors.recordDaoRequests(DAO_NAME, "getNextRunTimeInEpoch", "n/a", "n/a");
         String sql = "SELECT next_run_time FROM scheduler WHERE scheduler_name = ?";
         Long result =
@@ -196,7 +196,7 @@ public class PostgresSchedulerDAO extends PostgresBaseDAO implements SchedulerDA
     }
 
     @Override
-    public void setNextRunTimeInEpoch(String orgId, String scheduleName, long epochMillis) {
+    public void setNextRunTimeInEpoch(String scheduleName, long epochMillis) {
         Monitors.recordDaoRequests(DAO_NAME, "setNextRunTimeInEpoch", "n/a", "n/a");
         executeWithTransaction(
                 "UPDATE scheduler SET next_run_time = ? WHERE scheduler_name = ?",
@@ -205,7 +205,6 @@ public class PostgresSchedulerDAO extends PostgresBaseDAO implements SchedulerDA
 
     @Override
     public SearchResult<WorkflowScheduleModel> searchSchedules(
-            String orgId,
             String workflowName,
             String scheduleName,
             Boolean paused,

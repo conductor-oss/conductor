@@ -24,12 +24,11 @@ public interface SchedulerArchivalDAO {
     void saveExecutionRecord(WorkflowScheduleExecutionModel executionModel);
 
     SearchResult<String> searchScheduledExecutions(
-            String orgId, String query, String freeText, int start, int count, List<String> sort);
+            String query, String freeText, int start, int count, List<String> sort);
 
-    Map<String, WorkflowScheduleExecutionModel> getExecutionsByIds(
-            String orgId, Set<String> executionIds);
+    Map<String, WorkflowScheduleExecutionModel> getExecutionsByIds(Set<String> executionIds);
 
-    WorkflowScheduleExecutionModel getExecutionById(String orgId, String executionId);
+    WorkflowScheduleExecutionModel getExecutionById(String executionId);
 
     void cleanupOldRecords(int archivalMaxRecords, int archivalMaxRecordThreshold);
 }

@@ -212,7 +212,7 @@ public class CassandraSchedulerArchivalDAO extends CassandraBaseDAO
 
     @Override
     public SearchResult<String> searchScheduledExecutions(
-            String orgId, String query, String freeText, int start, int count, List<String> sort) {
+            String query, String freeText, int start, int count, List<String> sort) {
         Monitors.recordDaoRequests(DAO_NAME, "searchScheduledExecutions", "n/a", "n/a");
 
         SchedulerSearchQuery parsed = SchedulerSearchQuery.parse(query);
@@ -320,7 +320,7 @@ public class CassandraSchedulerArchivalDAO extends CassandraBaseDAO
 
     @Override
     public Map<String, WorkflowScheduleExecutionModel> getExecutionsByIds(
-            String orgId, Set<String> executionIds) {
+            Set<String> executionIds) {
         Monitors.recordDaoRequests(DAO_NAME, "getExecutionsByIds", "n/a", "n/a");
         if (executionIds == null || executionIds.isEmpty()) {
             return new HashMap<>();
@@ -341,7 +341,7 @@ public class CassandraSchedulerArchivalDAO extends CassandraBaseDAO
     }
 
     @Override
-    public WorkflowScheduleExecutionModel getExecutionById(String orgId, String executionId) {
+    public WorkflowScheduleExecutionModel getExecutionById(String executionId) {
         Monitors.recordDaoRequests(DAO_NAME, "getExecutionById", "n/a", "n/a");
         Row row = session.execute(selectByIdStmt.bind(executionId)).one();
         return row == null ? null : rowToModel(row);

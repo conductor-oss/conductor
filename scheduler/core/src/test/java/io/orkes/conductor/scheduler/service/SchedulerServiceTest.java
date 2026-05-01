@@ -228,11 +228,8 @@ class SchedulerServiceTest {
         // Verify workflow was started and execution record saved
         verify(workflowService, times(1)).startWorkflow(any(StartWorkflowRequest.class));
 
-        WorkflowScheduleModel schedule =
-                schedulerDAO.findScheduleByName(SchedulerService.DEFAULT_ORG_ID, "test_schedule");
-        long nextRunEpoch =
-                schedulerDAO.getNextRunTimeInEpoch(
-                        SchedulerService.DEFAULT_ORG_ID, schedule.getName());
+        WorkflowScheduleModel schedule = schedulerDAO.findScheduleByName("test_schedule");
+        long nextRunEpoch = schedulerDAO.getNextRunTimeInEpoch(schedule.getName());
         // Next run should be midnight Aug 27 UTC = 1630108800000
         assertEquals(1630108800000L, nextRunEpoch);
         assertEquals(schedule, service.getSchedule("test_schedule"));
@@ -531,7 +528,7 @@ class SchedulerServiceTest {
         testSchedule.setCronExpression("@daily");
         testSchedule.setStartWorkflowRequest(new StartWorkflowRequest());
         testSchedule.setZoneId("America/New_York");
-        when(mockSchedulerDAO.findScheduleByName(any(), eq(testSchedule.getName())))
+        when(mockSchedulerDAO.findScheduleByName(eq(testSchedule.getName())))
                 .thenReturn(testSchedule);
 
         QueueDAO mockQueue = (QueueDAO) service.queueDAO;
@@ -697,12 +694,10 @@ class SchedulerServiceTest {
         when(mockTimeProvider.getUtcTime(any())).thenReturn(utcTime(1630022399500L));
         executor.getExecutorServiceMainQueuePoll(1).getCommand().run();
 
-        List<String> recordIds =
-                schedulerDAO.getPendingExecutionRecordIds(SchedulerService.DEFAULT_ORG_ID);
+        List<String> recordIds = schedulerDAO.getPendingExecutionRecordIds();
         assertFalse(recordIds.isEmpty(), "A FAILED execution record should have been saved");
 
-        WorkflowScheduleExecutionModel record =
-                schedulerDAO.readExecutionRecord(SchedulerService.DEFAULT_ORG_ID, recordIds.get(0));
+        WorkflowScheduleExecutionModel record = schedulerDAO.readExecutionRecord(recordIds.get(0));
         assertNotNull(record);
         assertEquals(WorkflowScheduleExecutionModel.State.FAILED, record.getState());
         assertNotNull(record.getReason());
@@ -774,7 +769,6 @@ class SchedulerServiceTest {
         schedule.setCronExpression("*/10 * * ? * *");
         schedule.setRunCatchupScheduleInstances(true);
         schedule.setStartWorkflowRequest(new StartWorkflowRequest());
-        schedule.setOrgId(SchedulerService.DEFAULT_ORG_ID);
 
         long baseEpoch = 1630000000000L;
         ZonedDateTime currentTime = utcTime(baseEpoch + 35_000);
@@ -1081,7 +1075,6 @@ class SchedulerServiceTest {
             String id = UUID.randomUUID().toString();
             execIds.add(id);
             WorkflowScheduleExecutionModel rec = new WorkflowScheduleExecutionModel();
-            rec.setOrgId(SchedulerService.DEFAULT_ORG_ID);
             rec.setExecutionId(id);
             rec.setScheduleName("sched" + i);
             rec.setWorkflowName("wf" + i);

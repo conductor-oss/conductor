@@ -57,9 +57,6 @@ import static org.junit.Assert.*;
  */
 public abstract class AbstractSchedulerDAOTest {
 
-    /** Default orgId for OSS single-tenant deployments. */
-    protected static final String ORG_ID = "0000";
-
     /** Returns the DAO under test. Subclasses provide this via {@code @Autowired}. */
     protected abstract SchedulerDAO dao();
 
@@ -91,7 +88,7 @@ public abstract class AbstractSchedulerDAOTest {
         WorkflowScheduleModel schedule = buildSchedule("test-schedule", "my-workflow");
         dao().updateSchedule(schedule);
 
-        WorkflowScheduleModel found = dao().findScheduleByName(ORG_ID, "test-schedule");
+        WorkflowScheduleModel found = dao().findScheduleByName("test-schedule");
 
         assertNotNull(found);
         assertEquals("test-schedule", found.getName());
@@ -102,7 +99,7 @@ public abstract class AbstractSchedulerDAOTest {
 
     @Test
     public void testFindScheduleByName_notFound_returnsNull() {
-        assertNull(dao().findScheduleByName(ORG_ID, "no-such-schedule"));
+        assertNull(dao().findScheduleByName("no-such-schedule"));
     }
 
     @Test
@@ -113,7 +110,7 @@ public abstract class AbstractSchedulerDAOTest {
         schedule.setCronExpression("0 0 10 * * *");
         dao().updateSchedule(schedule);
 
-        WorkflowScheduleModel found = dao().findScheduleByName(ORG_ID, "upsert-schedule");
+        WorkflowScheduleModel found = dao().findScheduleByName("upsert-schedule");
         assertEquals("0 0 10 * * *", found.getCronExpression());
     }
 
@@ -123,7 +120,7 @@ public abstract class AbstractSchedulerDAOTest {
         dao().updateSchedule(buildSchedule("sched-b", "wf-b"));
         dao().updateSchedule(buildSchedule("sched-c", "wf-c"));
 
-        assertEquals(3, dao().getAllSchedules(ORG_ID).size());
+        assertEquals(3, dao().getAllSchedules().size());
     }
 
     @Test
@@ -132,7 +129,7 @@ public abstract class AbstractSchedulerDAOTest {
         dao().updateSchedule(buildSchedule("s2", "target-wf"));
         dao().updateSchedule(buildSchedule("s3", "other-wf"));
 
-        List<WorkflowScheduleModel> results = dao().findAllSchedules(ORG_ID, "target-wf");
+        List<WorkflowScheduleModel> results = dao().findAllSchedules("target-wf");
         assertEquals(2, results.size());
         assertTrue(
                 results.stream()
@@ -146,7 +143,7 @@ public abstract class AbstractSchedulerDAOTest {
         dao().updateSchedule(buildSchedule("find-c", "wf-c"));
 
         Map<String, WorkflowScheduleModel> result =
-                dao().findAllByNames(ORG_ID, Set.of("find-a", "find-c", "no-such-schedule"));
+                dao().findAllByNames(Set.of("find-a", "find-c", "no-such-schedule"));
         assertEquals(2, result.size());
         assertTrue(result.containsKey("find-a"));
         assertTrue(result.containsKey("find-c"));
@@ -156,14 +153,14 @@ public abstract class AbstractSchedulerDAOTest {
 
     @Test
     public void testFindAllByNames_emptySet_returnsEmpty() {
-        Map<String, WorkflowScheduleModel> result = dao().findAllByNames(ORG_ID, Set.of());
+        Map<String, WorkflowScheduleModel> result = dao().findAllByNames(Set.of());
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }
 
     @Test
     public void testFindAllByNames_nullSet_returnsEmpty() {
-        Map<String, WorkflowScheduleModel> result = dao().findAllByNames(ORG_ID, null);
+        Map<String, WorkflowScheduleModel> result = dao().findAllByNames(null);
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }
@@ -174,10 +171,10 @@ public abstract class AbstractSchedulerDAOTest {
         WorkflowScheduleExecutionModel exec = buildExecution("to-delete");
         dao().saveExecutionRecord(exec);
 
-        dao().deleteWorkflowSchedule(ORG_ID, "to-delete");
+        dao().deleteWorkflowSchedule("to-delete");
 
-        assertNull(dao().findScheduleByName(ORG_ID, "to-delete"));
-        assertNull(dao().readExecutionRecord(ORG_ID, exec.getExecutionId()));
+        assertNull(dao().findScheduleByName("to-delete"));
+        assertNull(dao().readExecutionRecord(exec.getExecutionId()));
     }
 
     @Test
@@ -187,15 +184,15 @@ public abstract class AbstractSchedulerDAOTest {
             dao().saveExecutionRecord(buildExecution("cascade-delete"));
         }
 
-        dao().deleteWorkflowSchedule(ORG_ID, "cascade-delete");
+        dao().deleteWorkflowSchedule("cascade-delete");
 
-        assertNull(dao().findScheduleByName(ORG_ID, "cascade-delete"));
-        assertTrue(dao().getPendingExecutionRecordIds(ORG_ID).isEmpty());
+        assertNull(dao().findScheduleByName("cascade-delete"));
+        assertTrue(dao().getPendingExecutionRecordIds().isEmpty());
     }
 
     @Test
     public void testDeleteSchedule_nonExistent_doesNotThrow() {
-        dao().deleteWorkflowSchedule(ORG_ID, "does-not-exist");
+        dao().deleteWorkflowSchedule("does-not-exist");
     }
 
     // =========================================================================
@@ -219,7 +216,7 @@ public abstract class AbstractSchedulerDAOTest {
         schedule.setNextRunTime(99999L);
         dao().updateSchedule(schedule);
 
-        WorkflowScheduleModel found = dao().findScheduleByName(ORG_ID, "round-trip-schedule");
+        WorkflowScheduleModel found = dao().findScheduleByName("round-trip-schedule");
 
         assertNotNull(found);
         assertEquals("America/New_York", found.getZoneId());
@@ -254,8 +251,7 @@ public abstract class AbstractSchedulerDAOTest {
         exec.setStartWorkflowRequest(req);
         dao().saveExecutionRecord(exec);
 
-        WorkflowScheduleExecutionModel found =
-                dao().readExecutionRecord(ORG_ID, exec.getExecutionId());
+        WorkflowScheduleExecutionModel found = dao().readExecutionRecord(exec.getExecutionId());
 
         assertNotNull(found);
         assertEquals("wf-instance-456", found.getWorkflowId());
@@ -279,8 +275,7 @@ public abstract class AbstractSchedulerDAOTest {
         WorkflowScheduleExecutionModel exec = buildExecution("exec-test");
         dao().saveExecutionRecord(exec);
 
-        WorkflowScheduleExecutionModel found =
-                dao().readExecutionRecord(ORG_ID, exec.getExecutionId());
+        WorkflowScheduleExecutionModel found = dao().readExecutionRecord(exec.getExecutionId());
         assertNotNull(found);
         assertEquals(exec.getExecutionId(), found.getExecutionId());
         assertEquals("exec-test", found.getScheduleName());
@@ -294,7 +289,7 @@ public abstract class AbstractSchedulerDAOTest {
         dao().saveExecutionRecord(exec);
         dao().saveExecutionRecord(exec);
 
-        List<String> pending = dao().getPendingExecutionRecordIds(ORG_ID);
+        List<String> pending = dao().getPendingExecutionRecordIds();
         assertEquals(
                 "Saving the same execution record twice must not produce duplicate rows",
                 1,
@@ -311,8 +306,7 @@ public abstract class AbstractSchedulerDAOTest {
         exec.setWorkflowId("conductor-wf-123");
         dao().saveExecutionRecord(exec);
 
-        WorkflowScheduleExecutionModel found =
-                dao().readExecutionRecord(ORG_ID, exec.getExecutionId());
+        WorkflowScheduleExecutionModel found = dao().readExecutionRecord(exec.getExecutionId());
         assertEquals(WorkflowScheduleExecutionModel.State.EXECUTED, found.getState());
         assertEquals("conductor-wf-123", found.getWorkflowId());
     }
@@ -329,8 +323,7 @@ public abstract class AbstractSchedulerDAOTest {
                 "com.netflix.conductor.core.exception.NotFoundException: No such workflow\n\tat ...");
         dao().saveExecutionRecord(exec);
 
-        WorkflowScheduleExecutionModel found =
-                dao().readExecutionRecord(ORG_ID, exec.getExecutionId());
+        WorkflowScheduleExecutionModel found = dao().readExecutionRecord(exec.getExecutionId());
         assertEquals(WorkflowScheduleExecutionModel.State.FAILED, found.getState());
         assertNotNull(found.getReason());
         assertTrue(found.getReason().contains("missing-wf"));
@@ -343,9 +336,9 @@ public abstract class AbstractSchedulerDAOTest {
         WorkflowScheduleExecutionModel exec = buildExecution("remove-exec");
         dao().saveExecutionRecord(exec);
 
-        dao().removeExecutionRecord(ORG_ID, exec.getExecutionId());
+        dao().removeExecutionRecord(exec.getExecutionId());
 
-        assertNull(dao().readExecutionRecord(ORG_ID, exec.getExecutionId()));
+        assertNull(dao().readExecutionRecord(exec.getExecutionId()));
     }
 
     @Test
@@ -361,7 +354,7 @@ public abstract class AbstractSchedulerDAOTest {
         dao().saveExecutionRecord(polled2);
         dao().saveExecutionRecord(executed);
 
-        List<String> pendingIds = dao().getPendingExecutionRecordIds(ORG_ID);
+        List<String> pendingIds = dao().getPendingExecutionRecordIds();
         assertEquals(2, pendingIds.size());
         assertTrue(pendingIds.contains(polled1.getExecutionId()));
         assertTrue(pendingIds.contains(polled2.getExecutionId()));
@@ -373,14 +366,14 @@ public abstract class AbstractSchedulerDAOTest {
 
         WorkflowScheduleExecutionModel exec = buildExecution("transition-test");
         dao().saveExecutionRecord(exec);
-        assertTrue(dao().getPendingExecutionRecordIds(ORG_ID).contains(exec.getExecutionId()));
+        assertTrue(dao().getPendingExecutionRecordIds().contains(exec.getExecutionId()));
 
         exec.setState(WorkflowScheduleExecutionModel.State.EXECUTED);
         dao().saveExecutionRecord(exec);
 
         assertFalse(
                 "EXECUTED record must not appear in pending list",
-                dao().getPendingExecutionRecordIds(ORG_ID).contains(exec.getExecutionId()));
+                dao().getPendingExecutionRecordIds().contains(exec.getExecutionId()));
     }
 
     // =========================================================================
@@ -392,15 +385,15 @@ public abstract class AbstractSchedulerDAOTest {
         dao().updateSchedule(buildSchedule("next-run-test", "wf"));
 
         long epochMillis = System.currentTimeMillis() + 60_000;
-        dao().setNextRunTimeInEpoch(ORG_ID, "next-run-test", epochMillis);
+        dao().setNextRunTimeInEpoch("next-run-test", epochMillis);
 
-        assertEquals(epochMillis, dao().getNextRunTimeInEpoch(ORG_ID, "next-run-test"));
+        assertEquals(epochMillis, dao().getNextRunTimeInEpoch("next-run-test"));
     }
 
     @Test
     public void testGetNextRunTime_notSet_returnsMinusOne() {
         dao().updateSchedule(buildSchedule("no-next-run", "wf"));
-        assertEquals(-1L, dao().getNextRunTimeInEpoch(ORG_ID, "no-next-run"));
+        assertEquals(-1L, dao().getNextRunTimeInEpoch("no-next-run"));
     }
 
     @Test
@@ -409,8 +402,8 @@ public abstract class AbstractSchedulerDAOTest {
         dao().updateSchedule(schedule);
 
         long epoch = System.currentTimeMillis() + 60_000;
-        dao().setNextRunTimeInEpoch(ORG_ID, "nrt-reset-test", epoch);
-        assertEquals(epoch, dao().getNextRunTimeInEpoch(ORG_ID, "nrt-reset-test"));
+        dao().setNextRunTimeInEpoch("nrt-reset-test", epoch);
+        assertEquals(epoch, dao().getNextRunTimeInEpoch("nrt-reset-test"));
 
         schedule.setCronExpression("0 0 10 * * *");
         schedule.setNextRunTime(null);
@@ -419,7 +412,7 @@ public abstract class AbstractSchedulerDAOTest {
         assertEquals(
                 "updateSchedule with null nextRunTime must reset the cached column",
                 -1L,
-                dao().getNextRunTimeInEpoch(ORG_ID, "nrt-reset-test"));
+                dao().getNextRunTimeInEpoch("nrt-reset-test"));
     }
 
     // =========================================================================
@@ -433,7 +426,7 @@ public abstract class AbstractSchedulerDAOTest {
             dao().updateSchedule(buildSchedule("volume-sched-" + i, "wf-" + (i % 10)));
         }
 
-        List<WorkflowScheduleModel> all = dao().getAllSchedules(ORG_ID);
+        List<WorkflowScheduleModel> all = dao().getAllSchedules();
         assertEquals(count, all.size());
     }
 
@@ -474,7 +467,7 @@ public abstract class AbstractSchedulerDAOTest {
 
         assertTrue("Unexpected errors during concurrent upserts: " + errors, errors.isEmpty());
 
-        List<WorkflowScheduleModel> all = dao().getAllSchedules(ORG_ID);
+        List<WorkflowScheduleModel> all = dao().getAllSchedules();
         assertEquals(
                 "Concurrent upserts on the same name must yield exactly one row", 1, all.size());
         assertEquals("concurrent-sched", all.get(0).getName());
@@ -488,12 +481,12 @@ public abstract class AbstractSchedulerDAOTest {
     public void testFindAllSchedules_caseSensitive() {
         dao().updateSchedule(buildSchedule("case-sched", "MyWorkflow"));
 
-        assertEquals(1, dao().findAllSchedules(ORG_ID, "MyWorkflow").size());
+        assertEquals(1, dao().findAllSchedules("MyWorkflow").size());
         assertEquals(
                 "Workflow name lookup must be case-sensitive",
                 0,
-                dao().findAllSchedules(ORG_ID, "myworkflow").size());
-        assertEquals(0, dao().findAllSchedules(ORG_ID, "MYWORKFLOW").size());
+                dao().findAllSchedules("myworkflow").size());
+        assertEquals(0, dao().findAllSchedules("MYWORKFLOW").size());
     }
 
     // =========================================================================
@@ -512,7 +505,7 @@ public abstract class AbstractSchedulerDAOTest {
         for (int i = 50; i < 100; i++) {
             queryNames.add("large-set-" + i);
         }
-        Map<String, WorkflowScheduleModel> result = dao().findAllByNames(ORG_ID, queryNames);
+        Map<String, WorkflowScheduleModel> result = dao().findAllByNames(queryNames);
         assertEquals(50, result.size());
         for (String name : allNames) {
             assertTrue(result.containsKey(name));
@@ -521,13 +514,13 @@ public abstract class AbstractSchedulerDAOTest {
 
     @Test
     public void testGetNextRunTime_nonExistentSchedule_returnsMinusOne() {
-        assertEquals(-1L, dao().getNextRunTimeInEpoch(ORG_ID, "non-existent-schedule"));
+        assertEquals(-1L, dao().getNextRunTimeInEpoch("non-existent-schedule"));
     }
 
     @Test
     public void testSetNextRunTime_nonExistentSchedule_doesNotThrow() {
-        dao().setNextRunTimeInEpoch(ORG_ID, "non-existent-schedule", System.currentTimeMillis());
-        assertEquals(-1L, dao().getNextRunTimeInEpoch(ORG_ID, "non-existent-schedule"));
+        dao().setNextRunTimeInEpoch("non-existent-schedule", System.currentTimeMillis());
+        assertEquals(-1L, dao().getNextRunTimeInEpoch("non-existent-schedule"));
     }
 
     // =========================================================================
@@ -540,7 +533,6 @@ public abstract class AbstractSchedulerDAOTest {
         startReq.setVersion(1);
 
         WorkflowScheduleModel schedule = new WorkflowScheduleModel();
-        schedule.setOrgId(ORG_ID);
         schedule.setName(name);
         schedule.setCronExpression("0 0 9 * * MON-FRI");
         schedule.setZoneId("UTC");
@@ -558,7 +550,6 @@ public abstract class AbstractSchedulerDAOTest {
         exec.setExecutionTime(System.currentTimeMillis());
         exec.setState(WorkflowScheduleExecutionModel.State.POLLED);
         exec.setZoneId("UTC");
-        exec.setOrgId(ORG_ID);
         return exec;
     }
 }

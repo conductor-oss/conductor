@@ -69,8 +69,7 @@ import static org.junit.Assert.assertEquals;
             "conductor.app.stack=test",
             "conductor.app.appId=conductor",
             "conductor.app.workflow-execution-lock-enabled=false",
-            "conductor.workflow-execution-lock.type=local_only",
-            "conductor.scheduler.enabled=false"
+            "conductor.workflow-execution-lock.type=local_only"
         })
 public class WorkflowStatusPublisherIntegrationTest {
 

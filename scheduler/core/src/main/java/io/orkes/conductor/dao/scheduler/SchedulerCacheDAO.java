@@ -18,13 +18,13 @@ public interface SchedulerCacheDAO {
 
     void updateSchedule(WorkflowScheduleModel workflowSchedule);
 
-    WorkflowScheduleModel findScheduleByName(String orgId, String name);
+    WorkflowScheduleModel findScheduleByName(String name);
 
     boolean exists(String name);
 
     void deleteWorkflowSchedule(String name);
 
-    long getNextRunTimeInEpoch(String orgId, String scheduleName);
+    long getNextRunTimeInEpoch(String scheduleName);
 
-    void setNextRunTimeInEpoch(String orgId, String scheduleName, long epochMilli);
+    void setNextRunTimeInEpoch(String scheduleName, long epochMilli);
 }

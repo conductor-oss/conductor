@@ -22,20 +22,13 @@ import io.orkes.conductor.dao.scheduler.SchedulerDAO;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleModel;
 
-/**
- * Simple in-memory SchedulerDAO for OSS unit tests. Keyed by orgId + name/id to simulate
- * multi-tenant storage.
- */
+/** Simple in-memory SchedulerDAO for OSS unit tests. Keyed by name/id. */
 public class InMemorySchedulerDAO implements SchedulerDAO {
 
     private final Map<String, WorkflowScheduleModel> schedules = new ConcurrentHashMap<>();
     private final Map<String, WorkflowScheduleExecutionModel> executionRecords =
             new ConcurrentHashMap<>();
     private final Map<String, Long> nextRunTimes = new ConcurrentHashMap<>();
-
-    private String key(String orgId, String name) {
-        return orgId + ":" + name;
-    }
 
     public void clear() {
         schedules.clear();
@@ -45,35 +38,32 @@ public class InMemorySchedulerDAO implements SchedulerDAO {
 
     @Override
     public void updateSchedule(WorkflowScheduleModel workflowSchedule) {
-        schedules.put(
-                key(workflowSchedule.getOrgId(), workflowSchedule.getName()), workflowSchedule);
+        schedules.put(workflowSchedule.getName(), workflowSchedule);
     }
 
     @Override
     public void saveExecutionRecord(WorkflowScheduleExecutionModel executionModel) {
-        executionRecords.put(
-                key(executionModel.getOrgId(), executionModel.getExecutionId()), executionModel);
+        executionRecords.put(executionModel.getExecutionId(), executionModel);
     }
 
     @Override
-    public WorkflowScheduleExecutionModel readExecutionRecord(String orgId, String executionId) {
-        return executionRecords.get(key(orgId, executionId));
+    public WorkflowScheduleExecutionModel readExecutionRecord(String executionId) {
+        return executionRecords.get(executionId);
     }
 
     @Override
-    public void removeExecutionRecord(String orgId, String executionId) {
-        executionRecords.remove(key(orgId, executionId));
+    public void removeExecutionRecord(String executionId) {
+        executionRecords.remove(executionId);
     }
 
     @Override
-    public WorkflowScheduleModel findScheduleByName(String orgId, String name) {
-        return schedules.get(key(orgId, name));
+    public WorkflowScheduleModel findScheduleByName(String name) {
+        return schedules.get(name);
     }
 
     @Override
-    public List<WorkflowScheduleModel> findAllSchedules(String orgId, String workflowName) {
+    public List<WorkflowScheduleModel> findAllSchedules(String workflowName) {
         return schedules.values().stream()
-                .filter(s -> orgId.equals(s.getOrgId()))
                 .filter(
                         s ->
                                 workflowName == null
@@ -83,31 +73,27 @@ public class InMemorySchedulerDAO implements SchedulerDAO {
     }
 
     @Override
-    public void deleteWorkflowSchedule(String orgId, String name) {
-        schedules.remove(key(orgId, name));
+    public void deleteWorkflowSchedule(String name) {
+        schedules.remove(name);
     }
 
     @Override
-    public List<String> getPendingExecutionRecordIds(String orgId) {
-        return executionRecords.entrySet().stream()
-                .filter(e -> e.getKey().startsWith(orgId + ":"))
-                .map(e -> e.getValue().getExecutionId())
+    public List<String> getPendingExecutionRecordIds() {
+        return executionRecords.values().stream()
+                .map(WorkflowScheduleExecutionModel::getExecutionId)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<WorkflowScheduleModel> getAllSchedules(String orgId) {
-        return schedules.values().stream()
-                .filter(s -> orgId.equals(s.getOrgId()))
-                .collect(Collectors.toList());
+    public List<WorkflowScheduleModel> getAllSchedules() {
+        return new ArrayList<>(schedules.values());
     }
 
     @Override
-    public Map<String, WorkflowScheduleModel> findAllByNames(
-            String orgId, Set<String> workflowScheduleNames) {
+    public Map<String, WorkflowScheduleModel> findAllByNames(Set<String> workflowScheduleNames) {
         Map<String, WorkflowScheduleModel> result = new HashMap<>();
         for (String name : workflowScheduleNames) {
-            WorkflowScheduleModel s = schedules.get(key(orgId, name));
+            WorkflowScheduleModel s = schedules.get(name);
             if (s != null) {
                 result.put(name, s);
             }
@@ -116,18 +102,17 @@ public class InMemorySchedulerDAO implements SchedulerDAO {
     }
 
     @Override
-    public long getNextRunTimeInEpoch(String orgId, String scheduleName) {
-        return nextRunTimes.getOrDefault(key(orgId, scheduleName), -1L);
+    public long getNextRunTimeInEpoch(String scheduleName) {
+        return nextRunTimes.getOrDefault(scheduleName, -1L);
     }
 
     @Override
-    public void setNextRunTimeInEpoch(String orgId, String name, long toEpochMilli) {
-        nextRunTimes.put(key(orgId, name), toEpochMilli);
+    public void setNextRunTimeInEpoch(String name, long toEpochMilli) {
+        nextRunTimes.put(name, toEpochMilli);
     }
 
     @Override
     public SearchResult<WorkflowScheduleModel> searchSchedules(
-            String orgId,
             String workflowName,
             String scheduleName,
             Boolean paused,
@@ -137,7 +122,6 @@ public class InMemorySchedulerDAO implements SchedulerDAO {
             List<String> sortOptions) {
         List<WorkflowScheduleModel> filtered =
                 schedules.values().stream()
-                        .filter(s -> orgId.equals(s.getOrgId()))
                         .filter(
                                 s ->
                                         workflowName == null
