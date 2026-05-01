@@ -316,10 +316,8 @@ public class RedisSchedulerDAO extends BaseDynoDAO implements SchedulerDAO {
     @Override
     public void setNextRunTimeInEpoch(String scheduleName, long epochMillis) {
         Monitors.recordDaoRequests(DAO_NAME, "setNextRunTimeInEpoch", "n/a", "n/a");
-        // Only set if the schedule exists
-        if (!jedisProxy.hexists(keyDefs(), scheduleName)) {
-            return;
-        }
+        // Store for any key: multi-cron schedules key by JSON payload strings (not schedule names)
+        // so the previous hexists(SCHEDULER.DEFS) guard silently dropped those writes.
         jedisProxy.hset(keyNextRun(), scheduleName, String.valueOf(epochMillis));
     }
 

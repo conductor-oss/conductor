@@ -55,17 +55,18 @@ public class SqliteSchedulerDAO implements SchedulerDAO {
 
     @Override
     public void updateSchedule(WorkflowScheduleModel schedule) {
-        String sql =
-                "INSERT OR REPLACE INTO scheduler (scheduler_name, workflow_name, json_data, next_run_time) "
-                        + "VALUES (?, ?, ?, ?)";
         jdbc.update(
-                sql,
+                "INSERT OR REPLACE INTO scheduler (scheduler_name, workflow_name, json_data, next_run_time) "
+                        + "VALUES (?, ?, ?, ?)",
                 schedule.getName(),
                 schedule.getStartWorkflowRequest() != null
                         ? schedule.getStartWorkflowRequest().getName()
                         : null,
                 toJson(schedule),
                 schedule.getNextRunTime());
+        // Reset the cached next-run-time so SchedulerService can set a fresh value
+        // via setNextRunTimeInEpoch after recomputing the schedule.
+        jdbc.update("DELETE FROM scheduler_next_run WHERE key = ?", schedule.getName());
     }
 
     @Override
@@ -106,6 +107,7 @@ public class SqliteSchedulerDAO implements SchedulerDAO {
     @Override
     public void deleteWorkflowSchedule(String name) {
         jdbc.update("DELETE FROM scheduler_execution WHERE schedule_name = ?", name);
+        jdbc.update("DELETE FROM scheduler_next_run WHERE key = ?", name);
         jdbc.update("DELETE FROM scheduler WHERE scheduler_name = ?", name);
     }
 
@@ -144,8 +146,11 @@ public class SqliteSchedulerDAO implements SchedulerDAO {
 
     @Override
     public long getNextRunTimeInEpoch(String scheduleName) {
-        String sql = "SELECT next_run_time FROM scheduler WHERE scheduler_name = ?";
-        List<Long> results = jdbc.queryForList(sql, Long.class, scheduleName);
+        List<Long> results =
+                jdbc.queryForList(
+                        "SELECT epoch_millis FROM scheduler_next_run WHERE key = ?",
+                        Long.class,
+                        scheduleName);
         if (results.isEmpty() || results.get(0) == null) {
             return -1L;
         }
@@ -154,10 +159,12 @@ public class SqliteSchedulerDAO implements SchedulerDAO {
 
     @Override
     public void setNextRunTimeInEpoch(String scheduleName, long epochMillis) {
+        // INSERT OR REPLACE accepts any key: schedule names (single-cron) and JSON payload
+        // strings like {"name":"s","cron":"...","id":0} (multi-cron) both work.
         jdbc.update(
-                "UPDATE scheduler SET next_run_time = ? WHERE scheduler_name = ?",
-                epochMillis,
-                scheduleName);
+                "INSERT OR REPLACE INTO scheduler_next_run (key, epoch_millis) VALUES (?, ?)",
+                scheduleName,
+                epochMillis);
     }
 
     @Override

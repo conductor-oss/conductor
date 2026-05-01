@@ -55,24 +55,33 @@ public class MySQLSchedulerDAO extends MySQLBaseDAO implements SchedulerDAO {
     @Override
     public void updateSchedule(WorkflowScheduleModel schedule) {
         Monitors.recordDaoRequests(DAO_NAME, "updateSchedule", "n/a", "n/a");
-        String sql =
-                "INSERT INTO scheduler (scheduler_name, workflow_name, json_data, next_run_time) "
-                        + "VALUES (?, ?, ?, ?) "
-                        + "ON DUPLICATE KEY UPDATE "
-                        + "    workflow_name = VALUES(workflow_name), "
-                        + "    json_data = VALUES(json_data), "
-                        + "    next_run_time = VALUES(next_run_time)";
-        executeWithTransaction(
-                sql,
-                q -> {
-                    q.addParameter(schedule.getName())
-                            .addParameter(
-                                    schedule.getStartWorkflowRequest() != null
-                                            ? schedule.getStartWorkflowRequest().getName()
-                                            : null)
-                            .addParameter(toJson(schedule));
-                    q.addParameter(schedule.getNextRunTime());
-                    q.executeUpdate();
+        withTransaction(
+                tx -> {
+                    execute(
+                            tx,
+                            "INSERT INTO scheduler (scheduler_name, workflow_name, json_data, next_run_time) "
+                                    + "VALUES (?, ?, ?, ?) "
+                                    + "ON DUPLICATE KEY UPDATE "
+                                    + "    workflow_name = VALUES(workflow_name), "
+                                    + "    json_data = VALUES(json_data), "
+                                    + "    next_run_time = VALUES(next_run_time)",
+                            q -> {
+                                q.addParameter(schedule.getName())
+                                        .addParameter(
+                                                schedule.getStartWorkflowRequest() != null
+                                                        ? schedule.getStartWorkflowRequest()
+                                                                .getName()
+                                                        : null)
+                                        .addParameter(toJson(schedule))
+                                        .addParameter(schedule.getNextRunTime())
+                                        .executeUpdate();
+                            });
+                    // Reset the cached next-run-time so SchedulerService can set a fresh value
+                    // via setNextRunTimeInEpoch after recomputing the schedule.
+                    execute(
+                            tx,
+                            "DELETE FROM scheduler_next_run WHERE `key` = ?",
+                            q -> q.addParameter(schedule.getName()).executeDelete());
                 });
     }
 
@@ -137,6 +146,10 @@ public class MySQLSchedulerDAO extends MySQLBaseDAO implements SchedulerDAO {
                             q -> q.addParameter(name).executeDelete());
                     execute(
                             tx,
+                            "DELETE FROM scheduler_next_run WHERE `key` = ?",
+                            q -> q.addParameter(name).executeDelete());
+                    execute(
+                            tx,
                             "DELETE FROM scheduler WHERE scheduler_name = ?",
                             q -> q.addParameter(name).executeDelete());
                 });
@@ -194,7 +207,7 @@ public class MySQLSchedulerDAO extends MySQLBaseDAO implements SchedulerDAO {
     @Override
     public long getNextRunTimeInEpoch(String scheduleName) {
         Monitors.recordDaoRequests(DAO_NAME, "getNextRunTimeInEpoch", "n/a", "n/a");
-        String sql = "SELECT next_run_time FROM scheduler WHERE scheduler_name = ?";
+        String sql = "SELECT epoch_millis FROM scheduler_next_run WHERE `key` = ?";
         Long result =
                 queryWithTransaction(
                         sql, q -> q.addParameter(scheduleName).executeAndFetchFirst(Long.class));
@@ -204,9 +217,12 @@ public class MySQLSchedulerDAO extends MySQLBaseDAO implements SchedulerDAO {
     @Override
     public void setNextRunTimeInEpoch(String scheduleName, long epochMillis) {
         Monitors.recordDaoRequests(DAO_NAME, "setNextRunTimeInEpoch", "n/a", "n/a");
+        // Upsert into scheduler_next_run so any key is accepted: schedule names (single-cron) and
+        // JSON payload strings like {"name":"s","cron":"...","id":0} (multi-cron) both work.
         executeWithTransaction(
-                "UPDATE scheduler SET next_run_time = ? WHERE scheduler_name = ?",
-                q -> q.addParameter(epochMillis).addParameter(scheduleName).executeUpdate());
+                "INSERT INTO scheduler_next_run (`key`, epoch_millis) VALUES (?, ?) "
+                        + "ON DUPLICATE KEY UPDATE epoch_millis = VALUES(epoch_millis)",
+                q -> q.addParameter(scheduleName).addParameter(epochMillis).executeUpdate());
     }
 
     @Override

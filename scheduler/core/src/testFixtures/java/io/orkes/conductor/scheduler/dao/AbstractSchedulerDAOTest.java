@@ -518,9 +518,52 @@ public abstract class AbstractSchedulerDAOTest {
     }
 
     @Test
-    public void testSetNextRunTime_nonExistentSchedule_doesNotThrow() {
-        dao().setNextRunTimeInEpoch("non-existent-schedule", System.currentTimeMillis());
-        assertEquals(-1L, dao().getNextRunTimeInEpoch("non-existent-schedule"));
+    public void testSetNextRunTime_arbitraryKey_persists() {
+        // setNextRunTimeInEpoch must store any key, not only registered schedule names.
+        // Multi-cron schedules use JSON payload keys; rejecting them was the root cause of
+        // the misfire bug (schedules firing on every poll cycle instead of on their cron time).
+        long epoch = System.currentTimeMillis() + 60_000;
+        dao().setNextRunTimeInEpoch("non-existent-schedule", epoch);
+        assertEquals(epoch, dao().getNextRunTimeInEpoch("non-existent-schedule"));
+    }
+
+    /**
+     * BUG REGRESSION — multi-cron next-run-time must survive a DAO round-trip.
+     *
+     * <p>When a schedule carries multiple cron expressions, {@code SchedulerService} keys
+     * next-run-time entries by a JSON payload string (e.g.
+     * {@code {"name":"s","cron":"0 0 8 * * ? UTC","id":0}}) rather than by the schedule name.
+     * The DAO must store and retrieve that value transparently.
+     *
+     * <p>SQL backends ({@code UPDATE scheduler SET next_run_time = ? WHERE scheduler_name = ?})
+     * silently update 0 rows for a JSON payload key, so {@code getNextRunTimeInEpoch} returns
+     * {@code -1}. {@code SchedulerService} then maps {@code -1} to epoch 1970 and deduces that
+     * the schedule is perpetually overdue, causing every multi-cron message to fire on every poll
+     * cycle instead of waiting for its cron time.
+     *
+     * <p>This test will FAIL against the current SQL DAO implementations, confirming the bug.
+     * It should pass once the DAO is fixed to support arbitrary payload keys.
+     */
+    @Test
+    public void testSetAndGetNextRunTime_withMultiCronPayloadKey() {
+        // This is the exact key format SchedulerService uses for multi-cron schedule entries:
+        // buildMultiCronPayload(scheduleName, cronExpr + " " + zoneId, index)
+        String multiCronPayloadKey =
+                "{\"name\":\"multi-cron-sched\",\"cron\":\"0 0 8 * * ? UTC\",\"id\":0}";
+        long futureEpoch = System.currentTimeMillis() + 3_600_000L; // 1 hour from now
+
+        dao().setNextRunTimeInEpoch(multiCronPayloadKey, futureEpoch);
+
+        long stored = dao().getNextRunTimeInEpoch(multiCronPayloadKey);
+        assertEquals(
+                "setNextRunTimeInEpoch must persist multi-cron JSON payload keys. "
+                        + "SQL DAOs currently use UPDATE WHERE scheduler_name=? which silently "
+                        + "skips rows that don't exist, dropping the write. "
+                        + "As a result getNextRunTimeInEpoch returns -1, SchedulerService maps "
+                        + "that to epoch 1970 and treats the schedule as perpetually overdue, "
+                        + "causing multi-cron schedules to fire on every poll cycle.",
+                futureEpoch,
+                stored);
     }
 
     // =========================================================================

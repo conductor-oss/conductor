@@ -1265,6 +1265,102 @@ class SchedulerServiceTest {
         }
     }
 
+    /**
+     * BUG REGRESSION — multi-cron per-cron next-run-time must be stored in the DAO and must not
+     * cause the schedule to fire on every poll cycle.
+     *
+     * <p>After a multi-cron message fires, {@code SchedulerService} calls
+     * {@code schedulerDAO.setNextRunTimeInEpoch(jsonPayload, nextEpoch)} where {@code jsonPayload}
+     * is a JSON string like {@code {"name":"s","cron":"... UTC","id":0}} — not the schedule name.
+     * The DAO must persist that value.
+     *
+     * <p>Redis and SQL DAO implementations silently drop this write (hexists guard / UPDATE with
+     * 0 rows matched), so a subsequent {@code getNextRunTimeInEpoch(jsonPayload)} returns {@code
+     * -1}. {@code SchedulerService} interprets -1 as epoch 1970, deduces the schedule is
+     * perpetually overdue, and fires the workflow on every poll cycle.
+     *
+     * <p>This test runs with {@code InMemorySchedulerDAO}, which correctly supports arbitrary
+     * keys. It documents what correct behavior looks like and serves as a regression test once
+     * the Redis/SQL DAOs are fixed. The companion DAO-level tests
+     * ({@code testSetAndGetNextRunTime_withMultiCronPayloadKey}) directly reproduce the bug in
+     * each storage backend.
+     */
+    @Test
+    @DisplayName(
+            "multi-cron: per-cron next-run-time is stored in DAO and schedule does not misfire")
+    void multiCronNextRunTimeIsStoredAfterCreateAndAfterFiring() throws Exception {
+        SchedulerTimeProvider mockTimeProvider = Mockito.mock(SchedulerTimeProvider.class);
+        when(redisMonitor.isMemoryCritical()).thenReturn(false);
+        when(redisMonitor.getUsagePercentage()).thenReturn(10);
+
+        // t0 = 2021-08-26T22:46:40Z  (cron "59 59 23 * * ?" fires at 23:59:59, ~73 min away)
+        long t0 = 1630000000000L;
+        when(mockTimeProvider.getUtcTime(any())).thenReturn(utcTime(t0));
+        SchedulerService service = createService(mockTimeProvider);
+        service.start();
+
+        WorkflowSchedule schedule = new WorkflowSchedule();
+        schedule.setName("multi_cron_nrt_bug");
+        schedule.setStartWorkflowRequest(new StartWorkflowRequest());
+        schedule.getStartWorkflowRequest().setName("wf");
+
+        CronSchedule cs = new CronSchedule();
+        cs.setCronExpression("59 59 23 * * ?"); // fires at 23:59:59 UTC each day
+        cs.setZoneId("UTC");
+        schedule.setCronSchedules(Collections.singletonList(cs));
+
+        service.createOrUpdateWorkflowSchedule(schedule);
+
+        // After creation: the scheduler queue must contain exactly one JSON payload message.
+        Map<String, ?> schedulerQueue =
+                queueDAO.dummyQueues.get(CONDUCTOR_SYSTEM_SCHEDULER_QUEUE_NAME);
+        assertEquals(1, schedulerQueue.size());
+        String queueMsgId = schedulerQueue.keySet().iterator().next();
+        assertTrue(
+                queueMsgId.startsWith("{"),
+                "Queue message for multi-cron must be a JSON payload, got: " + queueMsgId);
+
+        // After creation: the per-cron next-run-time must be stored in the DAO under the JSON
+        // payload key (not the schedule name). This is what SQL/Redis DAOs currently drop.
+        long storedAtCreate = schedulerDAO.getNextRunTimeInEpoch(queueMsgId);
+        assertTrue(
+                storedAtCreate > t0,
+                "After createOrUpdateWorkflowSchedule, the per-cron next-run-time must be "
+                        + "stored under the JSON payload key. Got: "
+                        + storedAtCreate
+                        + ". If this is -1 the DAO is silently dropping the write (the bug).");
+
+        // Advance time to 500 ms after 23:59:59 UTC — the cron is now due.
+        // fireTime corresponds to 2021-08-26T23:59:59.500Z
+        long fireTime = 1630022399500L;
+        when(mockTimeProvider.getUtcTime(any())).thenReturn(utcTime(fireTime));
+
+        // Trigger one handler iteration; it pops the queue message and should fire the workflow.
+        executor.getExecutorServiceMainQueuePoll(1).getCommand().run();
+
+        // The workflow must have fired exactly once.
+        verify(workflowService, times(1)).startWorkflow(any());
+
+        // After firing: the per-cron next-run-time must be updated to the NEXT occurrence of
+        // "59 59 23 * * ?" — i.e., 2021-08-27T23:59:59Z = 1630108799000L, which is > fireTime.
+        // If the DAO dropped the write (the bug), getNextRunTimeInEpoch returns -1 and the next
+        // handler call will see offsetSeconds ≪ 0 and fire again immediately.
+        long storedAfterFire = schedulerDAO.getNextRunTimeInEpoch(queueMsgId);
+        assertTrue(
+                storedAfterFire > fireTime,
+                "After the multi-cron message fires, the per-cron next-run-time must be updated "
+                        + "to the next cron occurrence (a future epoch > fireTime="
+                        + fireTime
+                        + "). Got: "
+                        + storedAfterFire
+                        + ". If this is -1 the DAO is silently dropping writes and multi-cron "
+                        + "schedules will fire on every poll cycle (the bug).");
+
+        // The second handler call must NOT fire the workflow again — the schedule is not due yet.
+        executor.getExecutorServiceMainQueuePoll(1).getCommand().run();
+        verify(workflowService, times(1)).startWorkflow(any()); // still exactly 1 invocation
+    }
+
     // -------------------------------------------------------------------------
     // Dynamic jitter / burst estimate tests
     // -------------------------------------------------------------------------
