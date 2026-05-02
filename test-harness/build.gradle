@@ -60,6 +60,28 @@ tasks.withType(Test)  {
     maxParallelForks = 1
 }
 
+// Scheduler integration tests use a separate Spring context (SQLite-backed SchedulerTestApp)
+// that pollutes the shared ConductorTestApp context used by the Spock specs.
+// Run them in a dedicated task with JVM isolation.
+test {
+    filter {
+        excludeTestsMatching 'conductor.test.scheduler.SchedulerIntegrationTest'
+    }
+}
+
+tasks.register('schedulerTest', Test) {
+    description = 'Runs scheduler integration tests in an isolated JVM'
+    group = 'verification'
+    filter {
+        includeTestsMatching 'conductor.test.scheduler.SchedulerIntegrationTest'
+    }
+    mustRunAfter test
+}
+
+tasks.named('check') {
+    dependsOn 'schedulerTest'
+}
+
 // Spotless cannot format files outside the project dir. The functionalTest source set
 // references e2e sources directly, so restrict Spotless to project-local sources only.
 afterEvaluate {

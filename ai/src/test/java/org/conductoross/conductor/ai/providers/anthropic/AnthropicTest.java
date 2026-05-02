@@ -60,7 +60,7 @@ class AnthropicTest {
         @Test
         void testGetChatOptions_basicOptions() {
             ChatCompletion input = new ChatCompletion();
-            input.setModel("claude-3-haiku-20240307");
+            input.setModel("claude-haiku-4-5-20251001");
             input.setMaxTokens(1000);
             input.setTemperature(0.7);
             input.setTopP(0.9);
@@ -86,7 +86,7 @@ class AnthropicTest {
         @Test
         void testGetChatOptions_withTools() {
             ChatCompletion input = new ChatCompletion();
-            input.setModel("claude-3-haiku-20240307");
+            input.setModel("claude-haiku-4-5-20251001");
             input.setMaxTokens(1000);
 
             ToolSpec tool = new ToolSpec();
@@ -124,7 +124,7 @@ class AnthropicTest {
         @Test
         void testChatCompletion() {
             ChatCompletion input = new ChatCompletion();
-            input.setModel("claude-3-haiku-20240307");
+            input.setModel("claude-haiku-4-5-20251001");
             input.setMaxTokens(100);
             input.setTemperature(0.7);
 
