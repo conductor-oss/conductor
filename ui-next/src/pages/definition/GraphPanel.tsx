@@ -1,39 +1,61 @@
-import { useCallback, useState } from "react";
 import { Box } from "@mui/material";
-import { useSelector } from "@xstate/react";
-import { Flow } from "components/features/flow/Flow";
-import { useLocalCopyMachine } from "./ConfirmLocalCopyDialog/state/hook";
-import { useMemo } from "react";
-import ProgressIcon from "./progressicons";
 import { X } from "@phosphor-icons/react";
-import { DefinitionMachineEventTypes } from "pages/definition/state/types";
-import MuiAlert from "components/ui/MuiAlert";
-import { usePanelChanges } from "pages/definition/state/usePanelChanges";
-import { selectIsOpenedEdge } from "components/features/flow/state/selectors";
+import { useSelector } from "@xstate/react";
 import AddTaskSidebar from "components/features/flow/components/RichAddTaskMenu/AddTaskSidebar";
+import { Flow } from "components/features/flow/Flow";
+import { selectIsOpenedEdge } from "components/features/flow/state/selectors";
+import MuiAlert from "components/ui/MuiAlert";
+import {
+  DefinitionMachineEventTypes,
+  WorkflowDefinitionEvents,
+} from "pages/definition/state/types";
+import { LocalCopyMachineEvents } from "./ConfirmLocalCopyDialog/state/types";
+import { usePanelChanges } from "pages/definition/state/usePanelChanges";
+import { useCallback, useMemo, useState } from "react";
+import { ActorRef } from "xstate";
+import { RichAddTaskMenuEvents } from "components/features/flow/components/RichAddTaskMenu/state";
+import { FlowEvents } from "components/features/flow/state";
+import { useLocalCopyMachine } from "./ConfirmLocalCopyDialog/state/hook";
+import ProgressIcon from "./progressicons";
 
-const GraphPanel = ({ definitionActor }) => {
-  const { leftPanelExpanded, setLeftPanelExpanded } =
+type RichAddTaskMenuActorRef = ActorRef<RichAddTaskMenuEvents>;
+type FlowActorRef = ActorRef<FlowEvents> & {
+  children: Map<string, RichAddTaskMenuActorRef>;
+};
+
+const GraphPanel = ({
+  definitionActor,
+}: {
+  definitionActor: ActorRef<WorkflowDefinitionEvents>;
+}) => {
+  const { leftPanelExpanded, setLeftPanelExpanded: _setLeftPanelExpanded } =
     usePanelChanges(definitionActor);
   const localCopyMessage = useSelector(
     definitionActor,
     (state) => state.context.localCopyMessage,
   );
-  const flowActor = definitionActor.children?.get("flowMachine");
+  const flowActor = (
+    definitionActor as ActorRef<WorkflowDefinitionEvents> & {
+      children: Map<string, FlowActorRef>;
+    }
+  ).children?.get("flowMachine");
   const [isHovered, setIsHovered] = useState(false);
 
-  const openedEdge = useSelector(flowActor, selectIsOpenedEdge);
+  const openedEdge = useSelector(flowActor!, selectIsOpenedEdge);
 
   const richAddTaskMenuActor = flowActor?.children.get(
     "richAddTaskMenuMachine",
   );
 
-  const menuType = useSelector(richAddTaskMenuActor || flowActor, (state) =>
-    richAddTaskMenuActor ? state.context.menuType : undefined,
+  const menuType = useSelector(
+    richAddTaskMenuActor || flowActor!,
+    (state: { context: { menuType?: "quick" | "advanced" } }) =>
+      richAddTaskMenuActor ? state.context.menuType : undefined,
   );
 
-  const [{ handleRemoveLocalCopyMessage }] =
-    useLocalCopyMachine(definitionActor);
+  const [{ handleRemoveLocalCopyMessage }] = useLocalCopyMachine(
+    definitionActor as unknown as ActorRef<LocalCopyMachineEvents>,
+  );
   const handleResetRequest = useCallback(() => {
     definitionActor.send({ type: DefinitionMachineEventTypes.RESET_EVT });
   }, [definitionActor]);
@@ -103,23 +125,18 @@ const GraphPanel = ({ definitionActor }) => {
               <Flow
                 flowActor={flowActor}
                 leftPanelExpanded={leftPanelExpanded}
-                setLeftPanelExpanded={setLeftPanelExpanded}
               />
             </Box>
 
             <AddTaskSidebar
               open={openedEdge}
-              richAddTaskMenuActor={flowActor?.children.get(
-                "richAddTaskMenuMachine",
-              )}
+              richAddTaskMenuActor={
+                flowActor.children.get("richAddTaskMenuMachine")!
+              }
             />
           </Box>
         ) : (
-          <Flow
-            flowActor={flowActor}
-            leftPanelExpanded={leftPanelExpanded}
-            setLeftPanelExpanded={setLeftPanelExpanded}
-          />
+          <Flow flowActor={flowActor} leftPanelExpanded={leftPanelExpanded} />
         ))}
     </Box>
   );

@@ -1,13 +1,15 @@
 import { Box, Tooltip } from "@mui/material";
 import { List } from "@phosphor-icons/react";
-
+import { IconButton, NavLink } from "components";
 import { useAuth } from "components/features/auth";
+import AppLogo from "plugins/AppLogo";
 import { FEATURES, featureFlags } from "utils";
 
-import { IconButton, NavLink } from "components";
-import AppLogo from "plugins/AppLogo";
-
-export default function AppBarModules({ handleDrawBarOpen }) {
+export default function AppBarModules({
+  handleDrawBarOpen,
+}: {
+  handleDrawBarOpen: () => void;
+}) {
   const { user } = useAuth();
 
   if (!featureFlags.isEnabled(FEATURES.ACCESS_MANAGEMENT)) {
@@ -40,7 +42,7 @@ export default function AppBarModules({ handleDrawBarOpen }) {
       >
         <NavLink
           path="/"
-          sx={{
+          style={{
             display: "flex",
             alignItems: "center",
             height: "100%",

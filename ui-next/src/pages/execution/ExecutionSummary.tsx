@@ -1,4 +1,6 @@
 import { KeyValueTable, NavLink, Paper } from "components";
+import { type KeyValueTableRow } from "components/KeyValueTable";
+import { WorkflowExecution } from "types/Execution";
 
 const style = {
   paper: {
@@ -6,9 +8,13 @@ const style = {
   },
 };
 
-export default function ExecutionSummary({ execution }) {
+export default function ExecutionSummary({
+  execution,
+}: {
+  execution: WorkflowExecution;
+}) {
   // To accommodate unexecuted tasks, read type & name out of workflowTask
-  const data = [
+  const data: KeyValueTableRow[] = [
     { label: "Workflow id", value: execution.workflowId },
     { label: "Status", value: execution.status, type: "status" },
     { label: "Version", value: execution.workflowVersion },
@@ -16,7 +22,7 @@ export default function ExecutionSummary({ execution }) {
     { label: "End time", value: execution.endTime, type: "date" },
     {
       label: "Duration",
-      value: execution.endTime - execution.startTime,
+      value: Number(execution.endTime) - Number(execution.startTime),
       type: "duration",
     },
   ];

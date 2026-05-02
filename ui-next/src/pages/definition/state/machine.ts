@@ -401,10 +401,13 @@ export const workflowDefinitionMachine = createMachine<
                         },
                       ],
                       [CodeMachineEventTypes.HIGHLIGHT_TEXT_REFERENCE]: {
-                        actions: "forwardToCodeMachine",
+                        actions: ["forwardToCodeMachine", "collapseAgent"],
                       },
                       [CodeMachineEventTypes.JUMP_TO_FIRST_ERROR]: {
-                        actions: "forwardToCodeMachine",
+                        actions: ["forwardToCodeMachine", "collapseAgent"],
+                      },
+                      [DefinitionMachineEventTypes.WORKFLOW_FROM_AGENT]: {
+                        actions: "forwardWorkflowToCodeMachine",
                       },
                     },
                   },
@@ -876,7 +879,11 @@ export const workflowDefinitionMachine = createMachine<
                     target: ".tabFocus",
                   },
                   [CodeMachineEventTypes.HIGHLIGHT_TEXT_REFERENCE]: {
-                    actions: ["persistCodeReference", "fireChangeToCodeTab"],
+                    actions: [
+                      "persistCodeReference",
+                      "fireChangeToCodeTab",
+                      "collapseAgent",
+                    ],
                   },
                   [DefinitionMachineEventTypes.HANDLE_LEFT_PANEL_EXPANDED]: {
                     target: "closed",
@@ -972,6 +979,9 @@ export const workflowDefinitionMachine = createMachine<
                   },
                   [DefinitionMachineEventTypes.MOVE_TASK_EVT]: {
                     actions: ["moveTaskFromLocation", "selectMovedTask"],
+                    target: "validateAndNotifyUpdates",
+                  },
+                  [DefinitionMachineEventTypes.WORKFLOW_FROM_AGENT]: {
                     target: "validateAndNotifyUpdates",
                   },
                   [FlowActionTypes.SELECT_NODE_EVT]: {
@@ -1230,8 +1240,7 @@ export const workflowDefinitionMachine = createMachine<
                   [DefinitionMachineEventTypes.WORKFLOW_FROM_AGENT]: {
                     actions: [
                       "persistWorkflowChanges",
-                      "notifyFlowUpdatesFromEvent",
-                      "sendWorkflowChangesToMetadataMachine",
+                      "sendWorkflowChangesToMetadataMachineFromEvent",
                     ],
                     target: "idle",
                   },

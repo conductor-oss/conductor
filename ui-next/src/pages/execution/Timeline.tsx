@@ -1,50 +1,61 @@
 import ExpandIcon from "@mui/icons-material/Expand";
 import { Box, Tooltip, Typography } from "@mui/material";
+import { ZoomControlsButton } from "components/ZoomControlsButton";
 import _debounce from "lodash/debounce";
 import _first from "lodash/first";
-import _flow from "lodash/flow";
-import _identity from "lodash/identity";
 import _last from "lodash/last";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Timeline from "react-vis-timeline";
-import { ZoomControlsButton } from "components/ZoomControlsButton";
 import { colors } from "theme/tokens/variables";
+import { ExecutionTask } from "types/Execution";
 import { formatDate } from "utils";
 import NoAnimRangeSlider from "./NoAnimRangeSlider";
 import { processTasksToGroupsAndItems } from "./timelineUtils";
 
 import "./timeline.scss";
 
-function valuetext(value) {
-  const valueText = formatDate(value, "dd-MM-yyyy hh:mm:ss SSS");
-  return valueText;
+type ExecutionStatusMap = Record<string, { related?: unknown }>;
+
+const EMPTY_STATUS_MAP: ExecutionStatusMap = {};
+
+interface VisMoment {
+  format: (formatStr: string) => string;
+}
+
+interface TimelineComponentProps {
+  tasks: ExecutionTask[];
+  onClick: (task: { ref: string; taskId: string }) => void;
+  selectedTask?: { taskId?: string } | null;
+  executionStatusMap?: ExecutionStatusMap;
+}
+
+function valuetext(value: number): string {
+  return formatDate(value, "dd-MM-yyyy hh:mm:ss SSS");
 }
 
 export default function TimelineComponent({
   tasks,
   onClick,
   selectedTask,
-  executionStatusMap,
-}) {
-  const timelineRef = useRef();
+  executionStatusMap = EMPTY_STATUS_MAP,
+}: TimelineComponentProps) {
+  const timelineRef = useRef<Timeline>(null);
 
-  const handleChange = (event, newValue) => {
-    setRangeSliderValue(newValue);
-    timelineRef.current.timeline.setWindow(newValue[0], newValue[1], {
+  const handleChange = (_event: Event, newValue: number | number[]) => {
+    const range = newValue as number[];
+    setRangeSliderValue(range);
+    timelineRef.current?.timeline.setWindow(range[0], range[1], {
       animation: false,
     });
   };
 
-  let selectedId = null;
-  if (selectedTask) {
-    selectedId = selectedTask.taskId;
-  }
+  const selectedId: string | null = selectedTask?.taskId ?? null;
 
   const [groups, items] = useMemo(() => {
     return processTasksToGroupsAndItems(tasks, executionStatusMap);
   }, [tasks, executionStatusMap]);
 
-  const handleClick = (e) => {
+  const handleClick = (e: { group: string; item: string; what: string }) => {
     const { group, item, what } = e;
     if (group && what !== "background") {
       onClick({
@@ -55,10 +66,12 @@ export default function TimelineComponent({
   };
 
   const currentTime = new Date();
-  const minDate = items.length > 0 ? _first(items)?.start : currentTime;
-  const lastDate = items.length > 0 ? _last(items)?.end : currentTime;
+  const minDate: Date =
+    items.length > 0 ? (_first(items)?.start ?? currentTime) : currentTime;
+  const lastDate: Date =
+    items.length > 0 ? (_last(items)?.end ?? currentTime) : currentTime;
   // the last item isn't necessary the latest to finish
-  let lastEnd = lastDate;
+  let lastEnd: Date = lastDate;
   items.forEach((i) => {
     if (i.end.getTime() > lastEnd.getTime()) {
       lastEnd = i.end;
@@ -71,7 +84,7 @@ export default function TimelineComponent({
   const maxDate = new Date(lastEnd.getTime() + endBuffer);
 
   const onFit = () => {
-    timelineRef.current.timeline.fit();
+    timelineRef.current?.timeline.fit();
     setRangeSliderValue([minDate.getTime(), maxDate.getTime()]);
   };
 
@@ -81,15 +94,14 @@ export default function TimelineComponent({
   ]);
 
   const debouncedSetRangeSliderValue = useRef(
-    _debounce((e) => {
+    _debounce((e: { start: Date; end: Date; byUser: boolean }) => {
       if (e.byUser) {
         setRangeSliderValue([e.start.getTime(), e.end.getTime()]);
       }
     }, 100),
-    [setRangeSliderValue],
   );
 
-  if (timelineRef.current) {
+  if (timelineRef.current?.timeline) {
     timelineRef.current.timeline.off(
       "rangechanged",
       debouncedSetRangeSliderValue.current,
@@ -128,9 +140,9 @@ export default function TimelineComponent({
           <Tooltip title="Zoom to Fit">
             <ZoomControlsButton id="fit-screen-button" onClick={onFit}>
               <ExpandIcon
-                color={colors.greyText}
                 sx={{
                   transform: "rotate(90deg)",
+                  color: colors.greyText,
                 }}
               />
             </ZoomControlsButton>
@@ -151,7 +163,7 @@ export default function TimelineComponent({
       >
         <Timeline
           ref={timelineRef}
-          selection={selectedId}
+          selection={selectedId != null ? [selectedId] : []}
           clickHandler={handleClick}
           options={{
             orientation: "top",
@@ -161,10 +173,10 @@ export default function TimelineComponent({
             min: minDate,
             max: maxDate,
             format: {
-              majorLabels: function (date) {
-                return (
-                  date.format("DD-MM-YYYY") + " " + date.format("hh:mm::ss")
-                );
+              // vis-timeline passes a moment-like object at runtime despite the Date type
+              majorLabels: function (date: Date) {
+                const d = date as unknown as VisMoment;
+                return d.format("DD-MM-YYYY") + " " + d.format("hh:mm::ss");
               },
             },
           }}
