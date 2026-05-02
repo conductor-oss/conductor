@@ -21,6 +21,8 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 
+import com.netflix.conductor.test.integration.http.SchedulerTestApp;
+
 /** Copy of com.netflix.conductor.Conductor for use by @SpringBootTest in AbstractSpecification. */
 
 // Prevents from the datasource beans to be loaded, AS they are needed only for specific databases.
@@ -32,7 +34,7 @@ import org.springframework.context.annotation.FilterType;
         excludeFilters =
                 @ComponentScan.Filter(
                         type = FilterType.ASSIGNABLE_TYPE,
-                        classes = {RestConfiguration.class}))
+                        classes = {RestConfiguration.class, SchedulerTestApp.class}))
 public class ConductorTestApp {
 
     public static void main(String[] args) throws IOException {
