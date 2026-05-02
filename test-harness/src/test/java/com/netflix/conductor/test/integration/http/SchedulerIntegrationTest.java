@@ -93,11 +93,13 @@ public class SchedulerIntegrationTest {
         }
 
         @Bean
+        @Primary
         public SchedulerDAO schedulerDAO() {
             return new InMemorySchedulerDAO();
         }
 
         @Bean
+        @Primary
         public SchedulerArchivalDAO schedulerArchivalDAO() {
             return new TrackingSchedulerArchivalDAO();
         }
