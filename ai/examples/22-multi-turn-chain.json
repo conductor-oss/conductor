@@ -1,0 +1,52 @@
+{
+  "name": "multi_turn_chain",
+  "description": "Two-step conversation using previousResponseId to avoid resending history",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["topic"],
+  "tasks": [
+    {
+      "name": "first_turn",
+      "taskReferenceName": "turn1",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "gpt-4o",
+        "messages": [
+          {
+            "role": "system",
+            "message": "You are a technical architect. Be concise."
+          },
+          {
+            "role": "user",
+            "message": "Design a high-level architecture for: ${workflow.input.topic}"
+          }
+        ],
+        "temperature": 0.3,
+        "maxTokens": 2000
+      }
+    },
+    {
+      "name": "follow_up",
+      "taskReferenceName": "turn2",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "gpt-4o",
+        "messages": [
+          {
+            "role": "user",
+            "message": "Now list the key risks and mitigations for this architecture."
+          }
+        ],
+        "previousResponseId": "${turn1.output.responseId}",
+        "temperature": 0.3,
+        "maxTokens": 2000
+      }
+    }
+  ],
+  "outputParameters": {
+    "architecture": "${turn1.output.result}",
+    "risks": "${turn2.output.result}"
+  }
+}

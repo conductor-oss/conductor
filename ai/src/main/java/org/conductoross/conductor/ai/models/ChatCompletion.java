@@ -72,14 +72,36 @@ public class ChatCompletion extends LLMWorkerInput {
     private String outputMimeType;
 
     // Used for thinking models
-    @Documented(usage = "applicable for Anthropic models, token allowance for thinking")
+    @Documented(
+            usage =
+                    "Token budget for extended thinking/reasoning before the model generates its final response. Supported by Anthropic and Google Gemini.")
     private int thinkingTokenLimit;
 
-    @Documented(usage = "applicable for OpenAI models, reasoning effort - low, medium or high")
+    @Documented(usage = "Reasoning effort level: low, medium, or high. Supported by OpenAI models.")
     private String reasoningEffort;
 
     @Documented(usage = "Location where the results should be stored.  Useful for media generation")
     private String outputLocation;
+
+    @Documented(
+            usage =
+                    "ID of a previous response to chain multi-turn conversations without resending full message history. Supported by OpenAI and Azure OpenAI (Responses API).")
+    private String previousResponseId;
+
+    @Documented(
+            usage =
+                    "Enable built-in web search. The LLM can search the web for real-time information. Supported by OpenAI, Anthropic, and Google Gemini.")
+    private boolean webSearch;
+
+    @Documented(
+            usage =
+                    "Enable built-in code execution. The LLM can write and run code in a sandboxed environment. Supported by OpenAI (code_interpreter), Anthropic (code_execution), and Google Gemini (codeExecution).")
+    private boolean codeInterpreter;
+
+    @Documented(
+            usage =
+                    "Vector store IDs for file search. The LLM can search through uploaded files. Supported by OpenAI only.")
+    private List<String> fileSearchVectorStoreIds;
 
     // Audio output
     private String voice;
