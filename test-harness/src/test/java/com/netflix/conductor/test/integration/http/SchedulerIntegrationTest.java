@@ -28,10 +28,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpEntity;
@@ -318,10 +318,7 @@ public class SchedulerIntegrationTest {
                                             workflowName == null
                                                     || workflowName.equals(
                                                             s.getStartWorkflowRequest().getName()))
-                            .filter(
-                                    s ->
-                                            scheduleName == null
-                                                    || s.getName().contains(scheduleName))
+                            .filter(s -> scheduleName == null || s.getName().contains(scheduleName))
                             .filter(s -> paused == null || s.isPaused() == paused)
                             .sorted(Comparator.comparing(WorkflowScheduleModel::getName))
                             .collect(Collectors.toList());
@@ -433,8 +430,8 @@ public class SchedulerIntegrationTest {
 
     /**
      * Counts execution records that have been archived for the given schedule name. The scheduler
-     * fires a cron, saves an execution record to SchedulerDAO, then the archival thread moves it
-     * to the SchedulerArchivalDAO.
+     * fires a cron, saves an execution record to SchedulerDAO, then the archival thread moves it to
+     * the SchedulerArchivalDAO.
      */
     private long countExecutionRecords(String scheduleName) {
         return ((TrackingSchedulerArchivalDAO) schedulerArchivalDAO)
@@ -500,8 +497,7 @@ public class SchedulerIntegrationTest {
                         });
 
         long preFireCount = countExecutionRecords(scheduleName);
-        assertTrue(
-                "Expected multiple fires before pause, got " + preFireCount, preFireCount >= 3);
+        assertTrue("Expected multiple fires before pause, got " + preFireCount, preFireCount >= 3);
 
         // ── 4. Pause the schedule ──
         put("scheduler/schedules/" + scheduleName + "/pause");
@@ -515,9 +511,7 @@ public class SchedulerIntegrationTest {
         Thread.sleep(4000);
         long countAfterPauseWait = countExecutionRecords(scheduleName);
         assertEquals(
-                "No new executions should occur while paused",
-                countAtPause,
-                countAfterPauseWait);
+                "No new executions should occur while paused", countAtPause, countAfterPauseWait);
 
         // ── 5. Resume the schedule ──
         put("scheduler/schedules/" + scheduleName + "/resume");
@@ -542,8 +536,6 @@ public class SchedulerIntegrationTest {
 
         // ── 6. Cleanup ──
         delete("scheduler/schedules/" + scheduleName);
-        assertNull(
-                "Schedule should be deleted",
-                schedulerDAO.findScheduleByName(scheduleName));
+        assertNull("Schedule should be deleted", schedulerDAO.findScheduleByName(scheduleName));
     }
 }

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery, useMutation } from "react-query";
 import { useFetchContext, fetchWithContext } from "../plugins/fetch";
 import { useFetch } from "./common";
@@ -5,6 +6,14 @@ import qs from "qs";
 
 export function useSchedulerDefs() {
   return useFetch(["schedulerDefs"], "/scheduler/schedules");
+}
+
+export function useScheduleNames() {
+  const { data } = useSchedulerDefs();
+  return useMemo(
+    () => (data ? data.map((s) => s.name).sort() : []),
+    [data]
+  );
 }
 
 export function useSchedulerDef(name, defaultSchedule) {

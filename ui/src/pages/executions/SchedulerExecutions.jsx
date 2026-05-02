@@ -9,7 +9,9 @@ import {
   Input,
   NavLink,
   DataTable,
+  WorkflowNameInput,
 } from "../../components";
+import ScheduleNameInput from "../../components/ScheduleNameInput";
 import { useQueryState } from "react-router-use-location-state";
 import DateRangePicker from "../../components/DateRangePicker";
 import { DEFAULT_ROWS_PER_PAGE } from "../../components/DataTable";
@@ -20,24 +22,12 @@ import SchedulerDisabledBanner, {
 
 import { makeStyles } from "@material-ui/styles";
 import clsx from "clsx";
+import executionsStyles from "./executionsStyles";
 import sharedStyles from "../styles";
 
 const useStyles = makeStyles({
+  ...executionsStyles,
   ...sharedStyles,
-  resetButton: {
-    color: "#d32f2f",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    gap: 4,
-    border: "none",
-    background: "none",
-    fontSize: 14,
-    padding: "6px 12px",
-    "&:hover": {
-      textDecoration: "underline",
-    },
-  },
 });
 
 const executionStatuses = ["POLLED", "EXECUTED", "FAILED"];
@@ -46,7 +36,7 @@ const MS_IN_DAY = 86400000;
 export default function SchedulerExecutions() {
   const classes = useStyles();
 
-  const [scheduleName, setScheduleName] = useQueryState("scheduleName", "");
+  const [scheduleName, setScheduleName] = useQueryState("scheduleName", []);
   const [workflowName, setWorkflowName] = useQueryState("workflowName", "");
   const [executionId, setExecutionId] = useQueryState("executionId", "");
   const [startFrom, setStartFrom] = useQueryState("startFrom", "");
@@ -75,19 +65,21 @@ export default function SchedulerExecutions() {
   function buildQuery() {
     const clauses = [];
     if (!_.isEmpty(scheduleName)) {
-      clauses.push(`scheduleName='${scheduleName}'`);
+      clauses.push(`scheduleName IN (${scheduleName.join(",")})`);
     }
     if (!_.isEmpty(workflowName)) {
-      clauses.push(`workflowName='${workflowName}'`);
+      clauses.push(`workflowName=${workflowName}`);
     }
     if (!_.isEmpty(executionId)) {
-      clauses.push(`executionId='${executionId}'`);
+      clauses.push(`executionId=${executionId}`);
     }
     if (!_.isEmpty(status)) {
       clauses.push(`state IN (${status.join(",")})`);
     }
     if (!_.isEmpty(lookback)) {
-      clauses.push(`scheduledTime>${new Date().getTime() - lookback * MS_IN_DAY}`);
+      clauses.push(
+        `scheduledTime>${new Date().getTime() - lookback * MS_IN_DAY}`
+      );
     }
     if (!_.isEmpty(startFrom)) {
       clauses.push(`scheduledTime>${new Date(startFrom).getTime()}`);
@@ -109,18 +101,6 @@ export default function SchedulerExecutions() {
     if (_.isEqual(oldQuery, newQuery)) {
       refetch();
     }
-  }
-
-  function doReset() {
-    setScheduleName("");
-    setWorkflowName("");
-    setExecutionId("");
-    setStartFrom("");
-    setStartTo("");
-    setLookback("");
-    setStatus([]);
-    setPage(1);
-    setQueryObj({ query: "", freeText: "*" });
   }
 
   const handlePage = (page) => setPage(page);
@@ -191,7 +171,7 @@ export default function SchedulerExecutions() {
   if (isSchedulerDisabled(error)) {
     return (
       <div className={clsx([classes.wrapper, classes.padded])}>
-        <Heading level={3} gutterBottom>
+        <Heading level={3} className={classes.heading}>
           Scheduler Executions
         </Heading>
         <SchedulerDisabledBanner />
@@ -201,33 +181,32 @@ export default function SchedulerExecutions() {
 
   return (
     <div className={clsx([classes.wrapper, classes.padded])}>
-      <Heading level={3} gutterBottom>
+      <Heading level={3} className={classes.heading}>
         Scheduler Executions
       </Heading>
       <Paper className={classes.paper}>
-        <Grid container spacing={3} style={{ padding: 15 }}>
+        <Grid container spacing={3} className={classes.controls}>
           <Grid item xs={5}>
-            <Input
+            <ScheduleNameInput
               fullWidth
-              label="Schedule name"
-              defaultValue={scheduleName}
-              onBlur={setScheduleName}
-              clearable
+              label="Schedule Name"
+              onChange={(evt, val) => setScheduleName(val)}
+              value={scheduleName}
             />
           </Grid>
           <Grid item xs={4}>
-            <Input
+            <WorkflowNameInput
               fullWidth
-              label="Workflow name"
-              defaultValue={workflowName}
-              onBlur={setWorkflowName}
-              clearable
+              label="Workflow Name"
+              multiple={false}
+              onChange={(evt, val) => setWorkflowName(val || "")}
+              value={workflowName || null}
             />
           </Grid>
           <Grid item xs={3}>
             <Input
               fullWidth
-              label="Scheduler execution id"
+              label="Scheduler Execution ID"
               defaultValue={executionId}
               onBlur={setExecutionId}
               clearable
@@ -237,14 +216,14 @@ export default function SchedulerExecutions() {
           <Grid item xs={4}>
             <DateRangePicker
               disabled={!_.isEmpty(lookback)}
-              label="Start time"
+              label="Start Time"
               from={startFrom}
               to={startTo}
               onFromChange={handleStartFrom}
               onToChange={handleStartTo}
             />
           </Grid>
-          <Grid item xs={2}>
+          <Grid item xs={1}>
             <Input
               fullWidth
               label="Lookback (days)"
@@ -255,7 +234,7 @@ export default function SchedulerExecutions() {
               disabled={!_.isEmpty(startFrom) || !_.isEmpty(startTo)}
             />
           </Grid>
-          <Grid item xs={2}>
+          <Grid item xs={3}>
             <Dropdown
               label="Status"
               fullWidth
@@ -265,19 +244,7 @@ export default function SchedulerExecutions() {
               value={status}
             />
           </Grid>
-          <Grid
-            item
-            xs={4}
-            style={{
-              display: "flex",
-              alignItems: "flex-end",
-              justifyContent: "flex-end",
-              gap: 8,
-            }}
-          >
-            <button className={classes.resetButton} onClick={doReset}>
-              Reset
-            </button>
+          <Grid item xs={1}>
             <FormControl>
               <InputLabel>&nbsp;</InputLabel>
               <PrimaryButton onClick={doSearch}>Search</PrimaryButton>
