@@ -67,6 +67,14 @@ dependencies {
     implementation project(':conductor-json-jq-task')
     implementation project(':conductor-kafka')
 
+    //Scheduler
+    implementation project(':conductor-scheduler-core')
+    implementation project(':conductor-scheduler-postgres-persistence')
+    implementation project(':conductor-scheduler-mysql-persistence')
+    implementation project(':conductor-scheduler-cassandra-persistence')
+    implementation project(':conductor-scheduler-redis-persistence')
+    implementation project(':conductor-scheduler-sqlite-persistence')
+
     //Metrics
     implementation project(':conductor-metrics')
 
