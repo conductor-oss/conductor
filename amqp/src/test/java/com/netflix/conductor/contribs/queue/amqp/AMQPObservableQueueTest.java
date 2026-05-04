@@ -13,11 +13,13 @@
 package com.netflix.conductor.contribs.queue.amqp;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -103,7 +105,41 @@ public class AMQPObservableQueueTest {
         when(properties.getDeliveryMode()).thenReturn(2);
         when(properties.isUseExchange()).thenReturn(true);
         addresses = new Address[] {new Address("localhost", PROTOCOL.PORT)};
+        resetAMQPConnectionState();
+    }
+
+    private void resetAMQPConnectionState() {
         AMQPConnection.setAMQPConnection(null);
+        clearStaticMap("availableChannelPool");
+        clearStaticMap("subscriberReservedChannelPool");
+        setStaticField("retrySettings", null);
+    }
+
+    private void clearStaticMap(String fieldName) {
+        Object value = getStaticField(fieldName);
+        if (value instanceof Map<?, ?> map) {
+            map.clear();
+        }
+    }
+
+    private void setStaticField(String fieldName, Object value) {
+        try {
+            Field field = AMQPConnection.class.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            field.set(null, value);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Failed to reset AMQPConnection field " + fieldName, e);
+        }
+    }
+
+    private Object getStaticField(String fieldName) {
+        try {
+            Field field = AMQPConnection.class.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            return field.get(null);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Failed to read AMQPConnection field " + fieldName, e);
+        }
     }
 
     List<GetResponse> buildQueue(final Random random, final int bound) {
