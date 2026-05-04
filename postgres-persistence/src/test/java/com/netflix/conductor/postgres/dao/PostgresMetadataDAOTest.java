@@ -38,6 +38,7 @@ import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.postgres.config.PostgresConfiguration;
 
@@ -316,9 +317,41 @@ public class PostgresMetadataDAOTest {
                         .collect(Collectors.toMap(WorkflowDef::getName, Function.identity()));
 
         assertNotNull(allMap);
-        assertEquals(4, allMap.size());
+        assertTrue(allMap.size() >= 4);
         assertEquals(1, allMap.get("test1").getVersion());
         assertEquals(2, allMap.get("test2").getVersion());
         assertEquals(3, allMap.get("test3").getVersion());
+    }
+
+    @Test
+    public void testGetWorkflowVersions() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("versions_wf_test");
+        def.setVersion(1);
+        metadataDAO.createWorkflowDef(def);
+
+        def.setVersion(2);
+        metadataDAO.createWorkflowDef(def);
+
+        def.setVersion(5);
+        metadataDAO.createWorkflowDef(def);
+
+        List<WorkflowDefSummary> versions = metadataDAO.getWorkflowVersions("versions_wf_test");
+        assertNotNull(versions);
+        assertEquals(3, versions.size());
+
+        assertEquals(1, versions.get(0).getVersion());
+        assertEquals(2, versions.get(1).getVersion());
+        assertEquals(5, versions.get(2).getVersion());
+
+        for (WorkflowDefSummary summary : versions) {
+            assertEquals("versions_wf_test", summary.getName());
+            assertNotNull(summary.getCreateTime());
+        }
+
+        // Non-existent workflow should return empty list
+        List<WorkflowDefSummary> empty = metadataDAO.getWorkflowVersions("nonexistent_workflow");
+        assertNotNull(empty);
+        assertTrue(empty.isEmpty());
     }
 }

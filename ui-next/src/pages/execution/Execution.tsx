@@ -1,27 +1,39 @@
 import LaunchIcon from "@mui/icons-material/Launch";
 import { Box, Stack, Tooltip } from "@mui/material";
 import { AutoRefreshButton, Button, Heading, LinearProgress } from "components";
-import MuiAlert from "components/ui/MuiAlert";
-import MuiTypography from "components/ui/MuiTypography";
-import NavLink from "components/ui/NavLink";
-import { SnackbarMessage } from "components/ui/SnackbarMessage";
 import StatusBadge from "components/StatusBadge";
-import TwoPanesDivider from "components/ui/TwoPanesDivider";
+import Agent from "components/features/agent/Agent";
+import { AgentDisplayMode } from "components/features/agent/agent-types";
+import {
+  agentDisplayModeAtom,
+  agentFirstUseAtom,
+} from "components/features/agent/agentAtomsStore";
 import { Flow } from "components/features/flow/Flow";
-import { CopyClipboardButton } from "components/ui/inputs/CopyClipboardButton";
 import OpenIcon from "components/icons/OpenIcon";
 import ButtonLinks from "components/layout/header/ButtonLinks";
 import { ConductorSectionHeader } from "components/layout/section/ConductorSectionHeader";
 import { SidebarContext } from "components/providers/sidebar/context/SidebarContext";
-import { path as _path } from "lodash/fp";
-import { useContext, useMemo } from "react";
+import MuiAlert from "components/ui/MuiAlert";
+import MuiTypography from "components/ui/MuiTypography";
+import NavLink from "components/ui/NavLink";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
+import TwoPanesDivider from "components/ui/TwoPanesDivider";
+import { CopyClipboardButton } from "components/ui/inputs/CopyClipboardButton";
+import { useAtom } from "jotai";
+import { WorkflowIntrospection } from "pages/execution/WorkflowIntrospection";
+import React, { useContext, useMemo } from "react";
 import { Helmet } from "react-helmet";
 import { useLocation } from "react-router";
 import { colors } from "theme/tokens/variables";
-import { WorkflowExecutionStatus } from "types/Execution";
+import {
+  ExecutionTask,
+  WorkflowExecution,
+  WorkflowExecutionStatus,
+} from "types/Execution";
 import { TaskStatus } from "types/TaskStatus";
 import { openInNewTab } from "utils/helpers";
 import { usePushHistory } from "utils/hooks/usePushHistory";
+import { ActorRef } from "xstate";
 import ActionModule from "./ActionModule";
 import InputOutput from "./ExecutionInputOutput";
 import ExecutionJson from "./ExecutionJson";
@@ -32,15 +44,22 @@ import { TaskList } from "./TaskList/TaskList";
 import Timeline from "./Timeline";
 import { FlowExecutionContextProvider } from "./state";
 import { useExecutionMachine } from "./state/hook";
-import { ExecutionTabs } from "./state/types";
-import { WorkflowIntrospection } from "pages/execution/WorkflowIntrospection";
-import Agent from "components/features/agent/Agent";
-import { AgentDisplayMode } from "components/features/agent/agent-types";
-import {
-  agentDisplayModeAtom,
-  agentFirstUseAtom,
-} from "components/features/agent/agentAtomsStore";
-import { useAtom } from "jotai";
+import { CountdownEvents, ExecutionTabs } from "./state/types";
+
+interface SecondaryActionsProps {
+  execution: WorkflowExecution;
+  countdownActor: ActorRef<CountdownEvents> | undefined;
+  onRestartExecutionWithLatestDefinitions: () => void;
+  onRestartExecutionWithCurrentDefinitions: () => void;
+  onRetryExecutionFromFailed: () => void;
+  onResumeExecution: () => void;
+  onTerminateExecution: () => void;
+  onPauseExecution: () => void;
+  onRetryResumeSubworkflow: () => void;
+  rerunExecutionWithLatestDefinitions: () => void;
+  createSheduleWithLatestDefinitions: () => void;
+  refetch: () => void;
+}
 
 const SecondaryActions = ({
   execution,
@@ -55,8 +74,10 @@ const SecondaryActions = ({
   rerunExecutionWithLatestDefinitions,
   createSheduleWithLatestDefinitions,
   refetch,
-}) => {
-  const isDynamic = _path("input._systemMetadata.dynamic", execution);
+}: SecondaryActionsProps) => {
+  const isDynamic = (
+    execution?.input?._systemMetadata as Record<string, unknown>
+  )?.dynamic;
   return (
     execution && (
       <Box
@@ -95,9 +116,9 @@ const SecondaryActions = ({
                 size="small"
                 startIcon={<OpenIcon />}
                 sx={{ minWidth: "fit-content" }}
-                component={NavLink}
-                to={`/workflowDef/${encodeURIComponent(
-                  execution.workflowType || execution.workflowName,
+                component={NavLink as React.ElementType}
+                path={`/workflowDef/${encodeURIComponent(
+                  execution.workflowType || execution.workflowName || "",
                 )}/${execution.workflowVersion}`}
               >
                 View definition
@@ -112,7 +133,7 @@ const SecondaryActions = ({
                 fontSize: "9pt",
               },
             }}
-            countdownActor={countdownActor}
+            countdownActor={countdownActor!}
             execution={execution}
             refetch={refetch}
           />
@@ -142,7 +163,12 @@ const SecondaryActions = ({
   );
 };
 
-const FailureAlert = ({ failedWFLink, alertText }) => {
+interface FailureAlertProps {
+  failedWFLink: string;
+  alertText: string;
+}
+
+const FailureAlert = ({ failedWFLink, alertText }: FailureAlertProps) => {
   const navigate = usePushHistory();
 
   const alertStyle = {
@@ -175,7 +201,17 @@ const FailureAlert = ({ failedWFLink, alertText }) => {
   );
 };
 
-const ReasonForIncompletion = ({ reason, navigate, location }) => {
+interface ReasonForIncompletionProps {
+  reason: string;
+  navigate: (path: string) => void;
+  location: { pathname: string };
+}
+
+const ReasonForIncompletion = ({
+  reason,
+  navigate,
+  location,
+}: ReasonForIncompletionProps) => {
   if (!reason) return null;
 
   if (reason.length >= 300) {
@@ -201,12 +237,19 @@ const ReasonForIncompletion = ({ reason, navigate, location }) => {
   return <>{reason}</>;
 };
 
+interface ExecutionAlertProps {
+  execution: WorkflowExecution;
+  openedTab: ExecutionTabs;
+  failedTaskWithReason: ExecutionTask | undefined;
+  handleJumpToTask: () => void;
+}
+
 const ExecutionAlert = ({
   execution,
   openedTab,
   failedTaskWithReason,
   handleJumpToTask,
-}) => {
+}: ExecutionAlertProps) => {
   const navigate = usePushHistory();
   const location = useLocation();
 
@@ -218,7 +261,7 @@ const ExecutionAlert = ({
     return (
       <MuiAlert
         severity={execution?.rateLimited ? "warning" : "error"}
-        style={{
+        sx={{
           ".MuiAlert-message": {
             display: "flex",
             justifyContent: "space-between",
@@ -310,7 +353,9 @@ export default function Execution() {
   const isAssistantPanelOpen =
     agentDisplayMode === AgentDisplayMode.FLOATING_EXPANDED;
 
-  const isFailure = (workflow) => {
+  const isFailure = (
+    workflow: WorkflowExecution | undefined,
+  ): string | undefined => {
     const workflowInput = workflow?.input;
     if (
       workflowInput?.reason &&
@@ -318,7 +363,7 @@ export default function Execution() {
       workflowInput?.workflowId &&
       workflowInput?.failureStatus
     ) {
-      return workflow.input.workflowId;
+      return workflowInput.workflowId as string;
     }
   };
 
@@ -351,14 +396,13 @@ export default function Execution() {
                   <Flow
                     flowActor={flowActor}
                     readOnly={true}
-                    leftPanelExpanded={rightPanelActor}
+                    leftPanelExpanded={!!rightPanelActor}
                     isExecutionView={isExecutionView}
                   />
                 </FlowExecutionContextProvider>
               )}
             {openedTab === ExecutionTabs.TASK_LIST_TAB && taskListActor && (
               <TaskList
-                tasks={execution.tasks}
                 taskListActor={taskListActor}
                 executionAlert={execution.reasonForIncompletion}
               />
@@ -382,11 +426,11 @@ export default function Execution() {
             )}
             {openedTab === ExecutionTabs.WORKFLOW_INPUT_OUTPUT_TAB && (
               <InputOutput
-                execution={execution}
+                execution={execution as unknown as Record<string, unknown>}
                 data={[
                   {
                     title: "Input",
-                    src: execution.input,
+                    src: execution.input as Record<string, unknown>,
                     hidden: false,
                     style: {
                       minWidth: 400,
@@ -414,11 +458,11 @@ export default function Execution() {
                     : false
                 }
                 handleUpdate={handleUpdateVariables}
-                execution={execution}
+                execution={execution as unknown as Record<string, unknown>}
                 data={[
                   {
                     title: "Variables",
-                    src: execution.variables,
+                    src: execution.variables ?? {},
                     hidden: false,
                     style: {
                       minWidth: 340,
@@ -429,11 +473,11 @@ export default function Execution() {
             )}
             {openedTab === ExecutionTabs.TASKS_TO_DOMAIN_TAB && (
               <InputOutput
-                execution={execution}
+                execution={execution as unknown as Record<string, unknown>}
                 data={[
                   {
                     title: "Task to Domain",
-                    src: execution.taskToDomain,
+                    src: execution.taskToDomain ?? {},
                     hidden: !execution.taskToDomain,
                     style: {
                       minWidth: 340,
@@ -487,8 +531,8 @@ export default function Execution() {
           >
             <RightPanel
               rightPanelActor={rightPanelActor}
-              workflowName={execution?.workflowName}
-              workflowStatus={execution?.status}
+              workflowName={execution?.workflowName ?? ""}
+              workflowStatus={execution?.status as string}
               doWhileSelection={doWhileSelection}
             />
           </Box>
@@ -498,7 +542,7 @@ export default function Execution() {
   );
 
   const workflowTitle = useMemo(
-    () => (execution?.workflowType || execution?.workflowName) ?? null,
+    () => execution?.workflowType || execution?.workflowName || null,
     [execution?.workflowType, execution?.workflowName],
   );
 
@@ -534,13 +578,25 @@ export default function Execution() {
         </title>
       </Helmet>
       <SnackbarMessage
-        message={maybeError?.text}
-        severity={maybeError?.severity}
+        message={maybeError?.text ?? ""}
+        severity={
+          (maybeError?.severity ?? "info") as
+            | "info"
+            | "success"
+            | "warning"
+            | "error"
+        }
         onDismiss={clearError}
       />
       <SnackbarMessage
-        message={maybeMessage?.text}
-        severity={maybeMessage?.severity}
+        message={maybeMessage?.text ?? ""}
+        severity={
+          (maybeMessage?.severity ?? "info") as
+            | "info"
+            | "success"
+            | "warning"
+            | "error"
+        }
         onDismiss={clearError}
       />
       <Box
@@ -590,8 +646,10 @@ export default function Execution() {
                       </Heading>
                     </Box>
                   </Tooltip>
-                  <CopyClipboardButton text={workflowTitle} />
-                  <StatusBadge status={execution?.status} />
+                  <CopyClipboardButton text={workflowTitle ?? ""} />
+                  <StatusBadge
+                    status={execution?.status as unknown as TaskStatus}
+                  />
                 </Stack>
               }
               breadcrumbItems={[
@@ -618,10 +676,10 @@ export default function Execution() {
                     />
                   )}
 
-                  {execution?.output?.["conductor.failure_workflow"] && (
+                  {!!execution?.output?.["conductor.failure_workflow"] && (
                     <FailureAlert
                       failedWFLink={
-                        execution.output["conductor.failure_workflow"]
+                        execution.output["conductor.failure_workflow"] as string
                       }
                       alertText="Triggered failure workflow"
                     />
@@ -675,6 +733,7 @@ export default function Execution() {
                 execution={execution}
                 openedTab={openedTab}
                 onChangeExecutionTab={changeExecutionTab}
+                isAssistantOpen={isAssistantPanelOpen}
                 onToggleAssistant={() => {
                   setAgentFirstUse(true);
                   setAgentDisplayMode(
