@@ -12,9 +12,6 @@
  */
 package org.conductoross.conductor;
 
-import java.io.IOException;
-import java.util.Properties;
-
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +20,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.core.io.FileSystemResource;
 
 // Prevents from the datasource beans to be loaded, AS they are needed only for specific databases.
 // In case that SQL database is selected this class will be imported back in the appropriate
@@ -34,38 +30,29 @@ public class Conductor {
 
     private static final Logger log = LoggerFactory.getLogger(Conductor.class);
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         loadExternalConfig();
 
         SpringApplication.run(Conductor.class, args);
     }
 
     /**
-     * Reads properties from the location specified in <code>CONDUCTOR_LITE_CONFIG_FILE</code> and
-     * sets them as system properties so they override the default properties.
+     * If <code>CONDUCTOR_LITE_CONFIG_FILE</code> is set, registers the file as an additional Spring
+     * Boot config location. Spring then loads the file as part of its standard property resolution,
+     * placing it above default properties but below environment variables, JVM system properties,
+     * and command-line args.
      *
      * <p>Spring Boot property hierarchy is documented here,
-     * https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-external-config
-     *
-     * @throws IOException if file can't be read.
+     * https://docs.spring.io/spring-boot/reference/features/external-config.html#features.external-config
      */
-    private static void loadExternalConfig() throws IOException {
+    private static void loadExternalConfig() {
         String configFile = System.getProperty("CONDUCTOR_LITE_CONFIG_FILE");
         if (StringUtils.isBlank(configFile)) {
             configFile = System.getenv("CONDUCTOR_LITE_CONFIG_FILE");
         }
         if (StringUtils.isNotBlank(configFile)) {
-            log.info("Loading {}", configFile);
-            FileSystemResource resource = new FileSystemResource(configFile);
-            if (resource.exists()) {
-                Properties properties = new Properties();
-                properties.load(resource.getInputStream());
-                properties.forEach(
-                        (key, value) -> System.setProperty((String) key, (String) value));
-                log.info("Loaded {} properties from {}", properties.size(), configFile);
-            } else {
-                log.warn("Ignoring {} since it does not exist", configFile);
-            }
+            log.info("Loading external config from {}", configFile);
+            System.setProperty("spring.config.additional-location", "optional:file:" + configFile);
         }
     }
 }
