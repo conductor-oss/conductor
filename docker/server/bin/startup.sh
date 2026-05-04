@@ -30,5 +30,5 @@ if [ -z "$CONFIG_PROP" ];
     java ${JAVA_OPTS} -jar conductor-server.jar 2>&1 | tee -a /app/logs/server.log
   else
     echo "Using config: $CONFIG_PROP";
-    java ${JAVA_OPTS} -jar conductor-server.jar -DCONDUCTOR_CONFIG_FILE=/app/config/$CONFIG_PROP 2>&1 | tee -a /app/logs/server.log
+    java ${JAVA_OPTS} -DCONDUCTOR_CONFIG_FILE=/app/config/$CONFIG_PROP -jar conductor-server.jar 2>&1 | tee -a /app/logs/server.log
 fi
