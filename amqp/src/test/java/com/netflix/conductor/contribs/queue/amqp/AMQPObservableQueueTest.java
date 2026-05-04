@@ -71,6 +71,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -389,11 +390,10 @@ public class AMQPObservableQueueTest {
     }
 
     @Test
-    public void testAck() throws IOException, TimeoutException {
+    public void testAckOnExchangeIsSkipped() throws IOException, TimeoutException {
         // Mock channel and connection
         Channel channel = mockBaseChannel();
         Connection connection = mockGoodConnection(channel);
-        final Random random = new Random();
 
         final String name = RandomStringUtils.randomAlphabetic(30),
                 type = "topic",
@@ -426,6 +426,41 @@ public class AMQPObservableQueueTest {
         List<String> failedMessages = observableQueue.ack(messages);
         assertNotNull(failedMessages);
         assertTrue(failedMessages.isEmpty());
+        verify(channel, never()).basicAck(anyLong(), anyBoolean());
+    }
+
+    @Test
+    public void testAckOnQueueCallsBasicAck() throws IOException, TimeoutException {
+        // Mock channel and connection
+        Channel channel = mockBaseChannel();
+        Connection connection = mockGoodConnection(channel);
+
+        final String queueName = RandomStringUtils.randomAlphabetic(30);
+        AMQPSettings settings = new AMQPSettings(properties).fromURI("amqp_queue:" + queueName);
+        List<GetResponse> queue = buildQueue(new Random(), batchSize);
+        channel = mockChannelForQueue(channel, true, true, queueName, queue);
+        doNothing().when(channel).basicAck(anyLong(), eq(false));
+
+        AMQPRetryPattern retrySettings = null;
+        AMQPObservableQueue observableQueue =
+                new AMQPObservableQueue(
+                        mockConnectionFactory(connection),
+                        addresses,
+                        false,
+                        settings,
+                        retrySettings,
+                        batchSize,
+                        pollTimeMs);
+        List<Message> messages = new LinkedList<>();
+        Message msg = new Message();
+        msg.setId("0e3eef8f-ebb1-4244-9665-759ab5bdf433");
+        msg.setPayload("Payload");
+        msg.setReceipt("1");
+        messages.add(msg);
+        List<String> failedMessages = observableQueue.ack(messages);
+        assertNotNull(failedMessages);
+        assertTrue(failedMessages.isEmpty());
+        verify(channel, times(1)).basicAck(1L, false);
     }
 
     private void testGetMessagesFromExchangeAndDefaultConfiguration(
