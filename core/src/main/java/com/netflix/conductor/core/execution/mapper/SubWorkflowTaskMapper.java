@@ -65,9 +65,15 @@ public class SubWorkflowTaskMapper implements TaskMapper {
                 getSubWorkflowInputParameters(workflowModel, subWorkflowParams);
 
         String subWorkflowName = resolvedParams.get("name").toString();
-        Integer subWorkflowVersion = getSubWorkflowVersion(resolvedParams, subWorkflowName);
-
         Object subWorkflowDefinition = resolvedParams.get("workflowDefinition");
+
+        // Only resolve the sub-workflow version when no inline definition is provided.
+        // When an inline definition is present, SubWorkflow.start() uses it directly and
+        // the version is irrelevant, so skip the potentially-failing MetadataDAO lookup.
+        Integer subWorkflowVersion = null;
+        if (subWorkflowDefinition == null) {
+            subWorkflowVersion = getSubWorkflowVersion(resolvedParams, subWorkflowName);
+        }
 
         Map subWorkflowTaskToDomain = null;
         Object uncheckedTaskToDomain = resolvedParams.get("taskToDomain");
@@ -124,12 +130,21 @@ public class SubWorkflowTaskMapper implements TaskMapper {
             params.put("taskToDomain", taskToDomain);
         }
 
-        params = parametersUtils.getTaskInputV2(params, workflowModel, null, null);
-
-        // do not resolve params inside subworkflow definition
         Object subWorkflowDefinition = subWorkflowParams.getWorkflowDefinition();
-        if (subWorkflowDefinition != null) {
+        if (subWorkflowDefinition instanceof String) {
+            // String value may be a ${ref.output.field} expression referencing a runtime task
+            // output. Include it in params before calling getTaskInputV2 so that the expression
+            // is resolved to its concrete value (e.g. an inline WorkflowDef Map) and ends up
+            // as subWorkflowDefinition in the task's inputData where SubWorkflow.start() reads it.
             params.put("workflowDefinition", subWorkflowDefinition);
+            params = parametersUtils.getTaskInputV2(params, workflowModel, null, null);
+        } else {
+            params = parametersUtils.getTaskInputV2(params, workflowModel, null, null);
+            // Concrete object (WorkflowDef, Map, etc.): add after resolution so that its
+            // internal fields are not mistakenly treated as expressions.
+            if (subWorkflowDefinition != null) {
+                params.put("workflowDefinition", subWorkflowDefinition);
+            }
         }
 
         return params;
