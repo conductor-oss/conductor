@@ -179,6 +179,18 @@ export function useWorkflowNamesAndVersions() {
   return { ...rest, data: newData };
 }
 
+export function useWorkflowVersions(workflowName) {
+  return useFetch(
+    workflowName ? ["workflowVersions", workflowName] : null,
+    workflowName ? `/metadata/workflow/${workflowName}/versions` : null,
+    {
+      enabled: !!workflowName,
+      staleTime: STALE_TIME_WORKFLOW_DEFS,
+      keepPreviousData: true,
+    }
+  );
+}
+
 export function useStartWorkflow(callbacks) {
   const path = "/workflow";
   const fetchContext = useFetchContext();
