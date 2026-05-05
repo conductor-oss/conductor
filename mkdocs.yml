@@ -76,6 +76,7 @@ nav:
       - documentation/api/startworkflow.md
       - documentation/api/workflow.md
       - documentation/api/task.md
+      - documentation/api/files.md
       - documentation/api/bulk.md
       - documentation/api/eventhandlers.md
       - documentation/api/taskdomains.md
@@ -121,6 +122,7 @@ nav:
       - documentation/advanced/isolationgroups.md
       - documentation/advanced/archival-of-workflows.md
       - documentation/advanced/externalpayloadstorage.md
+      - documentation/advanced/file-storage.md
       - documentation/advanced/redis.md
       - documentation/advanced/postgresql.md
       - documentation/advanced/opensearch.md
