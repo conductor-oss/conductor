@@ -824,6 +824,488 @@ public class TestDeciderService {
     }
 
     @Test
+    public void testExponentialBackoffWithMaxDelayCap() {
+        WorkflowModel workflow = createDefaultWorkflow();
+
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10);
+        taskDef.setRetryDelaySeconds(60);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.EXPONENTIAL_BACKOFF);
+        taskDef.setMaxRetryDelaySeconds(200); // cap at 200 s
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        // retry 0: 60 * 2^0 = 60 — below cap
+        Optional<TaskModel> task2 = deciderService.retry(taskDef, workflowTask, task, workflow);
+        assertEquals(60, task2.get().getCallbackAfterSeconds());
+
+        // retry 1: 60 * 2^1 = 120 — below cap
+        Optional<TaskModel> task3 =
+                deciderService.retry(taskDef, workflowTask, task2.get(), workflow);
+        assertEquals(120, task3.get().getCallbackAfterSeconds());
+
+        // retry 2: 60 * 2^2 = 240 — exceeds cap, should be clamped to 200
+        Optional<TaskModel> task4 =
+                deciderService.retry(taskDef, workflowTask, task3.get(), workflow);
+        assertEquals(200, task4.get().getCallbackAfterSeconds());
+
+        // retry 3: 60 * 2^3 = 480 — still capped at 200
+        Optional<TaskModel> task5 =
+                deciderService.retry(taskDef, workflowTask, task4.get(), workflow);
+        assertEquals(200, task5.get().getCallbackAfterSeconds());
+    }
+
+    @Test
+    public void testLinearBackoffWithMaxDelayCap() {
+        WorkflowModel workflow = createDefaultWorkflow();
+
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10);
+        taskDef.setRetryDelaySeconds(60);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.LINEAR_BACKOFF);
+        taskDef.setBackoffScaleFactor(2);
+        taskDef.setMaxRetryDelaySeconds(250); // cap at 250 s
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        // retry 0: 60 * 2 * 1 = 120 — below cap
+        Optional<TaskModel> task2 = deciderService.retry(taskDef, workflowTask, task, workflow);
+        assertEquals(120, task2.get().getCallbackAfterSeconds());
+
+        // retry 1: 60 * 2 * 2 = 240 — below cap
+        Optional<TaskModel> task3 =
+                deciderService.retry(taskDef, workflowTask, task2.get(), workflow);
+        assertEquals(240, task3.get().getCallbackAfterSeconds());
+
+        // retry 2: 60 * 2 * 3 = 360 — exceeds cap, should be clamped to 250
+        Optional<TaskModel> task4 =
+                deciderService.retry(taskDef, workflowTask, task3.get(), workflow);
+        assertEquals(250, task4.get().getCallbackAfterSeconds());
+
+        // retry 3: 60 * 2 * 4 = 480 — still capped at 250
+        Optional<TaskModel> task5 =
+                deciderService.retry(taskDef, workflowTask, task4.get(), workflow);
+        assertEquals(250, task5.get().getCallbackAfterSeconds());
+    }
+
+    @Test
+    public void testJitterAddedToRetryDelay() {
+        WorkflowModel workflow = createDefaultWorkflow();
+
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10);
+        taskDef.setRetryDelaySeconds(60);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.FIXED);
+        taskDef.setBackoffJitterMs(5000); // up to 5 000 ms of jitter
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        Optional<TaskModel> retried = deciderService.retry(taskDef, workflowTask, task, workflow);
+
+        // callbackAfterSeconds stays at the base delay
+        assertEquals(60, retried.get().getCallbackAfterSeconds());
+        // callbackAfterMs must be in [60_000, 65_000]
+        long callbackMs = retried.get().getCallbackAfterMs();
+        assertTrue("callbackAfterMs should be >= base delay ms", callbackMs >= 60_000);
+        assertTrue(
+                "callbackAfterMs should be <= base delay ms + maxJitterMs", callbackMs <= 65_000);
+    }
+
+    @Test
+    public void testJitterZeroMeansNoJitter() {
+        WorkflowModel workflow = createDefaultWorkflow();
+
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10);
+        taskDef.setRetryDelaySeconds(60);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.FIXED);
+        taskDef.setBackoffJitterMs(0); // no jitter
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        Optional<TaskModel> retried = deciderService.retry(taskDef, workflowTask, task, workflow);
+
+        assertEquals(60, retried.get().getCallbackAfterSeconds());
+        assertEquals(60_000, retried.get().getCallbackAfterMs());
+    }
+
+    @Test
+    public void testJitterWithExponentialBackoff() {
+        WorkflowModel workflow = createDefaultWorkflow();
+
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10);
+        taskDef.setRetryDelaySeconds(10);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.EXPONENTIAL_BACKOFF);
+        taskDef.setBackoffJitterMs(2000); // up to 2 000 ms of jitter
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        // retry 0: base = 10 * 2^0 = 10 s → callbackAfterMs in [10_000, 12_000]
+        Optional<TaskModel> task2 = deciderService.retry(taskDef, workflowTask, task, workflow);
+        assertEquals(10, task2.get().getCallbackAfterSeconds());
+        assertTrue(task2.get().getCallbackAfterMs() >= 10_000);
+        assertTrue(task2.get().getCallbackAfterMs() <= 12_000);
+
+        // retry 1: base = 10 * 2^1 = 20 s → callbackAfterMs in [20_000, 22_000]
+        Optional<TaskModel> task3 =
+                deciderService.retry(taskDef, workflowTask, task2.get(), workflow);
+        assertEquals(20, task3.get().getCallbackAfterSeconds());
+        assertTrue(task3.get().getCallbackAfterMs() >= 20_000);
+        assertTrue(task3.get().getCallbackAfterMs() <= 22_000);
+    }
+
+    /** Boundary: maxRetryDelaySeconds=0 means cap is disabled — delays grow uncapped. */
+    @Test
+    public void testMaxRetryDelaySeconds_zeroMeansNoCap() {
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10);
+        taskDef.setRetryDelaySeconds(10);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.EXPONENTIAL_BACKOFF);
+        taskDef.setMaxRetryDelaySeconds(0); // disabled
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        // retry 0: 10s; retry 1: 20s; retry 2: 40s — all uncapped
+        Optional<TaskModel> t1 = deciderService.retry(taskDef, workflowTask, task, workflow);
+        assertEquals(10, t1.get().getCallbackAfterSeconds());
+
+        Optional<TaskModel> t2 = deciderService.retry(taskDef, workflowTask, t1.get(), workflow);
+        assertEquals(20, t2.get().getCallbackAfterSeconds());
+
+        Optional<TaskModel> t3 = deciderService.retry(taskDef, workflowTask, t2.get(), workflow);
+        assertEquals(
+                "cap=0 must be treated as disabled: 10*2^2=40s is NOT capped",
+                40,
+                t3.get().getCallbackAfterSeconds());
+    }
+
+    /** Boundary: cap < retryDelaySeconds — cap fires immediately from the first retry. */
+    @Test
+    public void testMaxRetryDelaySeconds_capLessThanBaseDelay() {
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10);
+        taskDef.setRetryDelaySeconds(60);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.FIXED);
+        taskDef.setMaxRetryDelaySeconds(10); // cap < base
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        Optional<TaskModel> t1 = deciderService.retry(taskDef, workflowTask, task, workflow);
+        assertEquals(
+                "FIXED base=60s must be capped to 10s immediately",
+                10,
+                t1.get().getCallbackAfterSeconds());
+
+        Optional<TaskModel> t2 = deciderService.retry(taskDef, workflowTask, t1.get(), workflow);
+        assertEquals(
+                "All subsequent retries must also be capped at 10s",
+                10,
+                t2.get().getCallbackAfterSeconds());
+    }
+
+    /** Boundary: jitterMs=1 (minimum non-zero) — callbackAfterMs is base or base+1. */
+    @Test
+    public void testJitterMs_minimumOneMs() {
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10);
+        taskDef.setRetryDelaySeconds(30);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.FIXED);
+        taskDef.setBackoffJitterMs(1);
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        Optional<TaskModel> retried = deciderService.retry(taskDef, workflowTask, task, workflow);
+        assertEquals(30, retried.get().getCallbackAfterSeconds());
+        // callbackAfterMs must be in [30_000, 30_001]
+        assertTrue(retried.get().getCallbackAfterMs() >= 30_000);
+        assertTrue(
+                "With jitter=1ms, callbackAfterMs must be in [30000, 30001]; was "
+                        + retried.get().getCallbackAfterMs(),
+                retried.get().getCallbackAfterMs() <= 30_001);
+    }
+
+    /** Statistical: multiple retries with jitter produce different callbackAfterMs values. */
+    @Test
+    public void testJitter_producesVariance() {
+        WorkflowModel workflow = createDefaultWorkflow();
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(20);
+        taskDef.setRetryDelaySeconds(10);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.FIXED);
+        taskDef.setBackoffJitterMs(2000);
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        // Collect callbackAfterMs from 10 independent retry calls
+        java.util.Set<Long> distinctMs = new java.util.HashSet<>();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t0");
+        task.setRetryCount(0);
+
+        for (int i = 0; i < 10; i++) {
+            TaskModel t = new TaskModel();
+            t.setStatus(TaskModel.Status.FAILED);
+            t.setTaskId("t-" + i);
+            t.setRetryCount(0);
+            distinctMs.add(
+                    deciderService
+                            .retry(taskDef, workflowTask, t, workflow)
+                            .get()
+                            .getCallbackAfterMs());
+        }
+
+        // With 2000ms jitter over 10 retries, getting 10 identical values is astronomically
+        // unlikely
+        assertTrue(
+                "jitter must produce variance across multiple retries; all 10 had same callbackAfterMs",
+                distinctMs.size() > 1);
+    }
+
+    // -------------------------------------------------------------------------
+    // totalTimeoutSeconds
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void testCheckTotalTimeout_notExceeded_noTimeout() {
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        task.setTaskId("t1");
+        task.setTaskDefName("test");
+        task.setWorkflowInstanceId(workflow.getWorkflowId());
+        task.setFirstScheduledTime(System.currentTimeMillis()); // just now — not exceeded
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setTotalTimeoutSeconds(60);
+
+        // Should be a no-op; task status must remain IN_PROGRESS
+        deciderService.checkTotalTimeout(taskDef, task);
+        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
+    }
+
+    @Test
+    public void testCheckTotalTimeout_exceeded_timesOutTask() {
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        task.setTaskId("t1");
+        task.setTaskDefName("test");
+        task.setWorkflowInstanceId(workflow.getWorkflowId());
+        // Push firstScheduledTime far into the past so the budget is exhausted
+        task.setFirstScheduledTime(System.currentTimeMillis() - 120_000); // 120s ago
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setTotalTimeoutSeconds(60); // budget = 60s, elapsed > 60s
+        taskDef.setTimeoutPolicy(TaskDef.TimeoutPolicy.RETRY);
+
+        deciderService.checkTotalTimeout(taskDef, task);
+        assertEquals(
+                "RETRY policy sets task to TIMED_OUT",
+                TaskModel.Status.TIMED_OUT,
+                task.getStatus());
+    }
+
+    @Test(expected = com.netflix.conductor.core.exception.TerminateWorkflowException.class)
+    public void testCheckTotalTimeout_exceeded_timeOutWfPolicy_terminatesWorkflow() {
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        task.setTaskId("t1");
+        task.setTaskDefName("test");
+        task.setWorkflowInstanceId(workflow.getWorkflowId());
+        task.setFirstScheduledTime(System.currentTimeMillis() - 120_000);
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setTotalTimeoutSeconds(60);
+        taskDef.setTimeoutPolicy(TaskDef.TimeoutPolicy.TIME_OUT_WF);
+
+        deciderService.checkTotalTimeout(taskDef, task); // must throw
+    }
+
+    @Test
+    public void testCheckTotalTimeout_zeroDisabled_noTimeout() {
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        task.setTaskId("t1");
+        task.setTaskDefName("test");
+        task.setWorkflowInstanceId(workflow.getWorkflowId());
+        task.setFirstScheduledTime(System.currentTimeMillis() - 120_000); // way past any sane limit
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setTotalTimeoutSeconds(0); // disabled
+
+        deciderService.checkTotalTimeout(taskDef, task);
+        assertEquals(
+                "totalTimeoutSeconds=0 means disabled; status must be unchanged",
+                TaskModel.Status.IN_PROGRESS,
+                task.getStatus());
+    }
+
+    @Test
+    public void testCheckTotalTimeout_firstScheduledTimeZero_skipped() {
+        // Tasks created before firstScheduledTime was introduced have value 0 —
+        // the check must be skipped for backward compatibility.
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        task.setTaskId("t1");
+        task.setTaskDefName("test");
+        task.setWorkflowInstanceId(workflow.getWorkflowId());
+        task.setFirstScheduledTime(0); // pre-feature task
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setTotalTimeoutSeconds(1); // very tight budget
+
+        deciderService.checkTotalTimeout(taskDef, task);
+        assertEquals(
+                "firstScheduledTime=0 must be skipped for backward compat",
+                TaskModel.Status.IN_PROGRESS,
+                task.getStatus());
+    }
+
+    @Test(expected = com.netflix.conductor.core.exception.TerminateWorkflowException.class)
+    public void testRetry_totalTimeoutExceeded_preventsRetry() {
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+        task.setReasonForIncompletion("test failure");
+        task.setFirstScheduledTime(System.currentTimeMillis() - 200_000); // 200s ago
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10); // plenty of retries left
+        taskDef.setRetryDelaySeconds(1);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.FIXED);
+        taskDef.setTotalTimeoutSeconds(60); // budget = 60s, elapsed = 200s → exceeded
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        // Must throw TerminateWorkflowException — total timeout exceeded, no retry
+        deciderService.retry(taskDef, workflowTask, task, workflow);
+    }
+
+    @Test
+    public void testRetry_totalTimeoutNotYetExceeded_retriesNormally() {
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+        task.setReasonForIncompletion("test failure");
+        task.setFirstScheduledTime(System.currentTimeMillis()); // just now — budget not exhausted
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10);
+        taskDef.setRetryDelaySeconds(1);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.FIXED);
+        taskDef.setTotalTimeoutSeconds(3600); // 1 hour budget — far from exceeded
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        Optional<TaskModel> retried = deciderService.retry(taskDef, workflowTask, task, workflow);
+        assertTrue("retry must succeed when total budget is not exhausted", retried.isPresent());
+        assertEquals(1, retried.get().getRetryCount());
+    }
+
+    /** ALERT_ONLY policy: checkTotalTimeout should only log — task must remain unchanged. */
+    @Test
+    public void testCheckTotalTimeout_alertOnlyPolicy_onlyLogs() {
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        task.setTaskId("t1");
+        task.setTaskDefName("test");
+        task.setWorkflowInstanceId(workflow.getWorkflowId());
+        task.setFirstScheduledTime(System.currentTimeMillis() - 120_000);
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setTotalTimeoutSeconds(60);
+        taskDef.setTimeoutPolicy(TaskDef.TimeoutPolicy.ALERT_ONLY);
+
+        deciderService.checkTotalTimeout(taskDef, task);
+        // ALERT_ONLY must NOT change task status — it only logs
+        assertEquals(
+                "ALERT_ONLY must not change task status",
+                TaskModel.Status.IN_PROGRESS,
+                task.getStatus());
+    }
+
+    /**
+     * When a worker explicitly fails a task and the total budget is already exhausted, the retry()
+     * guard throws TerminateWorkflowException regardless of the per-attempt policy. This documents
+     * the intended behavior: totalTimeoutSeconds is a hard budget; the per-attempt timeoutPolicy
+     * controls single-attempt timeouts, not the total limit.
+     */
+    @Test(expected = com.netflix.conductor.core.exception.TerminateWorkflowException.class)
+    public void testRetry_totalTimeoutExceeded_alertOnlyPolicy_stillTerminates() {
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED); // worker explicitly failed it
+        task.setTaskId("t1");
+        task.setReasonForIncompletion("worker failure");
+        task.setFirstScheduledTime(System.currentTimeMillis() - 200_000);
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10);
+        taskDef.setRetryDelaySeconds(1);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.FIXED);
+        taskDef.setTotalTimeoutSeconds(60);
+        taskDef.setTimeoutPolicy(TaskDef.TimeoutPolicy.ALERT_ONLY);
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        // Must throw — total budget exhausted regardless of ALERT_ONLY policy
+        deciderService.retry(taskDef, workflowTask, task, workflow);
+    }
+
+    @Test(expected = com.netflix.conductor.core.exception.TerminateWorkflowException.class)
+    public void testRetry_totalTimeoutZero_doesNotPreventRetry() {
+        // totalTimeoutSeconds=0 means disabled — retries must still be allowed (up to retryCount).
+        // When retryCount is 0, the task fails terminally as usual (TerminateWorkflowException),
+        // but NOT because of total timeout.
+        WorkflowModel workflow = createDefaultWorkflow();
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+        task.setReasonForIncompletion("failure");
+        task.setFirstScheduledTime(System.currentTimeMillis() - 200_000);
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(
+                0); // no retries — will throw, but due to retryCount=0, not total timeout
+        taskDef.setTotalTimeoutSeconds(0); // disabled
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        deciderService.retry(taskDef, workflowTask, task, workflow);
+    }
+
+    @Test
     public void testFork() throws IOException {
         InputStream stream = TestDeciderService.class.getResourceAsStream("/test.json");
         WorkflowModel workflow = objectMapper.readValue(stream, WorkflowModel.class);

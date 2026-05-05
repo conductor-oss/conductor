@@ -6,6 +6,7 @@ import { defineConfig, loadEnv, Plugin } from "vite";
 import svgr from "vite-plugin-svgr";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { vitePluginCspNonce } from "./vite-plugin-csp-nonce";
+import { isLibPeerExternal } from "./vite.lib-peer-external";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageDir = __dirname;
@@ -48,19 +49,7 @@ export default defineConfig(({ mode }) => {
           formats: ["es"] as const,
         },
         rollupOptions: {
-          external: [
-            "react",
-            "react-dom",
-            "react/jsx-runtime",
-            "react-router",
-            "react-router-dom",
-            "@mui/material",
-            "@mui/icons-material",
-            "@mui/system",
-            "@mui/x-date-pickers",
-            "@emotion/react",
-            "@emotion/styled",
-          ],
+          external: isLibPeerExternal,
           output: {
             globals: {
               react: "React",

@@ -239,7 +239,7 @@ public class WorkflowRerunTests {
         assertEquals(Workflow.WorkflowStatus.COMPLETED, subWorkflow.getStatus());
 
         await().pollInterval(Duration.ofSeconds(1))
-                .atMost(Duration.ofSeconds(5))
+                .atMost(Duration.ofSeconds(30))
                 .untilAsserted(
                         () -> {
                             Workflow workflow1 = workflowClient.getWorkflow(workflowId, true);

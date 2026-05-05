@@ -7,6 +7,13 @@ import { taskToNode } from "./common";
 import { DoWhileTaskDef, Crumb, CommonTaskDef } from "types";
 import { NodeData, EdgeData } from "reaflow";
 
+// When DO_WHILE has children ELK treats it as a compound node and computes its
+// width from children + horizontal nodePadding. Without this, ELK allocates
+// ~450px (50+350+50) while the visual card enforces minWidth:570px, causing
+// 120px of horizontal overflow and overlap with adjacent fork branches.
+const DO_WHILE_ELK_HORIZONTAL_PADDING = 110; // (570_min_width - 350_default_child) / 2
+const DO_WHILE_ELK_DEFAULT_VERTICAL_PADDING = 50; // keep reaflow default
+
 type DoWhileTaskDefWithMaybeExecutionData = DoWhileTaskDef & {
   executionData?: any;
 };
@@ -50,11 +57,19 @@ export const processDoWhile = async (
   const nodeMapper: (nodes: NodeData[]) => NodeData[] =
     executionData == null ? maybeAddPortsToWhileNodes : _identity;
 
+  const doWhileNode: NodeData = {
+    ...(taskToNode(doWhileTask as CommonTaskDef, crumbs) as NodeData),
+    nodePadding: [
+      DO_WHILE_ELK_DEFAULT_VERTICAL_PADDING,
+      DO_WHILE_ELK_HORIZONTAL_PADDING,
+      DO_WHILE_ELK_DEFAULT_VERTICAL_PADDING,
+      DO_WHILE_ELK_HORIZONTAL_PADDING,
+    ] as [number, number, number, number],
+  };
+
   return {
     // TODO Fix when importing the sdk
-    nodes: [
-      taskToNode(doWhileTask as CommonTaskDef, crumbs) as NodeData,
-    ].concat(
+    nodes: [doWhileNode].concat(
       nodeMapper(loopOverNodesEdges!.nodes!).map((t) =>
         _isNil(t.parent)
           ? {

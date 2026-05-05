@@ -24,6 +24,7 @@ import com.netflix.conductor.cassandra.config.cache.CacheableEventHandlerDAO;
 import com.netflix.conductor.cassandra.config.cache.CacheableMetadataDAO;
 import com.netflix.conductor.cassandra.dao.CassandraEventHandlerDAO;
 import com.netflix.conductor.cassandra.dao.CassandraExecutionDAO;
+import com.netflix.conductor.cassandra.dao.CassandraFileMetadataDAO;
 import com.netflix.conductor.cassandra.dao.CassandraMetadataDAO;
 import com.netflix.conductor.cassandra.dao.CassandraPollDataDAO;
 import com.netflix.conductor.cassandra.util.Statements;
@@ -107,6 +108,13 @@ public class CassandraConfiguration {
     @Bean
     public CassandraPollDataDAO cassandraPollDataDAO() {
         return new CassandraPollDataDAO();
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "conductor.file-storage.enabled", havingValue = "true")
+    public CassandraFileMetadataDAO cassandraFileMetadataDAO(
+            Session session, ObjectMapper objectMapper, CassandraProperties properties) {
+        return new CassandraFileMetadataDAO(session, objectMapper, properties);
     }
 
     @Bean

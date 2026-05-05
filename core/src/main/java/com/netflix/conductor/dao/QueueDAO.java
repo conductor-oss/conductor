@@ -122,6 +122,24 @@ public interface QueueDAO {
     boolean setUnackTimeout(String queueName, String messageId, long unackTimeout);
 
     /**
+     * Updates the unack timeout only if the new value would result in an earlier delivery than the
+     * currently scheduled time — i.e. never postpones further than what is already set.
+     *
+     * <p>Implementations should perform this as an atomic compare-and-set where possible (e.g.
+     * {@code ZADD XX LT} in Redis, {@code LEAST(deliver_on, …)} in SQL). The default falls back to
+     * an unconditional {@link #setUnackTimeout}.
+     *
+     * @param queueName Name of the queue
+     * @param messageId Message Id
+     * @param unackTimeout timeout in milliseconds
+     * @return true if the timeout was updated
+     */
+    default boolean setUnackTimeoutIfShorter(
+            String queueName, String messageId, long unackTimeout) {
+        return setUnackTimeout(queueName, messageId, unackTimeout);
+    }
+
+    /**
      * @param queueName Name of the queue
      */
     void flush(String queueName);
