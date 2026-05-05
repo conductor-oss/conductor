@@ -59,6 +59,12 @@ allprojects {
             exclude group: 'ch.qos.logback', module: 'logback-core'
             exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
             exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+            exclude group: 'cglib', module: 'cglib'
+            exclude group: 'cglib', module: 'cglib-nodep'
+            exclude group: 'commons-configuration', module: 'commons-configuration'
+            exclude group: 'org.springframework.ai', module: 'spring-ai-template-st'
+            exclude group: 'org.antlr', module: 'ST4'
+            exclude group: 'org.antlr', module: 'antlr-runtime'
 
             resolutionStrategy.eachDependency { details ->
                 if (details.requested.group.startsWith('com.fasterxml.jackson.') ) {
@@ -67,6 +73,18 @@ allprojects {
                 // Force commons-lang3 to 3.18.0+ for compatibility with commons-compress used by Testcontainers
                 if (details.requested.group == 'org.apache.commons' && details.requested.name == 'commons-lang3') {
                     details.useVersion "3.18.0"
+                }
+                // Force commons-configuration2 to 2.11.0 (latest stable 2.x) if used
+                if (details.requested.group == 'org.apache.commons' && details.requested.name == 'commons-configuration2') {
+                    details.useVersion "2.11.0"
+                }
+                // Force commons-configuration 1.x to redirect to commons-configuration2 as safety net
+                if (details.requested.group == 'commons-configuration' && details.requested.name == 'commons-configuration') {
+                    details.useTarget 'org.apache.commons:commons-configuration2:2.11.0'
+                }
+                // Force cglib to 3.3.0 to resolve COR-EL exclusion (versions <= 3.2.5 are prohibited)
+                if (details.requested.group == 'cglib' && (details.requested.name == 'cglib' || details.requested.name == 'cglib-nodep')) {
+                    details.useVersion "3.3.0"
                 }
                 // Force all Netty components to fixed version (excluding newer/experimental components)
                 if (details.requested.group == 'io.netty' && 
@@ -109,6 +127,22 @@ allprojects {
     }
 
     dependencies {
+        // Force cglib to safe version via dependency constraints
+        constraints {
+            implementation('cglib:cglib:3.3.0') {
+                because 'COR-EL: cglib versions <= 3.2.5 are prohibited'
+            }
+            implementation('cglib:cglib-nodep:3.3.0') {
+                because 'COR-EL: cglib versions <= 3.2.5 are prohibited'
+            }
+            testImplementation('cglib:cglib:3.3.0') {
+                because 'COR-EL: cglib versions <= 3.2.5 are prohibited'
+            }
+            testImplementation('cglib:cglib-nodep:3.3.0') {
+                because 'COR-EL: cglib versions <= 3.2.5 are prohibited'
+            }
+        }
+
         implementation('org.apache.logging.log4j:log4j-core')
         implementation('org.apache.logging.log4j:log4j-api')
         implementation('org.apache.logging.log4j:log4j-slf4j-impl')
