@@ -49,19 +49,21 @@ public class SubWorkflow extends WorkflowSystemTask {
     @SuppressWarnings("unchecked")
     @Override
     public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
-        // Guard against double-start: if the sub-workflow was already created (e.g. start() was
-        // retried by the sweeper before the first invocation persisted) skip re-creating it.
-        if (!StringUtils.isEmpty(task.getSubWorkflowId())) {
+        // Guard against double-start: if the task has already moved past SCHEDULED state, a
+        // sub-workflow was started on a prior call; skip re-creating it.
+        // NOTE: we deliberately do NOT check task.getSubWorkflowId() here because
+        // TaskModel.getSubWorkflowId() falls back to outputData, and retried tasks
+        // inherit outputData from their failed predecessor — that would cause the guard
+        // to trigger on a legitimately fresh retry attempt.
+        if (task.getStatus() != TaskModel.Status.SCHEDULED) {
             LOGGER.warn(
-                    "Sub-workflow {} has already been started for task {} in {}, skipping.",
-                    task.getSubWorkflowId(),
+                    "Sub-workflow task {} is already in state {}, skipping duplicate start.",
                     task.getTaskId(),
-                    workflow.toShortString());
+                    task.getStatus());
             return;
         }
 
         Map<String, Object> input = task.getInputData();
-        String name = input.get("subWorkflowName").toString();
 
         // Null-safe version read: version may be absent when an inline workflowDefinition is
         // supplied (the mapper skips the MetadataDAO lookup in that case).
@@ -76,6 +78,7 @@ public class SubWorkflow extends WorkflowSystemTask {
         }
 
         WorkflowDef workflowDefinition = null;
+        String name;
         if (input.get("subWorkflowDefinition") != null) {
             // Convert the runtime Map to a WorkflowDef. This supports both the static
             // embedded-object form and the dynamic ${expr}-resolved form.
@@ -83,6 +86,15 @@ public class SubWorkflow extends WorkflowSystemTask {
                     objectMapper.convertValue(
                             input.get("subWorkflowDefinition"), WorkflowDef.class);
             name = workflowDefinition.getName();
+        } else {
+            name =
+                    input.get("subWorkflowName") != null
+                            ? input.get("subWorkflowName").toString()
+                            : null;
+            if (name == null) {
+                throw new NonTransientException(
+                        "SubWorkflow name is null and no workflowDefinition supplied");
+            }
         }
 
         Map<String, String> taskToDomain = workflow.getTaskToDomain();

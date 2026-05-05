@@ -37,6 +37,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -79,20 +80,23 @@ public class TestSubWorkflow {
         when(workflowExecutor.startWorkflow(any(StartWorkflowInput.class))).thenReturn(workflowId);
         when(workflowExecutor.getWorkflow(anyString(), eq(false))).thenReturn(workflow);
 
-        // Each start() call must begin with no sub-workflow ID set; once started, the double-start
-        // guard prevents re-creation on a subsequent call with the same task instance.
+        // Each start() call must begin in SCHEDULED state; once started, the double-start guard
+        // (status != SCHEDULED) prevents re-creation on a subsequent call with the same task.
+        task.setStatus(TaskModel.Status.SCHEDULED);
         workflow.setStatus(WorkflowModel.Status.RUNNING);
         subWorkflow.start(workflowInstance, task, workflowExecutor);
         assertEquals("workflow_1", task.getSubWorkflowId());
         assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
 
-        task.setSubWorkflowId(null); // reset to simulate a fresh start() attempt
+        task.setSubWorkflowId(null); // reset to simulate a fresh retry attempt
+        task.setStatus(TaskModel.Status.SCHEDULED);
         workflow.setStatus(WorkflowModel.Status.TERMINATED);
         subWorkflow.start(workflowInstance, task, workflowExecutor);
         assertEquals("workflow_1", task.getSubWorkflowId());
         assertEquals(TaskModel.Status.CANCELED, task.getStatus());
 
-        task.setSubWorkflowId(null); // reset to simulate a fresh start() attempt
+        task.setSubWorkflowId(null); // reset to simulate a fresh retry attempt
+        task.setStatus(TaskModel.Status.SCHEDULED);
         workflow.setStatus(WorkflowModel.Status.COMPLETED);
         subWorkflow.start(workflowInstance, task, workflowExecutor);
         assertEquals("workflow_1", task.getSubWorkflowId());
@@ -171,6 +175,7 @@ public class TestSubWorkflow {
 
         TaskModel task = new TaskModel();
         task.setOutputData(new HashMap<>());
+        task.setStatus(TaskModel.Status.SCHEDULED);
 
         Map<String, Object> inputData = new HashMap<>();
         inputData.put("subWorkflowName", "UnitWorkFlow");
@@ -199,6 +204,7 @@ public class TestSubWorkflow {
 
         TaskModel task = new TaskModel();
         task.setOutputData(new HashMap<>());
+        task.setStatus(TaskModel.Status.SCHEDULED);
 
         Map<String, Object> inputData = new HashMap<>();
         inputData.put("subWorkflowName", "UnitWorkFlow");
@@ -234,6 +240,7 @@ public class TestSubWorkflow {
 
         TaskModel task = new TaskModel();
         task.setOutputData(new HashMap<>());
+        task.setStatus(TaskModel.Status.SCHEDULED);
 
         Map<String, Object> inputData = new HashMap<>();
         inputData.put("subWorkflowName", "UnitWorkFlow");
@@ -418,15 +425,37 @@ public class TestSubWorkflow {
     }
 
     @Test
-    public void testStartIsIdempotentWhenSubWorkflowIdAlreadySet() {
-        // If start() is called twice on the same task (e.g. sweeper retry before the first
-        // invocation persisted), the double-start guard must prevent creating a duplicate.
+    public void testStartThrowsWhenSubWorkflowNameNullAndNoDefinitionSupplied() {
+        // If neither subWorkflowName nor subWorkflowDefinition is provided the task is
+        // misconfigured; start() must throw NonTransientException rather than NPE.
         WorkflowModel workflowInstance = new WorkflowModel();
         workflowInstance.setWorkflowDefinition(new WorkflowDef());
 
         TaskModel task = new TaskModel();
         task.setOutputData(new HashMap<>());
-        task.setSubWorkflowId("already-started-id"); // simulate a task that was already started
+        task.setStatus(TaskModel.Status.SCHEDULED);
+        task.setInputData(new HashMap<>()); // no subWorkflowName, no subWorkflowDefinition
+
+        try {
+            subWorkflow.start(workflowInstance, task, workflowExecutor);
+            fail("Expected NonTransientException");
+        } catch (NonTransientException e) {
+            assertTrue(e.getMessage().contains("null"));
+        }
+    }
+
+    @Test
+    public void testStartIsIdempotentWhenTaskAlreadyStarted() {
+        // If start() is called again on a task that already moved past SCHEDULED (e.g. sweeper
+        // retry before the first invocation persisted), the status-based guard must prevent
+        // creating a duplicate sub-workflow.
+        WorkflowModel workflowInstance = new WorkflowModel();
+        workflowInstance.setWorkflowDefinition(new WorkflowDef());
+
+        TaskModel task = new TaskModel();
+        task.setOutputData(new HashMap<>());
+        task.setSubWorkflowId("already-started-id");
+        task.setStatus(TaskModel.Status.IN_PROGRESS); // task moved past SCHEDULED on first start
 
         Map<String, Object> inputData = new HashMap<>();
         inputData.put("subWorkflowName", "UnitWorkFlow");
@@ -437,6 +466,43 @@ public class TestSubWorkflow {
 
         // startWorkflow must NOT have been called a second time
         assertEquals("already-started-id", task.getSubWorkflowId());
+        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
+    }
+
+    @Test
+    public void testStartCreatesNewSubWorkflowOnRetryEvenWhenOutputDataHasOldSubWorkflowId() {
+        // Regression test: retried tasks inherit outputData from their failed predecessor,
+        // so outputData may already contain "subWorkflowId" from the previous attempt.
+        // The old guard (checking getSubWorkflowId()) would have incorrectly blocked this retry.
+        // The new guard (checking status == SCHEDULED) must allow the retry through.
+        WorkflowModel workflowInstance = new WorkflowModel();
+        workflowInstance.setWorkflowDefinition(new WorkflowDef());
+
+        Map<String, Object> outputData = new HashMap<>();
+        outputData.put("subWorkflowId", "old-sub-workflow-id"); // inherited from failed predecessor
+
+        TaskModel task = new TaskModel();
+        task.setOutputData(outputData);
+        task.setStatus(TaskModel.Status.SCHEDULED); // retry: scheduler resets to SCHEDULED
+
+        Map<String, Object> inputData = new HashMap<>();
+        inputData.put("subWorkflowName", "UnitWorkFlow");
+        inputData.put("subWorkflowVersion", 1);
+        task.setInputData(inputData);
+
+        WorkflowModel createdSubWorkflow = new WorkflowModel();
+        createdSubWorkflow.setStatus(WorkflowModel.Status.RUNNING);
+
+        when(workflowExecutor.startWorkflow(any(StartWorkflowInput.class)))
+                .thenReturn("new-sub-workflow-id");
+        when(workflowExecutor.getWorkflow(eq("new-sub-workflow-id"), eq(false)))
+                .thenReturn(createdSubWorkflow);
+
+        subWorkflow.start(workflowInstance, task, workflowExecutor);
+
+        // A new sub-workflow must have been created, not blocked by the old outputData
+        assertEquals("new-sub-workflow-id", task.getSubWorkflowId());
+        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
     }
 
     @Test
@@ -490,6 +556,7 @@ public class TestSubWorkflow {
 
         TaskModel task = new TaskModel();
         task.setOutputData(new HashMap<>());
+        task.setStatus(TaskModel.Status.SCHEDULED);
 
         Map<String, Object> inputData = new HashMap<>();
         inputData.put("subWorkflowName", "UnitWorkFlow");
