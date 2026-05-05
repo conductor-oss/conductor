@@ -103,6 +103,14 @@ allprojects {
                 if (details.requested.group == 'io.netty' && details.requested.name == 'netty-codec') {
                     details.useVersion revNetty
                 }
+                // Force Reactor Netty line for CVE remediation when BOM-managed versions lag.
+                if (details.requested.group == 'io.projectreactor.netty') {
+                    details.useVersion revReactor
+                }
+                // Keep grpc artifacts aligned (including grpc-netty-shaded) to avoid vulnerable transitive mixes.
+                if (details.requested.group == 'io.grpc') {
+                    details.useVersion revGrpc
+                }
             }
         }
     }
