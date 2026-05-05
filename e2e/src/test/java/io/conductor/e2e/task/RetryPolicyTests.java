@@ -1187,23 +1187,29 @@ public class RetryPolicyTests {
         List<String> wfIds = new ArrayList<>();
         for (int i = 0; i < N; i++) wfIds.add(startWorkflow(wf));
 
-        // For each workflow: fail once then complete
-        ExecutorService pool = Executors.newFixedThreadPool(N);
-        CountDownLatch done = new CountDownLatch(N);
-        for (String id : wfIds) {
-            pool.submit(
-                    () -> {
-                        try {
-                            failTask(id, pollTask(tt).getTaskId());
-                            awaitScheduledRetry(id, 2);
-                            completeTask(id, pollTask(tt).getTaskId());
-                        } finally {
-                            done.countDown();
-                        }
-                    });
+        // Polling is by task type, so use the workflow ID on the polled task instead of
+        // pairing an arbitrary task ID with a separately captured workflow ID.
+        Set<String> failedWorkflowIds = ConcurrentHashMap.newKeySet();
+        while (failedWorkflowIds.size() < N) {
+            Task task = pollTask(tt);
+            String taskWorkflowId = task.getWorkflowInstanceId();
+            if (wfIds.contains(taskWorkflowId) && failedWorkflowIds.add(taskWorkflowId)) {
+                failTask(taskWorkflowId, task.getTaskId());
+            }
         }
-        assertTrue(done.await(60, TimeUnit.SECONDS));
-        pool.shutdown();
+
+        for (String id : wfIds) {
+            awaitScheduledRetry(id, 2);
+        }
+
+        Set<String> completedWorkflowIds = ConcurrentHashMap.newKeySet();
+        while (completedWorkflowIds.size() < N) {
+            Task task = pollTask(tt);
+            String taskWorkflowId = task.getWorkflowInstanceId();
+            if (wfIds.contains(taskWorkflowId) && completedWorkflowIds.add(taskWorkflowId)) {
+                completeTask(taskWorkflowId, task.getTaskId());
+            }
+        }
 
         // All N workflows must complete — totalTimeout (30s) was not reached by any instance
         for (String id : wfIds) {
