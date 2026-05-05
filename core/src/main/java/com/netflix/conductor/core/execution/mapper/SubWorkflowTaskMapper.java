@@ -14,7 +14,6 @@ package com.netflix.conductor.core.execution.mapper;
 
 import java.util.*;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -160,7 +159,11 @@ public class SubWorkflowTaskMapper implements TaskMapper {
     private Integer getSubWorkflowVersion(
             Map<String, Object> resolvedParams, String subWorkflowName) {
         return Optional.ofNullable(resolvedParams.get("version"))
-                .map(v -> v instanceof Number ? ((Number) v).intValue() : Integer.parseInt(v.toString()))
+                .map(
+                        v ->
+                                v instanceof Number
+                                        ? ((Number) v).intValue()
+                                        : Integer.parseInt(v.toString()))
                 .orElseGet(
                         () ->
                                 metadataDAO
