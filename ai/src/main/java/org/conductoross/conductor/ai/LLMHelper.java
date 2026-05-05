@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -38,7 +39,6 @@ import org.conductoross.conductor.ai.models.ToolSpec;
 import org.conductoross.conductor.ai.models.VideoGenRequest;
 import org.conductoross.conductor.common.JsonSchemaValidator;
 import org.conductoross.conductor.common.utils.StringTemplate;
-import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -57,8 +57,6 @@ import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
 import org.springframework.util.MimeType;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
@@ -84,10 +82,8 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SIM
 import static org.conductoross.conductor.ai.MimeExtensionResolver.getExtension;
 import static org.conductoross.conductor.ai.MimeExtensionResolver.getMimeTypeFromUrl;
 
-@Component
 @Slf4j
 @RequiredArgsConstructor
-@Conditional(AIIntegrationEnabledCondition.class)
 public class LLMHelper {
     private static final TypeReference<Map<String, Object>> MAP_OF_STRING_TO_OBJ =
             new TypeReference<>() {};
@@ -349,7 +345,10 @@ public class LLMHelper {
                     .addFirst(new ChatMessage(ChatMessage.Role.system, input.getInstructions()));
         }
 
-        List<Message> messages = input.getMessages().stream().map(this::constructMessage).toList();
+        List<Message> messages =
+                new ArrayList<>(input.getMessages().stream().map(this::constructMessage).toList());
+
+        ensureLastMessageIsFromUser(messages);
 
         Prompt prompt = new Prompt(messages, chatOptions);
         ChatResponse chatResponse = chatClient.prompt(prompt).call().chatResponse();
@@ -377,8 +376,11 @@ public class LLMHelper {
                 for (AssistantMessage.ToolCall toolCall : toolCalls) {
                     String name = toolCall.name();
                     String id = toolCall.id();
+                    if (id == null || id.isBlank()) {
+                        id = UUID.randomUUID().toString();
+                    }
                     String argsAsString = toolCall.arguments();
-                    Map<String, Object> args = Map.of();
+                    Map<String, Object> args = new HashMap<>();
                     try {
                         @SuppressWarnings("unchecked")
                         Map<String, Object> parsedArgs =
@@ -395,12 +397,6 @@ public class LLMHelper {
                                     .filter(toolSpec -> toolSpec.getName().equals(name))
                                     .findFirst();
 
-                    String integrationName =
-                            (String)
-                                    matched.map(ToolSpec::getConfigParams)
-                                            .orElse(Collections.emptyMap())
-                                            .get("integrationName");
-                    args.put("integrationName", integrationName);
                     String type = matched.map(ToolSpec::getType).orElse(TASK_TYPE_SIMPLE);
                     tools.add(
                             ToolCall.builder()
@@ -434,11 +430,20 @@ public class LLMHelper {
             result = responses.getFirst();
         }
         finishReason = finishReasonMap.getOrDefault(finishReason, finishReason).toUpperCase();
+
+        // Extract response_id if present (set by OpenAI Responses API for chaining)
+        String responseId = null;
+        Object respIdObj = chatResponse.getMetadata().get("response_id");
+        if (respIdObj instanceof String rid) {
+            responseId = rid;
+        }
+
         return LLMResponse.builder()
                 .result(result)
                 .media(media)
                 .toolCalls(tools)
                 .finishReason(finishReason)
+                .responseId(responseId)
                 .completionTokens(chatResponse.getMetadata().getUsage().getCompletionTokens())
                 .promptTokens(chatResponse.getMetadata().getUsage().getPromptTokens())
                 .tokenUsed(chatResponse.getMetadata().getUsage().getTotalTokens())
@@ -672,32 +677,32 @@ public class LLMHelper {
 
     private void storeMedia(
             String location, List<org.conductoross.conductor.ai.models.Media> media) {
-        Optional<DocumentLoader> docLoader =
+
+        DocumentLoader documentLoader =
                 documentLoaders.stream()
-                        .filter(documentLoader -> documentLoader.supports(location))
-                        .findFirst();
-        docLoader.ifPresent(
-                loader -> {
-                    media.stream()
-                            .filter(m1 -> m1.getData() != null)
-                            .forEach(
-                                    m -> {
-                                        // Each media item gets a unique path with file extension
-                                        // to prevent overwriting when multiple items exist
-                                        // (e.g., video + thumbnail)
-                                        String ext = getExtension(m.getMimeType());
-                                        String uniqueLocation =
-                                                location + "_" + java.util.UUID.randomUUID() + ext;
-                                        String uploadLocation =
-                                                loader.upload(
-                                                        Map.of(),
-                                                        m.getMimeType(),
-                                                        m.getData(),
-                                                        uniqueLocation);
-                                        m.setLocation(uploadLocation);
-                                        m.setData(null);
-                                    });
-                });
+                        .filter(loader -> loader.supports(location))
+                        .findFirst()
+                        .orElse(null);
+        if (documentLoader == null) {
+            log.debug("no document loaders found, media will not be stored");
+            return;
+        }
+        media.stream()
+                .filter(m1 -> m1.getData() != null)
+                .forEach(
+                        m -> {
+                            // Each media item gets a unique path with file extension
+                            // to prevent overwriting when multiple items exist
+                            // (e.g., video + thumbnail)
+                            String ext = getExtension(m.getMimeType());
+                            String uniqueLocation =
+                                    location + "_" + java.util.UUID.randomUUID() + ext;
+                            String uploadLocation =
+                                    documentLoader.upload(
+                                            Map.of(), m.getMimeType(), m.getData(), uniqueLocation);
+                            m.setLocation(uploadLocation);
+                            m.setData(null);
+                        });
     }
 
     /**
@@ -825,6 +830,41 @@ public class LLMHelper {
         }
 
         return result;
+    }
+
+    /**
+     * Ensures the conversation ends with a user message. Some providers (e.g. Anthropic/Claude)
+     * reject requests where the last message has an assistant or tool_call role ("assistant message
+     * prefill"). This typically happens when the prior iteration ended with finishReason=MAX_TOKENS
+     * and the DO_WHILE loop continues with the partial assistant response as the last message in
+     * the history. Appending a user continuation prompt is safe for all providers — OpenAI and
+     * others simply treat it as the next user turn.
+     *
+     * @param messages The mutable list of messages to check and potentially modify
+     */
+    @VisibleForTesting
+    void ensureLastMessageIsFromUser(List<Message> messages) {
+        if (messages.isEmpty()) return;
+        Message last = messages.getLast();
+        if (last instanceof UserMessage) return;
+
+        if (last instanceof AssistantMessage assistantMsg) {
+            // Replace trailing assistant message with a user message that includes
+            // the partial text as context + continuation instruction.
+            // This avoids the "assistant message prefill" error from Claude.
+            String partialText = assistantMsg.getText();
+            messages.removeLast();
+            String continuation =
+                    partialText != null && !partialText.isBlank()
+                            ? "You were saying:\n\n"
+                                    + partialText
+                                    + "\n\nPlease continue where you left off."
+                            : "Please continue where you left off.";
+            messages.add(new UserMessage(continuation));
+        } else {
+            // For any other non-user message type (tool_call, system, etc.)
+            messages.add(new UserMessage("Please continue where you left off."));
+        }
     }
 
     /** Checks if a string looks like JSON */

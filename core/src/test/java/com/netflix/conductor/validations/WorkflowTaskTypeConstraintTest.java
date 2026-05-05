@@ -344,7 +344,32 @@ public class WorkflowTaskTypeConstraintTest {
 
         assertTrue(
                 validationErrors.contains(
-                        "inputParameters.http_request field is required for taskType: HTTP taskName: encode"));
+                        "inputParameters.http_request or inputParameters.uri field is required for taskType: HTTP taskName: encode"));
+    }
+
+    @Test
+    public void testWorkflowTaskTypeHTTPWithTopLevelParams() {
+        WorkflowTask workflowTask = createSampleWorkflowTask();
+        workflowTask.setType("HTTP");
+        workflowTask.getInputParameters().put("uri", "http://www.netflix.com");
+        workflowTask.getInputParameters().put("method", "GET");
+
+        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
+
+        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    public void testWorkflowTaskTypeHTTPWithTopLevelUriOnly() {
+        WorkflowTask workflowTask = createSampleWorkflowTask();
+        workflowTask.setType("HTTP");
+        workflowTask.getInputParameters().put("uri", "http://www.netflix.com");
+
+        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
+
+        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
+        assertEquals(0, result.size());
     }
 
     @Test

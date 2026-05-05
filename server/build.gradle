@@ -32,9 +32,12 @@ dependencies {
     implementation project(':conductor-azureblob-storage')
     implementation project(':conductor-postgres-external-storage')
     implementation project(':conductor-awss3-storage')
+    implementation project(':conductor-local-file-storage')
+    implementation project(':conductor-gcs-storage')
 
 
     //Persistence
+    implementation project(':conductor-redis-configuration')
     implementation project(':conductor-redis-persistence')
     implementation project(':conductor-cassandra-persistence')
     implementation project(':conductor-postgres-persistence')
@@ -43,17 +46,19 @@ dependencies {
 
     // Indexing backend selection (build-time) to avoid Lucene conflicts between ES and OS
     def indexingBackend = project.findProperty('indexingBackend') ?: 'elasticsearch'
-    if (indexingBackend == 'opensearch' || indexingBackend == 'os') {
+
+    if (indexingBackend == 'opensearch3' || indexingBackend == 'os3') {
+        implementation project(':conductor-os-persistence-v3')
+    } else if (indexingBackend == 'opensearch' || indexingBackend == 'os') {
         implementation project(':conductor-os-persistence')
         implementation project(':conductor-os-persistence-v2')
-        // os-persistence-v3 excluded: requires API migration to opensearch-java 3.x
-        // The DAO layer needs reimplementation for the new client API (breaking changes)
-        // See: os-persistence-v3/build.gradle comments for details
-        // implementation project(':conductor-os-persistence-v3')
+    } else if (indexingBackend == 'elasticsearch8' || indexingBackend == 'es8') {
+        implementation project(':conductor-es8-persistence')
+    } else if (indexingBackend == 'elasticsearch7' || indexingBackend == 'es7' || indexingBackend == 'elasticsearch') {
+        implementation project(':conductor-es7-persistence')
     } else {
         implementation project(':conductor-es7-persistence')
     }
-
     implementation project(':conductor-redis-lock')
     implementation project(':conductor-redis-concurrency-limit')
 
@@ -61,6 +66,14 @@ dependencies {
     implementation project(':conductor-http-task')
     implementation project(':conductor-json-jq-task')
     implementation project(':conductor-kafka')
+
+    //Scheduler
+    implementation project(':conductor-scheduler-core')
+    implementation project(':conductor-scheduler-postgres-persistence')
+    implementation project(':conductor-scheduler-mysql-persistence')
+    implementation project(':conductor-scheduler-cassandra-persistence')
+    implementation project(':conductor-scheduler-redis-persistence')
+    implementation project(':conductor-scheduler-sqlite-persistence')
 
     //Metrics
     implementation project(':conductor-metrics')
@@ -80,9 +93,7 @@ dependencies {
     implementation "org.postgresql:postgresql:${revPostgres}"
 
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation ("io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}") {
-    	exclude group: 'com.netflix.conductor', module: 'conductor-core'
-    }
+    implementation "io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}"
 
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
 
@@ -103,6 +114,10 @@ jar {
 
 bootJar {
     mainClass = 'com.netflix.conductor.Conductor'
+    manifest {
+        attributes('Implementation-Title': project.name,
+                'Implementation-Version': project.version)
+    }
     archiveClassifier = 'boot'
 }
 

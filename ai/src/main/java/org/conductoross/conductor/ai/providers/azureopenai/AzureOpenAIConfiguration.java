@@ -12,16 +12,16 @@
  */
 package org.conductoross.conductor.ai.providers.azureopenai;
 
+import java.time.Duration;
+
 import org.conductoross.conductor.ai.ModelConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
 @ConfigurationProperties(prefix = "conductor.ai.azureopenai")
 @Component(value = AzureOpenAI.NAME)
@@ -31,6 +31,15 @@ public class AzureOpenAIConfiguration implements ModelConfiguration<AzureOpenAI>
     private String baseURL;
     private String user;
     private String deploymentName;
+    private Duration timeout = Duration.ofSeconds(600);
+
+    public AzureOpenAIConfiguration(
+            String apiKey, String baseURL, String user, String deploymentName) {
+        this.apiKey = apiKey;
+        this.baseURL = baseURL;
+        this.user = user;
+        this.deploymentName = deploymentName;
+    }
 
     @Override
     public AzureOpenAI get() {

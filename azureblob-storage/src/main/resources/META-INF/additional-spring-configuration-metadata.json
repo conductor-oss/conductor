@@ -1,0 +1,14 @@
+{
+  "properties": [
+    {
+      "name": "conductor.file-storage.azure-blob.container-name",
+      "type": "java.lang.String",
+      "description": "Azure Blob Storage container name where files are stored."
+    },
+    {
+      "name": "conductor.file-storage.azure-blob.connection-string",
+      "type": "java.lang.String",
+      "description": "Azure Storage connection string (DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net)."
+    }
+  ]
+}

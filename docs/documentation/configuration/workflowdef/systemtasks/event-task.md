@@ -1,3 +1,6 @@
+---
+description: "Event Task — publish events to message brokers (Kafka, SQS, NATS) from Conductor workflows for event-driven orchestration."
+---
 # Event Task
 
 ```json
@@ -9,11 +12,13 @@ The Event task (`EVENT`) is used to publish events to supported eventing systems
 The following queuing systems are supported:
 
 - Conductor internal queue
-- AMQP
+- AMQP (RabbitMQ)
 - Kafka
 - NATS
 - NATS Streaming
 - SQS
+
+For details on configuring connections to these event buses (Kafka bootstrap servers, NATS URLs, AMQP credentials, etc.), see the [Event Bus Orchestration](../../../../devguide/how-tos/event-bus.md#configuration) guide.
 
 
 ## Task parameters

@@ -16,7 +16,7 @@
  */
 ext {
     revActivation = '2.0.1'
-    revApacheHttpComponentsClient5 = '5.2.1'
+    revApacheHttpComponentsClient5 = '5.3.1'
     revAwaitility = '3.1.6'
     revAwsSdk = '2.31.68'
     revBval = '2.0.5'
@@ -32,11 +32,30 @@ ext {
     revHamcrestAllMatchers = '1.8'
     revHealth = '1.1.4'
     revPostgres = '42.7.2'
-    revProtoBuf = '4.33.0'
+
+    // -----------------------------------------------------------------
+    // PINNED DEPENDENCIES — do not upgrade without reading the notes.
+    // Dependabot ignore rules in .github/dependabot.yml enforce these.
+    // See: https://github.com/conductor-oss/conductor/issues/964
+    // -----------------------------------------------------------------
+
+    // PINNED (#964): protobuf-java must stay at 3.x.
+    // protobuf-java 4.x combined with GraalVM polyglot 25.x causes Gradle
+    // to request org.graalvm.polyglot:polyglot4 which does not exist on
+    // Maven Central, breaking compilation. Revisit when a 4.x release
+    // resolves this GraalVM capability-resolution conflict.
+    revProtoBuf = '3.25.5'
+
+    // PINNED (#964): GraalVM polyglot artifacts — ALL must be the same version.
+    // Mixing versions (e.g. polyglot:24.x with js:25.x) causes a runtime
+    // "polyglot version X is not compatible with Truffle Y" error.
+    // When upgrading, bump revGraalVM everywhere it is referenced and test.
+    // core/build.gradle uses this variable for all five GraalVM artifacts.
+    revGraalVM = '25.0.2'
     revJakartaAnnotation = '2.1.1'
     revJAXB = '4.0.1'
     revJAXRS = '4.0.0'
-    revJedis = '3.3.0'
+    revJedis = '6.0.0'
     revJersey = '3.1.7'
     revJerseyCommon = '3.1.7'
     revJsonPath = '2.4.0'
@@ -44,7 +63,7 @@ ext {
     revJsr311Api = '1.1.1'
     revMockServerClient = '5.12.0'
     revSpringDoc = '2.1.0'
-    revOrkesQueues = '1.0.10'
+    revOrkesQueues = '2.0.0.rc2'
     revPowerMock = '2.0.9'
     revProtogenAnnotations = '1.0.0'
     revProtogenCodegen = '1.4.0'
@@ -53,20 +72,21 @@ ext {
     revRxJava = '1.2.2'
     revSpock = '2.4-M4-groovy-4.0'
     revSpotifyCompletableFutures = '0.3.3'
-    revTestContainer = '1.19.3'
+    revTestContainer = '1.21.4'
     revFasterXml = '2.15.3'
     revAmqpClient = '5.13.0'
     revKafka = '2.6.0'
     revMicrometer = '1.14.6'
     revPrometheus = '0.9.0'
     revElasticSearch7 = '7.17.11'
+    revElasticSearch8 = '8.19.11'
     revCodec = '1.15'
     revAzureStorageBlobSdk = '12.25.1'
     revNatsStreaming = '2.6.5'
     revNats = '2.16.14'
     revStan = '2.2.3'
     revFlyway = '10.15.2'
-    revConductorClient = '4.0.10'
+    revConductorClient = '5.0.1'
     revReactor = '1.3.1'
     revSpringAI = '1.1.2'
     revJSonSchemaValidator  = '1.0.73'
@@ -75,4 +95,5 @@ ext {
     revMCP = '0.13.0'
     revCommonsCompress = '1.26.1'
     pinecone = '3.0.0'
+    revFlexmark = '0.64.8'
 }

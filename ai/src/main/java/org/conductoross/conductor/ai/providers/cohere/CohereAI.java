@@ -21,6 +21,8 @@ import org.conductoross.conductor.ai.providers.cohere.api.CohereApi;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.image.ImageModel;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.RestClient;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -101,7 +103,13 @@ public class CohereAI implements AIModel {
     // Initialization helpers
 
     private CohereApi createCohereApi() {
-        CohereApi.Builder builder = CohereApi.builder().apiKey(config.getApiKey());
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setReadTimeout(config.getTimeout());
+
+        CohereApi.Builder builder =
+                CohereApi.builder()
+                        .apiKey(config.getApiKey())
+                        .restClientBuilder(RestClient.builder().requestFactory(factory));
 
         if (config.getBaseURL() != null && !config.getBaseURL().isEmpty()) {
             builder.baseUrl(config.getBaseURL());

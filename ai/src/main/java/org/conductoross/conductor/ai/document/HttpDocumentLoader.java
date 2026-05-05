@@ -40,8 +40,10 @@ public class HttpDocumentLoader implements DocumentLoader {
 
     private static final int MAX_DEPTH = 1; // Specify the depth limit
     private final OkHttpClient httpClient;
+    private final DocumentAccessPolicy accessPolicy;
 
-    public HttpDocumentLoader() {
+    public HttpDocumentLoader(DocumentAccessPolicy accessPolicy) {
+        this.accessPolicy = accessPolicy;
         this.httpClient =
                 new OkHttpClient.Builder()
                         .connectTimeout(30, TimeUnit.SECONDS)
@@ -53,6 +55,7 @@ public class HttpDocumentLoader implements DocumentLoader {
     @SuppressWarnings("unchecked")
     @Override
     public byte[] download(String location) {
+        accessPolicy.validateAccess(location);
         try {
             Map<String, Object> headers =
                     (Map<String, Object>) TaskContext.get().getTask().getInputData().get("headers");
@@ -79,6 +82,7 @@ public class HttpDocumentLoader implements DocumentLoader {
             if (fileURI == null) {
                 return null;
             }
+            accessPolicy.validateAccess(fileURI);
             Input input = new Input();
             input.getHeaders().putAll(headers);
             input.setMethod("POST");

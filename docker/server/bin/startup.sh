@@ -22,19 +22,13 @@ nginx
 
 # Start the server
 cd /app/libs
-echo "Property file: $CONFIG_PROP"
-echo $CONFIG_PROP
-export config_file=
+echo "Using java options config: $JAVA_OPTS"
 
 if [ -z "$CONFIG_PROP" ];
   then
-    echo "Using default configuration file";
-    export config_file=/app/config/config.properties
+    echo "No CONFIG_PROP set — using built-in defaults (SQLite, no external dependencies required)";
+    java ${JAVA_OPTS} -jar conductor-server.jar 2>&1 | tee -a /app/logs/server.log
   else
-    echo "Using '$CONFIG_PROP'";
-    export config_file=/app/config/$CONFIG_PROP
+    echo "Using config: $CONFIG_PROP";
+    java ${JAVA_OPTS} -DCONDUCTOR_CONFIG_FILE=/app/config/$CONFIG_PROP -jar conductor-server.jar 2>&1 | tee -a /app/logs/server.log
 fi
-
-echo "Using java options config: $JAVA_OPTS"
-
-java ${JAVA_OPTS} -jar -DCONDUCTOR_CONFIG_FILE=$config_file conductor-server.jar 2>&1 | tee -a /app/logs/server.log

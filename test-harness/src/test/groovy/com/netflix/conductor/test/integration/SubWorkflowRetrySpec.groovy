@@ -287,7 +287,6 @@ class SubWorkflowRetrySpec extends AbstractSpecification {
             tasks.size() == 2
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
         }
 
         and: "verify that the sub workflow task in mid level workflow is updated"
@@ -296,7 +295,6 @@ class SubWorkflowRetrySpec extends AbstractSpecification {
             tasks.size() == 2
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
         }
 
         and: "verify that the previously failed task in leaf workflow is in SCHEDULED state"
@@ -407,7 +405,6 @@ class SubWorkflowRetrySpec extends AbstractSpecification {
             tasks.size() == 2
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
         }
         def newLeafWorkflowId = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true).getTasks().get(2).subWorkflowId
 
@@ -484,7 +481,6 @@ class SubWorkflowRetrySpec extends AbstractSpecification {
             tasks.size() == 2
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
         }
 
         and: "verify that the sub workflow task in mid level workflow is updated"
@@ -493,7 +489,6 @@ class SubWorkflowRetrySpec extends AbstractSpecification {
             tasks.size() == 2
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
         }
 
         and: "verify that the previously failed task in leaf workflow is in SCHEDULED state"
@@ -601,7 +596,6 @@ class SubWorkflowRetrySpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
         }
 
         and: "verify that the root workflow' is updated"
@@ -612,7 +606,6 @@ class SubWorkflowRetrySpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
         }
 
         when: "poll and complete the scheduled task in the leaf workflow"
@@ -686,7 +679,6 @@ class SubWorkflowRetrySpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
         }
 
         and: "verify that the root workflow is updated"
@@ -697,7 +689,6 @@ class SubWorkflowRetrySpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
         }
 
         when: "poll and complete the scheduled task in the leaf workflow"

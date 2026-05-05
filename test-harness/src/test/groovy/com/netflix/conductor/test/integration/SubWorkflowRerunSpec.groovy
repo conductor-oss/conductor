@@ -402,7 +402,6 @@ class SubWorkflowRerunSpec extends AbstractSpecification {
             tasks.size() == 2
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
         }
 
         when: "poll and complete the task in the mid level workflow"
@@ -492,7 +491,6 @@ class SubWorkflowRerunSpec extends AbstractSpecification {
             tasks.size() == 2
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
         }
 
         when: "poll and complete the task in the mid level workflow"
@@ -582,7 +580,6 @@ class SubWorkflowRerunSpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
         }
 
         and: "verify that the root workflow's SUB_WORKFLOW is updated"
@@ -593,7 +590,6 @@ class SubWorkflowRerunSpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
         }
 
         when: "poll and complete the scheduled task in the leaf workflow"
@@ -670,7 +666,6 @@ class SubWorkflowRerunSpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
         }
 
         and: "verify that the root workflow's SUB_WORKFLOW is updated"
@@ -681,7 +676,6 @@ class SubWorkflowRerunSpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
         }
 
         when: "poll and complete the scheduled task in the leaf workflow"

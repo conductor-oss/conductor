@@ -104,7 +104,7 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
         } catch (Exception e) {
             log.error("error executing annotated task " + getTaskType(), e);
             task.setStatus(TaskModel.Status.FAILED);
-            task.setReasonForIncompletion(e.getMessage());
+            task.setReasonForIncompletion(getRootCauseMessage(e));
             return true;
         } finally {
             TaskContext.clear();
@@ -116,13 +116,31 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
 
         log.error("Error executing annotated task " + getTaskType(), cause);
 
+        String message = getRootCauseMessage(cause);
         if (cause instanceof NonRetryableException) {
             task.setStatus(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
-            task.setReasonForIncompletion("Non-retryable error: " + cause.getMessage());
+            task.setReasonForIncompletion("Non-retryable error: " + message);
         } else {
             task.setStatus(TaskModel.Status.FAILED);
-            task.setReasonForIncompletion("Task execution failed: " + cause.getMessage());
+            task.setReasonForIncompletion("Task execution failed: " + message);
         }
+    }
+
+    /**
+     * Walk the exception cause chain to build a message that includes the root cause. This prevents
+     * wrapper exceptions (e.g. "Failed to generate content") from hiding the actual error (e.g.
+     * "404: This model is no longer available").
+     */
+    private String getRootCauseMessage(Throwable t) {
+        if (t == null) return "unknown error";
+        Throwable root = t;
+        while (root.getCause() != null && root.getCause() != root) {
+            root = root.getCause();
+        }
+        if (root == t) {
+            return t.getMessage();
+        }
+        return t.getMessage() + " — caused by: " + root.getMessage();
     }
 
     @Override

@@ -204,6 +204,7 @@ public class TestWorkflowExecutor {
         when(properties.getActiveWorkerLastPollTimeout()).thenReturn(Duration.ofSeconds(100));
         when(properties.getTaskExecutionPostponeDuration()).thenReturn(Duration.ofSeconds(60));
         when(properties.getWorkflowOffsetTimeout()).thenReturn(Duration.ofSeconds(30));
+        when(properties.getLockLeaseTime()).thenReturn(Duration.ofSeconds(30));
 
         workflowExecutor =
                 new WorkflowExecutorOps(
@@ -218,7 +219,8 @@ public class TestWorkflowExecutor {
                         executionLockService,
                         systemTaskRegistry,
                         parametersUtils,
-                        idGenerator);
+                        idGenerator,
+                        Optional.empty());
     }
 
     @Test
@@ -2618,8 +2620,10 @@ public class TestWorkflowExecutor {
         task.setStatus(TaskModel.Status.COMPLETED);
 
         // when:
+        // Dynamic tasks (not in static def, e.g. FORK_JOIN_DYNAMIC forked tasks) now always
+        // trigger decide to avoid workflow stalls caused by the sweeper's 30+ second delay.
         task.setReferenceTaskName("dynamic");
-        assertTrue(workflowExecutor.isLazyEvaluateWorkflow(workflowDef, task));
+        assertFalse(workflowExecutor.isLazyEvaluateWorkflow(workflowDef, task));
 
         task.setReferenceTaskName("branchTask1");
         assertFalse(workflowExecutor.isLazyEvaluateWorkflow(workflowDef, task));

@@ -1,3 +1,7 @@
+---
+description: "Conductor system architecture — worker-task queue model, state machine evaluator, pluggable data stores, and RPC-based polling for durable code execution."
+---
+
 # Architecture Overview
 
 This diagram showcases an overview of Conductor's system architecture:

@@ -1,0 +1,11 @@
+<svg xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" width="79.375mm" height="79.375mm" viewBox="0 0 79.375 79.375" version="1.1" id="svg5" inkscape:version="1.1.1 (3bf5ae0d25, 2021-09-20)" sodipodi:docname="Amazon Lambda architecture logo.svg">
+  <sodipodi:namedview id="namedview7" pagecolor="#ffffff" bordercolor="#111111" borderopacity="1" inkscape:pageshadow="0" inkscape:pageopacity="0" inkscape:pagecheckerboard="1" inkscape:document-units="mm" showgrid="true" fit-margin-top="0" fit-margin-left="0" fit-margin-right="0" fit-margin-bottom="0" inkscape:zoom="1.4467452" inkscape:cx="133.7485" inkscape:cy="89.511268" inkscape:window-width="1920" inkscape:window-height="1001" inkscape:window-x="-9" inkscape:window-y="-9" inkscape:window-maximized="1" inkscape:current-layer="layer1">
+    <inkscape:grid type="xygrid" id="grid836" enabled="true"/>
+  </sodipodi:namedview>
+  <defs id="defs2"/>
+  <g inkscape:label="Layer 1" inkscape:groupmode="layer" id="layer1" transform="translate(-59.800182,-58.702892)">
+    <rect style="fill:#d86613;fill-opacity:1;stroke:none;stroke-width:2.05;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stop-color:#000000" id="rect6798" width="79.375" height="79.375" x="59.800182" y="58.702892"/>
+    <path style="fill:none;fill-opacity:0.992157;stroke:#ffffff;stroke-width:2.05;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stop-color:#000000" d="m 83.711974,73.081971 v 11.544412 h 8.138237 L 110.8242,123.71736 h 13.03032 v -11.47583 h -5.05211 L 99.80557,73.081971 Z" id="path1212"/>
+    <path style="fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:2.05;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stop-color:#000000" d="M 89.543079,93.570702 96.332218,107.55632 88.961152,123.62 H 75.350544 Z" id="path1214"/>
+  </g>
+</svg>

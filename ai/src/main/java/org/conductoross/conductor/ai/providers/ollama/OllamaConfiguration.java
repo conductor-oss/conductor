@@ -12,18 +12,18 @@
  */
 package org.conductoross.conductor.ai.providers.ollama;
 
+import java.time.Duration;
+
 import org.conductoross.conductor.ai.ModelConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @Component
 @ConfigurationProperties(prefix = "conductor.ai.ollama")
-@AllArgsConstructor
 @NoArgsConstructor
 public class OllamaConfiguration implements ModelConfiguration<Ollama> {
 
@@ -32,6 +32,14 @@ public class OllamaConfiguration implements ModelConfiguration<Ollama> {
     private String authHeaderName;
 
     private String authHeader;
+
+    private Duration timeout = Duration.ofSeconds(600);
+
+    public OllamaConfiguration(String baseURL, String authHeaderName, String authHeader) {
+        this.baseURL = baseURL;
+        this.authHeaderName = authHeaderName;
+        this.authHeader = authHeader;
+    }
 
     public String getBaseURL() {
         return baseURL == null ? "http://localhost:11434" : baseURL;

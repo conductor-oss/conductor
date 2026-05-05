@@ -1,0 +1,78 @@
+{
+  "name": "coding_agent",
+  "description": "A coding agent that uses OpenAI code_interpreter to write, run, and iterate on code",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["task"],
+  "tasks": [
+    {
+      "name": "plan_implementation",
+      "taskReferenceName": "plan",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "gpt-4o",
+        "messages": [
+          {
+            "role": "system",
+            "message": "You are a senior software engineer. Break down the coding task into clear steps. Output a numbered plan."
+          },
+          {
+            "role": "user",
+            "message": "${workflow.input.task}"
+          }
+        ],
+        "temperature": 0.2,
+        "maxTokens": 1000
+      }
+    },
+    {
+      "name": "write_and_run_code",
+      "taskReferenceName": "code",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "gpt-4o",
+        "messages": [
+          {
+            "role": "system",
+            "message": "You are a coding assistant with access to a code execution sandbox. Write the code, run it, verify the output, and fix any errors. Return the final working code and its output."
+          },
+          {
+            "role": "user",
+            "message": "Implementation plan:\n${plan.output.result}\n\nOriginal task: ${workflow.input.task}\n\nWrite the code, execute it, and return the working result."
+          }
+        ],
+        "codeInterpreter": true,
+        "temperature": 0.1,
+        "maxTokens": 4000
+      }
+    },
+    {
+      "name": "review_code",
+      "taskReferenceName": "review",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "gpt-4o-mini",
+        "messages": [
+          {
+            "role": "system",
+            "message": "You are a code reviewer. Review the implementation for correctness, edge cases, and code quality. Provide a brief summary of what was built and any suggestions."
+          },
+          {
+            "role": "user",
+            "message": "Task: ${workflow.input.task}\n\nImplementation:\n${code.output.result}"
+          }
+        ],
+        "temperature": 0.3,
+        "maxTokens": 1000
+      }
+    }
+  ],
+  "outputParameters": {
+    "plan": "${plan.output.result}",
+    "code": "${code.output.result}",
+    "review": "${review.output.result}"
+  }
+}

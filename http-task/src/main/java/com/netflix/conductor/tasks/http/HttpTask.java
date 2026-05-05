@@ -13,10 +13,12 @@
 package com.netflix.conductor.tasks.http;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +36,7 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.tasks.http.providers.RestTemplateProvider;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -51,7 +54,7 @@ public class HttpTask extends WorkflowSystemTask {
     static final String MISSING_REQUEST =
             "Missing HTTP request. Task input MUST have a '"
                     + REQUEST_PARAMETER_NAME
-                    + "' key with HttpTask.Input as value. See documentation for HttpTask for required input parameters";
+                    + "' key with HttpTask.Input as value OR provide the input parameters directly. See documentation for HttpTask for required input parameters";
 
     private final TypeReference<Map<String, Object>> mapOfObj =
             new TypeReference<Map<String, Object>>() {};
@@ -77,12 +80,10 @@ public class HttpTask extends WorkflowSystemTask {
     @Override
     public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
         Object request = task.getInputData().get(requestParameter);
-        task.setWorkerId(Utils.getServerId());
         if (request == null) {
-            task.setReasonForIncompletion(MISSING_REQUEST);
-            task.setStatus(TaskModel.Status.FAILED);
-            return;
+            request = task.getInputData();
         }
+        task.setWorkerId(Utils.getServerId());
 
         Input input = objectMapper.convertValue(request, Input.class);
         if (input.getUri() == null) {
@@ -153,7 +154,10 @@ public class HttpTask extends WorkflowSystemTask {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.valueOf(input.getContentType()));
-        headers.setAccept(Collections.singletonList(MediaType.valueOf(input.getAccept())));
+        headers.setAccept(
+                input.getAcceptList().stream()
+                        .map(MediaType::valueOf)
+                        .collect(Collectors.toList()));
 
         input.headers.forEach(
                 (key, value) -> {
@@ -264,7 +268,8 @@ public class HttpTask extends WorkflowSystemTask {
         private Map<String, Object> headers = new HashMap<>();
         private String uri;
         private Object body;
-        private String accept = MediaType.APPLICATION_JSON_VALUE;
+        private List<String> accept =
+                new ArrayList<>(Collections.singletonList(MediaType.APPLICATION_JSON_VALUE));
         private String contentType = MediaType.APPLICATION_JSON_VALUE;
         private Integer connectionTimeOut = 3000;
         private Integer readTimeOut = 3000;
@@ -340,17 +345,36 @@ public class HttpTask extends WorkflowSystemTask {
         }
 
         /**
-         * @return the accept
+         * @return the first accept media type (for backward compatibility)
          */
         public String getAccept() {
+            return accept != null && !accept.isEmpty()
+                    ? accept.get(0)
+                    : MediaType.APPLICATION_JSON_VALUE;
+        }
+
+        /**
+         * @return the full list of accept media types
+         */
+        public List<String> getAcceptList() {
             return accept;
         }
 
         /**
-         * @param accept the accept to set
+         * @param accept the accept to set — accepts a String or a List of Strings
          */
-        public void setAccept(String accept) {
-            this.accept = accept;
+        @JsonSetter("accept")
+        public void setAccept(Object accept) {
+            if (accept == null) {
+                return;
+            }
+            if (accept instanceof String) {
+                this.accept = Collections.singletonList((String) accept);
+            } else if (accept instanceof List) {
+                this.accept =
+                        ((List<?>) accept)
+                                .stream().map(Object::toString).collect(Collectors.toList());
+            }
         }
 
         /**

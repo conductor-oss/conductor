@@ -1,17 +1,17 @@
+---
+description: "Redis Backend — configure Redis Standalone, Cluster, or Sentinel as the database and queue backend for Conductor."
+---
 # Redis
 
-By default conductor runs with an in-memory Redis mock. However, you
-can change the configuration by setting the properties mentioned below.
+Configure Redis as the database and queue backend by setting the properties below.
 
 ## `conductor.db.type` and `conductor.queue.type`
 
 | Value                          | Description                                                                            |
 |--------------------------------|----------------------------------------------------------------------------------------|
-| dynomite                       | Dynomite Cluster. Dynomite is a proxy layer that provides sharding and replication.    |
-| memory                         | Uses an in-memory Redis mock. Should be used only for development and testing purposes.|
+| redis_standalone               | Redis Standalone configuration.                                                        |
 | redis_cluster                  | Redis Cluster configuration.                                                           |
 | redis_sentinel                 | Redis Sentinel configuration.                                                          |
-| redis_standalone               | Redis Standalone configuration.                                                        |
 
 ## `conductor.redis.hosts`
 
@@ -32,7 +32,7 @@ conductor.redis.database=1
 
 ## `conductor.redis.username`
 
-[Redis ACL](https://redis.io/docs/management/security/acl/) using username and password authentication is now supported. 
+[Redis ACL](https://redis.io/docs/latest/operate/oss_and_stack/management/security/acl/) using username and password authentication is now supported. 
 
 The username property should be set as `conductor.redis.username`, e.g.:
 ```properties

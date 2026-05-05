@@ -1,3 +1,6 @@
+---
+description: "Do-While Task — loop over tasks in a Conductor workflow until a condition is met, with configurable iteration limits."
+---
 # Do While
 ```json
 "type" : "DO_WHILE"

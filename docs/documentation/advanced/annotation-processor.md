@@ -1,3 +1,6 @@
+---
+description: "Annotation Processor — use code generation during Conductor builds with annotation-based processing for protobuf and more."
+---
 # Annotation Processor
 
 This module is strictly for code generation tasks during builds based on annotations.

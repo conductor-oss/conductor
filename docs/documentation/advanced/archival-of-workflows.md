@@ -1,3 +1,6 @@
+---
+description: "Archiving Workflows — automatically archive completed or terminated Conductor workflows to free database storage."
+---
 # Archiving Workflows
 
 Conductor has support for archiving workflow upon termination or completion. Enabling this will delete the workflow from the configured database, but leave the associated data in Elasticsearch so it is still searchable. 

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="standard_product_icon" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 512 512">
+  <!-- Generator: Adobe Illustrator 29.1.0, SVG Export Plug-In . SVG Version: 2.1.0 Build 142)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: none;
+      }
+
+      .st1 {
+        fill: #4285f4;
+      }
+
+      .st2 {
+        fill: #34a853;
+      }
+
+      .st3 {
+        fill: #fbbc04;
+      }
+
+      .st4 {
+        fill: #ea4335;
+      }
+    </style>
+  </defs>
+  <g id="bounding_box">
+    <rect class="st0" width="512" height="512"/>
+  </g>
+  <g id="art">
+    <path class="st2" d="M442,277.9H70c-8.8,0-16,7.2-16,16v148.1c0,8.8,7.2,16,16,16h107.2c1.5.5,3.1.7,4.8.7s3.3-.3,4.8-.7h255.2c8.8,0,16-7.2,16-16v-148.1c0-8.8-7.2-16-16-16ZM86,309.9h80v116.1h-80v-116.1ZM426,425.9h-228v-116.1h228v116.1Z"/>
+    <path class="st3" d="M442,54H70c-8.8,0-16,7.2-16,16v148.8c0,8.8,7.2,16,16,16h372c8.8,0,16-7.2,16-16V70c0-8.8-7.2-16-16-16ZM86,86h80v116.8h-80v-116.8ZM426,202.8h-228v-116.8h228v116.8Z"/>
+    <path class="st4" d="M442,234.8h-16V86H54v-16c0-8.8,7.2-16,16-16h372c8.8,0,16,7.2,16,16v148.8c0,8.8-7.2,16-16,16Z"/>
+    <path class="st1" d="M442,457.9h-16v-148.1H54v-16c0-8.8,7.2-16,16-16h372c8.8,0,16,7.2,16,16v148.1c0,8.8-7.2,16-16,16Z"/>
+    <circle class="st4" cx="349" cy="144.4" r="37"/>
+    <circle class="st1" cx="349" cy="367.9" r="37"/>
+  </g>
+</svg>

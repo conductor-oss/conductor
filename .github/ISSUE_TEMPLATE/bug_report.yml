@@ -16,13 +16,9 @@ body:
       Your example should be fully self-contained and not rely on any artifact that should be downloaded.
       For example:
 
-      ```python
-      # All necessary imports at the beginning
-      import os
-      import re
-
-      # A succinct reproducing example trimmed down to the essential parts:
-      xxxxx
+      ```
+      # A succinct reproducing example trimmed down to the essential parts
+      # (any language is fine — Java, Python, Go, JavaScript, etc.)
       ```
 
       If the code is too long (hopefully, it isn't), feel free to put it in a public gist and link it in the issue: https://gist.github.com.
@@ -32,8 +28,8 @@ body:
     placeholder: |
       A clear and concise description of what the bug is.
 
-      ```python
-      # Sample code to reproduce the problem
+      ```
+      # Sample code to reproduce the problem (any language)
       ```
 
       ```

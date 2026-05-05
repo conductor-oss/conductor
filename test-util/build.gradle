@@ -30,9 +30,7 @@ dependencies {
     testImplementation "org.springframework:spring-web"
 
     implementation "redis.clients:jedis:${revJedis}"
-    implementation ("io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}") {
-        exclude group: 'com.netflix.conductor', module: 'conductor-core'
-    }
+    implementation "io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}"
 
 
     testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
@@ -40,8 +38,8 @@ dependencies {
     testImplementation "org.spockframework:spock-spring:${revSpock}"
     testImplementation "org.awaitility:awaitility:${revAwaitility}"
 
-    implementation "org.elasticsearch.client:elasticsearch-rest-client:6.8.23"
-    implementation "org.elasticsearch.client:elasticsearch-rest-high-level-client:6.8.23"
+    implementation "org.elasticsearch.client:elasticsearch-rest-client:7.17.29"
+    implementation "org.elasticsearch.client:elasticsearch-rest-high-level-client:7.17.29"
 
     implementation "org.testcontainers:elasticsearch:${revTestContainer}"
     implementation "org.testcontainers:mysql:${revTestContainer}"

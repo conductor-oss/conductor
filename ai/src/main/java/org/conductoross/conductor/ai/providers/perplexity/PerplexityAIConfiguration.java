@@ -12,24 +12,29 @@
  */
 package org.conductoross.conductor.ai.providers.perplexity;
 
+import java.time.Duration;
 import java.util.Objects;
 
 import org.conductoross.conductor.ai.ModelConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 @Component
 @ConfigurationProperties(prefix = "conductor.ai.perplexity")
 public class PerplexityAIConfiguration implements ModelConfiguration<PerplexityAI> {
     private String apiKey;
     private String baseURL;
+    private Duration timeout = Duration.ofSeconds(600);
+
+    public PerplexityAIConfiguration(String apiKey, String baseURL) {
+        this.apiKey = apiKey;
+        this.baseURL = baseURL;
+    }
 
     public String getBaseURL() {
         return Objects.isNull(baseURL) ? "https://api.perplexity.ai/" : baseURL;

@@ -15,8 +15,6 @@ package org.conductoross.conductor.ai.providers.gemini;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.models.AudioGenRequest;
@@ -34,31 +32,25 @@ import org.conductoross.conductor.ai.video.VideoResponse;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.image.ImageModel;
-import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
-import org.springframework.ai.vertexai.embedding.text.VertexAiTextEmbeddingModel;
-import org.springframework.ai.vertexai.embedding.text.VertexAiTextEmbeddingOptions;
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 
-import com.google.api.gax.core.FixedCredentialsProvider;
-import com.google.cloud.aiplatform.v1.PredictionServiceSettings;
-import com.google.cloud.vertexai.VertexAI;
-import com.google.common.primitives.Floats;
 import com.google.genai.Client;
 import com.google.genai.types.Blob;
 import com.google.genai.types.Candidate;
 import com.google.genai.types.Content;
+import com.google.genai.types.ContentEmbedding;
+import com.google.genai.types.EmbedContentConfig;
+import com.google.genai.types.EmbedContentResponse;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.PrebuiltVoiceConfig;
 import com.google.genai.types.SpeechConfig;
 import com.google.genai.types.VoiceConfig;
-import lombok.SneakyThrows;
 
 public class GeminiVertex implements AIModel {
 
     public static final String NAME = "vertex_ai";
+
+    public static final String ALIAS = "google_gemini";
 
     private final GeminiVertexConfiguration config;
 
@@ -72,93 +64,56 @@ public class GeminiVertex implements AIModel {
     }
 
     @Override
+    public List<String> getProviderAliases() {
+        return List.of(ALIAS);
+    }
+
+    @Override
     public List<Float> generateEmbeddings(EmbeddingGenRequest embeddingGenRequest) {
-        VertexAiTextEmbeddingOptions options =
-                VertexAiTextEmbeddingOptions.builder()
-                        .model(embeddingGenRequest.getModel())
-                        .dimensions(embeddingGenRequest.getDimensions())
-                        .build();
-
-        VertexAiEmbeddingConnectionDetails connectionDetails =
-                getVertexAiEmbeddingConnectionDetails();
-        VertexAiTextEmbeddingModel model =
-                new VertexAiTextEmbeddingModel(connectionDetails, options);
-
-        float[] embeddingsResponse =
-                model.embedForResponse(List.of(embeddingGenRequest.getText()))
-                        .getResult()
-                        .getOutput();
-        return Floats.asList(embeddingsResponse);
+        Client client = createGenAIClient();
+        EmbedContentConfig.Builder configBuilder = EmbedContentConfig.builder();
+        if (embeddingGenRequest.getDimensions() != null) {
+            configBuilder.outputDimensionality(embeddingGenRequest.getDimensions());
+        }
+        EmbedContentResponse response =
+                client.models.embedContent(
+                        embeddingGenRequest.getModel(),
+                        embeddingGenRequest.getText(),
+                        configBuilder.build());
+        return response.embeddings()
+                .flatMap(
+                        embeddings ->
+                                embeddings.isEmpty()
+                                        ? java.util.Optional.empty()
+                                        : java.util.Optional.of(embeddings.getFirst()))
+                .flatMap(ContentEmbedding::values)
+                .orElseThrow(() -> new RuntimeException("No embeddings returned from Gemini API"));
     }
 
     @Override
     public ChatModel getChatModel() {
-        VertexAI vertextAI = getVertexAI();
-        return VertexAiGeminiChatModel.builder().vertexAI(vertextAI).build();
-    }
-
-    @SneakyThrows
-    private VertexAI getVertexAI() {
-        VertexAI.Builder builder = new VertexAI.Builder();
-        if (config.getGoogleCredentials() != null) {
-            // Scope credentials for Vertex AI
-            var scopedCredentials =
-                    config.getGoogleCredentials()
-                            .createScoped("https://www.googleapis.com/auth/cloud-platform");
-            builder = builder.setCredentials(scopedCredentials);
-        }
-
-        return builder.setProjectId(config.getProjectId())
-                .setLocation(config.getLocation())
-                .build();
-    }
-
-    @SneakyThrows
-    private VertexAiEmbeddingConnectionDetails getVertexAiEmbeddingConnectionDetails() {
-        var builder =
-                VertexAiEmbeddingConnectionDetails.builder()
-                        .projectId(config.getProjectId())
-                        .location(config.getLocation())
-                        .apiEndpoint(config.getBaseURL());
-
-        // Only configure custom credentials if available
-        if (config.getGoogleCredentials() != null) {
-            // Scope credentials for Vertex AI
-            var scopedCredentials =
-                    config.getGoogleCredentials()
-                            .createScoped("https://www.googleapis.com/auth/cloud-platform");
-            builder.predictionServiceSettings(
-                    PredictionServiceSettings.newBuilder()
-                            .setEndpoint(config.getBaseURL())
-                            .setCredentialsProvider(
-                                    FixedCredentialsProvider.create(scopedCredentials))
-                            .build());
-        }
-
-        return builder.build();
+        return new GeminiChatModel(createGenAIClient());
     }
 
     @Override
     public ChatOptions getChatOptions(ChatCompletion input) {
-        List<ToolCallback> toolCallbacks = getToolCallback(input);
-        Set<String> toolNames =
-                toolCallbacks.stream()
-                        .map(tc -> tc.getToolDefinition().name())
-                        .collect(Collectors.toSet());
-
-        return VertexAiGeminiChatOptions.builder()
+        return GeminiChatOptions.builder()
                 .model(input.getModel())
                 .temperature(input.getTemperature())
-                .maxOutputTokens(input.getMaxTokens())
+                .maxTokens(input.getMaxTokens())
                 .frequencyPenalty(input.getFrequencyPenalty())
-                .internalToolExecutionEnabled(false)
                 .presencePenalty(input.getPresencePenalty())
                 .stopSequences(input.getStopWords())
-                .toolCallbacks(toolCallbacks)
-                .toolNames(toolNames)
                 .topK(input.getTopK())
                 .topP(input.getTopP())
-                .googleSearchRetrieval(input.isGoogleSearchRetrieval())
+                .googleSearchRetrieval(input.isGoogleSearchRetrieval() || input.isWebSearch())
+                .codeExecution(input.isCodeInterpreter())
+                .tools(
+                        input.getTools() != null && !input.getTools().isEmpty()
+                                ? input.getTools()
+                                : null)
+                .thinkingBudgetTokens(
+                        input.getThinkingTokenLimit() > 0 ? input.getThinkingTokenLimit() : null)
                 .build();
     }
 
@@ -197,21 +152,17 @@ public class GeminiVertex implements AIModel {
             List<Media> mediaList = new ArrayList<>();
             for (VideoGeneration gen : response.getResults()) {
                 Video video = gen.getOutput();
-                // Use the mime type from the Video if set, default to video/mp4
                 String mimeType = video.getMimeType() != null ? video.getMimeType() : "video/mp4";
 
-                // Prefer direct byte data to avoid redundant operations
                 if (video.getData() != null) {
                     mediaList.add(Media.builder().data(video.getData()).mimeType(mimeType).build());
                 } else if (video.getB64Json() != null) {
-                    // Fallback to base64 decoding if data field not populated
                     mediaList.add(
                             Media.builder()
                                     .data(Base64.getDecoder().decode(video.getB64Json()))
                                     .mimeType(mimeType)
                                     .build());
                 } else if (video.getUrl() != null) {
-                    // Last resort: Download from URL (e.g., GCS URI) to get bytes
                     byte[] bytes = downloadFromUrl(video.getUrl());
                     mediaList.add(Media.builder().data(bytes).mimeType(mimeType).build());
                 }
@@ -222,14 +173,20 @@ public class GeminiVertex implements AIModel {
         return builder.build();
     }
 
-    /** Creates a shared Google GenAI Client instance configured for Vertex AI. */
+    /** Creates a Google GenAI Client, using API key when available, otherwise Vertex AI. */
     private Client createGenAIClient() {
-        return Client.builder()
-                .vertexAI(true)
-                .credentials(config.getGoogleCredentials())
-                .location(config.getLocation())
-                .project(config.getProjectId())
-                .build();
+        if (config.getApiKey() != null && !config.getApiKey().isBlank()) {
+            return Client.builder().apiKey(config.getApiKey()).build();
+        }
+        Client.Builder builder =
+                Client.builder()
+                        .vertexAI(true)
+                        .location(config.getLocation())
+                        .project(config.getProjectId());
+        if (config.getGoogleCredentials() != null) {
+            builder.credentials(config.getGoogleCredentials());
+        }
+        return builder.build();
     }
 
     private byte[] downloadFromUrl(String url) {

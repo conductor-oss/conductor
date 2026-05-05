@@ -14,6 +14,7 @@ package com.netflix.conductor.core.execution;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -200,6 +201,9 @@ public class DeciderService {
             }
 
             if (taskDefinition.isPresent()) {
+                // Total timeout is checked first: if the overall budget is exhausted any
+                // per-attempt timeout check is moot.
+                checkTotalTimeout(taskDefinition.get(), pendingTask);
                 checkTaskTimeout(taskDefinition.get(), pendingTask);
                 checkTaskPollTimeout(taskDefinition.get(), pendingTask);
                 // If the task has not been updated for "responseTimeoutSeconds" then mark task
@@ -601,11 +605,37 @@ public class DeciderService {
             throw new TerminateWorkflowException(errMsg, status, task);
         }
 
+        // Guard: stop retrying if the total time budget across all attempts is exhausted.
+        // This is checked here (not only in checkTotalTimeout) so that a task timed out by a
+        // per-attempt policy with RETRY does not get re-queued once the total budget is gone.
+        if (taskDefinition.getTotalTimeoutSeconds() > 0 && task.getFirstScheduledTime() > 0) {
+            long totalElapsedSeconds =
+                    (System.currentTimeMillis() - task.getFirstScheduledTime()) / 1000;
+            if (totalElapsedSeconds >= taskDefinition.getTotalTimeoutSeconds()) {
+                final String errMsg =
+                        String.format(
+                                "Task %s/%s exceeded total timeout of %d seconds "
+                                        + "(elapsed %d seconds across all attempts). "
+                                        + "No further retries will be attempted.",
+                                task.getTaskId(),
+                                task.getTaskDefName(),
+                                taskDefinition.getTotalTimeoutSeconds(),
+                                totalElapsedSeconds);
+                WorkflowModel.Status totalTimeoutStatus =
+                        task.getStatus() == TaskModel.Status.TIMED_OUT
+                                ? WorkflowModel.Status.TIMED_OUT
+                                : WorkflowModel.Status.FAILED;
+                updateWorkflowOutput(workflow, task);
+                throw new TerminateWorkflowException(errMsg, totalTimeoutStatus, task);
+            }
+        }
+
         // retry... - but not immediately - put a delay...
         int startDelay = taskDefinition.getRetryDelaySeconds();
         switch (taskDefinition.getRetryLogic()) {
             case FIXED:
                 startDelay = taskDefinition.getRetryDelaySeconds();
+                startDelay = applyMaxRetryDelayCap(startDelay, taskDefinition);
                 break;
             case LINEAR_BACKOFF:
                 int linearRetryDelaySeconds =
@@ -615,6 +645,7 @@ public class DeciderService {
                 // Reset integer overflow to max value
                 startDelay =
                         linearRetryDelaySeconds < 0 ? Integer.MAX_VALUE : linearRetryDelaySeconds;
+                startDelay = applyMaxRetryDelayCap(startDelay, taskDefinition);
                 break;
             case EXPONENTIAL_BACKOFF:
                 int exponentialRetryDelaySeconds =
@@ -625,14 +656,26 @@ public class DeciderService {
                         exponentialRetryDelaySeconds < 0
                                 ? Integer.MAX_VALUE
                                 : exponentialRetryDelaySeconds;
+                startDelay = applyMaxRetryDelayCap(startDelay, taskDefinition);
                 break;
         }
 
         task.setRetried(true);
 
+        // Compute ms-precision total delay: base delay in seconds + random jitter in [0,
+        // maxJitterMs]
+        long jitterMs = 0;
+        if (taskDefinition.getBackoffJitterMs() > 0) {
+            jitterMs =
+                    ThreadLocalRandom.current()
+                            .nextLong(0, taskDefinition.getBackoffJitterMs() + 1);
+        }
+        long totalDelayMs = (long) startDelay * 1000 + jitterMs;
+
         TaskModel rescheduled = task.copy();
         rescheduled.setStartDelayInSeconds(startDelay);
         rescheduled.setCallbackAfterSeconds(startDelay);
+        rescheduled.setCallbackAfterMs(totalDelayMs);
         rescheduled.setRetryCount(task.getRetryCount() + 1);
         rescheduled.setRetried(false);
         rescheduled.setTaskId(idGenerator.generate());
@@ -710,7 +753,44 @@ public class DeciderService {
         }
     }
 
+    /**
+     * Enforces {@link TaskDef#getTotalTimeoutSeconds()} — a hard wall-clock budget that spans the
+     * entire lifetime of the task including all retry delays, not just a single attempt.
+     *
+     * <p>When the budget is exceeded the task is timed out via the same {@link
+     * #timeoutTaskWithTimeoutPolicy} path used for per-attempt timeouts, so the configured {@link
+     * TaskDef.TimeoutPolicy} still applies (ALERT_ONLY logs, RETRY sets TIMED_OUT which then fails
+     * permanently in {@link #retry}, TIME_OUT_WF terminates the workflow).
+     *
+     * <p>Tasks created before {@code firstScheduledTime} was introduced (value == 0) are skipped to
+     * preserve backward compatibility.
+     */
     @VisibleForTesting
+    void checkTotalTimeout(TaskDef taskDef, TaskModel task) {
+        if (taskDef == null
+                || taskDef.getTotalTimeoutSeconds() <= 0
+                || task.getStatus().isTerminal()
+                || task.getFirstScheduledTime() <= 0) {
+            return;
+        }
+        long totalElapsedSeconds =
+                (System.currentTimeMillis() - task.getFirstScheduledTime()) / 1000;
+        if (totalElapsedSeconds < taskDef.getTotalTimeoutSeconds()) {
+            return;
+        }
+        String reason =
+                String.format(
+                        "Task %s/%s exceeded total timeout of %d seconds "
+                                + "(elapsed %d seconds across all attempts including retry delays). "
+                                + "Timeout policy: %s",
+                        task.getTaskDefName(),
+                        task.getTaskId(),
+                        taskDef.getTotalTimeoutSeconds(),
+                        totalElapsedSeconds,
+                        taskDef.getTimeoutPolicy().name());
+        timeoutTaskWithTimeoutPolicy(reason, taskDef, task);
+    }
+
     void checkTaskTimeout(TaskDef taskDef, TaskModel task) {
 
         if (taskDef == null) {
@@ -924,6 +1004,11 @@ public class DeciderService {
                 .stream()
                 .filter(task -> !tasksInWorkflow.contains(task.getReferenceTaskName()))
                 .collect(Collectors.toList());
+    }
+
+    private int applyMaxRetryDelayCap(int delaySeconds, TaskDef taskDef) {
+        int cap = taskDef.getMaxRetryDelaySeconds();
+        return (cap > 0 && delaySeconds > cap) ? cap : delaySeconds;
     }
 
     private boolean isTaskSkipped(WorkflowTask taskToSchedule, WorkflowModel workflow) {

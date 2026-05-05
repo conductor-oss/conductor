@@ -1,3 +1,6 @@
+---
+description: "External Payload Storage — offload large Conductor workflow and task payloads to external storage like S3."
+---
 # External Payload Storage
 
 !!!warning
@@ -60,13 +63,9 @@ Set the following properties to the desired values in the JVM system properties:
 | conductor.external-payload-storage.s3.bucketName | S3 bucket where the payloads will be stored | |
 | conductor.external-payload-storage.s3.signedUrlExpirationDuration | The expiration time in seconds of the signed url for the payload | 5 |
 
-The payloads will be stored in the bucket configured above in a `UUID.json` file at locations determined by the type of the payload. See [here](https://github.com/conductor-oss/conductor/blob/main/awss3-storage/src/main/java/com/netflix/conductor/s3/storage/S3PayloadStorage.java#L149-L167) for information about how the object key is determined.
+The payloads will be stored in the bucket configured above in a `UUID.json` file at locations determined by the type of the payload. See the [S3PayloadStorage source](https://github.com/conductor-oss/conductor/blob/main/awss3-storage/src/main/java/com/netflix/conductor/s3/storage/S3PayloadStorage.java#L149-L167) for information about how the object key is determined.
 
 ### Azure Blob Storage
-
-ProductLive provides an implementation of [Azure Blob Storage](https://azure.microsoft.com/services/storage/blobs/) used to externalize large payload storage.  
-
-To build conductor with azure blob feature read the [README.md](https://github.com/conductor-oss/conductor/blob/main/azureblob-storage/README.md) in `azureblob-storage` module 
 
 !!!note
     This implementation assumes that you have an [Azure Blob Storage account's connection string or SAS Token](https://github.com/Azure/azure-sdk-for-java/blob/master/sdk/storage/azure-storage-blob/README.md).
@@ -86,7 +85,25 @@ Set the following properties to the desired values in the JVM system properties:
 | workflow.external.payload.storage.azure_blob.task_input_path | Path prefix where tasks input will be stored with an random UUID filename | task/input/ |
 | workflow.external.payload.storage.azure_blob.task_output_path | Path prefix where tasks output will be stored with an random UUID filename | task/output/ |
 
-The payloads will be stored as done in [Amazon S3](https://github.com/conductor-oss/conductor/blob/main/awss3-storage/src/main/java/com/netflix/conductor/s3/storage/S3PayloadStorage.java#L149-L167).
+The payloads will be stored in the same path structure as [Amazon S3](https://github.com/conductor-oss/conductor/blob/main/awss3-storage/src/main/java/com/netflix/conductor/s3/storage/S3PayloadStorage.java#L149-L167).
+
+#### Testing with Azurite
+
+You can use [Azurite](https://github.com/Azure/Azurite) to simulate Azure Storage locally for development and testing.
+
+#### Troubleshooting
+
+When using Elasticsearch persistence, you may receive a `java.lang.IllegalStateException` because the Netty library calls `setAvailableProcessors` twice. To resolve this, set:
+
+```properties
+es.set.netty.runtime.available.processors=false
+```
+
+To use `okhttp` instead of the default Netty HTTP client, add the following dependency:
+
+```
+com.azure:azure-core-http-okhttp:${compatible version}
+```
 
 ### PostgreSQL Storage
 

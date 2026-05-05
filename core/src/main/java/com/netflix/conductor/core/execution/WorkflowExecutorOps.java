@@ -49,6 +49,7 @@ import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.core.utils.Utils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -64,7 +65,7 @@ import static org.conductoross.conductor.core.execution.ExecutorUtils.computePos
 @Component
 public class WorkflowExecutorOps implements WorkflowExecutor {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowExecutor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowExecutorOps.class);
     private static final int EXPEDITED_PRIORITY = 10;
     private static final String CLASS_NAME = WorkflowExecutor.class.getSimpleName();
     private static final Predicate<TaskModel> UNSUCCESSFUL_TERMINAL_TASK =
@@ -86,6 +87,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     private final SystemTaskRegistry systemTaskRegistry;
     private long activeWorkerLastPollMs;
     private final ExecutionLockService executionLockService;
+    private final Optional<WorkflowMessageQueueDAO> workflowMessageQueueDAO;
 
     private final Predicate<PollData> validateLastPolledTime =
             pollData ->
@@ -104,7 +106,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             ExecutionLockService executionLockService,
             SystemTaskRegistry systemTaskRegistry,
             ParametersUtils parametersUtils,
-            IDGenerator idGenerator) {
+            IDGenerator idGenerator,
+            Optional<WorkflowMessageQueueDAO> workflowMessageQueueDAO) {
         this.deciderService = deciderService;
         this.metadataDAO = metadataDAO;
         this.queueDAO = queueDAO;
@@ -118,6 +121,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         this.parametersUtils = parametersUtils;
         this.idGenerator = idGenerator;
         this.systemTaskRegistry = systemTaskRegistry;
+        this.workflowMessageQueueDAO = workflowMessageQueueDAO;
     }
 
     /**
@@ -294,6 +298,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             // update parent's sub workflow task
             TaskModel subWorkflowTask =
                     executionDAOFacade.getTaskModel(workflow.getParentWorkflowTaskId());
+            if (subWorkflowTask == null || subWorkflowTask.getWorkflowTask() == null) {
+                // orphan sub-workflow: parent task reference no longer exists (e.g. parent was
+                // restarted and task list was cleared) — stop walking parent chain
+                break;
+            }
             if (subWorkflowTask.getWorkflowTask().isOptional()) {
                 // break out
                 LOGGER.info(
@@ -470,13 +479,15 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         taskToBeRetried.setSeq(0);
 
         // perform parameter replacement for retried task
-        Map<String, Object> taskInput =
-                parametersUtils.getTaskInput(
-                        taskToBeRetried.getWorkflowTask().getInputParameters(),
-                        workflow,
-                        taskToBeRetried.getWorkflowTask().getTaskDefinition(),
-                        taskToBeRetried.getTaskId());
-        taskToBeRetried.getInputData().putAll(taskInput);
+        if (taskToBeRetried.getWorkflowTask() != null) {
+            Map<String, Object> taskInput =
+                    parametersUtils.getTaskInput(
+                            taskToBeRetried.getWorkflowTask().getInputParameters(),
+                            workflow,
+                            taskToBeRetried.getWorkflowTask().getTaskDefinition(),
+                            taskToBeRetried.getTaskId());
+            taskToBeRetried.getInputData().putAll(taskInput);
+        }
 
         task.setRetried(true);
         // since this task is being retried and a retry has been computed, task
@@ -597,6 +608,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             expediteLazyWorkflowEvaluation(workflow.getParentWorkflowId());
         }
 
+        workflowMessageQueueDAO.ifPresent(dao -> dao.delete(workflow.getWorkflowId()));
         executionLockService.releaseLock(workflow.getWorkflowId());
         executionLockService.deleteLock(workflow.getWorkflowId());
         return workflow;
@@ -748,6 +760,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             executionDAOFacade.removeFromPendingWorkflow(
                     workflow.getWorkflowName(), workflow.getWorkflowId());
 
+            workflowMessageQueueDAO.ifPresent(dao -> dao.delete(workflow.getWorkflowId()));
             return workflow;
         } finally {
             executionLockService.releaseLock(workflow.getWorkflowId());
@@ -917,8 +930,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             LOGGER.error(errorMsg, e);
         }
 
-        taskResult.getLogs().forEach(taskExecLog -> taskExecLog.setTaskId(task.getTaskId()));
-        executionDAOFacade.addTaskExecLog(taskResult.getLogs());
+        List<TaskExecLog> taskLogs = taskResult.getLogs();
+        if (taskLogs != null) {
+            taskLogs.forEach(taskExecLog -> taskExecLog.setTaskId(task.getTaskId()));
+            executionDAOFacade.addTaskExecLog(taskLogs);
+        }
 
         if (task.getStatus().isTerminal()) {
             long duration = getTaskDuration(0, task);
@@ -938,22 +954,22 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     private void notifyTaskStatusListener(TaskModel task) {
         switch (task.getStatus()) {
             case COMPLETED:
-                taskStatusListener.onTaskCompleted(task);
+                taskStatusListener.onTaskCompletedIfEnabled(task);
                 break;
             case CANCELED:
-                taskStatusListener.onTaskCanceled(task);
+                taskStatusListener.onTaskCanceledIfEnabled(task);
                 break;
             case FAILED:
-                taskStatusListener.onTaskFailed(task);
+                taskStatusListener.onTaskFailedIfEnabled(task);
                 break;
             case FAILED_WITH_TERMINAL_ERROR:
-                taskStatusListener.onTaskFailedWithTerminalError(task);
+                taskStatusListener.onTaskFailedWithTerminalErrorIfEnabled(task);
                 break;
             case TIMED_OUT:
-                taskStatusListener.onTaskTimedOut(task);
+                taskStatusListener.onTaskTimedOutIfEnabled(task);
                 break;
             case IN_PROGRESS:
-                taskStatusListener.onTaskInProgress(task);
+                taskStatusListener.onTaskInProgressIfEnabled(task);
                 break;
             case SCHEDULED:
                 // no-op, already done in addTaskToQueue
@@ -1028,8 +1044,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     && task.getStatus().isSuccessful();
         }
 
-        return workflowTasks.stream().noneMatch(t -> t.getTaskReferenceName().equals(taskRefName))
-                && task.getStatus().isSuccessful();
+        // Tasks not in the workflow definition are dynamically forked (FORK_JOIN_DYNAMIC).
+        // Always trigger decide for these tasks: they rely on the sweeper which has a
+        // 30+ second initial delay, causing workflows to stall if decide is skipped.
+        return false;
     }
 
     @Override
@@ -1123,60 +1141,88 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         // and change the workflow/task state accordingly
         adjustStateIfSubWorkflowChanged(workflow);
 
+        // Guard against holding the lock past its lease time. If synchronous system tasks
+        // (e.g. INLINE inside a DO_WHILE) keep changing state, we loop instead of recursing to
+        // avoid a StackOverflowError. When the lease is about to expire we break out, persist the
+        // current state, and re-queue the workflow so the sweeper picks it up cleanly.
+        final long maxRuntime = properties.getLockLeaseTime().toMillis() - 100;
+        StopWatch decideWatch = new StopWatch();
+        decideWatch.start();
+
         try {
-            DeciderService.DeciderOutcome outcome = deciderService.decide(workflow);
-            if (outcome.isComplete) {
-                endExecution(workflow, outcome.terminateTask);
-                return workflow;
-            }
+            boolean continueLoop = true;
+            while (continueLoop) {
+                continueLoop = false;
 
-            List<TaskModel> tasksToBeScheduled = outcome.tasksToBeScheduled;
-            setTaskDomains(tasksToBeScheduled, workflow);
-            List<TaskModel> tasksToBeUpdated = outcome.tasksToBeUpdated;
+                DeciderService.DeciderOutcome outcome = deciderService.decide(workflow);
+                if (outcome.isComplete) {
+                    endExecution(workflow, outcome.terminateTask);
+                    return workflow;
+                }
 
-            tasksToBeScheduled = dedupAndAddTasks(workflow, tasksToBeScheduled);
+                List<TaskModel> tasksToBeScheduled = outcome.tasksToBeScheduled;
+                setTaskDomains(tasksToBeScheduled, workflow);
+                List<TaskModel> tasksToBeUpdated = outcome.tasksToBeUpdated;
 
-            boolean stateChanged = scheduleTask(workflow, tasksToBeScheduled); // start
+                tasksToBeScheduled = dedupAndAddTasks(workflow, tasksToBeScheduled);
 
-            for (TaskModel task : outcome.tasksToBeScheduled) {
-                executionDAOFacade.populateTaskData(task);
-                if (systemTaskRegistry.isSystemTask(task.getTaskType())
-                        && NON_TERMINAL_TASK.test(task)) {
-                    WorkflowSystemTask workflowSystemTask =
-                            systemTaskRegistry.get(task.getTaskType());
-                    if (!workflowSystemTask.isAsync()
-                            && workflowSystemTask.execute(workflow, task, this)) {
-                        tasksToBeUpdated.add(task);
-                        stateChanged = true;
+                boolean stateChanged = scheduleTask(workflow, tasksToBeScheduled);
+
+                for (TaskModel task : outcome.tasksToBeScheduled) {
+                    executionDAOFacade.populateTaskData(task);
+                    if (systemTaskRegistry.isSystemTask(task.getTaskType())
+                            && NON_TERMINAL_TASK.test(task)) {
+                        WorkflowSystemTask workflowSystemTask =
+                                systemTaskRegistry.get(task.getTaskType());
+                        if (!workflowSystemTask.isAsync()
+                                && workflowSystemTask.execute(workflow, task, this)) {
+                            tasksToBeUpdated.add(task);
+                            stateChanged = true;
+                        }
                     }
                 }
-            }
 
-            if (!outcome.tasksToBeUpdated.isEmpty() || !tasksToBeScheduled.isEmpty()) {
-                executionDAOFacade.updateTasks(tasksToBeUpdated);
-            }
+                if (!outcome.tasksToBeUpdated.isEmpty() || !tasksToBeScheduled.isEmpty()) {
+                    executionDAOFacade.updateTasks(tasksToBeUpdated);
+                }
 
-            if (stateChanged) {
-                return decide(workflow);
-            }
-
-            if (!outcome.tasksToBeUpdated.isEmpty() || !tasksToBeScheduled.isEmpty()) {
-                executionDAOFacade.updateWorkflow(workflow);
-            }
-
-            Duration timeout = properties.getWorkflowOffsetTimeout();
-            if (!workflow.getStatus().isTerminal()) {
-                Duration updatedOffset = computePostpone(workflow, timeout);
-                if (updatedOffset.getSeconds() != timeout.getSeconds()) {
-                    // we have a new value, setUnack uses time in millis
-                    LOGGER.debug(
-                            "Pushing the workflow {} into decider queue by {} millis",
+                if (stateChanged) {
+                    if (decideWatch.getTime() < maxRuntime) {
+                        continueLoop = true;
+                        continue;
+                    }
+                    // Lock lease is about to expire. Persist current state and re-queue so
+                    // the next decide() cycle continues without holding a stale lock.
+                    LOGGER.info(
+                            "Workflow {} decide loop approaching lock lease time after {} ms, "
+                                    + "re-queuing for continued processing",
                             workflow.getWorkflowId(),
-                            updatedOffset.getSeconds() * 1000);
-                    queueDAO.setUnackTimeout(
-                            DECIDER_QUEUE,
-                            workflow.getWorkflowId(),
-                            updatedOffset.getSeconds() * 1000);
+                            decideWatch.getTime());
+                    executionDAOFacade.updateWorkflow(workflow);
+                    queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), 0);
+                    return workflow;
+                }
+
+                if (!outcome.tasksToBeUpdated.isEmpty() || !tasksToBeScheduled.isEmpty()) {
+                    executionDAOFacade.updateWorkflow(workflow);
+                }
+
+                Duration timeout = properties.getWorkflowOffsetTimeout();
+                if (!workflow.getStatus().isTerminal()) {
+                    Duration updatedOffset =
+                            computePostpone(
+                                    workflow, timeout, properties.getMaxPostponeDurationSeconds());
+                    if (updatedOffset.getSeconds() != timeout.getSeconds()) {
+                        // we have a new value, setUnack uses time in millis
+                        LOGGER.debug(
+                                "Pushing the workflow {} into decider queue by {} millis",
+                                workflow.getWorkflowId(),
+                                updatedOffset.getSeconds() * 1000);
+                        queueDAO.setUnackTimeout(
+                                DECIDER_QUEUE,
+                                workflow.getWorkflowId(),
+                                updatedOffset.getSeconds() * 1000);
+                    }
                 }
             }
 
@@ -1467,7 +1513,14 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     private void addTaskToQueue(TaskModel task) {
         // put in queue
         String taskQueueName = QueueUtils.getQueueName(task);
-        if (task.getCallbackAfterSeconds() > 0) {
+        if (task.getCallbackAfterMs() > 0) {
+            // Use ms-precision Duration overload to preserve sub-second jitter
+            queueDAO.push(
+                    taskQueueName,
+                    task.getTaskId(),
+                    task.getWorkflowPriority(),
+                    Duration.ofMillis(task.getCallbackAfterMs()));
+        } else if (task.getCallbackAfterSeconds() > 0) {
             queueDAO.push(
                     taskQueueName,
                     task.getTaskId(),
@@ -1573,6 +1626,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 if (task.getSeq() == 0) { // Set only if the seq was not set
                     task.setSeq(++count);
                 }
+                // Stamp the very first time this task enters the queue. Retried tasks carry
+                // this value forward (via TaskModel.copy()), so it is never overwritten here.
+                if (task.getFirstScheduledTime() == 0) {
+                    task.setFirstScheduledTime(System.currentTimeMillis());
+                }
             }
 
             // metric to track the distribution of number of tasks within a workflow
@@ -1663,7 +1721,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             addTaskToQueue(task);
             // notify TaskStatusListener
             try {
-                taskStatusListener.onTaskScheduled(task);
+                taskStatusListener.onTaskScheduledIfEnabled(task);
             } catch (Exception e) {
                 String errorMsg =
                         String.format(
@@ -1887,6 +1945,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     void updateParentWorkflowTask(WorkflowModel subWorkflow) {
         TaskModel subWorkflowTask =
                 executionDAOFacade.getTaskModel(subWorkflow.getParentWorkflowTaskId());
+        if (subWorkflowTask == null) {
+            // orphan sub-workflow: parent task was cleared (e.g. parent workflow restarted)
+            return;
+        }
         executeSubworkflowTaskAndSyncData(subWorkflow, subWorkflowTask);
         executionDAOFacade.updateTask(subWorkflowTask);
     }
