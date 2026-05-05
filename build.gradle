@@ -62,6 +62,9 @@ allprojects {
             exclude group: 'cglib', module: 'cglib'
             exclude group: 'cglib', module: 'cglib-nodep'
             exclude group: 'commons-configuration', module: 'commons-configuration'
+            exclude group: 'org.springframework.ai', module: 'spring-ai-template-st'
+            exclude group: 'org.antlr', module: 'ST4'
+            exclude group: 'org.antlr', module: 'antlr-runtime'
 
             resolutionStrategy.eachDependency { details ->
                 if (details.requested.group.startsWith('com.fasterxml.jackson.') ) {
