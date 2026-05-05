@@ -88,6 +88,8 @@ public class SubWorkflowTaskMapper implements TaskMapper {
         subWorkflowTask.addInput("subWorkflowVersion", subWorkflowVersion);
         subWorkflowTask.addInput("subWorkflowTaskToDomain", subWorkflowTaskToDomain);
         subWorkflowTask.addInput("subWorkflowDefinition", subWorkflowDefinition);
+        subWorkflowTask.addInput("idempotencyKey", resolvedParams.get("idempotencyKey"));
+        subWorkflowTask.addInput("idempotencyStrategy", resolvedParams.get("idempotencyStrategy"));
         subWorkflowTask.addInput("workflowInput", taskMapperContext.getTaskInput());
         subWorkflowTask.setStatus(TaskModel.Status.SCHEDULED);
         subWorkflowTask.setCallbackAfterSeconds(workflowTask.getStartDelay());
@@ -128,6 +130,12 @@ public class SubWorkflowTaskMapper implements TaskMapper {
         Map<String, String> taskToDomain = subWorkflowParams.getTaskToDomain();
         if (taskToDomain != null) {
             params.put("taskToDomain", taskToDomain);
+        }
+        if (subWorkflowParams.getIdempotencyKey() != null) {
+            params.put("idempotencyKey", subWorkflowParams.getIdempotencyKey());
+        }
+        if (subWorkflowParams.getIdempotencyStrategy() != null) {
+            params.put("idempotencyStrategy", subWorkflowParams.getIdempotencyStrategy());
         }
 
         Object subWorkflowDefinition = subWorkflowParams.getWorkflowDefinition();

@@ -39,6 +39,8 @@ import io.conductor.e2e.util.ApiUtil;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SubWorkflowInlineTests {
 
@@ -459,6 +461,919 @@ public class SubWorkflowInlineTests {
         subWfDef.put("timeoutPolicy", "ALERT_ONLY");
         subWfDef.put("timeoutSeconds", 0);
         return subWfDef;
+    }
+
+    /**
+     * Verifies that the priority set in SubWorkflowParams is forwarded to the started sub-workflow.
+     *
+     * <p>SubWorkflow.start() now reads "priority" from task inputData (wired by the mapper from
+     * subWorkflowParams.priority) and passes it to StartWorkflowInput. This test confirms the
+     * end-to-end propagation: subWorkflowParams.priority=7 → sub-workflow.priority=7.
+     */
+    @Test
+    public void testPriorityPropagatedFromSubWorkflowParams() {
+        WorkflowClient workflowClient = ApiUtil.WORKFLOW_CLIENT;
+        MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
+        TaskClient taskClient = ApiUtil.TASK_CLIENT;
+
+        String suffix = RandomStringUtils.randomAlphanumeric(6).toLowerCase();
+        String parentWfName = "priority_parent_" + suffix;
+        String subWfName = "priority_sub_" + suffix;
+        String taskName = "priority_task_" + suffix;
+
+        // Register sub-workflow with a single SIMPLE task
+        TaskDef taskDef = new TaskDef(taskName);
+        taskDef.setOwnerEmail("test@conductor.io");
+        WorkflowTask simpleTask = new WorkflowTask();
+        simpleTask.setName(taskName);
+        simpleTask.setTaskReferenceName("t1");
+        simpleTask.setWorkflowTaskType(TaskType.SIMPLE);
+        WorkflowDef subWfDef = new WorkflowDef();
+        subWfDef.setName(subWfName);
+        subWfDef.setVersion(1);
+        subWfDef.setOwnerEmail("test@conductor.io");
+        subWfDef.setTasks(List.of(simpleTask));
+        subWfDef.setTimeoutSeconds(300);
+        subWfDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
+
+        // Register parent workflow with priority=7 set in subWorkflowParams
+        WorkflowTask subWfTask = new WorkflowTask();
+        subWfTask.setName("exec");
+        subWfTask.setTaskReferenceName("exec");
+        subWfTask.setWorkflowTaskType(TaskType.SUB_WORKFLOW);
+        SubWorkflowParams subParams = new SubWorkflowParams();
+        subParams.setName(subWfName);
+        subParams.setVersion(1);
+        subParams.setPriority(7);
+        subWfTask.setSubWorkflowParam(subParams);
+        WorkflowDef parentWfDef = new WorkflowDef();
+        parentWfDef.setName(parentWfName);
+        parentWfDef.setVersion(1);
+        parentWfDef.setOwnerEmail("test@conductor.io");
+        parentWfDef.setTasks(List.of(subWfTask));
+        parentWfDef.setTimeoutSeconds(300);
+        parentWfDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
+
+        metadataClient.registerTaskDefs(List.of(taskDef));
+        metadataClient.updateWorkflowDefs(List.of(subWfDef, parentWfDef));
+
+        StartWorkflowRequest req = new StartWorkflowRequest();
+        req.setName(parentWfName);
+        req.setVersion(1);
+        String workflowId = workflowClient.startWorkflow(req);
+
+        try {
+            // Wait for the SUB_WORKFLOW task to start and the sub-workflow to be created
+            await().atMost(15, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                                assertEquals(1, wf.getTasks().size());
+                                assertEquals(
+                                        Task.Status.IN_PROGRESS, wf.getTasks().get(0).getStatus());
+                                assertNotNull(wf.getTasks().get(0).getSubWorkflowId());
+                            });
+
+            String subWorkflowId =
+                    workflowClient
+                            .getWorkflow(workflowId, true)
+                            .getTasks()
+                            .get(0)
+                            .getSubWorkflowId();
+
+            // Priority set in subWorkflowParams must be propagated to the sub-workflow instance
+            Workflow subWf = workflowClient.getWorkflow(subWorkflowId, false);
+            assertEquals(
+                    7,
+                    subWf.getPriority(),
+                    "Sub-workflow priority must match the value set in subWorkflowParams");
+        } finally {
+            try {
+                workflowClient.terminateWorkflow(workflowId, "e2e test cleanup");
+            } catch (Exception ignored) {
+            }
+            try {
+                metadataClient.unregisterWorkflowDef(parentWfName, 1);
+                metadataClient.unregisterWorkflowDef(subWfName, 1);
+                metadataClient.unregisterTaskDef(taskName);
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    /**
+     * Verifies that an inline sub-workflow definition resolved from a String expression has
+     * "_systemMetadata.dynamic = true" injected into its workflow input by SubWorkflow.start().
+     *
+     * <p>This allows downstream tasks and tooling to distinguish dynamically-generated
+     * sub-workflows from statically-registered ones.
+     */
+    @Test
+    public void testDynamicInlineSubWorkflowMarkedInSystemMetadata() {
+        WorkflowClient workflowClient = ApiUtil.WORKFLOW_CLIENT;
+        MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
+        TaskClient taskClient = ApiUtil.TASK_CLIENT;
+
+        String suffix = RandomStringUtils.randomAlphanumeric(6).toLowerCase();
+        String parentWfName = "dynamic_mark_parent_" + suffix;
+        String builderTaskName = "dynamic_mark_builder_" + suffix;
+
+        // Minimal inline sub-workflow def: a single INLINE task that auto-completes
+        Map<String, Object> inlineTask = new HashMap<>();
+        inlineTask.put("name", "marker_check");
+        inlineTask.put("taskReferenceName", "marker_check");
+        inlineTask.put("type", "INLINE");
+        inlineTask.put(
+                "inputParameters", Map.of("evaluatorType", "javascript", "expression", "true;"));
+
+        Map<String, Object> subWfDefMap = new HashMap<>();
+        subWfDefMap.put("name", "dynamic_mark_sub_wf");
+        subWfDefMap.put("version", 1);
+        subWfDefMap.put("schemaVersion", 2);
+        subWfDefMap.put("tasks", List.of(inlineTask));
+        subWfDefMap.put("inputParameters", List.of());
+        subWfDefMap.put("outputParameters", Map.of());
+        subWfDefMap.put("timeoutPolicy", "ALERT_ONLY");
+        subWfDefMap.put("timeoutSeconds", 0);
+
+        // Parent: wf_builder returns the sub-wf def; exec SUB_WORKFLOW resolves
+        // "${wf_builder.output.result}"
+        TaskDef builderDef = new TaskDef(builderTaskName);
+        builderDef.setOwnerEmail("test@conductor.io");
+
+        WorkflowTask builderTask = new WorkflowTask();
+        builderTask.setName(builderTaskName);
+        builderTask.setTaskReferenceName("wf_builder");
+        builderTask.setWorkflowTaskType(TaskType.SIMPLE);
+
+        WorkflowTask execTask = new WorkflowTask();
+        execTask.setName("exec_dynamic");
+        execTask.setTaskReferenceName("exec");
+        execTask.setWorkflowTaskType(TaskType.SUB_WORKFLOW);
+        SubWorkflowParams subParams = new SubWorkflowParams();
+        subParams.setName("dynamic_mark_sub_wf");
+        subParams.setVersion(1);
+        subParams.setWorkflowDefinition("${wf_builder.output.result}");
+        execTask.setSubWorkflowParam(subParams);
+
+        WorkflowDef parentWfDef = new WorkflowDef();
+        parentWfDef.setName(parentWfName);
+        parentWfDef.setVersion(1);
+        parentWfDef.setOwnerEmail("test@conductor.io");
+        parentWfDef.setTasks(List.of(builderTask, execTask));
+        parentWfDef.setTimeoutSeconds(300);
+        parentWfDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
+
+        metadataClient.registerTaskDefs(List.of(builderDef));
+        metadataClient.updateWorkflowDefs(List.of(parentWfDef));
+
+        StartWorkflowRequest req = new StartWorkflowRequest();
+        req.setName(parentWfName);
+        req.setVersion(1);
+        String workflowId = workflowClient.startWorkflow(req);
+
+        try {
+            // Complete wf_builder with the inline sub-workflow definition
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                                assertEquals(
+                                        Task.Status.SCHEDULED, wf.getTasks().get(0).getStatus());
+                            });
+
+            String builderTaskId =
+                    workflowClient.getWorkflow(workflowId, true).getTasks().get(0).getTaskId();
+            TaskResult result = new TaskResult();
+            result.setWorkflowInstanceId(workflowId);
+            result.setTaskId(builderTaskId);
+            result.setStatus(TaskResult.Status.COMPLETED);
+            result.setOutputData(Map.of("result", subWfDefMap));
+            taskClient.updateTask(result);
+
+            // Wait until the SUB_WORKFLOW task has a sub-workflow ID — the task may be
+            // IN_PROGRESS or already COMPLETED since the inline sub-workflow has only a
+            // single auto-executing INLINE task and can finish before we poll.
+            await().atMost(15, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                                assertEquals(2, wf.getTasks().size());
+                                assertNotNull(wf.getTasks().get(1).getSubWorkflowId());
+                            });
+
+            String subWorkflowId =
+                    workflowClient
+                            .getWorkflow(workflowId, true)
+                            .getTasks()
+                            .get(1)
+                            .getSubWorkflowId();
+
+            // _systemMetadata.dynamic must be true in the sub-workflow's input
+            Workflow subWf = workflowClient.getWorkflow(subWorkflowId, false);
+            Object systemMetadata = subWf.getInput().get("_systemMetadata");
+            assertNotNull(systemMetadata, "_systemMetadata must be present in sub-workflow input");
+            assertTrue(systemMetadata instanceof Map, "_systemMetadata must be a Map");
+            assertEquals(
+                    true,
+                    ((Map<?, ?>) systemMetadata).get("dynamic"),
+                    "dynamic flag must be true for inline sub-workflows");
+        } finally {
+            try {
+                workflowClient.terminateWorkflow(workflowId, "e2e test cleanup");
+            } catch (Exception ignored) {
+            }
+            try {
+                metadataClient.unregisterWorkflowDef(parentWfName, 1);
+                metadataClient.unregisterTaskDef(builderTaskName);
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    /**
+     * Smoke test: verifies that setting idempotencyKey and idempotencyStrategy in SubWorkflowParams
+     * does not break workflow execution. The fields are wired end-to-end through the mapper and
+     * executor (StartWorkflowInput); enforcement is implementation-specific and not tested here.
+     */
+    @Test
+    public void testIdempotencyKeyForwardedWithoutBreakingExecution() {
+        WorkflowClient workflowClient = ApiUtil.WORKFLOW_CLIENT;
+        MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
+        TaskClient taskClient = ApiUtil.TASK_CLIENT;
+
+        String suffix = RandomStringUtils.randomAlphanumeric(6).toLowerCase();
+        String parentWfName = "idempotency_parent_" + suffix;
+        String subWfName = "idempotency_sub_" + suffix;
+        String taskName = "idempotency_task_" + suffix;
+
+        TaskDef taskDef = new TaskDef(taskName);
+        taskDef.setOwnerEmail("test@conductor.io");
+
+        WorkflowTask simpleTask = new WorkflowTask();
+        simpleTask.setName(taskName);
+        simpleTask.setTaskReferenceName("t1");
+        simpleTask.setWorkflowTaskType(TaskType.SIMPLE);
+
+        WorkflowDef subWfDef = new WorkflowDef();
+        subWfDef.setName(subWfName);
+        subWfDef.setVersion(1);
+        subWfDef.setOwnerEmail("test@conductor.io");
+        subWfDef.setTasks(List.of(simpleTask));
+        subWfDef.setTimeoutSeconds(300);
+        subWfDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
+
+        WorkflowTask subWfTask = new WorkflowTask();
+        subWfTask.setName("exec");
+        subWfTask.setTaskReferenceName("exec");
+        subWfTask.setWorkflowTaskType(TaskType.SUB_WORKFLOW);
+        SubWorkflowParams subParams = new SubWorkflowParams();
+        subParams.setName(subWfName);
+        subParams.setVersion(1);
+        subParams.setIdempotencyKey("test-idempotency-key-" + suffix);
+        subWfTask.setSubWorkflowParam(subParams);
+
+        WorkflowDef parentWfDef = new WorkflowDef();
+        parentWfDef.setName(parentWfName);
+        parentWfDef.setVersion(1);
+        parentWfDef.setOwnerEmail("test@conductor.io");
+        parentWfDef.setTasks(List.of(subWfTask));
+        parentWfDef.setTimeoutSeconds(300);
+        parentWfDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
+
+        metadataClient.registerTaskDefs(List.of(taskDef));
+        metadataClient.updateWorkflowDefs(List.of(subWfDef, parentWfDef));
+
+        StartWorkflowRequest req = new StartWorkflowRequest();
+        req.setName(parentWfName);
+        req.setVersion(1);
+        String workflowId = workflowClient.startWorkflow(req);
+
+        try {
+            // Sub-workflow must start and reach IN_PROGRESS — idempotency key must not prevent
+            // normal execution or cause an error when the OSS executor ignores it.
+            await().atMost(15, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                                assertEquals(1, wf.getTasks().size());
+                                assertEquals(
+                                        Task.Status.IN_PROGRESS, wf.getTasks().get(0).getStatus());
+                                assertNotNull(wf.getTasks().get(0).getSubWorkflowId());
+                            });
+
+            String subWorkflowId =
+                    workflowClient
+                            .getWorkflow(workflowId, true)
+                            .getTasks()
+                            .get(0)
+                            .getSubWorkflowId();
+
+            // Complete the task inside the sub-workflow so both workflows finish cleanly
+            String innerTaskId =
+                    workflowClient.getWorkflow(subWorkflowId, true).getTasks().get(0).getTaskId();
+            TaskResult innerResult = new TaskResult();
+            innerResult.setWorkflowInstanceId(subWorkflowId);
+            innerResult.setTaskId(innerTaskId);
+            innerResult.setStatus(TaskResult.Status.COMPLETED);
+            taskClient.updateTask(innerResult);
+
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () ->
+                                    assertEquals(
+                                            Workflow.WorkflowStatus.COMPLETED,
+                                            workflowClient
+                                                    .getWorkflow(workflowId, false)
+                                                    .getStatus()));
+        } finally {
+            try {
+                workflowClient.terminateWorkflow(workflowId, "e2e test cleanup");
+            } catch (Exception ignored) {
+            }
+            try {
+                metadataClient.unregisterWorkflowDef(parentWfName, 1);
+                metadataClient.unregisterWorkflowDef(subWfName, 1);
+                metadataClient.unregisterTaskDef(taskName);
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    /**
+     * Verifies that an explicit subWorkflowParams.version routes to that exact version, not the
+     * latest. This also validates the Number.intValue() fix: the version integer survives the JSON
+     * round-trip through the data store (which can deserialise it as a Double) and is parsed
+     * correctly. If parseInt("2.0") were used instead, the catch would swallow the error, resolve
+     * version=null, and run version 2 (latest) even when version 1 was explicitly requested — a
+     * silent correctness bug.
+     *
+     * <p>Proof structure:
+     *
+     * <pre>
+     * P1. Two versions of the sub-workflow are registered; they differ in their outputParameters:
+     *     v1 outputs {version: "v1"}, v2 outputs {version: "v2"}.
+     * P2. Parent is configured with subWorkflowParams.version=1.
+     * P3. The mapper writes the resolved version into the task's inputData["subWorkflowVersion"].
+     * P4. SubWorkflow.start() reads subWorkflowVersion via Number.intValue() → 1.
+     * P5. StartWorkflowInput.version=1 → WorkflowExecutor fetches v1 definition.
+     * P6. Sub-workflow output must contain {version: "v1"}, not {version: "v2"}.
+     * Contrapositive: if we observed {version: "v2"}, the version was not forwarded correctly.
+     * </pre>
+     */
+    @Test
+    public void testExplicitVersionRoutesToCorrectSubWorkflowVersion() {
+        WorkflowClient workflowClient = ApiUtil.WORKFLOW_CLIENT;
+        MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
+        TaskClient taskClient = ApiUtil.TASK_CLIENT;
+
+        String suffix = RandomStringUtils.randomAlphanumeric(6).toLowerCase();
+        String parentWfName = "version_parent_" + suffix;
+        String subWfName = "version_sub_" + suffix;
+        String taskName = "version_task_" + suffix;
+
+        TaskDef taskDef = new TaskDef(taskName);
+        taskDef.setOwnerEmail("test@conductor.io");
+
+        // v1: task outputs {version: "v1"}
+        WorkflowTask taskV1 = new WorkflowTask();
+        taskV1.setName(taskName);
+        taskV1.setTaskReferenceName("t1");
+        taskV1.setWorkflowTaskType(TaskType.SIMPLE);
+        WorkflowDef subWfV1 = new WorkflowDef();
+        subWfV1.setName(subWfName);
+        subWfV1.setVersion(1);
+        subWfV1.setOwnerEmail("test@conductor.io");
+        subWfV1.setTasks(List.of(taskV1));
+        subWfV1.setOutputParameters(Map.of("version", "v1"));
+        subWfV1.setTimeoutSeconds(300);
+        subWfV1.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
+
+        // v2: same task, different output sentinel
+        WorkflowTask taskV2 = new WorkflowTask();
+        taskV2.setName(taskName);
+        taskV2.setTaskReferenceName("t1");
+        taskV2.setWorkflowTaskType(TaskType.SIMPLE);
+        WorkflowDef subWfV2 = new WorkflowDef();
+        subWfV2.setName(subWfName);
+        subWfV2.setVersion(2);
+        subWfV2.setOwnerEmail("test@conductor.io");
+        subWfV2.setTasks(List.of(taskV2));
+        subWfV2.setOutputParameters(Map.of("version", "v2"));
+        subWfV2.setTimeoutSeconds(300);
+        subWfV2.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
+
+        // Parent requests version 1 explicitly
+        WorkflowTask subWfTask = new WorkflowTask();
+        subWfTask.setName("exec");
+        subWfTask.setTaskReferenceName("exec");
+        subWfTask.setWorkflowTaskType(TaskType.SUB_WORKFLOW);
+        SubWorkflowParams subParams = new SubWorkflowParams();
+        subParams.setName(subWfName);
+        subParams.setVersion(1); // explicitly request v1 even though v2 is latest
+        subWfTask.setSubWorkflowParam(subParams);
+        WorkflowDef parentWfDef = new WorkflowDef();
+        parentWfDef.setName(parentWfName);
+        parentWfDef.setVersion(1);
+        parentWfDef.setOwnerEmail("test@conductor.io");
+        parentWfDef.setTasks(List.of(subWfTask));
+        parentWfDef.setTimeoutSeconds(300);
+        parentWfDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
+
+        metadataClient.registerTaskDefs(List.of(taskDef));
+        metadataClient.updateWorkflowDefs(List.of(subWfV1, subWfV2, parentWfDef));
+
+        StartWorkflowRequest req = new StartWorkflowRequest();
+        req.setName(parentWfName);
+        req.setVersion(1);
+        String workflowId = workflowClient.startWorkflow(req);
+
+        try {
+            // Wait for the sub-workflow to be running
+            await().atMost(15, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                                assertNotNull(wf.getTasks().get(0).getSubWorkflowId());
+                            });
+
+            String subWorkflowId =
+                    workflowClient
+                            .getWorkflow(workflowId, true)
+                            .getTasks()
+                            .get(0)
+                            .getSubWorkflowId();
+
+            // Complete the task in the sub-workflow
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow subWf = workflowClient.getWorkflow(subWorkflowId, true);
+                                assertNotNull(subWf.getTasks());
+                                assertNotNull(subWf.getTasks().get(0).getTaskId());
+                            });
+
+            String innerTaskId =
+                    workflowClient.getWorkflow(subWorkflowId, true).getTasks().get(0).getTaskId();
+            TaskResult result = new TaskResult();
+            result.setWorkflowInstanceId(subWorkflowId);
+            result.setTaskId(innerTaskId);
+            result.setStatus(TaskResult.Status.COMPLETED);
+            taskClient.updateTask(result);
+
+            // The sub-workflow must be the v1 instance — its output sentinel is "v1"
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow subWf = workflowClient.getWorkflow(subWorkflowId, false);
+                                assertEquals(Workflow.WorkflowStatus.COMPLETED, subWf.getStatus());
+                                assertEquals(
+                                        "v1",
+                                        subWf.getOutput().get("version"),
+                                        "Sub-workflow must execute version 1, not the latest (v2)");
+                            });
+        } finally {
+            try {
+                workflowClient.terminateWorkflow(workflowId, "e2e test cleanup");
+            } catch (Exception ignored) {
+            }
+            try {
+                metadataClient.unregisterWorkflowDef(parentWfName, 1);
+                metadataClient.unregisterWorkflowDef(subWfName, 1);
+                metadataClient.unregisterWorkflowDef(subWfName, 2);
+                metadataClient.unregisterTaskDef(taskName);
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    /**
+     * Verifies that a normally-registered sub-workflow (no inline workflowDefinition) does NOT have
+     * "_systemMetadata" injected into its workflow input. The dynamic marking must only appear for
+     * inline definitions where workflowDefinition != null after resolution.
+     *
+     * <p>This is the boundary condition: the "else" branch of {@code if (workflowDefinition !=
+     * null)}. If the guard were missing, every sub-workflow would be marked dynamic.
+     */
+    @Test
+    public void testRegisteredSubWorkflowNotMarkedDynamic() {
+        WorkflowClient workflowClient = ApiUtil.WORKFLOW_CLIENT;
+        MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
+        TaskClient taskClient = ApiUtil.TASK_CLIENT;
+
+        String suffix = RandomStringUtils.randomAlphanumeric(6).toLowerCase();
+        String parentWfName = "nodyn_parent_" + suffix;
+        String subWfName = "nodyn_sub_" + suffix;
+        String taskName = "nodyn_task_" + suffix;
+
+        TaskDef taskDef = new TaskDef(taskName);
+        taskDef.setOwnerEmail("test@conductor.io");
+        WorkflowTask simpleTask = new WorkflowTask();
+        simpleTask.setName(taskName);
+        simpleTask.setTaskReferenceName("t1");
+        simpleTask.setWorkflowTaskType(TaskType.SIMPLE);
+        WorkflowDef subWfDef = new WorkflowDef();
+        subWfDef.setName(subWfName);
+        subWfDef.setVersion(1);
+        subWfDef.setOwnerEmail("test@conductor.io");
+        subWfDef.setTasks(List.of(simpleTask));
+        subWfDef.setTimeoutSeconds(300);
+        subWfDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
+
+        // Parent uses a pre-registered sub-workflow (no workflowDefinition field)
+        WorkflowTask subWfTask = new WorkflowTask();
+        subWfTask.setName("exec");
+        subWfTask.setTaskReferenceName("exec");
+        subWfTask.setWorkflowTaskType(TaskType.SUB_WORKFLOW);
+        SubWorkflowParams subParams = new SubWorkflowParams();
+        subParams.setName(subWfName);
+        subParams.setVersion(1);
+        // workflowDefinition intentionally NOT set — this is a registered lookup
+        subWfTask.setSubWorkflowParam(subParams);
+        WorkflowDef parentWfDef = new WorkflowDef();
+        parentWfDef.setName(parentWfName);
+        parentWfDef.setVersion(1);
+        parentWfDef.setOwnerEmail("test@conductor.io");
+        parentWfDef.setTasks(List.of(subWfTask));
+        parentWfDef.setTimeoutSeconds(300);
+        parentWfDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
+
+        metadataClient.registerTaskDefs(List.of(taskDef));
+        metadataClient.updateWorkflowDefs(List.of(subWfDef, parentWfDef));
+
+        StartWorkflowRequest req = new StartWorkflowRequest();
+        req.setName(parentWfName);
+        req.setVersion(1);
+        String workflowId = workflowClient.startWorkflow(req);
+
+        try {
+            await().atMost(15, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                                assertNotNull(wf.getTasks().get(0).getSubWorkflowId());
+                            });
+
+            String subWorkflowId =
+                    workflowClient
+                            .getWorkflow(workflowId, true)
+                            .getTasks()
+                            .get(0)
+                            .getSubWorkflowId();
+
+            // Registered sub-workflow must NOT have _systemMetadata in its input
+            Workflow subWf = workflowClient.getWorkflow(subWorkflowId, false);
+            assertNull(
+                    subWf.getInput().get("_systemMetadata"),
+                    "Registered sub-workflows must not be marked dynamic — "
+                            + "_systemMetadata must be absent when workflowDefinition is null");
+        } finally {
+            try {
+                workflowClient.terminateWorkflow(workflowId, "e2e test cleanup");
+            } catch (Exception ignored) {
+            }
+            try {
+                metadataClient.unregisterWorkflowDef(parentWfName, 1);
+                metadataClient.unregisterWorkflowDef(subWfName, 1);
+                metadataClient.unregisterTaskDef(taskName);
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    /**
+     * Verifies that a STATIC inline sub-workflow definition (a concrete WorkflowDef object embedded
+     * directly in subWorkflowParam.workflowDefinition, NOT a String expression) is also marked
+     * dynamic. This covers the object-form path of the dynamic-marking code, which executes for ANY
+     * non-null workflowDefinition regardless of whether it was resolved from an expression or
+     * embedded at compile time.
+     */
+    @Test
+    public void testStaticInlineSubWorkflowAlsoMarkedDynamic() {
+        WorkflowClient workflowClient = ApiUtil.WORKFLOW_CLIENT;
+        MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
+
+        String suffix = RandomStringUtils.randomAlphanumeric(6).toLowerCase();
+        String parentWfName = "static_dyn_parent_" + suffix;
+
+        // Build the sub-workflow def as a Java object and embed it directly
+        WorkflowTask inlineTask = new WorkflowTask();
+        inlineTask.setName("check_mark");
+        inlineTask.setTaskReferenceName("check_mark");
+        inlineTask.setWorkflowTaskType(TaskType.INLINE);
+        inlineTask.setInputParameters(Map.of("evaluatorType", "javascript", "expression", "true;"));
+
+        WorkflowDef embeddedSubWfDef = new WorkflowDef();
+        embeddedSubWfDef.setName("static_inline_sub");
+        embeddedSubWfDef.setVersion(1);
+        embeddedSubWfDef.setSchemaVersion(2);
+        embeddedSubWfDef.setTasks(List.of(inlineTask));
+        embeddedSubWfDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.ALERT_ONLY);
+
+        WorkflowTask subWfTask = new WorkflowTask();
+        subWfTask.setName("exec");
+        subWfTask.setTaskReferenceName("exec");
+        subWfTask.setWorkflowTaskType(TaskType.SUB_WORKFLOW);
+        SubWorkflowParams subParams = new SubWorkflowParams();
+        subParams.setName("static_inline_sub");
+        subParams.setVersion(1);
+        subParams.setWorkflowDef(embeddedSubWfDef); // concrete object, not an expression
+        subWfTask.setSubWorkflowParam(subParams);
+
+        WorkflowDef parentWfDef = new WorkflowDef();
+        parentWfDef.setName(parentWfName);
+        parentWfDef.setVersion(1);
+        parentWfDef.setOwnerEmail("test@conductor.io");
+        parentWfDef.setTasks(List.of(subWfTask));
+        parentWfDef.setTimeoutSeconds(300);
+        parentWfDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
+
+        metadataClient.updateWorkflowDefs(List.of(parentWfDef));
+
+        StartWorkflowRequest req = new StartWorkflowRequest();
+        req.setName(parentWfName);
+        req.setVersion(1);
+        String workflowId = workflowClient.startWorkflow(req);
+
+        try {
+            // Wait until the sub-workflow has been created (INLINE task completes fast)
+            await().atMost(15, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                                assertNotNull(wf.getTasks().get(0).getSubWorkflowId());
+                            });
+
+            String subWorkflowId =
+                    workflowClient
+                            .getWorkflow(workflowId, true)
+                            .getTasks()
+                            .get(0)
+                            .getSubWorkflowId();
+
+            Workflow subWf = workflowClient.getWorkflow(subWorkflowId, false);
+            Object systemMetadata = subWf.getInput().get("_systemMetadata");
+            assertNotNull(
+                    systemMetadata,
+                    "Static inline sub-workflows must also be marked dynamic — "
+                            + "_systemMetadata must be present whenever workflowDefinition != null");
+            assertTrue(systemMetadata instanceof Map);
+            assertEquals(
+                    true,
+                    ((Map<?, ?>) systemMetadata).get("dynamic"),
+                    "dynamic flag must be true for static inline sub-workflow definitions");
+        } finally {
+            try {
+                workflowClient.terminateWorkflow(workflowId, "e2e test cleanup");
+            } catch (Exception ignored) {
+            }
+            try {
+                metadataClient.unregisterWorkflowDef(parentWfName, 1);
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    /**
+     * Verifies that version=0 in subWorkflowParams is treated as "use the latest version", and that
+     * this sentinel value survives the Number.intValue() fix correctly.
+     *
+     * <p>Proof: SubWorkflow.start() does {@code resolvedVersion = version == 0 ? null : version}. A
+     * null version passed to StartWorkflowInput causes WorkflowExecutor to fetch the latest version
+     * from MetadataDAO. We register two versions; set subWorkflowParams.version=0; assert that
+     * version 2 (latest) executes. If the sentinel were ignored, version 1 could run.
+     */
+    @Test
+    public void testVersionZeroTreatedAsLatest() {
+        WorkflowClient workflowClient = ApiUtil.WORKFLOW_CLIENT;
+        MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
+        TaskClient taskClient = ApiUtil.TASK_CLIENT;
+
+        String suffix = RandomStringUtils.randomAlphanumeric(6).toLowerCase();
+        String parentWfName = "ver0_parent_" + suffix;
+        String subWfName = "ver0_sub_" + suffix;
+        String taskName = "ver0_task_" + suffix;
+
+        TaskDef taskDef = new TaskDef(taskName);
+        taskDef.setOwnerEmail("test@conductor.io");
+
+        WorkflowTask t = new WorkflowTask();
+        t.setName(taskName);
+        t.setTaskReferenceName("t1");
+        t.setWorkflowTaskType(TaskType.SIMPLE);
+
+        WorkflowDef subV1 = new WorkflowDef();
+        subV1.setName(subWfName);
+        subV1.setVersion(1);
+        subV1.setOwnerEmail("test@conductor.io");
+        subV1.setTasks(List.of(t));
+        subV1.setOutputParameters(Map.of("version", "v1"));
+        subV1.setTimeoutSeconds(300);
+        subV1.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
+
+        WorkflowDef subV2 = new WorkflowDef();
+        subV2.setName(subWfName);
+        subV2.setVersion(2);
+        subV2.setOwnerEmail("test@conductor.io");
+        subV2.setTasks(List.of(t));
+        subV2.setOutputParameters(Map.of("version", "v2"));
+        subV2.setTimeoutSeconds(300);
+        subV2.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
+
+        WorkflowTask subWfTask = new WorkflowTask();
+        subWfTask.setName("exec");
+        subWfTask.setTaskReferenceName("exec");
+        subWfTask.setWorkflowTaskType(TaskType.SUB_WORKFLOW);
+        SubWorkflowParams subParams = new SubWorkflowParams();
+        subParams.setName(subWfName);
+        subParams.setVersion(0); // sentinel: use latest
+        subWfTask.setSubWorkflowParam(subParams);
+        WorkflowDef parentWfDef = new WorkflowDef();
+        parentWfDef.setName(parentWfName);
+        parentWfDef.setVersion(1);
+        parentWfDef.setOwnerEmail("test@conductor.io");
+        parentWfDef.setTasks(List.of(subWfTask));
+        parentWfDef.setTimeoutSeconds(300);
+        parentWfDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
+
+        metadataClient.registerTaskDefs(List.of(taskDef));
+        metadataClient.updateWorkflowDefs(List.of(subV1, subV2, parentWfDef));
+
+        StartWorkflowRequest req = new StartWorkflowRequest();
+        req.setName(parentWfName);
+        req.setVersion(1);
+        String workflowId = workflowClient.startWorkflow(req);
+
+        try {
+            await().atMost(15, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () ->
+                                    assertNotNull(
+                                            workflowClient
+                                                    .getWorkflow(workflowId, true)
+                                                    .getTasks()
+                                                    .get(0)
+                                                    .getSubWorkflowId()));
+
+            String subWorkflowId =
+                    workflowClient
+                            .getWorkflow(workflowId, true)
+                            .getTasks()
+                            .get(0)
+                            .getSubWorkflowId();
+
+            String innerTaskId =
+                    workflowClient.getWorkflow(subWorkflowId, true).getTasks().get(0).getTaskId();
+            TaskResult result = new TaskResult();
+            result.setWorkflowInstanceId(subWorkflowId);
+            result.setTaskId(innerTaskId);
+            result.setStatus(TaskResult.Status.COMPLETED);
+            taskClient.updateTask(result);
+
+            // version=0 → resolvedVersion=null → WorkflowExecutor fetches latest (v2)
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow subWf = workflowClient.getWorkflow(subWorkflowId, false);
+                                assertEquals(Workflow.WorkflowStatus.COMPLETED, subWf.getStatus());
+                                assertEquals(
+                                        "v2",
+                                        subWf.getOutput().get("version"),
+                                        "version=0 must resolve to the latest version (v2)");
+                            });
+        } finally {
+            try {
+                workflowClient.terminateWorkflow(workflowId, "e2e test cleanup");
+            } catch (Exception ignored) {
+            }
+            try {
+                metadataClient.unregisterWorkflowDef(parentWfName, 1);
+                metadataClient.unregisterWorkflowDef(subWfName, 1);
+                metadataClient.unregisterWorkflowDef(subWfName, 2);
+                metadataClient.unregisterTaskDef(taskName);
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    /**
+     * Verifies that both idempotencyKey AND idempotencyStrategy are forwarded through the mapper
+     * into task inputData and then read by SubWorkflow.start() into StartWorkflowInput without
+     * errors. Also validates that the IdempotencyStrategy enum survives serialization (stored as
+     * its enum name string, correctly deserialized via IdempotencyStrategy.valueOf).
+     */
+    @Test
+    public void testIdempotencyKeyAndStrategyBothForwardedWithoutBreakingExecution() {
+        WorkflowClient workflowClient = ApiUtil.WORKFLOW_CLIENT;
+        MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
+        TaskClient taskClient = ApiUtil.TASK_CLIENT;
+
+        String suffix = RandomStringUtils.randomAlphanumeric(6).toLowerCase();
+        String parentWfName = "idp_strat_parent_" + suffix;
+        String subWfName = "idp_strat_sub_" + suffix;
+        String taskName = "idp_strat_task_" + suffix;
+
+        TaskDef taskDef = new TaskDef(taskName);
+        taskDef.setOwnerEmail("test@conductor.io");
+        WorkflowTask simpleTask = new WorkflowTask();
+        simpleTask.setName(taskName);
+        simpleTask.setTaskReferenceName("t1");
+        simpleTask.setWorkflowTaskType(TaskType.SIMPLE);
+        WorkflowDef subWfDef = new WorkflowDef();
+        subWfDef.setName(subWfName);
+        subWfDef.setVersion(1);
+        subWfDef.setOwnerEmail("test@conductor.io");
+        subWfDef.setTasks(List.of(simpleTask));
+        subWfDef.setTimeoutSeconds(300);
+        subWfDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
+
+        WorkflowTask subWfTask = new WorkflowTask();
+        subWfTask.setName("exec");
+        subWfTask.setTaskReferenceName("exec");
+        subWfTask.setWorkflowTaskType(TaskType.SUB_WORKFLOW);
+        SubWorkflowParams subParams = new SubWorkflowParams();
+        subParams.setName(subWfName);
+        subParams.setVersion(1);
+        subParams.setIdempotencyKey("e2e-idempotency-key-" + suffix);
+        subParams.setIdempotencyStrategy(
+                com.netflix.conductor.common.metadata.workflow.IdempotencyStrategy.RETURN_EXISTING);
+        subWfTask.setSubWorkflowParam(subParams);
+        WorkflowDef parentWfDef = new WorkflowDef();
+        parentWfDef.setName(parentWfName);
+        parentWfDef.setVersion(1);
+        parentWfDef.setOwnerEmail("test@conductor.io");
+        parentWfDef.setTasks(List.of(subWfTask));
+        parentWfDef.setTimeoutSeconds(300);
+        parentWfDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
+
+        metadataClient.registerTaskDefs(List.of(taskDef));
+        metadataClient.updateWorkflowDefs(List.of(subWfDef, parentWfDef));
+
+        StartWorkflowRequest req = new StartWorkflowRequest();
+        req.setName(parentWfName);
+        req.setVersion(1);
+        String workflowId = workflowClient.startWorkflow(req);
+
+        try {
+            // Both key and strategy must not prevent sub-workflow creation —
+            // idempotency enforcement is not implemented in OSS but the plumbing must not crash.
+            await().atMost(15, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                                assertEquals(
+                                        Task.Status.IN_PROGRESS, wf.getTasks().get(0).getStatus());
+                                assertNotNull(wf.getTasks().get(0).getSubWorkflowId());
+                            });
+
+            String subWorkflowId =
+                    workflowClient
+                            .getWorkflow(workflowId, true)
+                            .getTasks()
+                            .get(0)
+                            .getSubWorkflowId();
+
+            // The idempotencyKey must have been forwarded to the task's inputData by the mapper.
+            // We verify via the task inputData visible in the workflow execution.
+            Workflow wf = workflowClient.getWorkflow(workflowId, true);
+            assertEquals(
+                    "e2e-idempotency-key-" + suffix,
+                    wf.getTasks().get(0).getInputData().get("idempotencyKey"),
+                    "idempotencyKey must be forwarded through the mapper into task inputData");
+            assertEquals(
+                    "RETURN_EXISTING",
+                    String.valueOf(wf.getTasks().get(0).getInputData().get("idempotencyStrategy")),
+                    "idempotencyStrategy must be forwarded as its enum name string");
+
+            // Complete the inner task to clean up
+            String innerTaskId =
+                    workflowClient.getWorkflow(subWorkflowId, true).getTasks().get(0).getTaskId();
+            TaskResult result = new TaskResult();
+            result.setWorkflowInstanceId(subWorkflowId);
+            result.setTaskId(innerTaskId);
+            result.setStatus(TaskResult.Status.COMPLETED);
+            taskClient.updateTask(result);
+
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () ->
+                                    assertEquals(
+                                            Workflow.WorkflowStatus.COMPLETED,
+                                            workflowClient
+                                                    .getWorkflow(workflowId, false)
+                                                    .getStatus()));
+        } finally {
+            try {
+                workflowClient.terminateWorkflow(workflowId, "e2e test cleanup");
+            } catch (Exception ignored) {
+            }
+            try {
+                metadataClient.unregisterWorkflowDef(parentWfName, 1);
+                metadataClient.unregisterWorkflowDef(subWfName, 1);
+                metadataClient.unregisterTaskDef(taskName);
+            } catch (Exception ignored) {
+            }
+        }
     }
 
     private void registerInlineWorkflowDef(String workflowName, MetadataClient metadataClient1) {
