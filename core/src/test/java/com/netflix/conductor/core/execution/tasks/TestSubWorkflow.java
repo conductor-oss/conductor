@@ -458,6 +458,23 @@ public class TestSubWorkflow {
     }
 
     @Test
+    public void testExecuteReturnsFalseWhenSubWorkflowNotFoundInStore() {
+        // If the sub-workflow was deleted from the store (e.g. TTL expired) execute() must
+        // log a warning and return false without throwing NullPointerException.
+        WorkflowModel workflowInstance = new WorkflowModel();
+        workflowInstance.setWorkflowDefinition(new WorkflowDef());
+
+        TaskModel task = new TaskModel();
+        task.setSubWorkflowId("deleted-sub-workflow-id");
+
+        when(workflowExecutor.getWorkflow(eq("deleted-sub-workflow-id"), eq(false)))
+                .thenReturn(null); // simulates a deleted or expired sub-workflow
+
+        boolean result = subWorkflow.execute(workflowInstance, task, workflowExecutor);
+        assertFalse("execute() must return false when sub-workflow is not found", result);
+    }
+
+    @Test
     public void testIsAsync() {
         assertFalse(subWorkflow.isAsync());
     }

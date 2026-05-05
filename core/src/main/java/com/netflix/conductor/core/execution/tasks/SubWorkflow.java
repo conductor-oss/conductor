@@ -129,6 +129,11 @@ public class SubWorkflow extends WorkflowSystemTask {
                         IdempotencyStrategy.valueOf(
                                 String.valueOf(input.get("idempotencyStrategy")));
             } catch (IllegalArgumentException ignored) {
+                LOGGER.warn(
+                        "Unknown idempotencyStrategy '{}' for task {} in {} — ignoring.",
+                        input.get("idempotencyStrategy"),
+                        task.getTaskId(),
+                        workflow.toShortString());
             }
         }
 
@@ -184,6 +189,13 @@ public class SubWorkflow extends WorkflowSystemTask {
         }
 
         WorkflowModel subWorkflow = workflowExecutor.getWorkflow(workflowId, false);
+        if (subWorkflow == null) {
+            // Sub-workflow may have already been deleted (e.g. data-store TTL expired).
+            LOGGER.warn(
+                    "Cannot execute sub-workflow {} — not found in store (already deleted?).",
+                    workflowId);
+            return false;
+        }
         WorkflowModel.Status subWorkflowStatus = subWorkflow.getStatus();
         if (!subWorkflowStatus.isTerminal()) {
             return false;

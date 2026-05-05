@@ -93,10 +93,9 @@ public class SubWorkflowTaskMapper implements TaskMapper {
         subWorkflowTask.addInput("workflowInput", taskMapperContext.getTaskInput());
         subWorkflowTask.setStatus(TaskModel.Status.SCHEDULED);
         subWorkflowTask.setCallbackAfterSeconds(workflowTask.getStartDelay());
-        if (subWorkflowParams.getPriority() != null
-                && !StringUtils.isEmpty(subWorkflowParams.getPriority().toString())) {
-            int priority = Integer.parseInt(subWorkflowParams.getPriority().toString());
-            subWorkflowTask.setWorkflowPriority(priority);
+        if (subWorkflowParams.getPriority() instanceof Number) {
+            subWorkflowTask.setWorkflowPriority(
+                    ((Number) subWorkflowParams.getPriority()).intValue());
         }
         LOGGER.debug("SubWorkflowTask {} created to be Scheduled", subWorkflowTask);
         return List.of(subWorkflowTask);
@@ -161,8 +160,7 @@ public class SubWorkflowTaskMapper implements TaskMapper {
     private Integer getSubWorkflowVersion(
             Map<String, Object> resolvedParams, String subWorkflowName) {
         return Optional.ofNullable(resolvedParams.get("version"))
-                .map(Object::toString)
-                .map(Integer::parseInt)
+                .map(v -> v instanceof Number ? ((Number) v).intValue() : Integer.parseInt(v.toString()))
                 .orElseGet(
                         () ->
                                 metadataDAO
