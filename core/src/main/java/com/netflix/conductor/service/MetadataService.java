@@ -156,4 +156,13 @@ public interface MetadataService {
             boolean activeOnly);
 
     List<WorkflowDef> getWorkflowDefsLatestVersions();
+
+    /**
+     * Returns lightweight version summaries for a single workflow.
+     *
+     * @param name workflow name
+     * @return list of version summaries sorted by version ascending
+     */
+    List<WorkflowDefSummary> getWorkflowVersions(
+            @NotEmpty(message = "Workflow name cannot be null or empty") String name);
 }

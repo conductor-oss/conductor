@@ -68,7 +68,10 @@ import {
   UseLocalCopyChangesEvent,
 } from "../ConfirmLocalCopyDialog/state";
 import { SavedSuccessfulEvent } from "../confirmSave/state";
-import { HighlightTextReferenceEvent } from "../EditorPanel/CodeEditorTab/state";
+import {
+  CodeMachineEventTypes,
+  HighlightTextReferenceEvent,
+} from "../EditorPanel/CodeEditorTab/state";
 import {
   FormMachineActionTypes,
   TaskFormEvents,
@@ -89,6 +92,7 @@ export const persistWorkflowAttribs = assign<
       workflowName,
       currentVersion,
       workflowTemplateId,
+      preserveWorkflowChanges,
     }: UpdateAttributesEvent,
   ) => {
     const newWorkflowDefinition: Partial<WorkflowDef> = newWorkflowTemplate(
@@ -96,11 +100,20 @@ export const persistWorkflowAttribs = assign<
     ) as unknown as Partial<WorkflowDef>;
     const currentWf = isNewWorkflow ? newWorkflowDefinition : {};
 
+    // After a successful save the machine raises UPDATE_ATTRIBS_EVT to trigger a
+    // version refetch. Without this guard `workflowChanges` would be cleared to {}
+    // for the duration of that async fetch, causing the agent to see an empty
+    // workflow and ask the user for task reference names it already knows.
+    const workflowChanges =
+      preserveWorkflowChanges && !isNewWorkflow && context.workflowChanges
+        ? context.workflowChanges
+        : currentWf;
+
     return {
       isNewWorkflow,
       workflowName,
       currentWf,
-      workflowChanges: currentWf,
+      workflowChanges,
       currentVersion,
       workflowTemplateId,
       // Keep agent collapsed by default to improve initial page load performance
@@ -250,11 +263,16 @@ export const changeTab = assign<
   openedTab: (_context, event) =>
     "data" in event ? event.data.originalEvent.tab : event.tab,
   previousTab: ({ openedTab }, _) => openedTab,
+  isAgentExpanded: (context, event) => {
+    const nextTab = "data" in event ? event.data.originalEvent.tab : event.tab;
+    return nextTab === CODE_TAB ? false : context.isAgentExpanded;
+  },
 });
 
 export const changeToCodeTab = assign({
   openedTab: CODE_TAB,
   previousTab: ({ openedTab }: DefinitionMachineContext, _event) => openedTab,
+  isAgentExpanded: false,
 });
 
 export const changeToTaskTab = assign({
@@ -583,6 +601,32 @@ export const sendWorkflowChangesToMetadataMachine = sendTo<
   return {
     type: WorkflowMetadataMachineEventTypes.FORCE_WORKFLOW,
     workflow: workflowChanges || {},
+  };
+});
+
+// Reads from event.workflow directly (not ctx.workflowChanges) to avoid XState
+// v4 assign-before-sendTo timing: assign actions update context for the next
+// state snapshot, so sendTo actions in the same transition still see the old
+// context value.
+export const sendWorkflowChangesToMetadataMachineFromEvent = sendTo<
+  DefinitionMachineContext,
+  any,
+  ActorRef<WorkflowMetadataEvents>
+>("workflowTabMetaEditor", (_ctx, event) => {
+  return {
+    type: WorkflowMetadataMachineEventTypes.FORCE_WORKFLOW,
+    workflow: event.workflow || {},
+  };
+});
+
+export const forwardWorkflowToCodeMachine = sendTo<
+  DefinitionMachineContext,
+  any,
+  any
+>("codeMachine", (_ctx, event) => {
+  return {
+    type: CodeMachineEventTypes.FORCE_WORKFLOW,
+    workflow: event.workflow,
   };
 });
 
@@ -945,6 +989,12 @@ export const raiseUpdateAtribsEvent = raise<
       workflowVersions,
       currentVersion,
       workflowTemplateId,
+      // Do NOT set preserveWorkflowChanges here. After a successful save the
+      // machine re-fetches the workflow from the server; workflowChanges must
+      // be reset to {} so that updateWf can sync it to the freshly-loaded
+      // server copy. If we preserved the stale workflowChanges here,
+      // fastDeepEqual(workflowChanges, currentWf) would fail (server adds
+      // updateTime etc.) and the save button would stay permanently enabled.
     };
   },
 );
@@ -1028,6 +1078,10 @@ export const toggleAgentExpanded = assign<
     }
     return !context.isAgentExpanded;
   },
+});
+
+export const collapseAgent = assign<DefinitionMachineContext, any>({
+  isAgentExpanded: false,
 });
 
 export const autoExpandAgentForNewWorkflow = assign<
