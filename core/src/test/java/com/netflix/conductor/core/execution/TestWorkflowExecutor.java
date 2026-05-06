@@ -2332,7 +2332,8 @@ public class TestWorkflowExecutor {
         subWorkflowTask.setStatus(TaskModel.Status.IN_PROGRESS);
         WorkflowModel childWorkflow = new WorkflowModel();
         childWorkflow.setWorkflowDefinition(new WorkflowDef());
-        when(executionDAOFacade.getWorkflowModel("child-workflow-id", true)).thenReturn(childWorkflow);
+        when(executionDAOFacade.getWorkflowModel("child-workflow-id", true))
+                .thenReturn(childWorkflow);
 
         TaskModel lambdaTask = new TaskModel();
         lambdaTask.setTaskId(UUID.randomUUID().toString());

@@ -35,8 +35,7 @@ public class IDGenerator {
             String parentWorkflowId, String parentWorkflowTaskId, int retryCount) {
         String source =
                 String.format(
-                        "subworkflow:%s:%s:%d",
-                        parentWorkflowId, parentWorkflowTaskId, retryCount);
+                        "subworkflow:%s:%s:%d", parentWorkflowId, parentWorkflowTaskId, retryCount);
         return UUID.nameUUIDFromBytes(source.getBytes(StandardCharsets.UTF_8)).toString();
     }
 }

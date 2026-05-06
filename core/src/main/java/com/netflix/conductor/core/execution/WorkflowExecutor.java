@@ -179,5 +179,4 @@ public interface WorkflowExecutor {
      * @return created or existing workflow model
      */
     WorkflowModel startWorkflowIdempotent(StartWorkflowInput input);
-
 }

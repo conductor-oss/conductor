@@ -203,7 +203,8 @@ public class TestWorkflowRepairService {
         task.setTaskId("abcd");
         task.setCallbackAfterSeconds(60);
 
-        WorkflowSystemTask workflowSystemTask = new SubWorkflow(new ObjectMapper(), new IDGenerator());
+        WorkflowSystemTask workflowSystemTask =
+                new SubWorkflow(new ObjectMapper(), new IDGenerator());
         when(systemTaskRegistry.get(TASK_TYPE_SUB_WORKFLOW)).thenReturn(workflowSystemTask);
         when(queueDAO.containsMessage(anyString(), anyString())).thenReturn(false);
 
