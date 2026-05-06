@@ -31,6 +31,16 @@ export const agentDisplayModeAtom = atomWithStorage<AgentDisplayMode>(
   AgentDisplayMode.FLOATING_MINIMIZED,
 );
 
+/**
+ * Filled while the workflow execution page is mounted. Lets global Assistant
+ * controls (e.g. sidebar) close the task detail panel so the assistant can show,
+ * matching the in-page Assistant tab next to execution tabs.
+ */
+export const executionAssistantBridge = {
+  closeRightPanel: null as (() => void) | null,
+  isTaskPanelOpen: false,
+};
+
 export const agentWidthAtom = atomWithStorage<number>("agentWidth", 400);
 
 export const messagesAtom = atom<[]>([]);
