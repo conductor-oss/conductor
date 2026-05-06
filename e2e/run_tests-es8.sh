@@ -10,6 +10,10 @@ cleanup() {
     docker compose -f "$COMPOSE_FILE" down -v || true
 }
 
+# Register cleanup before compose operations so partial startup, health failures,
+# interrupted runs, and test failures all remove containers and volumes.
+trap cleanup EXIT
+
 echo "Preparing shared storage dir at $STORAGE_DIR ..."
 rm -rf "$STORAGE_DIR"
 mkdir -p "$STORAGE_DIR"
@@ -17,7 +21,6 @@ mkdir -p "$STORAGE_DIR"
 echo "Starting Conductor (Redis + Elasticsearch 8)..."
 docker compose -f "$COMPOSE_FILE" build conductor-server
 docker compose -f "$COMPOSE_FILE" up -d
-trap cleanup EXIT
 
 echo "Waiting for Conductor server at $SERVER_ROOT_URI/health ..."
 for i in $(seq 1 60); do
