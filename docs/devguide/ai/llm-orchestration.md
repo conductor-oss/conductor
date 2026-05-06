@@ -26,6 +26,76 @@ Conductor provides native system tasks for LLM orchestration and integration. No
 No other open source workflow engine provides native LLM orchestration at this breadth. Each provider is a configuration — switch models by changing a parameter, not your code.
 
 
+## Built-in tools & advanced capabilities
+
+Conductor supports provider-native tools that run on the provider's infrastructure — no MCP server or custom worker needed. Enable them with a single parameter in the `LLM_CHAT_COMPLETE` task.
+
+| Capability | Parameter | OpenAI | Anthropic | Google Gemini |
+|---|---|---|---|---|
+| Web Search | `webSearch: true` | ✓ | ✓ | ✓ |
+| Code Execution | `codeInterpreter: true` | ✓ (code_interpreter) | ✓ (code_execution) | ✓ (code_execution) |
+| File Search | `fileSearchVectorStoreIds: [...]` | ✓ | — | — |
+| Extended Thinking | `thinkingTokenLimit: N` | — | ✓ | ✓ |
+| Reasoning Effort | `reasoningEffort: "high"` | ✓ | — | — |
+| Google Search | `googleSearchRetrieval: true` | — | — | ✓ |
+| Custom Functions | `tools: [...]` | ✓ | ✓ | ✓ |
+
+### Web search
+
+The LLM can search the web for real-time information during chat completion. Enable it with `"webSearch": true`:
+
+```json
+{
+  "type": "LLM_CHAT_COMPLETE",
+  "inputParameters": {
+    "llmProvider": "openai",
+    "model": "gpt-4o-mini",
+    "messages": [{"role": "user", "message": "What happened in tech news today?"}],
+    "webSearch": true
+  }
+}
+```
+
+Works with OpenAI, Anthropic, and Google Gemini. Each provider uses its own native web search implementation.
+
+### Code execution
+
+The LLM can write and execute code in a sandboxed environment. Enable it with `"codeInterpreter": true`:
+
+```json
+{
+  "type": "LLM_CHAT_COMPLETE",
+  "inputParameters": {
+    "llmProvider": "google_gemini",
+    "model": "gemini-2.5-flash",
+    "messages": [{"role": "user", "message": "Calculate the first 100 prime numbers and plot them"}],
+    "codeInterpreter": true
+  }
+}
+```
+
+Use this for data analysis, chart generation, mathematical computation, or any task that benefits from running code.
+
+### Extended thinking
+
+Give the LLM a token budget for step-by-step reasoning before it responds. Useful for complex problems that benefit from chain-of-thought reasoning:
+
+```json
+{
+  "type": "LLM_CHAT_COMPLETE",
+  "inputParameters": {
+    "llmProvider": "anthropic",
+    "model": "claude-sonnet-4-20250514",
+    "messages": [{"role": "user", "message": "Prove that there are infinitely many primes"}],
+    "thinkingTokenLimit": 10000,
+    "maxTokens": 16000
+  }
+}
+```
+
+Supported by Anthropic and Google Gemini.
+
+
 ## Vector database workflows
 
 Built-in vector database integration enables RAG (retrieval-augmented generation) pipelines as standard vector database workflows.
@@ -144,6 +214,12 @@ Ready-to-use workflow definitions for every AI task type. Each example is a comp
 | [StabilityAI Image](https://github.com/conductor-oss/conductor/blob/main/ai/examples/14-stabilityai-image.json) | `GENERATE_IMAGE` |
 | [PDF Generation](https://github.com/conductor-oss/conductor/blob/main/ai/examples/15-pdf-generation.json) | `GENERATE_PDF` |
 | [LLM-to-PDF Pipeline](https://github.com/conductor-oss/conductor/blob/main/ai/examples/16-llm-to-pdf-pipeline.json) | `LLM_CHAT_COMPLETE`, `GENERATE_PDF` |
+| [Web Search](https://github.com/conductor-oss/conductor/blob/main/ai/examples/17-web-search.json) | `LLM_CHAT_COMPLETE` (web search) |
+| [Code Execution](https://github.com/conductor-oss/conductor/blob/main/ai/examples/18-code-execution.json) | `LLM_CHAT_COMPLETE` (code execution) |
+| [Coding Agent](https://github.com/conductor-oss/conductor/blob/main/ai/examples/19-coding-agent.json) | `LLM_CHAT_COMPLETE` (code_interpreter) |
+| [Extended Thinking](https://github.com/conductor-oss/conductor/blob/main/ai/examples/20-extended-thinking.json) | `LLM_CHAT_COMPLETE` (thinking) |
+| [Web Research Agent](https://github.com/conductor-oss/conductor/blob/main/ai/examples/21-web-search-research-agent.json) | `LLM_CHAT_COMPLETE` (web search + thinking), `GENERATE_PDF` |
+| [Multi-Turn Chain](https://github.com/conductor-oss/conductor/blob/main/ai/examples/22-multi-turn-chain.json) | `LLM_CHAT_COMPLETE` (previousResponseId) |
 
 Browse all examples: [`ai/examples/`](https://github.com/conductor-oss/conductor/tree/main/ai/examples)
 

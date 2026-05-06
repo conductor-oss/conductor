@@ -13,6 +13,7 @@
 package org.conductoross.conductor.ai.providers.anthropic;
 
 import java.util.List;
+import java.util.Map;
 
 import org.conductoross.conductor.ai.models.ChatCompletion;
 import org.conductoross.conductor.ai.models.ToolSpec;
@@ -60,7 +61,7 @@ class AnthropicTest {
         @Test
         void testGetChatOptions_basicOptions() {
             ChatCompletion input = new ChatCompletion();
-            input.setModel("claude-3-haiku-20240307");
+            input.setModel("claude-sonnet-4-6");
             input.setMaxTokens(1000);
             input.setTemperature(0.7);
             input.setTopP(0.9);
@@ -68,6 +69,12 @@ class AnthropicTest {
             var options = anthropic.getChatOptions(input);
 
             assertNotNull(options);
+            assertInstanceOf(AnthropicChatOptions.class, options);
+            AnthropicChatOptions opts = (AnthropicChatOptions) options;
+            assertEquals("claude-sonnet-4-6", opts.getModel());
+            assertEquals(1000, opts.getMaxTokens());
+            assertEquals(0.7, opts.getTemperature());
+            assertEquals(0.9, opts.getTopP());
         }
 
         @Test
@@ -81,30 +88,109 @@ class AnthropicTest {
             var options = anthropic.getChatOptions(input);
 
             assertNotNull(options);
+            assertInstanceOf(AnthropicChatOptions.class, options);
+            AnthropicChatOptions opts = (AnthropicChatOptions) options;
+            assertEquals(10000, opts.getThinkingBudgetTokens());
+            assertEquals(1.0, opts.getTemperature()); // Forced to 1.0 for thinking
         }
 
         @Test
         void testGetChatOptions_withTools() {
             ChatCompletion input = new ChatCompletion();
-            input.setModel("claude-3-haiku-20240307");
+            input.setModel("claude-sonnet-4-6");
             input.setMaxTokens(1000);
 
             ToolSpec tool = new ToolSpec();
             tool.setName("test_tool");
             tool.setDescription("A test tool");
-            tool.setInputSchema(
-                    java.util.Map.of("type", "object", "properties", java.util.Map.of()));
+            tool.setInputSchema(Map.of("type", "object", "properties", Map.of()));
             input.setTools(List.of(tool));
 
             var options = anthropic.getChatOptions(input);
 
             assertNotNull(options);
+            assertInstanceOf(AnthropicChatOptions.class, options);
+            AnthropicChatOptions opts = (AnthropicChatOptions) options;
+            assertNotNull(opts.getTools());
+            assertEquals(1, opts.getTools().size());
+            assertEquals("test_tool", opts.getTools().getFirst().name());
+            assertEquals("custom", opts.getTools().getFirst().type());
         }
 
         @Test
         void testGetChatModel_createsModel() {
             var chatModel = anthropic.getChatModel();
             assertNotNull(chatModel);
+            assertInstanceOf(AnthropicChatModel.class, chatModel);
+        }
+
+        @Test
+        void testGetChatOptions_withWebSearch() {
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("claude-sonnet-4-6");
+            input.setMaxTokens(500);
+            input.setWebSearch(true);
+
+            var options = anthropic.getChatOptions(input);
+
+            assertInstanceOf(AnthropicChatOptions.class, options);
+            AnthropicChatOptions opts = (AnthropicChatOptions) options;
+            assertNotNull(opts.getTools());
+            assertTrue(
+                    opts.getTools().stream()
+                            .anyMatch(
+                                    t ->
+                                            "web_search_20250305".equals(t.type())
+                                                    && "web_search".equals(t.name())));
+        }
+
+        @Test
+        void testGetChatOptions_withCodeExecution() {
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("claude-sonnet-4-6");
+            input.setMaxTokens(500);
+            input.setCodeInterpreter(true);
+
+            var options = anthropic.getChatOptions(input);
+
+            assertInstanceOf(AnthropicChatOptions.class, options);
+            AnthropicChatOptions opts = (AnthropicChatOptions) options;
+            assertNotNull(opts.getTools());
+            assertTrue(
+                    opts.getTools().stream()
+                            .anyMatch(
+                                    t ->
+                                            "code_execution_20250825".equals(t.type())
+                                                    && "code_execution".equals(t.name())));
+        }
+
+        @Test
+        void testGetChatOptions_withBothBuiltInTools() {
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("claude-sonnet-4-6");
+            input.setMaxTokens(500);
+            input.setWebSearch(true);
+            input.setCodeInterpreter(true);
+
+            var options = anthropic.getChatOptions(input);
+
+            assertInstanceOf(AnthropicChatOptions.class, options);
+            AnthropicChatOptions opts = (AnthropicChatOptions) options;
+            assertNotNull(opts.getTools());
+            assertEquals(2, opts.getTools().size());
+        }
+
+        @Test
+        void testGetChatOptions_noTools() {
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("claude-sonnet-4-6");
+            input.setMaxTokens(500);
+
+            var options = anthropic.getChatOptions(input);
+
+            assertInstanceOf(AnthropicChatOptions.class, options);
+            AnthropicChatOptions opts = (AnthropicChatOptions) options;
+            assertNull(opts.getTools());
         }
     }
 
@@ -124,7 +210,7 @@ class AnthropicTest {
         @Test
         void testChatCompletion() {
             ChatCompletion input = new ChatCompletion();
-            input.setModel("claude-3-haiku-20240307");
+            input.setModel("claude-haiku-4-5");
             input.setMaxTokens(100);
             input.setTemperature(0.7);
 
@@ -143,7 +229,7 @@ class AnthropicTest {
         @Test
         void testChatCompletion_withThinking() {
             ChatCompletion input = new ChatCompletion();
-            input.setModel("claude-sonnet-4-20250514");
+            input.setModel("claude-sonnet-4-5");
             input.setMaxTokens(16000);
             input.setThinkingTokenLimit(10000);
 

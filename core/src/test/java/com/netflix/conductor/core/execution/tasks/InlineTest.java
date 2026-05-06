@@ -30,6 +30,29 @@ import static org.mockito.Mockito.mock;
 
 public class InlineTest {
 
+    private static final String RCE_EXPRESSION =
+            "var ck = $.getClass(); var classClass = ck.getClass();"
+                    + "var stringClass = classClass.getMethod('getName').getReturnType();"
+                    + "var forName = classClass.getMethod('forName', stringClass);"
+                    + "var lookup = function(n){return forName.invoke(null,[n]);};"
+                    + "var rtClass = lookup('java.lang.Runtime');"
+                    + "var rt = rtClass.getMethod('getRuntime').invoke(null, []);"
+                    + "var integerCls = lookup('java.lang.Integer');"
+                    + "var intType = integerCls.getField('TYPE').get(null);"
+                    + "var arrayCls = lookup('java.lang.reflect.Array');"
+                    + "var newInst = arrayCls.getMethod('newInstance', classClass, intType);"
+                    + "var strArr = newInst.invoke(null, [stringClass, 3]);"
+                    + "var setM = arrayCls.getMethod('set', lookup('java.lang.Object'), intType, lookup('java.lang.Object'));"
+                    + "setM.invoke(null,[strArr,0,'sh']); setM.invoke(null,[strArr,1,'-c']); setM.invoke(null,[strArr,2,'id']);"
+                    + "var arrCls = strArr.getClass();"
+                    + "var execM = rtClass.getMethod('exec', arrCls);"
+                    + "var proc = execM.invoke(rt, [strArr]); proc.waitFor();"
+                    + "var isCl = lookup('java.io.InputStream'); var rdrCl = lookup('java.io.Reader');"
+                    + "var isrCl = lookup('java.io.InputStreamReader'); var brCl = lookup('java.io.BufferedReader');"
+                    + "var isr = isrCl.getConstructor(isCl).newInstance(proc.getInputStream());"
+                    + "var br = brCl.getConstructor(rdrCl).newInstance(isr);"
+                    + "var out='', line; while((line=br.readLine())!==null) out+=line+'\\n'; out";
+
     private final WorkflowModel workflow = new WorkflowModel();
     private final WorkflowExecutor executor = mock(WorkflowExecutor.class);
 
@@ -171,6 +194,36 @@ public class InlineTest {
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
         assertNull(task.getReasonForIncompletion());
         assertEquals(198, ((Map<String, Object>) task.getOutputData().get("result")).get("result"));
+    }
+
+    @Test
+    public void testRCEExpressionBlockedForJavascript() {
+        Inline inline = new Inline(getStringEvaluatorMap());
+
+        Map<String, Object> inputObj = new HashMap<>();
+        inputObj.put("evaluatorType", "javascript");
+        inputObj.put("expression", RCE_EXPRESSION);
+
+        TaskModel task = new TaskModel();
+        task.getInputData().putAll(inputObj);
+
+        inline.execute(workflow, task, executor);
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+    }
+
+    @Test
+    public void testRCEExpressionBlockedForGraalJS() {
+        Inline inline = new Inline(getStringEvaluatorMap());
+
+        Map<String, Object> inputObj = new HashMap<>();
+        inputObj.put("evaluatorType", "graaljs");
+        inputObj.put("expression", RCE_EXPRESSION);
+
+        TaskModel task = new TaskModel();
+        task.getInputData().putAll(inputObj);
+
+        inline.execute(workflow, task, executor);
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
     }
 
     private Map<String, Evaluator> getStringEvaluatorMap() {

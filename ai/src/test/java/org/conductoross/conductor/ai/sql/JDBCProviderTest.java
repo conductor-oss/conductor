@@ -25,51 +25,69 @@ import static org.mockito.Mockito.*;
 
 class JDBCProviderTest {
 
-    @Test
-    void testEmptyConfigList() {
+    private JDBCProvider createProvider(Map<String, DataSource> instances) {
         JDBCInstanceConfig instanceConfig = mock(JDBCInstanceConfig.class);
-        when(instanceConfig.getJDBCInstances()).thenReturn(Collections.emptyMap());
+        when(instanceConfig.getJDBCInstances()).thenReturn(instances);
+        return new JDBCProvider(instanceConfig);
+    }
 
-        JDBCProvider provider = new JDBCProvider(instanceConfig);
+    private JDBCInput inputWithConnectionId(String connectionId) {
+        JDBCInput input = new JDBCInput();
+        input.setConnectionId(connectionId);
+        return input;
+    }
 
-        DataSource result = provider.get("mysql-prod");
-
-        assertNull(result);
+    private JDBCInput inputWithIntegrationName(String integrationName) {
+        JDBCInput input = new JDBCInput();
+        input.setIntegrationName(integrationName);
+        return input;
     }
 
     @Test
-    void testGetRegisteredInstance() {
+    void testEmptyConfigList() {
+        JDBCProvider provider = createProvider(Collections.emptyMap());
+        assertNull(provider.get(inputWithConnectionId("mysql-prod")));
+    }
+
+    @Test
+    void testGetByConnectionId() {
         DataSource mockDataSource = mock(DataSource.class);
+        JDBCProvider provider = createProvider(Map.of("mysql-prod", mockDataSource));
+
+        assertSame(mockDataSource, provider.get(inputWithConnectionId("mysql-prod")));
+    }
+
+    @Test
+    void testGetByIntegrationName() {
+        DataSource mockDataSource = mock(DataSource.class);
+        JDBCProvider provider = createProvider(Map.of("my-integration", mockDataSource));
+
+        assertSame(mockDataSource, provider.get(inputWithIntegrationName("my-integration")));
+    }
+
+    @Test
+    void testConnectionIdTakesPrecedenceOverIntegrationName() {
+        DataSource connDs = mock(DataSource.class);
+        DataSource integDs = mock(DataSource.class);
 
         Map<String, DataSource> instances = new HashMap<>();
-        instances.put("mysql-prod", mockDataSource);
+        instances.put("conn-id", connDs);
+        instances.put("integ-name", integDs);
+        JDBCProvider provider = createProvider(instances);
 
-        JDBCInstanceConfig instanceConfig = mock(JDBCInstanceConfig.class);
-        when(instanceConfig.getJDBCInstances()).thenReturn(instances);
+        JDBCInput input = new JDBCInput();
+        input.setConnectionId("conn-id");
+        input.setIntegrationName("integ-name");
 
-        JDBCProvider provider = new JDBCProvider(instanceConfig);
-
-        DataSource result = provider.get("mysql-prod");
-
-        assertNotNull(result);
-        assertSame(mockDataSource, result);
+        assertSame(connDs, provider.get(input));
     }
 
     @Test
     void testGetUnregisteredInstance() {
         DataSource mockDataSource = mock(DataSource.class);
+        JDBCProvider provider = createProvider(Map.of("mysql-prod", mockDataSource));
 
-        Map<String, DataSource> instances = new HashMap<>();
-        instances.put("mysql-prod", mockDataSource);
-
-        JDBCInstanceConfig instanceConfig = mock(JDBCInstanceConfig.class);
-        when(instanceConfig.getJDBCInstances()).thenReturn(instances);
-
-        JDBCProvider provider = new JDBCProvider(instanceConfig);
-
-        DataSource result = provider.get("unknown");
-
-        assertNull(result);
+        assertNull(provider.get(inputWithConnectionId("unknown")));
     }
 
     @Test
@@ -80,25 +98,19 @@ class JDBCProviderTest {
         Map<String, DataSource> instances = new HashMap<>();
         instances.put("mysql-prod", mockMysql);
         instances.put("postgres-analytics", mockPostgres);
+        JDBCProvider provider = createProvider(instances);
 
-        JDBCInstanceConfig instanceConfig = mock(JDBCInstanceConfig.class);
-        when(instanceConfig.getJDBCInstances()).thenReturn(instances);
-
-        JDBCProvider provider = new JDBCProvider(instanceConfig);
-
-        assertSame(mockMysql, provider.get("mysql-prod"));
-        assertSame(mockPostgres, provider.get("postgres-analytics"));
+        assertSame(mockMysql, provider.get(inputWithConnectionId("mysql-prod")));
+        assertSame(mockPostgres, provider.get(inputWithConnectionId("postgres-analytics")));
     }
 
     @Test
-    void testGetWithNullName() {
-        JDBCInstanceConfig instanceConfig = mock(JDBCInstanceConfig.class);
-        when(instanceConfig.getJDBCInstances()).thenReturn(Collections.emptyMap());
+    void testBothConnectionIdAndIntegrationNameNull() {
+        JDBCProvider provider = createProvider(Collections.emptyMap());
 
-        JDBCProvider provider = new JDBCProvider(instanceConfig);
-
-        DataSource result = provider.get(null);
-        assertNull(result);
+        JDBCInput input = new JDBCInput();
+        // both null
+        assertNull(provider.get(input));
     }
 
     @Test
@@ -106,10 +118,9 @@ class JDBCProviderTest {
         JDBCInstanceConfig instanceConfig = mock(JDBCInstanceConfig.class);
         when(instanceConfig.getJDBCInstances()).thenThrow(new RuntimeException("Config error"));
 
-        // Should not throw - exception is caught and logged
         JDBCProvider provider = new JDBCProvider(instanceConfig);
 
-        assertNull(provider.get("anything"));
+        assertNull(provider.get(inputWithConnectionId("anything")));
     }
 
     @Test
@@ -122,18 +133,14 @@ class JDBCProviderTest {
         Map<String, DataSource> instances = new HashMap<>();
         instances.put("ds1", mockHikari1);
         instances.put("ds2", mockHikari2);
+        JDBCProvider provider = createProvider(instances);
 
-        JDBCInstanceConfig instanceConfig = mock(JDBCInstanceConfig.class);
-        when(instanceConfig.getJDBCInstances()).thenReturn(instances);
-
-        JDBCProvider provider = new JDBCProvider(instanceConfig);
         provider.shutdown();
 
         verify(mockHikari1).close();
         verify(mockHikari2).close();
 
-        // After shutdown, instances should be cleared
-        assertNull(provider.get("ds1"));
-        assertNull(provider.get("ds2"));
+        assertNull(provider.get(inputWithConnectionId("ds1")));
+        assertNull(provider.get(inputWithConnectionId("ds2")));
     }
 }

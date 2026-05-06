@@ -17,7 +17,6 @@ import {
 } from "utils/constants/route";
 import { featureFlags, FEATURES } from "utils/flags";
 import { useAuthHeaders, useCurrentUserInfo } from "utils/query";
-
 import { taskWithLatestIteration } from "../helpers";
 import {
   RightPanelContextEventTypes,
@@ -31,6 +30,7 @@ import {
 } from "./types";
 
 const isPlayground = featureFlags.isEnabled(FEATURES.PLAYGROUND);
+
 export const useExecutionMachine = () => {
   const authHeaders = useAuthHeaders();
   const { setMessage } = useContext(MessageContext);
@@ -284,6 +284,11 @@ export const useExecutionMachine = () => {
     (state) => state.context.doWhileSelection,
   );
 
+  const selectedTask = useSelector(
+    service,
+    (state) => state.context.selectedTask,
+  );
+
   const isAssistantPanelOpen = useSelector(
     service,
     (state) => state.context.isAssistantPanelOpen,
@@ -311,6 +316,7 @@ export const useExecutionMachine = () => {
     doWhileSelection,
     nodes,
     isAssistantPanelOpen,
+    selectedTask,
   };
 
   return [

@@ -151,6 +151,7 @@ export const useWorkflowDefinition = (currentUser: User) => {
       currentUserInfo: currentUser,
       initialSelectedTaskReferenceName: taskReferenceName,
       successfullyImportedWorkflowId: timeInParameter,
+      isAgentExpanded: localStorage.getItem("agentExpanded") === "true",
     },
     services: {
       fetchWorkflow: async (data) => {

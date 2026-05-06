@@ -44,7 +44,7 @@ Your agent code starts a workflow. Conductor schedules each step as a task, pers
 
 | Agent pattern | Conductor primitive | What happens mechanically |
 |---|---|---|
-| **LLM call** | `LLM_CHAT_COMPLETE` / `LLM_TEXT_COMPLETE` system task | Native LLM task. Configure provider and model as parameters. Retried on failure. Prompt, response, and token usage persisted. |
+| **LLM call** | `LLM_CHAT_COMPLETE` / `LLM_TEXT_COMPLETE` system task | Native LLM task. Configure provider and model as parameters. Retried on failure. Prompt, response, and token usage persisted. Supports built-in tools: web search, code execution, file search, extended thinking. |
 | **Embeddings** | `LLM_GENERATE_EMBEDDINGS` system task | Generate vector embeddings using any configured provider. Output stored and passed to downstream tasks. |
 | **Tool call / function calling** | `CALL_MCP_TOOL` system task, or `SIMPLE` / `HTTP` task | Call tools on any MCP server, or implement custom tool workers. Each call is tracked, retried on failure, and fully auditable. |
 | **Tool discovery** | `LIST_MCP_TOOLS` system task | Discover available tools from an MCP server at runtime. Feed the tool list to an LLM for dynamic tool selection. |
@@ -79,12 +79,13 @@ Conductor provides all of this as infrastructure. Your agent code focuses on the
 ## Next steps
 
 - **[Build Your First AI Agent](first-ai-agent.md)** &mdash; Step-by-step: discover MCP tools, call an LLM, execute, add human approval, make it autonomous. 5 minutes.
+- **[AI & LLM Recipes](../cookbook/ai-llm.md)** &mdash; Ready-to-use recipes: chat completion, RAG, MCP agents, web search, code execution, coding agents, extended thinking, and more.
+- **[LLM Orchestration](llm-orchestration.md)** &mdash; Native LLM providers, built-in tools, vector databases, and content generation.
+- **[MCP Integration](mcp-guide.md)** &mdash; Connect to any MCP server, expose workflows as MCP tools, multi-server agents.
 - **[Production Agent Architecture](production-agent-architecture.md)** &mdash; The canonical reference architecture for a durable production agent. End-to-end pattern with every primitive mapped.
 - **[Failure Semantics for AI Agents](failure-semantics.md)** &mdash; The exact failure contract: what happens under crashes, retries, duplicates, long waits, and partial side effects.
 - **[Why Conductor for Agents](why-conductor.md)** &mdash; What Conductor gives you out of the box for agentic workflows.
-- **[MCP Integration](mcp-guide.md)** &mdash; Connect to any MCP server, expose workflows as MCP tools, multi-server agents.
 - **[Durable Agents](durable-agents.md)** &mdash; What persists, what gets retried, and why JSON is AI-native.
 - **[Human-in-the-Loop](human-in-the-loop.md)** &mdash; Pre-execution review, conditional approval, and LLM-as-judge patterns.
 - **[Dynamic Workflows](dynamic-workflows.md)** &mdash; Agent loops, dynamic workflow generation, and tool use examples.
-- **[LLM Orchestration](llm-orchestration.md)** &mdash; Native LLM providers, vector databases, and content generation.
 - **[Token Efficiency](token-efficiency.md)** &mdash; How durable execution saves tokens and reduces LLM costs.
