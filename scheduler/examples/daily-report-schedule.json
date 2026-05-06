@@ -1,0 +1,15 @@
+{
+  "name": "daily-report-schedule",
+  "cronExpression": "0 0 9 * * MON-FRI",
+  "zoneId": "America/New_York",
+  "startWorkflowRequest": {
+    "name": "daily_report_workflow",
+    "version": 1,
+    "input": {},
+    "correlationId": "daily-report-${scheduledTime}"
+  },
+  "scheduleStartTime": 0,
+  "scheduleEndTime": 0,
+  "runCatchupScheduleInstances": false,
+  "paused": false
+}

@@ -70,10 +70,21 @@ include 'kafka-event-queue'
 
 include 'test-harness'
 
-include 'scheduler'
+include 'scheduler-core'
 include 'scheduler-postgres-persistence'
 include 'scheduler-mysql-persistence'
+include 'scheduler-cassandra-persistence'
+include 'scheduler-redis-persistence'
+include 'scheduler-sqlite-persistence'
 
 include 'e2e'
 
 rootProject.children.each {it.name="conductor-${it.name}"}
+
+// Map scheduler submodules to their nested directories
+project(':conductor-scheduler-core').projectDir = file('scheduler/core')
+project(':conductor-scheduler-postgres-persistence').projectDir = file('scheduler/postgres-persistence')
+project(':conductor-scheduler-mysql-persistence').projectDir = file('scheduler/mysql-persistence')
+project(':conductor-scheduler-cassandra-persistence').projectDir = file('scheduler/cassandra-persistence')
+project(':conductor-scheduler-redis-persistence').projectDir = file('scheduler/redis-persistence')
+project(':conductor-scheduler-sqlite-persistence').projectDir = file('scheduler/sqlite-persistence')
