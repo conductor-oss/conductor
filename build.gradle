@@ -118,6 +118,18 @@ allprojects {
                 if (details.requested.group == 'org.apache.logging.log4j') {
                     details.useVersion revLog4j2
                 }
+                // Force all Google Protobuf Java artifacts (protobuf-java,
+                // protobuf-java-util, protobuf-bom, etc.) to revProtoBuf to
+                // remediate CVE-2026-0994. protobuf-java-util is pulled in
+                // transitively (e.g. via gRPC) on the older 3.25.x line and
+                // must be aligned with the fixed 4.33.x runtime.
+                // protoc itself is excluded because grpc/build.gradle pins
+                // it to 3.25.5 for code-generation compatibility.
+                if (details.requested.group == 'com.google.protobuf'
+                        && details.requested.name != 'protoc'
+                        && !details.requested.name.startsWith('protoc-gen-')) {
+                    details.useVersion revProtoBuf
+                }
             }
         }
     }
