@@ -131,6 +131,19 @@ allprojects {
                     details.useVersion revProtoBuf
                 }
             }
+
+            // Resolve the lz4-java capability conflict: Kafka 3.9.x pulls
+            // 'at.yawk.lz4:lz4-java' (the maintained coordinate after the
+            // original maintainer lost publish access to 'org.lz4'), while
+            // Elasticsearch 7.17.x still pulls the legacy 'org.lz4:lz4-java'.
+            // Both declare capability 'org.lz4:lz4-java', so Gradle requires
+            // an explicit selection. The two artifacts ship the same
+            // 'net.jpountz.lz4.*' classes and are drop-in compatible, so we
+            // pick the highest version (1.10.1 from at.yawk.lz4) — newer
+            // gives us upstream bug/security fixes.
+            resolutionStrategy.capabilitiesResolution.withCapability('org.lz4:lz4-java') {
+                selectHighestVersion()
+            }
         }
     }
 
