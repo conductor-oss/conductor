@@ -92,6 +92,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
         this.insertEventExecutionStatement =
                 session.prepare(statements.getInsertEventExecutionStatement())
                         .setConsistencyLevel(properties.getWriteConsistencyLevel());
+
         this.selectTotalStatement =
                 session.prepare(statements.getSelectTotalStatement())
                         .setConsistencyLevel(properties.getReadConsistencyLevel());
@@ -115,6 +116,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                                 statements
                                         .getSelectAllEventExecutionsForMessageFromEventExecutionsStatement())
                         .setConsistencyLevel(properties.getReadConsistencyLevel());
+
         this.updateWorkflowStatement =
                 session.prepare(statements.getUpdateWorkflowStatement())
                         .setConsistencyLevel(properties.getWriteConsistencyLevel());
