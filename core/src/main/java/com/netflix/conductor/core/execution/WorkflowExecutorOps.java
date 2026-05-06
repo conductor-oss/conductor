@@ -357,7 +357,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
     private void resetUnsuccessfulJoinTasks(WorkflowModel workflow) {
         if (workflow.getWorkflowDefinition().containsType(TaskType.TASK_TYPE_JOIN)
-                || workflow.getWorkflowDefinition().containsType(TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC)) {
+                || workflow.getWorkflowDefinition()
+                        .containsType(TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC)) {
             workflow.getTasks().stream()
                     .filter(UNSUCCESSFUL_JOIN_TASK)
                     .peek(
