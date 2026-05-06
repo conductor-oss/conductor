@@ -29,7 +29,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.events.EventExecution;
-import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
@@ -187,34 +186,6 @@ public class ExecutionDAOFacadeTest {
     }
 
     @Test
-    public void testRemoveWorkflowLeavesOwnedReservationCleanupToExecutionDAO() {
-        WorkflowModel workflow = new WorkflowModel();
-        workflow.setWorkflowId("workflowId");
-        workflow.setStatus(WorkflowModel.Status.COMPLETED);
-
-        TaskModel subWorkflowTask = new TaskModel();
-        subWorkflowTask.setTaskId("subTaskId");
-        subWorkflowTask.setTaskType(TaskType.TASK_TYPE_SUB_WORKFLOW);
-        subWorkflowTask.setWorkflowInstanceId(workflow.getWorkflowId());
-        subWorkflowTask.setStatus(TaskModel.Status.SCHEDULED);
-
-        TaskModel otherTask = new TaskModel();
-        otherTask.setTaskId("otherTaskId");
-        otherTask.setTaskType(TaskType.TASK_TYPE_SIMPLE);
-        otherTask.setWorkflowInstanceId(workflow.getWorkflowId());
-        otherTask.setStatus(TaskModel.Status.COMPLETED);
-
-        workflow.setTasks(List.of(subWorkflowTask, otherTask));
-
-        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
-
-        executionDAOFacade.removeWorkflow("workflowId", false);
-
-        verify(executionDAO, never()).removeSubWorkflowIdReservations(anyString());
-        verify(executionDAO, never()).removeSubWorkflowIdReservation(anyString(), anyString());
-    }
-
-    @Test
     public void testRemoveWorkflowContinuesOnIndexNotFound() {
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowId("workflowId");
@@ -284,95 +255,6 @@ public class ExecutionDAOFacadeTest {
                 () -> executionDAOFacade.removeWorkflow("workflowId", true));
 
         verify(executionDAO, never()).removeWorkflow(anyString());
-    }
-
-    @Test
-    public void testRemoveTaskClearsSubWorkflowReservation() {
-        TaskModel task = new TaskModel();
-        task.setTaskId("subTaskId");
-        task.setTaskType(TaskType.TASK_TYPE_SUB_WORKFLOW);
-        task.setWorkflowInstanceId("workflowId");
-
-        when(executionDAO.getTask("subTaskId")).thenReturn(task);
-        when(executionDAO.removeTask("subTaskId")).thenReturn(true);
-
-        executionDAOFacade.removeTask("subTaskId");
-
-        verify(executionDAO).removeTask("subTaskId");
-        verify(executionDAO).removeSubWorkflowIdReservation("workflowId", "subTaskId");
-    }
-
-    @Test
-    public void testRemoveTaskDoesNotClearReservationForNonSubWorkflowTask() {
-        TaskModel task = new TaskModel();
-        task.setTaskId("taskId");
-        task.setTaskType(TaskType.TASK_TYPE_SIMPLE);
-        task.setWorkflowInstanceId("workflowId");
-
-        when(executionDAO.getTask("taskId")).thenReturn(task);
-        when(executionDAO.removeTask("taskId")).thenReturn(true);
-
-        executionDAOFacade.removeTask("taskId");
-
-        verify(executionDAO).removeTask("taskId");
-        verify(executionDAO, never()).removeSubWorkflowIdReservation(anyString(), anyString());
-    }
-
-    @Test
-    public void testRemoveTaskDoesNotClearReservationWhenTaskDeletionFails() {
-        TaskModel task = new TaskModel();
-        task.setTaskId("subTaskId");
-        task.setTaskType(TaskType.TASK_TYPE_SUB_WORKFLOW);
-        task.setWorkflowInstanceId("workflowId");
-
-        when(executionDAO.getTask("subTaskId")).thenReturn(task);
-        when(executionDAO.removeTask("subTaskId")).thenReturn(false);
-
-        executionDAOFacade.removeTask("subTaskId");
-
-        verify(executionDAO).removeTask("subTaskId");
-        verify(executionDAO, never()).removeSubWorkflowIdReservation(anyString(), anyString());
-    }
-
-    @Test
-    public void testRemoveWorkflowWithExpiryLeavesOwnedReservationCleanupToExecutionDAO() {
-        WorkflowModel workflow = new WorkflowModel();
-        workflow.setWorkflowId("workflowId");
-        workflow.setStatus(WorkflowModel.Status.COMPLETED);
-
-        TaskModel subWorkflowTask = new TaskModel();
-        subWorkflowTask.setTaskId("subTaskId");
-        subWorkflowTask.setTaskType(TaskType.TASK_TYPE_SUB_WORKFLOW);
-        subWorkflowTask.setWorkflowInstanceId(workflow.getWorkflowId());
-        subWorkflowTask.setStatus(TaskModel.Status.SCHEDULED);
-        workflow.setTasks(List.of(subWorkflowTask));
-
-        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
-
-        executionDAOFacade.removeWorkflowWithExpiry("workflowId", false, 60);
-
-        verify(executionDAO, never()).removeSubWorkflowIdReservations(anyString());
-        verify(executionDAO).removeWorkflowWithExpiry("workflowId", 60);
-    }
-
-    @Test
-    public void testRemoveWorkflowWithoutSubWorkflowTasksDoesNotClearReservationsInFacade() {
-        WorkflowModel workflow = new WorkflowModel();
-        workflow.setWorkflowId("workflowId");
-        workflow.setStatus(WorkflowModel.Status.COMPLETED);
-
-        TaskModel simpleTask = new TaskModel();
-        simpleTask.setTaskId("taskId");
-        simpleTask.setTaskType(TaskType.TASK_TYPE_SIMPLE);
-        simpleTask.setWorkflowInstanceId(workflow.getWorkflowId());
-        simpleTask.setStatus(TaskModel.Status.COMPLETED);
-        workflow.setTasks(List.of(simpleTask));
-
-        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
-
-        executionDAOFacade.removeWorkflow("workflowId", false);
-
-        verify(executionDAO, never()).removeSubWorkflowIdReservations(anyString());
     }
 
     @Test

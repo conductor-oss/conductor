@@ -31,7 +31,6 @@ import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
-import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.Workflow;
@@ -283,16 +282,6 @@ public class ExecutionDAOFacade {
             indexDAO.indexWorkflow(new WorkflowSummary(workflowModel.toWorkflow()));
         }
         return workflowModel.getWorkflowId();
-    }
-
-    public String reserveSubWorkflowId(
-            String parentWorkflowId, String parentWorkflowTaskId, String subWorkflowId) {
-        return executionDAO.reserveSubWorkflowId(
-                parentWorkflowId, parentWorkflowTaskId, subWorkflowId);
-    }
-
-    public void removeSubWorkflowIdReservation(String workflowId, String taskId) {
-        executionDAO.removeSubWorkflowIdReservation(workflowId, taskId);
     }
 
     private void externalizeTaskData(TaskModel taskModel) {
@@ -600,38 +589,7 @@ public class ExecutionDAOFacade {
     }
 
     public void removeTask(String taskId) {
-        TaskModel taskModel = executionDAO.getTask(taskId);
-        boolean removed = executionDAO.removeTask(taskId);
-        if (!removed) {
-            LOGGER.warn(
-                    "Task {} was not removed; skipping owned sub-workflow reservation cleanup",
-                    taskId);
-            return;
-        }
-        cleanupOwnedSubWorkflowReservation(taskModel);
-    }
-
-    private void cleanupOwnedSubWorkflowReservation(TaskModel task) {
-        if (task == null
-                || !TaskType.TASK_TYPE_SUB_WORKFLOW.equals(task.getTaskType())
-                || StringUtils.isBlank(task.getWorkflowInstanceId())
-                || StringUtils.isBlank(task.getTaskId())) {
-            return;
-        }
-        LOGGER.debug(
-                "Removing owned sub-workflow reservation for task {} in workflow {} during task deletion",
-                task.getTaskId(),
-                task.getWorkflowInstanceId());
-        try {
-            executionDAO.removeSubWorkflowIdReservation(
-                    task.getWorkflowInstanceId(), task.getTaskId());
-        } catch (Exception e) {
-            LOGGER.warn(
-                    "Unable to remove sub-workflow reservation owned by workflow {} task {}",
-                    task.getWorkflowInstanceId(),
-                    task.getTaskId(),
-                    e);
-        }
+        executionDAO.removeTask(taskId);
     }
 
     private void removeTaskIndex(WorkflowModel workflow, TaskModel task, boolean archiveTask)

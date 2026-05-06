@@ -79,8 +79,8 @@ public class TestDeciderService {
     public static class TestConfiguration {
 
         @Bean(TASK_TYPE_SUB_WORKFLOW)
-        public SubWorkflow subWorkflow(ObjectMapper objectMapper) {
-            return new SubWorkflow(objectMapper);
+        public SubWorkflow subWorkflow(ObjectMapper objectMapper, IDGenerator idGenerator) {
+            return new SubWorkflow(objectMapper, idGenerator);
         }
 
         @Bean("asyncCompleteSystemTask")

@@ -21,9 +21,11 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.exception.NonTransientException;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -39,10 +41,12 @@ public class SubWorkflow extends WorkflowSystemTask {
     private static final String SUB_WORKFLOW_LAUNCH_ERROR = "subWorkflowLaunchError";
 
     private final ObjectMapper objectMapper;
+    private final IDGenerator idGenerator;
 
-    public SubWorkflow(ObjectMapper objectMapper) {
+    public SubWorkflow(ObjectMapper objectMapper, IDGenerator idGenerator) {
         super(TASK_TYPE_SUB_WORKFLOW);
         this.objectMapper = objectMapper;
+        this.idGenerator = idGenerator;
     }
 
     @SuppressWarnings("unchecked")
@@ -79,10 +83,12 @@ public class SubWorkflow extends WorkflowSystemTask {
             String subWorkflowId =
                     StringUtils.defaultIfBlank(
                             task.getSubWorkflowId(),
-                            workflowExecutor.reserveSubWorkflowId(
-                                    workflow.getWorkflowId(), task.getTaskId()));
+                            idGenerator.generateSubWorkflowId(
+                                    workflow.getWorkflowId(),
+                                    task.getTaskId(),
+                                    task.getRetryCount()));
             LOGGER.debug(
-                    "Launching sub-workflow task {} in parent workflow {} with reserved child workflow id {}",
+                    "Launching sub-workflow task {} in parent workflow {} with deterministic child workflow id {}",
                     task.getTaskId(),
                     workflow.getWorkflowId(),
                     subWorkflowId);
@@ -158,14 +164,30 @@ public class SubWorkflow extends WorkflowSystemTask {
     public void cancel(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         String workflowId = task.getSubWorkflowId();
         if (StringUtils.isEmpty(workflowId)) {
+            workflowId =
+                    idGenerator.generateSubWorkflowId(
+                            workflow.getWorkflowId(), task.getTaskId(), task.getRetryCount());
             LOGGER.info(
-                    "Removing unattached sub-workflow reservation for task {} in parent workflow {} during cancel",
+                    "Checking deterministic child workflow {} for unattached sub-workflow task {} in parent workflow {} during cancel",
+                    workflowId,
                     task.getTaskId(),
                     workflow.getWorkflowId());
-            workflowExecutor.removeSubWorkflowIdReservation(
-                    workflow.getWorkflowId(), task.getTaskId());
-            return;
+            try {
+                terminateSubWorkflow(workflow, workflowExecutor, workflowId);
+            } catch (NotFoundException e) {
+                LOGGER.info(
+                        "No deterministic child workflow {} exists for unattached sub-workflow task {} in parent workflow {} during cancel",
+                        workflowId,
+                        task.getTaskId(),
+                        workflow.getWorkflowId());
+            }
+        } else {
+            terminateSubWorkflow(workflow, workflowExecutor, workflowId);
         }
+    }
+
+    private void terminateSubWorkflow(
+            WorkflowModel workflow, WorkflowExecutor workflowExecutor, String workflowId) {
         WorkflowModel subWorkflow = workflowExecutor.getWorkflow(workflowId, true);
         subWorkflow.setStatus(WorkflowModel.Status.TERMINATED);
         String reason =

@@ -25,9 +25,11 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.exception.NonTransientException;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -47,9 +49,10 @@ public class TestSubWorkflow {
 
     private static final String PARENT_WORKFLOW_ID = "parent-workflow";
     private static final String PARENT_TASK_ID = "task_1";
-    private static final String RESERVED_SUB_WORKFLOW_ID = "reserved-sub-workflow";
+    private static final String CHILD_SUB_WORKFLOW_ID = "child-sub-workflow";
 
     private WorkflowExecutor workflowExecutor;
+    private IDGenerator idGenerator;
     private SubWorkflow subWorkflow;
 
     @Autowired private ObjectMapper objectMapper;
@@ -57,7 +60,8 @@ public class TestSubWorkflow {
     @Before
     public void setup() {
         workflowExecutor = mock(WorkflowExecutor.class);
-        subWorkflow = new SubWorkflow(objectMapper);
+        idGenerator = mock(IDGenerator.class);
+        subWorkflow = new SubWorkflow(objectMapper, idGenerator);
     }
 
     @Test
@@ -68,7 +72,7 @@ public class TestSubWorkflow {
         task.setInputData(inputData);
 
         WorkflowModel subWorkflowInstance = new WorkflowModel();
-        subWorkflowInstance.setWorkflowId(RESERVED_SUB_WORKFLOW_ID);
+        subWorkflowInstance.setWorkflowId(CHILD_SUB_WORKFLOW_ID);
         subWorkflowInstance.setStatus(WorkflowModel.Status.RUNNING);
 
         StartWorkflowInput startWorkflowInput =
@@ -78,7 +82,7 @@ public class TestSubWorkflow {
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
 
-        assertEquals(RESERVED_SUB_WORKFLOW_ID, task.getSubWorkflowId());
+        assertEquals(CHILD_SUB_WORKFLOW_ID, task.getSubWorkflowId());
         assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
         assertNull(task.getReasonForIncompletion());
         assertFalse(task.getOutputData().containsKey("subWorkflowLaunchError"));
@@ -92,7 +96,7 @@ public class TestSubWorkflow {
         task.setInputData(inputData);
 
         WorkflowModel subWorkflowInstance = new WorkflowModel();
-        subWorkflowInstance.setWorkflowId(RESERVED_SUB_WORKFLOW_ID);
+        subWorkflowInstance.setWorkflowId(CHILD_SUB_WORKFLOW_ID);
         subWorkflowInstance.setStatus(WorkflowModel.Status.RUNNING);
 
         StartWorkflowInput startWorkflowInput =
@@ -103,7 +107,7 @@ public class TestSubWorkflow {
         subWorkflow.start(workflowInstance, task, workflowExecutor);
 
         verify(workflowExecutor).startWorkflowIdempotent(startWorkflowInput);
-        assertEquals(RESERVED_SUB_WORKFLOW_ID, task.getSubWorkflowId());
+        assertEquals(CHILD_SUB_WORKFLOW_ID, task.getSubWorkflowId());
     }
 
     @Test
@@ -118,8 +122,9 @@ public class TestSubWorkflow {
                 expectedStartWorkflowInput(
                         workflowInstance, task, "UnitWorkFlow", 3, inputData, null, null);
 
-        when(workflowExecutor.reserveSubWorkflowId(PARENT_WORKFLOW_ID, PARENT_TASK_ID))
-                .thenReturn(RESERVED_SUB_WORKFLOW_ID);
+        when(idGenerator.generateSubWorkflowId(
+                        PARENT_WORKFLOW_ID, PARENT_TASK_ID, task.getRetryCount()))
+                .thenReturn(CHILD_SUB_WORKFLOW_ID);
         when(workflowExecutor.startWorkflowIdempotent(startWorkflowInput))
                 .thenThrow(new TransientException("QueueDAO failure"));
 
@@ -145,8 +150,9 @@ public class TestSubWorkflow {
                 expectedStartWorkflowInput(
                         workflowInstance, task, "UnitWorkFlow", 3, inputData, null, null);
 
-        when(workflowExecutor.reserveSubWorkflowId(PARENT_WORKFLOW_ID, PARENT_TASK_ID))
-                .thenReturn(RESERVED_SUB_WORKFLOW_ID);
+        when(idGenerator.generateSubWorkflowId(
+                        PARENT_WORKFLOW_ID, PARENT_TASK_ID, task.getRetryCount()))
+                .thenReturn(CHILD_SUB_WORKFLOW_ID);
         when(workflowExecutor.startWorkflowIdempotent(startWorkflowInput))
                 .thenThrow(new NonTransientException("non transient failure"));
 
@@ -167,7 +173,7 @@ public class TestSubWorkflow {
         task.setInputData(inputData);
 
         WorkflowModel subWorkflowInstance = new WorkflowModel();
-        subWorkflowInstance.setWorkflowId(RESERVED_SUB_WORKFLOW_ID);
+        subWorkflowInstance.setWorkflowId(CHILD_SUB_WORKFLOW_ID);
         subWorkflowInstance.setStatus(WorkflowModel.Status.RUNNING);
 
         StartWorkflowInput startWorkflowInput =
@@ -177,7 +183,7 @@ public class TestSubWorkflow {
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
 
-        assertEquals(RESERVED_SUB_WORKFLOW_ID, task.getSubWorkflowId());
+        assertEquals(CHILD_SUB_WORKFLOW_ID, task.getSubWorkflowId());
     }
 
     @Test
@@ -191,7 +197,7 @@ public class TestSubWorkflow {
         task.setInputData(inputData);
 
         WorkflowModel subWorkflowInstance = new WorkflowModel();
-        subWorkflowInstance.setWorkflowId(RESERVED_SUB_WORKFLOW_ID);
+        subWorkflowInstance.setWorkflowId(CHILD_SUB_WORKFLOW_ID);
         subWorkflowInstance.setStatus(WorkflowModel.Status.RUNNING);
 
         StartWorkflowInput startWorkflowInput =
@@ -201,7 +207,7 @@ public class TestSubWorkflow {
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
 
-        assertEquals(RESERVED_SUB_WORKFLOW_ID, task.getSubWorkflowId());
+        assertEquals(CHILD_SUB_WORKFLOW_ID, task.getSubWorkflowId());
     }
 
     @Test
@@ -216,7 +222,7 @@ public class TestSubWorkflow {
         task.setInputData(inputData);
 
         WorkflowModel subWorkflowInstance = new WorkflowModel();
-        subWorkflowInstance.setWorkflowId(RESERVED_SUB_WORKFLOW_ID);
+        subWorkflowInstance.setWorkflowId(CHILD_SUB_WORKFLOW_ID);
         subWorkflowInstance.setStatus(WorkflowModel.Status.RUNNING);
 
         StartWorkflowInput startWorkflowInput =
@@ -226,7 +232,7 @@ public class TestSubWorkflow {
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
 
-        assertEquals(RESERVED_SUB_WORKFLOW_ID, task.getSubWorkflowId());
+        assertEquals(CHILD_SUB_WORKFLOW_ID, task.getSubWorkflowId());
     }
 
     @Test
@@ -249,7 +255,7 @@ public class TestSubWorkflow {
         task.setInputData(inputData);
 
         WorkflowModel subWorkflowInstance = new WorkflowModel();
-        subWorkflowInstance.setWorkflowId(RESERVED_SUB_WORKFLOW_ID);
+        subWorkflowInstance.setWorkflowId(CHILD_SUB_WORKFLOW_ID);
         subWorkflowInstance.setStatus(WorkflowModel.Status.RUNNING);
 
         StartWorkflowInput startWorkflowInput =
@@ -258,7 +264,7 @@ public class TestSubWorkflow {
         mockSubWorkflowLaunch(workflowInstance, task, startWorkflowInput, subWorkflowInstance);
 
         assertTrue(subWorkflow.execute(workflowInstance, task, workflowExecutor));
-        assertEquals(RESERVED_SUB_WORKFLOW_ID, task.getSubWorkflowId());
+        assertEquals(CHILD_SUB_WORKFLOW_ID, task.getSubWorkflowId());
         assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
         assertNull(task.getReasonForIncompletion());
         assertFalse(task.getOutputData().containsKey("subWorkflowLaunchError"));
@@ -329,14 +335,37 @@ public class TestSubWorkflow {
     @Test
     public void testCancelWithoutWorkflowId() {
         WorkflowModel workflowInstance = newParentWorkflow();
-        WorkflowModel subWorkflowInstance = new WorkflowModel();
         TaskModel task = newTask();
         task.setInputData(inputData("UnitWorkFlow", 2));
 
+        when(idGenerator.generateSubWorkflowId(
+                        PARENT_WORKFLOW_ID, PARENT_TASK_ID, task.getRetryCount()))
+                .thenReturn(CHILD_SUB_WORKFLOW_ID);
+        when(workflowExecutor.getWorkflow(CHILD_SUB_WORKFLOW_ID, true))
+                .thenThrow(new NotFoundException("missing"));
+
         subWorkflow.cancel(workflowInstance, task, workflowExecutor);
 
-        assertEquals(WorkflowModel.Status.RUNNING, subWorkflowInstance.getStatus());
-        verify(workflowExecutor).removeSubWorkflowIdReservation(PARENT_WORKFLOW_ID, PARENT_TASK_ID);
+        verify(workflowExecutor).getWorkflow(CHILD_SUB_WORKFLOW_ID, true);
+    }
+
+    @Test
+    public void testCancelWithoutWorkflowIdTerminatesDeterministicChildIfCreated() {
+        WorkflowModel workflowInstance = newParentWorkflow();
+        WorkflowModel subWorkflowInstance = new WorkflowModel();
+        subWorkflowInstance.setStatus(WorkflowModel.Status.RUNNING);
+        TaskModel task = newTask();
+        task.setInputData(inputData("UnitWorkFlow", 2));
+
+        when(idGenerator.generateSubWorkflowId(
+                        PARENT_WORKFLOW_ID, PARENT_TASK_ID, task.getRetryCount()))
+                .thenReturn(CHILD_SUB_WORKFLOW_ID);
+        when(workflowExecutor.getWorkflow(CHILD_SUB_WORKFLOW_ID, true))
+                .thenReturn(subWorkflowInstance);
+
+        subWorkflow.cancel(workflowInstance, task, workflowExecutor);
+
+        assertEquals(WorkflowModel.Status.TERMINATED, subWorkflowInstance.getStatus());
     }
 
     @Test
@@ -357,7 +386,7 @@ public class TestSubWorkflow {
         task.setInputData(inputData);
 
         WorkflowModel subWorkflowInstance = new WorkflowModel();
-        subWorkflowInstance.setWorkflowId(RESERVED_SUB_WORKFLOW_ID);
+        subWorkflowInstance.setWorkflowId(CHILD_SUB_WORKFLOW_ID);
         subWorkflowInstance.setStatus(WorkflowModel.Status.RUNNING);
 
         StartWorkflowInput startWorkflowInput =
@@ -373,7 +402,7 @@ public class TestSubWorkflow {
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
 
-        assertEquals(RESERVED_SUB_WORKFLOW_ID, task.getSubWorkflowId());
+        assertEquals(CHILD_SUB_WORKFLOW_ID, task.getSubWorkflowId());
     }
 
     @Test
@@ -434,8 +463,9 @@ public class TestSubWorkflow {
             TaskModel task,
             StartWorkflowInput startWorkflowInput,
             WorkflowModel subWorkflowInstance) {
-        when(workflowExecutor.reserveSubWorkflowId(PARENT_WORKFLOW_ID, PARENT_TASK_ID))
-                .thenReturn(RESERVED_SUB_WORKFLOW_ID);
+        when(idGenerator.generateSubWorkflowId(
+                        PARENT_WORKFLOW_ID, PARENT_TASK_ID, task.getRetryCount()))
+                .thenReturn(CHILD_SUB_WORKFLOW_ID);
         when(workflowExecutor.startWorkflowIdempotent(startWorkflowInput))
                 .thenReturn(subWorkflowInstance);
     }
@@ -456,7 +486,7 @@ public class TestSubWorkflow {
                 workflowInput,
                 taskToDomain,
                 workflowDef,
-                RESERVED_SUB_WORKFLOW_ID);
+                CHILD_SUB_WORKFLOW_ID);
     }
 
     private StartWorkflowInput expectedStartWorkflowInput(

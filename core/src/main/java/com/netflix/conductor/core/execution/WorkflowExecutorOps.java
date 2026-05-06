@@ -2047,10 +2047,12 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             throw new TransientException("Error acquiring lock when creating workflow: {}");
         }
 
+        boolean createAttempted = false;
         try {
             try {
                 WorkflowModel existingWorkflow =
                         executionDAOFacade.getWorkflowModelFromExecutionDAO(workflowId, false);
+                validateIdempotentWorkflowOwnership(input, existingWorkflow);
                 return existingWorkflow;
             } catch (NotFoundException e) {
                 LOGGER.debug(
@@ -2059,6 +2061,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             }
 
             WorkflowModel workflow = createWorkflowModel(input, workflowDefinition, workflowId);
+            createAttempted = true;
             createAndQueueEvaluationWithLock(workflow);
 
             Monitors.recordWorkflowStartSuccess(
@@ -2073,7 +2076,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     "Unable to start workflow idempotently: {}", workflowDefinition.getName(), e);
 
             try {
-                executionDAOFacade.removeWorkflow(workflowId, false);
+                if (createAttempted) {
+                    executionDAOFacade.removeWorkflow(workflowId, false);
+                }
             } catch (Exception rwe) {
                 LOGGER.error("Could not remove the workflowId: " + workflowId, rwe);
             }
@@ -2083,23 +2088,27 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         }
     }
 
-    @Override
-    public String reserveSubWorkflowId(String parentWorkflowId, String parentWorkflowTaskId) {
-        Preconditions.checkArgument(
-                StringUtils.isNotBlank(parentWorkflowId), "parentWorkflowId cannot be blank");
-        Preconditions.checkArgument(
-                StringUtils.isNotBlank(parentWorkflowTaskId),
-                "parentWorkflowTaskId cannot be blank");
-        return executionDAOFacade.reserveSubWorkflowId(
-                parentWorkflowId, parentWorkflowTaskId, idGenerator.generate());
-    }
+    private void validateIdempotentWorkflowOwnership(
+            StartWorkflowInput input, WorkflowModel existingWorkflow) {
+        if (StringUtils.isBlank(input.getParentWorkflowId())
+                && StringUtils.isBlank(input.getParentWorkflowTaskId())) {
+            return;
+        }
 
-    @Override
-    public void removeSubWorkflowIdReservation(String workflowId, String taskId) {
-        Preconditions.checkArgument(
-                StringUtils.isNotBlank(workflowId), "workflowId cannot be blank");
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "taskId cannot be blank");
-        executionDAOFacade.removeSubWorkflowIdReservation(workflowId, taskId);
+        if (!StringUtils.equals(input.getParentWorkflowId(), existingWorkflow.getParentWorkflowId())
+                || !StringUtils.equals(
+                        input.getParentWorkflowTaskId(),
+                        existingWorkflow.getParentWorkflowTaskId())) {
+            String message =
+                    String.format(
+                            "Workflow id %s already belongs to parent workflow %s task %s, cannot attach to parent workflow %s task %s",
+                            existingWorkflow.getWorkflowId(),
+                            existingWorkflow.getParentWorkflowId(),
+                            existingWorkflow.getParentWorkflowTaskId(),
+                            input.getParentWorkflowId(),
+                            input.getParentWorkflowTaskId());
+            throw new NonTransientException(message);
+        }
     }
 
     private void createAndEvaluate(WorkflowModel workflow) {

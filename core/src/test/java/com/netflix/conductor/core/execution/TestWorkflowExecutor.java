@@ -42,6 +42,7 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.exception.ConflictException;
+import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.exception.TransientException;
@@ -94,7 +95,7 @@ public class TestWorkflowExecutor {
 
         @Bean(TASK_TYPE_SUB_WORKFLOW)
         public SubWorkflow subWorkflow(ObjectMapper objectMapper) {
-            return new SubWorkflow(objectMapper);
+            return new SubWorkflow(objectMapper, new IDGenerator());
         }
 
         @Bean(TASK_TYPE_LAMBDA)
@@ -815,15 +816,6 @@ public class TestWorkflowExecutor {
     }
 
     @Test
-    public void testReserveSubWorkflowId() {
-        when(executionDAOFacade.reserveSubWorkflowId(eq("parent"), eq("task"), anyString()))
-                .thenReturn("reserved-sub-workflow");
-
-        assertEquals(
-                "reserved-sub-workflow", workflowExecutor.reserveSubWorkflowId("parent", "task"));
-    }
-
-    @Test
     public void testStartWorkflowIdempotentReturnsExistingWorkflowModel() {
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName("existing-workflow");
@@ -852,6 +844,40 @@ public class TestWorkflowExecutor {
         verify(queueDAO, never()).push(anyString(), anyString(), anyInt(), anyLong());
         verify(queueDAO, never()).postpone(anyString(), anyString(), anyInt(), anyLong());
         verify(executionLockService).releaseLock("existing-workflow-id");
+    }
+
+    @Test(expected = NonTransientException.class)
+    public void testStartWorkflowIdempotentRejectsExistingWorkflowOwnedByDifferentParentTask() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("owned-workflow");
+        workflowDef.setVersion(1);
+
+        StartWorkflowInput input = new StartWorkflowInput();
+        input.setWorkflowDefinition(workflowDef);
+        input.setName(workflowDef.getName());
+        input.setVersion(workflowDef.getVersion());
+        input.setWorkflowInput(Collections.emptyMap());
+        input.setWorkflowId("owned-workflow-id");
+        input.setParentWorkflowId("parent-workflow");
+        input.setParentWorkflowTaskId("parent-task");
+
+        WorkflowModel existingWorkflow = new WorkflowModel();
+        existingWorkflow.setWorkflowId("owned-workflow-id");
+        existingWorkflow.setStatus(WorkflowModel.Status.RUNNING);
+        existingWorkflow.setParentWorkflowId("other-parent-workflow");
+        existingWorkflow.setParentWorkflowTaskId("other-parent-task");
+
+        when(executionLockService.acquireLock("owned-workflow-id")).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO("owned-workflow-id", false))
+                .thenReturn(existingWorkflow);
+
+        try {
+            workflowExecutor.startWorkflowIdempotent(input);
+        } finally {
+            verify(executionDAOFacade, never()).createWorkflow(any());
+            verify(executionDAOFacade, never()).removeWorkflow(anyString(), anyBoolean());
+            verify(executionLockService).releaseLock("owned-workflow-id");
+        }
     }
 
     @Test
@@ -927,6 +953,7 @@ public class TestWorkflowExecutor {
             workflowExecutor.startWorkflowIdempotent(input);
         } finally {
             verify(executionDAOFacade, never()).createWorkflow(any());
+            verify(executionDAOFacade, never()).removeWorkflow(anyString(), anyBoolean());
             verify(executionLockService).releaseLock("transient-workflow-id");
         }
     }
@@ -2301,7 +2328,11 @@ public class TestWorkflowExecutor {
         TaskModel subWorkflowTask = new TaskModel();
         subWorkflowTask.setTaskId(UUID.randomUUID().toString());
         subWorkflowTask.setTaskType(TaskType.SUB_WORKFLOW.name());
+        subWorkflowTask.setSubWorkflowId("child-workflow-id");
         subWorkflowTask.setStatus(TaskModel.Status.IN_PROGRESS);
+        WorkflowModel childWorkflow = new WorkflowModel();
+        childWorkflow.setWorkflowDefinition(new WorkflowDef());
+        when(executionDAOFacade.getWorkflowModel("child-workflow-id", true)).thenReturn(childWorkflow);
 
         TaskModel lambdaTask = new TaskModel();
         lambdaTask.setTaskId(UUID.randomUUID().toString());
@@ -2325,7 +2356,7 @@ public class TestWorkflowExecutor {
         assertEquals(TaskModel.Status.CANCELED, argumentCaptor.getAllValues().get(0).getStatus());
         assertEquals(TaskType.LAMBDA.name(), argumentCaptor.getAllValues().get(1).getTaskType());
         assertEquals(TaskModel.Status.CANCELED, argumentCaptor.getAllValues().get(1).getStatus());
-        verify(workflowStatusListener, times(1))
+        verify(workflowStatusListener, times(2))
                 .onWorkflowFinalizedIfEnabled(any(WorkflowModel.class));
     }
 
@@ -2393,8 +2424,6 @@ public class TestWorkflowExecutor {
                         eq(subWorkflowTask.getWorkflowPriority()),
                         eq(0L));
         verify(executionDAOFacade, never()).updateTask(subWorkflowTask);
-        verify(executionDAOFacade, never())
-                .reserveSubWorkflowId(anyString(), anyString(), anyString());
     }
 
     @Test

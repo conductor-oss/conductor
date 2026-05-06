@@ -65,9 +65,10 @@ class AsyncSystemTaskExecutorTest extends Specification {
     def "Execute SubWorkflow task"() {
         given:
         String workflowId = "workflowId"
-        String subWorkflowId = "subWorkflowId"
-        String parentTaskId = new IDGenerator().generate()
-        SubWorkflow subWorkflowTask = new SubWorkflow(new ObjectMapper())
+        IDGenerator idGenerator = new IDGenerator()
+        String parentTaskId = idGenerator.generate()
+        String subWorkflowId = idGenerator.generateSubWorkflowId(workflowId, parentTaskId, 0)
+        SubWorkflow subWorkflowTask = new SubWorkflow(new ObjectMapper(), idGenerator)
 
         TaskModel task1 = new TaskModel()
         task1.setTaskType(SUB_WORKFLOW.name())
@@ -90,7 +91,6 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(parentTaskId) >> task1
         1 * executionDAOFacade.getWorkflowModel(workflowId, subWorkflowTask.isTaskRetrievalRequired()) >> workflow
-        1 * workflowExecutor.reserveSubWorkflowId(workflowId, parentTaskId) >> subWorkflowId
         1 * workflowExecutor.startWorkflowIdempotent(*_) >> subWorkflow
 
         // SUB_WORKFLOW is asyncComplete so its removed from the queue
