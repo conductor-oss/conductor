@@ -36,9 +36,9 @@ import com.netflix.conductor.model.WorkflowModel;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -67,6 +67,8 @@ public class AdminServiceImplReindexTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty());
+        // default to healthy cluster so existing tests don't need to stub it
+        lenient().when(indexDAO.isClusterHealthy()).thenReturn(true);
     }
 
     private void waitForReindex() throws InterruptedException {
@@ -98,7 +100,7 @@ public class AdminServiceImplReindexTest {
         when(executionDAO.getWorkflow("wf1", true)).thenReturn(wf);
         when(executionDAO.getWorkflow("wf2", true)).thenReturn(wf);
 
-        Map<String, Object> result = adminService.startReindex();
+        Map<String, Object> result = adminService.startReindex(false);
         assertEquals("STARTED", result.get("state"));
 
         waitForReindex();
@@ -119,11 +121,11 @@ public class AdminServiceImplReindexTest {
         when(executionDAO.getAllWorkflowIdsAfter("wf1", 100)).thenReturn(Collections.emptyList());
         when(executionDAO.getWorkflow("wf1", true)).thenReturn(wf);
 
-        adminService.startReindex();
+        adminService.startReindex(false);
         waitForReindex();
         assertEquals("COMPLETED", adminService.getReindexStatus().get("state"));
 
-        Map<String, Object> result = adminService.startReindex();
+        Map<String, Object> result = adminService.startReindex(false);
         assertEquals("STARTED", result.get("state"));
         waitForReindex();
 
@@ -136,8 +138,10 @@ public class AdminServiceImplReindexTest {
     @Test
     public void testDoublePostReturnsAlreadyRunning() {
         when(executionDAO.getWorkflowCount()).thenReturn(0L);
-        // make background thread block so state stays RUNNING during second call
-        when(executionDAO.getAllWorkflowIdsAfter(anyString(), anyInt()))
+        // fail-fast probe in startReindex (limit=1) returns immediately;
+        // the actual paging call (limit=100) blocks long enough to keep state RUNNING
+        when(executionDAO.getAllWorkflowIdsAfter("", 1)).thenReturn(Collections.emptyList());
+        when(executionDAO.getAllWorkflowIdsAfter("", 100))
                 .thenAnswer(
                         inv -> {
                             try {
@@ -148,9 +152,9 @@ public class AdminServiceImplReindexTest {
                             return Collections.emptyList();
                         });
 
-        adminService.startReindex();
+        adminService.startReindex(false);
 
-        Map<String, Object> result = adminService.startReindex();
+        Map<String, Object> result = adminService.startReindex(false);
         assertEquals("ALREADY_RUNNING", result.get("state"));
     }
 
@@ -159,7 +163,7 @@ public class AdminServiceImplReindexTest {
         when(executionDAO.getWorkflowCount())
                 .thenThrow(new UnsupportedOperationException("not supported"));
 
-        Map<String, Object> result = adminService.startReindex();
+        Map<String, Object> result = adminService.startReindex(false);
         assertEquals("UNSUPPORTED", result.get("state"));
     }
 
@@ -176,7 +180,7 @@ public class AdminServiceImplReindexTest {
         when(executionDAO.getAllWorkflowIdsAfter(lastId, 100)).thenReturn(Collections.emptyList());
         when(executionDAO.getWorkflow(anyString(), eq(true))).thenReturn(wf);
 
-        adminService.startReindex();
+        adminService.startReindex(false);
         waitForReindex();
 
         verify(executionDAO).getAllWorkflowIdsAfter("", 100);
@@ -194,7 +198,7 @@ public class AdminServiceImplReindexTest {
         when(executionDAO.getAllWorkflowIdsAfter("wf1", 100)).thenReturn(Collections.emptyList());
         when(executionDAO.getWorkflow("wf1", true)).thenReturn(wf);
 
-        adminService.startReindex();
+        adminService.startReindex(false);
         waitForReindex();
 
         assertEquals(null, ReflectionTestUtils.getField(adminService, "reindexRateLimiter"));
@@ -210,12 +214,60 @@ public class AdminServiceImplReindexTest {
         when(executionDAO.getAllWorkflowIdsAfter("wf1", 100)).thenReturn(Collections.emptyList());
         when(executionDAO.getWorkflow("wf1", true)).thenReturn(wf);
 
-        adminService.startReindex();
+        adminService.startReindex(false);
         waitForReindex();
 
         Object limiter = ReflectionTestUtils.getField(adminService, "reindexRateLimiter");
         assertEquals("COMPLETED", adminService.getReindexStatus().get("state"));
         // limiter was created (non-null) and job still completed successfully
         org.junit.Assert.assertNotNull(limiter);
+    }
+
+    @Test
+    public void testPreflightFailedWhenClusterUnhealthy() {
+        when(executionDAO.getWorkflowCount()).thenReturn(5L);
+        when(executionDAO.getAllWorkflowIdsAfter("", 1)).thenReturn(Collections.emptyList());
+        when(indexDAO.isClusterHealthy()).thenReturn(false);
+
+        Map<String, Object> result = adminService.startReindex(false);
+        assertEquals("PREFLIGHT_FAILED", result.get("state"));
+        // background thread must not have been submitted
+        assertEquals("PREFLIGHT_FAILED", adminService.getReindexStatus().get("state"));
+        org.junit.Assert.assertNotNull(result.get("warning"));
+    }
+
+    @Test
+    public void testForceBypassesPreflight() throws Exception {
+        WorkflowModel wf = stubWorkflow();
+        when(executionDAO.getWorkflowCount()).thenReturn(1L);
+        when(executionDAO.getAllWorkflowIdsAfter("", 1)).thenReturn(Collections.emptyList());
+        when(executionDAO.getAllWorkflowIdsAfter("", 100))
+                .thenReturn(Collections.singletonList("wf1"));
+        when(executionDAO.getAllWorkflowIdsAfter("wf1", 100)).thenReturn(Collections.emptyList());
+        when(executionDAO.getWorkflow("wf1", true)).thenReturn(wf);
+        // force=true must bypass the health check entirely; this stub should NOT be invoked
+        lenient().when(indexDAO.isClusterHealthy()).thenReturn(false);
+
+        Map<String, Object> result = adminService.startReindex(true);
+        assertEquals("STARTED", result.get("state"));
+        assertEquals(Boolean.TRUE, result.get("forced"));
+        waitForReindex();
+        assertEquals("COMPLETED", adminService.getReindexStatus().get("state"));
+    }
+
+    @Test
+    public void testStartedResponseIncludesWarning() throws Exception {
+        WorkflowModel wf = stubWorkflow();
+        when(executionDAO.getWorkflowCount()).thenReturn(1L);
+        when(executionDAO.getAllWorkflowIdsAfter("", 1)).thenReturn(Collections.emptyList());
+        when(executionDAO.getAllWorkflowIdsAfter("", 100))
+                .thenReturn(Collections.singletonList("wf1"));
+        when(executionDAO.getAllWorkflowIdsAfter("wf1", 100)).thenReturn(Collections.emptyList());
+        when(executionDAO.getWorkflow("wf1", true)).thenReturn(wf);
+
+        Map<String, Object> result = adminService.startReindex(false);
+        assertEquals("STARTED", result.get("state"));
+        org.junit.Assert.assertNotNull(result.get("warning"));
+        waitForReindex();
     }
 }

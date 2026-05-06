@@ -57,7 +57,8 @@ public class AdminServiceImpl implements AdminService {
         IDLE,
         RUNNING,
         COMPLETED,
-        FAILED
+        FAILED,
+        PREFLIGHT_FAILED
     }
 
     private final AtomicReference<ReindexState> reindexState =
@@ -185,8 +186,15 @@ public class AdminServiceImpl implements AdminService {
         return (verbose ? eventQueueManager.getQueueSizes() : eventQueueManager.getQueues());
     }
 
+    private static final String REINDEX_WARNING =
+            "WARNING: bulk-writing every workflow and task back to the search index can saturate "
+                    + "ingest throughput, breach disk watermarks, and drive the cluster into a red "
+                    + "state. Verify cluster health (GET /_cluster/health) and available disk "
+                    + "space before using this endpoint. This is a voluntary call — the operator "
+                    + "is responsible for knowing it is safe to run.";
+
     @Override
-    public Map<String, Object> startReindex() {
+    public Map<String, Object> startReindex(boolean force) {
         // Fail fast if the DAO doesn't support reindexing
         try {
             executionDAO.getWorkflowCount();
@@ -202,9 +210,25 @@ public class AdminServiceImpl implements AdminService {
             return result;
         }
 
+        // Pre-flight: refuse to start on an unhealthy index cluster unless explicitly forced.
+        // Bulk writes to a yellow/red cluster are the fastest way to make the problem worse.
+        if (!force && !indexDAO.isClusterHealthy()) {
+            reindexState.set(ReindexState.PREFLIGHT_FAILED);
+            reindexMessage =
+                    "Pre-flight failed: index cluster is not green. Fix the cluster first, or "
+                            + "re-run with ?force=true if you understand the risk.";
+            Map<String, Object> result = new HashMap<>();
+            result.put("state", "PREFLIGHT_FAILED");
+            result.put("message", reindexMessage);
+            result.put("warning", REINDEX_WARNING);
+            return result;
+        }
+
         if (!reindexState.compareAndSet(ReindexState.IDLE, ReindexState.RUNNING)
                 && !reindexState.compareAndSet(ReindexState.COMPLETED, ReindexState.RUNNING)
-                && !reindexState.compareAndSet(ReindexState.FAILED, ReindexState.RUNNING)) {
+                && !reindexState.compareAndSet(ReindexState.FAILED, ReindexState.RUNNING)
+                && !reindexState.compareAndSet(
+                        ReindexState.PREFLIGHT_FAILED, ReindexState.RUNNING)) {
             Map<String, Object> result = new HashMap<>();
             result.put("state", "ALREADY_RUNNING");
             result.put("message", "A reindex job is already in progress");
@@ -228,6 +252,10 @@ public class AdminServiceImpl implements AdminService {
         result.put(
                 "message",
                 "Reindex job started. Use GET /api/admin/reindex/status to track progress.");
+        result.put("warning", REINDEX_WARNING);
+        if (force) {
+            result.put("forced", true);
+        }
         return result;
     }
 

@@ -32,6 +32,8 @@ import org.apache.http.nio.entity.NByteArrayEntity;
 import org.apache.http.nio.entity.NStringEntity;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.action.DocWriteResponse;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
@@ -45,6 +47,8 @@ import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.*;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
+import org.elasticsearch.cluster.health.ClusterHealthStatus;
+import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -1197,6 +1201,25 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
             return getObjectCounts(query, freeText, WORKFLOW_DOC_TYPE);
         } catch (Exception e) {
             throw new NonTransientException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public boolean isClusterHealthy() {
+        try {
+            ClusterHealthRequest request = new ClusterHealthRequest();
+            request.timeout(TimeValue.timeValueSeconds(5));
+            ClusterHealthResponse response =
+                    elasticSearchClient.cluster().health(request, RequestOptions.DEFAULT);
+            ClusterHealthStatus status = response.getStatus();
+            if (status != ClusterHealthStatus.GREEN) {
+                logger.warn("Elasticsearch cluster health is {} (not GREEN)", status);
+                return false;
+            }
+            return true;
+        } catch (Exception e) {
+            logger.warn("Failed to query Elasticsearch cluster health", e);
+            return false;
         }
     }
 
