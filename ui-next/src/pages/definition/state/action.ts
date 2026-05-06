@@ -263,10 +263,8 @@ export const changeTab = assign<
   openedTab: (_context, event) =>
     "data" in event ? event.data.originalEvent.tab : event.tab,
   previousTab: ({ openedTab }, _) => openedTab,
-  isAgentExpanded: (context, event) => {
-    const nextTab = "data" in event ? event.data.originalEvent.tab : event.tab;
-    return nextTab === CODE_TAB ? false : context.isAgentExpanded;
-  },
+  // Collapse assistant on any tab click (Workflow, Task, Code, Run, Dependencies, …)
+  isAgentExpanded: false,
 });
 
 export const changeToCodeTab = assign({
@@ -278,11 +276,13 @@ export const changeToCodeTab = assign({
 export const changeToTaskTab = assign({
   openedTab: TASK_TAB,
   previousTab: ({ openedTab }: DefinitionMachineContext, _event) => openedTab,
+  isAgentExpanded: false,
 });
 
 export const changeToPreviousTab = assign<DefinitionMachineContext>({
   openedTab: ({ previousTab, openedTab }: DefinitionMachineContext) =>
     previousTab === openedTab ? LeftPaneTabs.WORKFLOW_TAB : previousTab,
+  isAgentExpanded: false,
 });
 
 export const performOperation = assign<

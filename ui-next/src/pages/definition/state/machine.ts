@@ -254,6 +254,7 @@ export const workflowDefinitionMachine = createMachine<
                 cond: "isAddOperation",
               },
               [FlowActionTypes.SELECT_NODE_EVT]: {
+                actions: ["collapseAgent"],
                 target:
                   "#workflowDefinitionMachine.ready.rightPanel.opened.tabFocus",
                 cond: "isValidSelection",
@@ -391,7 +392,7 @@ export const workflowDefinitionMachine = createMachine<
                       [DefinitionMachineEventTypes.CHANGE_TAB_EVT]: [
                         {
                           cond: "comesFromCodeAimsTaskTabHasSelectedTask",
-                          actions: ["reSelectTaskIfSelected"],
+                          actions: ["collapseAgent", "reSelectTaskIfSelected"],
                           target: "tabFocus",
                         },
                         {
@@ -463,6 +464,7 @@ export const workflowDefinitionMachine = createMachine<
                         target: "tabFocus",
                       },
                       [FlowActionTypes.SELECT_NODE_EVT]: {
+                        actions: ["collapseAgent"],
                         target: "tabFocusAfter",
                         cond: "isValidSelection",
                       },
@@ -986,6 +988,7 @@ export const workflowDefinitionMachine = createMachine<
                   },
                   [FlowActionTypes.SELECT_NODE_EVT]: {
                     actions: [
+                      "collapseAgent",
                       "persistSelectedTabCrumbs",
                       "changeToTaskTab",
                       "handleLeftPanelExpanded",
