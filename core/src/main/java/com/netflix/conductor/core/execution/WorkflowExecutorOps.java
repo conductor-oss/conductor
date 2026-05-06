@@ -334,6 +334,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             WorkflowModel parentWorkflow =
                     executionDAOFacade.getWorkflowModel(parentWorkflowId, true);
             parentWorkflow.setStatus(WorkflowModel.Status.RUNNING);
+            parentWorkflow.setReasonForIncompletion(null);
+            parentWorkflow.setFailedTaskId(null);
+            parentWorkflow.setFailedReferenceTaskNames(new HashSet<>());
+            parentWorkflow.setFailedTaskNames(new HashSet<>());
             parentWorkflow.setLastRetriedTime(System.currentTimeMillis());
             executionDAOFacade.updateWorkflow(parentWorkflow);
 
@@ -348,6 +352,20 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             expediteLazyWorkflowEvaluation(parentWorkflowId);
 
             workflow = parentWorkflow;
+        }
+    }
+
+    private void resetUnsuccessfulJoinTasks(WorkflowModel workflow) {
+        if (workflow.getWorkflowDefinition().containsType(TaskType.TASK_TYPE_JOIN)
+                || workflow.getWorkflowDefinition().containsType(TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC)) {
+            workflow.getTasks().stream()
+                    .filter(UNSUCCESSFUL_JOIN_TASK)
+                    .peek(
+                            task -> {
+                                task.setStatus(TaskModel.Status.IN_PROGRESS);
+                                addTaskToQueue(task);
+                            })
+                    .forEach(executionDAOFacade::updateTask);
         }
     }
 
@@ -1158,6 +1176,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         // we find any sub workflow tasks that have changed
         // and change the workflow/task state accordingly
         adjustStateIfSubWorkflowChanged(workflow);
+        resetUnsuccessfulJoinTasksWithActiveBranches(workflow);
 
         // Guard against holding the lock past its lease time. If synchronous system tasks
         // (e.g. INLINE inside a DO_WHILE) keep changing state, we loop instead of recursing to
@@ -1270,22 +1289,52 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     subWorkflowTask.getTaskId());
 
             // find all terminal and unsuccessful JOIN tasks and set them to IN_PROGRESS
-            if (workflow.getWorkflowDefinition().containsType(TaskType.TASK_TYPE_JOIN)
-                    || workflow.getWorkflowDefinition()
-                            .containsType(TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC)) {
-                // if we are here, then the SUB_WORKFLOW task could be part of a FORK_JOIN or
-                // FORK_JOIN_DYNAMIC
-                // and the JOIN task(s) needs to be evaluated again, set them to IN_PROGRESS
-                workflow.getTasks().stream()
-                        .filter(UNSUCCESSFUL_JOIN_TASK)
-                        .peek(
-                                task -> {
-                                    task.setStatus(TaskModel.Status.IN_PROGRESS);
-                                    addTaskToQueue(task);
-                                })
-                        .forEach(executionDAOFacade::updateTask);
-            }
+            // if we are here, then the SUB_WORKFLOW task could be part of a FORK_JOIN or
+            // FORK_JOIN_DYNAMIC and the JOIN task(s) needs to be evaluated again, set them to
+            // IN_PROGRESS
+            resetUnsuccessfulJoinTasks(workflow);
         }
+    }
+
+    private void resetUnsuccessfulJoinTasksWithActiveBranches(WorkflowModel workflow) {
+        if (!workflow.getWorkflowDefinition().containsType(TaskType.TASK_TYPE_JOIN)
+                && !workflow.getWorkflowDefinition()
+                        .containsType(TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC)) {
+            return;
+        }
+
+        // A rerun/retry/restart can reactivate one fork branch while the previous JOIN is still
+        // terminal. Reopen only those JOIN tasks whose dependencies include an active branch.
+        Set<String> activeReferenceTaskNames =
+                workflow.getTasks().stream()
+                        .filter(NON_TERMINAL_TASK)
+                        .map(TaskModel::getReferenceTaskName)
+                        .collect(Collectors.toSet());
+        if (activeReferenceTaskNames.isEmpty()) {
+            return;
+        }
+
+        workflow.getTasks().stream()
+                .filter(UNSUCCESSFUL_JOIN_TASK)
+                .filter(task -> hasActiveJoinDependency(task, activeReferenceTaskNames))
+                .peek(
+                        task -> {
+                            task.setStatus(TaskModel.Status.IN_PROGRESS);
+                            addTaskToQueue(task);
+                        })
+                .forEach(executionDAOFacade::updateTask);
+    }
+
+    private boolean hasActiveJoinDependency(
+            TaskModel joinTask, Set<String> activeReferenceTaskNames) {
+        Object joinOn = joinTask.getInputData().get("joinOn");
+        if (!(joinOn instanceof List<?> joinOnRefs)) {
+            return false;
+        }
+        return joinOnRefs.stream()
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .anyMatch(activeReferenceTaskNames::contains);
     }
 
     private Optional<TaskModel> findChangedSubWorkflowTask(WorkflowModel workflow) {
