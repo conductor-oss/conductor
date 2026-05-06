@@ -27,7 +27,7 @@ plugins {
 // Establish version and status
 ext.githubProjectName = rootProject.name // Change if github project name is not the same as the root project's name
 
-ext["tomcat.version"] = "10.1.52"
+ext["tomcat.version"] = "10.1.54"
 
 subprojects {
     tasks.withType(Javadoc).all { enabled = false }
@@ -110,6 +110,13 @@ allprojects {
                 // Keep grpc artifacts aligned (including grpc-netty-shaded) to avoid vulnerable transitive mixes.
                 if (details.requested.group == 'io.grpc') {
                     details.useVersion revGrpc
+                }
+                // Force all Log4j 2 modules (api, core, slf4j-impl, jul, web, etc.)
+                // to revLog4j2 to remediate CVE-2026-34478. This is defense-in-depth
+                // alongside the 'log4j2.version' BOM override, in case a transitive
+                // dependency requests the old vulnerable line directly.
+                if (details.requested.group == 'org.apache.logging.log4j') {
+                    details.useVersion revLog4j2
                 }
             }
         }

@@ -19,6 +19,11 @@ ext['elasticsearch.version'] = revElasticSearch7
 
 ext['json-smart.version'] = revJsonSmart
 
+// Override Spring Boot BOM-managed Log4j 2 version to address CVE-2026-34478
+// (CVSS 7.5). Fixed in 2.25.4 (released 2026-04-13). Spring Boot 3.3.11 BOM
+// ships 2.23.1, so we pin all log4j-* artifacts to revLog4j2.
+ext['log4j2.version'] = revLog4j2
+
 ext['kafka.version'] = revKafka
 
 ext['micrometer.version'] = revMicrometer
