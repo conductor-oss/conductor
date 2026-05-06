@@ -1,8 +1,8 @@
 import { FormControlLabel, Grid, Link, Switch } from "@mui/material";
 import { useSelector } from "@xstate/react";
-import MuiTypography from "components/ui/MuiTypography";
-import PromptVariables from "components/PromptVariables";
 import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
+import PromptVariables from "components/PromptVariables";
+import MuiTypography from "components/ui/MuiTypography";
 import { path as _path, clone, setWith } from "lodash/fp";
 import { ConductorValueInput } from "pages/definition/EditorPanel/TaskFormTab/forms/ConductorValueInput";
 import { ConductorArrayMapFormBase } from "pages/definition/EditorPanel/TaskFormTab/forms/LLMFormFields/ConductorArrayMapForm";
@@ -15,6 +15,7 @@ import { useGetSetHandler } from "pages/definition/EditorPanel/TaskFormTab/forms
 import { FunctionComponent, useMemo } from "react";
 import { TaskDef } from "types/common";
 import { UiIntegrationsFieldType } from "types/FormFieldTypes";
+import { PromptDef } from "types/Prompts";
 import { ActorRef, State } from "xstate";
 import { MEDIA_TYPE_SUGGESTIONS } from "./constants/httpSuggestions";
 
@@ -53,11 +54,43 @@ const useSetterGetter = (
 
 const aiFieldTypes = {
   [UiIntegrationsFieldType.LLM_PROVIDER]: ({ onChange, task, actor }) => {
-    const options = useSelector(actor, (state) =>
+    const promptNameOptions = useSelector(
+      actor,
+      (state) => state.context.promptNameOptions,
+    );
+    const allOptions = useSelector(actor, (state) =>
       state.context.llmProviderOptions.map(
         ({ name }: { name: string }) => name, // Fix types
       ),
     );
+
+    // Filter options based on selected prompt's integrations
+    const selectedPromptName = task?.inputParameters?.promptName;
+    const selectedPrompt = promptNameOptions.find(
+      (prompt: PromptDef) => prompt.name === selectedPromptName,
+    );
+
+    const options = useMemo(() => {
+      if (
+        selectedPrompt?.integrations &&
+        selectedPrompt.integrations.length > 0
+      ) {
+        // Extract unique providers from prompt integrations (format: "provider:model")
+        const availableProviders = new Set(
+          selectedPrompt.integrations
+            .map((integration: string) => {
+              const [provider] = integration.split(":");
+              return provider;
+            })
+            .filter(Boolean),
+        );
+        return allOptions.filter((option: string) =>
+          availableProviders.has(option),
+        );
+      }
+      return allOptions;
+    }, [allOptions, selectedPrompt]);
+
     const [setValue, ipValue] = useSetterGetter(
       UiIntegrationsFieldType.LLM_PROVIDER,
       task,
@@ -80,11 +113,48 @@ const aiFieldTypes = {
     );
   },
   [UiIntegrationsFieldType.MODEL]: ({ onChange, task, actor }) => {
-    const options = useSelector(actor, (state) =>
+    const promptNameOptions = useSelector(
+      actor,
+      (state) => state.context.promptNameOptions,
+    );
+    const allOptions = useSelector(actor, (state) =>
       state.context.modelOptions.map(
         ({ api }: { api: string }) => api, // Fix types
       ),
     );
+    const selectedProvider = task?.inputParameters?.llmProvider;
+
+    // Filter options based on selected prompt's integrations
+    const selectedPromptName = task?.inputParameters?.promptName;
+    const selectedPrompt = promptNameOptions.find(
+      (prompt: PromptDef) => prompt.name === selectedPromptName,
+    );
+
+    const options = useMemo(() => {
+      if (
+        selectedPrompt?.integrations &&
+        selectedPrompt.integrations.length > 0
+      ) {
+        // Extract models for the selected provider from prompt integrations (format: "provider:model")
+        const availableModels = new Set(
+          selectedPrompt.integrations
+            .filter((integration: string) => {
+              const [provider] = integration.split(":");
+              return provider === selectedProvider;
+            })
+            .map((integration: string) => {
+              const [, model] = integration.split(":");
+              return model;
+            })
+            .filter(Boolean),
+        );
+        return allOptions.filter((option: string) =>
+          availableModels.has(option),
+        );
+      }
+      return allOptions;
+    }, [allOptions, selectedPrompt, selectedProvider]);
+
     const [setValue, ipValue] = useSetterGetter(
       UiIntegrationsFieldType.MODEL,
       task,
