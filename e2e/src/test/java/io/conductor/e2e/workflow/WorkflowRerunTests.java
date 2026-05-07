@@ -1572,15 +1572,19 @@ public class WorkflowRerunTests {
             rerunRequest.setReRunFromTaskId(innerFailedTaskId);
             workflowClient.rerunWorkflow(workflowId, rerunRequest);
 
-            try {
-                Thread.sleep(2000L);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                                assertEquals(
+                                        Workflow.WorkflowStatus.RUNNING,
+                                        wf.getStatus(),
+                                        "Parent workflow should be RUNNING after nested rerun. "
+                                                + "reason="
+                                                + wf.getReasonForIncompletion());
+                            });
 
             workflow = workflowClient.getWorkflow(workflowId, true);
-
-            assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
 
             Task taskBeforeAfterRerun =
                     workflow.getTasks().stream()
