@@ -200,54 +200,6 @@ const getPluginTaskMenuItems = (): BaseTaskMenuItem[] => {
   }));
 };
 
-/**
- * AI/LLM Tasks for Agentic Orchestration
- * These are AI-powered tasks for building intelligent workflows.
- */
-export const AI_TASKS: BaseTaskMenuItem[] = [
-  {
-    name: "LLM Chat Complete",
-    description: "Generate text using a large language model chat interface.",
-    type: TaskType.LLM_CHAT_COMPLETE,
-    category: RichAddMenuTabs.AI_AGENTS_TAB,
-  },
-  {
-    name: "LLM Text Complete",
-    description: "Generate text using a large language model completion API.",
-    type: TaskType.LLM_TEXT_COMPLETE,
-    category: RichAddMenuTabs.AI_AGENTS_TAB,
-  },
-  {
-    name: "LLM Generate Embeddings",
-    description: "Generate vector embeddings from text.",
-    type: TaskType.LLM_GENERATE_EMBEDDINGS,
-    category: RichAddMenuTabs.AI_AGENTS_TAB,
-  },
-  {
-    name: "LLM Get Embeddings",
-    description: "Retrieve stored embeddings by ID or query.",
-    type: TaskType.LLM_GET_EMBEDDINGS,
-    category: RichAddMenuTabs.AI_AGENTS_TAB,
-  },
-  {
-    name: "LLM Index Document",
-    description: "Index a document into a vector database for semantic search.",
-    type: TaskType.LLM_INDEX_DOCUMENT,
-    category: RichAddMenuTabs.AI_AGENTS_TAB,
-  },
-  {
-    name: "LLM Search Index",
-    description: "Search indexed documents using semantic similarity.",
-    type: TaskType.LLM_SEARCH_INDEX,
-    category: RichAddMenuTabs.AI_AGENTS_TAB,
-  },
-];
-
-/**
- * @deprecated Use AI_TASKS instead
- */
-export const LLM_TASKS: BaseTaskMenuItem[] = AI_TASKS;
-
 const [simpleTask, ...remainingWorkerTasks] = WORKER_TASKS;
 
 /**
@@ -258,7 +210,6 @@ export const getALL_TASKS = (): BaseTaskMenuItem[] => [
   simpleTask,
   ...SYSTEM_TASKS,
   ...OPERATOR_TASKS,
-  ...AI_TASKS,
   ...getPluginTaskMenuItems(),
   ...remainingWorkerTasks,
 ];
