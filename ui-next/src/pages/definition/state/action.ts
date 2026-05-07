@@ -20,7 +20,13 @@ import {
   ErrorInspectorMachineEvents,
   WorkflowWithNoErrorsEvent,
 } from "../errorInspector/state";
-import { CODE_TAB, RUN_TAB, SEVERITY_ERROR, TASK_TAB } from "./constants";
+import {
+  CODE_TAB,
+  RUN_TAB,
+  SEVERITY_ERROR,
+  TASK_TAB,
+  WORKFLOW_TAB,
+} from "./constants";
 import {
   ADD_NEW_SWITCH_PATH,
   performOperation as applyWorkflowOperation,
@@ -55,6 +61,7 @@ import {
   ToggleAgentExpandedEvent,
   UpdateAttributesEvent,
   UpdateWorkflowMetadataEvent,
+  WorkflowFromAgentEvent,
 } from "./types";
 
 import { JsonSchema } from "@jsonforms/core";
@@ -488,6 +495,41 @@ export const sendCrumbUpdates = sendTo<
   };
 });
 
+/**
+ * After AI updates, context.workflowChanges is fresh but formTaskMachine still
+ * holds stale taskChanges. Send FORCE_REFRESH_TASK (not UPDATE_CRUMBS — that
+ * one ignores non-SWITCH/DO_WHILE tasks via maybeUseChanges) so the form
+ * immediately reflects the agent's changes. Read from event.workflow to avoid
+ * XState v4 assign/sendTo ordering issues (assign updates context for the next
+ * snapshot, so sendTo in the same transition still sees the old context).
+ */
+export const syncTaskFormWithAgentWorkflow = choose<
+  DefinitionMachineContext,
+  WorkflowFromAgentEvent
+>([
+  {
+    cond: (ctx, event) =>
+      ctx.openedTab === TASK_TAB &&
+      !_isEmpty(ctx.selectedTaskCrumbs) &&
+      Array.isArray(event.workflow?.tasks),
+    actions: [
+      sendTo<
+        DefinitionMachineContext,
+        WorkflowFromAgentEvent,
+        ActorRef<TaskFormEvents>
+      >("formTaskMachine", (ctx, event) => ({
+        type: FormMachineActionTypes.FORCE_REFRESH_TASK,
+        crumbs: ctx.selectedTaskCrumbs,
+        task: crumbsToTask(
+          ctx.selectedTaskCrumbs,
+          (event.workflow.tasks as any[]) || [],
+        ),
+      })),
+    ],
+  },
+  { actions: [() => undefined] },
+]);
+
 export const persistSelectedTabCrumbs = assign<DefinitionMachineContext, any>(
   (_, event) => {
     return {
@@ -608,16 +650,31 @@ export const sendWorkflowChangesToMetadataMachine = sendTo<
 // v4 assign-before-sendTo timing: assign actions update context for the next
 // state snapshot, so sendTo actions in the same transition still see the old
 // context value.
-export const sendWorkflowChangesToMetadataMachineFromEvent = sendTo<
+//
+// IMPORTANT: workflowTabMetaEditor is only invoked as a child actor when the
+// machine is in the `workflowEditor` state (i.e. openedTab === WORKFLOW_TAB).
+// XState v4's sendTo throws synchronously inside resolveTransition when the
+// target actor doesn't exist, which aborts the entire transition — including
+// all assign actions (like persistWorkflowChanges) that should have committed
+// context updates. We guard with choose so the sendTo is only attempted when
+// the actor is guaranteed to be running.
+export const sendWorkflowChangesToMetadataMachineFromEvent = choose<
   DefinitionMachineContext,
-  any,
-  ActorRef<WorkflowMetadataEvents>
->("workflowTabMetaEditor", (_ctx, event) => {
-  return {
-    type: WorkflowMetadataMachineEventTypes.FORCE_WORKFLOW,
-    workflow: event.workflow || {},
-  };
-});
+  any
+>([
+  {
+    cond: ({ openedTab }: DefinitionMachineContext) =>
+      openedTab === WORKFLOW_TAB,
+    actions: sendTo<
+      DefinitionMachineContext,
+      any,
+      ActorRef<WorkflowMetadataEvents>
+    >("workflowTabMetaEditor", (_ctx, event) => ({
+      type: WorkflowMetadataMachineEventTypes.FORCE_WORKFLOW,
+      workflow: event.workflow || {},
+    })),
+  },
+]);
 
 export const forwardWorkflowToCodeMachine = sendTo<
   DefinitionMachineContext,
