@@ -106,6 +106,24 @@
       "type": "java.lang.String",
       "description": "The implementation of the workflow execution lock to be used.",
       "defaultValue": "noop_lock"
+    },
+    {
+      "name": "conductor.file-storage.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable the file-storage feature. When false, no file-storage beans are created and /api/files returns 404.",
+      "defaultValue": false
+    },
+    {
+      "name": "conductor.file-storage.type",
+      "type": "java.lang.String",
+      "description": "Storage backend: local, s3, gcs, or azure-blob.",
+      "defaultValue": "local"
+    },
+    {
+      "name": "conductor.file-storage.signed-url-expiration",
+      "type": "java.time.Duration",
+      "description": "TTL for presigned upload/download URLs.",
+      "defaultValue": "60s"
     }
   ],
   "hints": [
@@ -138,6 +156,15 @@
           "value": "local_only",
           "description": "Use the local in-memory cache based implementation as the lock provider."
         }
+      ]
+    },
+    {
+      "name": "conductor.file-storage.type",
+      "values": [
+        { "value": "local",      "description": "Local filesystem storage." },
+        { "value": "s3",         "description": "AWS S3 (or S3-compatible) storage." },
+        { "value": "gcs",        "description": "Google Cloud Storage." },
+        { "value": "azure-blob", "description": "Azure Blob Storage." }
       ]
     }
   ]

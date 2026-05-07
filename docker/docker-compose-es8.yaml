@@ -17,6 +17,9 @@ services:
     ports:
       - 8000:8080
       - 8127:5000
+    volumes:
+      # Shared with host so file:// URIs from the server resolve on the e2e runner.
+      - /tmp/conductor-file-storage-e2e:/tmp/conductor-file-storage-e2e
     healthcheck:
       test: ["CMD", "curl","-I" ,"-XGET", "http://localhost:8080/health"]
       interval: 60s

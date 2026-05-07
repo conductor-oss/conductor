@@ -1,0 +1,30 @@
+{
+  "name": "retry_demo_workflow",
+  "description": "Scheduled workflow that calls a non-existent API endpoint to produce a 404. Demonstrates how the scheduler records a new FAILED execution every firing interval, independent of prior failures.",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "call_failing_endpoint",
+      "taskReferenceName": "call_failing_endpoint",
+      "type": "HTTP",
+      "retryCount": 0,
+      "inputParameters": {
+        "http_request": {
+          "uri": "http://conductor-server:8080/api/workflow/00000000-0000-0000-0000-000000000000",
+          "method": "GET",
+          "connectionTimeOut": 5000,
+          "readTimeOut": 5000
+        }
+      }
+    }
+  ],
+  "outputParameters": {
+    "statusCode": "${call_failing_endpoint.output.response.statusCode}",
+    "body": "${call_failing_endpoint.output.response.body}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "ownerEmail": "demo@example.com",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 60
+}

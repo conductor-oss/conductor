@@ -4,6 +4,7 @@ import {
   EditEvent,
   DebounceEditEvent,
   CodeMachineEventTypes,
+  ForceWorkflowEvent,
   HighlightTextReferenceEvent,
 } from "./types";
 import { ErrorInspectorEventTypes } from "pages/definition/errorInspector/state/types";
@@ -39,3 +40,10 @@ export const checkForErrorsInWorkflow = send<CodeMachineContext, any>(
 );
 
 export const cancelDebounceEditChanges = cancel("debounce_edit_event");
+
+export const forceWorkflowChanges = assign<
+  CodeMachineContext,
+  ForceWorkflowEvent
+>({
+  editorChanges: (_, { workflow }) => JSON.stringify(workflow, null, 2),
+});
