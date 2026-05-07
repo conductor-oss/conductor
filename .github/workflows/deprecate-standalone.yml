@@ -33,9 +33,12 @@ jobs:
           tags: conductoross/conductor-standalone:deprecated
 
       - name: Update Docker Hub description
-        uses: peter-evans/dockerhub-description@v4
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: conductoross/conductor-standalone
-          readme-filepath: docker/conductor-standalone-deprecation/dockerhub-description.md
+        run: |
+          TOKEN=$(curl -s -X POST "https://hub.docker.com/v2/users/login" \
+            -H "Content-Type: application/json" \
+            -d "{\"username\":\"${{ secrets.DOCKERHUB_USERNAME }}\",\"password\":\"${{ secrets.DOCKERHUB_TOKEN }}\"}" \
+            | jq -r '.token')
+          curl -s -X PATCH "https://hub.docker.com/v2/repositories/conductoross/conductor-standalone/" \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"full_description\":$(jq -Rs . < docker/conductor-standalone-deprecation/dockerhub-description.md)}"
