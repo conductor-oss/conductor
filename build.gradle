@@ -27,7 +27,7 @@ plugins {
 // Establish version and status
 ext.githubProjectName = rootProject.name // Change if github project name is not the same as the root project's name
 
-ext["tomcat.version"] = "10.1.52"
+ext["tomcat.version"] = "10.1.54"
 
 subprojects {
     tasks.withType(Javadoc).all { enabled = false }
@@ -111,6 +111,38 @@ allprojects {
                 if (details.requested.group == 'io.grpc') {
                     details.useVersion revGrpc
                 }
+                // Force all Log4j 2 modules (api, core, slf4j-impl, jul, web, etc.)
+                // to revLog4j2 to remediate CVE-2026-34478. This is defense-in-depth
+                // alongside the 'log4j2.version' BOM override, in case a transitive
+                // dependency requests the old vulnerable line directly.
+                if (details.requested.group == 'org.apache.logging.log4j') {
+                    details.useVersion revLog4j2
+                }
+                // Force all Google Protobuf Java artifacts (protobuf-java,
+                // protobuf-java-util, protobuf-bom, etc.) to revProtoBuf to
+                // remediate CVE-2026-0994. protobuf-java-util is pulled in
+                // transitively (e.g. via gRPC) on the older 3.25.x line and
+                // must be aligned with the fixed 4.33.x runtime.
+                // protoc itself is excluded because grpc/build.gradle pins
+                // it to 3.25.5 for code-generation compatibility.
+                if (details.requested.group == 'com.google.protobuf'
+                        && details.requested.name != 'protoc'
+                        && !details.requested.name.startsWith('protoc-gen-')) {
+                    details.useVersion revProtoBuf
+                }
+            }
+
+            // Resolve the lz4-java capability conflict: Kafka 3.9.x pulls
+            // 'at.yawk.lz4:lz4-java' (the maintained coordinate after the
+            // original maintainer lost publish access to 'org.lz4'), while
+            // Elasticsearch 7.17.x still pulls the legacy 'org.lz4:lz4-java'.
+            // Both declare capability 'org.lz4:lz4-java', so Gradle requires
+            // an explicit selection. The two artifacts ship the same
+            // 'net.jpountz.lz4.*' classes and are drop-in compatible, so we
+            // pick the highest version (1.10.1 from at.yawk.lz4) — newer
+            // gives us upstream bug/security fixes.
+            resolutionStrategy.capabilitiesResolution.withCapability('org.lz4:lz4-java') {
+                selectHighestVersion()
             }
         }
     }

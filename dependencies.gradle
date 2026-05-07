@@ -32,7 +32,12 @@ ext {
     revHamcrestAllMatchers = '1.8'
     revHealth = '1.1.4'
     revPostgres = '42.7.2'
-    revProtoBuf = '4.33.0'
+    // Bumped from 4.33.0 to 4.33.6 to remediate CVE-2026-0994 (CVSS 7.5).
+    // NVD identifies google:protobuf <= 33.4 as vulnerable; the Java artifact
+    // line maps 1:1 (4.33.4 and earlier are affected). 4.33.6 is the latest
+    // patch in the 4.33.x line and is wire/descriptor compatible with the
+    // pinned protoc 3.25.5 used in grpc/build.gradle.
+    revProtoBuf = '4.33.6'
     revJakartaAnnotation = '2.1.1'
     revJAXB = '4.0.1'
     revJAXRS = '4.0.0'
@@ -57,7 +62,7 @@ ext {
     revTestContainer = '1.19.3'
     revFasterXml = '2.15.3'
     revAmqpClient = '5.13.0'
-    revKafka = '3.9.1'
+    revKafka = '3.9.2'
     revMicrometer = '1.14.6'
     revPrometheus = '0.9.0'
     revElasticSearch7 = '7.17.25'
@@ -77,4 +82,7 @@ ext {
     revMCP = '0.13.0'
     revCommonsCompress = '1.26.1'
     pinecone = '3.0.0'
+    // Pin Log4j 2 to 2.25.4+ to remediate CVE-2026-34478 (CVSS 7.5).
+    // Spring Boot 3.3.11 BOM ships 2.23.1, so we override via 'log4j2.version'.
+    revLog4j2 = '2.25.4'
 }
