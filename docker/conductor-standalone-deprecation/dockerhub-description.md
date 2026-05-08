@@ -36,9 +36,7 @@ All older tags (`:3.15.0`, `:latest` prior to 2026) point at a Conductor 3.15.0 
 
 ## Why was this deprecated?
 
-`conductor-standalone` was a batteries-included single-container image intended for local development. It fell out of sync with the main release cadence and was last published in December 2023 at version 3.15.0, while the project has since moved to 3.23.x.
-
-Rather than maintain a parallel image indefinitely, the project consolidated on `conductoross/conductor`, which now supports SQLite out of the box via the `conductor` CLI — providing the same zero-dependency local experience.
+`conductor-standalone` was intentionally deprecated in favor of consolidating on a single image. `conductoross/conductor` now supports SQLite out of the box, providing the same zero-dependency local experience without a separate image to maintain.
 
 ## Links
 
