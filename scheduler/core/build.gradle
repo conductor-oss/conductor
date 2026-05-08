@@ -1,0 +1,42 @@
+plugins {
+    id 'java'
+    id 'java-test-fixtures'
+}
+
+dependencies {
+    implementation project(':conductor-common')
+    implementation project(':conductor-metrics')
+    implementation project(':conductor-core')
+
+    implementation 'org.springframework.retry:spring-retry'
+    implementation 'org.springframework.security:spring-security-core'
+    implementation "org.apache.commons:commons-lang3"
+
+    implementation "io.micrometer:micrometer-core:${revMicrometer}"
+    implementation 'com.zaxxer:HikariCP:5.1.0'
+    implementation "com.google.guava:guava:${revGuava}"
+
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+    compileOnly 'org.springframework.boot:spring-boot-starter-jdbc'
+    compileOnly 'org.springframework.boot:spring-boot-starter-validation'
+    compileOnly 'org.springframework.boot:spring-boot-starter-web'
+    compileOnly "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
+
+
+    testImplementation 'org.hamcrest:hamcrest'
+    testImplementation "org.awaitility:awaitility:3.1.6"
+
+    testFixturesImplementation project(':conductor-common')
+    testFixturesImplementation project(':conductor-core')
+    testFixturesImplementation 'junit:junit'
+    testFixturesImplementation 'org.assertj:assertj-core'
+    testFixturesImplementation 'org.mockito:mockito-core'
+    testFixturesImplementation 'org.springframework.boot:spring-boot-test-autoconfigure'
+    testFixturesImplementation 'org.springframework.boot:spring-boot-autoconfigure'
+    testFixturesImplementation 'org.springframework.retry:spring-retry'
+    testFixturesImplementation "com.fasterxml.jackson.core:jackson-databind"
+}
+
+test {
+    useJUnitPlatform()
+}

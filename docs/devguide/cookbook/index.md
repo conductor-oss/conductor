@@ -24,6 +24,10 @@ Production-ready workflow recipes. Each recipe includes the complete JSON workfl
 
     Exponential backoff with cap and jitter, lease extension for long-running workers, hard SLA with totalTimeoutSeconds, and thundering herd prevention.
 
+-   **[Scheduled workflows](workflow-scheduling.md)**
+
+    Cron-triggered execution, catchup after downtime, bounded time windows, input parameterization, and concurrent execution handling.
+
 -   **[Event-driven recipes](event-driven.md)**
 
     Publish to Kafka/NATS/RabbitMQ/SQS, event handlers to trigger workflows, complete tasks from events.

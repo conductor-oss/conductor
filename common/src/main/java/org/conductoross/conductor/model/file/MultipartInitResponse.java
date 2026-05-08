@@ -22,9 +22,6 @@ public class MultipartInitResponse {
     /** Backend-specific multipart identifier (S3 {@code UploadId}, GCS resumable session ID). */
     private String uploadId;
 
-    /** Resumable session URL for GCS/Azure; {@code null} for S3 (clients use per-part URLs). */
-    private String uploadUrl;
-
     public String getFileHandleId() {
         return fileHandleId;
     }
@@ -39,14 +36,6 @@ public class MultipartInitResponse {
 
     public void setUploadId(String uploadId) {
         this.uploadId = uploadId;
-    }
-
-    public String getUploadUrl() {
-        return uploadUrl;
-    }
-
-    public void setUploadUrl(String uploadUrl) {
-        this.uploadUrl = uploadUrl;
     }
 
     @Override

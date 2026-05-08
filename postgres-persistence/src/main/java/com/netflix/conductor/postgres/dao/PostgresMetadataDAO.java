@@ -26,6 +26,7 @@ import org.springframework.retry.support.RetryTemplate;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.dao.EventHandlerDAO;
@@ -237,6 +238,35 @@ public class PostgresMetadataDAO extends PostgresBaseDAO implements MetadataDAO,
         return queryWithTransaction(
                 GET_ALL_VERSIONS_WORKFLOW_DEF_QUERY,
                 q -> q.addParameter(name).executeAndFetch(WorkflowDef.class));
+    }
+
+    @Override
+    public List<WorkflowDefSummary> getWorkflowVersions(String name) {
+        final String QUERY =
+                "SELECT version, created_on, modified_on FROM meta_workflow_def "
+                        + "WHERE name = ? ORDER BY version";
+
+        return queryWithTransaction(
+                QUERY,
+                q ->
+                        q.addParameter(name)
+                                .executeAndFetch(
+                                        rs -> {
+                                            List<WorkflowDefSummary> summaries = new ArrayList<>();
+                                            while (rs.next()) {
+                                                WorkflowDefSummary summary =
+                                                        new WorkflowDefSummary();
+                                                summary.setName(name);
+                                                summary.setVersion(rs.getInt("version"));
+                                                java.sql.Timestamp createdOn =
+                                                        rs.getTimestamp("created_on");
+                                                if (createdOn != null) {
+                                                    summary.setCreateTime(createdOn.getTime());
+                                                }
+                                                summaries.add(summary);
+                                            }
+                                            return summaries;
+                                        }));
     }
 
     @Override
