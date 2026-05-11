@@ -29,10 +29,10 @@ import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
-import com.netflix.conductor.service.ExecutionLockService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -53,7 +53,6 @@ public class WorkflowSweeperTest {
     private SweeperProperties sweeperProperties;
     private SystemTaskRegistry systemTaskRegistry;
     private ObjectMapper objectMapper;
-    private ExecutionLockService executionLockService;
     private WorkflowSweeper workflowSweeper;
 
     @Before
@@ -66,7 +65,6 @@ public class WorkflowSweeperTest {
         sweeperProperties = mock(SweeperProperties.class);
         systemTaskRegistry = mock(SystemTaskRegistry.class);
         objectMapper = mock(ObjectMapper.class);
-        executionLockService = mock(ExecutionLockService.class);
 
         when(properties.getWorkflowOffsetTimeout()).thenReturn(Duration.ofSeconds(30));
         when(properties.getMaxPostponeDurationSeconds()).thenReturn(Duration.ofSeconds(3600));
@@ -82,8 +80,7 @@ public class WorkflowSweeperTest {
                         properties,
                         sweeperProperties,
                         systemTaskRegistry,
-                        objectMapper,
-                        executionLockService);
+                        objectMapper);
     }
 
     @Test
@@ -95,7 +92,6 @@ public class WorkflowSweeperTest {
         runningWaitTask.setWaitTimeout(System.currentTimeMillis() + 60_000);
         WorkflowModel workflow = newWorkflow(List.of(completedTask, runningWaitTask));
 
-        when(executionLockService.acquireLock(WORKFLOW_ID)).thenReturn(true);
         when(workflowExecutor.getWorkflow(WORKFLOW_ID, true)).thenReturn(workflow);
         when(workflowExecutor.decide(WORKFLOW_ID)).thenReturn(workflow);
         when(systemTaskRegistry.isSystemTask(anyString())).thenReturn(false);
@@ -105,7 +101,6 @@ public class WorkflowSweeperTest {
         workflowSweeper.sweep(WORKFLOW_ID);
 
         verify(queueDAO, never()).push(TaskType.TASK_TYPE_SIMPLE, completedTask.getTaskId(), 0L);
-        verify(executionLockService).releaseLock(WORKFLOW_ID);
     }
 
     @Test
@@ -114,7 +109,6 @@ public class WorkflowSweeperTest {
                 newTask("simple-task", TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.IN_PROGRESS);
         WorkflowModel workflow = newWorkflow(List.of(simpleInProgressTask));
 
-        when(executionLockService.acquireLock(WORKFLOW_ID)).thenReturn(true);
         when(workflowExecutor.getWorkflow(WORKFLOW_ID, true)).thenReturn(workflow);
         when(workflowExecutor.decide(WORKFLOW_ID)).thenReturn(workflow);
         when(systemTaskRegistry.isSystemTask(anyString())).thenReturn(false);
@@ -123,7 +117,6 @@ public class WorkflowSweeperTest {
 
         verify(queueDAO, never())
                 .push(TaskType.TASK_TYPE_SIMPLE, simpleInProgressTask.getTaskId(), 0L);
-        verify(executionLockService).releaseLock(WORKFLOW_ID);
     }
 
     @Test
@@ -133,7 +126,6 @@ public class WorkflowSweeperTest {
         scheduledTask.setCallbackAfterSeconds(7L);
         WorkflowModel workflow = newWorkflow(List.of(scheduledTask));
 
-        when(executionLockService.acquireLock(WORKFLOW_ID)).thenReturn(true);
         when(workflowExecutor.getWorkflow(WORKFLOW_ID, true)).thenReturn(workflow);
         when(workflowExecutor.decide(WORKFLOW_ID)).thenReturn(workflow);
         when(systemTaskRegistry.isSystemTask(anyString())).thenReturn(false);
@@ -147,7 +139,6 @@ public class WorkflowSweeperTest {
                         TaskType.TASK_TYPE_SIMPLE,
                         scheduledTask.getTaskId(),
                         scheduledTask.getCallbackAfterSeconds());
-        verify(executionLockService).releaseLock(WORKFLOW_ID);
     }
 
     @Test
@@ -168,7 +159,6 @@ public class WorkflowSweeperTest {
         terminalWorkflow.setWorkflowId(WORKFLOW_ID);
         terminalWorkflow.setStatus(WorkflowModel.Status.COMPLETED);
 
-        when(executionLockService.acquireLock(WORKFLOW_ID)).thenReturn(true);
         when(workflowExecutor.getWorkflow(WORKFLOW_ID, true)).thenReturn(workflow);
         when(workflowExecutor.decide(WORKFLOW_ID)).thenReturn(workflow, terminalWorkflow);
         when(systemTaskRegistry.isSystemTask(TaskType.TASK_TYPE_SUB_WORKFLOW)).thenReturn(true);
@@ -183,7 +173,53 @@ public class WorkflowSweeperTest {
         verify(executionDAO).updateTask(subWorkflowTask);
         verify(workflowExecutor, times(2)).decide(WORKFLOW_ID);
         verify(queueDAO, never()).push(anyString(), anyString(), anyLong());
-        verify(executionLockService).releaseLock(WORKFLOW_ID);
+    }
+
+    /**
+     * Regression test for conductor-oss/conductor#1058.
+     *
+     * <p>Previously, sweep() pre-acquired the execution lock and then called
+     * workflowExecutor.decide(workflowId), which acquires the same lock internally. With a
+     * non-reentrant lock backend (Postgres advisory locks), the inner acquisition always
+     * returned false, decide() returned null, and the sweeper re-queued the workflow with a
+     * backoff delay — stalling workflows containing a SUB_WORKFLOW task forever after the
+     * sub-workflow completed.
+     *
+     * <p>After the fix, sweep() no longer pre-acquires the lock; decide() handles locking
+     * itself. A SUB_WORKFLOW parent whose child has completed must advance to terminal in a
+     * single sweep cycle, with no backoff push to the decider queue.
+     */
+    @Test
+    public void sweepAdvancesParentWhenSubWorkflowCompletedWithNonReentrantLock() {
+        TaskModel subWorkflowTask =
+                newTask(
+                        "sub-workflow-task",
+                        TaskType.TASK_TYPE_SUB_WORKFLOW,
+                        TaskModel.Status.IN_PROGRESS);
+        subWorkflowTask.setSubWorkflowId("sub-workflow-id");
+        WorkflowModel workflow = newWorkflow(List.of(subWorkflowTask));
+
+        WorkflowSystemTask workflowSystemTask = mock(WorkflowSystemTask.class);
+        WorkflowModel subWorkflow = new WorkflowModel();
+        subWorkflow.setStatus(WorkflowModel.Status.COMPLETED);
+        subWorkflow.setOutput(Map.of("result", "ok"));
+        WorkflowModel terminalWorkflow = new WorkflowModel();
+        terminalWorkflow.setWorkflowId(WORKFLOW_ID);
+        terminalWorkflow.setStatus(WorkflowModel.Status.COMPLETED);
+
+        when(workflowExecutor.getWorkflow(WORKFLOW_ID, true)).thenReturn(workflow);
+        when(workflowExecutor.decide(WORKFLOW_ID)).thenReturn(workflow, terminalWorkflow);
+        when(systemTaskRegistry.isSystemTask(TaskType.TASK_TYPE_SUB_WORKFLOW)).thenReturn(true);
+        when(systemTaskRegistry.get(TaskType.TASK_TYPE_SUB_WORKFLOW))
+                .thenReturn(workflowSystemTask);
+        when(workflowSystemTask.isAsync()).thenReturn(true);
+        when(workflowSystemTask.isAsyncComplete(subWorkflowTask)).thenReturn(true);
+        when(executionDAO.getWorkflow("sub-workflow-id", false)).thenReturn(subWorkflow);
+
+        workflowSweeper.sweep(WORKFLOW_ID);
+
+        verify(queueDAO, never()).push(anyString(), anyString(), anyInt(), anyLong());
+        verify(queueDAO).remove(com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE, WORKFLOW_ID);
     }
 
     private WorkflowModel newWorkflow(List<TaskModel> tasks) {

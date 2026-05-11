@@ -40,7 +40,6 @@ import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
-import com.netflix.conductor.service.ExecutionLockService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -65,7 +64,6 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
     private final ConductorProperties properties;
     private final ObjectMapper objectMapper;
     private SystemTaskRegistry systemTaskRegistry;
-    private final ExecutionLockService executionLockService;
     private final Clock clock = Clock.systemDefaultZone();
     private AtomicBoolean stop = new AtomicBoolean(false);
 
@@ -77,8 +75,7 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
             ConductorProperties properties,
             SweeperProperties sweeperProperties,
             SystemTaskRegistry systemTaskRegistry,
-            ObjectMapper objectMapper,
-            ExecutionLockService executionLockService) {
+            ObjectMapper objectMapper) {
         this.queueDAO = queueDAO;
         this.executionDAO = executionDAO;
         this.sweeperProperties = sweeperProperties;
@@ -88,7 +85,6 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
         this.properties = properties;
         this.systemTaskRegistry = systemTaskRegistry;
         this.objectMapper = objectMapper;
-        this.executionLockService = executionLockService;
         log.info("Initializing sweeper with {} threads", properties.getSweeperThreadCount());
         for (int i = 0; i < properties.getSweeperThreadCount(); i++) {
             sweeperExecutor.execute(this::pollAndSweep);
@@ -159,10 +155,6 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
     }
 
     public void sweep(String workflowId) {
-        if (!executionLockService.acquireLock(workflowId)) {
-            log.error("Couldn't acquire lock to sweep workflow {}", workflowId);
-            return;
-        }
         log.info("Running sweeper for workflow {}", workflowId);
 
         try {
@@ -295,8 +287,6 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
             queueDAO.remove(DECIDER_QUEUE, workflowId);
         } catch (Throwable e) {
             log.error("Error running sweep for {}, error = {}", workflowId, e.getMessage(), e);
-        } finally {
-            executionLockService.releaseLock(workflowId);
         }
     }
 
