@@ -1,15 +1,8 @@
 import { Box } from "@mui/material";
 import { useSelector } from "@xstate/react";
-import React, {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { colors } from "theme/tokens/variables";
-import { FEATURES, featureFlags, logger } from "utils";
+import { FEATURES, featureFlags } from "utils";
 import { ActorRef, EventObject, State } from "xstate";
 import ErrorInspector from "../errorInspector/ErrorInspector";
 import {
@@ -17,7 +10,7 @@ import {
   DefinitionMachineEventTypes,
   WorkflowDefinitionEvents,
 } from "../state/types";
-import { AssistantPanel, SHRINKED_HEIGHT } from "./AssistantPanel";
+import { AssistantPanel } from "./AssistantPanel";
 import { ConfirmationDialogs } from "./ConfirmationDialogs";
 import { EditorTabs } from "./EditorTabs";
 import { TabContent } from "./TabContent";
@@ -109,6 +102,7 @@ const EditorPanel = ({ definitionActor }: EditorPanelProps) => {
   } | null>(null);
   const shouldHandleClickRef = useRef<{ wasCollapsed: boolean } | null>(null);
   const editorPanelContainerRef = useRef<HTMLDivElement>(null);
+  const isMountedRef = useRef(false);
 
   // Handle document-level mouse events during resize
   // Note: We use refs (wasCollapsed) instead of XState state (isAgentExpanded) during drag
@@ -197,18 +191,19 @@ const EditorPanel = ({ definitionActor }: EditorPanelProps) => {
   }, [isResizing, handleMouseMove, handleMouseUp]);
 
   useEffect(() => {
-    if (!tabsContainerRef.current) return;
+    const el = tabsContainerRef.current;
+    if (!el) return;
 
-    const updateTabsHeight = () => {
-      if (tabsContainerRef.current) {
-        const height = tabsContainerRef.current.offsetHeight || 48;
-        setTabsHeight((prev) => (prev !== height ? height : prev));
-      }
-    };
+    const resizeObserver = new ResizeObserver((entries) => {
+      const height =
+        entries[0]?.borderBoxSize?.[0]?.blockSize ??
+        entries[0]?.contentRect?.height ??
+        el.offsetHeight ??
+        48;
+      setTabsHeight((prev) => (prev !== height ? height : prev));
+    });
 
-    updateTabsHeight();
-    const resizeObserver = new ResizeObserver(updateTabsHeight);
-    resizeObserver.observe(tabsContainerRef.current);
+    resizeObserver.observe(el);
 
     return () => {
       resizeObserver.disconnect();
@@ -226,8 +221,6 @@ const EditorPanel = ({ definitionActor }: EditorPanelProps) => {
       DefinitionMachineEventTypes.DISMISS_IMPORT_SUCCESSFUL_DIALOG,
     );
   };
-
-  logger.debug("Rendering Editor Panel");
 
   const handleResetConfirmation = (val: boolean) =>
     (val ? handleConfirmReset : handleCancelRequest)();
@@ -249,24 +242,23 @@ const EditorPanel = ({ definitionActor }: EditorPanelProps) => {
       state.context.errorInspectorMachine,
   );
 
-  // When auto-expanded (e.g. new workflow) with no height set, measure container and set full height
-  useLayoutEffect(() => {
-    if (!isAgentExpanded || agentPanelHeight !== null) return;
-    if (!editorPanelContainerRef.current) return;
-    const containerRect =
-      editorPanelContainerRef.current.getBoundingClientRect();
-    const maxHeight =
-      containerRect.height - tabsHeight - (errorInspectorActor ? 50 : 0);
-    if (maxHeight > 0) setAgentPanelHeight(maxHeight);
-  }, [isAgentExpanded, agentPanelHeight, tabsHeight, errorInspectorActor]);
+  // Persist expanded state so it survives navigation to a new workflow
+  useEffect(() => {
+    localStorage.setItem("agentExpanded", String(isAgentExpanded));
+  }, [isAgentExpanded]);
 
-  // Effective height: use measured value when expanded, or explicit agentPanelHeight
-  const effectiveAgentPanelHeight = useMemo(() => {
-    if (isAgentExpanded && agentPanelHeight === null) {
-      return SHRINKED_HEIGHT;
+  // Reset height when navigating to a different workflow so the layout effect re-measures.
+  // Skip on initial mount — agentPanelHeight is already null and the layout effect below
+  // has already run (effects execute after layout effects, so resetting here would undo it).
+  useEffect(() => {
+    if (!isMountedRef.current) {
+      isMountedRef.current = true;
+      return;
     }
-    return agentPanelHeight;
-  }, [isAgentExpanded, agentPanelHeight]);
+    setAgentPanelHeight(null);
+  }, [definitionActor]);
+
+  const effectiveAgentPanelHeight = agentPanelHeight;
 
   // Calculate available height for tab content (accounting for error inspector and assistant panel)
   const getTabContentHeight = useCallback(() => {
@@ -299,41 +291,16 @@ const EditorPanel = ({ definitionActor }: EditorPanelProps) => {
 
       // When collapsed, start with collapsed height (50px)
       // When expanded, use current height or maxHeight
-      const startHeight = isAgentExpanded ? agentPanelHeight || maxHeight : 50; // Collapsed height
+      const startHeight = isAgentExpanded ? agentPanelHeight || maxHeight : 50;
 
-      // If starting from collapsed, calculate initial height based on mouse position
-      // This prevents the panel from using calc() value when it expands
-      if (!isAgentExpanded && agentPanelHeight === null) {
-        // Calculate height based on distance from bottom of container
-        // Mouse Y position relative to container bottom
-        const mouseYFromBottom = containerRect.bottom - e.clientY;
-        // Initial height is the distance from bottom, clamped between min and max
-        const initialHeight = Math.max(
-          200,
-          Math.min(maxHeight, mouseYFromBottom),
-        );
-        // Set height immediately so it's available when panel expands
-        setAgentPanelHeight(initialHeight);
-        // Store resize state with collapsed height as start point
-        resizeStateRef.current = {
-          startY: e.clientY,
-          startHeight: 50, // Use 50px (collapsed height) as starting point for drag calculations
-          maxHeight,
-          containerRect,
-          wasCollapsed: true,
-          hasExpanded: false,
-        };
-      } else {
-        // Store resize state in refs for the useEffect to use
-        resizeStateRef.current = {
-          startY: e.clientY,
-          startHeight,
-          maxHeight,
-          containerRect,
-          wasCollapsed: !isAgentExpanded,
-          hasExpanded: false,
-        };
-      }
+      resizeStateRef.current = {
+        startY: e.clientY,
+        startHeight,
+        maxHeight,
+        containerRect,
+        wasCollapsed: !isAgentExpanded,
+        hasExpanded: false,
+      };
 
       resizeStartRef.current = { x: e.clientX, y: e.clientY };
       isResizingRef.current = false;
@@ -401,10 +368,6 @@ const EditorPanel = ({ definitionActor }: EditorPanelProps) => {
       containerHeight - tabsHeight - (errorInspectorActor ? 50 : 0);
     setAgentPanelHeight(maxHeight);
   }, [tabsHeight, errorInspectorActor]);
-
-  const handleHeightChange = useCallback((height: number) => {
-    setAgentPanelHeight(height);
-  }, []);
 
   return (
     <>
@@ -489,7 +452,6 @@ const EditorPanel = ({ definitionActor }: EditorPanelProps) => {
               onHeaderClick={handleHeaderClick}
               onToggleExpanded={handleToggleExpanded}
               onMaximize={handleMaximize}
-              onHeightChange={handleHeightChange}
               isResizing={isResizing}
             />
           )}

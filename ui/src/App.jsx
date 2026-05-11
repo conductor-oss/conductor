@@ -17,6 +17,9 @@ import TaskDefinitions from "./pages/definitions/Task";
 import TaskDefinition from "./pages/definition/TaskDefinition";
 import EventHandlerDefinitions from "./pages/definitions/EventHandler";
 import EventHandlerDefinition from "./pages/definition/EventHandlerDefinition";
+import SchedulerDefinitions from "./pages/definitions/Scheduler";
+import SchedulerDefinition from "./pages/definition/SchedulerDefinition";
+import SchedulerExecutions from "./pages/executions/SchedulerExecutions";
 import TaskQueue from "./pages/misc/TaskQueue";
 import KitchenSink from "./pages/kitchensink/KitchenSink";
 import DiagramTest from "./pages/kitchensink/DiagramTest";
@@ -82,6 +85,9 @@ export default function App() {
           <Button component={NavLink} path="/workflowDefs">
             Definitions
           </Button>
+          <Button component={NavLink} path="/schedulerExecs">
+            Scheduler
+          </Button>
           <Button component={NavLink} path="/taskQueue">
             Task Queues
           </Button>
@@ -127,6 +133,15 @@ export default function App() {
             </Route>
             <Route exact path="/eventHandlerDef/:event?/:name?">
               <EventHandlerDefinition />
+            </Route>
+            <Route exact path="/schedulerDefs">
+              <SchedulerDefinitions />
+            </Route>
+            <Route exact path="/schedulerDef/:name?">
+              <SchedulerDefinition />
+            </Route>
+            <Route exact path="/schedulerExecs">
+              <SchedulerExecutions />
             </Route>
             <Route exact path="/taskQueue/:name?">
               <TaskQueue />

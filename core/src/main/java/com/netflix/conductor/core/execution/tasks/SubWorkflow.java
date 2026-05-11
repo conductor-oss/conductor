@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
@@ -19,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import com.netflix.conductor.common.metadata.workflow.IdempotencyStrategy;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.TransientException;
@@ -47,19 +49,52 @@ public class SubWorkflow extends WorkflowSystemTask {
     @SuppressWarnings("unchecked")
     @Override
     public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
+        // Guard against double-start: if the task has already moved past SCHEDULED state, a
+        // sub-workflow was started on a prior call; skip re-creating it.
+        // NOTE: we deliberately do NOT check task.getSubWorkflowId() here because
+        // TaskModel.getSubWorkflowId() falls back to outputData, and retried tasks
+        // inherit outputData from their failed predecessor — that would cause the guard
+        // to trigger on a legitimately fresh retry attempt.
+        if (task.getStatus() != TaskModel.Status.SCHEDULED) {
+            LOGGER.warn(
+                    "Sub-workflow task {} is already in state {}, skipping duplicate start.",
+                    task.getTaskId(),
+                    task.getStatus());
+            return;
+        }
+
         Map<String, Object> input = task.getInputData();
-        String name = input.get("subWorkflowName").toString();
-        int version = (int) input.get("subWorkflowVersion");
-        // version=0 is treated as "use latest", same as null
-        Integer resolvedVersion = version == 0 ? null : version;
+
+        // Null-safe version read: version may be absent when an inline workflowDefinition is
+        // supplied (the mapper skips the MetadataDAO lookup in that case).
+        // Use Number.intValue() — the same JSON round-trip issue that affects priority (Integer
+        // stored, Double retrieved) applies here: parseInt("2.0") would throw and silently fall
+        // back to null (= latest), causing the wrong sub-workflow version to be executed.
+        Integer resolvedVersion = null;
+        Object versionObj = input.get("subWorkflowVersion");
+        if (versionObj instanceof Number) {
+            int version = ((Number) versionObj).intValue();
+            resolvedVersion = version == 0 ? null : version;
+        }
 
         WorkflowDef workflowDefinition = null;
+        String name;
         if (input.get("subWorkflowDefinition") != null) {
-            // convert the value back to workflow definition object
+            // Convert the runtime Map to a WorkflowDef. This supports both the static
+            // embedded-object form and the dynamic ${expr}-resolved form.
             workflowDefinition =
                     objectMapper.convertValue(
                             input.get("subWorkflowDefinition"), WorkflowDef.class);
             name = workflowDefinition.getName();
+        } else {
+            name =
+                    input.get("subWorkflowName") != null
+                            ? input.get("subWorkflowName").toString()
+                            : null;
+            if (name == null) {
+                throw new NonTransientException(
+                        "SubWorkflow name is null and no workflowDefinition supplied");
+            }
         }
 
         Map<String, String> taskToDomain = workflow.getTaskToDomain();
@@ -71,6 +106,49 @@ public class SubWorkflow extends WorkflowSystemTask {
         if (wfInput == null || wfInput.isEmpty()) {
             wfInput = input;
         }
+
+        // Mark dynamically-generated sub-workflows so they can be identified downstream.
+        if (workflowDefinition != null) {
+            wfInput = new HashMap<>(wfInput);
+            Map<String, Object> systemMetadata =
+                    wfInput.get("_systemMetadata") instanceof Map
+                            ? new HashMap<>((Map<String, Object>) wfInput.get("_systemMetadata"))
+                            : new HashMap<>();
+            systemMetadata.put("dynamic", true);
+            wfInput.put("_systemMetadata", systemMetadata);
+        }
+
+        // Priority: forward only when explicitly set in subWorkflowParams; otherwise leave null
+        // so the sub-workflow inherits the server default (avoids breaking existing behaviour).
+        // Use Number.intValue() to handle both Integer and Double (the latter appears after JSON
+        // round-trips through the data store — e.g. "7" stored as 7.0 cannot be parseInt'd).
+        Integer priority = null;
+        Object priorityObj = input.get("priority");
+        if (priorityObj instanceof Number) {
+            priority = ((Number) priorityObj).intValue();
+        }
+
+        // Idempotency: read key and strategy forwarded by the mapper (fields present in
+        // SubWorkflowParams and now propagated end-to-end; enforcement is implementation-specific).
+        String idempotencyKey = null;
+        if (input.get("idempotencyKey") != null) {
+            idempotencyKey = String.valueOf(input.get("idempotencyKey"));
+        }
+        IdempotencyStrategy idempotencyStrategy = null;
+        if (input.get("idempotencyStrategy") != null) {
+            try {
+                idempotencyStrategy =
+                        IdempotencyStrategy.valueOf(
+                                String.valueOf(input.get("idempotencyStrategy")));
+            } catch (IllegalArgumentException ignored) {
+                LOGGER.warn(
+                        "Unknown idempotencyStrategy '{}' for task {} in {} — ignoring.",
+                        input.get("idempotencyStrategy"),
+                        task.getTaskId(),
+                        workflow.toShortString());
+            }
+        }
+
         String correlationId = workflow.getCorrelationId();
 
         try {
@@ -83,6 +161,9 @@ public class SubWorkflow extends WorkflowSystemTask {
             startWorkflowInput.setParentWorkflowId(workflow.getWorkflowId());
             startWorkflowInput.setParentWorkflowTaskId(task.getTaskId());
             startWorkflowInput.setTaskToDomain(taskToDomain);
+            startWorkflowInput.setPriority(priority);
+            startWorkflowInput.setIdempotencyKey(idempotencyKey);
+            startWorkflowInput.setIdempotencyStrategy(idempotencyStrategy);
 
             String subWorkflowId = workflowExecutor.startWorkflow(startWorkflowInput);
 
@@ -101,7 +182,6 @@ public class SubWorkflow extends WorkflowSystemTask {
                     workflow.toShortString(),
                     name);
         } catch (Exception ae) {
-
             task.setStatus(TaskModel.Status.FAILED);
             task.setReasonForIncompletion(ae.getMessage());
             LOGGER.error(
@@ -121,6 +201,13 @@ public class SubWorkflow extends WorkflowSystemTask {
         }
 
         WorkflowModel subWorkflow = workflowExecutor.getWorkflow(workflowId, false);
+        if (subWorkflow == null) {
+            // Sub-workflow may have already been deleted (e.g. data-store TTL expired).
+            LOGGER.warn(
+                    "Cannot execute sub-workflow {} — not found in store (already deleted?).",
+                    workflowId);
+            return false;
+        }
         WorkflowModel.Status subWorkflowStatus = subWorkflow.getStatus();
         if (!subWorkflowStatus.isTerminal()) {
             return false;
@@ -137,6 +224,13 @@ public class SubWorkflow extends WorkflowSystemTask {
             return;
         }
         WorkflowModel subWorkflow = workflowExecutor.getWorkflow(workflowId, true);
+        if (subWorkflow == null) {
+            // Sub-workflow may have already been deleted (e.g. data-store TTL expired).
+            LOGGER.warn(
+                    "Cannot cancel sub-workflow {} — not found in store (already deleted?).",
+                    workflowId);
+            return;
+        }
         subWorkflow.setStatus(WorkflowModel.Status.TERMINATED);
         String reason =
                 StringUtils.isEmpty(workflow.getReasonForIncompletion())

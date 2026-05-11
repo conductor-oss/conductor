@@ -1773,7 +1773,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             LOGGER.error(errorMsg);
             throw new ConflictException(errorMsg);
         }
-        updateAndPushParents(workflow, "reran");
 
         // If the task Id is null it implies that the entire workflow has to be rerun
         if (taskId == null) {
@@ -1803,6 +1802,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             executionDAOFacade.updateWorkflow(workflow);
             notifyWorkflowStatusListener(workflow, WorkflowEventType.RERAN);
             decide(workflowId);
+            updateAndPushParents(workflow, "reran");
             return true;
         }
 
@@ -1895,6 +1895,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             }
             executionDAOFacade.updateTask(rerunFromTask);
             decide(workflow.getWorkflowId());
+            updateAndPushParents(workflow, "reran");
             return true;
         }
         return false;

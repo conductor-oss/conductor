@@ -39,6 +39,7 @@ import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.postgres.config.PostgresConfiguration;
@@ -511,5 +512,60 @@ public class PostgresMetadataDAOTest {
         def.setName(name);
         def.setVersion(version);
         return def;
+    }
+
+    @Test
+    public void testGetWorkflowNames() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("names_wf_alpha");
+        def.setVersion(1);
+        metadataDAO.createWorkflowDef(def);
+
+        def.setVersion(2);
+        metadataDAO.createWorkflowDef(def);
+
+        def.setName("names_wf_beta");
+        def.setVersion(1);
+        metadataDAO.createWorkflowDef(def);
+
+        List<String> names = metadataDAO.getWorkflowNames();
+        assertNotNull(names);
+
+        // Verify distinct names and ordering
+        assertTrue(names.contains("names_wf_alpha"));
+        assertTrue(names.contains("names_wf_beta"));
+        assertTrue(names.indexOf("names_wf_alpha") < names.indexOf("names_wf_beta"));
+    }
+
+    @Test
+    public void testGetWorkflowVersions() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("versions_wf_test");
+        def.setVersion(1);
+        metadataDAO.createWorkflowDef(def);
+
+        def.setVersion(2);
+        metadataDAO.createWorkflowDef(def);
+
+        def.setVersion(5);
+        metadataDAO.createWorkflowDef(def);
+
+        List<WorkflowDefSummary> versions = metadataDAO.getWorkflowVersions("versions_wf_test");
+        assertNotNull(versions);
+        assertEquals(3, versions.size());
+
+        assertEquals(1, versions.get(0).getVersion());
+        assertEquals(2, versions.get(1).getVersion());
+        assertEquals(5, versions.get(2).getVersion());
+
+        for (WorkflowDefSummary summary : versions) {
+            assertEquals("versions_wf_test", summary.getName());
+            assertNotNull(summary.getCreateTime());
+        }
+
+        // Non-existent workflow should return empty list
+        List<WorkflowDefSummary> empty = metadataDAO.getWorkflowVersions("nonexistent_workflow");
+        assertNotNull(empty);
+        assertTrue(empty.isEmpty());
     }
 }

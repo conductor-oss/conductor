@@ -106,7 +106,7 @@
     "react-player": "^2.16.0",
     "react-query": "^3.39.2",
     "react-vis-timeline": "^2.0.3",
-    "reaflow": "^5.4.1",
+    "reaflow": "5.1.2",
     "recharts": "^2.10.3",
     "remark-gfm": "^4.0.0",
     "ts-key-enum": "^2.0.12",
