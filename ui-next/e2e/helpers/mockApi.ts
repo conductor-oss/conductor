@@ -1,0 +1,76 @@
+/**
+ * API mocking helpers for Playwright E2E tests.
+ *
+ * The Conductor UI proxies /api/* to a backend server. Tests call these
+ * helpers via page.route() to intercept those requests so the suite can
+ * run without a live Conductor backend.
+ */
+
+import type { Page } from "@playwright/test";
+
+/** Empty paginated workflow search response */
+const EMPTY_WORKFLOW_SEARCH = {
+  totalHits: 0,
+  results: [],
+};
+
+/** Empty paginated task search response */
+const EMPTY_TASK_SEARCH = {
+  totalHits: 0,
+  results: [],
+};
+
+/** Mock API endpoints that are fetched on initial page load */
+export async function mockCommonApis(page: Page): Promise<void> {
+  // Workflow execution search (WorkflowSearch page default load)
+  await page.route("**/api/workflow/search**", (route) =>
+    route.fulfill({ json: EMPTY_WORKFLOW_SEARCH }),
+  );
+
+  // Workflow definitions list
+  await page.route("**/api/metadata/workflow**", (route) =>
+    route.fulfill({ json: [] }),
+  );
+
+  // Task definitions list
+  await page.route("**/api/metadata/taskdefs**", (route) =>
+    route.fulfill({ json: [] }),
+  );
+
+  // Scheduler schedule definitions
+  await page.route("**/api/scheduler/schedules**", (route) =>
+    route.fulfill({ json: [] }),
+  );
+
+  // Scheduler executions
+  await page.route("**/api/scheduler/search**", (route) =>
+    route.fulfill({ json: EMPTY_WORKFLOW_SEARCH }),
+  );
+
+  // Event handler queue names
+  await page.route("**/api/event/queues**", (route) =>
+    route.fulfill({ json: [] }),
+  );
+
+  // Task queue data
+  await page.route("**/api/event**", (route) => route.fulfill({ json: [] }));
+
+  // Task execution search
+  await page.route("**/api/tasks/search**", (route) =>
+    route.fulfill({ json: EMPTY_TASK_SEARCH }),
+  );
+
+  // Version / release info (used by useAPIReleaseVersion)
+  await page.route("**/api/version**", (route) =>
+    route.fulfill({ json: { version: "test", buildTime: "2026-01-01" } }),
+  );
+
+  // Tags
+  await page.route("**/api/metadata/tags**", (route) =>
+    route.fulfill({ json: [] }),
+  );
+
+  // Fall-through: return an empty object for any remaining /api calls
+  // so the UI doesn't stall on unexpected requests.
+  await page.route("**/api/**", (route) => route.fulfill({ json: {} }));
+}

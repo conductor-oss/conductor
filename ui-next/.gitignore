@@ -13,6 +13,7 @@ storybook-static
 # Test / Playwright
 /test-results/
 /playwright-report/
+/playwright-integration-report/
 /playwright/.cache/
 
 # Turbo
