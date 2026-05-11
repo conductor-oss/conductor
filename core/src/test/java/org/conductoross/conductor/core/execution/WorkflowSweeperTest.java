@@ -180,14 +180,13 @@ public class WorkflowSweeperTest {
      *
      * <p>Previously, sweep() pre-acquired the execution lock and then called
      * workflowExecutor.decide(workflowId), which acquires the same lock internally. With a
-     * non-reentrant lock backend (Postgres advisory locks), the inner acquisition always
-     * returned false, decide() returned null, and the sweeper re-queued the workflow with a
-     * backoff delay — stalling workflows containing a SUB_WORKFLOW task forever after the
-     * sub-workflow completed.
+     * non-reentrant lock backend (Postgres advisory locks), the inner acquisition always returned
+     * false, decide() returned null, and the sweeper re-queued the workflow with a backoff delay —
+     * stalling workflows containing a SUB_WORKFLOW task forever after the sub-workflow completed.
      *
-     * <p>After the fix, sweep() no longer pre-acquires the lock; decide() handles locking
-     * itself. A SUB_WORKFLOW parent whose child has completed must advance to terminal in a
-     * single sweep cycle, with no backoff push to the decider queue.
+     * <p>After the fix, sweep() no longer pre-acquires the lock; decide() handles locking itself. A
+     * SUB_WORKFLOW parent whose child has completed must advance to terminal in a single sweep
+     * cycle, with no backoff push to the decider queue.
      */
     @Test
     public void sweepAdvancesParentWhenSubWorkflowCompletedWithNonReentrantLock() {
