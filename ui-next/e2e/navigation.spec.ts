@@ -47,18 +47,19 @@ test("navigates to scheduler definitions /scheduleDef", async ({ page }) => {
   await expect(page.locator("#main-content")).toBeVisible();
 });
 
-test("navigates to event handlers /eventHandlers", async ({ page }) => {
-  await page.goto("/eventHandlers");
-  await expect(page).toHaveURL(/\/eventHandlers/);
+test("navigates to event handler definitions /eventHandlerDef", async ({
+  page,
+}) => {
+  await page.goto("/eventHandlerDef");
+  await expect(page).toHaveURL(/\/eventHandlerDef/);
   await expect(page.locator("#main-content")).toBeVisible();
 });
 
 test("unknown route renders the error page", async ({ page }) => {
   await page.goto("/this-route-does-not-exist");
-  // React Router renders ErrorPage for the wildcard "*" route
-  await expect(page.locator("#main-content")).toBeVisible();
-  // Should not crash — a 404/error message is shown inside main-content
-  await expect(
-    page.locator("#main-content").getByRole("heading").first(),
-  ).toBeVisible();
+  // React Router renders ErrorPage for the wildcard "*" route.
+  // ErrorPage uses MuiTypography (renders as <p>, not a heading element)
+  // so we check for the error-page container and visible text instead.
+  await expect(page.locator("#error-page")).toBeVisible();
+  await expect(page.locator("#error-page")).toContainText(/error/i);
 });

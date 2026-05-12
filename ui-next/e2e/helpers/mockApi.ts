@@ -37,12 +37,18 @@ export async function mockCommonApis(page: Page): Promise<void> {
     route.fulfill({ json: [] }),
   );
 
-  // Scheduler schedule definitions
+  // Scheduler paginated search — must be registered before the broader
+  // schedules pattern so this more-specific route wins first.
+  await page.route("**/api/scheduler/schedules/search**", (route) =>
+    route.fulfill({ json: { results: [], totalHits: 0 } }),
+  );
+
+  // Scheduler schedule definitions list
   await page.route("**/api/scheduler/schedules**", (route) =>
     route.fulfill({ json: [] }),
   );
 
-  // Scheduler executions
+  // Scheduler executions (/scheduler/search/executions)
   await page.route("**/api/scheduler/search**", (route) =>
     route.fulfill({ json: EMPTY_WORKFLOW_SEARCH }),
   );
@@ -70,7 +76,8 @@ export async function mockCommonApis(page: Page): Promise<void> {
     route.fulfill({ json: [] }),
   );
 
-  // Fall-through: return an empty object for any remaining /api calls
-  // so the UI doesn't stall on unexpected requests.
-  await page.route("**/api/**", (route) => route.fulfill({ json: {} }));
+  // Fall-through: return an empty array for any remaining /api calls.
+  // Most Conductor list endpoints return arrays; returning [] is safer than {}
+  // because components that call .map() on the result won't crash.
+  await page.route("**/api/**", (route) => route.fulfill({ json: [] }));
 }

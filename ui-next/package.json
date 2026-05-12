@@ -34,6 +34,7 @@
     "test:e2e:integration": "playwright test --config playwright.integration.config.ts",
     "test:e2e:integration:ui": "playwright test --config playwright.integration.config.ts --ui",
     "test:e2e:integration:headed": "playwright test --config playwright.integration.config.ts --headed",
+    "test:e2e:snapshots:update": "playwright test snapshots --update-snapshots",
     "lint": "eslint 'src/**/*.{js,jsx,ts,tsx}' --quiet",
     "lint:fix": "eslint 'src/**/*.{js,jsx,ts,tsx}' --fix",
     "prettier:write": "prettier --write .",

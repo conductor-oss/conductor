@@ -12,6 +12,7 @@ import { defineConfig, devices } from "@playwright/test";
  */
 export default defineConfig({
   testDir: "./e2e",
+  testIgnore: "**/integration/**",
 
   // Run each test file in parallel; keep serial within a file.
   fullyParallel: true,
@@ -25,6 +26,19 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
 
   reporter: [["html", { outputFolder: "playwright-report" }]],
+
+  // Snapshot comparison settings.
+  // Allow up to 2% of pixels to differ to tolerate minor sub-pixel and
+  // anti-aliasing differences across machines without false positives.
+  expect: {
+    toHaveScreenshot: {
+      maxDiffPixelRatio: 0.02,
+    },
+  },
+
+  // Store snapshots next to the spec files in an __snapshots__ directory.
+  snapshotPathTemplate:
+    "{testDir}/__snapshots__/{testFilePath}/{arg}{ext}",
 
   use: {
     baseURL: "http://localhost:1234",

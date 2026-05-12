@@ -11,9 +11,10 @@ test.beforeEach(async ({ page }) => {
   await mockCommonApis(page);
 });
 
-test("page title is Conductor UI", async ({ page }) => {
+test("page title reflects the current page", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveTitle("Conductor UI");
+  // The home route renders WorkflowSearch which sets its own Helmet title.
+  await expect(page).toHaveTitle("Workflow Executions");
 });
 
 test("app shell renders layout containers", async ({ page }) => {
