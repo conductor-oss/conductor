@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
-import { useState } from "react";
 import { IdempotencyStrategyEnum } from "pages/runWorkflow/types";
+import { useState } from "react";
 import { useScheduleFormHandlers } from "../hooks/useScheduleFormHandlers";
 import { useScheduleState } from "../hooks/useScheduleState";
 import { useWorkflowConfig } from "../hooks/useWorkflowConfig";
@@ -496,12 +496,14 @@ describe("useScheduleState", () => {
 function buildWorkflowDefByVersions(
   workflows: Record<string, { versions: string[]; inputParams?: string[] }>,
 ) {
+  type WorkflowDef = { inputParameters: string[] };
+
   const lookups = new Map<string, string[]>();
-  const values = new Map<string, Map<string, any>>();
+  const values = new Map<string, Map<string, WorkflowDef>>();
 
   for (const [name, { versions, inputParams }] of Object.entries(workflows)) {
     lookups.set(name, versions);
-    const versionMap = new Map<string, any>();
+    const versionMap = new Map<string, WorkflowDef>();
     for (const v of versions) {
       versionMap.set(v, {
         inputParameters: inputParams ?? [],
@@ -510,7 +512,10 @@ function buildWorkflowDefByVersions(
     values.set(name, versionMap);
   }
 
-  return new Map([
+  return new Map<
+    string,
+    Map<string, string[]> | Map<string, Map<string, WorkflowDef>>
+  >([
     ["lookups", lookups],
     ["values", values],
   ]);
