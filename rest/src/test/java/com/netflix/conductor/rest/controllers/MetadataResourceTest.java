@@ -163,6 +163,14 @@ public class MetadataResourceTest {
     }
 
     @Test
+    public void testGetWorkflowNames() {
+        List<String> names = Arrays.asList("workflow_a", "workflow_b");
+        when(mockMetadataService.getWorkflowNames()).thenReturn(names);
+        assertEquals(names, metadataResource.getWorkflowNames());
+        verify(mockMetadataService, times(1)).getWorkflowNames();
+    }
+
+    @Test
     public void testGetWorkflowVersions() {
         WorkflowDefSummary v1 = new WorkflowDefSummary();
         v1.setName("my_workflow");

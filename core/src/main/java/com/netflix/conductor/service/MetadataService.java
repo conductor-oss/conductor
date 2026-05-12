@@ -158,6 +158,11 @@ public interface MetadataService {
     List<WorkflowDef> getWorkflowDefsLatestVersions();
 
     /**
+     * @return Returns distinct workflow definition names (no versions, no definition bodies)
+     */
+    List<String> getWorkflowNames();
+
+    /**
      * Returns lightweight version summaries for a single workflow.
      *
      * @param name workflow name

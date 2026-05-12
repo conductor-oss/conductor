@@ -324,6 +324,29 @@ public class PostgresMetadataDAOTest {
     }
 
     @Test
+    public void testGetWorkflowNames() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("names_wf_alpha");
+        def.setVersion(1);
+        metadataDAO.createWorkflowDef(def);
+
+        def.setVersion(2);
+        metadataDAO.createWorkflowDef(def);
+
+        def.setName("names_wf_beta");
+        def.setVersion(1);
+        metadataDAO.createWorkflowDef(def);
+
+        List<String> names = metadataDAO.getWorkflowNames();
+        assertNotNull(names);
+
+        // Verify distinct names and ordering
+        assertTrue(names.contains("names_wf_alpha"));
+        assertTrue(names.contains("names_wf_beta"));
+        assertTrue(names.indexOf("names_wf_alpha") < names.indexOf("names_wf_beta"));
+    }
+
+    @Test
     public void testGetWorkflowVersions() {
         WorkflowDef def = new WorkflowDef();
         def.setName("versions_wf_test");
