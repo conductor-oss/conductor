@@ -32,6 +32,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.model.BulkResponse;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.NotFoundException;
+import com.netflix.conductor.core.listener.MetadataChangeListenerStub;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 
@@ -96,7 +97,8 @@ public class MetadataServiceTest {
                             invocation ->
                                     taskDefinitions.get(invocation.getArgument(0, String.class)));
 
-            return new MetadataServiceImpl(metadataDAO, eventHandlerDAO, properties);
+            return new MetadataServiceImpl(
+                    metadataDAO, eventHandlerDAO, new MetadataChangeListenerStub(), properties);
         }
 
         private List<WorkflowDef> mockWorkflowDefs() {

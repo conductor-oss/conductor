@@ -36,6 +36,8 @@ import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
+import com.netflix.conductor.core.listener.MetadataChangeListener;
+import com.netflix.conductor.core.listener.MetadataChangeListenerStub;
 import com.netflix.conductor.core.listener.TaskStatusListener;
 import com.netflix.conductor.core.listener.TaskStatusListenerStub;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
@@ -91,6 +93,15 @@ public class ConductorCoreConfiguration {
     @Bean
     public TaskStatusListener taskStatusListener() {
         return new TaskStatusListenerStub();
+    }
+
+    @ConditionalOnProperty(
+            name = "conductor.metadata-change-listener.type",
+            havingValue = "stub",
+            matchIfMissing = true)
+    @Bean
+    public MetadataChangeListener metadataChangeListener() {
+        return new MetadataChangeListenerStub();
     }
 
     @Bean
