@@ -14,7 +14,11 @@ storybook-static
 /test-results/
 /playwright-report/
 /playwright-integration-report/
+/playwright-snapshots-report/
 /playwright/.cache/
+
+# pnpm store (created inside project when running in Docker)
+.pnpm-store/
 
 # Turbo
 .turbo

@@ -1,0 +1,57 @@
+# Runs snapshot tests in a consistent Linux + Chromium environment so that
+# baselines are pixel-identical across developer machines and CI.
+#
+# Usage (via package.json scripts):
+#   pnpm test:e2e:snapshots           # run snapshot tests
+#   pnpm test:e2e:snapshots:update    # regenerate baselines
+
+services:
+  app:
+    image: node:20-slim
+    working_dir: /app
+    volumes:
+      - .:/app
+      - app_modules:/app/node_modules
+    environment:
+      CI: "true"
+    # Listen on all interfaces so the playwright service can reach it.
+    command: >
+      sh -c "corepack enable &&
+             pnpm install --frozen-lockfile &&
+             pnpm dev --host 0.0.0.0"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >
+          node -e "require('http').get('http://localhost:1234',
+            r => process.exit(r.statusCode < 400 ? 0 : 1)
+          ).on('error', () => process.exit(1))"
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 300s
+
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.59.1-noble
+    working_dir: /app
+    volumes:
+      - .:/app
+      - pw_modules:/app/node_modules
+    # Share the app container's network namespace so Playwright reaches the
+    # Vite dev server via http://localhost:1234 without cross-container DNS.
+    network_mode: "service:app"
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      CI: "true"
+      BASE_URL: http://localhost:1234
+    # PLAYWRIGHT_FLAGS is set by the :update script to --update-snapshots.
+    command: >
+      sh -c "corepack enable &&
+             pnpm install --frozen-lockfile &&
+             pnpm exec playwright test --config playwright.snapshots.config.ts $${PLAYWRIGHT_FLAGS:-}"
+
+volumes:
+  app_modules:
+  pw_modules:

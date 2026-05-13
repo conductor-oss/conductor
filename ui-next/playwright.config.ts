@@ -37,8 +37,7 @@ export default defineConfig({
   },
 
   // Store snapshots next to the spec files in an __snapshots__ directory.
-  snapshotPathTemplate:
-    "{testDir}/__snapshots__/{testFilePath}/{arg}{ext}",
+  snapshotPathTemplate: "{testDir}/__snapshots__/{testFilePath}/{arg}{ext}",
 
   use: {
     baseURL: "http://localhost:1234",
