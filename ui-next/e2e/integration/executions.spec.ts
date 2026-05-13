@@ -102,23 +102,18 @@ test("clicking an execution row opens the execution detail page", async ({
   await page.getByText(new RegExp(idPrefix)).first().click();
 
   await expect(page).toHaveURL(new RegExp(`/execution/${workflowId}`));
-  await expect(page.locator("#main-content")).toBeVisible();
-});
-
-test("execution detail page shows the workflow name and status", async ({
-  page,
-}) => {
-  const workflowId = await startWorkflow(WF_NAME, { value: "test" });
-  startedWorkflowIds.push(workflowId);
-
-  // Navigate directly — we already have the ID from the API.
-  await page.goto(`/execution/${workflowId}`);
   await page.waitForLoadState("networkidle");
 
+  // Detail page content
+  await expect(page.locator("#main-content")).toBeVisible();
   await expect(page.getByText(WF_NAME)).toBeVisible();
-
-  // SET_VARIABLE workflows complete immediately.
   await expect(page.getByText(/COMPLETED/i)).toBeVisible();
+
+  // The full workflow ID should appear somewhere on the detail page.
+  await expect(page.getByText(new RegExp(workflowId))).toBeVisible();
+
+  // The SET_VARIABLE task should be listed in the task list.
+  await expect(page.getByText("set_var_ref")).toBeVisible();
 });
 
 test("executions page renders the search form", async ({ page }) => {
