@@ -156,4 +156,70 @@ public class PostgresLockDAOTest {
         assertTrue(postgresLock.acquireLock(lockId1, 2000, 10000, TimeUnit.MILLISECONDS));
         assertTrue(postgresLock.acquireLock(lockId2, 2000, 10000, TimeUnit.MILLISECONDS));
     }
+
+    @Test
+    public void testReentrantAcquisitionFromSameThread() {
+        String lockId = UUID.randomUUID().toString();
+        try {
+            assertTrue(
+                    postgresLock.acquireLock(lockId, 500, 60_000, TimeUnit.MILLISECONDS),
+                    "First acquisition should succeed");
+            assertTrue(
+                    postgresLock.acquireLock(lockId, 500, 60_000, TimeUnit.MILLISECONDS),
+                    "Reentrant acquisition by the same thread should succeed");
+            assertTrue(
+                    postgresLock.acquireLock(lockId, 500, 60_000, TimeUnit.MILLISECONDS),
+                    "Further reentrant acquisitions by the same thread should succeed");
+        } finally {
+            postgresLock.releaseLock(lockId);
+            postgresLock.releaseLock(lockId);
+            postgresLock.releaseLock(lockId);
+        }
+    }
+
+    @Test
+    public void testReentrantHoldExcludesOtherThreads() throws Exception {
+        String lockId = UUID.randomUUID().toString();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            assertTrue(
+                    postgresLock.acquireLock(lockId, 500, 60_000, TimeUnit.MILLISECONDS),
+                    "Outer acquisition should succeed");
+            assertTrue(
+                    postgresLock.acquireLock(lockId, 500, 60_000, TimeUnit.MILLISECONDS),
+                    "Reentrant acquisition should succeed");
+
+            Assertions.assertFalse(
+                    executor.submit(
+                                    () ->
+                                            postgresLock.acquireLock(
+                                                    lockId, 500, TimeUnit.MILLISECONDS))
+                            .get(5, TimeUnit.SECONDS),
+                    "Other threads must not acquire while the lock is held re-entrantly");
+
+            postgresLock.releaseLock(lockId);
+
+            Assertions.assertFalse(
+                    executor.submit(
+                                    () ->
+                                            postgresLock.acquireLock(
+                                                    lockId, 500, TimeUnit.MILLISECONDS))
+                            .get(5, TimeUnit.SECONDS),
+                    "Other threads must still be excluded until matching releases happen");
+
+            postgresLock.releaseLock(lockId);
+
+            assertTrue(
+                    executor.submit(
+                                    () ->
+                                            postgresLock.acquireLock(
+                                                    lockId, 2000, TimeUnit.MILLISECONDS))
+                            .get(5, TimeUnit.SECONDS),
+                    "After matching releases, another thread must acquire the lock");
+        } finally {
+            executor.shutdownNow();
+            executor.awaitTermination(5, TimeUnit.SECONDS);
+            postgresLock.releaseLock(lockId);
+        }
+    }
 }
