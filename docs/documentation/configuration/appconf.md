@@ -184,3 +184,41 @@ conductor.app.maxWorkflowVariablesPayloadSizeThreshold=256KB
 # The maximum size of task execution logs. Example: 10000
 conductor.app.taskExecLogSizeLimit=10000
 ```
+
+## UI Serving
+
+The Conductor REST server ships with a bundled single-page UI. Two pieces of Spring MVC wiring make this work, and a single property toggles them as a pair.
+
+This property sits under the `conductor.enable.*` namespace rather than `conductor.app.*` covered above.
+
+| Field                          | Type    | Description                                                                                                                                                                          | Notes              |
+|:-------------------------------|:--------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-------------------|
+| `conductor.enable.ui.serving`  | boolean | When `true`, the server registers (1) a `HandlerInterceptor` that forwards unmatched paths to `index.html` so the SPA's client-side router can handle them, and (2) a resource handler that serves the UI bundle at `/static/ui/**`. Set to `false` to disable both. | Default is `true`  |
+
+### What changes when you disable UI serving
+
+Setting `conductor.enable.ui.serving=false` skips two registrations in `RestConfiguration`:
+
+- The `SpaInterceptor` bean is not created, so no `HandlerInterceptor` is added to the interceptor chain. Unknown paths are no longer forwarded to `index.html`.
+- The `/static/ui/**` resource handler is not registered, so the bundled UI's JavaScript and CSS are no longer served.
+
+The flag does **not** affect the REST API, the OpenAPI spec, Swagger UI, or actuator endpoints. The following paths are excluded at the interceptor-registration level and behave identically regardless of the flag:
+
+- `/api/**`
+- `/actuator`, `/actuator/**`
+- `/health`, `/health/**`
+- `/api-docs`, `/api-docs/**`
+- `/v3/api-docs`, `/v3/api-docs/**`
+- `/swagger-ui`, `/swagger-ui/**`
+
+A small placeholder `index.html` (a short page with the Conductor logo and links to Swagger UI and the documentation) is shipped inside the server JAR and is still served by Spring Boot's default static-resource handling at `/`. If you need a strict 404 at the root, route `/` through your reverse proxy to your own UI host.
+
+### Example usage
+
+```properties
+# Disable the bundled SPA forwarder and the /static/ui/** resource handler.
+# Use this when hosting the UI separately (CDN, Nginx, or another container).
+conductor.enable.ui.serving=false
+```
+
+See the [Headless (API-only) deployment](../../devguide/running/deploy.md#headless-api-only-deployment) section in the self-hosted deployment guide for the common production pattern.
