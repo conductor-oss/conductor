@@ -206,6 +206,12 @@ public class PostgresMetadataDAO extends PostgresBaseDAO implements MetadataDAO,
     }
 
     @Override
+    public List<String> getWorkflowNames() {
+        final String QUERY = "SELECT DISTINCT name FROM meta_workflow_def ORDER BY name";
+        return queryWithTransaction(QUERY, q -> q.executeAndFetch(String.class));
+    }
+
+    @Override
     public List<WorkflowDef> getAllWorkflowDefs() {
         final String GET_ALL_WORKFLOW_DEF_QUERY =
                 "SELECT json_data FROM meta_workflow_def ORDER BY name, version";
