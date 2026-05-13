@@ -508,7 +508,14 @@ public class SchedulerIntegrationTest {
         String scheduleJson = get("scheduler/schedules/" + scheduleName, String.class);
         assertTrue("Schedule should be paused", scheduleJson.contains("\"paused\":true"));
 
-        // Record count at pause time, wait, verify no new executions
+        // The scheduler may have a fire already in flight at the moment pause
+        // returns — the cron tick was dispatched before the pause flag flipped,
+        // and the resulting execution record is written a beat later. Wait
+        // long enough for any such in-flight fire (and one more cron tick at
+        // the */2s cadence) to land before snapshotting, otherwise the
+        // snapshot races the in-flight write and the equality check below
+        // sees a spurious +1.
+        Thread.sleep(3000);
         long countAtPause = countExecutionRecords(scheduleName);
         Thread.sleep(4000);
         long countAfterPauseWait = countExecutionRecords(scheduleName);

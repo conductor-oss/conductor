@@ -235,16 +235,15 @@ class AIReasoningEndToEndTest {
     }
 
     @Test
-    void doWhileLoopThreadsPreviousResponseIdAcrossIterations() {
-        // The auto-threading of previousResponseId between same-refName loop
-        // iterations is the other half of the reasoning plumbing — without it,
-        // multi-turn reasoning loses state. Stage two distinct response IDs,
-        // run a two-iteration DoWhile, then assert iteration 2's input carried
-        // iteration 1's responseId.
+    void doWhileLoopDoesNotAutoThreadPreviousResponseId() {
+        // Auto-threading of previousResponseId between same-refName loop
+        // iterations is intentionally DISABLED — see the javadoc on
+        // AIModelTaskMapper.threadPreviousResponseId for the OpenAI token
+        // billing failure mode that drove the decision. This test locks in
+        // that contract end-to-end: iteration 2 must NOT inherit iteration
+        // 1's responseId unless the workflow definition wires it explicitly.
         fakeChatModel.stageResponse("Turn one.", "Thinking turn 1.", 10, "resp_turn_1");
         fakeChatModel.stageResponse("Turn two.", "Thinking turn 2.", 11, "resp_turn_2");
-        // Capture the chatCompletion input the fake saw on each call so we can
-        // assert turn 2 received previousResponseId=resp_turn_1.
         AtomicReference<String> turn2PreviousId = new AtomicReference<>();
         fakeChatModel.onCall(
                 (callIndex, opts) -> {
@@ -271,10 +270,9 @@ class AIReasoningEndToEndTest {
         Workflow completed = awaitWorkflow(workflowId);
         assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
 
-        assertEquals(
-                "resp_turn_1",
+        assertNull(
                 turn2PreviousId.get(),
-                "second loop iteration must inherit prior iteration's responseId");
+                "loop iterations must NOT auto-thread previousResponseId — re-enable only after the history rebuild emits a strict delta");
     }
 
     // -- workflow registration helpers --
