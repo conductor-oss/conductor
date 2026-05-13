@@ -52,6 +52,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AnthropicChatModel implements ChatModel {
 
+    private static final int DEFAULT_MAX_TOKENS = 8192;
+
     private final AnthropicMessagesApi messagesApi;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -93,15 +95,18 @@ public class AnthropicChatModel implements ChatModel {
             messages.addAll(convertMessage(msg));
         }
 
-        // Extract options
+        // Extract options — Spring AI's ChatClient may merge AnthropicChatOptions with
+        // ToolCallingChatOptions (the model's default), producing a non-Anthropic type.
+        // We handle both cases and always guarantee max_tokens (required by Anthropic API).
         AnthropicChatOptions opts = options instanceof AnthropicChatOptions aco ? aco : null;
 
         MessagesRequest.Builder builder =
                 MessagesRequest.builder().messages(messages).system(system);
 
         if (opts != null) {
+            Integer maxTokens = opts.getMaxTokens();
             builder.model(opts.getModel())
-                    .maxTokens(opts.getMaxTokens())
+                    .maxTokens(maxTokens != null && maxTokens > 0 ? maxTokens : DEFAULT_MAX_TOKENS)
                     .temperature(opts.getTemperature())
                     .topP(opts.getTopP())
                     .topK(opts.getTopK())
@@ -123,12 +128,15 @@ public class AnthropicChatModel implements ChatModel {
                 }
             }
         } else if (options != null) {
+            Integer maxTokens = options.getMaxTokens();
             builder.model(options.getModel())
-                    .maxTokens(options.getMaxTokens())
+                    .maxTokens(maxTokens != null && maxTokens > 0 ? maxTokens : DEFAULT_MAX_TOKENS)
                     .temperature(options.getTemperature())
                     .topP(options.getTopP())
                     .topK(options.getTopK())
                     .stopSequences(options.getStopSequences());
+        } else {
+            builder.maxTokens(DEFAULT_MAX_TOKENS);
         }
 
         return builder.build();
