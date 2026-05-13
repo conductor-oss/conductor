@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.postgres.dao;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
@@ -24,6 +26,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class PostgresLockDAO extends PostgresBaseDAO implements Lock {
     private final long DAY_MS = 24 * 60 * 60 * 1000;
+
+    private final ThreadLocal<Map<String, Integer>> heldByThread =
+            ThreadLocal.withInitial(HashMap::new);
 
     public PostgresLockDAO(
             RetryTemplate retryTemplate, ObjectMapper objectMapper, DataSource dataSource) {
@@ -42,6 +47,20 @@ public class PostgresLockDAO extends PostgresBaseDAO implements Lock {
 
     @Override
     public boolean acquireLock(String lockId, long timeToTry, long leaseTime, TimeUnit unit) {
+        Map<String, Integer> holds = heldByThread.get();
+        Integer count = holds.get(lockId);
+        if (count != null) {
+            holds.put(lockId, count + 1);
+            return true;
+        }
+        boolean acquired = acquireFromDb(lockId, timeToTry, leaseTime, unit);
+        if (acquired) {
+            holds.put(lockId, 1);
+        }
+        return acquired;
+    }
+
+    private boolean acquireFromDb(String lockId, long timeToTry, long leaseTime, TimeUnit unit) {
         long endTime = System.currentTimeMillis() + unit.toMillis(timeToTry);
         while (System.currentTimeMillis() < endTime) {
             var sql =
@@ -71,12 +90,24 @@ public class PostgresLockDAO extends PostgresBaseDAO implements Lock {
 
     @Override
     public void releaseLock(String lockId) {
-        var sql = "DELETE FROM locks WHERE lock_id = ?";
-        queryWithTransaction(sql, q -> q.addParameter(lockId).executeDelete());
+        Map<String, Integer> holds = heldByThread.get();
+        Integer count = holds.get(lockId);
+        if (count != null && count > 1) {
+            holds.put(lockId, count - 1);
+            return;
+        }
+        holds.remove(lockId);
+        deleteFromDb(lockId);
     }
 
     @Override
     public void deleteLock(String lockId) {
-        releaseLock(lockId);
+        heldByThread.get().remove(lockId);
+        deleteFromDb(lockId);
+    }
+
+    private void deleteFromDb(String lockId) {
+        var sql = "DELETE FROM locks WHERE lock_id = ?";
+        queryWithTransaction(sql, q -> q.addParameter(lockId).executeDelete());
     }
 }
