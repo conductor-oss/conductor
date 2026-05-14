@@ -222,4 +222,56 @@ public class PostgresLockDAOTest {
             postgresLock.releaseLock(lockId);
         }
     }
+
+    @Test
+    public void testStaleSelfReleaseRemovesOrphanedRow() throws Exception {
+        String lockId = UUID.randomUUID().toString();
+        assertTrue(
+                postgresLock.acquireLock(lockId, 500, 500, TimeUnit.MILLISECONDS),
+                "Initial acquisition should succeed");
+
+        Thread.sleep(700);
+
+        postgresLock.releaseLock(lockId);
+
+        try (var connection = dataSource.getConnection();
+                var ps = connection.prepareStatement("SELECT * FROM locks WHERE lock_id = ?")) {
+            ps.setString(1, lockId);
+            var rs = ps.executeQuery();
+            Assertions.assertFalse(
+                    rs.next(),
+                    "Orphaned row from expired self-hold must be removed when nobody else acquired it");
+        }
+    }
+
+    @Test
+    public void testStaleLocalHoldDoesNotDeleteAnotherThreadsLock() throws Exception {
+        String lockId = UUID.randomUUID().toString();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            assertTrue(
+                    postgresLock.acquireLock(lockId, 500, 500, TimeUnit.MILLISECONDS),
+                    "Initial acquisition should succeed");
+
+            Thread.sleep(700);
+
+            assertTrue(
+                    executor.submit(
+                                    () ->
+                                            postgresLock.acquireLock(
+                                                    lockId, 1000, 5000, TimeUnit.MILLISECONDS))
+                            .get(5, TimeUnit.SECONDS),
+                    "After lease expiry another thread must acquire the lock");
+
+            postgresLock.releaseLock(lockId);
+
+            Assertions.assertFalse(
+                    postgresLock.acquireLock(lockId, 500, TimeUnit.MILLISECONDS),
+                    "Stale release from prior holder must not delete the other thread's lock");
+        } finally {
+            executor.shutdownNow();
+            executor.awaitTermination(5, TimeUnit.SECONDS);
+            postgresLock.releaseLock(lockId);
+        }
+    }
 }

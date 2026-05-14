@@ -27,7 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class PostgresLockDAO extends PostgresBaseDAO implements Lock {
     private final long DAY_MS = 24 * 60 * 60 * 1000;
 
-    private final ThreadLocal<Map<String, Integer>> heldByThread =
+    private final ThreadLocal<Map<String, Hold>> heldByThread =
             ThreadLocal.withInitial(HashMap::new);
 
     public PostgresLockDAO(
@@ -47,17 +47,18 @@ public class PostgresLockDAO extends PostgresBaseDAO implements Lock {
 
     @Override
     public boolean acquireLock(String lockId, long timeToTry, long leaseTime, TimeUnit unit) {
-        Map<String, Integer> holds = heldByThread.get();
-        Integer count = holds.get(lockId);
-        if (count != null) {
-            holds.put(lockId, count + 1);
+        Map<String, Hold> holds = heldByThread.get();
+        Hold hold = holds.get(lockId);
+        if (hold != null) {
+            hold.count++;
             return true;
         }
-        boolean acquired = acquireFromDb(lockId, timeToTry, leaseTime, unit);
-        if (acquired) {
-            holds.put(lockId, 1);
+        long leaseExpiresAtMillis = System.currentTimeMillis() + unit.toMillis(leaseTime);
+        if (acquireFromDb(lockId, timeToTry, leaseTime, unit)) {
+            holds.put(lockId, new Hold(leaseExpiresAtMillis));
+            return true;
         }
-        return acquired;
+        return false;
     }
 
     private boolean acquireFromDb(String lockId, long timeToTry, long leaseTime, TimeUnit unit) {
@@ -90,14 +91,22 @@ public class PostgresLockDAO extends PostgresBaseDAO implements Lock {
 
     @Override
     public void releaseLock(String lockId) {
-        Map<String, Integer> holds = heldByThread.get();
-        Integer count = holds.get(lockId);
-        if (count != null && count > 1) {
-            holds.put(lockId, count - 1);
+        Map<String, Hold> holds = heldByThread.get();
+        Hold hold = holds.get(lockId);
+        if (hold == null) {
+            deleteFromDb(lockId);
+            return;
+        }
+        if (hold.count > 1) {
+            hold.count--;
             return;
         }
         holds.remove(lockId);
-        deleteFromDb(lockId);
+        if (hold.leaseExpiresAtMillis > System.currentTimeMillis()) {
+            deleteFromDb(lockId);
+        } else {
+            deleteFromDbIfExpired(lockId);
+        }
     }
 
     @Override
@@ -109,5 +118,20 @@ public class PostgresLockDAO extends PostgresBaseDAO implements Lock {
     private void deleteFromDb(String lockId) {
         var sql = "DELETE FROM locks WHERE lock_id = ?";
         queryWithTransaction(sql, q -> q.addParameter(lockId).executeDelete());
+    }
+
+    private void deleteFromDbIfExpired(String lockId) {
+        var sql = "DELETE FROM locks WHERE lock_id = ? AND lease_expiration <= now()";
+        queryWithTransaction(sql, q -> q.addParameter(lockId).executeDelete());
+    }
+
+    private static final class Hold {
+        int count;
+        final long leaseExpiresAtMillis;
+
+        Hold(long leaseExpiresAtMillis) {
+            this.count = 1;
+            this.leaseExpiresAtMillis = leaseExpiresAtMillis;
+        }
     }
 }
