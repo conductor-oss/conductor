@@ -6,9 +6,11 @@ on:
       - main
     paths-ignore:
       - "conductor-clients/**"
+      - "ui-next/**"
   pull_request:
     paths-ignore:
       - "conductor-clients/**"
+      - "ui-next/**"
   workflow_dispatch:
     inputs:
       redis_es8:
