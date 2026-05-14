@@ -198,7 +198,7 @@ public class AIModelIntegrationTest {
             // Use generic ImageOptions to set model and parameters
             var imageOptions =
                     ImageOptionsBuilder.builder()
-                            .model("dall-e-3")
+                            .model("gpt-image-1")
                             .height(1024)
                             .width(1024)
                             .build();
@@ -435,6 +435,104 @@ public class AIModelIntegrationTest {
             // Second response should also have its own response_id
             String turn2ResponseId = (String) turn2Response.getMetadata().get("response_id");
             assertNotNull(turn2ResponseId, "Expected response_id in turn 2 metadata");
+        }
+
+        @Test
+        @DisplayName("Reasoning round-trip against gpt-5.3-codex (live)")
+        void testReasoningSummary_codex() {
+            // gpt-5.3-codex is the Codex-tuned variant of gpt-5.3 reasoning models.
+            // Verifies the nested-reasoning request shape that works for gpt-5-mini
+            // also reaches the Codex endpoint without 400s, and that the response
+            // carries the reasoning_tokens metadata key. Empirically Codex sometimes
+            // returns reasoning_tokens=0 for short coding prompts even with effort
+            // requested — accepted as the model's prerogative — so the hard invariant
+            // is just that the field surfaces (i.e. the metadata plumbing works).
+            ChatModel chatModel = openAI.getChatModel();
+            assertNotNull(chatModel);
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gpt-5.3-codex");
+            input.setMaxTokens(4000);
+            input.setReasoningEffort("high");
+            input.setReasoningSummary("auto");
+
+            var chatOptions = openAI.getChatOptions(input);
+            Prompt prompt =
+                    new Prompt(
+                            "Implement a Python function that returns all permutations of a list"
+                                    + " using only recursion and tuple swaps — no Python stdlib helpers."
+                                    + " Walk through your algorithm choice before writing the code.",
+                            chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+
+            // The metadata key must be present — that's the part our adapter is
+            // responsible for. The value itself is whatever the model decided.
+            Object reasoningTokens = response.getMetadata().get("reasoning_tokens");
+            assertNotNull(
+                    reasoningTokens,
+                    "Expected reasoning_tokens metadata key on a gpt-5.3-codex response");
+
+            Object reasoning = response.getMetadata().get("reasoning");
+            // Best-effort visibility for the live behavior — we don't fail if the
+            // model returns no summary, but log enough to diagnose if the round
+            // trip breaks in the future.
+            System.out.println(
+                    "gpt-5.3-codex reasoning_tokens="
+                            + reasoningTokens
+                            + ", summary_present="
+                            + (reasoning != null)
+                            + (reasoning != null ? "\n--\n" + reasoning + "\n--" : ""));
+
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertFalse(text.isEmpty(), "Expected code output from Codex reasoning model");
+        }
+
+        @Test
+        @DisplayName(
+                "Reasoning request shape is plumbed correctly against live OpenAI (smoke check)")
+        void testReasoningSummary() {
+            // Smoke check that the request reaches OpenAI with the nested
+            // reasoning block intact and that the reasoning pathway engages.
+            // Deterministic coverage of the response-side parsing
+            // (reasoning summary → metadata["reasoning"], reasoning_tokens →
+            // metadata["reasoning_tokens"])
+            // lives in OpenAIResponsesChatModelTest, which stubs the HTTP layer
+            // and pins the contract without depending on what OpenAI happens
+            // to emit on any given call. This test only asserts the hard
+            // request-side invariant: a reasoning model should bill some
+            // reasoning tokens — anything less means we silently lost the
+            // ``reasoning`` block on the wire.
+            ChatModel chatModel = openAI.getChatModel();
+            assertNotNull(chatModel);
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gpt-5-mini");
+            input.setMaxTokens(2000);
+            input.setReasoningEffort("medium");
+            input.setReasoningSummary("auto");
+
+            var chatOptions = openAI.getChatOptions(input);
+            Prompt prompt =
+                    new Prompt(
+                            "If a train leaves at 3pm and travels 60mph for 2.5 hours, what time"
+                                    + " does it arrive and how far has it gone? Explain.",
+                            chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+
+            Object reasoningTokens = response.getMetadata().get("reasoning_tokens");
+            assertNotNull(
+                    reasoningTokens,
+                    "Expected reasoning_tokens metadata on a reasoning model response");
+            assertTrue(
+                    ((Number) reasoningTokens).intValue() > 0,
+                    "Expected reasoning_tokens > 0 on a reasoning model, got: " + reasoningTokens);
         }
 
         @Test
