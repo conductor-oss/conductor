@@ -39,7 +39,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -78,7 +81,7 @@ public class TestSubWorkflow {
         StartWorkflowInput startWorkflowInput =
                 expectedStartWorkflowInput(
                         workflowInstance, task, "UnitWorkFlow", 3, inputData, null, null);
-        mockSubWorkflowLaunch(workflowInstance, task, startWorkflowInput, subWorkflowInstance);
+        mockSubWorkflowLaunch(task, startWorkflowInput, subWorkflowInstance);
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
 
@@ -102,7 +105,7 @@ public class TestSubWorkflow {
         StartWorkflowInput startWorkflowInput =
                 expectedStartWorkflowInput(
                         workflowInstance, task, "UnitWorkFlow", null, inputData, null, null);
-        mockSubWorkflowLaunch(workflowInstance, task, startWorkflowInput, subWorkflowInstance);
+        mockSubWorkflowLaunch(task, startWorkflowInput, subWorkflowInstance);
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
 
@@ -114,7 +117,6 @@ public class TestSubWorkflow {
     public void testStartSubWorkflowQueueFailure() {
         WorkflowModel workflowInstance = newParentWorkflow();
         TaskModel task = newTask();
-        task.setStatus(TaskModel.Status.SCHEDULED);
         Map<String, Object> inputData = inputData("UnitWorkFlow", 3);
         task.setInputData(inputData);
 
@@ -142,7 +144,6 @@ public class TestSubWorkflow {
     public void testStartSubWorkflowStartError() {
         WorkflowModel workflowInstance = newParentWorkflow();
         TaskModel task = newTask();
-        task.setStatus(TaskModel.Status.SCHEDULED);
         Map<String, Object> inputData = inputData("UnitWorkFlow", 3);
         task.setInputData(inputData);
 
@@ -179,7 +180,7 @@ public class TestSubWorkflow {
         StartWorkflowInput startWorkflowInput =
                 expectedStartWorkflowInput(
                         workflowInstance, task, "UnitWorkFlow", 3, inputData, null, null);
-        mockSubWorkflowLaunch(workflowInstance, task, startWorkflowInput, subWorkflowInstance);
+        mockSubWorkflowLaunch(task, startWorkflowInput, subWorkflowInstance);
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
 
@@ -203,7 +204,7 @@ public class TestSubWorkflow {
         StartWorkflowInput startWorkflowInput =
                 expectedStartWorkflowInput(
                         workflowInstance, task, "UnitWorkFlow", 3, workflowInput, null, null);
-        mockSubWorkflowLaunch(workflowInstance, task, startWorkflowInput, subWorkflowInstance);
+        mockSubWorkflowLaunch(task, startWorkflowInput, subWorkflowInstance);
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
 
@@ -228,7 +229,7 @@ public class TestSubWorkflow {
         StartWorkflowInput startWorkflowInput =
                 expectedStartWorkflowInput(
                         workflowInstance, task, "UnitWorkFlow", 2, inputData, taskToDomain, null);
-        mockSubWorkflowLaunch(workflowInstance, task, startWorkflowInput, subWorkflowInstance);
+        mockSubWorkflowLaunch(task, startWorkflowInput, subWorkflowInstance);
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
 
@@ -240,6 +241,7 @@ public class TestSubWorkflow {
         WorkflowModel workflowInstance = newParentWorkflow();
 
         TaskModel task = newTask();
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
         task.setOutputData(new HashMap<>());
         task.setInputData(inputData("UnitWorkFlow", 2));
 
@@ -250,7 +252,6 @@ public class TestSubWorkflow {
     public void testExecuteScheduledSubWorkflowWithoutIdRetriesStart() {
         WorkflowModel workflowInstance = newParentWorkflow();
         TaskModel task = newTask();
-        task.setStatus(TaskModel.Status.SCHEDULED);
         Map<String, Object> inputData = inputData("UnitWorkFlow", 2);
         task.setInputData(inputData);
 
@@ -261,7 +262,7 @@ public class TestSubWorkflow {
         StartWorkflowInput startWorkflowInput =
                 expectedStartWorkflowInput(
                         workflowInstance, task, "UnitWorkFlow", 2, inputData, null, null);
-        mockSubWorkflowLaunch(workflowInstance, task, startWorkflowInput, subWorkflowInstance);
+        mockSubWorkflowLaunch(task, startWorkflowInput, subWorkflowInstance);
 
         assertTrue(subWorkflow.execute(workflowInstance, task, workflowExecutor));
         assertEquals(CHILD_SUB_WORKFLOW_ID, task.getSubWorkflowId());
@@ -275,6 +276,7 @@ public class TestSubWorkflow {
         WorkflowModel workflowInstance = newParentWorkflow();
         WorkflowModel subWorkflowInstance = new WorkflowModel();
         TaskModel task = newTask();
+        task.setStatus(null);
         task.setSubWorkflowId("sub-workflow-id");
         task.setOutputData(new HashMap<>());
         task.setInputData(inputData("UnitWorkFlow", 2));
@@ -369,6 +371,84 @@ public class TestSubWorkflow {
     }
 
     @Test
+    public void testStartThrowsWhenSubWorkflowNameNullAndNoDefinitionSupplied() {
+        WorkflowModel workflowInstance = newParentWorkflow();
+        TaskModel task = newTask();
+        task.setInputData(new HashMap<>());
+
+        try {
+            subWorkflow.start(workflowInstance, task, workflowExecutor);
+            fail("Expected NonTransientException");
+        } catch (NonTransientException e) {
+            assertTrue(e.getMessage().contains("null"));
+        }
+    }
+
+    @Test
+    public void testStartIsIdempotentWhenTaskAlreadyStarted() {
+        WorkflowModel workflowInstance = newParentWorkflow();
+        TaskModel task = newTask();
+        task.setSubWorkflowId("already-started-id");
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        task.setInputData(inputData("UnitWorkFlow", 1));
+
+        subWorkflow.start(workflowInstance, task, workflowExecutor);
+
+        verify(workflowExecutor, never()).startWorkflowIdempotent(any());
+        assertEquals("already-started-id", task.getSubWorkflowId());
+        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
+    }
+
+    @Test
+    public void testStartCreatesNewSubWorkflowOnRetryEvenWhenOutputDataHasOldSubWorkflowId() {
+        WorkflowModel workflowInstance = newParentWorkflow();
+        Map<String, Object> outputData = new HashMap<>();
+        outputData.put("subWorkflowId", "old-sub-workflow-id");
+
+        TaskModel task = newTask();
+        task.setOutputData(outputData);
+        task.setInputData(inputData("UnitWorkFlow", 1));
+
+        WorkflowModel subWorkflowInstance = new WorkflowModel();
+        subWorkflowInstance.setWorkflowId(CHILD_SUB_WORKFLOW_ID);
+        subWorkflowInstance.setStatus(WorkflowModel.Status.RUNNING);
+
+        StartWorkflowInput startWorkflowInput =
+                expectedStartWorkflowInput(
+                        workflowInstance, task, "UnitWorkFlow", 1, task.getInputData(), null, null);
+        mockSubWorkflowLaunch(task, startWorkflowInput, subWorkflowInstance);
+
+        subWorkflow.start(workflowInstance, task, workflowExecutor);
+
+        assertEquals(CHILD_SUB_WORKFLOW_ID, task.getSubWorkflowId());
+        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
+    }
+
+    @Test
+    public void testCancelIsNoOpWhenSubWorkflowNotFoundInStore() {
+        WorkflowModel workflowInstance = newParentWorkflow();
+        workflowInstance.setStatus(WorkflowModel.Status.TERMINATED);
+
+        TaskModel task = newTask();
+        task.setSubWorkflowId("deleted-sub-workflow-id");
+
+        when(workflowExecutor.getWorkflow("deleted-sub-workflow-id", true)).thenReturn(null);
+
+        subWorkflow.cancel(workflowInstance, task, workflowExecutor);
+    }
+
+    @Test
+    public void testExecuteReturnsFalseWhenSubWorkflowNotFoundInStore() {
+        WorkflowModel workflowInstance = newParentWorkflow();
+        TaskModel task = newTask();
+        task.setSubWorkflowId("deleted-sub-workflow-id");
+
+        when(workflowExecutor.getWorkflow("deleted-sub-workflow-id", false)).thenReturn(null);
+
+        assertFalse(subWorkflow.execute(workflowInstance, task, workflowExecutor));
+    }
+
+    @Test
     public void testIsAsync() {
         assertTrue(subWorkflow.isAsync());
     }
@@ -398,43 +478,11 @@ public class TestSubWorkflow {
                         inputData,
                         null,
                         subWorkflowDef);
-        mockSubWorkflowLaunch(workflowInstance, task, startWorkflowInput, subWorkflowInstance);
+        mockSubWorkflowLaunch(task, startWorkflowInput, subWorkflowInstance);
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
 
         assertEquals(CHILD_SUB_WORKFLOW_ID, task.getSubWorkflowId());
-    }
-
-    @Test
-    public void testStartSubWorkflowReusesExistingTaskSubWorkflowId() {
-        WorkflowModel workflowInstance = newParentWorkflow();
-        TaskModel task = newTask();
-        task.setSubWorkflowId("existing-sub-workflow");
-        Map<String, Object> inputData = inputData("UnitWorkFlow", 2);
-        task.setInputData(inputData);
-
-        WorkflowModel subWorkflowInstance = new WorkflowModel();
-        subWorkflowInstance.setWorkflowId("existing-sub-workflow");
-        subWorkflowInstance.setStatus(WorkflowModel.Status.RUNNING);
-
-        StartWorkflowInput startWorkflowInput =
-                expectedStartWorkflowInput(
-                        workflowInstance,
-                        task,
-                        "UnitWorkFlow",
-                        2,
-                        inputData,
-                        null,
-                        null,
-                        "existing-sub-workflow");
-
-        when(workflowExecutor.startWorkflowIdempotent(startWorkflowInput))
-                .thenReturn(subWorkflowInstance);
-
-        subWorkflow.start(workflowInstance, task, workflowExecutor);
-
-        verify(workflowExecutor).startWorkflowIdempotent(startWorkflowInput);
-        assertEquals("existing-sub-workflow", task.getSubWorkflowId());
     }
 
     private WorkflowModel newParentWorkflow() {
@@ -447,6 +495,7 @@ public class TestSubWorkflow {
     private TaskModel newTask() {
         TaskModel task = new TaskModel();
         task.setTaskId(PARENT_TASK_ID);
+        task.setStatus(TaskModel.Status.SCHEDULED);
         task.setOutputData(new HashMap<>());
         return task;
     }
@@ -459,7 +508,6 @@ public class TestSubWorkflow {
     }
 
     private void mockSubWorkflowLaunch(
-            WorkflowModel workflowInstance,
             TaskModel task,
             StartWorkflowInput startWorkflowInput,
             WorkflowModel subWorkflowInstance) {
@@ -502,7 +550,7 @@ public class TestSubWorkflow {
         startWorkflowInput.setWorkflowDefinition(workflowDef);
         startWorkflowInput.setName(subWorkflowName);
         startWorkflowInput.setVersion(subWorkflowVersion);
-        startWorkflowInput.setWorkflowInput(workflowInput);
+        startWorkflowInput.setWorkflowInput(expectedWorkflowInput(workflowInput, workflowDef));
         startWorkflowInput.setCorrelationId(workflowInstance.getCorrelationId());
         startWorkflowInput.setParentWorkflowId(workflowInstance.getWorkflowId());
         startWorkflowInput.setParentWorkflowTaskId(task.getTaskId());
@@ -510,5 +558,20 @@ public class TestSubWorkflow {
                 taskToDomain == null ? workflowInstance.getTaskToDomain() : taskToDomain);
         startWorkflowInput.setWorkflowId(workflowId);
         return startWorkflowInput;
+    }
+
+    private Map<String, Object> expectedWorkflowInput(
+            Map<String, Object> workflowInput, WorkflowDef workflowDef) {
+        if (workflowDef == null) {
+            return workflowInput;
+        }
+        Map<String, Object> expectedInput = new HashMap<>(workflowInput);
+        Map<String, Object> systemMetadata =
+                expectedInput.get("_systemMetadata") instanceof Map
+                        ? new HashMap<>((Map<String, Object>) expectedInput.get("_systemMetadata"))
+                        : new HashMap<>();
+        systemMetadata.put("dynamic", true);
+        expectedInput.put("_systemMetadata", systemMetadata);
+        return expectedInput;
     }
 }

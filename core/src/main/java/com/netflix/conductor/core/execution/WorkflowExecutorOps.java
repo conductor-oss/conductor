@@ -1870,6 +1870,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             updateAndPushParents(workflow, "reran");
             notifyWorkflowStatusListener(workflow, WorkflowEventType.RERAN);
             decide(workflowId);
+            updateAndPushParents(workflow, "reran");
             return true;
         }
 
@@ -1963,6 +1964,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             }
             executionDAOFacade.updateTask(rerunFromTask);
             decide(workflow.getWorkflowId());
+            updateAndPushParents(workflow, "reran");
             return true;
         }
         return false;

@@ -1543,9 +1543,13 @@ public class WorkflowRerunTests {
             await().atMost(10, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
+                                Workflow wf = workflowClient.getWorkflow(workflowId, true);
                                 assertEquals(
                                         Workflow.WorkflowStatus.RUNNING,
-                                        workflowClient.getWorkflow(workflowId, true).getStatus());
+                                        wf.getStatus(),
+                                        "Parent workflow should be RUNNING after nested rerun. "
+                                                + "reason="
+                                                + wf.getReasonForIncompletion());
                             });
             workflow = workflowClient.getWorkflow(workflowId, true);
 
