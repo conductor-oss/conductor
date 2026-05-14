@@ -64,7 +64,7 @@ public class AnthropicChatModel implements ChatModel {
         try {
             MessagesRequest request = buildRequest(prompt);
             MessagesResponse result = messagesApi.createMessage(request);
-            return toSpringChatResponse(result);
+            return toSpringChatResponse(result, prompt.getOptions());
         } catch (IOException e) {
             throw new RuntimeException("Anthropic Messages API call failed: " + e.getMessage(), e);
         }
@@ -185,11 +185,16 @@ public class AnthropicChatModel implements ChatModel {
         return messages;
     }
 
-    private ChatResponse toSpringChatResponse(MessagesResponse result) {
+    private ChatResponse toSpringChatResponse(MessagesResponse result, ChatOptions options) {
         List<Generation> generations = new ArrayList<>();
         List<AssistantMessage.ToolCall> toolCalls = new ArrayList<>();
         StringBuilder textBuilder = new StringBuilder();
+        StringBuilder reasoningBuilder = new StringBuilder();
         String finishReason = mapStopReason(result.stopReason());
+        boolean surfaceReasoning =
+                options instanceof AnthropicChatOptions aco
+                        && aco.getReasoningSummary() != null
+                        && !aco.getReasoningSummary().isBlank();
 
         if (result.content() != null) {
             for (ResponseContentBlock block : result.content()) {
@@ -215,7 +220,19 @@ public class AnthropicChatModel implements ChatModel {
                         finishReason = "TOOL_CALLS";
                     }
                     case "thinking" -> {
-                        // Thinking blocks are internal reasoning — skip in main output
+                        // Anthropic thinking blocks carry the model's chain-of-thought
+                        // when extended thinking is enabled (via thinking_budget_tokens).
+                        // We surface them on ChatResponseMetadata["reasoning"] only when
+                        // the caller opted in via reasoningSummary, matching the gate
+                        // we use for OpenAI and Gemini.
+                        if (surfaceReasoning
+                                && block.thinking() != null
+                                && !block.thinking().isBlank()) {
+                            if (!reasoningBuilder.isEmpty()) {
+                                reasoningBuilder.append("\n\n");
+                            }
+                            reasoningBuilder.append(block.thinking());
+                        }
                     }
                     default -> {
                         // web_search_tool_result, code_execution_tool_result, etc.
@@ -253,6 +270,12 @@ public class AnthropicChatModel implements ChatModel {
                         .id(result.id())
                         .model(result.model())
                         .usage(springUsage);
+
+        // Anthropic does not break out a separate reasoning_tokens counter — extended
+        // thinking is billed under output_tokens — so we only surface the text blob.
+        if (!reasoningBuilder.isEmpty()) {
+            metaBuilder.keyValue("reasoning", reasoningBuilder.toString());
+        }
 
         return new ChatResponse(generations, metaBuilder.build());
     }
