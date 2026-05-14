@@ -770,8 +770,7 @@ public class SubWorkflowInlineTests {
                             .getSubWorkflowId();
 
             // Complete the task inside the sub-workflow so both workflows finish cleanly
-            String innerTaskId =
-                    workflowClient.getWorkflow(subWorkflowId, true).getTasks().get(0).getTaskId();
+            String innerTaskId = awaitFirstTaskId(workflowClient, subWorkflowId);
             TaskResult innerResult = new TaskResult();
             innerResult.setWorkflowInstanceId(subWorkflowId);
             innerResult.setTaskId(innerTaskId);
@@ -913,8 +912,7 @@ public class SubWorkflowInlineTests {
                                 assertNotNull(subWf.getTasks().get(0).getTaskId());
                             });
 
-            String innerTaskId =
-                    workflowClient.getWorkflow(subWorkflowId, true).getTasks().get(0).getTaskId();
+            String innerTaskId = awaitFirstTaskId(workflowClient, subWorkflowId);
             TaskResult result = new TaskResult();
             result.setWorkflowInstanceId(subWorkflowId);
             result.setTaskId(innerTaskId);
@@ -1222,8 +1220,7 @@ public class SubWorkflowInlineTests {
                             .get(0)
                             .getSubWorkflowId();
 
-            String innerTaskId =
-                    workflowClient.getWorkflow(subWorkflowId, true).getTasks().get(0).getTaskId();
+            String innerTaskId = awaitFirstTaskId(workflowClient, subWorkflowId);
             TaskResult result = new TaskResult();
             result.setWorkflowInstanceId(subWorkflowId);
             result.setTaskId(innerTaskId);
@@ -1346,8 +1343,7 @@ public class SubWorkflowInlineTests {
                     "idempotencyStrategy must be forwarded as its enum name string");
 
             // Complete the inner task to clean up
-            String innerTaskId =
-                    workflowClient.getWorkflow(subWorkflowId, true).getTasks().get(0).getTaskId();
+            String innerTaskId = awaitFirstTaskId(workflowClient, subWorkflowId);
             TaskResult result = new TaskResult();
             result.setWorkflowInstanceId(subWorkflowId);
             result.setTaskId(innerTaskId);
@@ -1374,6 +1370,21 @@ public class SubWorkflowInlineTests {
             } catch (Exception ignored) {
             }
         }
+    }
+
+    private String awaitFirstTaskId(WorkflowClient workflowClient, String workflowId) {
+        final String[] taskId = new String[1];
+        await().atMost(10, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
+                            assertTrue(
+                                    workflow.getTasks() != null && !workflow.getTasks().isEmpty(),
+                                    "Sub-workflow first task should be scheduled");
+                            taskId[0] = workflow.getTasks().get(0).getTaskId();
+                            assertNotNull(taskId[0]);
+                        });
+        return taskId[0];
     }
 
     private void registerInlineWorkflowDef(String workflowName, MetadataClient metadataClient1) {
