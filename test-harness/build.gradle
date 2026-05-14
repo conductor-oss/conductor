@@ -201,8 +201,8 @@ dependencies {
     functionalTestImplementation 'org.junit.jupiter:junit-jupiter-params'
 
     // Lombok (used by e2e test classes)
-    functionalTestCompileOnly 'org.projectlombok:lombok:1.18.30'
-    functionalTestAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
+    functionalTestCompileOnly 'org.projectlombok:lombok:1.18.46'
+    functionalTestAnnotationProcessor 'org.projectlombok:lombok:1.18.46'
 
     // Awaitility 4.x (e2e uses 4.2.0; test-harness has 3.x)
     functionalTestImplementation 'org.awaitility:awaitility:4.2.0'
