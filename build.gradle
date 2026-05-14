@@ -135,7 +135,7 @@ allprojects {
             implementation('commons-beanutils:commons-beanutils:1.11.0') {
                 because 'CVE-2025-48734: PropertyUtilsBean enum suppression'
             }
-            implementation('com.microsoft.sqlserver:mssql-jdbc:12.8.2.jre11') {
+            implementation('com.microsoft.sqlserver:mssql-jdbc:13.4.0.jre11') {
                 because 'CVE-2025-59250: improper input validation'
             }
         }
