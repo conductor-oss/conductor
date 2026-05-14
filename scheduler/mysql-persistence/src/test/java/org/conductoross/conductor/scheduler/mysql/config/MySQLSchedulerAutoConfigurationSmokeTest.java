@@ -13,6 +13,9 @@
 package org.conductoross.conductor.scheduler.mysql.config;
 
 import org.conductoross.conductor.scheduler.mysql.dao.MySQLSchedulerDAO;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.retry.support.RetryTemplate;
 
 import io.orkes.conductor.dao.scheduler.SchedulerDAO;
 import io.orkes.conductor.scheduler.config.AbstractSchedulerAutoConfigurationSmokeTest;
@@ -49,5 +52,30 @@ public class MySQLSchedulerAutoConfigurationSmokeTest
     @Override
     protected Class<? extends SchedulerDAO> expectedDaoClass() {
         return MySQLSchedulerDAO.class;
+    }
+
+    @Override
+    protected Class<?> backendTestBeansClass() {
+        return MySQLTestBeans.class;
+    }
+
+    /*
+     * Registers both RetryTemplate beans that exist in a real MySQL-backed Conductor:
+     * mysqlRetryTemplate (from mysql-persistence) and onTransientErrorRetryTemplate
+     * (from core). Without both, the scheduler config's @Qualifier injection would silently
+     * bind to the single available candidate and an accidentally-unqualified parameter would
+     * not be caught — see #1084.
+     */
+    @Configuration
+    static class MySQLTestBeans {
+        @Bean
+        public RetryTemplate mysqlRetryTemplate() {
+            return new RetryTemplate();
+        }
+
+        @Bean
+        public RetryTemplate onTransientErrorRetryTemplate() {
+            return new RetryTemplate();
+        }
     }
 }
