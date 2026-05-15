@@ -80,6 +80,16 @@ public class ChatCompletion extends LLMWorkerInput {
     @Documented(usage = "Reasoning effort level: low, medium, or high. Supported by OpenAI models.")
     private String reasoningEffort;
 
+    @Documented(
+            usage =
+                    """
+                    Reasoning summary mode. When set, the provider returns chain-of-thought reasoning text on the response, available via the 'reasoning' field on the task output (and the reasoning_tokens count via 'reasoningTokens' where supported).
+                    - OpenAI / Azure OpenAI (Responses API, gpt-5.x and o-series): values 'auto', 'concise', 'detailed' — passed through as 'reasoning.summary'.
+                    - Anthropic (Claude with extended thinking): any non-blank value opts in to surfacing the thinking blocks. The actual thinking budget is configured via 'thinkingTokenLimit'.
+                    - Google Gemini (2.5+): any non-blank value enables 'includeThoughts' on the request so the model returns thought summaries. The thinking budget is configured via 'thinkingTokenLimit'.
+                    """)
+    private String reasoningSummary;
+
     @Documented(usage = "Location where the results should be stored.  Useful for media generation")
     private String outputLocation;
 

@@ -67,6 +67,13 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
             if (chatCompletion.getUserInput() != null && chatCompletion.getMessages().isEmpty()) {
                 history.add(new ChatMessage(ChatMessage.Role.user, chatCompletion.getUserInput()));
             }
+            // getHistory() internally skips prior loop-iteration assistant messages
+            // for this same task refName when previousResponseId is in play —
+            // OpenAI's Responses API already has those server-side, and the local
+            // history injection drops the matching user prompts which would leave
+            // the model staring at orphaned replies. Participants, tool calls, and
+            // sub-workflow context are still preserved since the server has never
+            // seen those.
             getHistory(workflowModel, taskModel, chatCompletion);
             updateTaskModel(chatCompletion, taskModel);
 
@@ -125,6 +132,14 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
         if (chatCompleteTask.getParentTaskReferenceName() != null) {
             historyContextTaskRefName = chatCompleteTask.getParentTaskReferenceName();
         }
+        // When previousResponseId is in play, the OpenAI Responses API server-side
+        // conversation store already has every prior turn for this loop. Re-injecting
+        // those prior assistant messages here would duplicate context and — because
+        // we only emit the assistant side, not the user prompt — leave the model
+        // looking at orphaned replies. We still want participants, tool calls, and
+        // sub-workflow context, which the server has never seen.
+        String prevRespId = chatCompletion.getPreviousResponseId();
+        boolean suppressLoopAssistantHistory = prevRespId != null && !prevRespId.isBlank();
         List<ChatMessage> history = new ArrayList<>();
         for (TaskModel task : workflow.getTasks()) {
             if (!task.getStatus().isTerminal()) {
@@ -139,7 +154,9 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
                     && task.getWorkflowTask()
                             .getTaskReferenceName()
                             .equals(historyContextTaskRefName)) {
-                skipTask = false;
+                // Same-refName loop iterations are exactly the assistant-message
+                // duplication the Responses API has already absorbed; skip them.
+                skipTask = suppressLoopAssistantHistory;
             } else if (chatCompletion.getParticipants() != null) {
                 ChatMessage.Role participantRole =
                         chatCompletion
