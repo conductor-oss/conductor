@@ -114,6 +114,20 @@ public class OpenAIResponsesApi {
 
     // -- Request DTOs --
 
+    /**
+     * Reasoning config block on the Responses API request. OpenAI's Responses API takes a nested
+     * object {@code "reasoning": {"effort": "...", "summary": "..."}} rather than the flat {@code
+     * "reasoning_effort"} parameter the legacy Chat Completions API used. Sending the flat shape
+     * produces an HTTP 400: "Unsupported parameter: 'reasoning_effort'. ... has moved to
+     * 'reasoning.effort'."
+     *
+     * <p>{@code summary} (values like {@code "auto"}, {@code "concise"}, {@code "detailed"}) is
+     * required to receive human-readable chain-of-thought summaries on reasoning items in the
+     * response — without it, reasoning items carry no summary text.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Reasoning(String effort, String summary) {}
+
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record ResponseRequest(
             String model,
@@ -124,7 +138,7 @@ public class OpenAIResponsesApi {
             Double temperature,
             @JsonProperty("top_p") Double topP,
             @JsonProperty("max_output_tokens") Integer maxOutputTokens,
-            @JsonProperty("reasoning_effort") String reasoningEffort,
+            Reasoning reasoning,
             TextFormat text,
             @JsonProperty("tool_choice") Object toolChoice,
             Boolean store) {
@@ -143,6 +157,7 @@ public class OpenAIResponsesApi {
             private Double topP;
             private Integer maxOutputTokens;
             private String reasoningEffort;
+            private String reasoningSummary;
             private TextFormat text;
             private Object toolChoice;
             private Boolean store;
@@ -188,7 +203,19 @@ public class OpenAIResponsesApi {
             }
 
             public Builder reasoningEffort(String reasoningEffort) {
+                // Public API stays a flat String for caller convenience;
+                // the request body is serialized via the nested ``Reasoning``
+                // record so OpenAI's Responses API sees ``reasoning.effort``.
                 this.reasoningEffort = reasoningEffort;
+                return this;
+            }
+
+            public Builder reasoningSummary(String reasoningSummary) {
+                // OpenAI emits chain-of-thought summary text on reasoning
+                // items only when ``reasoning.summary`` is set on the request
+                // (e.g. "auto", "concise", "detailed"). Without this, the
+                // response's reasoning items carry no summary text.
+                this.reasoningSummary = reasoningSummary;
                 return this;
             }
 
@@ -208,16 +235,31 @@ public class OpenAIResponsesApi {
             }
 
             public ResponseRequest build() {
+                boolean hasEffort = reasoningEffort != null && !reasoningEffort.isBlank();
+                boolean hasSummary = reasoningSummary != null && !reasoningSummary.isBlank();
+                Reasoning reasoning =
+                        (hasEffort || hasSummary)
+                                ? new Reasoning(
+                                        hasEffort ? reasoningEffort : null,
+                                        hasSummary ? reasoningSummary : null)
+                                : null;
+                // OpenAI's Responses API rejects an empty-string previous_response_id
+                // with HTTP 400 ("Invalid 'previous_response_id': ''"). Normalize
+                // blank to null so the field gets omitted from the wire payload.
+                String normalizedPrevRespId =
+                        (previousResponseId != null && !previousResponseId.isBlank())
+                                ? previousResponseId
+                                : null;
                 return new ResponseRequest(
                         model,
                         input,
                         instructions,
                         tools,
-                        previousResponseId,
+                        normalizedPrevRespId,
                         temperature,
                         topP,
                         maxOutputTokens,
-                        reasoningEffort,
+                        reasoning,
                         text,
                         toolChoice,
                         store);
@@ -346,7 +388,7 @@ public class OpenAIResponsesApi {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record OutputItem(
-            String type, // "message", "function_call"
+            String type, // "message", "function_call", "reasoning"
             String id,
             String role,
             List<OutputContent> content,
@@ -354,7 +396,16 @@ public class OpenAIResponsesApi {
             // function_call fields
             @JsonProperty("call_id") String callId,
             String name,
-            String arguments) {}
+            String arguments,
+            // reasoning item: list of chain-of-thought summary blocks the model
+            // emitted while thinking. Populated only when the request set
+            // ``reasoning.summary``. Surfaced via ChatResponseMetadata so
+            // downstream consumers can render it separately from the final
+            // message.
+            List<ReasoningSummary> summary) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record ReasoningSummary(String type, String text) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record OutputContent(
