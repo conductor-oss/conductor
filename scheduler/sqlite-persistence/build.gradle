@@ -1,0 +1,22 @@
+dependencies {
+    implementation project(':conductor-scheduler-core')
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+
+    implementation "com.fasterxml.jackson.core:jackson-databind"
+    implementation "com.fasterxml.jackson.core:jackson-core"
+
+    implementation "org.xerial:sqlite-jdbc:3.49.0.0"
+    implementation "org.springframework.boot:spring-boot-starter-jdbc"
+    implementation "org.flywaydb:flyway-core:11.3.1"
+
+    testImplementation 'org.springframework.boot:spring-boot-starter'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation testFixtures(project(':conductor-scheduler-core'))
+}
+
+test {
+    maxParallelForks = 1
+}

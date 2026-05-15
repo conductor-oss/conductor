@@ -23,6 +23,7 @@ export default function Header({ tabIndex, loading }) {
             component={NavLink}
             path="/eventHandlerDefs"
           />
+          <Tab label="Schedulers" component={NavLink} path="/schedulerDefs" />
         </Tabs>
       </div>
     </div>

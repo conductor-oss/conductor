@@ -55,6 +55,7 @@ services:
       - discovery.seed_hosts=conductor-opensearch # Nodes to look for when discovering the cluster
       - cluster.initial_cluster_manager_nodes=conductor-opensearch # Nodes eligible to serve as cluster manager
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=P4zzW)rd>>123_
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
     volumes:
       - osdata-conductor:/usr/share/opensearch/data
     networks:

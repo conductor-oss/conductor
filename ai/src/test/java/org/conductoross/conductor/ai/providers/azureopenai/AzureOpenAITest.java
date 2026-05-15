@@ -70,7 +70,7 @@ class AzureOpenAITest {
         @Test
         void testGetImageOptions() {
             ImageGenRequest input = new ImageGenRequest();
-            input.setModel("dall-e-3");
+            input.setModel("gpt-image-1");
             input.setHeight(1024);
             input.setWidth(1024);
             input.setN(1);

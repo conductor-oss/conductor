@@ -103,12 +103,14 @@ public class OpenAIResponsesChatModel implements ChatModel {
         // Extract extended options from OpenAIResponsesChatOptions
         String previousResponseId = null;
         String reasoningEffort = null;
+        String reasoningSummary = null;
         Boolean jsonOutput = null;
         List<Tool> tools = null;
 
         if (options instanceof OpenAIResponsesChatOptions extOpts) {
             previousResponseId = extOpts.getPreviousResponseId();
             reasoningEffort = extOpts.getReasoningEffort();
+            reasoningSummary = extOpts.getReasoningSummary();
             jsonOutput = extOpts.getJsonOutput();
             tools = extOpts.getResponsesApiTools();
         }
@@ -130,6 +132,7 @@ public class OpenAIResponsesChatModel implements ChatModel {
                         .topP(topP)
                         .maxOutputTokens(maxTokens)
                         .reasoningEffort(reasoningEffort)
+                        .reasoningSummary(reasoningSummary)
                         .text(textFormat);
 
         return builder.build();
@@ -198,6 +201,7 @@ public class OpenAIResponsesChatModel implements ChatModel {
         List<Generation> generations = new ArrayList<>();
         Usage usage = result.usage();
 
+        StringBuilder reasoningBuilder = new StringBuilder();
         if (result.output() != null) {
             // Collect text from message outputs and tool calls separately
             StringBuilder textBuilder = new StringBuilder();
@@ -221,6 +225,18 @@ public class OpenAIResponsesChatModel implements ChatModel {
                             new AssistantMessage.ToolCall(
                                     item.callId(), "function", item.name(), item.arguments()));
                     finishReason = "TOOL_CALLS";
+                } else if ("reasoning".equals(item.type()) && item.summary() != null) {
+                    // Chain-of-thought summaries returned when the request set
+                    // reasoning.summary. Concatenate so downstream consumers
+                    // see a single text blob in metadata["reasoning"].
+                    for (var s : item.summary()) {
+                        if (s != null && s.text() != null && !s.text().isBlank()) {
+                            if (!reasoningBuilder.isEmpty()) {
+                                reasoningBuilder.append("\n\n");
+                            }
+                            reasoningBuilder.append(s.text());
+                        }
+                    }
                 }
             }
 
@@ -260,6 +276,15 @@ public class OpenAIResponsesChatModel implements ChatModel {
         // Store the response ID in metadata for previous_response_id chaining
         if (result.id() != null) {
             metaBuilder.keyValue("response_id", result.id());
+        }
+
+        if (!reasoningBuilder.isEmpty()) {
+            metaBuilder.keyValue("reasoning", reasoningBuilder.toString());
+        }
+        if (usage != null
+                && usage.outputTokensDetails() != null
+                && usage.outputTokensDetails().reasoningTokens() != null) {
+            metaBuilder.keyValue("reasoning_tokens", usage.outputTokensDetails().reasoningTokens());
         }
 
         return new ChatResponse(generations, metaBuilder.build());
