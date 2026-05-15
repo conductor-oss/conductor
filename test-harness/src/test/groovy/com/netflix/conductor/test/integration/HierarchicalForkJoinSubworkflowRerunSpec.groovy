@@ -357,17 +357,18 @@ class HierarchicalForkJoinSubworkflowRerunSpec extends AbstractSpecification {
         }
 
         and: "verify the root workflow is updated"
-        with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
-            status == Workflow.WorkflowStatus.RUNNING
-            tasks.size() == 4
-            tasks[0].taskType == TASK_TYPE_FORK
-            tasks[0].status == Task.Status.COMPLETED
-            tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
-            tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[2].taskType == 'integration_task_2'
-            tasks[2].status == Task.Status.COMPLETED
-            tasks[3].taskType == TASK_TYPE_JOIN
-            tasks[3].status == Task.Status.CANCELED
+        await().atMost(10, TimeUnit.SECONDS).until {
+            def workflow = workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
+            workflow.status == Workflow.WorkflowStatus.RUNNING &&
+            workflow.tasks.size() == 4 &&
+            workflow.tasks[0].taskType == TASK_TYPE_FORK &&
+            workflow.tasks[0].status == Task.Status.COMPLETED &&
+            workflow.tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW &&
+            workflow.tasks[1].status == Task.Status.IN_PROGRESS &&
+            workflow.tasks[2].taskType == 'integration_task_2' &&
+            workflow.tasks[2].status == Task.Status.COMPLETED &&
+            workflow.tasks[3].taskType == TASK_TYPE_JOIN &&
+            workflow.tasks[3].status == Task.Status.CANCELED
         }
 
         when: "poll and complete the integration_task_2 task in the mid level workflow"
