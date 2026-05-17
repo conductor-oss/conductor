@@ -20,8 +20,10 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
+import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
 
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
 
 /**
@@ -63,6 +65,9 @@ class InlineSubWorkflowFromExpressionSpec extends AbstractSpecification {
     @Autowired
     SubWorkflow subWorkflowTask
 
+    @Autowired
+    QueueDAO queueDAO
+
     def "Sub-workflow definition from a String expression runs a complex DO_WHILE with SWITCH, INLINE, and SIMPLE tasks"() {
         given: "A complex sub-workflow definition built as a runtime Map (DO_WHILE + SWITCH + INLINE + SIMPLE)"
         // This Map is exactly what the wf_builder SIMPLE task will return as its output.
@@ -91,6 +96,14 @@ class InlineSubWorkflowFromExpressionSpec extends AbstractSpecification {
 
         then: "wf_builder completed and acknowledged"
         verifyPolledAndAcknowledgedTask(pollBuilder)
+
+        and: "The async SUB_WORKFLOW system task is executed"
+        List<String> polledSubWorkflowIds = []
+        conditions.eventually {
+            polledSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+            assert !polledSubWorkflowIds.empty
+        }
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledSubWorkflowIds[0])
 
         and: "The SUB_WORKFLOW task starts (expression resolved → inline WorkflowDef created)"
         conditions.eventually {
