@@ -52,8 +52,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * tasks complete inline in a single pass — {@code completeWorkflow(child)} drives {@code
  * updateParentWorkflowTask}, which reads the parent task in its pre-attach state (SCHEDULED, no
  * {@code subWorkflowId}) and invokes {@code SubWorkflow.execute(child, parentTask, …)} with the
- * child workflow as the context. The SCHEDULED-recovery branch then derives a phantom
- * deterministic id from the child's workflow id and mints an orphaned workflow.
+ * child workflow as the context. The SCHEDULED-recovery branch then derives a phantom deterministic
+ * id from the child's workflow id and mints an orphaned workflow.
  *
  * <p>This test exercises the race by:
  *
@@ -72,8 +72,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  *       </ul>
  * </ol>
  *
- * <p>This is a probabilistic reproducer. The deterministic gate for the structural defect lives in
- * {@code TestSubWorkflow.testExecuteFromUpdateParentWorkflowTaskDoesNotCreatePhantomWhenContextIsChild}.
+ * <p>This is a probabilistic reproducer; PARALLELISM is sized to fire the race reliably under load
+ * but no run is guaranteed to hit it. Inspect {@code parentWorkflowId} on any flagged phantom to
+ * confirm it points at a legitimate child id — the smoking gun for this bug.
  */
 public class SubWorkflowScheduledRaceTests {
 
@@ -108,9 +109,7 @@ public class SubWorkflowScheduledRaceTests {
             }
 
             List<String> parentIds =
-                    starts.stream()
-                            .map(CompletableFuture::join)
-                            .collect(Collectors.toList());
+                    starts.stream().map(CompletableFuture::join).collect(Collectors.toList());
 
             await().atMost(AWAIT_SECONDS, TimeUnit.SECONDS)
                     .pollInterval(500, TimeUnit.MILLISECONDS)
@@ -176,8 +175,7 @@ public class SubWorkflowScheduledRaceTests {
                                 .orElseThrow()
                                 .getTaskId();
                 String legitimateChildId = deterministicSubWorkflowId(pid, parentTaskId, 0);
-                String phantomId =
-                        deterministicSubWorkflowId(legitimateChildId, parentTaskId, 0);
+                String phantomId = deterministicSubWorkflowId(legitimateChildId, parentTaskId, 0);
                 try {
                     Workflow phantom = workflowClient.getWorkflow(phantomId, false);
                     if (phantom != null) {
@@ -202,8 +200,7 @@ public class SubWorkflowScheduledRaceTests {
             String parentWorkflowId, String parentWorkflowTaskId, int retryCount) {
         String source =
                 String.format(
-                        "subworkflow:%s:%s:%d",
-                        parentWorkflowId, parentWorkflowTaskId, retryCount);
+                        "subworkflow:%s:%s:%d", parentWorkflowId, parentWorkflowTaskId, retryCount);
         return UUID.nameUUIDFromBytes(source.getBytes(StandardCharsets.UTF_8)).toString();
     }
 
