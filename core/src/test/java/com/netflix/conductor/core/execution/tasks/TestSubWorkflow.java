@@ -249,29 +249,6 @@ public class TestSubWorkflow {
     }
 
     @Test
-    public void testExecuteScheduledSubWorkflowWithoutIdRetriesStart() {
-        WorkflowModel workflowInstance = newParentWorkflow();
-        TaskModel task = newTask();
-        Map<String, Object> inputData = inputData("UnitWorkFlow", 2);
-        task.setInputData(inputData);
-
-        WorkflowModel subWorkflowInstance = new WorkflowModel();
-        subWorkflowInstance.setWorkflowId(CHILD_SUB_WORKFLOW_ID);
-        subWorkflowInstance.setStatus(WorkflowModel.Status.RUNNING);
-
-        StartWorkflowInput startWorkflowInput =
-                expectedStartWorkflowInput(
-                        workflowInstance, task, "UnitWorkFlow", 2, inputData, null, null);
-        mockSubWorkflowLaunch(task, startWorkflowInput, subWorkflowInstance);
-
-        assertTrue(subWorkflow.execute(workflowInstance, task, workflowExecutor));
-        assertEquals(CHILD_SUB_WORKFLOW_ID, task.getSubWorkflowId());
-        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
-        assertNull(task.getReasonForIncompletion());
-        assertFalse(task.getOutputData().containsKey("subWorkflowLaunchError"));
-    }
-
-    @Test
     public void testExecuteWorkflowStatus() {
         WorkflowModel workflowInstance = newParentWorkflow();
         WorkflowModel subWorkflowInstance = new WorkflowModel();

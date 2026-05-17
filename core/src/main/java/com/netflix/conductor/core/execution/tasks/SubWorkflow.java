@@ -213,7 +213,18 @@ public class SubWorkflow extends WorkflowSystemTask {
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         String workflowId = task.getSubWorkflowId();
         if (StringUtils.isEmpty(workflowId)) {
-            if (task.getStatus() == TaskModel.Status.SCHEDULED) {
+            // Only attempt SCHEDULED-recovery when this execute() call is running
+            // in the parent's evaluation context. WorkflowExecutorOps.updateParentWorkflowTask
+            // invokes this method with workflow set to the just-completed CHILD
+            // and task set to the parent's SUB_WORKFLOW task. If we recursed into
+            // start() from that context, start() would derive the deterministic
+            // child id from workflow.getWorkflowId() — the child's id, not the
+            // parent's — and mint a phantom workflow keyed off the wrong context.
+            // The legitimate launch retry happens on the async system-task worker
+            // path, where workflow IS the parent.
+            if (task.getStatus() == TaskModel.Status.SCHEDULED
+                    && task.getWorkflowInstanceId() != null
+                    && task.getWorkflowInstanceId().equals(workflow.getWorkflowId())) {
                 LOGGER.info(
                         "Retrying sub-workflow launch for task {} in parent workflow {} because it is scheduled without an attached child workflow id",
                         task.getTaskId(),
