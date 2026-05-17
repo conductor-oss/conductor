@@ -351,10 +351,7 @@ const TaskFormContent: FunctionComponent = () => {
       ? "CONNECTED APP"
       : taskType;
   const taskTypeLabel = taskType === TaskType.MCP ? "CONNECTED APP" : taskType;
-  const taskDocUrl =
-    taskType === TaskType.MCP && mcpIntegrationType
-      ? getTaskDocUrl(mcpIntegrationType) || getTaskDocUrl(TaskType.HTTP)
-      : "";
+  const taskDocUrl = getTaskDocUrl(mcpIntegrationType ?? taskType) ?? "";
 
   return (
     <Box
