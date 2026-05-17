@@ -11,6 +11,7 @@ import {
   UpdateTaskEvent,
   TaskFormMachineContext,
   UpdateCrumbsEvent,
+  ForceRefreshTaskEvent,
   SelectEdgeEvent,
 } from "./types";
 import { REPLACE_TASK_EVT } from "../../../state/constants";
@@ -78,6 +79,16 @@ export const updateCrumbsAndOriginalTask = assign<
     maybeUseChanges(context.taskChanges, event?.task),
   taskChanges: (context, event) =>
     maybeUseChanges(context.taskChanges, event?.task),
+});
+
+/** Used by AI agent updates — always replaces task state regardless of task type. */
+export const forceRefreshTask = assign<
+  TaskFormMachineContext,
+  ForceRefreshTaskEvent
+>({
+  crumbs: (_context, event) => event.crumbs,
+  originalTask: (context, event) => event.task ?? context.originalTask,
+  taskChanges: (context, event) => event.task ?? context.taskChanges,
 });
 
 export const maybePersistSelectedSwitchBranch = assign<
