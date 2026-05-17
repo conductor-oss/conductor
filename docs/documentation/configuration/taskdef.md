@@ -73,6 +73,10 @@ where `clamp` only applies when `maxRetryDelaySeconds > 0`.
 **Example**
 You have 1000 task executions waiting in the queue, and 1000 workers polling this queue for tasks, but if you have set `concurrentExecLimit` to 10, only 10 tasks would be given to workers (which would lead to starvation). If any of the workers finishes execution, a new task(s) will be removed from the queue, while still keeping the current execution count to 10.
 
+**Queue wait time behavior**
+
+When a poll arrives and the limit is already at capacity, Conductor does not release the task immediately when a slot opens up. Instead, the queued task message is postponed for a fixed duration (default: **60 seconds**, configurable via `conductor.app.taskExecutionPostponeDuration`) before it becomes visible to workers again. This means tasks waiting behind a full `concurrentExecLimit` will experience up to one full postpone window of additional queue time — even if a running task finishes shortly after the poll.
+
 ### Task Rate Limits
 
 !!! note "Rate Limiting"
