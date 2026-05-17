@@ -5,6 +5,10 @@
  * the License. You may obtain a copy of the License at
  * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.benchmark;
 
@@ -32,7 +36,8 @@ public final class ScriptEngineBenchmark {
 
     private static final int WARMUP_ITERS = 5000;
     private static final long WARMUP_TIME_CAP_NANOS = 5_000_000_000L; // 5s cap on warmup
-    private static final long MEASURE_TIME_NANOS = 7_500_000_000L; // 7.5s measure per (case, engine)
+    private static final long MEASURE_TIME_NANOS =
+            7_500_000_000L; // 7.5s measure per (case, engine)
     private static final int MIN_MEASURE_ITERS = 250;
 
     public static void main(String[] args) throws Exception {
@@ -42,8 +47,7 @@ public final class ScriptEngineBenchmark {
                 "JVM: %s %s%n",
                 System.getProperty("java.vm.name"), System.getProperty("java.version"));
         System.out.printf(
-                "OS:  %s %s%n",
-                System.getProperty("os.name"), System.getProperty("os.arch"));
+                "OS:  %s %s%n", System.getProperty("os.name"), System.getProperty("os.arch"));
         System.out.printf(
                 "Warmup: %d iters; Measure: up to %.1fs or %d iters per case per engine%n%n",
                 WARMUP_ITERS, MEASURE_TIME_NANOS / 1e9, MIN_MEASURE_ITERS);
@@ -54,8 +58,7 @@ public final class ScriptEngineBenchmark {
         try {
             engines.add(new JavetDriver());
         } catch (Throwable t) {
-            System.out.println(
-                    "WARNING: Javet driver unavailable on this host: " + t.getMessage());
+            System.out.println("WARNING: Javet driver unavailable on this host: " + t.getMessage());
         }
 
         // Header
@@ -110,7 +113,8 @@ public final class ScriptEngineBenchmark {
                     line.append(String.format("%14s", "-"));
                 } else {
                     double speedup = baseline / r.nanosPerOp;
-                    line.append(String.format("%14s", String.format(Locale.ROOT, "%.2fx", speedup)));
+                    line.append(
+                            String.format("%14s", String.format(Locale.ROOT, "%.2fx", speedup)));
                 }
             }
             System.out.println(line);
@@ -257,7 +261,8 @@ public final class ScriptEngineBenchmark {
 
     // ---------- Rhino ----------
     static final class RhinoDriver implements EngineDriver {
-        private final ThreadLocal<org.mozilla.javascript.Context> contextHolder = new ThreadLocal<>();
+        private final ThreadLocal<org.mozilla.javascript.Context> contextHolder =
+                new ThreadLocal<>();
         private org.mozilla.javascript.Script compiled;
 
         @Override
@@ -353,10 +358,7 @@ public final class ScriptEngineBenchmark {
             // ProxyConverter lazy-wraps Java objects and forces a JNI callback for every
             // property access from JS, which is catastrophic for scripts that iterate.
             v8.setConverter(new com.caoccao.javet.interop.converters.JavetObjectConverter());
-            compiled =
-                    v8.getExecutor(script)
-                            .setResourceName("inline.js")
-                            .compileV8Script();
+            compiled = v8.getExecutor(script).setResourceName("inline.js").compileV8Script();
         }
 
         @Override

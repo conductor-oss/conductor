@@ -5,6 +5,10 @@
  * the License. You may obtain a copy of the License at
  * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.benchmark;
 
@@ -15,8 +19,8 @@ import java.util.Map;
 
 /**
  * Scripts and inputs used by {@link ScriptEngineBenchmark}. All scripts use ES5/ES6 syntax that
- * works on Rhino, GraalJS, and V8 without modification. No async/await, no optional chaining,
- * no nullish coalescing.
+ * works on Rhino, GraalJS, and V8 without modification. No async/await, no optional chaining, no
+ * nullish coalescing.
  */
 final class BenchmarkScripts {
 
@@ -29,18 +33,10 @@ final class BenchmarkScripts {
 
     static {
         // 1. Trivial boolean expression
-        CASES.add(
-                new Case(
-                        "01_trivial_boolean",
-                        "$.value > 0",
-                        smallNumericInput()));
+        CASES.add(new Case("01_trivial_boolean", "$.value > 0", smallNumericInput()));
 
         // 2. Simple arithmetic on three fields
-        CASES.add(
-                new Case(
-                        "02_simple_arith",
-                        "($.a + $.b) * $.c - $.d / 2",
-                        smallNumericInput()));
+        CASES.add(new Case("02_simple_arith", "($.a + $.b) * $.c - $.d / 2", smallNumericInput()));
 
         // 3. Deep nested property access
         CASES.add(
@@ -118,9 +114,7 @@ final class BenchmarkScripts {
         // 10. Complex pipeline (~80 lines) processing 500 orders
         CASES.add(
                 new Case(
-                        "10_complex_orders_pipeline_500",
-                        COMPLEX_ORDERS_SCRIPT,
-                        ordersInput(500)));
+                        "10_complex_orders_pipeline_500", COMPLEX_ORDERS_SCRIPT, ordersInput(500)));
 
         // 11. Same complex pipeline but on 5000 orders (stress test)
         CASES.add(
@@ -151,76 +145,76 @@ final class BenchmarkScripts {
 
     private static String buildComplexOrdersScript() {
         return "(function() {\n"
-                    + "  var orders = $.orders;\n"
-                    + "  var summary = {\n"
-                    + "    total: 0,\n"
-                    + "    count: 0,\n"
-                    + "    byCategory: {},\n"
-                    + "    byCustomer: {},\n"
-                    + "    bySource: {},\n"
-                    + "    flaggedOrders: [],\n"
-                    + "    avgOrder: 0,\n"
-                    + "    maxOrder: 0,\n"
-                    + "    minOrder: Number.MAX_VALUE\n"
-                    + "  };\n"
-                    + "  for (var i = 0; i < orders.length; i++) {\n"
-                    + "    var o = orders[i];\n"
-                    + "    var amount = 0;\n"
-                    + "    for (var j = 0; j < o.lineItems.length; j++) {\n"
-                    + "      var li = o.lineItems[j];\n"
-                    + "      amount += li.price * li.qty * (1 - (li.discount || 0));\n"
-                    + "    }\n"
-                    + "    o.computedAmount = amount;\n"
-                    + "    summary.total += amount;\n"
-                    + "    summary.count++;\n"
-                    + "    if (amount > summary.maxOrder) summary.maxOrder = amount;\n"
-                    + "    if (amount < summary.minOrder) summary.minOrder = amount;\n"
-                    + "    if (!summary.byCategory[o.category]) {\n"
-                    + "      summary.byCategory[o.category] = { count: 0, sum: 0, items: 0 };\n"
-                    + "    }\n"
-                    + "    var cat = summary.byCategory[o.category];\n"
-                    + "    cat.count++;\n"
-                    + "    cat.sum += amount;\n"
-                    + "    cat.items += o.lineItems.length;\n"
-                    + "    if (!summary.byCustomer[o.customerId]) {\n"
-                    + "      summary.byCustomer[o.customerId] = { count: 0, sum: 0, orders: [] };\n"
-                    + "    }\n"
-                    + "    var cust = summary.byCustomer[o.customerId];\n"
-                    + "    cust.count++;\n"
-                    + "    cust.sum += amount;\n"
-                    + "    cust.orders.push(o.id);\n"
-                    + "    if (!summary.bySource[o.source]) {\n"
-                    + "      summary.bySource[o.source] = 0;\n"
-                    + "    }\n"
-                    + "    summary.bySource[o.source]++;\n"
-                    + "    if (amount > 1000 || (o.flags && o.flags.indexOf('priority') >= 0)) {\n"
-                    + "      summary.flaggedOrders.push({\n"
-                    + "        id: o.id,\n"
-                    + "        amount: amount,\n"
-                    + "        category: o.category,\n"
-                    + "        customerId: o.customerId,\n"
-                    + "        reasons: amount > 1000 ? ['high_value'] : ['priority']\n"
-                    + "      });\n"
-                    + "    }\n"
-                    + "  }\n"
-                    + "  summary.avgOrder = summary.count > 0 ? summary.total / summary.count : 0;\n"
-                    + "  var categories = [];\n"
-                    + "  for (var k in summary.byCategory) {\n"
-                    + "    var c = summary.byCategory[k];\n"
-                    + "    c.avg = c.sum / c.count;\n"
-                    + "    categories.push({ name: k, avg: c.avg, sum: c.sum, count: c.count });\n"
-                    + "  }\n"
-                    + "  categories.sort(function(a, b) { return b.sum - a.sum; });\n"
-                    + "  summary.topCategories = categories.slice(0, 5);\n"
-                    + "  var customers = [];\n"
-                    + "  for (var ck in summary.byCustomer) {\n"
-                    + "    var cu = summary.byCustomer[ck];\n"
-                    + "    customers.push({ id: ck, sum: cu.sum, count: cu.count });\n"
-                    + "  }\n"
-                    + "  customers.sort(function(a, b) { return b.sum - a.sum; });\n"
-                    + "  summary.topCustomers = customers.slice(0, 10);\n"
-                    + "  return summary;\n"
-                    + "})()";
+                + "  var orders = $.orders;\n"
+                + "  var summary = {\n"
+                + "    total: 0,\n"
+                + "    count: 0,\n"
+                + "    byCategory: {},\n"
+                + "    byCustomer: {},\n"
+                + "    bySource: {},\n"
+                + "    flaggedOrders: [],\n"
+                + "    avgOrder: 0,\n"
+                + "    maxOrder: 0,\n"
+                + "    minOrder: Number.MAX_VALUE\n"
+                + "  };\n"
+                + "  for (var i = 0; i < orders.length; i++) {\n"
+                + "    var o = orders[i];\n"
+                + "    var amount = 0;\n"
+                + "    for (var j = 0; j < o.lineItems.length; j++) {\n"
+                + "      var li = o.lineItems[j];\n"
+                + "      amount += li.price * li.qty * (1 - (li.discount || 0));\n"
+                + "    }\n"
+                + "    o.computedAmount = amount;\n"
+                + "    summary.total += amount;\n"
+                + "    summary.count++;\n"
+                + "    if (amount > summary.maxOrder) summary.maxOrder = amount;\n"
+                + "    if (amount < summary.minOrder) summary.minOrder = amount;\n"
+                + "    if (!summary.byCategory[o.category]) {\n"
+                + "      summary.byCategory[o.category] = { count: 0, sum: 0, items: 0 };\n"
+                + "    }\n"
+                + "    var cat = summary.byCategory[o.category];\n"
+                + "    cat.count++;\n"
+                + "    cat.sum += amount;\n"
+                + "    cat.items += o.lineItems.length;\n"
+                + "    if (!summary.byCustomer[o.customerId]) {\n"
+                + "      summary.byCustomer[o.customerId] = { count: 0, sum: 0, orders: [] };\n"
+                + "    }\n"
+                + "    var cust = summary.byCustomer[o.customerId];\n"
+                + "    cust.count++;\n"
+                + "    cust.sum += amount;\n"
+                + "    cust.orders.push(o.id);\n"
+                + "    if (!summary.bySource[o.source]) {\n"
+                + "      summary.bySource[o.source] = 0;\n"
+                + "    }\n"
+                + "    summary.bySource[o.source]++;\n"
+                + "    if (amount > 1000 || (o.flags && o.flags.indexOf('priority') >= 0)) {\n"
+                + "      summary.flaggedOrders.push({\n"
+                + "        id: o.id,\n"
+                + "        amount: amount,\n"
+                + "        category: o.category,\n"
+                + "        customerId: o.customerId,\n"
+                + "        reasons: amount > 1000 ? ['high_value'] : ['priority']\n"
+                + "      });\n"
+                + "    }\n"
+                + "  }\n"
+                + "  summary.avgOrder = summary.count > 0 ? summary.total / summary.count : 0;\n"
+                + "  var categories = [];\n"
+                + "  for (var k in summary.byCategory) {\n"
+                + "    var c = summary.byCategory[k];\n"
+                + "    c.avg = c.sum / c.count;\n"
+                + "    categories.push({ name: k, avg: c.avg, sum: c.sum, count: c.count });\n"
+                + "  }\n"
+                + "  categories.sort(function(a, b) { return b.sum - a.sum; });\n"
+                + "  summary.topCategories = categories.slice(0, 5);\n"
+                + "  var customers = [];\n"
+                + "  for (var ck in summary.byCustomer) {\n"
+                + "    var cu = summary.byCustomer[ck];\n"
+                + "    customers.push({ id: ck, sum: cu.sum, count: cu.count });\n"
+                + "  }\n"
+                + "  customers.sort(function(a, b) { return b.sum - a.sum; });\n"
+                + "  summary.topCustomers = customers.slice(0, 10);\n"
+                + "  return summary;\n"
+                + "})()";
     }
 
     // ---------- Input builders ----------

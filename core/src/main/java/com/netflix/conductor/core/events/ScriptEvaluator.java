@@ -49,9 +49,7 @@ public class ScriptEvaluator {
 
     private static Engine buildEngine() {
         Engine engine =
-                Engine.newBuilder("js")
-                        .option("engine.WarnInterpreterOnly", "false")
-                        .build();
+                Engine.newBuilder("js").option("engine.WarnInterpreterOnly", "false").build();
         // Log once so operators can confirm whether the optimizing runtime is engaged.
         // "GraalVM" => JIT-compiling Truffle runtime; "Default" => interpreter-only fallback.
         LOGGER.info(
@@ -168,11 +166,11 @@ public class ScriptEvaluator {
     }
 
     /**
-     * Returns a defensive deep copy of {@code input} so script-side mutations (e.g. {@code
-     * $.data.x = 1}) cannot leak back into the caller's data structures and so {@code PolyglotMap}
-     * /{@code PolyglotList} references created during evaluation cannot escape a closed Context.
-     * Recurses through Maps, Lists, Sets, and arrays; immutable scalars (String, Number, Boolean,
-     * etc.) are shared by reference. Cheaper than a JSON round-trip.
+     * Returns a defensive deep copy of {@code input} so script-side mutations (e.g. {@code $.data.x
+     * = 1}) cannot leak back into the caller's data structures and so {@code PolyglotMap} /{@code
+     * PolyglotList} references created during evaluation cannot escape a closed Context. Recurses
+     * through Maps, Lists, Sets, and arrays; immutable scalars (String, Number, Boolean, etc.) are
+     * shared by reference. Cheaper than a JSON round-trip.
      */
     public static Object deepCopy(Object input) {
         if (input == null) {
@@ -274,8 +272,7 @@ public class ScriptEvaluator {
                 final ScriptExecutionContext finalScriptContext = scriptContext;
                 finalScriptContext.prepareBindings(input, console);
                 Future<Value> futureResult =
-                        executorService.submit(
-                                () -> finalScriptContext.getContext().eval(source));
+                        executorService.submit(() -> finalScriptContext.getContext().eval(source));
                 Value value =
                         futureResult.get(maxExecutionTimeSeconds.getSeconds(), TimeUnit.SECONDS);
                 return getObject(value);
