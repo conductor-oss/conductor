@@ -49,6 +49,8 @@ export const fetchForPromptNames = async (
 ) => {
   const maybeLlmProvider = task?.inputParameters?.llmProvider;
   const maybeModel = task?.inputParameters?.model;
+
+  // If provider and model are both set, fetch prompts for that specific combination
   if (maybeModel && maybeLlmProvider) {
     const path = `/integrations/provider/${maybeLlmProvider}/integration/${maybeModel}/prompt`;
     try {
@@ -62,7 +64,20 @@ export const fetchForPromptNames = async (
       return [];
     }
   }
-  return [];
+
+  // If provider/model are not set, fetch all prompts so users can see them
+  // This allows selecting a prompt before selecting provider/model
+  try {
+    const path = `/prompts`;
+    const response = await queryClient.fetchQuery(
+      [fetchContext.stack, path],
+      () => fetchWithContext(path, fetchContext, { headers }),
+    );
+    return response;
+  } catch (error) {
+    logger.error(error);
+    return [];
+  }
 };
 
 export const fetchForVectorDb = async ({

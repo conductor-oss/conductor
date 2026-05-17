@@ -1,5 +1,5 @@
-import React from "react";
 import { useInterpret } from "@xstate/react";
+import React from "react";
 import { TaskDef } from "types";
 import { UiIntegrationsFieldType } from "types/FormFieldTypes";
 import { FieldComponentType, updateField } from "utils/fieldHelpers";
@@ -61,11 +61,38 @@ const LLMFormFieldsWrapper = ({
             event.task,
           );
 
-          const taskWithSelectedPromptName = updateField(
+          let taskWithSelectedPromptName = updateField(
             `inputParameters.${UiIntegrationsFieldType.PROMPT_NAME}`,
             maybeAvailablePromptName?.name,
             taskWithVariables,
           );
+
+          // Auto-populate temperature if available in the prompt
+          if (maybeAvailablePromptName.temperature != null) {
+            taskWithSelectedPromptName = updateField(
+              `inputParameters.${UiIntegrationsFieldType.TEMPERATURE}`,
+              maybeAvailablePromptName.temperature,
+              taskWithSelectedPromptName,
+            );
+          }
+
+          // Auto-populate topP if available in the prompt
+          if (maybeAvailablePromptName.topP != null) {
+            taskWithSelectedPromptName = updateField(
+              `inputParameters.${UiIntegrationsFieldType.TOP_P}`,
+              maybeAvailablePromptName.topP,
+              taskWithSelectedPromptName,
+            );
+          }
+
+          // Auto-populate stopWords if available in the prompt
+          if (maybeAvailablePromptName.stopWords != null) {
+            taskWithSelectedPromptName = updateField(
+              `inputParameters.stopWords`,
+              maybeAvailablePromptName.stopWords,
+              taskWithSelectedPromptName,
+            );
+          }
 
           onChange(taskWithSelectedPromptName);
         } else {
@@ -103,11 +130,38 @@ const LLMFormFieldsWrapper = ({
             event.task,
           );
 
-          const taskWithSelectedPromptName = updateField(
+          let taskWithSelectedPromptName = updateField(
             `inputParameters.${UiIntegrationsFieldType.INSTRUCTIONS}`,
             maybeAvailablePromptName?.name,
             taskWithVariables,
           );
+
+          // Auto-populate temperature if available in the prompt
+          if (maybeAvailablePromptName.temperature != null) {
+            taskWithSelectedPromptName = updateField(
+              `inputParameters.${UiIntegrationsFieldType.TEMPERATURE}`,
+              maybeAvailablePromptName.temperature,
+              taskWithSelectedPromptName,
+            );
+          }
+
+          // Auto-populate topP if available in the prompt
+          if (maybeAvailablePromptName.topP != null) {
+            taskWithSelectedPromptName = updateField(
+              `inputParameters.${UiIntegrationsFieldType.TOP_P}`,
+              maybeAvailablePromptName.topP,
+              taskWithSelectedPromptName,
+            );
+          }
+
+          // Auto-populate stopWords if available in the prompt
+          if (maybeAvailablePromptName.stopWords != null) {
+            taskWithSelectedPromptName = updateField(
+              `inputParameters.stopWords`,
+              maybeAvailablePromptName.stopWords,
+              taskWithSelectedPromptName,
+            );
+          }
 
           onChange(taskWithSelectedPromptName);
         } else {
