@@ -50,6 +50,14 @@ export const LLMChatCompleteTaskForm = ({ task, onChange }: TaskFormProps) => {
     >
       {(actor) => (
         <Box padding={1} width="100%">
+          <TaskFormSection title="Prompt and Variables">
+            <LLMFormFields
+              task={task}
+              onChange={onChange}
+              fieldFieldComponents={promptFieldComponents}
+              actor={actor}
+            />
+          </TaskFormSection>
           <TaskFormSection
             accordionAdditionalProps={{ defaultExpanded: true }}
             title="Provider and Model"
@@ -58,14 +66,6 @@ export const LLMChatCompleteTaskForm = ({ task, onChange }: TaskFormProps) => {
               task={task}
               onChange={onChange}
               fieldFieldComponents={modelFieldComponents}
-              actor={actor}
-            />
-          </TaskFormSection>
-          <TaskFormSection title="Prompt and Variables">
-            <LLMFormFields
-              task={task}
-              onChange={onChange}
-              fieldFieldComponents={promptFieldComponents}
               actor={actor}
             />
           </TaskFormSection>
