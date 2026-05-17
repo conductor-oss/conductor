@@ -68,14 +68,23 @@ where `clamp` only applies when `maxRetryDelaySeconds > 0`.
 
 ### Task Concurrent Execution Limits
 
-`concurrentExecLimit` limits the number of simultaneous Task executions at any point.
+`concurrentExecLimit` caps the number of tasks of this type that can be `IN_PROGRESS` at the same time, across all workers.
 
 **Example**
-You have 1000 task executions waiting in the queue, and 1000 workers polling this queue for tasks, but if you have set `concurrentExecLimit` to 10, only 10 tasks would be given to workers (which would lead to starvation). If any of the workers finishes execution, a new task(s) will be removed from the queue, while still keeping the current execution count to 10.
 
-**Queue wait time behavior**
+You have 1000 tasks in the queue and 1000 workers polling for them. With `concurrentExecLimit = 10`, only 10 tasks are handed out at a time — the remaining 990 workers are starved until a slot opens.
 
-When a poll arrives and the limit is already at capacity, Conductor does not release the task immediately when a slot opens up. Instead, the queued task message is postponed for a fixed duration (default: **60 seconds**, configurable via `conductor.app.taskExecutionPostponeDuration`) before it becomes visible to workers again. This means tasks waiting behind a full `concurrentExecLimit` will experience up to one full postpone window of additional queue time — even if a running task finishes shortly after the poll.
+**How the limit is enforced**
+
+The limit is checked at poll time, not when a task completes. When a worker polls and the limit is already full, Conductor does **not** hold the worker — it postpones the queued task message and returns nothing to that worker. The task becomes eligible for polling again only after the postpone window expires.
+
+The default postpone duration is **60 seconds**, set by the server property `conductor.app.taskExecutionPostponeDuration`.
+
+**What this means in practice**
+
+This is not event-driven. If task A finishes in 5ms, task B does not get handed out immediately — it stays invisible in the queue until the 60-second window expires. This is why tasks with `concurrentExecLimit` often show queue wait times of ~60,000ms even when the task itself runs in milliseconds.
+
+If your tasks are short-lived, lower `conductor.app.taskExecutionPostponeDuration` (e.g. to `5s`) to reduce queue wait time at the cost of slightly more poll churn.
 
 ### Task Rate Limits
 
