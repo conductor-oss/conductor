@@ -76,15 +76,15 @@ You have 1000 tasks in the queue and 1000 workers polling for them. With `concur
 
 **How the limit is enforced**
 
-The limit is checked at poll time, not when a task completes. When a worker polls and the limit is already full, Conductor does **not** hold the worker — it postpones the queued task message and returns nothing to that worker. The task becomes eligible for polling again only after the postpone window expires.
+The limit is checked at poll time, not when a task completes. When a worker polls and the limit is already full, Conductor postpones the queued task message and returns nothing to that worker. The task becomes eligible for polling again only after the postpone window expires.
 
-The default postpone duration is **60 seconds**, set by the server property `conductor.app.taskExecutionPostponeDuration`.
+The postpone duration defaults to **60 seconds** and is controlled by [`conductor.app.taskExecutionPostponeDuration`](appconf.md).
 
 **What this means in practice**
 
-This is not event-driven. If task A finishes in 5ms, task B does not get handed out immediately — it stays invisible in the queue until the 60-second window expires. This is why tasks with `concurrentExecLimit` often show queue wait times of ~60,000ms even when the task itself runs in milliseconds.
+If task A finishes in 5ms, task B still waits up to 60 seconds before a worker can pick it up — because release is driven by the postpone timer, not by task completion. This is why tasks with `concurrentExecLimit` often show queue wait times of ~60,000ms even when the task itself runs in milliseconds.
 
-If your tasks are short-lived, lower `conductor.app.taskExecutionPostponeDuration` (e.g. to `5s`) to reduce queue wait time at the cost of slightly more poll churn.
+If your tasks are short-lived, lower `conductor.app.taskExecutionPostponeDuration` to reduce queue wait time at the cost of slightly more poll churn.
 
 ### Task Rate Limits
 
