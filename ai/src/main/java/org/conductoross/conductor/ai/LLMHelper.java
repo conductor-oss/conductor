@@ -430,11 +430,40 @@ public class LLMHelper {
             result = responses.getFirst();
         }
         finishReason = finishReasonMap.getOrDefault(finishReason, finishReason).toUpperCase();
+
+        // Extract response_id if present (set by OpenAI Responses API for chaining)
+        String responseId = null;
+        Object respIdObj = chatResponse.getMetadata().get("response_id");
+        if (respIdObj instanceof String rid) {
+            responseId = rid;
+        }
+
+        // Reasoning summary + reasoning token count. Surfaced by the OpenAI
+        // Responses API, Anthropic extended thinking, and Gemini thought
+        // summaries — the chat-model adapters normalize all three onto these
+        // two metadata keys before we read them here.
+        String reasoning = null;
+        Object reasoningObj = chatResponse.getMetadata().get("reasoning");
+        if (reasoningObj instanceof String r && !r.isBlank()) {
+            reasoning = r;
+        }
+        Integer reasoningTokens = null;
+        Object rtObj = chatResponse.getMetadata().get("reasoning_tokens");
+        // ``Number`` rather than ``Integer`` so a Long survives the Jackson
+        // round-trip ChatResponseMetadata may go through. Token counts won't
+        // overflow int — convert and move on.
+        if (rtObj instanceof Number rt) {
+            reasoningTokens = rt.intValue();
+        }
+
         return LLMResponse.builder()
                 .result(result)
                 .media(media)
                 .toolCalls(tools)
                 .finishReason(finishReason)
+                .responseId(responseId)
+                .reasoning(reasoning)
+                .reasoningTokens(reasoningTokens)
                 .completionTokens(chatResponse.getMetadata().getUsage().getCompletionTokens())
                 .promptTokens(chatResponse.getMetadata().getUsage().getPromptTokens())
                 .tokenUsed(chatResponse.getMetadata().getUsage().getTotalTokens())

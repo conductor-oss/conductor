@@ -265,10 +265,10 @@ public class OpenAIVideoApi {
     public record VideoStatusResponse(
             String id,
             String object,
-            @JsonProperty("created_at") long createdAt,
+            @JsonProperty("created_at") Long createdAt,
             String status,
             String model,
-            int progress,
+            Integer progress,
             String seconds,
             String size) {}
 }

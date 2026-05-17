@@ -454,6 +454,10 @@ export const CreatorFlags: FunctionComponent = () => {
     FEATURES.ENABLE_CONFETTI,
     null,
   );
+  const [connectedAppsEnabled, setConnectedAppsEnabled] = useLocalStorage(
+    FEATURES.CONNECTED_APPS_ENABLED,
+    null,
+  );
   const [showAgent, setShowAgent] = useLocalStorage(FEATURES.SHOW_AGENT, null);
   const [enableAgentAudioInput, setEnableAgentAudioInput] = useLocalStorage(
     FEATURES.ENABLE_AGENT_AUDIO_INPUT,
@@ -973,6 +977,16 @@ export const CreatorFlags: FunctionComponent = () => {
       setValue: setWorkflowIntrospection,
       contextValue: featureFlags.getContextValue(
         FEATURES.WORKFLOW_INTROSPECTION,
+      ),
+      type: "boolean",
+    },
+    {
+      name: "connected_apps_enabled",
+      label: "Connected Apps Enabled",
+      value: connectedAppsEnabled,
+      setValue: setConnectedAppsEnabled,
+      contextValue: featureFlags.getContextValue(
+        FEATURES.CONNECTED_APPS_ENABLED,
       ),
       type: "boolean",
     },

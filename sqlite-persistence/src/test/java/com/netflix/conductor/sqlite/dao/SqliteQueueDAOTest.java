@@ -343,6 +343,85 @@ public class SqliteQueueDAOTest {
         }
     }
 
+    @Test
+    public void setUnackTimeoutIfShorterShortensDueTime() {
+        String queueName = "setUnackIfShorter_shorten";
+        String messageId = "msg-shorten";
+
+        // Push with a 1-hour delay so it is not immediately poppable
+        queueDAO.push(queueName, messageId, 3600L);
+        assertEquals(0, queueDAO.pop(queueName, 1, 100).size());
+
+        // Shorten delivery to now (0 s) — should succeed and return true
+        boolean shortened = queueDAO.setUnackTimeoutIfShorter(queueName, messageId, 0L);
+        assertTrue(
+                "setUnackTimeoutIfShorter should return true when it actually shortens", shortened);
+
+        // Message must now be immediately poppable
+        List<String> popped = queueDAO.pop(queueName, 1, 100);
+        assertEquals(1, popped.size());
+        assertEquals(messageId, popped.get(0));
+    }
+
+    @Test
+    public void setUnackTimeoutIfShorterDoesNotExtend() {
+        String queueName = "setUnackIfShorter_noextend";
+        String messageId = "msg-noextend";
+
+        // Push with offset 0 so it is immediately available
+        queueDAO.push(queueName, messageId, 0L);
+
+        // Try to push deliver_on far into the future — must be rejected
+        boolean extended = queueDAO.setUnackTimeoutIfShorter(queueName, messageId, 3_600_000L);
+        assertFalse(
+                "setUnackTimeoutIfShorter must not extend an already-closer delivery time",
+                extended);
+
+        // Message must still be immediately poppable
+        List<String> popped = queueDAO.pop(queueName, 1, 100);
+        assertEquals(1, popped.size());
+        assertEquals(messageId, popped.get(0));
+    }
+
+    @Test
+    public void setUnackTimeoutIfShorterReturnsFalseForNonExistent() {
+        String queueName = "setUnackIfShorter_nonexistent";
+        boolean updated = queueDAO.setUnackTimeoutIfShorter(queueName, "no-such-message", 0L);
+        assertFalse(
+                "setUnackTimeoutIfShorter must return false for a non-existent message", updated);
+    }
+
+    @Test
+    public void setUnackTimeoutIfShorterReturnsFalseWhenEqualTimeout() {
+        String queueName = "setUnackIfShorter_equal";
+        String messageId = "msg-equal";
+        queueDAO.push(queueName, messageId, 0L);
+
+        boolean result = queueDAO.setUnackTimeoutIfShorter(queueName, messageId, 0L);
+        assertFalse("Equal timeout must not update deliver_on — returns false", result);
+
+        List<String> popped = queueDAO.pop(queueName, 1, 100);
+        assertEquals(1, popped.size());
+        assertEquals(messageId, popped.get(0));
+    }
+
+    @Test
+    public void setUnackTimeoutIfShorterRejectsExtensionThenAcceptsShortening() {
+        String queueName = "setUnackIfShorter_reject_then_accept";
+        String messageId = "msg-reject-accept";
+        queueDAO.push(queueName, messageId, 3600L);
+
+        boolean extended = queueDAO.setUnackTimeoutIfShorter(queueName, messageId, 7_200_000L);
+        assertFalse("Extending must return false", extended);
+
+        boolean shortened = queueDAO.setUnackTimeoutIfShorter(queueName, messageId, 0L);
+        assertTrue("Shortening to now must return true", shortened);
+
+        List<String> popped = queueDAO.pop(queueName, 1, 100);
+        assertEquals(1, popped.size());
+        assertEquals(messageId, popped.get(0));
+    }
+
     // @Test
     public void processUnacksTest() {
         processUnacks(

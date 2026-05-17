@@ -204,6 +204,28 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
     }
 
     @Override
+    public boolean setUnackTimeoutIfShorter(String queueName, String messageId, long unackTimeout) {
+        long updatedOffsetTimeInSecond = unackTimeout / 1000;
+
+        // Only update when the proposed deliver_on is earlier than what is already set,
+        // mirroring the ZADD LT semantics used by the Redis implementation.
+        final String UPDATE_UNACK_TIMEOUT_IF_SHORTER =
+                "UPDATE queue_message SET offset_time_seconds = ?, deliver_on = strftime('%Y-%m-%d %H:%M:%f', 'now', '+' || ? || ' seconds')"
+                        + " WHERE queue_name = ? AND message_id = ? AND deliver_on > strftime('%Y-%m-%d %H:%M:%f', 'now', '+' || ? || ' seconds')";
+
+        return queryWithTransaction(
+                        UPDATE_UNACK_TIMEOUT_IF_SHORTER,
+                        q ->
+                                q.addParameter(updatedOffsetTimeInSecond)
+                                        .addParameter(updatedOffsetTimeInSecond)
+                                        .addParameter(queueName)
+                                        .addParameter(messageId)
+                                        .addParameter(updatedOffsetTimeInSecond)
+                                        .executeUpdate())
+                == 1;
+    }
+
+    @Override
     public void flush(String queueName) {
         final String FLUSH_QUEUE = "DELETE FROM queue_message WHERE queue_name = ?";
         executeWithTransaction(FLUSH_QUEUE, q -> q.addParameter(queueName).executeDelete());

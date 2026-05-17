@@ -17,6 +17,9 @@ import java.util.List;
 import org.conductoross.conductor.ai.models.ChatCompletion;
 import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.models.ImageGenRequest;
+import org.conductoross.conductor.ai.providers.openai.OpenAIHttpImageModel;
+import org.conductoross.conductor.ai.providers.openai.OpenAIResponsesChatModel;
+import org.conductoross.conductor.ai.providers.openai.OpenAIResponsesChatOptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -60,12 +63,14 @@ class AzureOpenAITest {
             var options = azureOpenAI.getChatOptions(input);
 
             assertNotNull(options);
+            assertInstanceOf(OpenAIResponsesChatOptions.class, options);
+            assertEquals("gpt-4", options.getModel());
         }
 
         @Test
         void testGetImageOptions() {
             ImageGenRequest input = new ImageGenRequest();
-            input.setModel("dall-e-3");
+            input.setModel("gpt-image-1");
             input.setHeight(1024);
             input.setWidth(1024);
             input.setN(1);
@@ -73,6 +78,20 @@ class AzureOpenAITest {
             var options = azureOpenAI.getImageOptions(input);
 
             assertNotNull(options);
+        }
+
+        @Test
+        void testGetChatModel_createsResponsesModel() {
+            var chatModel = azureOpenAI.getChatModel();
+            assertNotNull(chatModel);
+            assertInstanceOf(OpenAIResponsesChatModel.class, chatModel);
+        }
+
+        @Test
+        void testGetImageModel_createsHttpModel() {
+            var imageModel = azureOpenAI.getImageModel();
+            assertNotNull(imageModel);
+            assertInstanceOf(OpenAIHttpImageModel.class, imageModel);
         }
     }
 

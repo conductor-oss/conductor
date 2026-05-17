@@ -83,6 +83,22 @@ public class MetadataResource {
         return metadataService.getWorkflowNamesAndVersions();
     }
 
+    @Operation(
+            summary =
+                    "Returns only distinct workflow definition names (no versions or definition bodies)")
+    @GetMapping("/workflow/names")
+    public List<String> getWorkflowNames() {
+        return metadataService.getWorkflowNames();
+    }
+
+    @Operation(
+            summary =
+                    "Returns lightweight version summaries for a single workflow (no definition bodies)")
+    @GetMapping("/workflow/{name}/versions")
+    public List<WorkflowDefSummary> getWorkflowVersions(@PathVariable("name") String name) {
+        return metadataService.getWorkflowVersions(name);
+    }
+
     @Operation(summary = "Returns only the latest version of all workflow definitions")
     @GetMapping("/workflow/latest-versions")
     public List<WorkflowDef> getAllWorkflowsWithLatestVersions() {
