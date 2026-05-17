@@ -53,7 +53,7 @@ public abstract class AbstractSchedulerAutoConfigurationSmokeTest {
         }
 
         @Bean
-        public RetryTemplate retryTemplate() {
+        public RetryTemplate postgresRetryTemplate() {
             return new RetryTemplate();
         }
     }

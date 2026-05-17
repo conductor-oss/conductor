@@ -142,11 +142,9 @@ export const MaybeTooltipLabel = ({
   <>
     {tooltip ? (
       <ConductorToolTip placement="top" {...tooltip}>
-        <Box sx={{ display: "inline-block" }}>
+        <Box sx={{ display: "inline-flex", alignItems: "center", gap: "3px" }}>
           {label}
-          <Box component="span" sx={{ ml: "3px" }}>
-            <InfoIcon size={14} />
-          </Box>
+          <InfoIcon size={14} />
           {required && label && "*"}
         </Box>
       </ConductorToolTip>
@@ -397,6 +395,18 @@ const ConductorInput = forwardRef(
               isFocused,
               disabled,
             }),
+            // MUI TextField renders the label JSX in both the visible InputLabel
+            // and the hidden NotchedOutline <legend> for border-notch sizing.
+            // The InputLabel shrinks via CSS transform so its text scales down,
+            // but the SVG icon stays at its absolute size, making the notch
+            // wider than the visual label. The legend's font-size is already set
+            // by MUI to match the shrunken InputLabel, so expressing the icon
+            // size in `em` naturally scales it to match — no scale factor needed.
+            // 0.875em = 14px / 16px (body1 base), resolving to 10.5px in the
+            // legend's 12px font-size context (0.875 × 12 = 10.5).
+            !!tooltip && {
+              "& legend svg": { width: "0.875em", height: "0.875em" },
+            },
           ],
         }}
         helperText={helperText}
