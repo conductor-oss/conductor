@@ -38,7 +38,7 @@ include 'redis-concurrency-limit'
 
 include 'json-jq-task'
 include 'http-task'
-include 'webhook-task'
+include 'webhooks'
 
 include 'rest'
 include 'grpc'
