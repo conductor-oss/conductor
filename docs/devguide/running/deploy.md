@@ -474,6 +474,34 @@ For details on available metrics, see [Server Metrics](../../documentation/metri
 
 ---
 
+### Headless (API-only) deployment
+
+By default, the Conductor server also serves the bundled UI. For production setups where the UI is hosted separately — behind a CDN, in its own Nginx container, or as part of a larger SPA — disable the bundled UI serving:
+
+```properties
+conductor.enable.ui.serving=false
+```
+
+This skips two Spring MVC registrations:
+
+1. The `SpaInterceptor` that forwards unmatched paths to `index.html` (which the SPA's client-side router uses).
+2. The resource handler that serves the UI bundle at `/static/ui/**`.
+
+The REST API (`/api/**`), OpenAPI spec (`/api-docs`, `/v3/api-docs`), Swagger UI (`/swagger-ui/**`), actuator endpoints, and health checks are not affected — they are excluded at the interceptor-registration level and respond identically regardless of the flag.
+
+!!! note "A small placeholder remains at `/`"
+    A static `index.html` is shipped inside the server JAR (a short page with a Conductor logo and links to Swagger UI and the documentation) and is still served by Spring Boot's default static-resource handling, so a request for `/` returns that placeholder rather than a 404. If you need a strict 404 at the root, route `/` through your reverse proxy to your own UI host.
+
+When to use this pattern:
+
+- You want to scale the API server and the UI independently.
+- You want different authentication, rate-limiting, or CSP policies on the UI versus the API.
+- You want to deploy UI changes without restarting the engine.
+
+See [UI Serving](../../documentation/configuration/appconf.md#ui-serving) in the App Configuration reference for the full property description.
+
+---
+
 ## Recommended production configurations
 
 ### PostgreSQL stack (simplest)
