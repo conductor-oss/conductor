@@ -18,9 +18,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.conductoross.conductor.common.webhook.IncomingWebhookEvent;
-import org.conductoross.conductor.common.webhook.WebhookConfig;
-import org.conductoross.conductor.common.webhook.WebhookConfigDAO;
+import org.conductoross.conductor.common.webhook.model.IncomingWebhookEvent;
+import org.conductoross.conductor.common.webhook.model.WebhookConfig;
+import org.conductoross.conductor.dao.webhook.WebhookConfigDAO;
 
 /**
  * Default single-node implementation of {@link WebhookConfigDAO}.

@@ -12,4 +12,5 @@
  */
 dependencies {
     implementation project(':conductor-common')
+    implementation project(':conductor-core')
 }

@@ -17,7 +17,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.conductoross.conductor.common.webhook.WebhookTaskDAO;
+import org.conductoross.conductor.dao.webhook.WebhookTaskDAO;
 
 /**
  * Default single-node implementation of {@link WebhookTaskDAO}.
