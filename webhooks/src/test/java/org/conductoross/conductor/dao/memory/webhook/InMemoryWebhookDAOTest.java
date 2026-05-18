@@ -13,7 +13,6 @@
 package org.conductoross.conductor.dao.memory.webhook;
 
 import java.util.List;
-import java.util.Map;
 
 import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
 import org.conductoross.conductor.webhook.model.WebhookConfig;
@@ -89,33 +88,6 @@ public class InMemoryWebhookDAOTest {
     }
 
     @Test
-    public void matchersStoredAndRetrievedByWebhookId() {
-        Map<String, Map<String, Object>> index =
-                Map.of("order_workflow;1;waitForPayment", Map.of("$['type']", "payment.completed"));
-        dao.createMatchers("w1", index);
-        assertEquals(index, dao.getMatchers("w1"));
-    }
-
-    @Test
-    public void getMatchersReturnsEmptyMapForUnknownWebhook() {
-        assertTrue(dao.getMatchers("does-not-exist").isEmpty());
-    }
-
-    @Test
-    public void createMatchersOverwritesPreviousIndex() {
-        dao.createMatchers("w1", Map.of("key-1", Map.of("a", "1")));
-        dao.createMatchers("w1", Map.of("key-2", Map.of("b", "2")));
-        assertEquals(Map.of("key-2", Map.of("b", "2")), dao.getMatchers("w1"));
-    }
-
-    @Test
-    public void removeMatchersDropsTheIndex() {
-        dao.createMatchers("w1", Map.of("k", Map.of("a", "1")));
-        dao.removeMatchers("w1");
-        assertTrue(dao.getMatchers("w1").isEmpty());
-    }
-
-    @Test
     public void incomingEventRoundTripsById() {
         IncomingWebhookEvent event = new IncomingWebhookEvent();
         event.setId("e1");
@@ -166,29 +138,15 @@ public class InMemoryWebhookDAOTest {
     }
 
     @Test
-    public void getMatchersReturnsStoredReferenceCallersMustNotMutate() {
-        Map<String, Map<String, Object>> index = new java.util.HashMap<>();
-        index.put("k1", Map.of("a", "1"));
-        dao.createMatchers("w1", index);
-        dao.getMatchers("w1").remove("k1");
-        assertTrue(
-                "in-memory impl returns the stored map reference; callers mutating it corrupts "
-                        + "storage. Pinned so a future defensive-copy switch is deliberate.",
-                dao.getMatchers("w1").isEmpty());
-    }
-
-    @Test
-    public void configMatchersAndEventsAreIsolatedNamespaces() {
-        // Same id used across all three storages — must not collide.
+    public void configAndEventsAreIsolatedNamespaces() {
+        // Same id used across both storages — must not collide.
         dao.createWebhook("shared-id", newConfig("shared-id", "config"));
-        dao.createMatchers("shared-id", Map.of("k", Map.of("a", "1")));
         IncomingWebhookEvent event = new IncomingWebhookEvent();
         event.setId("shared-id");
         dao.createIncomingWebhookEvent("shared-id", event);
 
         dao.removeWebhook("shared-id");
         assertNull(dao.getWebhook("shared-id"));
-        assertEquals(Map.of("k", Map.of("a", "1")), dao.getMatchers("shared-id"));
         assertEquals(event, dao.getIncomingWebhookEvent("shared-id"));
     }
 }

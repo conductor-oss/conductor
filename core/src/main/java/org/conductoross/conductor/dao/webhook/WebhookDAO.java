@@ -13,7 +13,6 @@
 package org.conductoross.conductor.dao.webhook;
 
 import java.util.List;
-import java.util.Map;
 
 import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
 import org.conductoross.conductor.webhook.model.WebhookConfig;
@@ -45,15 +44,6 @@ public interface WebhookDAO {
     List<WebhookConfig> getAllWebhooks();
 
     void removeWebhook(String id);
-
-    void createMatchers(String webhookId, Map<String, Map<String, Object>> matchers);
-
-    /**
-     * @see WebhookDAO — the returned matcher index must not be mutated by the caller.
-     */
-    Map<String, Map<String, Object>> getMatchers(String webhookId);
-
-    void removeMatchers(String webhookId);
 
     void createIncomingWebhookEvent(String id, IncomingWebhookEvent event);
 
