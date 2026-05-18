@@ -68,6 +68,7 @@ export const HEADERS_PATH = "headers";
 export const CONTENT_TYPE_PATH = "contentType";
 export const METHOD_PATH = "method";
 export const HEDGING_CONFIG_PATH = "hedgingConfig";
+export const ACCEPTED_STATUS_CODES_PATH = "acceptedStatusCodes";
 export const SERVICE_PATH = "service";
 export const HTTP_REQUEST_PATH = "inputParameters.http_request";
 export const POLLING_STRATEGY_PATH = "pollingStrategy";
@@ -77,3 +78,25 @@ export const WAIT_DURATION_PATH =
 export const URI_PATH = "uri";
 export const HTTP_REQUEST_BODY = "body";
 export const HTTP_REQUEST_ENCODE = "encode";
+
+export const STATUS_CODE_SUGGESTIONS = [
+  "2xx",
+  "3xx",
+  "4xx",
+  "5xx",
+  "200",
+  "201",
+  "202",
+  "204",
+  "301",
+  "302",
+  "304",
+  "400",
+  "401",
+  "403",
+  "404",
+  "429",
+  "500",
+  "502",
+  "503",
+];
