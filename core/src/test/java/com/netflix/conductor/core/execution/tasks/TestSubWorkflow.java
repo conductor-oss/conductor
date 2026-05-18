@@ -472,6 +472,7 @@ public class TestSubWorkflow {
     private TaskModel newTask() {
         TaskModel task = new TaskModel();
         task.setTaskId(PARENT_TASK_ID);
+        task.setWorkflowInstanceId(PARENT_WORKFLOW_ID);
         task.setStatus(TaskModel.Status.SCHEDULED);
         task.setOutputData(new HashMap<>());
         return task;
