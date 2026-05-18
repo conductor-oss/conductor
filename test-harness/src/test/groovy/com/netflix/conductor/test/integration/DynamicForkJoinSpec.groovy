@@ -428,6 +428,8 @@ class DynamicForkJoinSpec extends AbstractSpecification {
         workflowTestUtil.verifyPolledAndAcknowledgedTask(pollAndCompleteTask1Try1)
 
         and: "verify that workflow has progressed further ahead and new dynamic tasks have been scheduled"
+        List<String> polledSubWfIds = queueDAO.pop('SUB_WORKFLOW', 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledSubWfIds[0])
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 5
@@ -467,6 +469,7 @@ class DynamicForkJoinSpec extends AbstractSpecification {
         when: "subworkflow is retrieved"
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowId = workflow.tasks[2].subWorkflowId
+        sweep(subWorkflowId)
 
         then: "verify that the sub workflow is RUNNING, and first task is in SCHEDULED state"
         with(workflowExecutionService.getExecutionStatus(subWorkflowId, true)) {
