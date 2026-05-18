@@ -27,4 +27,10 @@ public interface WebhookTaskService {
     Set<String> get(String hash);
 
     void remove(String hash, String taskId);
+
+    class Constants {
+
+        public static final String WAIT_FOR_WEBHOOK = "WAIT_FOR_WEBHOOK";
+        public static final String WEBHOOK_DELIMITER = ";";
+    }
 }
