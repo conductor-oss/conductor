@@ -42,10 +42,11 @@ export default defineConfig({
     },
   ],
 
-  // Build the app and serve it before the test run.
-  // In CI a fresh build is always produced; locally an existing server is reused.
+  // Serve the production bundle before the test run.
+  // In CI the bundle is already built by a prior step, so just serve it.
+  // Locally, build first then serve; an existing server on port 5000 is reused.
   webServer: {
-    command: "yarn build && yarn preview",
+    command: process.env.CI ? "yarn preview" : "yarn build && yarn preview",
     url: "http://localhost:5000",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
