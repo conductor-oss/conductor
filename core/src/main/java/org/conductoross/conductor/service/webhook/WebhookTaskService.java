@@ -24,11 +24,11 @@ import com.netflix.conductor.model.TaskModel;
  */
 public interface WebhookTaskService {
 
-    void put(TaskModel task, int workflowVersion);
+    void remove(String hash, String taskId);
 
     Set<String> get(String hash);
 
-    void remove(String hash, String taskId);
+    void put(TaskModel taskModel, int workflowVersion);
 
     class Constants {
 

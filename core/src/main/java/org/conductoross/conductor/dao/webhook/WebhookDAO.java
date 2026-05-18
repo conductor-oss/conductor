@@ -18,7 +18,7 @@ import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
 import org.conductoross.conductor.webhook.model.WebhookConfig;
 
 /**
- * Persists webhook configurations, matcher indexes, and inbound event audit records.
+ * Persists webhook configurations and inbound event audit records.
  *
  * <p>Implementations: {@code InMemoryWebhookDAO} (single-node, default), {@code RedisWebhookDAO} /
  * {@code PostgresWebhookDAO} (multi-node, land in later PRs).
@@ -30,12 +30,12 @@ import org.conductoross.conductor.webhook.model.WebhookConfig;
  */
 public interface WebhookDAO {
 
-    void createWebhook(String id, WebhookConfig config);
+    void createWebhook(String id, WebhookConfig webhookConfig);
 
     /**
      * @see WebhookDAO — returned config must not be mutated by the caller.
      */
-    WebhookConfig getWebhook(String id);
+    WebhookConfig getWebhook(String webhookId);
 
     /**
      * @see WebhookDAO — the returned list is a fresh collection, but its elements must not be
@@ -45,12 +45,12 @@ public interface WebhookDAO {
 
     void removeWebhook(String id);
 
-    void createIncomingWebhookEvent(String id, IncomingWebhookEvent event);
+    void createIncomingWebhookEvent(String id, IncomingWebhookEvent incomingWebhookEvent);
 
     /**
      * @see WebhookDAO — the returned event must not be mutated by the caller.
      */
-    IncomingWebhookEvent getWebhookEvent(String id);
+    IncomingWebhookEvent getWebhookEvent(String messageId);
 
     void removeWebhookEvent(String id);
 }

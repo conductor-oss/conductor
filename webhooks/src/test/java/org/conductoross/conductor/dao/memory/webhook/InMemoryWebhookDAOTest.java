@@ -99,12 +99,12 @@ public class InMemoryWebhookDAOTest {
     }
 
     @Test
-    public void getIncomingEventReturnsNullForUnknownId() {
+    public void getWebhookEventReturnsNullForUnknownId() {
         assertNull(dao.getWebhookEvent("does-not-exist"));
     }
 
     @Test
-    public void removeIncomingEventDropsTheRecord() {
+    public void removeWebhookEventDropsTheRecord() {
         IncomingWebhookEvent event = new IncomingWebhookEvent();
         event.setId("e1");
         dao.createIncomingWebhookEvent("e1", event);
