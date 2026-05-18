@@ -12,40 +12,76 @@
  */
 package org.conductoross.conductor.webhook.model;
 
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
+import org.conductoross.conductor.common.metadata.tags.Tag;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
 @Data
+@Builder
+@RequiredArgsConstructor
+@AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class WebhookConfig {
 
-    public enum Verifier {
-        HEADER_BASED,
-        SIGNATURE_BASED,
-        HMAC_BASED,
-        SLACK_BASED,
-        STRIPE,
-        TWITTER,
-        SENDGRID
-    }
+    private String name;
 
     private String id;
-    private String name;
+
+    private Map<String, Integer> receiverWorkflowNamesToVersions;
+
+    private Map<String, Object> workflowsToStart;
+
+    private boolean urlVerified;
+
     private String sourcePlatform;
-    private String createdBy;
 
     private Verifier verifier;
-    private Map<String, String> headers = new LinkedHashMap<>();
-    private String headerKey;
+
+    private Map<String, String> headers;
+
+    private String headerKey; // Required for signature_based verifier.
+
     private String secretKey;
+
     private String secretValue;
 
-    private Map<String, Integer> receiverWorkflowNamesToVersions = new LinkedHashMap<>();
-    private Map<String, Object> workflowsToStart = new LinkedHashMap<>();
+    private String createdBy;
+    private List<Tag> tags;
 
     private String expression;
     private String evaluatorType;
 
-    private boolean urlVerified;
+    public enum Verifier {
+        SLACK_BASED,
+        SIGNATURE_BASED,
+        HEADER_BASED,
+        STRIPE,
+        TWITTER,
+        HMAC_BASED,
+        SENDGRID
+    }
+
+    @JsonIgnore
+    public List<String> getWorkflowNames() {
+        return receiverWorkflowNamesToVersions == null
+                ? List.of()
+                : new ArrayList<>(receiverWorkflowNamesToVersions.keySet());
+    }
+
+    public void accept(WebhookConfigVisitor visitor) {
+        visitor.visit(this);
+    }
+
+    public interface WebhookConfigVisitor {
+        default void visit(WebhookConfig webhookConfig) {}
+    }
 }
