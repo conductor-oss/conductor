@@ -95,12 +95,12 @@ public class InMemoryWebhookDAOTest {
         event.setBody("{\"foo\":\"bar\"}");
         event.setTimeStamp(1234567890L);
         dao.createIncomingWebhookEvent("e1", event);
-        assertEquals(event, dao.getIncomingWebhookEvent("e1"));
+        assertEquals(event, dao.getWebhookEvent("e1"));
     }
 
     @Test
     public void getIncomingEventReturnsNullForUnknownId() {
-        assertNull(dao.getIncomingWebhookEvent("does-not-exist"));
+        assertNull(dao.getWebhookEvent("does-not-exist"));
     }
 
     @Test
@@ -108,8 +108,8 @@ public class InMemoryWebhookDAOTest {
         IncomingWebhookEvent event = new IncomingWebhookEvent();
         event.setId("e1");
         dao.createIncomingWebhookEvent("e1", event);
-        dao.removeIncomingWebhookEvent("e1");
-        assertNull(dao.getIncomingWebhookEvent("e1"));
+        dao.removeWebhookEvent("e1");
+        assertNull(dao.getWebhookEvent("e1"));
     }
 
     @Test
@@ -147,6 +147,6 @@ public class InMemoryWebhookDAOTest {
 
         dao.removeWebhook("shared-id");
         assertNull(dao.getWebhook("shared-id"));
-        assertEquals(event, dao.getIncomingWebhookEvent("shared-id"));
+        assertEquals(event, dao.getWebhookEvent("shared-id"));
     }
 }

@@ -50,7 +50,7 @@ public interface WebhookDAO {
     /**
      * @see WebhookDAO — the returned event must not be mutated by the caller.
      */
-    IncomingWebhookEvent getIncomingWebhookEvent(String id);
+    IncomingWebhookEvent getWebhookEvent(String id);
 
-    void removeIncomingWebhookEvent(String id);
+    void removeWebhookEvent(String id);
 }

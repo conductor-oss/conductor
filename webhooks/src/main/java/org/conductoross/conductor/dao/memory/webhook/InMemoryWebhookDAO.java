@@ -58,12 +58,12 @@ public class InMemoryWebhookDAO implements WebhookDAO {
     }
 
     @Override
-    public IncomingWebhookEvent getIncomingWebhookEvent(String id) {
+    public IncomingWebhookEvent getWebhookEvent(String id) {
         return events.get(id);
     }
 
     @Override
-    public void removeIncomingWebhookEvent(String id) {
+    public void removeWebhookEvent(String id) {
         events.remove(id);
     }
 }
