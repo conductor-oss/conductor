@@ -12,18 +12,29 @@
  */
 package org.conductoross.conductor.webhook.model;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.springframework.http.HttpHeaders;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
+@Builder
 @Data
+@AllArgsConstructor
+@RequiredArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class IncomingWebhookEvent {
-
-    private String id;
-    private String webhookId;
+    @JsonProperty("body")
     private String body;
-    private Map<String, String> headers = new LinkedHashMap<>();
-    private Map<String, Object> requestParams = new LinkedHashMap<>();
-    private long timestamp;
+
+    private String webhookId;
+    private HttpHeaders headers;
+    private Map<String, Object> requestParams;
+    private String id;
+    private long timeStamp;
 }

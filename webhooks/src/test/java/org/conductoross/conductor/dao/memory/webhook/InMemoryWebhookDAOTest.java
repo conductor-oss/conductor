@@ -121,7 +121,7 @@ public class InMemoryWebhookDAOTest {
         event.setId("e1");
         event.setWebhookId("w1");
         event.setBody("{\"foo\":\"bar\"}");
-        event.setTimestamp(1234567890L);
+        event.setTimeStamp(1234567890L);
         dao.createIncomingWebhookEvent("e1", event);
         assertEquals(event, dao.getIncomingWebhookEvent("e1"));
     }
