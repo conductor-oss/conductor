@@ -117,6 +117,15 @@ public class InMemoryWebhookTaskServiceTest {
     }
 
     @Test
+    public void differentWorkflowVersionsProduceDifferentHashes() {
+        Map<String, Object> matches = Map.of("a", "1");
+        service.put(task("task-v1", "wf1", "ref1", matches), 1);
+        service.put(task("task-v2", "wf1", "ref1", matches), 2);
+        assertEquals(Set.of("task-v1"), service.get(hash("wf1", 1, "ref1", matches)));
+        assertEquals(Set.of("task-v2"), service.get(hash("wf1", 2, "ref1", matches)));
+    }
+
+    @Test
     public void differentMatchesProduceDifferentHashes() {
         service.put(task("task-1", "wf1", "ref1", Map.of("a", "1")), 1);
         service.put(task("task-2", "wf1", "ref1", Map.of("a", "2")), 1);
