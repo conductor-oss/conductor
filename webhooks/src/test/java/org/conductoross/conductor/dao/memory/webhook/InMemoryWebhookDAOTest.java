@@ -141,6 +141,43 @@ public class InMemoryWebhookDAOTest {
     }
 
     @Test
+    public void getWebhookReturnsStoredReferenceCallersMustNotMutate() {
+        // Documents the mutation contract: in-memory impl returns a live reference; callers must
+        // not mutate. To change a stored config, fetch + construct new + write back.
+        dao.createWebhook("w1", newConfig("w1", "original"));
+        WebhookConfig fetched = dao.getWebhook("w1");
+        fetched.setName("mutated-by-caller");
+        assertEquals(
+                "in-memory impl returns the stored reference; this test pins the contract so a "
+                        + "future switch to defensive-copy semantics is a deliberate decision",
+                "mutated-by-caller",
+                dao.getWebhook("w1").getName());
+    }
+
+    @Test
+    public void getAllWebhooksReturnsFreshListButLiveElements() {
+        dao.createWebhook("w1", newConfig("w1", "a"));
+        List<WebhookConfig> first = dao.getAllWebhooks();
+        first.clear(); // mutating the returned list must not affect storage
+        assertEquals(1, dao.getAllWebhooks().size());
+        // ...but elements are live references; same contract as getWebhook
+        dao.getAllWebhooks().get(0).setName("mutated-by-caller");
+        assertEquals("mutated-by-caller", dao.getWebhook("w1").getName());
+    }
+
+    @Test
+    public void getMatchersReturnsStoredReferenceCallersMustNotMutate() {
+        Map<String, Map<String, Object>> index = new java.util.HashMap<>();
+        index.put("k1", Map.of("a", "1"));
+        dao.createMatchers("w1", index);
+        dao.getMatchers("w1").remove("k1");
+        assertTrue(
+                "in-memory impl returns the stored map reference; callers mutating it corrupts "
+                        + "storage. Pinned so a future defensive-copy switch is deliberate.",
+                dao.getMatchers("w1").isEmpty());
+    }
+
+    @Test
     public void configMatchersAndEventsAreIsolatedNamespaces() {
         // Same id used across all three storages — must not collide.
         dao.createWebhook("shared-id", newConfig("shared-id", "config"));

@@ -23,25 +23,43 @@ import org.conductoross.conductor.webhook.model.WebhookConfig;
  *
  * <p>Implementations: {@code InMemoryWebhookDAO} (single-node, default), {@code RedisWebhookDAO} /
  * {@code PostgresWebhookDAO} (multi-node, land in later PRs).
+ *
+ * <p><b>Mutation contract:</b> objects returned from {@code get*} methods must not be mutated by
+ * callers. Implementations may return live references to stored state; deserializing impls
+ * (Redis/Postgres) return fresh objects, in-memory impls do not. To modify a stored value,
+ * construct a new instance and write it back via the corresponding {@code create*} method.
  */
 public interface WebhookDAO {
 
     void createWebhook(String id, WebhookConfig config);
 
+    /**
+     * @see WebhookDAO — returned config must not be mutated by the caller.
+     */
     WebhookConfig getWebhook(String id);
 
+    /**
+     * @see WebhookDAO — the returned list is a fresh collection, but its elements must not be
+     *     mutated.
+     */
     List<WebhookConfig> getAllWebhooks();
 
     void removeWebhook(String id);
 
     void createMatchers(String webhookId, Map<String, Map<String, Object>> matchers);
 
+    /**
+     * @see WebhookDAO — the returned matcher index must not be mutated by the caller.
+     */
     Map<String, Map<String, Object>> getMatchers(String webhookId);
 
     void removeMatchers(String webhookId);
 
     void createIncomingWebhookEvent(String id, IncomingWebhookEvent event);
 
+    /**
+     * @see WebhookDAO — the returned event must not be mutated by the caller.
+     */
     IncomingWebhookEvent getIncomingWebhookEvent(String id);
 
     void removeIncomingWebhookEvent(String id);
