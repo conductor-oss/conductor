@@ -14,6 +14,8 @@ package org.conductoross.conductor.service.webhook;
 
 import java.util.Set;
 
+import com.netflix.conductor.model.TaskModel;
+
 /**
  * Routes inbound webhook events to parked WAIT_FOR_WEBHOOK tasks by hash.
  *
@@ -22,7 +24,7 @@ import java.util.Set;
  */
 public interface WebhookTaskService {
 
-    void put(String hash, String taskId);
+    void put(TaskModel task, int workflowVersion);
 
     Set<String> get(String hash);
 

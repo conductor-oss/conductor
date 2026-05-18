@@ -14,10 +14,18 @@ package org.conductoross.conductor.dao.memory.webhook;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.conductoross.conductor.service.webhook.WebhookTaskService;
+
+import com.netflix.conductor.common.utils.TaskUtils;
+import com.netflix.conductor.core.exception.NonTransientException;
+import com.netflix.conductor.model.TaskModel;
+
+import static org.conductoross.conductor.service.webhook.WebhookTaskService.Constants.WEBHOOK_DELIMITER;
 
 /**
  * Default single-node implementation of {@link WebhookTaskService}.
@@ -30,15 +38,14 @@ public class InMemoryWebhookTaskService implements WebhookTaskService {
     private final ConcurrentHashMap<String, Set<String>> storage = new ConcurrentHashMap<>();
 
     @Override
-    public void put(String hash, String taskId) {
-        if (taskId == null) {
-            throw new NullPointerException("taskId");
-        }
+    public void put(TaskModel task, int workflowVersion) {
+        Map<String, Object> expectedMatches = getAndValidateExpectedMatches(task);
+        String hash = computeHash(task, workflowVersion, expectedMatches);
         storage.compute(
                 hash,
                 (key, taskIds) -> {
                     Set<String> bucket = taskIds == null ? ConcurrentHashMap.newKeySet() : taskIds;
-                    bucket.add(taskId);
+                    bucket.add(task.getTaskId());
                     return bucket;
                 });
     }
@@ -57,5 +64,44 @@ public class InMemoryWebhookTaskService implements WebhookTaskService {
                     taskIds.remove(taskId);
                     return taskIds.isEmpty() ? null : taskIds;
                 });
+    }
+
+    private String computeHash(
+            TaskModel task, int workflowVersion, Map<String, Object> expectedMatches) {
+        return computeHash(
+                task.getWorkflowType(),
+                workflowVersion,
+                TaskUtils.removeIterationFromTaskRefName(task.getReferenceTaskName()),
+                expectedMatches);
+    }
+
+    private String computeHash(
+            String workflowName,
+            int workflowVersion,
+            String taskReferenceName,
+            Map<String, Object> expectedMatches) {
+        TreeSet<String> sortedFields = new TreeSet<>(expectedMatches.keySet());
+        StringBuilder hash =
+                new StringBuilder(
+                        workflowName
+                                + WEBHOOK_DELIMITER
+                                + workflowVersion
+                                + WEBHOOK_DELIMITER
+                                + taskReferenceName);
+        for (String field : sortedFields) {
+            hash.append(WEBHOOK_DELIMITER).append(expectedMatches.get(field));
+        }
+        return hash.toString();
+    }
+
+    private Map<String, Object> getAndValidateExpectedMatches(TaskModel task) {
+        Map<String, Object> inputData = task.getInputData();
+        @SuppressWarnings("unchecked")
+        Map<String, Object> matches =
+                inputData == null ? null : (Map<String, Object>) inputData.get("matches");
+        if (matches == null) {
+            throw new NonTransientException("Webhook task missing matches field");
+        }
+        return matches;
     }
 }
