@@ -30,12 +30,21 @@ import org.conductoross.conductor.webhook.model.WebhookConfig;
  */
 public interface WebhookDAO {
 
-    void createWebhook(String id, WebhookConfig webhookConfig);
+    /**
+     * @see WebhookDAO — the returned event must not be mutated by the caller.
+     */
+    IncomingWebhookEvent getWebhookEvent(String messageId);
 
     /**
      * @see WebhookDAO — returned config must not be mutated by the caller.
      */
     WebhookConfig getWebhook(String webhookId);
+
+    void createWebhook(String id, WebhookConfig webhookConfig);
+
+    void removeWebhookEvent(String id);
+
+    void removeWebhook(String id);
 
     /**
      * @see WebhookDAO — the returned list is a fresh collection, but its elements must not be
@@ -43,14 +52,5 @@ public interface WebhookDAO {
      */
     List<WebhookConfig> getAllWebhooks();
 
-    void removeWebhook(String id);
-
     void createIncomingWebhookEvent(String id, IncomingWebhookEvent incomingWebhookEvent);
-
-    /**
-     * @see WebhookDAO — the returned event must not be mutated by the caller.
-     */
-    IncomingWebhookEvent getWebhookEvent(String messageId);
-
-    void removeWebhookEvent(String id);
 }
