@@ -15,8 +15,8 @@ package org.conductoross.conductor.tasks.webhook;
 import java.util.List;
 import java.util.Map;
 
-import org.conductoross.conductor.common.webhook.model.IncomingWebhookEvent;
-import org.conductoross.conductor.common.webhook.model.WebhookConfig;
+import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
+import org.conductoross.conductor.webhook.model.WebhookConfig;
 import org.junit.Before;
 import org.junit.Test;
 

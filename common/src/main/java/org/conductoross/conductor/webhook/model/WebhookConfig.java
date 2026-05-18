@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.common.webhook.model;
+package org.conductoross.conductor.webhook.model;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -18,12 +18,34 @@ import java.util.Map;
 import lombok.Data;
 
 @Data
-public class IncomingWebhookEvent {
+public class WebhookConfig {
+
+    public enum Verifier {
+        HEADER_BASED,
+        SIGNATURE_BASED,
+        HMAC_BASED,
+        SLACK_BASED,
+        STRIPE,
+        TWITTER,
+        SENDGRID
+    }
 
     private String id;
-    private String webhookId;
-    private String body;
+    private String name;
+    private String sourcePlatform;
+    private String createdBy;
+
+    private Verifier verifier;
     private Map<String, String> headers = new LinkedHashMap<>();
-    private Map<String, Object> requestParams = new LinkedHashMap<>();
-    private long timestamp;
+    private String headerKey;
+    private String secretKey;
+    private String secretValue;
+
+    private Map<String, Integer> receiverWorkflowNamesToVersions = new LinkedHashMap<>();
+    private Map<String, Object> workflowsToStart = new LinkedHashMap<>();
+
+    private String expression;
+    private String evaluatorType;
+
+    private boolean urlVerified;
 }

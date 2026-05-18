@@ -16,8 +16,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.conductoross.conductor.common.webhook.model.IncomingWebhookEvent;
-import org.conductoross.conductor.common.webhook.model.WebhookConfig;
+import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
+import org.conductoross.conductor.webhook.model.WebhookConfig;
 
 /**
  * Verifies inbound webhook requests against a {@link WebhookConfig}.
