@@ -17,15 +17,15 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.conductoross.conductor.dao.webhook.WebhookTaskDAO;
+import org.conductoross.conductor.service.webhook.WebhookTaskService;
 
 /**
- * Default single-node implementation of {@link WebhookTaskDAO}.
+ * Default single-node implementation of {@link WebhookTaskService}.
  *
  * <p>Backed by an in-process map; suitable for single-server deployments and tests. Multi-node
- * deployments should bind {@code RedisWebhookTaskDAO} (lands in a later PR) instead.
+ * deployments should bind {@code RedisWebhookTaskService} (lands in a later PR) instead.
  */
-public class InMemoryWebhookTaskDAO implements WebhookTaskDAO {
+public class InMemoryWebhookTaskService implements WebhookTaskService {
 
     private final ConcurrentHashMap<String, Set<String>> storage = new ConcurrentHashMap<>();
 

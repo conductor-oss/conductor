@@ -20,7 +20,7 @@ package org.conductoross.conductor.dao.webhook;
  * a thread-local accessed by their DAO implementations.
  *
  * <p>Callers invoke {@link #applyContext(String)} before any {@link WebhookDAO} or {@link
- * WebhookTaskDAO} access.
+ * WebhookTaskService} access.
  */
 public interface WebhookOrgContextProvider {
 

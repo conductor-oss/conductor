@@ -25,13 +25,13 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class InMemoryWebhookTaskDAOTest {
+public class InMemoryWebhookTaskServiceTest {
 
-    private InMemoryWebhookTaskDAO dao;
+    private InMemoryWebhookTaskService dao;
 
     @Before
     public void setUp() {
-        dao = new InMemoryWebhookTaskDAO();
+        dao = new InMemoryWebhookTaskService();
     }
 
     @Test

@@ -10,17 +10,17 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.dao.webhook;
+package org.conductoross.conductor.service.webhook;
 
 import java.util.Set;
 
 /**
  * Routes inbound webhook events to parked WAIT_FOR_WEBHOOK tasks by hash.
  *
- * <p>Implementations: {@code InMemoryWebhookTaskDAO} (single-node, default), {@code
- * RedisWebhookTaskDAO} (multi-node, lands in a later PR).
+ * <p>Implementations: {@code InMemoryWebhookTaskService} (single-node, default), {@code
+ * RedisWebhookTaskService} (multi-node, lands in a later PR).
  */
-public interface WebhookTaskDAO {
+public interface WebhookTaskService {
 
     void put(String hash, String taskId);
 
