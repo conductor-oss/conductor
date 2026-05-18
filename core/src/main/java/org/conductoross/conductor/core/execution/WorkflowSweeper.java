@@ -27,8 +27,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.TaskType;
-import com.netflix.conductor.common.run.TaskSummary;
-import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.NotFoundException;
@@ -38,7 +36,6 @@ import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.core.utils.Utils;
 import com.netflix.conductor.dao.ExecutionDAO;
-import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
@@ -63,7 +60,6 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
     private final SweeperProperties sweeperProperties;
     private final WorkflowExecutor workflowExecutor;
     private final ExecutionDAO executionDAO;
-    private final IndexDAO indexDAO;
     private final Duration worflowOffsetTimeout;
     private final Executor sweeperExecutor;
     private final ConductorProperties properties;
@@ -78,7 +74,6 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
             QueueDAO queueDAO,
             WorkflowExecutor workflowExecutor,
             ExecutionDAO executionDAO,
-            IndexDAO indexDAO,
             ConductorProperties properties,
             SweeperProperties sweeperProperties,
             SystemTaskRegistry systemTaskRegistry,
@@ -86,7 +81,6 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
             ExecutionLockService executionLockService) {
         this.queueDAO = queueDAO;
         this.executionDAO = executionDAO;
-        this.indexDAO = indexDAO;
         this.sweeperProperties = sweeperProperties;
         this.workflowExecutor = workflowExecutor;
         this.worflowOffsetTimeout = properties.getWorkflowOffsetTimeout();
@@ -173,7 +167,6 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
 
         try {
             WorkflowModel workflow = workflowExecutor.getWorkflow(workflowId, true);
-            reconcileIndexedStateIfNeeded(workflow);
             if (workflow == null || workflow.getStatus().isTerminal()) {
                 queueDAO.remove(DECIDER_QUEUE, workflowId);
                 return;
@@ -332,7 +325,6 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
         }
         task.addOutput(subWorkflow.getOutput());
         executionDAO.updateTask(task);
-        indexTaskFromExecutionState(task);
     }
 
     private void forceSetLastTaskAsNotExecuted(WorkflowModel workflow) {
@@ -355,61 +347,6 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
             }
             taskModel.setExecuted(false);
             executionDAO.updateWorkflow(workflow);
-            indexWorkflowFromExecutionState(workflow);
-        }
-    }
-
-    private void reconcileIndexedStateIfNeeded(WorkflowModel workflow) {
-        if (workflow == null || workflow.getStatus() == null) {
-            return;
-        }
-
-        try {
-            String indexedStatus = indexDAO.get(workflow.getWorkflowId(), "status");
-            String executionStatus = workflow.getStatus().toString();
-            boolean missingIndexedStatus = StringUtils.isBlank(indexedStatus);
-            if (StringUtils.equals(indexedStatus, executionStatus)
-                    || (missingIndexedStatus && !workflow.getStatus().isTerminal())) {
-                return;
-            }
-
-            log.warn(
-                    "Detected indexed workflow state mismatch for {}: executionStatus={} indexedStatus={}; re-indexing from execution store",
-                    workflow.getWorkflowId(),
-                    executionStatus,
-                    indexedStatus);
-            indexWorkflowFromExecutionState(workflow);
-            if (properties.isTaskIndexingEnabled() && workflow.getTasks() != null) {
-                workflow.getTasks().forEach(this::indexTaskFromExecutionState);
-            }
-        } catch (Exception e) {
-            log.warn(
-                    "Unable to reconcile indexed workflow state for {}",
-                    workflow.getWorkflowId(),
-                    e);
-        }
-    }
-
-    private void indexWorkflowFromExecutionState(WorkflowModel workflow) {
-        try {
-            indexDAO.indexWorkflow(new WorkflowSummary(workflow.toWorkflow()));
-        } catch (Exception e) {
-            log.warn("Failed to refresh workflow index state for {}", workflow.getWorkflowId(), e);
-        }
-    }
-
-    private void indexTaskFromExecutionState(TaskModel task) {
-        if (!properties.isTaskIndexingEnabled()) {
-            return;
-        }
-        try {
-            indexDAO.indexTask(new TaskSummary(task.toTask()));
-        } catch (Exception e) {
-            log.warn(
-                    "Failed to refresh task index state for task {} in workflow {}",
-                    task.getTaskId(),
-                    task.getWorkflowInstanceId(),
-                    e);
         }
     }
 
