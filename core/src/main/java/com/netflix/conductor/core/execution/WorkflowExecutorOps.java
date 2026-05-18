@@ -55,6 +55,8 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.ExecutionLockService;
 
+import com.google.common.base.Preconditions;
+
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 import static com.netflix.conductor.model.TaskModel.Status.*;
 
@@ -332,6 +334,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             WorkflowModel parentWorkflow =
                     executionDAOFacade.getWorkflowModel(parentWorkflowId, true);
             parentWorkflow.setStatus(WorkflowModel.Status.RUNNING);
+            parentWorkflow.setReasonForIncompletion(null);
+            parentWorkflow.setFailedTaskId(null);
+            parentWorkflow.setFailedReferenceTaskNames(new HashSet<>());
+            parentWorkflow.setFailedTaskNames(new HashSet<>());
             parentWorkflow.setLastRetriedTime(System.currentTimeMillis());
             executionDAOFacade.updateWorkflow(parentWorkflow);
 
@@ -346,6 +352,21 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             expediteLazyWorkflowEvaluation(parentWorkflowId);
 
             workflow = parentWorkflow;
+        }
+    }
+
+    private void resetUnsuccessfulJoinTasks(WorkflowModel workflow) {
+        if (workflow.getWorkflowDefinition().containsType(TaskType.TASK_TYPE_JOIN)
+                || workflow.getWorkflowDefinition()
+                        .containsType(TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC)) {
+            workflow.getTasks().stream()
+                    .filter(UNSUCCESSFUL_JOIN_TASK)
+                    .peek(
+                            task -> {
+                                task.setStatus(TaskModel.Status.IN_PROGRESS);
+                                addTaskToQueue(task);
+                            })
+                    .forEach(executionDAOFacade::updateTask);
         }
     }
 
@@ -477,6 +498,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         taskToBeRetried.setWorkerId(null);
         taskToBeRetried.setReasonForIncompletion(null);
         taskToBeRetried.setSeq(0);
+        clearRetriedTaskRuntimeState(taskToBeRetried);
 
         // perform parameter replacement for retried task
         if (taskToBeRetried.getWorkflowTask() != null) {
@@ -488,6 +510,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                             taskToBeRetried.getTaskId());
             taskToBeRetried.getInputData().putAll(taskInput);
         }
+        clearLegacySubWorkflowId(taskToBeRetried);
 
         task.setRetried(true);
         // since this task is being retried and a retry has been computed, task
@@ -495,6 +518,20 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         // complete
         task.setExecuted(true);
         return taskToBeRetried;
+    }
+
+    private void clearRetriedTaskRuntimeState(TaskModel task) {
+        task.setUpdateTime(0);
+        task.setCallbackAfterMs(0);
+        task.setOutputData(new HashMap<>());
+        task.setExternalOutputPayloadStoragePath(null);
+        task.setOutputMessage(null);
+    }
+
+    private void clearLegacySubWorkflowId(TaskModel task) {
+        task.setSubWorkflowId(null);
+        task.getInputData().remove("subWorkflowId");
+        task.getOutputData().remove("subWorkflowId");
     }
 
     private void endExecution(WorkflowModel workflow, TaskModel terminateTask) {
@@ -1140,6 +1177,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         // we find any sub workflow tasks that have changed
         // and change the workflow/task state accordingly
         adjustStateIfSubWorkflowChanged(workflow);
+        resetUnsuccessfulJoinTasksWithActiveBranches(workflow);
 
         // Guard against holding the lock past its lease time. If synchronous system tasks
         // (e.g. INLINE inside a DO_WHILE) keep changing state, we loop instead of recursing to
@@ -1252,22 +1290,52 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     subWorkflowTask.getTaskId());
 
             // find all terminal and unsuccessful JOIN tasks and set them to IN_PROGRESS
-            if (workflow.getWorkflowDefinition().containsType(TaskType.TASK_TYPE_JOIN)
-                    || workflow.getWorkflowDefinition()
-                            .containsType(TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC)) {
-                // if we are here, then the SUB_WORKFLOW task could be part of a FORK_JOIN or
-                // FORK_JOIN_DYNAMIC
-                // and the JOIN task(s) needs to be evaluated again, set them to IN_PROGRESS
-                workflow.getTasks().stream()
-                        .filter(UNSUCCESSFUL_JOIN_TASK)
-                        .peek(
-                                task -> {
-                                    task.setStatus(TaskModel.Status.IN_PROGRESS);
-                                    addTaskToQueue(task);
-                                })
-                        .forEach(executionDAOFacade::updateTask);
-            }
+            // if we are here, then the SUB_WORKFLOW task could be part of a FORK_JOIN or
+            // FORK_JOIN_DYNAMIC and the JOIN task(s) needs to be evaluated again, set them to
+            // IN_PROGRESS
+            resetUnsuccessfulJoinTasks(workflow);
         }
+    }
+
+    private void resetUnsuccessfulJoinTasksWithActiveBranches(WorkflowModel workflow) {
+        if (!workflow.getWorkflowDefinition().containsType(TaskType.TASK_TYPE_JOIN)
+                && !workflow.getWorkflowDefinition()
+                        .containsType(TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC)) {
+            return;
+        }
+
+        // A rerun/retry/restart can reactivate one fork branch while the previous JOIN is still
+        // terminal. Reopen only those JOIN tasks whose dependencies include an active branch.
+        Set<String> activeReferenceTaskNames =
+                workflow.getTasks().stream()
+                        .filter(NON_TERMINAL_TASK)
+                        .map(TaskModel::getReferenceTaskName)
+                        .collect(Collectors.toSet());
+        if (activeReferenceTaskNames.isEmpty()) {
+            return;
+        }
+
+        workflow.getTasks().stream()
+                .filter(UNSUCCESSFUL_JOIN_TASK)
+                .filter(task -> hasActiveJoinDependency(task, activeReferenceTaskNames))
+                .peek(
+                        task -> {
+                            task.setStatus(TaskModel.Status.IN_PROGRESS);
+                            addTaskToQueue(task);
+                        })
+                .forEach(executionDAOFacade::updateTask);
+    }
+
+    private boolean hasActiveJoinDependency(
+            TaskModel joinTask, Set<String> activeReferenceTaskNames) {
+        Object joinOn = joinTask.getInputData().get("joinOn");
+        if (!(joinOn instanceof List<?> joinOnRefs)) {
+            return false;
+        }
+        return joinOnRefs.stream()
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .anyMatch(activeReferenceTaskNames::contains);
     }
 
     private Optional<TaskModel> findChangedSubWorkflowTask(WorkflowModel workflow) {
@@ -1773,8 +1841,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             LOGGER.error(errorMsg);
             throw new ConflictException(errorMsg);
         }
-        updateAndPushParents(workflow, "reran");
-
         // If the task Id is null it implies that the entire workflow has to be rerun
         if (taskId == null) {
             // remove all tasks
@@ -1801,8 +1867,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     workflow.getPriority(),
                     properties.getWorkflowOffsetTimeout().getSeconds());
             executionDAOFacade.updateWorkflow(workflow);
+            updateAndPushParents(workflow, "reran");
             notifyWorkflowStatusListener(workflow, WorkflowEventType.RERAN);
             decide(workflowId);
+            updateAndPushParents(workflow, "reran");
             return true;
         }
 
@@ -1850,6 +1918,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     workflow.getPriority(),
                     properties.getWorkflowOffsetTimeout().getSeconds());
             executionDAOFacade.updateWorkflow(workflow);
+            updateAndPushParents(workflow, "reran");
             notifyWorkflowStatusListener(workflow, WorkflowEventType.RETRIED);
 
             // update tasks in datastore to update workflow-tasks relationship for archived
@@ -1895,6 +1964,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             }
             executionDAOFacade.updateTask(rerunFromTask);
             decide(workflow.getWorkflowId());
+            updateAndPushParents(workflow, "reran");
             return true;
         }
         return false;
@@ -1987,51 +2057,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
     @Override
     public String startWorkflow(StartWorkflowInput input) {
-        WorkflowDef workflowDefinition;
-
-        if (input.getWorkflowDefinition() == null) {
-            workflowDefinition =
-                    metadataMapperService.lookupForWorkflowDefinition(
-                            input.getName(), input.getVersion());
-        } else {
-            workflowDefinition = input.getWorkflowDefinition();
-        }
-
-        workflowDefinition = metadataMapperService.populateTaskDefinitions(workflowDefinition);
-
-        // perform validations
-        Map<String, Object> workflowInput = input.getWorkflowInput();
-        String externalInputPayloadStoragePath = input.getExternalInputPayloadStoragePath();
-        validateWorkflow(workflowDefinition, workflowInput, externalInputPayloadStoragePath);
-
-        // Generate ID if it's not present
+        WorkflowDef workflowDefinition = resolveWorkflowDefinition(input);
         String workflowId =
                 Optional.ofNullable(input.getWorkflowId()).orElseGet(idGenerator::generate);
-
-        // Persist the Workflow
-        WorkflowModel workflow = new WorkflowModel();
-        workflow.setWorkflowId(workflowId);
-        workflow.setCorrelationId(input.getCorrelationId());
-        workflow.setPriority(input.getPriority() == null ? 0 : input.getPriority());
-        workflow.setWorkflowDefinition(workflowDefinition);
-        workflow.setStatus(WorkflowModel.Status.RUNNING);
-        workflow.setParentWorkflowId(input.getParentWorkflowId());
-        workflow.setParentWorkflowTaskId(input.getParentWorkflowTaskId());
-        workflow.setOwnerApp(WorkflowContext.get().getClientApp());
-        workflow.setCreateTime(System.currentTimeMillis());
-        workflow.setUpdatedBy(null);
-        workflow.setUpdatedTime(null);
-        workflow.setEvent(input.getEvent());
-        workflow.setTaskToDomain(input.getTaskToDomain());
-        workflow.setVariables(workflowDefinition.getVariables());
-
-        if (workflowInput != null && !workflowInput.isEmpty()) {
-            Map<String, Object> parsedInput =
-                    parametersUtils.getWorkflowInput(workflowDefinition, workflowInput);
-            workflow.setInput(parsedInput);
-        } else {
-            workflow.setExternalInputPayloadStoragePath(externalInputPayloadStoragePath);
-        }
+        WorkflowModel workflow = createWorkflowModel(input, workflowDefinition, workflowId);
 
         try {
             createAndEvaluate(workflow);
@@ -2057,22 +2086,169 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         }
     }
 
+    @Override
+    public WorkflowModel startWorkflowIdempotent(StartWorkflowInput input) {
+        Preconditions.checkArgument(
+                StringUtils.isNotBlank(input.getWorkflowId()),
+                "workflowId must be present for idempotent workflow start");
+
+        WorkflowDef workflowDefinition = resolveWorkflowDefinition(input);
+        String workflowId = input.getWorkflowId();
+
+        if (!executionLockService.acquireLock(workflowId)) {
+            throw new TransientException("Error acquiring lock when creating workflow: {}");
+        }
+
+        boolean createAttempted = false;
+        try {
+            try {
+                WorkflowModel existingWorkflow =
+                        executionDAOFacade.getWorkflowModelFromExecutionDAO(workflowId, false);
+                validateIdempotentWorkflowOwnership(input, existingWorkflow);
+                return existingWorkflow;
+            } catch (NotFoundException e) {
+                LOGGER.debug(
+                        "No existing workflow found in execution store for idempotent start of workflow id {}, proceeding with creation",
+                        workflowId);
+            }
+
+            WorkflowModel workflow = createWorkflowModel(input, workflowDefinition, workflowId);
+            createAttempted = true;
+            createAndQueueEvaluationWithLock(workflow);
+
+            Monitors.recordWorkflowStartSuccess(
+                    workflow.getWorkflowName(),
+                    String.valueOf(workflow.getWorkflowVersion()),
+                    workflow.getOwnerApp());
+            return workflow;
+        } catch (Exception e) {
+            Monitors.recordWorkflowStartError(
+                    workflowDefinition.getName(), WorkflowContext.get().getClientApp());
+            LOGGER.error(
+                    "Unable to start workflow idempotently: {}", workflowDefinition.getName(), e);
+
+            try {
+                if (createAttempted) {
+                    executionDAOFacade.removeWorkflow(workflowId, false);
+                }
+            } catch (Exception rwe) {
+                LOGGER.error("Could not remove the workflowId: " + workflowId, rwe);
+            }
+            throw e;
+        } finally {
+            executionLockService.releaseLock(workflowId);
+        }
+    }
+
+    private void validateIdempotentWorkflowOwnership(
+            StartWorkflowInput input, WorkflowModel existingWorkflow) {
+        if (StringUtils.isBlank(input.getParentWorkflowId())
+                && StringUtils.isBlank(input.getParentWorkflowTaskId())) {
+            return;
+        }
+
+        if (!StringUtils.equals(input.getParentWorkflowId(), existingWorkflow.getParentWorkflowId())
+                || !StringUtils.equals(
+                        input.getParentWorkflowTaskId(),
+                        existingWorkflow.getParentWorkflowTaskId())) {
+            String message =
+                    String.format(
+                            "Workflow id %s already belongs to parent workflow %s task %s, cannot attach to parent workflow %s task %s",
+                            existingWorkflow.getWorkflowId(),
+                            existingWorkflow.getParentWorkflowId(),
+                            existingWorkflow.getParentWorkflowTaskId(),
+                            input.getParentWorkflowId(),
+                            input.getParentWorkflowTaskId());
+            throw new NonTransientException(message);
+        }
+    }
+
     private void createAndEvaluate(WorkflowModel workflow) {
         if (!executionLockService.acquireLock(workflow.getWorkflowId())) {
             throw new TransientException("Error acquiring lock when creating workflow: {}");
         }
         try {
-            executionDAOFacade.createWorkflow(workflow);
-            LOGGER.debug(
-                    "A new instance of workflow: {} created with id: {}",
-                    workflow.getWorkflowName(),
-                    workflow.getWorkflowId());
-            executionDAOFacade.populateWorkflowAndTaskPayloadData(workflow);
-            notifyWorkflowStatusListener(workflow, WorkflowEventType.STARTED);
-            decide(workflow);
+            createAndEvaluateWithLock(workflow);
         } finally {
             executionLockService.releaseLock(workflow.getWorkflowId());
         }
+    }
+
+    private void createAndEvaluateWithLock(WorkflowModel workflow) {
+        executionDAOFacade.createWorkflow(workflow);
+        LOGGER.debug(
+                "A new instance of workflow: {} created with id: {}",
+                workflow.getWorkflowName(),
+                workflow.getWorkflowId());
+        executionDAOFacade.populateWorkflowAndTaskPayloadData(workflow);
+        notifyWorkflowStatusListener(workflow, WorkflowEventType.STARTED);
+        decide(workflow);
+    }
+
+    private void createAndQueueEvaluationWithLock(WorkflowModel workflow) {
+        executionDAOFacade.createWorkflow(workflow);
+        LOGGER.debug(
+                "A new instance of workflow: {} created with id: {}",
+                workflow.getWorkflowName(),
+                workflow.getWorkflowId());
+        executionDAOFacade.populateWorkflowAndTaskPayloadData(workflow);
+        notifyWorkflowStatusListener(workflow, WorkflowEventType.STARTED);
+        try {
+            expediteLazyWorkflowEvaluation(workflow.getWorkflowId());
+        } catch (Exception e) {
+            LOGGER.warn(
+                    "Unable to expedite evaluation for newly created workflow {}, leaving default decider queue entry in place",
+                    workflow.getWorkflowId(),
+                    e);
+        }
+    }
+
+    private WorkflowDef resolveWorkflowDefinition(StartWorkflowInput input) {
+        WorkflowDef workflowDefinition;
+
+        if (input.getWorkflowDefinition() == null) {
+            workflowDefinition =
+                    metadataMapperService.lookupForWorkflowDefinition(
+                            input.getName(), input.getVersion());
+        } else {
+            workflowDefinition = input.getWorkflowDefinition();
+        }
+
+        workflowDefinition = metadataMapperService.populateTaskDefinitions(workflowDefinition);
+        validateWorkflow(
+                workflowDefinition,
+                input.getWorkflowInput(),
+                input.getExternalInputPayloadStoragePath());
+        return workflowDefinition;
+    }
+
+    private WorkflowModel createWorkflowModel(
+            StartWorkflowInput input, WorkflowDef workflowDefinition, String workflowId) {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId(workflowId);
+        workflow.setCorrelationId(input.getCorrelationId());
+        workflow.setPriority(input.getPriority() == null ? 0 : input.getPriority());
+        workflow.setWorkflowDefinition(workflowDefinition);
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        workflow.setParentWorkflowId(input.getParentWorkflowId());
+        workflow.setParentWorkflowTaskId(input.getParentWorkflowTaskId());
+        workflow.setOwnerApp(WorkflowContext.get().getClientApp());
+        workflow.setCreateTime(System.currentTimeMillis());
+        workflow.setUpdatedBy(null);
+        workflow.setUpdatedTime(null);
+        workflow.setEvent(input.getEvent());
+        workflow.setTaskToDomain(input.getTaskToDomain());
+        workflow.setVariables(workflowDefinition.getVariables());
+
+        Map<String, Object> workflowInput = input.getWorkflowInput();
+        if (workflowInput != null && !workflowInput.isEmpty()) {
+            Map<String, Object> parsedInput =
+                    parametersUtils.getWorkflowInput(workflowDefinition, workflowInput);
+            workflow.setInput(parsedInput);
+        } else {
+            workflow.setExternalInputPayloadStoragePath(input.getExternalInputPayloadStoragePath());
+        }
+        return workflow;
     }
 
     /**

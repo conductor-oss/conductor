@@ -12,6 +12,7 @@ import {
   fetchWorkflowWithDependencies,
   ImportSummary,
 } from "utils/cloudTemplates";
+import { FEATURES, featureFlags } from "utils/flags";
 import { logger } from "utils/logger";
 import { getErrors } from "utils/utils";
 import { getEnvVariables } from "../commonService";
@@ -57,8 +58,6 @@ export const persistCopyInLocalStorage = (
     localStorage.setItem(wfKey, JSON.stringify(workflowChanges));
     addLocalCopyTime(wfKey);
 
-    logger.log("Saved to local storage");
-
     return Promise.resolve("Saved to local storage");
   }
 
@@ -68,6 +67,11 @@ export const persistCopyInLocalStorage = (
 export const fetchSecrets = async ({
   authHeaders: headers,
 }: DefinitionMachineContext) => {
+  // OSS ships with `window.conductor.SECRETS: false` (see public/context.js).
+  // Orkes / conductor-ui enables SECRETS so workflow validation can load names.
+  if (!featureFlags.isEnabled(FEATURES.SECRETS)) {
+    return [];
+  }
   const url = `/secrets-v2`;
   try {
     const result = await queryClient.fetchQuery([fetchContext.stack, url], () =>

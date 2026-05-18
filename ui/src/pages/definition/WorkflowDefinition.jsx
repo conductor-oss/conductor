@@ -9,7 +9,7 @@ import _ from "lodash";
 import Editor from "@monaco-editor/react";
 import {
   useWorkflowDef,
-  useWorkflowNamesAndVersions,
+  useWorkflowVersions,
 } from "../../data/workflow";
 import ResetConfirmationDialog from "./ResetConfirmationDialog";
 import {
@@ -152,11 +152,11 @@ export default function Workflow() {
     [workflowDef]
   );
 
-  const { data: namesAndVersions, refetch: refetchNamesAndVersions } =
-    useWorkflowNamesAndVersions();
+  const { data: versionsData, refetch: refetchVersions } =
+    useWorkflowVersions(workflowName);
   const versions = useMemo(
-    () => namesAndVersions.get(workflowName) || [],
-    [namesAndVersions, workflowName]
+    () => versionsData || [],
+    [versionsData]
   );
 
   // Refs
@@ -226,7 +226,7 @@ export default function Workflow() {
   const handleSaveSuccess = (name, version) => {
     setSaveDialog(null);
     setIsModified(false);
-    refetchNamesAndVersions();
+    refetchVersions();
 
     if (name === workflowName && version === workflowVersion) {
       refetchWorkflow();

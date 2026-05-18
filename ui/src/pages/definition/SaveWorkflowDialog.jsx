@@ -12,7 +12,8 @@ import { DiffEditor } from "@monaco-editor/react";
 import { makeStyles } from "@material-ui/styles";
 import {
   useSaveWorkflow,
-  useWorkflowNamesAndVersions,
+  useWorkflowNames,
+  useWorkflowVersions,
 } from "../../data/workflow";
 import _ from "lodash";
 import { useEffect } from "react";
@@ -36,17 +37,24 @@ export default function SaveWorkflowDialog({ onSuccess, onCancel, document }) {
   const diffMonacoRef = useRef(null);
   const [errorMsg, setErrorMsg] = useState();
   const [useAutoVersion, setUseAutoVersion] = useState(true);
-  const { data: namesAndVersions } = useWorkflowNamesAndVersions();
+  const workflowNames = useWorkflowNames();
+
+  const parsedName = useMemo(() => {
+    if (!document) return null;
+    try {
+      return JSON.parse(document.modified).name;
+    } catch {
+      return null;
+    }
+  }, [document]);
+
+  const { data: versions } = useWorkflowVersions(parsedName);
 
   const modified = useMemo(() => {
-    if (!document || !namesAndVersions) return { text: "", obj: null };
+    if (!document) return { text: "", obj: null };
 
     const parsedModified = JSON.parse(document.modified);
-    const latestVersion = _.get(
-      _.last(namesAndVersions.get(parsedModified.name)),
-      "version",
-      0
-    );
+    const latestVersion = _.get(_.last(versions), "version", 0);
 
     if (useAutoVersion) {
       parsedModified.version = _.isNumber(latestVersion)
@@ -54,7 +62,7 @@ export default function SaveWorkflowDialog({ onSuccess, onCancel, document }) {
         : 1;
     }
     const isNew = _.get(document, "originalObj.name") !== parsedModified.name;
-    const isClash = isNew && namesAndVersions.has(parsedModified.name);
+    const isClash = isNew && workflowNames.includes(parsedModified.name);
 
     return {
       text: JSON.stringify(parsedModified, null, 2),
@@ -62,7 +70,7 @@ export default function SaveWorkflowDialog({ onSuccess, onCancel, document }) {
       isClash: isClash,
       isNew: isNew,
     };
-  }, [document, useAutoVersion, namesAndVersions]);
+  }, [document, useAutoVersion, versions, workflowNames]);
 
   useEffect(() => {
     if (modified.isClash) {

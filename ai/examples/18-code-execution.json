@@ -1,0 +1,34 @@
+{
+  "name": "code_execution_workflow",
+  "description": "Chat completion with built-in code execution — the LLM can write and run code in a sandbox",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["task"],
+  "tasks": [
+    {
+      "name": "code_execution_chat",
+      "taskReferenceName": "chat",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "google_gemini",
+        "model": "gemini-2.5-flash",
+        "messages": [
+          {
+            "role": "system",
+            "message": "You are a data analyst. Use code execution to compute results, generate charts, and analyze data."
+          },
+          {
+            "role": "user",
+            "message": "${workflow.input.task}"
+          }
+        ],
+        "codeInterpreter": true,
+        "temperature": 0.2,
+        "maxTokens": 2000
+      }
+    }
+  ],
+  "outputParameters": {
+    "result": "${chat.output.result}"
+  }
+}

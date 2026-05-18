@@ -1,0 +1,11 @@
+{
+  "name": "retry-demo-schedule",
+  "cronExpression": "0 * * * * *",
+  "zoneId": "UTC",
+  "runCatchupScheduleInstances": false,
+  "startWorkflowRequest": {
+    "name": "retry_demo_workflow",
+    "version": 1,
+    "input": {}
+  }
+}

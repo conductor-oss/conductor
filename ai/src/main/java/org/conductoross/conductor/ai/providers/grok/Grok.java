@@ -19,23 +19,30 @@ import java.util.stream.Collectors;
 import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.models.ChatCompletion;
 import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
+import org.conductoross.conductor.ai.providers.openai.OpenAICompatChatModel;
+import org.conductoross.conductor.ai.providers.openai.api.OpenAIChatCompletionsApi;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.image.ImageModel;
-import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
-import org.springframework.web.client.RestClient;
 
 public class Grok implements AIModel {
 
     public static final String NAME = "Grok";
     private final GrokAIConfiguration config;
+    private final OpenAICompatChatModel chatModel;
 
     public Grok(GrokAIConfiguration config) {
         this.config = config;
+        long timeoutSecs = config.getTimeout() != null ? config.getTimeout().getSeconds() : 600;
+        OpenAIChatCompletionsApi api =
+                new OpenAIChatCompletionsApi(
+                        config.getApiKey(),
+                        config.getBaseURL(),
+                        "/v1/chat/completions",
+                        timeoutSecs);
+        this.chatModel = new OpenAICompatChatModel(api);
     }
 
     @Override
@@ -56,35 +63,23 @@ public class Grok implements AIModel {
                         .map(tc -> tc.getToolDefinition().name())
                         .collect(Collectors.toSet());
 
-        OpenAiChatOptions.Builder builder =
-                OpenAiChatOptions.builder()
-                        .model(input.getModel())
-                        .temperature(input.getTemperature())
-                        .topP(input.getTopP())
-                        .maxTokens(input.getMaxTokens())
-                        .stop(input.getStopWords())
-                        .frequencyPenalty(input.getFrequencyPenalty())
-                        .presencePenalty(input.getPresencePenalty())
-                        .toolCallbacks(toolCallbacks)
-                        .toolNames(toolNames)
-                        .internalToolExecutionEnabled(false);
-
-        return builder.build();
+        return ToolCallingChatOptions.builder()
+                .model(input.getModel())
+                .temperature(input.getTemperature())
+                .topP(input.getTopP())
+                .maxTokens(input.getMaxTokens())
+                .stopSequences(input.getStopWords())
+                .frequencyPenalty(input.getFrequencyPenalty())
+                .presencePenalty(input.getPresencePenalty())
+                .toolCallbacks(toolCallbacks)
+                .toolNames(toolNames)
+                .internalToolExecutionEnabled(false)
+                .build();
     }
 
     @Override
     public ChatModel getChatModel() {
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setReadTimeout(config.getTimeout());
-
-        OpenAiApi grokApi =
-                OpenAiApi.builder()
-                        .baseUrl(config.getBaseURL())
-                        .apiKey(config.getApiKey())
-                        .completionsPath("/v1/chat/completions")
-                        .restClientBuilder(RestClient.builder().requestFactory(factory))
-                        .build();
-        return OpenAiChatModel.builder().openAiApi(grokApi).build();
+        return this.chatModel;
     }
 
     @Override
