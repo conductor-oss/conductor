@@ -75,6 +75,14 @@ public class InMemoryWebhookTaskService implements WebhookTaskService {
                 expectedMatches);
     }
 
+    /**
+     * Matches keys are sorted, but each value's contribution is just {@link Object#toString()}.
+     * That is stable for strings, numbers, and booleans. It is <b>not</b> stable for nested {@link
+     * Map} values whose toString reflects iteration order (HashMap, etc.) — those can hash
+     * differently across JVM runs even for equal inputs. Mirrors the Orkes Redis impl verbatim; any
+     * change to value-side canonicalization needs to land in Orkes too or hashes diverge between
+     * OSS and Orkes deployments.
+     */
     private String computeHash(
             String workflowName,
             int workflowVersion,

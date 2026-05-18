@@ -149,6 +149,16 @@ public class InMemoryWebhookTaskServiceTest {
     }
 
     @Test
+    public void matchesWithPrimitiveValuesHashStably() {
+        // matches is declared Map<String, Object>; verify Integer / Long / Boolean values
+        // produce stable hashes (toString is well-defined for these).
+        Map<String, Object> primitives = Map.of("count", 42, "size", 1024L, "active", true);
+        service.put(task("task-1", "wf1", "ref1", primitives), 1);
+        service.put(task("task-2", "wf1", "ref1", primitives), 1);
+        assertEquals(Set.of("task-1", "task-2"), service.get(hash("wf1", 1, "ref1", primitives)));
+    }
+
+    @Test
     public void taskReferenceNameIterationSuffixIsStrippedFromHash() {
         // refName "loop__1" and "loop" should produce the same hash
         Map<String, Object> matches = Map.of("a", "1");
