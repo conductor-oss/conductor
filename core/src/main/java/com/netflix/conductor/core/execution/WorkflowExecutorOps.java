@@ -2308,6 +2308,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     "Error while notifying WorkflowStatusListener for workflow: {}",
                     workflow.getWorkflowId(),
                     e);
+            Monitors.error(CLASS_NAME, "notifyWorkflowStatusListener");
         }
     }
 }
