@@ -157,13 +157,25 @@ public class SubWorkflow extends WorkflowSystemTask {
         String correlationId = workflow.getCorrelationId();
 
         try {
+            // Derive the parent reference from the task itself, not from the
+            // caller-supplied `workflow` argument. `task.workflowInstanceId` is
+            // stamped on the task when it's scheduled and always identifies the
+            // workflow that owns the task. Reading it from `workflow` would let
+            // a wrong-context caller (e.g. updateParentWorkflowTask invoking
+            // SubWorkflow.execute with the child workflow as `workflow`) compute
+            // a divergent deterministic child id and mint a phantom workflow.
+            // Using the task-intrinsic ref makes the id derivation idempotent
+            // across all callers, so the existing child-id lock inside
+            // startWorkflowIdempotent serializes concurrent attempts onto the
+            // same workflow.
+            String parentWorkflowId = task.getWorkflowInstanceId();
             String subWorkflowId =
                     idGenerator.generateSubWorkflowId(
-                            workflow.getWorkflowId(), task.getTaskId(), task.getRetryCount());
+                            parentWorkflowId, task.getTaskId(), task.getRetryCount());
             LOGGER.debug(
                     "Launching sub-workflow task {} in parent workflow {} with deterministic child workflow id {}",
                     task.getTaskId(),
-                    workflow.getWorkflowId(),
+                    parentWorkflowId,
                     subWorkflowId);
 
             StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
@@ -172,7 +184,7 @@ public class SubWorkflow extends WorkflowSystemTask {
             startWorkflowInput.setVersion(resolvedVersion);
             startWorkflowInput.setWorkflowInput(wfInput);
             startWorkflowInput.setCorrelationId(correlationId);
-            startWorkflowInput.setParentWorkflowId(workflow.getWorkflowId());
+            startWorkflowInput.setParentWorkflowId(parentWorkflowId);
             startWorkflowInput.setParentWorkflowTaskId(task.getTaskId());
             startWorkflowInput.setTaskToDomain(taskToDomain);
             startWorkflowInput.setWorkflowId(subWorkflowId);
@@ -213,11 +225,17 @@ public class SubWorkflow extends WorkflowSystemTask {
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         String workflowId = task.getSubWorkflowId();
         if (StringUtils.isEmpty(workflowId)) {
+            // SCHEDULED-recovery: the parent task is scheduled but its child
+            // workflow id was never attached (e.g. async worker crashed mid-
+            // launch). Re-run start() — safe in any caller context because
+            // start() derives the deterministic id from task.workflowInstanceId,
+            // and the child-id lock inside startWorkflowIdempotent serializes
+            // any concurrent re-entry onto the same workflow.
             if (task.getStatus() == TaskModel.Status.SCHEDULED) {
                 LOGGER.info(
                         "Retrying sub-workflow launch for task {} in parent workflow {} because it is scheduled without an attached child workflow id",
                         task.getTaskId(),
-                        workflow.getWorkflowId());
+                        task.getWorkflowInstanceId());
                 start(workflow, task, workflowExecutor);
                 return StringUtils.isNotEmpty(task.getSubWorkflowId())
                         || task.getStatus().isTerminal();
