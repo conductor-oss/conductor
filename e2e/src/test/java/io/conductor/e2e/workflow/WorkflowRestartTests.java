@@ -243,6 +243,36 @@ public class WorkflowRestartTests {
         metadataClient.updateWorkflowDefs(java.util.List.of(workflowDef));
     }
 
+    private String awaitSubWorkflowId(String workflowId) {
+        final String[] subWorkflowId = new String[1];
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(500, TimeUnit.MILLISECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
+                            assertFalse(workflow.getTasks().isEmpty());
+                            subWorkflowId[0] = workflow.getTasks().get(0).getSubWorkflowId();
+                            assertNotNull(subWorkflowId[0]);
+                            assertFalse(subWorkflowId[0].isBlank());
+                        });
+        return subWorkflowId[0];
+    }
+
+    private String awaitFirstTaskId(String workflowId) {
+        final String[] taskId = new String[1];
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(500, TimeUnit.MILLISECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
+                            assertFalse(workflow.getTasks().isEmpty());
+                            taskId[0] = workflow.getTasks().get(0).getTaskId();
+                            assertNotNull(taskId[0]);
+                            assertFalse(taskId[0].isBlank());
+                        });
+        return taskId[0];
+    }
+
     @Test
     @DisplayName("Check workflow with sub_workflow task and restart functionality")
     public void testRestartWithSubWorkflow() {
@@ -263,21 +293,9 @@ public class WorkflowRestartTests {
 
         String workflowId = workflowClient.startWorkflow(startWorkflowRequest);
         System.out.print("Workflow id is " + workflowId);
-        // Wait for sub-workflow to be started and get its ID
-        await().atMost(10, TimeUnit.SECONDS)
-                .pollInterval(500, TimeUnit.MILLISECONDS)
-                .untilAsserted(
-                        () -> {
-                            Workflow workflow1 = workflowClient.getWorkflow(workflowId, true);
-                            assertNotEquals(0, workflow1.getTasks().size());
-                            assertNotNull(workflow1.getTasks().get(0).getSubWorkflowId());
-                            assertFalse(workflow1.getTasks().get(0).getSubWorkflowId().isBlank());
-                        });
-        Workflow workflow = workflowClient.getWorkflow(workflowId, true);
         // Fail the simple task
-        String subworkflowId = workflow.getTasks().get(0).getSubWorkflowId();
-        Workflow subWorkflow = workflowClient.getWorkflow(subworkflowId, true);
-        String taskId = subWorkflow.getTasks().get(0).getTaskId();
+        String subworkflowId = awaitSubWorkflowId(workflowId);
+        String taskId = awaitFirstTaskId(subworkflowId);
         TaskResult taskResult = new TaskResult();
         taskResult.setWorkflowInstanceId(subworkflowId);
         taskResult.setTaskId(taskId);
@@ -311,7 +329,7 @@ public class WorkflowRestartTests {
                                     workflow1.getTasks().get(0).getStatus().name(),
                                     Task.Status.SCHEDULED.name());
                         });
-        taskId = workflowClient.getWorkflow(subworkflowId, true).getTasks().get(0).getTaskId();
+        taskId = awaitFirstTaskId(subworkflowId);
 
         taskResult = new TaskResult();
         taskResult.setWorkflowInstanceId(subworkflowId);
@@ -331,11 +349,9 @@ public class WorkflowRestartTests {
 
         // Check restart functionality at parent workflow level.
         workflowClient.restart(workflowId, false);
-        workflow = workflowClient.getWorkflow(workflowId, true);
         // Fail the simple task
-        subworkflowId = workflow.getTasks().get(0).getSubWorkflowId();
-        subWorkflow = workflowClient.getWorkflow(subworkflowId, true);
-        taskId = subWorkflow.getTasks().get(0).getTaskId();
+        subworkflowId = awaitSubWorkflowId(workflowId);
+        taskId = awaitFirstTaskId(subworkflowId);
         taskResult = new TaskResult();
         taskResult.setWorkflowInstanceId(subworkflowId);
         taskResult.setTaskId(taskId);
@@ -385,8 +401,7 @@ public class WorkflowRestartTests {
         Workflow workflow = workflowClient.getWorkflow(workflowId, true);
         // Fail the simple task
         String subworkflowId = workflow.getTasks().get(0).getSubWorkflowId();
-        Workflow subWorkflow = workflowClient.getWorkflow(subworkflowId, true);
-        String taskId = subWorkflow.getTasks().get(0).getTaskId();
+        String taskId = awaitFirstTaskId(subworkflowId);
         TaskResult taskResult = new TaskResult();
         taskResult.setWorkflowInstanceId(subworkflowId);
         taskResult.setTaskId(taskId);
@@ -431,7 +446,7 @@ public class WorkflowRestartTests {
                         });
         String newSubWorkflowId =
                 workflowClient.getWorkflow(workflowId, true).getTasks().get(0).getSubWorkflowId();
-        taskId = workflowClient.getWorkflow(newSubWorkflowId, true).getTasks().get(0).getTaskId();
+        taskId = awaitFirstTaskId(newSubWorkflowId);
         taskResult = new TaskResult();
         taskResult.setWorkflowInstanceId(newSubWorkflowId);
         taskResult.setTaskId(taskId);
@@ -493,8 +508,7 @@ public class WorkflowRestartTests {
         // Fail the simple task
         Workflow workflow = workflowClient.getWorkflow(workflowId, true);
         String subworkflowId = workflow.getTasks().get(0).getSubWorkflowId();
-        Workflow subWorkflow = workflowClient.getWorkflow(subworkflowId, true);
-        String taskId = subWorkflow.getTasks().get(0).getTaskId();
+        String taskId = awaitFirstTaskId(subworkflowId);
         TaskResult taskResult = new TaskResult();
         taskResult.setWorkflowInstanceId(subworkflowId);
         taskResult.setTaskId(taskId);
@@ -539,7 +553,7 @@ public class WorkflowRestartTests {
                         });
         String newSubWorkflowId =
                 workflowClient.getWorkflow(workflowId, true).getTasks().get(0).getSubWorkflowId();
-        taskId = workflowClient.getWorkflow(newSubWorkflowId, true).getTasks().get(0).getTaskId();
+        taskId = awaitFirstTaskId(newSubWorkflowId);
         taskResult = new TaskResult();
         taskResult.setWorkflowInstanceId(newSubWorkflowId);
         taskResult.setTaskId(taskId);
@@ -615,8 +629,7 @@ public class WorkflowRestartTests {
                                 id -> id != null);
 
         // Fail the simple task in child workflow
-        Workflow childWorkflow = workflowClient.getWorkflow(childWorkflowId, true);
-        String childTaskId = childWorkflow.getTasks().get(0).getTaskId();
+        String childTaskId = awaitFirstTaskId(childWorkflowId);
         TaskResult taskResult = new TaskResult();
         taskResult.setWorkflowInstanceId(childWorkflowId);
         taskResult.setTaskId(childTaskId);

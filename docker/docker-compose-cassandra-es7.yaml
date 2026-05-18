@@ -1,0 +1,90 @@
+services:
+  conductor-server:
+    environment:
+      - CONFIG_PROP=config-cassandra-es7.properties
+      - JAVA_OPTS=-Dpolyglot.engine.WarnInterpreterOnly=false
+      - conductor.app.ownerEmailMandatory=false
+    image: conductor:server
+    container_name: conductor-server
+    build:
+      context: ../
+      dockerfile: docker/server/Dockerfile
+      args:
+        YARN_OPTS: ${YARN_OPTS}
+    networks:
+      - internal
+    ports:
+      - 8000:8080
+      - 8127:5000
+    healthcheck:
+      test: ["CMD", "curl", "-I", "-XGET", "http://localhost:8080/health"]
+      interval: 60s
+      timeout: 30s
+      retries: 12
+    links:
+      - conductor-cassandra:cassandradb
+      - conductor-redis:rs
+      - conductor-elasticsearch:es
+    depends_on:
+      conductor-cassandra:
+        condition: service_healthy
+      conductor-redis:
+        condition: service_healthy
+      conductor-elasticsearch:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"
+
+  conductor-cassandra:
+    image: cassandra:4
+    environment:
+      - CASSANDRA_CLUSTER_NAME=conductor
+      - CASSANDRA_NUM_TOKENS=4
+      - MAX_HEAP_SIZE=512M
+      - HEAP_NEWSIZE=128M
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"
+
+  conductor-redis:
+    image: redis:6.2.3-alpine
+    volumes:
+      - ../server/config/redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+
+  conductor-elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.11
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+    networks:
+      - internal
+    healthcheck:
+      test: curl http://localhost:9200/_cluster/health -o /dev/null
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"
+
+networks:
+  internal:

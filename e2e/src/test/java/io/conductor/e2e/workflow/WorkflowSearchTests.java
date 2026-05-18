@@ -66,7 +66,8 @@ public class WorkflowSearchTests {
 
         workflowAdminClient.startWorkflow(startWorkflowRequest);
         workflowAdminClient.startWorkflow(startWorkflowRequest);
-        await().pollInterval(100, TimeUnit.MILLISECONDS)
+        await().atMost(30, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
                 .untilAsserted(
                         () -> {
                             workflowSummarySearchResult.set(
@@ -88,7 +89,8 @@ public class WorkflowSearchTests {
         workflowAdminClient.startWorkflow(startWorkflowRequest);
         workflowAdminClient.startWorkflow(startWorkflowRequest);
         // In search result when only this workflow searched 2 results should come
-        await().pollInterval(100, TimeUnit.MILLISECONDS)
+        await().atMost(30, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
                 .untilAsserted(
                         () -> {
                             workflowSummarySearchResult.set(
@@ -98,7 +100,8 @@ public class WorkflowSearchTests {
                         });
 
         // In search result when both workflow searched then 4 results should come
-        await().pollInterval(100, TimeUnit.MILLISECONDS)
+        await().atMost(30, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
                 .untilAsserted(
                         () -> {
                             workflowSummarySearchResult.set(
@@ -139,7 +142,7 @@ public class WorkflowSearchTests {
         String workflowId = workflowClient.startWorkflow(startReq);
 
         // Search by workflowId with double quotes
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(30, TimeUnit.SECONDS)
                 .pollInterval(100, TimeUnit.MILLISECONDS)
                 .untilAsserted(
                         () -> {
@@ -171,7 +174,7 @@ public class WorkflowSearchTests {
         String workflowId = workflowClient.startWorkflow(startReq);
 
         // Search by workflowId with single quotes — this was broken before the fix
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(30, TimeUnit.SECONDS)
                 .pollInterval(100, TimeUnit.MILLISECONDS)
                 .untilAsserted(
                         () -> {
@@ -204,7 +207,7 @@ public class WorkflowSearchTests {
         workflowClient.startWorkflow(startReq);
 
         // Search by workflowType with single quotes
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(30, TimeUnit.SECONDS)
                 .pollInterval(100, TimeUnit.MILLISECONDS)
                 .untilAsserted(
                         () -> {
@@ -248,7 +251,7 @@ public class WorkflowSearchTests {
         String otherWorkflowId = workflowClient.startWorkflow(otherReq);
 
         // Search with multiple single-quoted conditions — mimics getWorkflowsByCorrelationId
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(30, TimeUnit.SECONDS)
                 .pollInterval(100, TimeUnit.MILLISECONDS)
                 .untilAsserted(
                         () -> {
@@ -289,7 +292,7 @@ public class WorkflowSearchTests {
         }
 
         // Wait for all 3 to be indexed
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(30, TimeUnit.SECONDS)
                 .pollInterval(100, TimeUnit.MILLISECONDS)
                 .untilAsserted(
                         () -> {

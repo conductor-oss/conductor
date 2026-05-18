@@ -36,7 +36,7 @@ services:
         max-file: "3"
 
   conductor-postgres:
-    image: postgres
+    image: postgres:16
     environment:
       - POSTGRES_USER=conductor
       - POSTGRES_PASSWORD=conductor

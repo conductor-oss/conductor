@@ -95,6 +95,18 @@ const formControls = (mode: PaletteMode): Components<Theme> => {
           marginLeft: 8,
           height: 20,
           width: 40,
+          // These selectors live inside the root override so they share its
+          // cascade position (injected after MUI's own styles), which beats
+          // the .MuiSwitch-sizeSmall .MuiSwitch-switchBase specificity that
+          // size="small" adds and that the switchBase slot alone cannot win.
+          "& .MuiSwitch-switchBase": {
+            padding: 2,
+            top: 0,
+          },
+          "& .MuiSwitch-switchBase.Mui-checked": {
+            // With padding:2 the switchBase is 20px wide; translateX = 40-20.
+            transform: "translateX(20px)",
+          },
           "&:hover": {
             "& > $track": {
               backgroundColor: colors.gray05,
@@ -125,7 +137,6 @@ const formControls = (mode: PaletteMode): Components<Theme> => {
         switchBase: {
           padding: 2,
           "&$checked": {
-            // transform: "translateX(100%)",
             "& + $track": {
               opacity: 1,
             },

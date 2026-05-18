@@ -12,8 +12,11 @@
  */
 package org.conductoross.conductor.es8.dao.index;
 
+import java.util.List;
+
 import org.junit.Test;
 
+import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 
 import static org.junit.Assert.assertEquals;
@@ -37,6 +40,40 @@ public class Es8SearchSupportTest {
         Query query = support.boolQueryBuilder("", " ");
 
         assertTrue(query.isMatchAll());
+    }
+
+    @Test
+    public void unquotedValueWithENotParsedAsDouble() throws Exception {
+        // Regression: workflow names like "1E234" or "12E34" were incorrectly parsed as doubles,
+        // causing terms queries on keyword fields to return 0 results.
+        Query query = support.boolQueryBuilder("workflowType IN (1E234)", "*");
+
+        assertTrue(query.isTerms());
+        List<FieldValue> values = query.terms().terms().value();
+        assertEquals(1, values.size());
+        assertTrue(values.get(0).isString());
+        assertEquals("1E234", values.get(0).stringValue());
+    }
+
+    @Test
+    public void doubleQuotedStructuredQueryUsesTermQuery() throws Exception {
+        String uuid = "09d13af8-3a2a-48bf-a91d-ef0a9114f07a";
+        Query query = support.boolQueryBuilder("workflowId=\"" + uuid + "\"", "*");
+
+        assertTrue(query.isTerm());
+        assertEquals("workflowId", query.term().field());
+        assertEquals(uuid, query.term().value().stringValue());
+    }
+
+    @Test
+    public void andConditionStructuredQueryUsesBoolMustQuery() throws Exception {
+        Query query =
+                support.boolQueryBuilder(
+                        "correlationId='corr-abc' AND workflowType='MyWorkflow'", "*");
+
+        assertTrue(query.isBool());
+        assertEquals(2, query.bool().must().size());
+        assertTrue(query.bool().must().stream().anyMatch(Query::isTerm));
     }
 
     @Test

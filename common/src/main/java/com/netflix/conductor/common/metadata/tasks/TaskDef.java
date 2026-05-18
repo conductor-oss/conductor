@@ -124,11 +124,19 @@ public class TaskDef extends Auditable {
     @Min(value = 1, message = "Backoff scale factor. Applicable for LINEAR_BACKOFF")
     private Integer backoffScaleFactor = 1;
 
+    @ProtoField(id = 24)
+    @Min(value = 0, message = "TaskDef maxRetryDelaySeconds: {value} must be >= 0")
+    private int maxRetryDelaySeconds = 0;
+
+    @ProtoField(id = 25)
+    @Min(value = 0, message = "TaskDef backoffJitterMs: {value} must be >= 0")
+    private int backoffJitterMs = 0;
+
     @ProtoField(id = 21)
     private String baseType;
 
     @ProtoField(id = 22)
-    @NotNull
+    @Min(value = 0, message = "TaskDef totalTimeoutSeconds: {value} must be >= 0")
     private long totalTimeoutSeconds;
 
     @ProtoField(id = 23)
@@ -439,6 +447,36 @@ public class TaskDef extends Auditable {
         return backoffScaleFactor;
     }
 
+    /**
+     * Maximum delay between retries in seconds. When set to a value greater than 0, the computed
+     * delay for {@code EXPONENTIAL_BACKOFF} and {@code LINEAR_BACKOFF} retry logic will be capped
+     * at this value. A value of 0 (the default) means no cap is applied.
+     *
+     * <p>Example: 20 retries with exponential backoff starting at 1 s and capped at 600 s will back
+     * off as 1, 2, 4, 8, …, 600, 600, 600, … instead of growing unboundedly.
+     */
+    public int getMaxRetryDelaySeconds() {
+        return maxRetryDelaySeconds;
+    }
+
+    public void setMaxRetryDelaySeconds(int maxRetryDelaySeconds) {
+        this.maxRetryDelaySeconds = maxRetryDelaySeconds;
+    }
+
+    /**
+     * Maximum jitter to add to the retry delay. On each retry a random value in {@code [0,
+     * backoffJitterMs]} milliseconds is added to the computed delay, spreading retries across time
+     * and preventing thundering-herd storms when many tasks fail simultaneously. A value of 0 (the
+     * default) disables jitter.
+     */
+    public int getBackoffJitterMs() {
+        return backoffJitterMs;
+    }
+
+    public void setBackoffJitterMs(int backoffJitterMs) {
+        this.backoffJitterMs = backoffJitterMs;
+    }
+
     public String getBaseType() {
         return baseType;
     }
@@ -521,7 +559,9 @@ public class TaskDef extends Auditable {
                 && Objects.equals(getBaseType(), taskDef.getBaseType())
                 && Objects.equals(getInputSchema(), taskDef.getInputSchema())
                 && Objects.equals(getOutputSchema(), taskDef.getOutputSchema())
-                && Objects.equals(getTotalTimeoutSeconds(), taskDef.getTotalTimeoutSeconds());
+                && Objects.equals(getTotalTimeoutSeconds(), taskDef.getTotalTimeoutSeconds())
+                && getMaxRetryDelaySeconds() == taskDef.getMaxRetryDelaySeconds()
+                && getBackoffJitterMs() == taskDef.getBackoffJitterMs();
     }
 
     @Override
@@ -548,6 +588,8 @@ public class TaskDef extends Auditable {
                 getBaseType(),
                 getInputSchema(),
                 getOutputSchema(),
-                getTotalTimeoutSeconds());
+                getTotalTimeoutSeconds(),
+                getMaxRetryDelaySeconds(),
+                getBackoffJitterMs());
     }
 }

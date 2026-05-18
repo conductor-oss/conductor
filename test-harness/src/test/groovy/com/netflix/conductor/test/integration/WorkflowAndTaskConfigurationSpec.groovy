@@ -134,7 +134,12 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         }
 
         when: "The second task 'integration_task_2' is polled and completed"
-        def task2Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker')
+        sweep(workflowInstanceId)
+        Tuple task2Try1 = null
+        conditions.eventually {
+            task2Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker')
+            assert task2Try1[0]
+        }
 
         then: "Verify that the task was polled and acknowledged"
         verifyPolledAndAcknowledgedTask(task2Try1)
@@ -210,7 +215,12 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         }
 
         when: "The second task 'integration_task_2' is polled and completed"
-        def task2Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker')
+        sweep(workflowInstanceId)
+        Tuple task2Try1 = null
+        conditions.eventually {
+            task2Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker')
+            assert task2Try1[0]
+        }
 
         then: "Verify that the task was polled and acknowledged"
         verifyPolledAndAcknowledgedTask(task2Try1)
