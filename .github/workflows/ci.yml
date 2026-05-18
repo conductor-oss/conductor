@@ -349,7 +349,7 @@ jobs:
         run: npx playwright install-deps chromium
 
       - name: Run Playwright E2E Tests
-        run: yarn playwright:test
+        run: yarn test:e2e
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v6
