@@ -1276,7 +1276,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         }
     }
 
-    private void adjustStateIfSubWorkflowChanged(WorkflowModel workflow) {
+    @VisibleForTesting
+    void adjustStateIfSubWorkflowChanged(WorkflowModel workflow) {
         Optional<TaskModel> changedSubWorkflowTask = findChangedSubWorkflowTask(workflow);
         if (changedSubWorkflowTask.isPresent()) {
             // reset the flag
@@ -2020,6 +2021,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             return;
         }
         executeSubworkflowTaskAndSyncData(subWorkflow, subWorkflowTask);
+        // Mark the sub workflow task as changed so that adjustStateIfSubWorkflowChanged
+        // can properly re-evaluate the parent. This ensures correctness even when the
+        // sweeper resets the flag between updateAndPushParents and completeWorkflow.
+        subWorkflowTask.setSubworkflowChanged(true);
         executionDAOFacade.updateTask(subWorkflowTask);
     }
 

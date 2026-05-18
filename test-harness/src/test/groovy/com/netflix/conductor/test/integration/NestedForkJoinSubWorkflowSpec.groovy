@@ -268,7 +268,6 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
             tasks[1].status == Task.Status.COMPLETED
             tasks[2].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[2].status == Task.Status.COMPLETED
-            !tasks[2].subworkflowChanged
             tasks[3].taskType == 'integration_task_2'
             tasks[3].status == Task.Status.COMPLETED
             tasks[4].taskType == TASK_TYPE_JOIN
@@ -388,7 +387,6 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
             tasks[1].status == Task.Status.COMPLETED
             tasks[2].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[2].status == Task.Status.COMPLETED
-            !tasks[2].subworkflowChanged
             tasks[3].taskType == 'integration_task_2'
             tasks[3].status == Task.Status.COMPLETED
             tasks[4].taskType == TASK_TYPE_JOIN
