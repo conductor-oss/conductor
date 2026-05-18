@@ -24,13 +24,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class InMemoryWebhookConfigDAOTest {
+public class InMemoryWebhookDAOTest {
 
-    private InMemoryWebhookConfigDAO dao;
+    private InMemoryWebhookDAO dao;
 
     @Before
     public void setUp() {
-        dao = new InMemoryWebhookConfigDAO();
+        dao = new InMemoryWebhookDAO();
     }
 
     private WebhookConfig newConfig(String id, String name) {

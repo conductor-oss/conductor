@@ -20,15 +20,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.conductoross.conductor.common.webhook.model.IncomingWebhookEvent;
 import org.conductoross.conductor.common.webhook.model.WebhookConfig;
-import org.conductoross.conductor.dao.webhook.WebhookConfigDAO;
+import org.conductoross.conductor.dao.webhook.WebhookDAO;
 
 /**
- * Default single-node implementation of {@link WebhookConfigDAO}.
+ * Default single-node implementation of {@link WebhookDAO}.
  *
  * <p>Backed by in-process maps; suitable for single-server deployments and tests. Multi-node
  * deployments should bind a persistent implementation (lands in a later PR).
  */
-public class InMemoryWebhookConfigDAO implements WebhookConfigDAO {
+public class InMemoryWebhookDAO implements WebhookDAO {
 
     private final ConcurrentHashMap<String, WebhookConfig> configs = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Map<String, Map<String, Object>>> matchers =

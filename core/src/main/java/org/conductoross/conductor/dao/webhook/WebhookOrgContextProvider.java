@@ -19,7 +19,7 @@ package org.conductoross.conductor.dao.webhook;
  * Enterprise) supply an implementation that resolves an orgId from the webhook id and stores it in
  * a thread-local accessed by their DAO implementations.
  *
- * <p>Callers invoke {@link #applyContext(String)} before any {@link WebhookConfigDAO} or {@link
+ * <p>Callers invoke {@link #applyContext(String)} before any {@link WebhookDAO} or {@link
  * WebhookTaskDAO} access.
  */
 public interface WebhookOrgContextProvider {
