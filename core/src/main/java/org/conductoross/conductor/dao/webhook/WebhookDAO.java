@@ -23,10 +23,6 @@ import org.conductoross.conductor.webhook.model.WebhookConfig;
  *
  * <p>Implementations: {@code InMemoryWebhookDAO} (single-node, default), {@code RedisWebhookDAO} /
  * {@code PostgresWebhookDAO} (multi-node, land in later PRs).
- *
- * <p>Implementations are responsible for org-level isolation when applicable; the interface itself
- * takes no orgId. Callers invoke {@link WebhookOrgContextProvider#applyContext(String)} before DAO
- * access.
  */
 public interface WebhookDAO {
 
