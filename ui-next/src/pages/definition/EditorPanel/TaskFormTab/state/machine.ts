@@ -60,9 +60,6 @@ export const formMachine = createMachine<
             // Note it will use incoming task if task is SWITCH and has changes else it will ignore
             actions: ["updateCrumbsAndOriginalTask"],
           },
-          [FormMachineActionTypes.FORCE_REFRESH_TASK]: {
-            actions: ["forceRefreshTask"],
-          },
           [FlowActionTypes.SELECT_EDGE_EVT]: {
             actions: ["maybePersistSelectedSwitchBranch"],
           },

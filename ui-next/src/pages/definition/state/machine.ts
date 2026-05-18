@@ -254,7 +254,6 @@ export const workflowDefinitionMachine = createMachine<
                 cond: "isAddOperation",
               },
               [FlowActionTypes.SELECT_NODE_EVT]: {
-                actions: ["collapseAgent"],
                 target:
                   "#workflowDefinitionMachine.ready.rightPanel.opened.tabFocus",
                 cond: "isValidSelection",
@@ -392,17 +391,13 @@ export const workflowDefinitionMachine = createMachine<
                       [DefinitionMachineEventTypes.CHANGE_TAB_EVT]: [
                         {
                           cond: "comesFromCodeAimsTaskTabHasSelectedTask",
-                          actions: ["collapseAgent", "reSelectTaskIfSelected"],
+                          actions: ["reSelectTaskIfSelected"],
                           target: "tabFocus",
                         },
                         {
                           actions: ["changeTab"],
                           cond: "isDifferentTab",
                           target: "tabFocus",
-                        },
-                        // Same tab — still minimize assistant
-                        {
-                          actions: ["collapseAgent"],
                         },
                       ],
                       [CodeMachineEventTypes.HIGHLIGHT_TEXT_REFERENCE]: {
@@ -462,18 +457,12 @@ export const workflowDefinitionMachine = createMachine<
                           "gtagEventLogger",
                         ],
                       },
-                      [DefinitionMachineEventTypes.CHANGE_TAB_EVT]: [
-                        {
-                          actions: ["changeTab", "gtagEventLogger"],
-                          cond: "isDifferentTab",
-                          target: "tabFocus",
-                        },
-                        {
-                          actions: ["collapseAgent"],
-                        },
-                      ],
+                      [DefinitionMachineEventTypes.CHANGE_TAB_EVT]: {
+                        actions: ["changeTab", "gtagEventLogger"],
+                        cond: "isDifferentTab",
+                        target: "tabFocus",
+                      },
                       [FlowActionTypes.SELECT_NODE_EVT]: {
-                        actions: ["collapseAgent"],
                         target: "tabFocusAfter",
                         cond: "isValidSelection",
                       },
@@ -534,15 +523,10 @@ export const workflowDefinitionMachine = createMachine<
                       },
                     },
                     on: {
-                      [DefinitionMachineEventTypes.CHANGE_TAB_EVT]: [
-                        {
-                          actions: ["forwardToRunWorkflowMachine"],
-                          cond: "isDifferentTab",
-                        },
-                        {
-                          actions: ["collapseAgent"],
-                        },
-                      ],
+                      [DefinitionMachineEventTypes.CHANGE_TAB_EVT]: {
+                        actions: ["forwardToRunWorkflowMachine"],
+                        cond: "isDifferentTab",
+                      },
                       [DefinitionMachineEventTypes.REDIRECT_TO_EXECUTION_PAGE]:
                         {
                           actions: ["redirectToExecutionPage"],
@@ -553,16 +537,11 @@ export const workflowDefinitionMachine = createMachine<
                     tags: ["dependenciesTab"],
 
                     on: {
-                      [DefinitionMachineEventTypes.CHANGE_TAB_EVT]: [
-                        {
-                          actions: ["changeTab", "gtagEventLogger"],
-                          cond: "isDifferentTab",
-                          target: "tabFocus",
-                        },
-                        {
-                          actions: ["collapseAgent"],
-                        },
-                      ],
+                      [DefinitionMachineEventTypes.CHANGE_TAB_EVT]: {
+                        actions: ["changeTab", "gtagEventLogger"],
+                        cond: "isDifferentTab",
+                        target: "tabFocus",
+                      },
                       [DefinitionMachineEventTypes.REDIRECT_TO_EXECUTION_PAGE]:
                         {
                           actions: ["redirectToExecutionPage"],
@@ -607,16 +586,11 @@ export const workflowDefinitionMachine = createMachine<
                       },
                     },
                     on: {
-                      [DefinitionMachineEventTypes.CHANGE_TAB_EVT]: [
-                        {
-                          actions: ["changeTab", "gtagEventLogger"],
-                          cond: "isDifferentTab",
-                          target: "tabFocus",
-                        },
-                        {
-                          actions: ["collapseAgent"],
-                        },
-                      ],
+                      [DefinitionMachineEventTypes.CHANGE_TAB_EVT]: {
+                        actions: ["changeTab", "gtagEventLogger"],
+                        cond: "isDifferentTab",
+                        target: "tabFocus",
+                      },
                       [LocalCopyMachineEventTypes.USE_LOCAL_COPY_WORKFLOW]: {
                         actions: [
                           "forwardWorkflowToTabMetadataEditorMachine",
@@ -1012,7 +986,6 @@ export const workflowDefinitionMachine = createMachine<
                   },
                   [FlowActionTypes.SELECT_NODE_EVT]: {
                     actions: [
-                      "collapseAgent",
                       "persistSelectedTabCrumbs",
                       "changeToTaskTab",
                       "handleLeftPanelExpanded",
@@ -1267,12 +1240,6 @@ export const workflowDefinitionMachine = createMachine<
                   [DefinitionMachineEventTypes.WORKFLOW_FROM_AGENT]: {
                     actions: [
                       "persistWorkflowChanges",
-                      // syncTaskFormWithAgentWorkflow must run before
-                      // sendWorkflowChangesToMetadataMachineFromEvent: the metadata
-                      // machine send throws when the user is on the task tab (the
-                      // workflowTabMetaEditor child actor is not running), which would
-                      // prevent the task form from receiving the updated workflow.
-                      "syncTaskFormWithAgentWorkflow",
                       "sendWorkflowChangesToMetadataMachineFromEvent",
                     ],
                     target: "idle",

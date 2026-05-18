@@ -7,7 +7,6 @@ import { AgentDisplayMode } from "components/features/agent/agent-types";
 import {
   agentDisplayModeAtom,
   agentFirstUseAtom,
-  executionAssistantBridge,
 } from "components/features/agent/agentAtomsStore";
 import { Flow } from "components/features/flow/Flow";
 import OpenIcon from "components/icons/OpenIcon";
@@ -22,7 +21,7 @@ import TwoPanesDivider from "components/ui/TwoPanesDivider";
 import { CopyClipboardButton } from "components/ui/inputs/CopyClipboardButton";
 import { useAtom } from "jotai";
 import { WorkflowIntrospection } from "pages/execution/WorkflowIntrospection";
-import React, { useCallback, useContext, useMemo } from "react";
+import React, { useContext, useMemo } from "react";
 import { Helmet } from "react-helmet";
 import { useLocation } from "react-router";
 import { colors } from "theme/tokens/variables";
@@ -343,29 +342,16 @@ export default function Execution() {
   ] = useExecutionMachine();
   const location = useLocation();
 
-  executionAssistantBridge.closeRightPanel = closeRightPanel;
-  executionAssistantBridge.isTaskPanelOpen = !!rightPanelActor;
-
-  const clearExecutionAssistantBridgeOnUnmountRef = useCallback(
-    (el: HTMLElement | null) => {
-      if (el == null) {
-        executionAssistantBridge.closeRightPanel = null;
-        executionAssistantBridge.isTaskPanelOpen = false;
-      }
-    },
-    [],
-  );
-
   const { open: isSideBarOpen } = useContext(SidebarContext);
 
   const [, setAgentFirstUse] = useAtom(agentFirstUseAtom);
   const [agentDisplayMode, setAgentDisplayMode] = useAtom(agentDisplayModeAtom);
 
-  // Task details and the assistant share the right pane. Prefer task details
-  // whenever a task is selected (no useEffect — visibility is derived).
-  const assistantVisiblyOpen =
-    agentDisplayMode === AgentDisplayMode.FLOATING_EXPANDED &&
-    rightPanelActor === undefined;
+  // The assistant panel is open whenever the agent is in expanded mode.
+  // Deriving from the atom (rather than XState) means the sidebar button and
+  // cross-page navigation drive this panel without any extra sync effect.
+  const isAssistantPanelOpen =
+    agentDisplayMode === AgentDisplayMode.FLOATING_EXPANDED;
 
   const isFailure = (
     workflow: WorkflowExecution | undefined,
@@ -508,7 +494,7 @@ export default function Execution() {
 
   const rightPanelContent = (
     <>
-      {assistantVisiblyOpen ? (
+      {isAssistantPanelOpen ? (
         <Box
           sx={{
             height: "100%",
@@ -580,7 +566,6 @@ export default function Execution() {
 
   return (
     <Box
-      ref={clearExecutionAssistantBridgeOnUnmountRef}
       sx={{
         height: "100%",
         width: "100%",
@@ -748,17 +733,14 @@ export default function Execution() {
                 execution={execution}
                 openedTab={openedTab}
                 onChangeExecutionTab={changeExecutionTab}
-                isAssistantOpen={assistantVisiblyOpen}
+                isAssistantOpen={isAssistantPanelOpen}
                 onToggleAssistant={() => {
                   setAgentFirstUse(true);
-                  if (assistantVisiblyOpen) {
-                    setAgentDisplayMode(AgentDisplayMode.CLOSED);
-                  } else {
-                    if (rightPanelActor) {
-                      closeRightPanel();
-                    }
-                    setAgentDisplayMode(AgentDisplayMode.FLOATING_EXPANDED);
-                  }
+                  setAgentDisplayMode(
+                    isAssistantPanelOpen
+                      ? AgentDisplayMode.CLOSED
+                      : AgentDisplayMode.FLOATING_EXPANDED,
+                  );
                 }}
               />
             </Box>
@@ -794,7 +776,7 @@ export default function Execution() {
               leftPanelContent={leftPanelContent}
               rightPanelContent={rightPanelContent}
               leftPanelExpanded={
-                !assistantVisiblyOpen && rightPanelActor === undefined
+                !isAssistantPanelOpen && rightPanelActor === undefined
               }
               setLeftPanelExpanded={closeRightPanel}
               hideCollapseButton={true}

@@ -34,18 +34,6 @@ export const updateField = (path: string, value: any, taskJson: any) => {
 
 const fieldValue = (task: Partial<TaskDef>, type: string) => {
   const value = _path(`inputParameters.${type}`, task);
-  if (value != null && value !== "") {
-    return value;
-  }
-  if (
-    type === UiIntegrationsFieldType.LLM_PROVIDER ||
-    type === UiIntegrationsFieldType.EMBEDDING_MODEL_PROVIDER
-  ) {
-    const fromIntegration = _path(`inputParameters.integrationName`, task);
-    if (fromIntegration != null && fromIntegration !== "") {
-      return fromIntegration;
-    }
-  }
   if (value != null) {
     return value;
   } else if (
