@@ -58,16 +58,4 @@ public class InMemoryWebhookTaskService implements WebhookTaskService {
                     return taskIds.isEmpty() ? null : taskIds;
                 });
     }
-
-    @Override
-    public Set<String> popAll(String hash) {
-        Set<String>[] holder = new Set[1];
-        storage.compute(
-                hash,
-                (key, taskIds) -> {
-                    holder[0] = taskIds;
-                    return null;
-                });
-        return holder[0] == null ? Collections.emptySet() : new HashSet<>(holder[0]);
-    }
 }

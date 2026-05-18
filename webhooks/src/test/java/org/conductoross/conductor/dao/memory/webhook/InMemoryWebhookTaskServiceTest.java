@@ -12,7 +12,6 @@
  */
 package org.conductoross.conductor.dao.memory.webhook;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -89,20 +88,6 @@ public class InMemoryWebhookTaskServiceTest {
     }
 
     @Test
-    public void popAllReturnsAllTaskIdsAndClearsBucket() {
-        dao.put("h1", "task-1");
-        dao.put("h1", "task-2");
-        Set<String> popped = dao.popAll("h1");
-        assertEquals(Set.of("task-1", "task-2"), popped);
-        assertTrue(dao.get("h1").isEmpty());
-    }
-
-    @Test
-    public void popAllOfUnknownHashReturnsEmptySet() {
-        assertTrue(dao.popAll("does-not-exist").isEmpty());
-    }
-
-    @Test
     public void getReturnsSnapshotIndependentFromInternalStorage() {
         dao.put("h1", "task-1");
         Set<String> snapshot = dao.get("h1");
@@ -111,15 +96,6 @@ public class InMemoryWebhookTaskServiceTest {
                 "internal storage must not be affected by mutations on a returned snapshot",
                 Set.of("task-1"),
                 dao.get("h1"));
-    }
-
-    @Test
-    public void popAllReturnsSnapshotIndependentFromInternalStorage() {
-        dao.put("h1", "task-1");
-        Set<String> popped = dao.popAll("h1");
-        popped.add("task-injected");
-        dao.put("h1", "task-2");
-        assertEquals(Set.of("task-2"), dao.get("h1"));
     }
 
     @Test
@@ -160,39 +136,6 @@ public class InMemoryWebhookTaskServiceTest {
         assertTrue(done.await(10, TimeUnit.SECONDS));
         pool.shutdownNow();
         assertEquals(threads * perThread, dao.get("h1").size());
-    }
-
-    @Test
-    public void concurrentPopAllAndPutDoesNotLoseTaskIds() throws InterruptedException {
-        int producers = 8;
-        int perProducer = 500;
-        Set<String> popped = new HashSet<>();
-        ExecutorService pool = Executors.newFixedThreadPool(producers + 1);
-        CountDownLatch done = new CountDownLatch(producers);
-        for (int t = 0; t < producers; t++) {
-            int tid = t;
-            pool.submit(
-                    () -> {
-                        for (int i = 0; i < perProducer; i++) {
-                            dao.put("h1", "task-" + tid + "-" + i);
-                        }
-                        done.countDown();
-                    });
-        }
-        pool.submit(
-                () -> {
-                    while (done.getCount() > 0) {
-                        synchronized (popped) {
-                            popped.addAll(dao.popAll("h1"));
-                        }
-                    }
-                });
-        assertTrue(done.await(10, TimeUnit.SECONDS));
-        synchronized (popped) {
-            popped.addAll(dao.popAll("h1"));
-        }
-        pool.shutdownNow();
-        assertEquals(producers * perProducer, popped.size());
     }
 
     @Test(expected = NullPointerException.class)

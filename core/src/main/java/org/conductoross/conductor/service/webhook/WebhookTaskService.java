@@ -27,6 +27,4 @@ public interface WebhookTaskService {
     Set<String> get(String hash);
 
     void remove(String hash, String taskId);
-
-    Set<String> popAll(String hash);
 }
