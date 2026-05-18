@@ -20,10 +20,12 @@ This pattern is essential in microservice architectures where two-phase commits 
 
 ### Configuring a failure workflow
 
-You can configure a workflow to automatically run a compensation flow upon failure by adding the `failureWorkflow` parameter to your main workflow definition:
+You can configure a workflow to automatically run upon failure by adding the `failureWorkflow` parameter to your main workflow definition.
+Additionally, you may also specify the _version_ of it by using the `failureWorkflowVersion` parameter.
 
 ```json
-"failureWorkflow": "<name of your compensation flow>",
+"failureWorkflow": "<Name of your compensation flow>",
+"failureWorkflowVersion": "<Version of your compensation flow. If not specified, the latest version will be used>",
 ```
 
 If your main workflow fails, Conductor will trigger this failure workflow. By default, the following parameters are passed to the failure workflow as input:
