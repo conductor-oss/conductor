@@ -15,6 +15,7 @@ package org.conductoross.conductor.dao.memory.webhook;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -240,7 +241,7 @@ public class InMemoryWebhookTaskServiceTest {
         StringBuilder sb =
                 new StringBuilder(
                         workflowType + WEBHOOK_DELIMITER + version + WEBHOOK_DELIMITER + refName);
-        new java.util.TreeSet<>(matches.keySet())
+        new TreeSet<>(matches.keySet())
                 .forEach(k -> sb.append(WEBHOOK_DELIMITER).append(matches.get(k)));
         return sb.toString();
     }
