@@ -30,7 +30,13 @@ public class ScriptEvaluator {
 
     private static final int DEFAULT_MAX_EXECUTION_SECONDS = 4;
     private static final int DEFAULT_CONTEXT_POOL_SIZE = 10;
-    private static final boolean DEFAULT_CONTEXT_POOL_ENABLED = true;
+    // Pool reuse changes JS semantics: a Context's global scope persists across calls, so a
+    // user script with top-level `const x = ...` or `let x = ...` throws SyntaxError on the
+    // second call (identifier already declared). Default off; users who fully control their
+    // scripts can opt in via CONDUCTOR_SCRIPT_CONTEXT_POOL_ENABLED=true. The shared Engine and
+    // Source cache below still apply when the pool is disabled, so Context creation is much
+    // cheaper than before.
+    private static final boolean DEFAULT_CONTEXT_POOL_ENABLED = false;
     private static final int DEFAULT_SOURCE_CACHE_SIZE = 1024;
 
     private static Duration maxExecutionTimeSeconds;
