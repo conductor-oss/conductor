@@ -10,10 +10,7 @@ export function useSchedulerDefs() {
 
 export function useScheduleNames() {
   const { data } = useSchedulerDefs();
-  return useMemo(
-    () => (data ? data.map((s) => s.name).sort() : []),
-    [data]
-  );
+  return useMemo(() => (data ? data.map((s) => s.name).sort() : []), [data]);
 }
 
 export function useSchedulerDef(name, defaultSchedule) {
