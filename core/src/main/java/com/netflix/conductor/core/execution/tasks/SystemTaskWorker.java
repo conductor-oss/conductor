@@ -12,11 +12,13 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
@@ -55,6 +57,7 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
     private final int queuePopTimeout;
 
     ConcurrentHashMap<String, ExecutionConfig> queueExecutionConfigMap = new ConcurrentHashMap<>();
+    private final List<ScheduledExecutorService> scheduledPollers = new ArrayList<>();
 
     public SystemTaskWorker(
             QueueDAO queueDAO,
@@ -78,12 +81,13 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
     }
 
     public void startPolling(WorkflowSystemTask systemTask, String queueName) {
-        Executors.newSingleThreadScheduledExecutor()
-                .scheduleWithFixedDelay(
-                        () -> this.pollAndExecute(systemTask, queueName),
-                        1000,
-                        pollInterval,
-                        TimeUnit.MILLISECONDS);
+        ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+        scheduledPollers.add(scheduledExecutor);
+        scheduledExecutor.scheduleWithFixedDelay(
+                () -> this.pollAndExecute(systemTask, queueName),
+                1000,
+                pollInterval,
+                TimeUnit.MILLISECONDS);
         LOGGER.info(
                 "Started listening for task: {} in queue: {} at pollInterval of {} ms",
                 systemTask,
@@ -181,5 +185,52 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
         int threadCount = properties.getIsolatedSystemTaskWorkerThreadCount();
         String threadNameFormat = "isolated-system-task-worker-%d";
         return new ExecutionConfig(threadCount, threadNameFormat);
+    }
+
+    /**
+     * Gracefully stops the SystemTaskWorker by: 1. Stopping all polling schedulers to prevent new
+     * tasks from being picked up 2. Waiting for in-flight tasks to complete in all executor
+     * services
+     */
+    @Override
+    public void doStop() {
+        LOGGER.info("Initiating graceful shutdown of SystemTaskWorker...");
+
+        LOGGER.info("Stopping {} polling schedulers", scheduledPollers.size());
+        for (ScheduledExecutorService scheduler : scheduledPollers) {
+            scheduler.shutdown();
+        }
+
+        for (ScheduledExecutorService scheduler : scheduledPollers) {
+            try {
+                if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                    scheduler.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                scheduler.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        long shutdownTimeout = properties.getSystemTaskWorkerShutdownTimeout().getSeconds();
+        LOGGER.info(
+                "Waiting for in-flight system tasks to complete (timeout: {}s)...",
+                shutdownTimeout);
+        defaultExecutionConfig.shutdown(shutdownTimeout);
+
+        for (ExecutionConfig config : queueExecutionConfigMap.values()) {
+            config.shutdown(shutdownTimeout);
+        }
+
+        LOGGER.info("SystemTaskWorker graceful shutdown completed");
+    }
+
+    /**
+     * Returns a high phase value to ensure this component stops BEFORE other components like Kafka
+     * and Redis during shutdown. Higher phase = stops earlier during shutdown.
+     */
+    @Override
+    public int getPhase() {
+        return Integer.MAX_VALUE - 1;
     }
 }
