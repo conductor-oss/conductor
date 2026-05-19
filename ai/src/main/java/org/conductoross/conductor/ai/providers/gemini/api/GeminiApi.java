@@ -64,9 +64,14 @@ public class GeminiApi {
 
     // ---- URL helpers ----
 
-    private String modelUrl(String model, String verb) {
+    private String modelUrl(String model, String aiStudioVerb, String vertexVerb) {
+        String verb = apiKey != null ? aiStudioVerb : vertexVerb;
         String url = endpointBase + "/models/" + model + ":" + verb;
         return apiKey != null ? url + "?key=" + apiKey : url;
+    }
+
+    private String modelUrl(String model, String verb) {
+        return modelUrl(model, verb, verb);
     }
 
     private String operationUrl(String operationName) {
@@ -83,7 +88,11 @@ public class GeminiApi {
     private okhttp3.Request.Builder authRequest(String url) throws java.io.IOException {
         okhttp3.Request.Builder builder = new okhttp3.Request.Builder().url(url);
         if (credentials != null) {
-            credentials.refreshIfExpired();
+            if (credentials.getAccessToken() == null) {
+                credentials.refresh();
+            } else {
+                credentials.refreshIfExpired();
+            }
             builder.header("Authorization", "Bearer "
                     + credentials.getAccessToken().getTokenValue());
         }
@@ -148,7 +157,7 @@ public class GeminiApi {
             String model, String promptText, GenerateImagesConfig config) throws java.io.IOException {
         GenerateImagesRequest req = new GenerateImagesRequest(new ImagePrompt(promptText), config);
         return objectMapper.readValue(
-                executePost(modelUrl(model, "generateImages"), req),
+                executePost(modelUrl(model, "generateImages", "predict"), req),
                 GenerateImagesResponse.class);
     }
 
@@ -165,14 +174,24 @@ public class GeminiApi {
         }
         GenerateVideosRequest req = new GenerateVideosRequest(List.of(instance), config);
         return objectMapper.readValue(
-                executePost(modelUrl(model, "generateVideos"), req),
+                executePost(modelUrl(model, "generateVideos", "predictLongRunning"), req),
                 GenerateVideosOperation.class);
     }
 
     public GenerateVideosOperation getVideosOperation(String operationName) throws java.io.IOException {
-        return objectMapper.readValue(
-                executeGet(operationUrl(operationName)),
-                GenerateVideosOperation.class);
+        if (apiKey != null) {
+            // AI Studio: GET the operation resource
+            return objectMapper.readValue(
+                    executeGet(operationUrl(operationName)),
+                    GenerateVideosOperation.class);
+        } else {
+            // Vertex AI: POST to fetchPredictOperation
+            String vertexBase = endpointBase.replaceAll("/publishers/google$", "");
+            String url = vertexBase + "/" + operationName + ":fetchPredictOperation";
+            return objectMapper.readValue(
+                    executePost(url, java.util.Map.of()),
+                    GenerateVideosOperation.class);
+        }
     }
 
     // --- Request DTOs ---
