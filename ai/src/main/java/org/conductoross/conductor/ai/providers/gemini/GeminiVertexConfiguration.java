@@ -46,6 +46,14 @@ public class GeminiVertexConfiguration implements ModelConfiguration<GeminiVerte
                 : baseURL;
     }
 
+    /**
+     * Returns the raw configured baseURL without applying the Vertex AI default.
+     * Use this when the default would be incorrect (e.g. API key / AI Studio mode).
+     */
+    public String getRawBaseURL() {
+        return baseURL;
+    }
+
     @Override
     public GeminiVertex get() {
         OkHttpClient client = conductorAiHttpClient != null

@@ -54,7 +54,10 @@ public class GeminiVertex implements AIModel {
 
     private GeminiApi createApi() {
         if (config.getApiKey() != null && !config.getApiKey().isBlank()) {
-            return GeminiApi.forApiKey(httpClient, config.getApiKey(), config.getBaseURL());
+            // For API key mode, only pass a custom base URL if explicitly configured.
+            // config.getBaseURL() defaults to a Vertex AI URL which is wrong for API key mode.
+            String customBase = config.getRawBaseURL(); // null if not explicitly set
+            return GeminiApi.forApiKey(httpClient, config.getApiKey(), customBase);
         }
         return GeminiApi.forVertex(httpClient, config.getProjectId(),
                 config.getLocation(), config.getGoogleCredentials());
@@ -199,7 +202,7 @@ public class GeminiVertex implements AIModel {
                 new GeminiApi.VoiceConfig(new GeminiApi.PrebuiltVoiceConfig(request.getVoice())));
         GeminiApi.GenerationConfig genConfig = new GeminiApi.GenerationConfig(
                 null, null, null, request.getMaxTokens(), request.getStopWords(),
-                request.getFrequencyPenalty() != null ? request.getFrequencyPenalty() : null,
+                request.getFrequencyPenalty(),
                 null, null, List.of("AUDIO"), null, speechConfig);
 
         try {
@@ -225,6 +228,8 @@ public class GeminiVertex implements AIModel {
                 }
             }
             return LLMResponse.builder().media(media).build();
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Gemini generateAudio failed", e);
         }
