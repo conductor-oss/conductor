@@ -14,20 +14,15 @@ package org.conductoross.conductor.webhook.dao.memory;
 
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.conductoross.conductor.service.webhook.WebhookTaskHashing;
 import org.conductoross.conductor.service.webhook.WebhookTaskService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Component;
 
-import com.netflix.conductor.common.utils.TaskUtils;
-import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.model.TaskModel;
-
-import static org.conductoross.conductor.service.webhook.WebhookTaskService.Constants.WEBHOOK_DELIMITER;
 
 /**
  * Default single-node implementation of {@link WebhookTaskService}.
@@ -43,8 +38,7 @@ public class InMemoryWebhookTaskService implements WebhookTaskService {
 
     @Override
     public void put(TaskModel task, int workflowVersion) {
-        Map<String, Object> expectedMatches = getAndValidateExpectedMatches(task);
-        String hash = computeHash(task, workflowVersion, expectedMatches);
+        String hash = WebhookTaskHashing.computeHash(task, workflowVersion);
         storage.compute(
                 hash,
                 (key, taskIds) -> {
@@ -68,52 +62,5 @@ public class InMemoryWebhookTaskService implements WebhookTaskService {
                     taskIds.remove(taskId);
                     return taskIds.isEmpty() ? null : taskIds;
                 });
-    }
-
-    private String computeHash(
-            TaskModel task, int workflowVersion, Map<String, Object> expectedMatches) {
-        return computeHash(
-                task.getWorkflowType(),
-                workflowVersion,
-                TaskUtils.removeIterationFromTaskRefName(task.getReferenceTaskName()),
-                expectedMatches);
-    }
-
-    /**
-     * Matches keys are sorted, but each value's contribution is just {@link Object#toString()}.
-     * That is stable for strings, numbers, and booleans. It is <b>not</b> stable for nested {@link
-     * Map} values whose toString reflects iteration order (HashMap, etc.) — those can hash
-     * differently across JVM runs even for equal inputs. Mirrors the Orkes Redis impl verbatim; any
-     * change to value-side canonicalization needs to land in Orkes too or hashes diverge between
-     * OSS and Orkes deployments.
-     */
-    private String computeHash(
-            String workflowName,
-            int workflowVersion,
-            String taskReferenceName,
-            Map<String, Object> expectedMatches) {
-        TreeSet<String> sortedFields = new TreeSet<>(expectedMatches.keySet());
-        StringBuilder hash =
-                new StringBuilder(
-                        workflowName
-                                + WEBHOOK_DELIMITER
-                                + workflowVersion
-                                + WEBHOOK_DELIMITER
-                                + taskReferenceName);
-        for (String field : sortedFields) {
-            hash.append(WEBHOOK_DELIMITER).append(expectedMatches.get(field));
-        }
-        return hash.toString();
-    }
-
-    private Map<String, Object> getAndValidateExpectedMatches(TaskModel task) {
-        Map<String, Object> inputData = task.getInputData();
-        @SuppressWarnings("unchecked")
-        Map<String, Object> matches =
-                inputData == null ? null : (Map<String, Object>) inputData.get("matches");
-        if (matches == null) {
-            throw new NonTransientException("Webhook task missing matches field");
-        }
-        return matches;
     }
 }

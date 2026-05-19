@@ -146,6 +146,26 @@ public class PostgresConfiguration {
         return new PostgresFileMetadataDAO(retryTemplate, objectMapper, dataSource);
     }
 
+    @Bean(name = "webhookDAO")
+    @DependsOn({"flywayForPrimaryDb"})
+    public org.conductoross.conductor.postgres.dao.PostgresWebhookDAO postgresWebhookDAO(
+            @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper,
+            com.netflix.conductor.dao.MetadataDAO metadataDAO) {
+        return new org.conductoross.conductor.postgres.dao.PostgresWebhookDAO(
+                retryTemplate, objectMapper, dataSource, metadataDAO);
+    }
+
+    @Bean(name = "webhookTaskService")
+    @DependsOn({"flywayForPrimaryDb"})
+    public org.conductoross.conductor.postgres.dao.PostgresWebhookTaskService
+            postgresWebhookTaskService(
+                    @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
+                    ObjectMapper objectMapper) {
+        return new org.conductoross.conductor.postgres.dao.PostgresWebhookTaskService(
+                retryTemplate, objectMapper, dataSource);
+    }
+
     @Bean
     public RetryTemplate postgresRetryTemplate(PostgresProperties properties) {
         SimpleRetryPolicy retryPolicy = new CustomRetryPolicy();
