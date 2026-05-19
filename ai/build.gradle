@@ -47,6 +47,7 @@ dependencies {
     api "org.springframework.boot:spring-boot-starter-jdbc"
 
 
+    testImplementation "com.squareup.okhttp3:mockwebserver:4.12.0"
     testImplementation "org.testcontainers:mongodb:${revTestContainer}"
     testImplementation "org.testcontainers:postgresql:${revTestContainer}"
     testImplementation "org.postgresql:postgresql:${revPostgres}"
