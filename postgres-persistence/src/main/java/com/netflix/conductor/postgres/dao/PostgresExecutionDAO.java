@@ -374,6 +374,27 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
         return workflow;
     }
 
+    @Override
+    public List<String> getAllWorkflowIds(int offset, int limit) {
+        String GET_ALL_WORKFLOW_IDS =
+                "SELECT workflow_id FROM workflow ORDER BY workflow_id LIMIT ? OFFSET ?";
+        return queryWithTransaction(
+                GET_ALL_WORKFLOW_IDS,
+                q -> q.addParameter(limit).addParameter(offset).executeScalarList(String.class));
+    }
+
+    @Override
+    public long getWorkflowCount() {
+        return queryWithTransaction("SELECT COUNT(*) FROM workflow", q -> q.executeCount());
+    }
+
+    @Override
+    public List<String> getAllWorkflowIdsAfter(String cursor, int limit) {
+        return queryWithTransaction(
+                "SELECT workflow_id FROM workflow WHERE workflow_id > ? ORDER BY workflow_id LIMIT ?",
+                q -> q.addParameter(cursor).addParameter(limit).executeScalarList(String.class));
+    }
+
     /**
      * @param workflowName name of the workflow
      * @param version the workflow version
