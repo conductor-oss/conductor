@@ -1,20 +1,22 @@
 /*
- * Copyright 2022 Orkes, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
- * Licensed under the Orkes Enterprise License (the "License"); you may not use this file except in compliance with
- * the License.
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
 package org.conductoross.conductor.webhook.verifier;
 
-import org.conductoross.conductor.common.utils.ErrorList;
-import org.conductoross.conductor.webhook.model.WebhookConfig;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.stereotype.Component;
-
+import org.conductoross.conductor.common.utils.ErrorList;
 import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
+import org.conductoross.conductor.webhook.model.WebhookConfig;
+import org.springframework.stereotype.Component;
 
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -27,7 +29,8 @@ public class SlackVerifier implements WebhookVerifier {
     private static String challenge = "challenge";
 
     @Override
-    public ErrorList verify(WebhookConfig webhookConfig, IncomingWebhookEvent incomingWebhookEvent) {
+    public ErrorList verify(
+            WebhookConfig webhookConfig, IncomingWebhookEvent incomingWebhookEvent) {
         try {
             if (webhookConfig.isUrlVerified()) {
                 // These are actual set of events
@@ -41,7 +44,9 @@ public class SlackVerifier implements WebhookVerifier {
             if (StringUtils.isEmpty(body)) {
                 return ErrorList.singleton("Challenge is not present in the body");
             } else {
-                log.debug("Challenge is verified successfully for webhook: {}", incomingWebhookEvent.getId());
+                log.debug(
+                        "Challenge is verified successfully for webhook: {}",
+                        incomingWebhookEvent.getId());
 
                 return ErrorList.empty();
             }
@@ -57,7 +62,8 @@ public class SlackVerifier implements WebhookVerifier {
         return WebhookConfig.Verifier.SLACK_BASED.toString();
     }
 
-    public String extractChallenge(IncomingWebhookEvent incomingWebhookEvent, WebhookConfig webhookConfig) {
+    public String extractChallenge(
+            IncomingWebhookEvent incomingWebhookEvent, WebhookConfig webhookConfig) {
         try {
             // Before parsing check for challenge parameter
             String requestBody = incomingWebhookEvent.getBody();
@@ -70,7 +76,6 @@ public class SlackVerifier implements WebhookVerifier {
             log.error(
                     "challenge is not present in the header "
                             + incomingWebhookEvent.getWebhookId());
-
         }
         return null;
     }

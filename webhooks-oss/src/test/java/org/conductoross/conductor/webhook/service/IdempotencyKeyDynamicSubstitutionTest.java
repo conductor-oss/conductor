@@ -1,25 +1,37 @@
+/*
+ * Copyright 2026 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package org.conductoross.conductor.webhook.service;
 
-import com.netflix.conductor.common.metadata.workflow.IdempotencyStrategy;
-import com.netflix.conductor.core.execution.evaluators.Evaluator;
-import com.netflix.conductor.core.utils.ParametersUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.common.config.ObjectMapperProvider;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.service.webhook.TargetWorkflowCollector;
 import org.conductoross.conductor.webhook.model.WebhookConfig;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.netflix.conductor.common.config.ObjectMapperProvider;
+import com.netflix.conductor.common.metadata.workflow.IdempotencyStrategy;
+import com.netflix.conductor.core.execution.evaluators.Evaluator;
+import com.netflix.conductor.core.utils.ParametersUtils;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -30,8 +42,7 @@ public class IdempotencyKeyDynamicSubstitutionTest {
     private ParametersUtils parametersUtils;
     private ObjectMapper objectMapper;
 
-    @Mock
-    private Evaluator evaluator;
+    @Mock private Evaluator evaluator;
 
     @BeforeEach
     public void setUp() {
@@ -125,7 +136,9 @@ public class IdempotencyKeyDynamicSubstitutionTest {
         // Setup
         Map<String, Object> workflowsToStart = new HashMap<>();
         workflowsToStart.put("sample_workflow", 1);
-        workflowsToStart.put("idempotencyKey", "order-${workflow.input.orderId}-customer-${workflow.input.customerId}");
+        workflowsToStart.put(
+                "idempotencyKey",
+                "order-${workflow.input.orderId}-customer-${workflow.input.customerId}");
         workflowsToStart.put("idempotencyStrategy", "RETURN_EXISTING");
 
         webhookConfig.setWorkflowsToStart(workflowsToStart);
@@ -172,7 +185,8 @@ public class IdempotencyKeyDynamicSubstitutionTest {
     @Test
     public void testWithExpressionAndDynamicIdempotencyKey() {
         // Setup
-        String expression = "(function(){ \n return { workflowsToStart: {\"sample_workflow\": 1, \"idempotencyKey\": \"${workflow.input.orderId}\", \"idempotencyStrategy\": \"RETURN_EXISTING\"}, receiverWorkflowNamesToVersions: { } }  \n})();";
+        String expression =
+                "(function(){ \n return { workflowsToStart: {\"sample_workflow\": 1, \"idempotencyKey\": \"${workflow.input.orderId}\", \"idempotencyStrategy\": \"RETURN_EXISTING\"}, receiverWorkflowNamesToVersions: { } }  \n})();";
         webhookConfig.setExpression(expression);
         webhookConfig.setEvaluatorType("javascript");
 

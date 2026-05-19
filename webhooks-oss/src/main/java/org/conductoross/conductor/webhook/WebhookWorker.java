@@ -29,7 +29,6 @@ import org.conductoross.conductor.webhook.model.WebhookConfig;
 import org.conductoross.conductor.webhook.model.WebhookExecutionHistory;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.IdempotencyStrategy;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
@@ -39,6 +38,7 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.SneakyThrows;
@@ -48,11 +48,12 @@ import static org.conductoross.conductor.webhook.WebhookWorkerProperties.WEBHOOK
 
 /**
  * Polls {@link WebhookWorkerProperties#WEBHOOK_QUEUE} for stored {@link IncomingWebhookEvent}
- * messages and dispatches each: completes any waiting {@code WAIT_FOR_WEBHOOK} tasks that match
- * the configured matchers, then starts any workflows declared in {@link WebhookConfig#getWorkflowsToStart()}.
+ * messages and dispatches each: completes any waiting {@code WAIT_FOR_WEBHOOK} tasks that match the
+ * configured matchers, then starts any workflows declared in {@link
+ * WebhookConfig#getWorkflowsToStart()}.
  *
- * <p>OSS port of the Orkes Enterprise {@code WebhookWorker}: same polling/dispatch flow,
- * with multi-tenant orgId handling, audit logging, and {@code ExtendedEventExecution} bookkeeping
+ * <p>OSS port of the Orkes Enterprise {@code WebhookWorker}: same polling/dispatch flow, with
+ * multi-tenant orgId handling, audit logging, and {@code ExtendedEventExecution} bookkeeping
  * removed. Failures are logged rather than persisted as {@code EventExecution}s.
  */
 @Component
@@ -105,18 +106,24 @@ public class WebhookWorker {
             log.info("WebhookWorker disabled (threadCount={})", threadCount);
             return;
         }
-        executorService = Executors.newScheduledThreadPool(threadCount, r -> {
-            Thread t = new Thread(r);
-            t.setName("webhookWorker-" + t.getId());
-            t.setDaemon(true);
-            return t;
-        });
+        executorService =
+                Executors.newScheduledThreadPool(
+                        threadCount,
+                        r -> {
+                            Thread t = new Thread(r);
+                            t.setName("webhookWorker-" + t.getId());
+                            t.setDaemon(true);
+                            return t;
+                        });
         for (int i = 0; i < threadCount; i++) {
             executorService.scheduleWithFixedDelay(
                     this::pollAndExecuteSafely, 10, pollingIntervalMs, TimeUnit.MILLISECONDS);
         }
-        log.info("WebhookWorker started: threadCount={}, pollingIntervalMs={}, pollBatchSize={}",
-                threadCount, pollingIntervalMs, pollBatchSize);
+        log.info(
+                "WebhookWorker started: threadCount={}, pollingIntervalMs={}, pollBatchSize={}",
+                threadCount,
+                pollingIntervalMs,
+                pollBatchSize);
     }
 
     @PreDestroy
@@ -149,15 +156,17 @@ public class WebhookWorker {
     }
 
     void handleMessage(String messageId) {
-        IncomingWebhookEvent event = objectMapper.convertValue(
-                webhookDAO.getWebhookEvent(messageId), IncomingWebhookEvent.class);
+        IncomingWebhookEvent event =
+                objectMapper.convertValue(
+                        webhookDAO.getWebhookEvent(messageId), IncomingWebhookEvent.class);
         if (event == null) {
             log.warn("webhook event {} not found, skipping", messageId);
             return;
         }
         WebhookConfig webhookConfig = webhookDAO.getWebhook(event.getWebhookId());
         if (webhookConfig == null) {
-            log.warn("webhook {} not found for event {}, dropping", event.getWebhookId(), messageId);
+            log.warn(
+                    "webhook {} not found for event {}, dropping", event.getWebhookId(), messageId);
             return;
         }
 
@@ -166,13 +175,21 @@ public class WebhookWorker {
         for (Map.Entry<String, Map<String, Object>> entry : matchers.entrySet()) {
             Map<String, Object> value = entry.getValue();
             if (value == null) {
-                log.debug("misconfigured matcher entry for webhook {}: {}", event.getWebhookId(), entry);
+                log.debug(
+                        "misconfigured matcher entry for webhook {}: {}",
+                        event.getWebhookId(),
+                        entry);
                 continue;
             }
-            String hash = webhookHashingService.computeJsonHash(
-                    new StringBuilder(entry.getKey()), value, event.getBody(), event.getRequestParams());
+            String hash =
+                    webhookHashingService.computeJsonHash(
+                            new StringBuilder(entry.getKey()),
+                            value,
+                            event.getBody(),
+                            event.getRequestParams());
             if (hash == null) {
-                log.debug("no matching hash for webhook {} matcher {}", event.getWebhookId(), entry);
+                log.debug(
+                        "no matching hash for webhook {} matcher {}", event.getWebhookId(), entry);
                 continue;
             }
             completeTasksFor(hash, getPayload(event), matchedWorkflowIds, webhookConfig, event);
@@ -188,24 +205,43 @@ public class WebhookWorker {
         Map<String, Object> workflowsToStart = targetWorkflowCollector.getWorkflowsToStart();
         if (workflowsToStart != null) {
             String eventName = webhookConfig.getName() + ":" + event.getId();
-            workflowsToStart.forEach((workflowName, versionObj) -> {
-                if (!(versionObj instanceof Integer version)) {
-                    log.warn("workflowToStart {} for webhook {} has non-integer version: {}",
-                            workflowName, webhookConfig.getId(), versionObj);
-                    return;
-                }
-                try {
-                    String workflowId = doStartWorkflow(
-                            eventName,
-                            buildStartRequest(workflowName, version, requestBody,
-                                    idempotencyKey, idempotencyStrategy, webhookConfig.getCreatedBy()));
-                    log.debug("started workflow {} (id={}) for webhook {} event {}",
-                            workflowName, workflowId, webhookConfig.getId(), event.getId());
-                } catch (Throwable t) {
-                    log.error("failed to start workflow {} for webhook {} event {}: {}",
-                            workflowName, webhookConfig.getId(), event.getId(), t.getMessage(), t);
-                }
-            });
+            workflowsToStart.forEach(
+                    (workflowName, versionObj) -> {
+                        if (!(versionObj instanceof Integer version)) {
+                            log.warn(
+                                    "workflowToStart {} for webhook {} has non-integer version: {}",
+                                    workflowName,
+                                    webhookConfig.getId(),
+                                    versionObj);
+                            return;
+                        }
+                        try {
+                            String workflowId =
+                                    doStartWorkflow(
+                                            eventName,
+                                            buildStartRequest(
+                                                    workflowName,
+                                                    version,
+                                                    requestBody,
+                                                    idempotencyKey,
+                                                    idempotencyStrategy,
+                                                    webhookConfig.getCreatedBy()));
+                            log.debug(
+                                    "started workflow {} (id={}) for webhook {} event {}",
+                                    workflowName,
+                                    workflowId,
+                                    webhookConfig.getId(),
+                                    event.getId());
+                        } catch (Throwable t) {
+                            log.error(
+                                    "failed to start workflow {} for webhook {} event {}: {}",
+                                    workflowName,
+                                    webhookConfig.getId(),
+                                    event.getId(),
+                                    t.getMessage(),
+                                    t);
+                        }
+                    });
         }
         webhookDAO.removeWebhookEvent(event.getId());
     }
@@ -230,7 +266,11 @@ public class WebhookWorker {
             IncomingWebhookEvent event) {
         TaskModel taskModel = executionDAOFacade.getTaskModel(taskId);
         if (taskModel == null) {
-            log.debug("task {} not found for webhook {} event {}", taskId, webhookConfig.getId(), event.getId());
+            log.debug(
+                    "task {} not found for webhook {} event {}",
+                    taskId,
+                    webhookConfig.getId(),
+                    event.getId());
             return;
         }
         if (taskModel.getStatus().isTerminal()) {
@@ -290,11 +330,14 @@ public class WebhookWorker {
 
     @SneakyThrows
     private void recordHistory(
-            Set<String> matchedWorkflowIds, WebhookConfig webhookConfig, IncomingWebhookEvent event) {
+            Set<String> matchedWorkflowIds,
+            WebhookConfig webhookConfig,
+            IncomingWebhookEvent event) {
         String payload = objectMapper.writeValueAsString(event);
         boolean matched = !matchedWorkflowIds.isEmpty();
-        WebhookExecutionHistory history = new WebhookExecutionHistory(
-                event.getId(), matched, matchedWorkflowIds, payload, event.getTimeStamp());
+        WebhookExecutionHistory history =
+                new WebhookExecutionHistory(
+                        event.getId(), matched, matchedWorkflowIds, payload, event.getTimeStamp());
 
         List<WebhookExecutionHistory> hist = webhookConfig.getWebhookExecutionHistory();
         if (hist == null) {

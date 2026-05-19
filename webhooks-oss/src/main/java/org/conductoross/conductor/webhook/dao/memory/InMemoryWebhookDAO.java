@@ -106,24 +106,30 @@ public class InMemoryWebhookDAO implements WebhookDAO {
             return;
         }
         Map<String, Map<String, Object>> computed = new HashMap<>();
-        receiverWorkflowNamesToVersionsOverride.forEach((workflowName, wfVersion) -> {
-            Optional<WorkflowDef> def = metadataDAO.getWorkflowDef(workflowName, wfVersion);
-            if (def.isEmpty()) {
-                return;
-            }
-            for (WorkflowTask task : def.get().collectTasks()) {
-                String type = task.getType();
-                if (!WAIT_FOR_WEBHOOK.equals(type) && !TaskType.WAIT.toString().equals(type)) {
-                    continue;
-                }
-                Object raw = task.getInputParameters().get("matches");
-                if (raw instanceof Map<?, ?> m && !CollectionUtils.isEmpty(m)) {
-                    String key = workflowName + WEBHOOK_DELIMITER + wfVersion
-                            + WEBHOOK_DELIMITER + task.getTaskReferenceName();
-                    computed.put(key, (Map<String, Object>) m);
-                }
-            }
-        });
+        receiverWorkflowNamesToVersionsOverride.forEach(
+                (workflowName, wfVersion) -> {
+                    Optional<WorkflowDef> def = metadataDAO.getWorkflowDef(workflowName, wfVersion);
+                    if (def.isEmpty()) {
+                        return;
+                    }
+                    for (WorkflowTask task : def.get().collectTasks()) {
+                        String type = task.getType();
+                        if (!WAIT_FOR_WEBHOOK.equals(type)
+                                && !TaskType.WAIT.toString().equals(type)) {
+                            continue;
+                        }
+                        Object raw = task.getInputParameters().get("matches");
+                        if (raw instanceof Map<?, ?> m && !CollectionUtils.isEmpty(m)) {
+                            String key =
+                                    workflowName
+                                            + WEBHOOK_DELIMITER
+                                            + wfVersion
+                                            + WEBHOOK_DELIMITER
+                                            + task.getTaskReferenceName();
+                            computed.put(key, (Map<String, Object>) m);
+                        }
+                    }
+                });
         matchers.put(webhookConfig.getId(), computed);
     }
 

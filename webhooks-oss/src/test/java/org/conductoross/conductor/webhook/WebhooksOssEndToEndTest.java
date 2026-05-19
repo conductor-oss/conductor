@@ -5,6 +5,10 @@
  * the License. You may obtain a copy of the License at
  * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package org.conductoross.conductor.webhook;
 
@@ -13,13 +17,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import org.conductoross.conductor.service.webhook.TargetWorkflowCollector;
 import org.conductoross.conductor.webhook.dao.memory.InMemoryWebhookDAO;
 import org.conductoross.conductor.webhook.dao.memory.InMemoryWebhookTaskService;
 import org.conductoross.conductor.webhook.model.WebhookConfig;
 import org.conductoross.conductor.webhook.rest.IncomingWebhookResource;
 import org.conductoross.conductor.webhook.service.IncomingWebhookService;
 import org.conductoross.conductor.webhook.service.WebhookConfigService;
-import org.conductoross.conductor.service.webhook.TargetWorkflowCollector;
 import org.conductoross.conductor.webhook.verifier.WebhookVerifier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,7 +33,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
@@ -42,10 +45,11 @@ import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -53,9 +57,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Exercises the real bean graph for the webhooks-oss module end-to-end: register a config →
- * receive an HTTP event → store + enqueue → worker dispatches → workflow start / waiting task
- * completion. Only the workflow executor, queue DAO, and metadata DAO are mocked.
+ * Exercises the real bean graph for the webhooks-oss module end-to-end: register a config → receive
+ * an HTTP event → store + enqueue → worker dispatches → workflow start / waiting task completion.
+ * Only the workflow executor, queue DAO, and metadata DAO are mocked.
  */
 @ExtendWith(MockitoExtension.class)
 class WebhooksOssEndToEndTest {
@@ -83,19 +87,26 @@ class WebhooksOssEndToEndTest {
     void wire() {
         webhookDAO = new InMemoryWebhookDAO(metadataDAO);
         webhookTaskService = new InMemoryWebhookTaskService();
-        targetWorkflowCollector = new TargetWorkflowCollector(Map.<String, Evaluator>of(), parametersUtils);
+        targetWorkflowCollector =
+                new TargetWorkflowCollector(Map.<String, Evaluator>of(), parametersUtils);
         configService = new WebhookConfigService(webhookDAO, targetWorkflowCollector, idGenerator);
         hashingService = new WebhookHashingService();
         Set<WebhookVerifier> verifiers = Set.of(new StubVerifier());
-        incomingService = new IncomingWebhookService(
-                webhookDAO, verifiers, queueDAO, idGenerator, executionDAOFacade);
+        incomingService = new IncomingWebhookService(webhookDAO, verifiers, queueDAO, idGenerator);
         resource = new IncomingWebhookResource(incomingService);
         WebhookWorkerProperties properties = new WebhookWorkerProperties();
         properties.setThreadCount(0); // disable polling thread
-        worker = new WebhookWorker(
-                objectMapper, queueDAO, webhookDAO, properties,
-                hashingService, workflowExecutor, webhookTaskService,
-                executionDAOFacade, targetWorkflowCollector);
+        worker =
+                new WebhookWorker(
+                        objectMapper,
+                        queueDAO,
+                        webhookDAO,
+                        properties,
+                        hashingService,
+                        workflowExecutor,
+                        webhookTaskService,
+                        executionDAOFacade,
+                        targetWorkflowCollector);
         systemTask = new Webhook(webhookTaskService);
     }
 
@@ -107,19 +118,22 @@ class WebhooksOssEndToEndTest {
         assertThat(webhookId).isNotBlank();
         assertThat(webhookDAO.getWebhook(webhookId)).isSameAs(config);
 
-        String response = resource.handleWebhook(
-                webhookId, "{\"event\":\"push\"}", Map.of(), new HttpHeaders());
+        String response =
+                resource.handleWebhook(
+                        webhookId, "{\"event\":\"push\"}", Map.of(), new HttpHeaders());
 
         assertThat(response).isNull();
-        verify(queueDAO).push(eq(WebhookWorkerProperties.WEBHOOK_QUEUE), any(String.class), anyLong());
+        verify(queueDAO)
+                .push(eq(WebhookWorkerProperties.WEBHOOK_QUEUE), any(String.class), anyLong());
     }
 
     @Test
-    void receive_unknownWebhookId_returnsNullAndNoEnqueue() {
-        String response = resource.handleWebhook(
-                "missing-id", "{}", Map.of(), new HttpHeaders());
-
-        assertThat(response).isNull();
+    void receive_unknownWebhookId_throwsNotFoundAndNoEnqueue() {
+        assertThatThrownBy(
+                        () ->
+                                resource.handleWebhook(
+                                        "missing-id", "{}", Map.of(), new HttpHeaders()))
+                .isInstanceOf(com.netflix.conductor.core.exception.NotFoundException.class);
         verify(queueDAO, never()).push(any(), any(String.class), anyLong());
     }
 
@@ -156,7 +170,8 @@ class WebhooksOssEndToEndTest {
         WorkflowDef wfDef = new WorkflowDef();
         wfDef.setName("wf-a");
         wfDef.setVersion(1);
-        com.netflix.conductor.model.WorkflowModel workflow = new com.netflix.conductor.model.WorkflowModel();
+        com.netflix.conductor.model.WorkflowModel workflow =
+                new com.netflix.conductor.model.WorkflowModel();
         workflow.setWorkflowDefinition(wfDef);
         systemTask.start(workflow, waitingTask, workflowExecutor);
 
@@ -167,7 +182,11 @@ class WebhooksOssEndToEndTest {
 
         // Capture the messageId that got enqueued and feed it to the worker
         ArgumentCaptor<String> messageIdCaptor = ArgumentCaptor.forClass(String.class);
-        verify(queueDAO).push(eq(WebhookWorkerProperties.WEBHOOK_QUEUE), messageIdCaptor.capture(), anyLong());
+        verify(queueDAO)
+                .push(
+                        eq(WebhookWorkerProperties.WEBHOOK_QUEUE),
+                        messageIdCaptor.capture(),
+                        anyLong());
         worker.handleMessage(messageIdCaptor.getValue());
 
         // Worker should have called updateTask with COMPLETED
@@ -186,8 +205,10 @@ class WebhooksOssEndToEndTest {
         configService.createWebhook(config);
 
         // StubVerifier rejects bodies starting with "REJECT"
-        assertThatThrownBy(() -> resource.handleWebhook(
-                config.getId(), "REJECT", Map.of(), new HttpHeaders()))
+        assertThatThrownBy(
+                        () ->
+                                resource.handleWebhook(
+                                        config.getId(), "REJECT", Map.of(), new HttpHeaders()))
                 .isInstanceOf(com.netflix.conductor.core.exception.NonTransientException.class);
         verify(queueDAO, never()).push(any(), any(String.class), anyLong());
     }

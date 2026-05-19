@@ -5,6 +5,10 @@
  * the License. You may obtain a copy of the License at
  * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package org.conductoross.conductor.webhook;
 
@@ -23,13 +27,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -57,10 +62,17 @@ class WebhookWorkerTest {
     void setUp() {
         WebhookWorkerProperties properties = new WebhookWorkerProperties();
         properties.setThreadCount(0); // disable polling thread
-        worker = new WebhookWorker(
-                objectMapper, queueDAO, webhookDAO, properties,
-                webhookHashingService, workflowExecutor, webhookTaskService,
-                executionDAOFacade, targetWorkflowCollector);
+        worker =
+                new WebhookWorker(
+                        objectMapper,
+                        queueDAO,
+                        webhookDAO,
+                        properties,
+                        webhookHashingService,
+                        workflowExecutor,
+                        webhookTaskService,
+                        executionDAOFacade,
+                        targetWorkflowCollector);
     }
 
     @Test
@@ -75,8 +87,12 @@ class WebhookWorkerTest {
 
     @Test
     void handleMessage_configNotFound_returnsEarly() {
-        IncomingWebhookEvent event = IncomingWebhookEvent.builder()
-                .id("ev-1").webhookId("hook-missing").body("{}").build();
+        IncomingWebhookEvent event =
+                IncomingWebhookEvent.builder()
+                        .id("ev-1")
+                        .webhookId("hook-missing")
+                        .body("{}")
+                        .build();
         when(webhookDAO.getWebhookEvent("ev-1")).thenReturn(event);
         when(webhookDAO.getWebhook("hook-missing")).thenReturn(null);
 
@@ -88,10 +104,13 @@ class WebhookWorkerTest {
 
     @Test
     void handleMessage_workflowsToStart_invokesExecutor() {
-        IncomingWebhookEvent event = IncomingWebhookEvent.builder()
-                .id("ev-1").webhookId("hook-1").body("{\"foo\":\"bar\"}")
-                .requestParams(Map.of())
-                .build();
+        IncomingWebhookEvent event =
+                IncomingWebhookEvent.builder()
+                        .id("ev-1")
+                        .webhookId("hook-1")
+                        .body("{\"foo\":\"bar\"}")
+                        .requestParams(Map.of())
+                        .build();
         WebhookConfig config = new WebhookConfig();
         config.setId("hook-1");
         config.setName("my-hook");
@@ -105,7 +124,8 @@ class WebhookWorkerTest {
 
         worker.handleMessage("ev-1");
 
-        ArgumentCaptor<StartWorkflowInput> captor = ArgumentCaptor.forClass(StartWorkflowInput.class);
+        ArgumentCaptor<StartWorkflowInput> captor =
+                ArgumentCaptor.forClass(StartWorkflowInput.class);
         verify(workflowExecutor).startWorkflow(captor.capture());
         StartWorkflowInput input = captor.getValue();
         assertThat(input.getName()).isEqualTo("wf-a");
@@ -117,9 +137,13 @@ class WebhookWorkerTest {
 
     @Test
     void handleMessage_workflowsToStart_nonIntegerVersion_skipped() {
-        IncomingWebhookEvent event = IncomingWebhookEvent.builder()
-                .id("ev-1").webhookId("hook-1").body("{}").requestParams(Map.of())
-                .build();
+        IncomingWebhookEvent event =
+                IncomingWebhookEvent.builder()
+                        .id("ev-1")
+                        .webhookId("hook-1")
+                        .body("{}")
+                        .requestParams(Map.of())
+                        .build();
         WebhookConfig config = new WebhookConfig();
         config.setId("hook-1");
         config.setName("my-hook");
@@ -127,7 +151,8 @@ class WebhookWorkerTest {
         when(webhookDAO.getWebhookEvent("ev-1")).thenReturn(event);
         when(webhookDAO.getWebhook("hook-1")).thenReturn(config);
         when(webhookDAO.getMatchers("hook-1")).thenReturn(Map.of());
-        when(targetWorkflowCollector.getWorkflowsToStart()).thenReturn(Map.of("wf-a", "not-a-number"));
+        when(targetWorkflowCollector.getWorkflowsToStart())
+                .thenReturn(Map.of("wf-a", "not-a-number"));
 
         worker.handleMessage("ev-1");
 
@@ -136,17 +161,21 @@ class WebhookWorkerTest {
 
     @Test
     void handleMessage_matcherHit_completesWaitingTask() {
-        IncomingWebhookEvent event = IncomingWebhookEvent.builder()
-                .id("ev-1").webhookId("hook-1").body("{}").requestParams(Map.of())
-                .build();
+        IncomingWebhookEvent event =
+                IncomingWebhookEvent.builder()
+                        .id("ev-1")
+                        .webhookId("hook-1")
+                        .body("{}")
+                        .requestParams(Map.of())
+                        .build();
         WebhookConfig config = new WebhookConfig();
         config.setId("hook-1");
         config.setName("my-hook");
 
         when(webhookDAO.getWebhookEvent("ev-1")).thenReturn(event);
         when(webhookDAO.getWebhook("hook-1")).thenReturn(config);
-        when(webhookDAO.getMatchers("hook-1")).thenReturn(
-                Map.of("wf-a;1;wait_ref", Map.of("event", "push")));
+        when(webhookDAO.getMatchers("hook-1"))
+                .thenReturn(Map.of("wf-a;1;wait_ref", Map.of("event", "push")));
         when(webhookHashingService.computeJsonHash(any(), any(), anyString(), any()))
                 .thenReturn("hash-abc");
         when(webhookTaskService.get("hash-abc")).thenReturn(Set.of("task-1"));
@@ -168,17 +197,20 @@ class WebhookWorkerTest {
 
     @Test
     void handleMessage_matcherHit_terminalTask_skipped() {
-        IncomingWebhookEvent event = IncomingWebhookEvent.builder()
-                .id("ev-1").webhookId("hook-1").body("{}").requestParams(Map.of())
-                .build();
+        IncomingWebhookEvent event =
+                IncomingWebhookEvent.builder()
+                        .id("ev-1")
+                        .webhookId("hook-1")
+                        .body("{}")
+                        .requestParams(Map.of())
+                        .build();
         WebhookConfig config = new WebhookConfig();
         config.setId("hook-1");
         config.setName("my-hook");
 
         when(webhookDAO.getWebhookEvent("ev-1")).thenReturn(event);
         when(webhookDAO.getWebhook("hook-1")).thenReturn(config);
-        when(webhookDAO.getMatchers("hook-1")).thenReturn(
-                Map.of("k", Map.of("event", "push")));
+        when(webhookDAO.getMatchers("hook-1")).thenReturn(Map.of("k", Map.of("event", "push")));
         when(webhookHashingService.computeJsonHash(any(), any(), anyString(), any()))
                 .thenReturn("hash");
         when(webhookTaskService.get("hash")).thenReturn(Set.of("task-done"));

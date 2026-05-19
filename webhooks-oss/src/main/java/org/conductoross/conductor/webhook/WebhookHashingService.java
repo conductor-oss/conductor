@@ -1,8 +1,11 @@
 /*
- * Copyright 2022 Orkes, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
- * Licensed under the Orkes Enterprise License (the "License"); you may not use this file except in compliance with
- * the License.
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -16,12 +19,12 @@ import java.util.TreeSet;
 
 import org.springframework.stereotype.Service;
 
+import com.netflix.conductor.common.config.ObjectMapperProvider;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
-import com.netflix.conductor.common.config.ObjectMapperProvider;
-
 import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONArray;
 
@@ -33,7 +36,11 @@ public class WebhookHashingService {
 
     private static final ObjectMapper om = new ObjectMapperProvider().getObjectMapper();
 
-    public String computeJsonHash(StringBuilder hash, Map<String, Object> matches, String body, Map<String, Object> parameters) {
+    public String computeJsonHash(
+            StringBuilder hash,
+            Map<String, Object> matches,
+            String body,
+            Map<String, Object> parameters) {
         Map<String, Object> map;
         try {
             Object obj = om.readValue(body, Object.class);
@@ -61,16 +68,13 @@ public class WebhookHashingService {
                 if (valueArray.isEmpty()) {
                     return null;
                 }
-                value = valueArray.get(0)
-                    .toString();
+                value = valueArray.get(0).toString();
             }
 
             String expectedValue = Objects.toString(matches.get(path));
-            if (expectedValue.startsWith("$") || expectedValue.trim()
-                .equalsIgnoreCase(value.toString()
-                    .trim())) {
-                hash.append(WEBHOOK_DELIMITER)
-                    .append(value);
+            if (expectedValue.startsWith("$")
+                    || expectedValue.trim().equalsIgnoreCase(value.toString().trim())) {
+                hash.append(WEBHOOK_DELIMITER).append(value);
             } else {
                 return null;
             }

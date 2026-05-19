@@ -45,15 +45,18 @@ public class IncomingWebhookResource {
             @RequestBody String bodyStr,
             @RequestParam Map<String, Object> requestParams,
             @RequestHeader HttpHeaders headers) {
-        log.debug("Webhook Event id={} payload={} params={} headers={}",
-                id, bodyStr, requestParams, headers);
+        log.debug(
+                "Webhook Event id={} payload={} params={} headers={}",
+                id,
+                bodyStr,
+                requestParams,
+                headers);
         return incomingWebhookService.handleWebhook(id, bodyStr, requestParams, headers);
     }
 
     @GetMapping("/{id}")
     public String handlePing(
-            @PathVariable("id") String id,
-            @RequestParam Map<String, Object> requestParams) {
+            @PathVariable("id") String id, @RequestParam Map<String, Object> requestParams) {
         return incomingWebhookService.handlePing(id, requestParams);
     }
 }

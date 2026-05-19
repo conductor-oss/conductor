@@ -1,65 +1,63 @@
 /*
- * Copyright 2022 Orkes, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
- * Licensed under the Orkes Enterprise License (the "License"); you may not use this file except in compliance with
- * the License.
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
 package org.conductoross.conductor.webhook.service;
 
-import com.netflix.conductor.core.dal.ExecutionDAOFacade;
-import com.netflix.conductor.core.exception.NonTransientException;
-import com.netflix.conductor.dao.QueueDAO;
-import com.netflix.conductor.core.utils.IDGenerator;
-import org.conductoross.conductor.dao.webhook.WebhookDAO;
-import org.conductoross.conductor.common.metadata.EventMessage;
-import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
-import org.conductoross.conductor.webhook.model.WebhookConfig;
-import org.conductoross.conductor.webhook.verifier.WebhookVerifier;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
-import org.springframework.stereotype.Service;
-
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.conductoross.conductor.webhook.WebhookWorkerProperties.WEBHOOK_QUEUE;
-import static org.conductoross.conductor.common.metadata.EventMessage.DEAD_LETTER_QUEUE;
+import org.conductoross.conductor.dao.webhook.WebhookDAO;
+import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
+import org.conductoross.conductor.webhook.model.WebhookConfig;
+import org.conductoross.conductor.webhook.verifier.WebhookVerifier;
+import org.springframework.http.HttpHeaders;
+import org.springframework.stereotype.Service;
 
+import com.netflix.conductor.core.exception.NonTransientException;
+import com.netflix.conductor.core.exception.NotFoundException;
+import com.netflix.conductor.core.utils.IDGenerator;
+import com.netflix.conductor.dao.QueueDAO;
+
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+
+import static org.conductoross.conductor.webhook.WebhookWorkerProperties.WEBHOOK_QUEUE;
 
 @Service
 @Slf4j
 public class IncomingWebhookService {
 
     private final WebhookDAO webhookDAO;
-
     private final QueueDAO queueDAO;
-
     private final Map<String, WebhookVerifier> webhookVerifiers;
-    private final ExecutionDAOFacade executionDAOFacade;
     private final IDGenerator idGenerator;
 
     public IncomingWebhookService(
             WebhookDAO webhookDAO,
             Set<WebhookVerifier> webhookVerifiersSet,
             QueueDAO queueDAO,
-            IDGenerator idGenerator,
-            ExecutionDAOFacade executionDAOFacade) {
+            IDGenerator idGenerator) {
         this.webhookDAO = webhookDAO;
         this.idGenerator = idGenerator;
         this.queueDAO = queueDAO;
         this.webhookVerifiers =
                 webhookVerifiersSet.stream()
                         .collect(Collectors.toMap(WebhookVerifier::getType, Function.identity()));
-        this.executionDAOFacade = executionDAOFacade;
     }
 
-    public String handleWebhook(String id, String bodyStr, Map<String, Object> requestParams, HttpHeaders headers) {
+    public String handleWebhook(
+            String id, String bodyStr, Map<String, Object> requestParams, HttpHeaders headers) {
         String eventId = idGenerator.generate();
         IncomingWebhookEvent incomingWebhookEvent =
                 IncomingWebhookEvent.builder()
@@ -73,20 +71,8 @@ public class IncomingWebhookService {
 
         WebhookConfig webhookConfig = webhookDAO.getWebhook(id);
         if (webhookConfig == null) {
-            EventMessage eventMessage = new EventMessage();
-            String description = "Webhook " + id + " does not exist in conductor.";
-            eventMessage
-                    .setId(incomingWebhookEvent.getId())
-                    .setEventTarget(DEAD_LETTER_QUEUE)
-                    .setEventType(EventMessage.EventType.WEBHOOK)
-                    .setPayload(incomingWebhookEvent.getBody())
-                    .setFullPayload(incomingWebhookEvent)
-                    .setCreatedAt(incomingWebhookEvent.getTimeStamp())
-                    .setStatus(EventMessage.EventMessageStatus.REJECTED)
-                    .setStatusDescription(description);
-
-            log.warn("Rejected webhook event {}: {}", eventMessage.getId(), description);
-            return null;
+            log.warn("Rejected webhook event {}: webhook {} not registered", eventId, id);
+            throw new NotFoundException("Webhook with id " + id + " does not exist");
         }
 
         String verifierName = webhookConfig.getVerifier().toString();
@@ -95,24 +81,13 @@ public class IncomingWebhookService {
         var verificationErrors = verifier.verify(webhookConfig, incomingWebhookEvent);
 
         if (verificationErrors.arePresent()) {
-            String verificationFailure = "Request verification failed for webhookevent '" + id
-                    + "': " + verificationErrors.getMessage();
+            String verificationFailure =
+                    "Request verification failed for webhookevent '"
+                            + id
+                            + "': "
+                            + verificationErrors.getMessage();
 
-            log.error(verificationFailure);
-
-            EventMessage eventMessage = new EventMessage();
-            eventMessage
-                    .setId(incomingWebhookEvent.getId())
-                    .setEventTarget(webhookConfig.getId())
-                    .setEventType(EventMessage.EventType.WEBHOOK)
-                    .setPayload(incomingWebhookEvent.getBody())
-                    .setFullPayload(incomingWebhookEvent)
-                    .setCreatedAt(incomingWebhookEvent.getTimeStamp())
-                    .setStatus(EventMessage.EventMessageStatus.REJECTED)
-                    .setStatusDescription(verificationFailure);
-
-            log.warn("Rejected webhook event {}: {}", eventMessage.getId(), verificationFailure);
-
+            log.warn("Rejected webhook event {}: {}", eventId, verificationFailure);
             throw new NonTransientException(verificationFailure);
         }
 

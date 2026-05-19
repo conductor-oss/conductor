@@ -1,27 +1,31 @@
 /*
- * Copyright 2022 Orkes, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
- * Licensed under the Orkes Enterprise License (the "License"); you may not use this file except in compliance with
- * the License.
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
 package org.conductoross.conductor.webhook.verifier;
 
-import com.sendgrid.helpers.eventwebhook.EventWebhook;
-import com.sendgrid.helpers.eventwebhook.EventWebhookHeader;
-import org.conductoross.conductor.common.utils.ErrorList;
-import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
-import org.conductoross.conductor.webhook.model.WebhookConfig;
-import lombok.extern.slf4j.Slf4j;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.springframework.stereotype.Component;
-
 import java.io.IOException;
 import java.security.*;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.InvalidKeySpecException;
+
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.conductoross.conductor.common.utils.ErrorList;
+import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
+import org.conductoross.conductor.webhook.model.WebhookConfig;
+import org.springframework.stereotype.Component;
+
+import com.sendgrid.helpers.eventwebhook.EventWebhook;
+import com.sendgrid.helpers.eventwebhook.EventWebhookHeader;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
@@ -33,7 +37,8 @@ public class SendGridVerifier implements WebhookVerifier {
     }
 
     @Override
-    public ErrorList verify(WebhookConfig webhookConfig, IncomingWebhookEvent incomingWebhookEvent) {
+    public ErrorList verify(
+            WebhookConfig webhookConfig, IncomingWebhookEvent incomingWebhookEvent) {
         var errors = new ErrorList();
 
         ECPublicKey key = null;
@@ -48,8 +53,10 @@ public class SendGridVerifier implements WebhookVerifier {
             errors.add("Invalid public key specification: " + e.getMessage());
         }
 
-        var signature = incomingWebhookEvent.getHeaders().getFirst(EventWebhookHeader.SIGNATURE.name);
-        var timestamp = incomingWebhookEvent.getHeaders().getFirst(EventWebhookHeader.TIMESTAMP.name);
+        var signature =
+                incomingWebhookEvent.getHeaders().getFirst(EventWebhookHeader.SIGNATURE.name);
+        var timestamp =
+                incomingWebhookEvent.getHeaders().getFirst(EventWebhookHeader.TIMESTAMP.name);
 
         if (signature == null) {
             errors.add(String.format("Header '%s' is missing", EventWebhookHeader.SIGNATURE.name));
@@ -61,7 +68,8 @@ public class SendGridVerifier implements WebhookVerifier {
 
         if (errors.isEmpty()) {
             try {
-                if (!sendgrid.VerifySignature(key, incomingWebhookEvent.getBody(), signature, timestamp)) {
+                if (!sendgrid.VerifySignature(
+                        key, incomingWebhookEvent.getBody(), signature, timestamp)) {
                     errors.add("Signature verification failed.");
                 }
             } catch (NoSuchAlgorithmException e) {

@@ -1,21 +1,16 @@
 /*
- * Copyright 2022 Orkes, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
- * Licensed under the Orkes Enterprise License (the "License"); you may not use this file except in compliance with
- * the License.
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
 package org.conductoross.conductor.webhook.verifier;
-
-import org.conductoross.conductor.common.utils.ErrorList;
-import org.conductoross.conductor.webhook.model.WebhookConfig;
-import org.springframework.stereotype.Component;
-
-import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
-
-import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
@@ -25,6 +20,13 @@ import java.util.Base64;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.conductoross.conductor.common.utils.ErrorList;
+import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
+import org.conductoross.conductor.webhook.model.WebhookConfig;
+import org.springframework.stereotype.Component;
+
+import lombok.extern.slf4j.Slf4j;
+
 @Slf4j
 @Component
 public class HMACVerifier implements WebhookVerifier {
@@ -32,7 +34,8 @@ public class HMACVerifier implements WebhookVerifier {
     public static final String ALGORITHM = "HmacSHA256";
 
     @Override
-    public ErrorList verify(WebhookConfig webhookConfig, IncomingWebhookEvent incomingWebhookEvent) {
+    public ErrorList verify(
+            WebhookConfig webhookConfig, IncomingWebhookEvent incomingWebhookEvent) {
         var header = webhookConfig.getHeaderKey();
         var headerValues = incomingWebhookEvent.getHeaders().get(header);
 
@@ -63,7 +66,11 @@ public class HMACVerifier implements WebhookVerifier {
 
         String requestSignature = headerValues.getFirst().replace("HMAC", "").stripLeading();
 
-        log.debug("requestSignature: " + requestSignature + " computedSignature:" + computedSignature);
+        log.debug(
+                "requestSignature: "
+                        + requestSignature
+                        + " computedSignature:"
+                        + computedSignature);
 
         if (!computedSignature.equals(requestSignature)) {
             return ErrorList.singleton("Computed signature does not match the request signature.");
@@ -97,7 +104,4 @@ public class HMACVerifier implements WebhookVerifier {
         }
         return Base64.getEncoder().encode(src);
     }
-
-
-
 }

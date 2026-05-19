@@ -1,8 +1,11 @@
 /*
- * Copyright 2022 Orkes, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
- * Licensed under the Orkes Enterprise License (the "License"); you may not use this file except in compliance with
- * the License.
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -14,20 +17,17 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
+import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
 import org.conductoross.conductor.webhook.model.WebhookConfig;
-import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.TestPropertySource;
-
-import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 
 @TestPropertySource(properties = {"conductor.security.enabled=false"})
 public class HMACVerifierTest {
@@ -94,9 +94,7 @@ public class HMACVerifierTest {
                 webhookConfig.getHeaders().keySet().iterator().next(),
                 Arrays.asList(
                         "HMAC " + calculateSignature(webhookConfig.getSecretValue()),
-                        "HMAC " + calculateSignature(webhookConfig.getSecretValue())
-                )
-        );
+                        "HMAC " + calculateSignature(webhookConfig.getSecretValue())));
         incomingWebhookEvent.setHeaders(httpHeaders);
         incomingWebhookEvent.setBody(body);
         Assertions.assertFalse(hmacVerifier.verify(webhookConfig, incomingWebhookEvent).isEmpty());
@@ -107,7 +105,8 @@ public class HMACVerifierTest {
         webhookConfig.setName("Teams");
         webhookConfig.setUrlVerified(false);
         webhookConfig.setSourcePlatform("MICROSOFT_TEAMS");
-        webhookConfig.setHeaders(Map.of("Authorization", "HMAC 8gBSqHFqsfn9A8SuMFBV1PVQl5AIU97NWMpj49RlN7E="));
+        webhookConfig.setHeaders(
+                Map.of("Authorization", "HMAC 8gBSqHFqsfn9A8SuMFBV1PVQl5AIU97NWMpj49RlN7E="));
         webhookConfig.setSecretKey("SECURITY_TOKEN");
         webhookConfig.setSecretValue(base64EncodedString(SECURITY_TOKEN_RAW));
         webhookConfig.setHeaderKey("Authorization");
@@ -127,10 +126,10 @@ public class HMACVerifierTest {
             Mac mac = Mac.getInstance(algorithm);
             SecretKeySpec secretKeySpec = new SecretKeySpec(keyBytes, algorithm);
             mac.init(secretKeySpec);
-            byte[] calculatedHMACValue = mac.doFinal("information".getBytes(StandardCharsets.UTF_8));
+            byte[] calculatedHMACValue =
+                    mac.doFinal("information".getBytes(StandardCharsets.UTF_8));
             return new String(HMACVerifier.encode(calculatedHMACValue));
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             return "";
         }
     }

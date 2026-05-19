@@ -21,6 +21,7 @@ import org.conductoross.conductor.webhook.model.WebhookConfig;
 import org.springframework.stereotype.Service;
 
 import com.netflix.conductor.core.exception.ConflictException;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.utils.IDGenerator;
 
 import lombok.AllArgsConstructor;
@@ -41,7 +42,8 @@ public class WebhookConfigService {
         if (webhookConfig.getId() != null) {
             WebhookConfig existing = getWebhook(webhookConfig.getId());
             if (existing != null) {
-                throw new ConflictException("Webhook with id " + webhookConfig.getId() + " already exists");
+                throw new ConflictException(
+                        "Webhook with id " + webhookConfig.getId() + " already exists");
             }
         } else {
             webhookConfig.setId(idGenerator.generate());
@@ -57,7 +59,8 @@ public class WebhookConfigService {
 
     private void createMatchers(WebhookConfig webhookConfig) {
         webhookConfig.accept(targetWorkflowCollector);
-        webhookDAO.createMatchers(webhookConfig, targetWorkflowCollector.getWorkflowsToCompleteWebhooks());
+        webhookDAO.createMatchers(
+                webhookConfig, targetWorkflowCollector.getWorkflowsToCompleteWebhooks());
     }
 
     public void removeWebhook(String id) {
@@ -77,7 +80,12 @@ public class WebhookConfigService {
 
     public void updateWebhook(WebhookConfig webhookConfig) {
         WebhookConfig existing = getWebhook(webhookConfig.getId());
-        if (!StringUtils.isEmpty(webhookConfig.getSecretValue()) && SECRET.equals(webhookConfig.getSecretValue())) {
+        if (existing == null) {
+            throw new NotFoundException(
+                    "Webhook with id " + webhookConfig.getId() + " does not exist");
+        }
+        if (!StringUtils.isEmpty(webhookConfig.getSecretValue())
+                && SECRET.equals(webhookConfig.getSecretValue())) {
             webhookConfig.setSecretValue(existing.getSecretValue());
         }
         webhookConfig.setUrlVerified(existing.isUrlVerified());
