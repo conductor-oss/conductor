@@ -114,6 +114,14 @@ public class GeminiVertex implements AIModel {
                                 : null)
                 .thinkingBudgetTokens(
                         input.getThinkingTokenLimit() > 0 ? input.getThinkingTokenLimit() : null)
+                // Any non-blank reasoningSummary opts the request into emitting
+                // thought summaries. Gemini 2.5 will not return thought text
+                // without ``includeThoughts=true`` even when a budget is set.
+                .includeThoughts(
+                        input.getReasoningSummary() != null
+                                        && !input.getReasoningSummary().isBlank()
+                                ? Boolean.TRUE
+                                : null)
                 .build();
     }
 

@@ -29,6 +29,7 @@ import org.testcontainers.utility.DockerImageName;
 import com.netflix.conductor.redis.testutil.FixedPortContainer;
 
 import com.google.common.util.concurrent.Uninterruptibles;
+import redis.clients.jedis.DefaultJedisClientConfig;
 import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisCluster;
 
@@ -40,18 +41,18 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class JedisClusterCommandsBatchTest {
 
-    static int[] ports = new int[] {7000, 7001, 7002, 7003, 7004, 7005};
+    static int[] ports = new int[] {17000, 17001, 17002, 17003, 17004, 17005};
 
     private static FixedPortContainer redis =
             new FixedPortContainer(DockerImageName.parse("orkesio/redis-cluster"));
 
     static {
-        redis.exposePort(7000, 7000);
-        redis.exposePort(7001, 7001);
-        redis.exposePort(7002, 7002);
-        redis.exposePort(7003, 7003);
-        redis.exposePort(7004, 7004);
-        redis.exposePort(7005, 7005);
+        redis.exposePort(17000, 7000);
+        redis.exposePort(17001, 7001);
+        redis.exposePort(17002, 7002);
+        redis.exposePort(17003, 7003);
+        redis.exposePort(17004, 7004);
+        redis.exposePort(17005, 7005);
     }
 
     private static JedisClusterCommands commands;
@@ -67,7 +68,18 @@ public class JedisClusterCommandsBatchTest {
             hostAndPorts.add(new HostAndPort("localhost", port));
         }
 
-        jedisCluster = new JedisCluster(hostAndPorts);
+        // Redis cluster nodes announce themselves on internal ports 7000-7005, but the container
+        // exposes them on 17000-17005 to avoid host port conflicts. This mapper translates.
+        DefaultJedisClientConfig clientConfig =
+                DefaultJedisClientConfig.builder()
+                        .hostAndPortMapper(
+                                hp ->
+                                        hp.getPort() >= 7000 && hp.getPort() <= 7005
+                                                ? new HostAndPort("127.0.0.1", hp.getPort() + 10000)
+                                                : hp)
+                        .build();
+
+        jedisCluster = new JedisCluster(hostAndPorts, clientConfig);
         commands = new JedisClusterCommands(jedisCluster);
     }
 

@@ -42,6 +42,8 @@ export enum IntegrationType {
   WORDPRESS_COM = "wordpress-com",
   DISCOURSE = "discourse",
   COMMONROOM = "commonroom",
+  AWS_S3 = "aws-s3",
+  HUBSPOT = "hubspot",
 }
 export enum IntegrationCategory {
   API = "API",

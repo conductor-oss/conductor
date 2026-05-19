@@ -32,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 public class Anthropic implements AIModel {
 
     public static final String NAME = "anthropic";
+    public static final int DEFAULT_MAX_TOKENS = 8192;
     private final AnthropicConfiguration config;
 
     private final AnthropicMessagesApi messagesApi;
@@ -74,14 +75,20 @@ public class Anthropic implements AIModel {
             temperature = 1.0; // Thinking mode requires temperature=1
         }
 
+        Integer maxTokens = input.getMaxTokens();
+        if (maxTokens == null || maxTokens <= 0) {
+            maxTokens = DEFAULT_MAX_TOKENS;
+        }
+
         return AnthropicChatOptions.builder()
                 .model(input.getModel())
-                .maxTokens(input.getMaxTokens())
+                .maxTokens(maxTokens)
                 .temperature(temperature)
                 .topP(input.getTopP())
                 .topK(input.getTopK())
                 .stopSequences(input.getStopWords())
                 .thinkingBudgetTokens(thinkingBudget)
+                .reasoningSummary(input.getReasoningSummary())
                 .tools(tools.isEmpty() ? null : tools)
                 .build();
     }

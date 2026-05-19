@@ -27,6 +27,7 @@ export const llmFormFieldsMachine = createMachine<
       indexOptions: [],
       embeddingModelOptions: [],
       selectedPromptName: undefined,
+      selectedPrompt: null,
     },
     states: {
       [LLMFormFieldsMachineStates.DETERMINE_INITIAL_STATE]: {

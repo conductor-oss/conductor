@@ -243,6 +243,11 @@ public class MetadataServiceImpl implements MetadataService {
     }
 
     @Override
+    public List<String> getWorkflowNames() {
+        return metadataDAO.getWorkflowNames();
+    }
+
+    @Override
     public List<WorkflowDefSummary> getWorkflowVersions(String name) {
         return metadataDAO.getWorkflowVersions(name);
     }
