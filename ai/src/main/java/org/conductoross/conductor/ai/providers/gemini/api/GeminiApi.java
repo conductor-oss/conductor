@@ -20,9 +20,160 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * DTO types for the Gemini REST API. HTTP client and request methods are added by subsequent tasks.
+ * DTO types for the Gemini REST API, plus an OkHttp-based HTTP client for all Gemini API calls.
  */
 public class GeminiApi {
+
+    // ---- HTTP client state ----
+
+    private static final String AI_STUDIO_BASE = "https://generativelanguage.googleapis.com";
+    private static final String AI_STUDIO_VERSION = "/v1beta";
+    private static final okhttp3.MediaType JSON_MEDIA = okhttp3.MediaType.parse("application/json");
+
+    private final okhttp3.OkHttpClient httpClient;
+    private final String endpointBase; // e.g. "https://generativelanguage.googleapis.com/v1beta"
+    private final String apiKey;       // null for Vertex
+    private final com.google.auth.oauth2.GoogleCredentials credentials; // null for API key mode
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+
+    /** Factory: API-key mode (AI Studio / generativelanguage.googleapis.com). */
+    public static GeminiApi forApiKey(okhttp3.OkHttpClient httpClient, String apiKey, String customBase) {
+        String base = (customBase != null && !customBase.isBlank())
+                ? customBase + AI_STUDIO_VERSION : AI_STUDIO_BASE + AI_STUDIO_VERSION;
+        return new GeminiApi(httpClient, base, apiKey, null);
+    }
+
+    /** Factory: Vertex AI mode. */
+    public static GeminiApi forVertex(okhttp3.OkHttpClient httpClient,
+            String projectId, String location,
+            com.google.auth.oauth2.GoogleCredentials credentials) {
+        String base = "https://" + location + "-aiplatform.googleapis.com/v1"
+                + "/projects/" + projectId + "/locations/" + location + "/publishers/google";
+        return new GeminiApi(httpClient, base, null, credentials);
+    }
+
+    private GeminiApi(okhttp3.OkHttpClient httpClient, String endpointBase,
+            String apiKey, com.google.auth.oauth2.GoogleCredentials credentials) {
+        this.httpClient = httpClient;
+        this.endpointBase = endpointBase;
+        this.apiKey = apiKey;
+        this.credentials = credentials;
+        this.objectMapper = new com.netflix.conductor.common.config.ObjectMapperProvider()
+                .getObjectMapper();
+    }
+
+    // ---- URL helpers ----
+
+    private String modelUrl(String model, String verb) {
+        String url = endpointBase + "/models/" + model + ":" + verb;
+        return apiKey != null ? url + "?key=" + apiKey : url;
+    }
+
+    private String operationUrl(String operationName) {
+        if (apiKey != null) {
+            // AI Studio: operationName is the bare operation id
+            return AI_STUDIO_BASE + AI_STUDIO_VERSION + "/" + operationName + "?key=" + apiKey;
+        }
+        // Vertex: operationName is a full resource path like "projects/.../operations/xxx"
+        // Strip the version prefix from endpointBase to get the Vertex host
+        String vertexBase = endpointBase.replaceAll("/v1/projects/.*", "");
+        return vertexBase + "/v1/" + operationName;
+    }
+
+    private okhttp3.Request.Builder authRequest(String url) throws java.io.IOException {
+        okhttp3.Request.Builder builder = new okhttp3.Request.Builder().url(url);
+        if (credentials != null) {
+            credentials.refreshIfExpired();
+            builder.header("Authorization", "Bearer "
+                    + credentials.getAccessToken().getTokenValue());
+        }
+        return builder;
+    }
+
+    private String executePost(String url, Object body) throws java.io.IOException {
+        String json = objectMapper.writeValueAsString(body);
+        okhttp3.Request request = authRequest(url)
+                .post(okhttp3.RequestBody.create(json, JSON_MEDIA))
+                .build();
+        try (okhttp3.Response response = httpClient.newCall(request).execute()) {
+            String resp = response.body() != null ? response.body().string() : "";
+            if (!response.isSuccessful()) {
+                throw new java.io.IOException(
+                        "Gemini API error %d: %s".formatted(response.code(), resp));
+            }
+            return resp;
+        }
+    }
+
+    private String executeGet(String url) throws java.io.IOException {
+        okhttp3.Request request = authRequest(url).get().build();
+        try (okhttp3.Response response = httpClient.newCall(request).execute()) {
+            String resp = response.body() != null ? response.body().string() : "";
+            if (!response.isSuccessful()) {
+                throw new java.io.IOException(
+                        "Gemini API error %d: %s".formatted(response.code(), resp));
+            }
+            return resp;
+        }
+    }
+
+    // ---- API methods ----
+
+    public GenerateContentResponse generateContent(
+            String model, List<Content> contents, GenerationConfig config) throws java.io.IOException {
+        return generateContent(model, contents, null, null, config);
+    }
+
+    public GenerateContentResponse generateContent(
+            String model, List<Content> contents,
+            Content systemInstruction, List<Tool> tools,
+            GenerationConfig config) throws java.io.IOException {
+        GenerateContentRequest req = new GenerateContentRequest(
+                contents, systemInstruction, tools, config);
+        return objectMapper.readValue(
+                executePost(modelUrl(model, "generateContent"), req),
+                GenerateContentResponse.class);
+    }
+
+    public EmbedContentResponse embedContent(
+            String model, String text, Integer outputDimensionality) throws java.io.IOException {
+        Content content = new Content(null, List.of(Part.text(text)));
+        EmbedContentRequest req = new EmbedContentRequest(content, null, outputDimensionality);
+        return objectMapper.readValue(
+                executePost(modelUrl(model, "embedContent"), req),
+                EmbedContentResponse.class);
+    }
+
+    public GenerateImagesResponse generateImages(
+            String model, String promptText, GenerateImagesConfig config) throws java.io.IOException {
+        GenerateImagesRequest req = new GenerateImagesRequest(new ImagePrompt(promptText), config);
+        return objectMapper.readValue(
+                executePost(modelUrl(model, "generateImages"), req),
+                GenerateImagesResponse.class);
+    }
+
+    public GenerateVideosOperation generateVideos(
+            String model, String text, byte[] inputImageBytes, String inputMimeType,
+            GenerateVideosConfig config) throws java.io.IOException {
+        java.util.Map<String, Object> instance = new java.util.LinkedHashMap<>();
+        instance.put("prompt", text);
+        if (inputImageBytes != null) {
+            instance.put("image", java.util.Map.of(
+                    "bytesBase64Encoded",
+                    java.util.Base64.getEncoder().encodeToString(inputImageBytes),
+                    "mimeType", inputMimeType != null ? inputMimeType : "image/png"));
+        }
+        GenerateVideosRequest req = new GenerateVideosRequest(List.of(instance), config);
+        return objectMapper.readValue(
+                executePost(modelUrl(model, "generateVideos"), req),
+                GenerateVideosOperation.class);
+    }
+
+    public GenerateVideosOperation getVideosOperation(String operationName) throws java.io.IOException {
+        return objectMapper.readValue(
+                executeGet(operationUrl(operationName)),
+                GenerateVideosOperation.class);
+    }
 
     // --- Request DTOs ---
 
