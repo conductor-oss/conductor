@@ -295,7 +295,7 @@ public class HttpTaskTest {
         Instant start = Instant.now();
         input.setConnectionTimeOut(110);
         input.setMethod("GET");
-        input.setUri("http://127.1.2.3");
+        input.setUri("http://127.0.0.2");
         task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
         task.setStatus(TaskModel.Status.SCHEDULED);
         task.setScheduledTime(0);
