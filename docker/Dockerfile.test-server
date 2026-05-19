@@ -1,3 +1,0 @@
-FROM conductoross/conductor:latest
-COPY server/bin/startup.sh /app/startup.sh
-RUN chmod +x /app/startup.sh
