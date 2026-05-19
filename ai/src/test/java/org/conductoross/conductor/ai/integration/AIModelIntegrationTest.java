@@ -55,6 +55,7 @@ import org.springframework.ai.image.ImageOptionsBuilder;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 
+import okhttp3.OkHttpClient;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -163,7 +164,7 @@ public class AIModelIntegrationTest {
             OpenAIConfiguration config = new OpenAIConfiguration();
             config.setApiKey(System.getenv("OPENAI_API_KEY"));
             config.setBaseURL(System.getenv("OPENAI_BASE_URL"));
-            openAI = new OpenAI(config);
+            openAI = new OpenAI(config, new OkHttpClient());
         }
 
         @Test
@@ -560,7 +561,7 @@ public class AIModelIntegrationTest {
             AnthropicConfiguration config = new AnthropicConfiguration();
             config.setApiKey(System.getenv("ANTHROPIC_API_KEY"));
             config.setBaseURL(System.getenv("ANTHROPIC_BASE_URL"));
-            anthropic = new Anthropic(config);
+            anthropic = new Anthropic(config, new OkHttpClient());
         }
 
         @Test
@@ -1134,7 +1135,7 @@ public class AIModelIntegrationTest {
             GrokAIConfiguration config = new GrokAIConfiguration();
             config.setApiKey(System.getenv("GROK_API_KEY"));
             config.setBaseURL(System.getenv("GROK_BASE_URL"));
-            grok = new Grok(config);
+            grok = new Grok(config, new OkHttpClient());
         }
 
         @Test
@@ -1297,7 +1298,7 @@ public class AIModelIntegrationTest {
             AzureOpenAIConfiguration config = new AzureOpenAIConfiguration();
             config.setApiKey(System.getenv("AZURE_OPENAI_API_KEY"));
             config.setBaseURL(System.getenv("AZURE_OPENAI_ENDPOINT"));
-            azureOpenAI = new AzureOpenAI(config);
+            azureOpenAI = new AzureOpenAI(config, new OkHttpClient());
         }
 
         @Test
@@ -1436,7 +1437,7 @@ public class AIModelIntegrationTest {
             PerplexityAIConfiguration config = new PerplexityAIConfiguration();
             config.setApiKey(System.getenv("PERPLEXITY_API_KEY"));
             config.setBaseURL(System.getenv("PERPLEXITY_BASE_URL"));
-            perplexity = new PerplexityAI(config);
+            perplexity = new PerplexityAI(config, new OkHttpClient());
         }
 
         @Test

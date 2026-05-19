@@ -16,9 +16,11 @@ import java.time.Duration;
 import java.util.Objects;
 
 import org.conductoross.conductor.ai.ModelConfiguration;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import okhttp3.OkHttpClient;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -31,6 +33,8 @@ public class GrokAIConfiguration implements ModelConfiguration<Grok> {
     private String baseURL;
     private Duration timeout = Duration.ofSeconds(600);
 
+    @Autowired private OkHttpClient conductorAiHttpClient;
+
     public GrokAIConfiguration(String apiKey, String baseURL) {
         this.apiKey = apiKey;
         this.baseURL = baseURL;
@@ -42,6 +46,6 @@ public class GrokAIConfiguration implements ModelConfiguration<Grok> {
 
     @Override
     public Grok get() {
-        return new Grok(this);
+        return new Grok(this, conductorAiHttpClient);
     }
 }

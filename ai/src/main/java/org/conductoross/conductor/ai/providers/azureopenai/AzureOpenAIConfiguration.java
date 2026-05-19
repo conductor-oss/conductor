@@ -15,9 +15,11 @@ package org.conductoross.conductor.ai.providers.azureopenai;
 import java.time.Duration;
 
 import org.conductoross.conductor.ai.ModelConfiguration;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import okhttp3.OkHttpClient;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -33,6 +35,8 @@ public class AzureOpenAIConfiguration implements ModelConfiguration<AzureOpenAI>
     private String deploymentName;
     private Duration timeout = Duration.ofSeconds(600);
 
+    @Autowired private OkHttpClient conductorAiHttpClient;
+
     public AzureOpenAIConfiguration(
             String apiKey, String baseURL, String user, String deploymentName) {
         this.apiKey = apiKey;
@@ -43,6 +47,6 @@ public class AzureOpenAIConfiguration implements ModelConfiguration<AzureOpenAI>
 
     @Override
     public AzureOpenAI get() {
-        return new AzureOpenAI(this);
+        return new AzureOpenAI(this, conductorAiHttpClient);
     }
 }

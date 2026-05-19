@@ -13,9 +13,11 @@
 package org.conductoross.conductor.ai.providers.stabilityai;
 
 import org.conductoross.conductor.ai.ModelConfiguration;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import okhttp3.OkHttpClient;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -36,8 +38,10 @@ public class StabilityAIConfiguration implements ModelConfiguration<StabilityAI>
 
     private String apiKey;
 
+    @Autowired private OkHttpClient conductorAiHttpClient;
+
     @Override
     public StabilityAI get() {
-        return new StabilityAI(this);
+        return new StabilityAI(this, conductorAiHttpClient);
     }
 }

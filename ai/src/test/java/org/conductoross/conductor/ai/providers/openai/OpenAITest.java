@@ -24,6 +24,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 
+import okhttp3.OkHttpClient;
 import static org.junit.jupiter.api.Assertions.*;
 
 class OpenAITest {
@@ -39,7 +40,7 @@ class OpenAITest {
         void setUp() {
             OpenAIConfiguration config = new OpenAIConfiguration();
             config.setApiKey("test-api-key");
-            openAI = new OpenAI(config);
+            openAI = new OpenAI(config, new OkHttpClient());
         }
 
         @Test
@@ -190,7 +191,7 @@ class OpenAITest {
         void setUp() {
             OpenAIConfiguration config = new OpenAIConfiguration();
             config.setApiKey(System.getenv(ENV_API_KEY));
-            openAI = new OpenAI(config);
+            openAI = new OpenAI(config, new OkHttpClient());
         }
 
         @Test
