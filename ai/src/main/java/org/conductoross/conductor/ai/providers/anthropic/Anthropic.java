@@ -22,6 +22,8 @@ import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.models.ToolSpec;
 import org.conductoross.conductor.ai.providers.anthropic.api.AnthropicMessagesApi;
 import org.conductoross.conductor.ai.providers.anthropic.api.AnthropicMessagesApi.Tool;
+
+import okhttp3.OkHttpClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.image.ImageModel;
@@ -38,14 +40,16 @@ public class Anthropic implements AIModel {
     private final AnthropicMessagesApi messagesApi;
     private final AnthropicChatModel chatModel;
 
-    @SuppressWarnings("unchecked")
     public Anthropic(AnthropicConfiguration config) {
-        this.config = config;
-        long timeoutSecs = config.getTimeout() != null ? config.getTimeout().getSeconds() : 600;
+        this(config, new OkHttpClient());
+    }
 
+    @SuppressWarnings("unchecked")
+    public Anthropic(AnthropicConfiguration config, OkHttpClient httpClient) {
+        this.config = config;
         this.messagesApi =
                 new AnthropicMessagesApi(
-                        config.getApiKey(), config.getBaseURL(), config.getVersion(), timeoutSecs);
+                        httpClient, config.getApiKey(), config.getBaseURL(), config.getVersion());
         this.chatModel = new AnthropicChatModel(messagesApi);
     }
 

@@ -31,8 +31,9 @@ import org.springframework.ai.mistralai.MistralAiChatOptions;
 import org.springframework.ai.mistralai.MistralAiEmbeddingModel;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
+
+import okhttp3.OkHttpClient;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -48,8 +49,12 @@ public class MistralAI implements AIModel {
     private final MistralAiEmbeddingModel embeddingModel;
 
     public MistralAI(MistralAIConfiguration config) {
+        this(config, new OkHttpClient());
+    }
+
+    public MistralAI(MistralAIConfiguration config, OkHttpClient httpClient) {
         this.config = config;
-        this.mistralAiApi = createMistralAiApi();
+        this.mistralAiApi = createMistralAiApi(httpClient);
         this.chatModel = createChatModel();
         this.embeddingModel =
                 MistralAiEmbeddingModel.builder().mistralAiApi(this.mistralAiApi).build();
@@ -111,18 +116,13 @@ public class MistralAI implements AIModel {
 
     // Initialization helpers
 
-    private MistralAiApi createMistralAiApi() {
-        String apiKey = config.getApiKey();
-        String baseURL = config.getBaseURL();
-
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setReadTimeout(config.getTimeout());
-
+    private MistralAiApi createMistralAiApi(OkHttpClient httpClient) {
+        var factory = new org.springframework.http.client.OkHttp3ClientHttpRequestFactory(httpClient);
         // Needs accept-encoding headers
         // https://github.com/spring-projects/spring-ai/issues/372
         return MistralAiApi.builder()
-                .baseUrl(baseURL)
-                .apiKey(apiKey)
+                .baseUrl(config.getBaseURL())
+                .apiKey(config.getApiKey())
                 .restClientBuilder(
                         RestClient.builder()
                                 .requestFactory(factory)

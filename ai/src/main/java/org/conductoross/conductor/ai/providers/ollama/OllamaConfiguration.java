@@ -15,9 +15,11 @@ package org.conductoross.conductor.ai.providers.ollama;
 import java.time.Duration;
 
 import org.conductoross.conductor.ai.ModelConfiguration;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import okhttp3.OkHttpClient;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -35,6 +37,9 @@ public class OllamaConfiguration implements ModelConfiguration<Ollama> {
 
     private Duration timeout = Duration.ofSeconds(600);
 
+    @Autowired
+    private OkHttpClient conductorAiHttpClient;
+
     public OllamaConfiguration(String baseURL, String authHeaderName, String authHeader) {
         this.baseURL = baseURL;
         this.authHeaderName = authHeaderName;
@@ -47,6 +52,6 @@ public class OllamaConfiguration implements ModelConfiguration<Ollama> {
 
     @Override
     public Ollama get() {
-        return new Ollama(this);
+        return new Ollama(this, conductorAiHttpClient != null ? conductorAiHttpClient : new okhttp3.OkHttpClient());
     }
 }

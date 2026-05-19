@@ -15,9 +15,11 @@ package org.conductoross.conductor.ai.providers.cohere;
 import java.time.Duration;
 
 import org.conductoross.conductor.ai.ModelConfiguration;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import okhttp3.OkHttpClient;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +35,9 @@ public class CohereAIConfiguration implements ModelConfiguration<CohereAI> {
     private String baseURL = "https://api.cohere.ai";
     private Duration timeout = Duration.ofSeconds(600);
 
+    @Autowired
+    private OkHttpClient conductorAiHttpClient;
+
     public CohereAIConfiguration(String apiKey, String baseURL) {
         this.apiKey = apiKey;
         this.baseURL = baseURL;
@@ -40,6 +45,6 @@ public class CohereAIConfiguration implements ModelConfiguration<CohereAI> {
 
     @Override
     public CohereAI get() {
-        return new CohereAI(this);
+        return new CohereAI(this, conductorAiHttpClient != null ? conductorAiHttpClient : new okhttp3.OkHttpClient());
     }
 }

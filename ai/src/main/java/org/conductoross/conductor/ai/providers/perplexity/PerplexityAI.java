@@ -19,6 +19,8 @@ import org.conductoross.conductor.ai.models.ChatCompletion;
 import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.providers.openai.OpenAICompatChatModel;
 import org.conductoross.conductor.ai.providers.openai.api.OpenAIChatCompletionsApi;
+
+import okhttp3.OkHttpClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.image.ImageModel;
@@ -31,11 +33,14 @@ public class PerplexityAI implements AIModel {
     private final OpenAICompatChatModel chatModel;
 
     public PerplexityAI(PerplexityAIConfiguration config) {
+        this(config, new OkHttpClient());
+    }
+
+    public PerplexityAI(PerplexityAIConfiguration config, OkHttpClient httpClient) {
         this.config = config;
-        long timeoutSecs = config.getTimeout() != null ? config.getTimeout().getSeconds() : 600;
         OpenAIChatCompletionsApi api =
                 new OpenAIChatCompletionsApi(
-                        config.getApiKey(), config.getBaseURL(), "/chat/completions", timeoutSecs);
+                        httpClient, config.getApiKey(), config.getBaseURL(), "/chat/completions");
         this.chatModel = new OpenAICompatChatModel(api);
     }
 
