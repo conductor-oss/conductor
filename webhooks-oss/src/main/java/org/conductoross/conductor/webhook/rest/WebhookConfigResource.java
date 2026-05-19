@@ -52,7 +52,7 @@ public class WebhookConfigResource {
 
     @PutMapping("/{id}")
     public WebhookConfig updateWebhook(
-            @PathVariable String id, @RequestBody WebhookConfig webhookConfig) {
+            @PathVariable("id") String id, @RequestBody WebhookConfig webhookConfig) {
         webhookConfig.setId(id);
         validate(webhookConfig);
         webhookConfigService.updateWebhook(webhookConfig);
@@ -60,7 +60,7 @@ public class WebhookConfigResource {
     }
 
     @DeleteMapping("/{id}")
-    public void deleteWebhook(@PathVariable String id) {
+    public void deleteWebhook(@PathVariable("id") String id) {
         WebhookConfig existing = webhookConfigService.getWebhook(id);
         if (existing == null) {
             throw new NotFoundException("Webhook with id " + id + " does not exist");
@@ -69,13 +69,12 @@ public class WebhookConfigResource {
     }
 
     @GetMapping("/{id}")
-    public WebhookConfig getWebhook(@PathVariable String id) {
+    public WebhookConfig getWebhook(@PathVariable("id") String id) {
         WebhookConfig webhookConfig = webhookConfigService.getWebhook(id);
         if (webhookConfig == null) {
             throw new NotFoundException("Webhook with id " + id + " does not exist");
         }
-        webhookConfig.setSecretValue(WebhookConfigService.SECRET);
-        return webhookConfig;
+        return webhookConfig.toBuilder().secretValue(WebhookConfigService.SECRET).build();
     }
 
     @GetMapping

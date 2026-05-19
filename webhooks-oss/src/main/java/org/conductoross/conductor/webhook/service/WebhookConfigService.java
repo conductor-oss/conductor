@@ -70,9 +70,9 @@ public class WebhookConfigService {
     }
 
     public List<WebhookConfig> getWebhooks() {
-        List<WebhookConfig> webhookConfigs = webhookDAO.getAllWebhooks();
-        webhookConfigs.forEach(c -> c.setSecretValue(SECRET));
-        return webhookConfigs;
+        return webhookDAO.getAllWebhooks().stream()
+                .map(c -> c.toBuilder().secretValue(SECRET).build())
+                .toList();
     }
 
     public void updateWebhook(WebhookConfig webhookConfig) {

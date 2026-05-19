@@ -119,5 +119,7 @@ class WebhookConfigResourceTest {
         WebhookConfig result = resource.getWebhook("hook-1");
 
         assertThat(result.getSecretValue()).isEqualTo(WebhookConfigService.SECRET);
+        // Regression: stored config must not be mutated; see WebhookConfigServiceTest.
+        assertThat(config.getSecretValue()).isEqualTo("real-secret");
     }
 }

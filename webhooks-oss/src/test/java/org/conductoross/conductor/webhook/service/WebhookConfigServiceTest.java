@@ -102,6 +102,12 @@ class WebhookConfigServiceTest {
 
         assertThat(result).extracting(WebhookConfig::getSecretValue)
                 .containsOnly(WebhookConfigService.SECRET);
+        // Regression: stored configs must not be mutated by sanitization.
+        // Found via smoke test against running server: in-memory DAO returns
+        // shared references, so prior in-place setSecretValue("***") corrupted
+        // the persisted secret and broke subsequent HMAC verification.
+        assertThat(c1.getSecretValue()).isEqualTo("real-secret-1");
+        assertThat(c2.getSecretValue()).isEqualTo("real-secret-2");
     }
 
     @Test

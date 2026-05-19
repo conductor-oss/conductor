@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 @Data
-@Builder
+@Builder(toBuilder = true)
 @RequiredArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)

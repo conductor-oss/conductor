@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping(
-        value = "/webhook",
+        value = "/api/webhook",
         produces = {MediaType.APPLICATION_JSON_VALUE})
 @RequiredArgsConstructor
 @Slf4j
@@ -41,7 +41,7 @@ public class IncomingWebhookResource {
 
     @PostMapping("/{id}")
     public String handleWebhook(
-            @PathVariable String id,
+            @PathVariable("id") String id,
             @RequestBody String bodyStr,
             @RequestParam Map<String, Object> requestParams,
             @RequestHeader HttpHeaders headers) {
@@ -52,7 +52,7 @@ public class IncomingWebhookResource {
 
     @GetMapping("/{id}")
     public String handlePing(
-            @PathVariable String id,
+            @PathVariable("id") String id,
             @RequestParam Map<String, Object> requestParams) {
         return incomingWebhookService.handlePing(id, requestParams);
     }
