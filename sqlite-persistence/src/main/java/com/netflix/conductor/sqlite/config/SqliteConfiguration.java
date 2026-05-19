@@ -172,6 +172,25 @@ public class SqliteConfiguration {
         return new SqliteIndexDAO(retryTemplate, objectMapper, dataSource, properties);
     }
 
+    @Bean(name = "webhookDAO")
+    @DependsOn({"flywayForPrimaryDb"})
+    public org.conductoross.conductor.sqlite.dao.SqliteWebhookDAO sqliteWebhookDAO(
+            @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper,
+            com.netflix.conductor.dao.MetadataDAO metadataDAO) {
+        return new org.conductoross.conductor.sqlite.dao.SqliteWebhookDAO(
+                retryTemplate, objectMapper, dataSource, metadataDAO);
+    }
+
+    @Bean(name = "webhookTaskService")
+    @DependsOn({"flywayForPrimaryDb"})
+    public org.conductoross.conductor.sqlite.dao.SqliteWebhookTaskService sqliteWebhookTaskService(
+            @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        return new org.conductoross.conductor.sqlite.dao.SqliteWebhookTaskService(
+                retryTemplate, objectMapper, dataSource);
+    }
+
     @Bean
     @DependsOn({"flywayForPrimaryDb"})
     @ConditionalOnProperty(name = "conductor.workflow-execution-lock.type", havingValue = "sqlite")

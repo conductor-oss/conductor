@@ -75,6 +75,27 @@ public class MySQLConfiguration {
         return new MySQLQueueDAO(retryTemplate, objectMapper, dataSource);
     }
 
+    @Bean(name = "webhookDAO")
+    @DependsOn({"flyway", "flywayInitializer"})
+    public org.conductoross.conductor.mysql.dao.MySQLWebhookDAO mySqlWebhookDAO(
+            @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper,
+            DataSource dataSource,
+            com.netflix.conductor.dao.MetadataDAO metadataDAO) {
+        return new org.conductoross.conductor.mysql.dao.MySQLWebhookDAO(
+                retryTemplate, objectMapper, dataSource, metadataDAO);
+    }
+
+    @Bean(name = "webhookTaskService")
+    @DependsOn({"flyway", "flywayInitializer"})
+    public org.conductoross.conductor.mysql.dao.MySQLWebhookTaskService mySqlWebhookTaskService(
+            @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper,
+            DataSource dataSource) {
+        return new org.conductoross.conductor.mysql.dao.MySQLWebhookTaskService(
+                retryTemplate, objectMapper, dataSource);
+    }
+
     @Bean
     public RetryTemplate mysqlRetryTemplate(MySQLProperties properties) {
         SimpleRetryPolicy retryPolicy = new CustomRetryPolicy();
