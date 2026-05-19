@@ -66,10 +66,13 @@ public class CassandraWebhookDAO extends CassandraBaseDAO implements WebhookDAO 
     private static final String TABLE_TARGETS = "webhook_target_workflows";
     private static final String ALL_BUCKET = "ALL";
 
+    private static final long DEFAULT_EVENT_TTL_SECONDS = 7L * 24 * 3600; // 7 days
+
     private final Session session;
     private final MetadataDAO metadataDAO;
     // objectMapper / toJson / readValue are package-private in CassandraBaseDAO; keep a local ref.
     private final ObjectMapper objectMapper;
+    private final long incomingEventTtlSeconds;
 
     private final PreparedStatement insertWebhookStmt;
     private final PreparedStatement selectWebhookStmt;
@@ -87,10 +90,20 @@ public class CassandraWebhookDAO extends CassandraBaseDAO implements WebhookDAO 
             ObjectMapper objectMapper,
             CassandraProperties properties,
             MetadataDAO metadataDAO) {
+        this(session, objectMapper, properties, metadataDAO, DEFAULT_EVENT_TTL_SECONDS);
+    }
+
+    public CassandraWebhookDAO(
+            Session session,
+            ObjectMapper objectMapper,
+            CassandraProperties properties,
+            MetadataDAO metadataDAO,
+            long incomingEventTtlSeconds) {
         super(session, objectMapper, properties);
         this.session = session;
         this.metadataDAO = metadataDAO;
         this.objectMapper = objectMapper;
+        this.incomingEventTtlSeconds = incomingEventTtlSeconds;
         ensureTables();
 
         ConsistencyLevel readConsistency = properties.getReadConsistencyLevel();
@@ -154,12 +167,18 @@ public class CassandraWebhookDAO extends CassandraBaseDAO implements WebhookDAO 
                         + TABLE_WEBHOOK
                         + " (bucket text, webhook_id text, json_data text,"
                         + " PRIMARY KEY ((bucket), webhook_id))");
+        // default_time_to_live makes Cassandra auto-expire rows after the configured
+        // window — matches the cleanup-job behavior on the SQL backings. Note: CREATE
+        // TABLE IF NOT EXISTS won't update an existing table's TTL; operators changing
+        // the retention duration on an existing deployment need to ALTER TABLE manually.
         session.execute(
                 "CREATE TABLE IF NOT EXISTS "
                         + ks
                         + "."
                         + TABLE_EVENT
-                        + " (event_id text PRIMARY KEY, json_data text)");
+                        + " (event_id text PRIMARY KEY, json_data text)"
+                        + " WITH default_time_to_live = "
+                        + incomingEventTtlSeconds);
         session.execute(
                 "CREATE TABLE IF NOT EXISTS "
                         + ks

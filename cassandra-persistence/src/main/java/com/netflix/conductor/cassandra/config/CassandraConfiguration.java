@@ -116,9 +116,15 @@ public class CassandraConfiguration {
             Session session,
             ObjectMapper objectMapper,
             CassandraProperties properties,
-            com.netflix.conductor.dao.MetadataDAO metadataDAO) {
+            com.netflix.conductor.dao.MetadataDAO metadataDAO,
+            org.springframework.core.env.Environment env) {
+        long ttlSeconds = 7L * 24 * 3600;
+        String retention = env.getProperty("conductor.webhooks.cleanup.retention-duration");
+        if (retention != null) {
+            ttlSeconds = java.time.Duration.parse(retention).toSeconds();
+        }
         return new org.conductoross.conductor.cassandra.dao.CassandraWebhookDAO(
-                session, objectMapper, properties, metadataDAO);
+                session, objectMapper, properties, metadataDAO, ttlSeconds);
     }
 
     @Bean(name = "webhookTaskService")
