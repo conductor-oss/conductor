@@ -141,7 +141,7 @@ public class WebhookWorker {
         }
     }
 
-    private void pollAndExecute() {
+    void pollAndExecute() {
         List<String> messages = queueDAO.pop(WEBHOOK_QUEUE, pollBatchSize, 1000);
         for (String id : messages) {
             try {
@@ -153,8 +153,11 @@ public class WebhookWorker {
                 // QueueDAO impl's retry policy gives up (e.g. moves to a
                 // dead-letter table). Acking-on-failure here would silently drop
                 // webhook events on any transient failure (DB blip, OOM, etc.).
-                log.error("webhook message {} processing failed; will be redelivered: {}",
-                        id, t.getMessage(), t);
+                log.error(
+                        "webhook message {} processing failed; will be redelivered: {}",
+                        id,
+                        t.getMessage(),
+                        t);
             }
         }
     }

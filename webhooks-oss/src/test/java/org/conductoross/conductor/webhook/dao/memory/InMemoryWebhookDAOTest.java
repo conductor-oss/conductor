@@ -176,8 +176,7 @@ class InMemoryWebhookDAOTest {
         when(metadataDAO.getWorkflowDef("wf-a", 1)).thenReturn(Optional.of(def1));
         dao.createMatchers(config, Map.of("wf-a", 1));
 
-        assertThat(dao.getMatchers("hook-1").get("wf-a;1;wait_ref"))
-                .containsEntry("event", "push");
+        assertThat(dao.getMatchers("hook-1").get("wf-a;1;wait_ref")).containsEntry("event", "push");
 
         // Simulate a WorkflowDef update: same name+version, different matches.
         WorkflowTask updated = new WorkflowTask();
