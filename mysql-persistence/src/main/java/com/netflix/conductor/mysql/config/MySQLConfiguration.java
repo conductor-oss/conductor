@@ -97,6 +97,31 @@ public class MySQLConfiguration {
     }
 
     @Bean
+    @DependsOn({"flyway", "flywayInitializer"})
+    @ConditionalOnProperty(
+            name = "conductor.webhooks.cleanup.enabled",
+            havingValue = "true",
+            matchIfMissing = true)
+    public org.conductoross.conductor.mysql.dao.MySQLWebhookCleanupJob mySqlWebhookCleanupJob(
+            DataSource dataSource, org.springframework.core.env.Environment env) {
+        org.conductoross.conductor.mysql.dao.MySQLWebhookCleanupJob job =
+                new org.conductoross.conductor.mysql.dao.MySQLWebhookCleanupJob(dataSource);
+        String retention = env.getProperty("conductor.webhooks.cleanup.retention-duration");
+        if (retention != null) {
+            job.setRetentionDuration(java.time.Duration.parse(retention));
+        }
+        Integer batch = env.getProperty("conductor.webhooks.cleanup.batch-size", Integer.class);
+        if (batch != null) {
+            job.setBatchSize(batch);
+        }
+        String maxRuntime = env.getProperty("conductor.webhooks.cleanup.max-runtime");
+        if (maxRuntime != null) {
+            job.setMaxRuntime(java.time.Duration.parse(maxRuntime));
+        }
+        return job;
+    }
+
+    @Bean
     public RetryTemplate mysqlRetryTemplate(MySQLProperties properties) {
         SimpleRetryPolicy retryPolicy = new CustomRetryPolicy();
         retryPolicy.setMaxAttempts(properties.getDeadlockRetryMax());
