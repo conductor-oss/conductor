@@ -160,6 +160,44 @@ class InMemoryWebhookDAOTest {
     }
 
     @Test
+    void getMatchers_reflectsWorkflowDefUpdates_noStaleCache() {
+        WebhookConfig config = new WebhookConfig();
+        config.setId("hook-1");
+
+        WorkflowTask original = new WorkflowTask();
+        original.setType("WAIT_FOR_WEBHOOK");
+        original.setTaskReferenceName("wait_ref");
+        original.setInputParameters(Map.of("matches", Map.of("event", "push")));
+        WorkflowDef def1 = new WorkflowDef();
+        def1.setName("wf-a");
+        def1.setVersion(1);
+        def1.setTasks(List.of(original));
+
+        when(metadataDAO.getWorkflowDef("wf-a", 1)).thenReturn(Optional.of(def1));
+        dao.createMatchers(config, Map.of("wf-a", 1));
+
+        assertThat(dao.getMatchers("hook-1").get("wf-a;1;wait_ref"))
+                .containsEntry("event", "push");
+
+        // Simulate a WorkflowDef update: same name+version, different matches.
+        WorkflowTask updated = new WorkflowTask();
+        updated.setType("WAIT_FOR_WEBHOOK");
+        updated.setTaskReferenceName("wait_ref");
+        updated.setInputParameters(Map.of("matches", Map.of("event", "merge")));
+        WorkflowDef def2 = new WorkflowDef();
+        def2.setName("wf-a");
+        def2.setVersion(1);
+        def2.setTasks(List.of(updated));
+        when(metadataDAO.getWorkflowDef("wf-a", 1)).thenReturn(Optional.of(def2));
+
+        // Without re-running createMatchers, the next getMatchers must reflect
+        // the new WorkflowDef. Old impl cached at createMatchers time and would
+        // return the stale "push" criteria.
+        assertThat(dao.getMatchers("hook-1").get("wf-a;1;wait_ref"))
+                .containsEntry("event", "merge");
+    }
+
+    @Test
     void removeMatchers_drops() {
         WebhookConfig config = new WebhookConfig();
         config.setId("hook-1");

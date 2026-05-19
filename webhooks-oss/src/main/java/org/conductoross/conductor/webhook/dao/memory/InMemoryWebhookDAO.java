@@ -24,6 +24,7 @@ import org.conductoross.conductor.dao.webhook.WebhookDAO;
 import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
 import org.conductoross.conductor.webhook.model.WebhookConfig;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -49,7 +50,13 @@ public class InMemoryWebhookDAO implements WebhookDAO {
     private final ConcurrentHashMap<String, WebhookConfig> configs = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, IncomingWebhookEvent> events =
             new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Map<String, Map<String, Object>>> matchers =
+    // workflow-name -> version override snapshot taken at createMatchers() time.
+    // Stored (not recomputed) because it reflects the expression evaluation that
+    // ran when the config was registered. The actual `matches` criteria are
+    // looked up fresh from MetadataDAO on every getMatchers() call so updates to
+    // a WorkflowDef's WAIT_FOR_WEBHOOK task input parameters take effect without
+    // re-registering the webhook.
+    private final ConcurrentHashMap<String, Map<String, Integer>> targetWorkflows =
             new ConcurrentHashMap<>();
 
     public InMemoryWebhookDAO(MetadataDAO metadataDAO) {
@@ -93,20 +100,33 @@ public class InMemoryWebhookDAO implements WebhookDAO {
 
     @Override
     public Map<String, Map<String, Object>> getMatchers(String webhookId) {
-        return matchers.getOrDefault(webhookId, Collections.emptyMap());
+        Map<String, Integer> targets = targetWorkflows.get(webhookId);
+        if (targets == null || targets.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return computeMatchers(targets);
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void createMatchers(
             WebhookConfig webhookConfig,
-            Map<String, Integer> receiverWorkflowNamesToVersionsOverride) {
-        if (receiverWorkflowNamesToVersionsOverride == null) {
-            matchers.put(webhookConfig.getId(), Collections.emptyMap());
-            return;
-        }
+            @Nullable Map<String, Integer> receiverWorkflowNamesToVersionsOverride) {
+        targetWorkflows.put(
+                webhookConfig.getId(),
+                receiverWorkflowNamesToVersionsOverride == null
+                        ? Collections.emptyMap()
+                        : Map.copyOf(receiverWorkflowNamesToVersionsOverride));
+    }
+
+    @Override
+    public void removeMatchers(String id) {
+        targetWorkflows.remove(id);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Map<String, Object>> computeMatchers(Map<String, Integer> targets) {
         Map<String, Map<String, Object>> computed = new HashMap<>();
-        receiverWorkflowNamesToVersionsOverride.forEach(
+        targets.forEach(
                 (workflowName, wfVersion) -> {
                     Optional<WorkflowDef> def = metadataDAO.getWorkflowDef(workflowName, wfVersion);
                     if (def.isEmpty()) {
@@ -130,11 +150,6 @@ public class InMemoryWebhookDAO implements WebhookDAO {
                         }
                     }
                 });
-        matchers.put(webhookConfig.getId(), computed);
-    }
-
-    @Override
-    public void removeMatchers(String id) {
-        matchers.remove(id);
+        return computed;
     }
 }

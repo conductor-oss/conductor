@@ -146,11 +146,15 @@ public class WebhookWorker {
         for (String id : messages) {
             try {
                 handleMessage(id);
-            } catch (Throwable t) {
-                log.error("webhook message {} processing failed: {}", id, t.getMessage(), t);
-            } finally {
-                // Ack even on failure; retries are not yet modelled.
                 queueDAO.ack(WEBHOOK_QUEUE, id);
+            } catch (Throwable t) {
+                // Do NOT ack — let the queue's unack timeout redeliver this
+                // message. Poison messages will be retried until the underlying
+                // QueueDAO impl's retry policy gives up (e.g. moves to a
+                // dead-letter table). Acking-on-failure here would silently drop
+                // webhook events on any transient failure (DB blip, OOM, etc.).
+                log.error("webhook message {} processing failed; will be redelivered: {}",
+                        id, t.getMessage(), t);
             }
         }
     }
