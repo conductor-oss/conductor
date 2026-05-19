@@ -12,9 +12,9 @@ package org.conductoross.conductor.webhook.service;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.core.utils.IDGenerator;
 import org.conductoross.conductor.dao.webhook.WebhookDAO;
 import org.conductoross.conductor.common.metadata.EventMessage;
-import org.conductoross.conductor.id.TimeBasedUUIDGenerator;
 import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
 import org.conductoross.conductor.webhook.model.WebhookConfig;
 import org.conductoross.conductor.webhook.verifier.WebhookVerifier;
@@ -42,16 +42,16 @@ public class IncomingWebhookService {
 
     private final Map<String, WebhookVerifier> webhookVerifiers;
     private final ExecutionDAOFacade executionDAOFacade;
-    private final TimeBasedUUIDGenerator timeBasedUUIDGenerator;
+    private final IDGenerator idGenerator;
 
     public IncomingWebhookService(
             WebhookDAO webhookDAO,
             Set<WebhookVerifier> webhookVerifiersSet,
             QueueDAO queueDAO,
-            TimeBasedUUIDGenerator timeBasedUUIDGenerator,
+            IDGenerator idGenerator,
             ExecutionDAOFacade executionDAOFacade) {
         this.webhookDAO = webhookDAO;
-        this.timeBasedUUIDGenerator = timeBasedUUIDGenerator;
+        this.idGenerator = idGenerator;
         this.queueDAO = queueDAO;
         this.webhookVerifiers =
                 webhookVerifiersSet.stream()
@@ -60,7 +60,7 @@ public class IncomingWebhookService {
     }
 
     public String handleWebhook(String id, String bodyStr, Map<String, Object> requestParams, HttpHeaders headers) {
-        String eventId = timeBasedUUIDGenerator.generate();
+        String eventId = idGenerator.generate();
         IncomingWebhookEvent incomingWebhookEvent =
                 IncomingWebhookEvent.builder()
                         .body(bodyStr)
@@ -157,7 +157,7 @@ public class IncomingWebhookService {
             webhookDAO.createWebhook(id, webhookConfig);
         } else {
             // Webhook event
-            String eventId = timeBasedUUIDGenerator.generate();
+            String eventId = idGenerator.generate();
             IncomingWebhookEvent incomingWebhookEvent =
                     IncomingWebhookEvent.builder()
                             .body("{}")
