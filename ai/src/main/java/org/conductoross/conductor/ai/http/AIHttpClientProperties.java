@@ -13,7 +13,7 @@ import lombok.Data;
 public class AIHttpClientProperties {
 
     private Duration connectTimeout = Duration.ofSeconds(60);
-    private Duration readTimeout = Duration.ofSeconds(120);
+    private Duration readTimeout = Duration.ofSeconds(600);
     private Duration writeTimeout = Duration.ofSeconds(60);
     private int maxIdleConnections = 50;
     private Duration keepAlive = Duration.ofMinutes(5);
