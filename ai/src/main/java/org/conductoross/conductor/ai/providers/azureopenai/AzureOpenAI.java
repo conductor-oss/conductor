@@ -31,6 +31,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.image.ImageModel;
 
+import okhttp3.OkHttpClient;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -51,17 +52,13 @@ public class AzureOpenAI implements AIModel {
     private final OpenAIResponsesChatModel chatModel;
     private final OpenAIHttpImageModel imageModel;
 
-    public AzureOpenAI(AzureOpenAIConfiguration config) {
+    public AzureOpenAI(AzureOpenAIConfiguration config, OkHttpClient httpClient) {
         this.config = config;
-        long timeoutSecs = config.getTimeout() != null ? config.getTimeout().getSeconds() : 600;
-
-        // Azure base URL format: https://RESOURCE.openai.azure.com/openai/v1
         String baseUrl = toAzureV1Url(config.getBaseURL());
 
-        this.responsesApi = new OpenAIResponsesApi(config.getApiKey(), baseUrl, true, timeoutSecs);
-        this.embeddingsApi =
-                new OpenAIEmbeddingsApi(config.getApiKey(), baseUrl, true, timeoutSecs);
-        this.imageGenApi = new OpenAIImageGenApi(config.getApiKey(), baseUrl, true, timeoutSecs);
+        this.responsesApi = new OpenAIResponsesApi(httpClient, config.getApiKey(), baseUrl, true);
+        this.embeddingsApi = new OpenAIEmbeddingsApi(httpClient, config.getApiKey(), baseUrl, true);
+        this.imageGenApi = new OpenAIImageGenApi(httpClient, config.getApiKey(), baseUrl, true);
         this.chatModel = new OpenAIResponsesChatModel(responsesApi);
         this.imageModel = new OpenAIHttpImageModel(imageGenApi);
     }

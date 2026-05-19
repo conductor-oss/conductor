@@ -15,7 +15,6 @@ package org.conductoross.conductor.ai.providers.anthropic.api;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
@@ -50,21 +49,16 @@ public class AnthropicMessagesApi {
     private final OkHttpClient httpClient;
     private final ObjectMapper objectMapper;
 
-    public AnthropicMessagesApi(String apiKey, String baseUrl, long timeoutSeconds) {
-        this(apiKey, baseUrl, null, timeoutSeconds);
+    public AnthropicMessagesApi(OkHttpClient httpClient, String apiKey, String baseUrl) {
+        this(httpClient, apiKey, baseUrl, null);
     }
 
     public AnthropicMessagesApi(
-            String apiKey, String baseUrl, String anthropicVersion, long timeoutSeconds) {
+            OkHttpClient httpClient, String apiKey, String baseUrl, String anthropicVersion) {
         this.baseUrl = baseUrl != null ? baseUrl : "https://api.anthropic.com";
         this.apiKey = apiKey;
         this.anthropicVersion = anthropicVersion != null ? anthropicVersion : DEFAULT_VERSION;
-        this.httpClient =
-                new OkHttpClient.Builder()
-                        .connectTimeout(60, TimeUnit.SECONDS)
-                        .readTimeout(timeoutSeconds, TimeUnit.SECONDS)
-                        .writeTimeout(60, TimeUnit.SECONDS)
-                        .build();
+        this.httpClient = httpClient;
         this.objectMapper = new ObjectMapperProvider().getObjectMapper();
     }
 

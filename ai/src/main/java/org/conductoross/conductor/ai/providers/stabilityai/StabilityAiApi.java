@@ -13,10 +13,12 @@
 package org.conductoross.conductor.ai.providers.stabilityai;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
+
+import com.netflix.conductor.common.config.ObjectMapperProvider;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
@@ -52,21 +54,13 @@ public class StabilityAiApi {
     private final String apiKey;
     private final String baseUrl;
     private final OkHttpClient httpClient;
+    private final ObjectMapper objectMapper;
 
-    public StabilityAiApi(String apiKey) {
-        this(apiKey, DEFAULT_BASE_URL);
-    }
-
-    public StabilityAiApi(String apiKey, String baseUrl) {
+    public StabilityAiApi(OkHttpClient httpClient, String apiKey, String baseUrl) {
         this.apiKey = apiKey;
         this.baseUrl = baseUrl != null ? baseUrl : DEFAULT_BASE_URL;
-        this.httpClient =
-                new OkHttpClient.Builder()
-                        .connectTimeout(30, TimeUnit.SECONDS)
-                        .readTimeout(120, TimeUnit.SECONDS)
-                        .writeTimeout(30, TimeUnit.SECONDS)
-                        .followRedirects(true)
-                        .build();
+        this.httpClient = httpClient;
+        this.objectMapper = new ObjectMapperProvider().getObjectMapper();
     }
 
     /**
