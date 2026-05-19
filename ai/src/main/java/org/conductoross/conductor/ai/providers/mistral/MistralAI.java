@@ -117,7 +117,10 @@ public class MistralAI implements AIModel {
     // Initialization helpers
 
     private MistralAiApi createMistralAiApi(OkHttpClient httpClient) {
-        var factory = new org.springframework.http.client.OkHttp3ClientHttpRequestFactory(httpClient);
+        OkHttpClient effective = (config.getTimeout() != null)
+                ? httpClient.newBuilder().readTimeout(config.getTimeout()).build()
+                : httpClient;
+        var factory = new org.springframework.http.client.OkHttp3ClientHttpRequestFactory(effective);
         // Needs accept-encoding headers
         // https://github.com/spring-projects/spring-ai/issues/372
         return MistralAiApi.builder()

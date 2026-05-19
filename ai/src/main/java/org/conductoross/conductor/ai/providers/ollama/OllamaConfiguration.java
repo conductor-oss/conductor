@@ -52,6 +52,8 @@ public class OllamaConfiguration implements ModelConfiguration<Ollama> {
 
     @Override
     public Ollama get() {
-        return new Ollama(this, conductorAiHttpClient != null ? conductorAiHttpClient : new okhttp3.OkHttpClient());
+        return conductorAiHttpClient != null
+                ? new Ollama(this, conductorAiHttpClient)
+                : new Ollama(this);
     }
 }

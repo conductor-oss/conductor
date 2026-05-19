@@ -30,6 +30,10 @@ public class HuggingFace implements AIModel {
     private final HuggingFaceConfiguration config;
     private final OkHttpClient httpClient;
 
+    public HuggingFace(HuggingFaceConfiguration config) {
+        this(config, new OkHttpClient());
+    }
+
     public HuggingFace(HuggingFaceConfiguration config, OkHttpClient httpClient) {
         this.config = config;
         this.httpClient = httpClient;

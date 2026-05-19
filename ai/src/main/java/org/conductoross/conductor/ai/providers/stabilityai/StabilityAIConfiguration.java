@@ -18,7 +18,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import okhttp3.OkHttpClient;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -33,12 +32,15 @@ import lombok.NoArgsConstructor;
 @Component
 @ConfigurationProperties(prefix = "conductor.ai.stabilityai")
 @NoArgsConstructor
-@AllArgsConstructor
 public class StabilityAIConfiguration implements ModelConfiguration<StabilityAI> {
 
     private String apiKey;
 
     @Autowired private OkHttpClient conductorAiHttpClient;
+
+    public StabilityAIConfiguration(String apiKey) {
+        this.apiKey = apiKey;
+    }
 
     @Override
     public StabilityAI get() {

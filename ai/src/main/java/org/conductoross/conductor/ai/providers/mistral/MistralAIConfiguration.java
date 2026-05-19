@@ -49,6 +49,8 @@ public class MistralAIConfiguration implements ModelConfiguration<MistralAI> {
 
     @Override
     public MistralAI get() {
-        return new MistralAI(this, conductorAiHttpClient != null ? conductorAiHttpClient : new okhttp3.OkHttpClient());
+        return conductorAiHttpClient != null
+                ? new MistralAI(this, conductorAiHttpClient)
+                : new MistralAI(this);
     }
 }

@@ -112,7 +112,10 @@ public class Ollama implements AIModel {
     }
 
     private OllamaApi buildOllamaApi() {
-        var factory = new org.springframework.http.client.OkHttp3ClientHttpRequestFactory(httpClient);
+        OkHttpClient effective = (config.getTimeout() != null)
+                ? httpClient.newBuilder().readTimeout(config.getTimeout()).build()
+                : httpClient;
+        var factory = new org.springframework.http.client.OkHttp3ClientHttpRequestFactory(effective);
         RestClient.Builder builder = RestClient.builder().requestFactory(factory);
         if (StringUtils.isNotBlank(config.getAuthHeaderName())) {
             builder.defaultHeader(config.getAuthHeaderName(), config.getAuthHeader());

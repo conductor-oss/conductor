@@ -70,6 +70,10 @@ public class StabilityAI implements AIModel {
      */
     private final ImageModel imageModel;
 
+    public StabilityAI(StabilityAIConfiguration config) {
+        this(config, new OkHttpClient());
+    }
+
     public StabilityAI(StabilityAIConfiguration config, OkHttpClient httpClient) {
         this.api = new StabilityAiApi(httpClient, config.getApiKey(), null);
 

@@ -45,6 +45,8 @@ public class CohereAIConfiguration implements ModelConfiguration<CohereAI> {
 
     @Override
     public CohereAI get() {
-        return new CohereAI(this, conductorAiHttpClient != null ? conductorAiHttpClient : new okhttp3.OkHttpClient());
+        return conductorAiHttpClient != null
+                ? new CohereAI(this, conductorAiHttpClient)
+                : new CohereAI(this);
     }
 }

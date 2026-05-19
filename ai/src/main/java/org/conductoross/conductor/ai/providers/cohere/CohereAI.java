@@ -108,7 +108,10 @@ public class CohereAI implements AIModel {
     // Initialization helpers
 
     private CohereApi createCohereApi(OkHttpClient httpClient) {
-        var factory = new org.springframework.http.client.OkHttp3ClientHttpRequestFactory(httpClient);
+        OkHttpClient effective = (config.getTimeout() != null)
+                ? httpClient.newBuilder().readTimeout(config.getTimeout()).build()
+                : httpClient;
+        var factory = new org.springframework.http.client.OkHttp3ClientHttpRequestFactory(effective);
         CohereApi.Builder builder =
                 CohereApi.builder()
                         .apiKey(config.getApiKey())

@@ -17,7 +17,6 @@ dependencies {
     api "org.springframework.ai:spring-ai-model:${revSpringAI}"
     api "org.springframework.ai:spring-ai-client-chat:${revSpringAI}"
     api "org.springframework.ai:spring-ai-mistral-ai:${revSpringAI}"
-    api "org.springframework.ai:spring-ai-huggingface:${revSpringAI}"
     api "org.springframework.ai:spring-ai-bedrock-converse:${revSpringAI}"
     api "org.springframework.ai:spring-ai-ollama:${revSpringAI}"
 

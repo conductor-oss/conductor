@@ -36,7 +36,8 @@ public class HuggingFaceChatModel implements ChatModel {
         String inputs =
                 prompt.getInstructions().stream()
                         .map(m -> m.getText())
-                        .reduce("", (a, b) -> a.isBlank() ? b : a + "\n" + b);
+                        .filter(t -> t != null && !t.isBlank())
+                        .collect(java.util.stream.Collectors.joining("\n"));
         try {
             String text = api.generate(inputs);
             AssistantMessage msg = new AssistantMessage(text);

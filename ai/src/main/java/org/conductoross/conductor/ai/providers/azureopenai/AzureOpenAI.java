@@ -52,6 +52,10 @@ public class AzureOpenAI implements AIModel {
     private final OpenAIResponsesChatModel chatModel;
     private final OpenAIHttpImageModel imageModel;
 
+    public AzureOpenAI(AzureOpenAIConfiguration config) {
+        this(config, new OkHttpClient());
+    }
+
     public AzureOpenAI(AzureOpenAIConfiguration config, OkHttpClient httpClient) {
         this.config = config;
         String baseUrl = toAzureV1Url(config.getBaseURL());
