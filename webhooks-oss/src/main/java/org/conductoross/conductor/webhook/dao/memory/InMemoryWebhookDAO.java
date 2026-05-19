@@ -14,8 +14,10 @@ package org.conductoross.conductor.webhook.dao.memory;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.conductoross.conductor.dao.webhook.WebhookDAO;
@@ -23,6 +25,15 @@ import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
 import org.conductoross.conductor.webhook.model.WebhookConfig;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
+
+import com.netflix.conductor.common.metadata.tasks.TaskType;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.dao.MetadataDAO;
+
+import static org.conductoross.conductor.service.webhook.WebhookTaskService.Constants.WAIT_FOR_WEBHOOK;
+import static org.conductoross.conductor.service.webhook.WebhookTaskService.Constants.WEBHOOK_DELIMITER;
 
 /**
  * Default single-node implementation of {@link WebhookDAO}.
@@ -34,11 +45,16 @@ import org.springframework.stereotype.Component;
 @ConditionalOnMissingBean(name = "webhookDAO")
 public class InMemoryWebhookDAO implements WebhookDAO {
 
+    private final MetadataDAO metadataDAO;
     private final ConcurrentHashMap<String, WebhookConfig> configs = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, IncomingWebhookEvent> events =
             new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Map<String, Map<String, Object>>> matchers =
             new ConcurrentHashMap<>();
+
+    public InMemoryWebhookDAO(MetadataDAO metadataDAO) {
+        this.metadataDAO = metadataDAO;
+    }
 
     @Override
     public void createWebhook(String id, WebhookConfig config) {
@@ -75,21 +91,40 @@ public class InMemoryWebhookDAO implements WebhookDAO {
         events.remove(id);
     }
 
-    // Matchers map workflowName;version;taskRef -> per-task `matches` inputParameter,
-    // computed from WorkflowDefs at createMatchers() time. The OSS path that consumes
-    // them (a WebhookWorker poller dispatching WAIT_FOR_WEBHOOK completion) is not yet
-    // ported, so these are no-ops here. When the worker lands, this impl will need
-    // MetadataDAO to resolve WorkflowDefs by name+version.
     @Override
     public Map<String, Map<String, Object>> getMatchers(String webhookId) {
         return matchers.getOrDefault(webhookId, Collections.emptyMap());
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void createMatchers(
             WebhookConfig webhookConfig,
             Map<String, Integer> receiverWorkflowNamesToVersionsOverride) {
-        matchers.put(webhookConfig.getId(), Collections.emptyMap());
+        if (receiverWorkflowNamesToVersionsOverride == null) {
+            matchers.put(webhookConfig.getId(), Collections.emptyMap());
+            return;
+        }
+        Map<String, Map<String, Object>> computed = new HashMap<>();
+        receiverWorkflowNamesToVersionsOverride.forEach((workflowName, wfVersion) -> {
+            Optional<WorkflowDef> def = metadataDAO.getWorkflowDef(workflowName, wfVersion);
+            if (def.isEmpty()) {
+                return;
+            }
+            for (WorkflowTask task : def.get().collectTasks()) {
+                String type = task.getType();
+                if (!WAIT_FOR_WEBHOOK.equals(type) && !TaskType.WAIT.toString().equals(type)) {
+                    continue;
+                }
+                Object raw = task.getInputParameters().get("matches");
+                if (raw instanceof Map<?, ?> m && !CollectionUtils.isEmpty(m)) {
+                    String key = workflowName + WEBHOOK_DELIMITER + wfVersion
+                            + WEBHOOK_DELIMITER + task.getTaskReferenceName();
+                    computed.put(key, (Map<String, Object>) m);
+                }
+            }
+        });
+        matchers.put(webhookConfig.getId(), computed);
     }
 
     @Override
