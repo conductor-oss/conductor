@@ -1,3 +1,15 @@
+/*
+ * Copyright 2026 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package org.conductoross.conductor.ai.providers.gemini.api;
 
 import java.util.List;
@@ -8,9 +20,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * OkHttp REST client for the Gemini REST API.
- * Supports both API-key mode (generativelanguage.googleapis.com) and
- * Vertex AI mode ({location}-aiplatform.googleapis.com).
+ * DTO types for the Gemini REST API. HTTP client and request methods are added by subsequent tasks.
  */
 public class GeminiApi {
 
@@ -49,7 +59,10 @@ public class GeminiApi {
         }
     }
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public record FunctionCallPart(String name, Map<String, Object> args) {}
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public record FunctionResponsePart(String name, Map<String, Object> response) {}
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -84,7 +97,7 @@ public class GeminiApi {
     public record GenerationConfig(
             Double temperature,
             @JsonProperty("topP") Double topP,
-            @JsonProperty("topK") Double topK,
+            @JsonProperty("topK") Integer topK,
             @JsonProperty("maxOutputTokens") Integer maxOutputTokens,
             @JsonProperty("stopSequences") List<String> stopSequences,
             @JsonProperty("frequencyPenalty") Double frequencyPenalty,
@@ -107,6 +120,7 @@ public class GeminiApi {
     public record VoiceConfig(
             @JsonProperty("prebuiltVoiceConfig") PrebuiltVoiceConfig prebuiltVoiceConfig) {}
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public record PrebuiltVoiceConfig(
             @JsonProperty("voiceName") String voiceName) {}
 
@@ -146,9 +160,8 @@ public class GeminiApi {
 
         /** Finish reason from first candidate. */
         public String finishReason() {
-            if (candidates == null || candidates.isEmpty()) return "STOP";
-            return candidates.get(0).finishReason() != null
-                    ? candidates.get(0).finishReason() : "STOP";
+            if (candidates == null || candidates.isEmpty()) return null;
+            return candidates.get(0).finishReason();
         }
     }
 
@@ -183,8 +196,10 @@ public class GeminiApi {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record GenerateImagesRequest(
-            Map<String, String> prompt,
+            @JsonProperty("prompt") ImagePrompt prompt,
             @JsonProperty("generationConfig") GenerateImagesConfig generationConfig) {}
+
+    public record ImagePrompt(@JsonProperty("text") String text) {}
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record GenerateImagesConfig(
@@ -205,7 +220,7 @@ public class GeminiApi {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record GenerateVideosRequest(
-            Map<String, Object> instances,
+            @JsonProperty("instances") List<Map<String, Object>> instances,
             @JsonProperty("parameters") GenerateVideosConfig parameters) {}
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
