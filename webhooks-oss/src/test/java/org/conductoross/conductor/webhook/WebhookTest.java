@@ -1,0 +1,53 @@
+/*
+ * Copyright 2026 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ */
+package org.conductoross.conductor.webhook;
+
+import org.conductoross.conductor.service.webhook.WebhookTaskService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
+
+@ExtendWith(MockitoExtension.class)
+class WebhookTest {
+
+    @Mock private WebhookTaskService webhookTaskService;
+    @Mock private WorkflowExecutor workflowExecutor;
+
+    private Webhook webhook;
+
+    @BeforeEach
+    void setUp() {
+        webhook = new Webhook(webhookTaskService);
+    }
+
+    @Test
+    void start_registersTaskWithService_andMarksInProgress() {
+        WorkflowDef def = new WorkflowDef();
+        def.setVersion(3);
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(def);
+        TaskModel taskModel = new TaskModel();
+        taskModel.setTaskId("task-42");
+
+        webhook.start(workflow, taskModel, workflowExecutor);
+
+        verify(webhookTaskService).put(taskModel, 3);
+        assertThat(taskModel.getStatus()).isEqualTo(TaskModel.Status.IN_PROGRESS);
+    }
+}
