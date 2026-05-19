@@ -148,7 +148,7 @@ public class WebhookWorker {
         }
     }
 
-    private void handleMessage(String messageId) {
+    void handleMessage(String messageId) {
         IncomingWebhookEvent event = objectMapper.convertValue(
                 webhookDAO.getWebhookEvent(messageId), IncomingWebhookEvent.class);
         if (event == null) {
