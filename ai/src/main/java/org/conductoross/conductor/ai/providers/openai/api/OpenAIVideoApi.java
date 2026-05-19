@@ -61,6 +61,7 @@ public class OpenAIVideoApi {
                 .connectTimeout(120, TimeUnit.SECONDS)
                 .readTimeout(5, TimeUnit.MINUTES)
                 .followRedirects(true)
+                // writeTimeout inherited from shared client (default 60s is sufficient for form upload)
                 .build();
         this.objectMapper = new ObjectMapperProvider().getObjectMapper();
     }
