@@ -80,7 +80,10 @@ public class RedisExecutionDAOTest extends ExecutionDAOTest {
 
         executionDAO =
                 new RedisExecutionDAO(
-                        jedisProxy, objectMapper, conductorProperties, redisProperties,
+                        jedisProxy,
+                        objectMapper,
+                        conductorProperties,
+                        redisProperties,
                         mock(QueueDAO.class));
     }
 
@@ -362,9 +365,13 @@ public class RedisExecutionDAOTest extends ExecutionDAOTest {
         ConductorProperties conductorProperties = new ConductorProperties();
         RedisProperties redisProperties = new RedisProperties(conductorProperties);
         JedisProxy jedisProxy = new JedisProxy(new JedisStandalone(jedisPool));
-        RedisExecutionDAO dao = new RedisExecutionDAO(
-                jedisProxy, new ObjectMapperProvider().getObjectMapper(),
-                conductorProperties, redisProperties, queueDAO);
+        RedisExecutionDAO dao =
+                new RedisExecutionDAO(
+                        jedisProxy,
+                        new ObjectMapperProvider().getObjectMapper(),
+                        conductorProperties,
+                        redisProperties,
+                        queueDAO);
 
         TaskDef def = new TaskDef();
         def.setName("limited_task");
@@ -395,9 +402,13 @@ public class RedisExecutionDAOTest extends ExecutionDAOTest {
         ConductorProperties conductorProperties = new ConductorProperties();
         RedisProperties redisProperties = new RedisProperties(conductorProperties);
         JedisProxy jedisProxy = new JedisProxy(new JedisStandalone(jedisPool));
-        RedisExecutionDAO dao = new RedisExecutionDAO(
-                jedisProxy, new ObjectMapperProvider().getObjectMapper(),
-                conductorProperties, redisProperties, queueDAO);
+        RedisExecutionDAO dao =
+                new RedisExecutionDAO(
+                        jedisProxy,
+                        new ObjectMapperProvider().getObjectMapper(),
+                        conductorProperties,
+                        redisProperties,
+                        queueDAO);
 
         TaskDef def = new TaskDef();
         def.setName("limited_task");

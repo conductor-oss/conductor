@@ -233,8 +233,10 @@ public class RedisExecutionDAO extends BaseDynoDAO
                     String queueName = QueueUtils.getQueueName(task);
                     List<String> nextIds = queueDAO.peekFirstIds(queueName, 1);
                     if (nextIds != null && !nextIds.isEmpty()) {
-                        LOGGER.debug("Concurrency slot freed for {}, releasing postponed task {}",
-                                task.getTaskDefName(), nextIds.get(0));
+                        LOGGER.debug(
+                                "Concurrency slot freed for {}, releasing postponed task {}",
+                                task.getTaskDefName(),
+                                nextIds.get(0));
                         queueDAO.resetOffsetTime(queueName, nextIds.get(0));
                     }
                 }

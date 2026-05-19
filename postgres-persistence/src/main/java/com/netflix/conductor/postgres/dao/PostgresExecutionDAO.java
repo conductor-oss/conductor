@@ -182,13 +182,17 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
     public void updateTask(TaskModel task) {
         withTransaction(connection -> updateTask(connection, task));
         Optional<TaskDef> taskDefinition = task.getTaskDefinition();
-        if (taskDefinition.isPresent() && taskDefinition.get().concurrencyLimit() > 0
-                && task.getStatus() != null && task.getStatus().isTerminal()) {
+        if (taskDefinition.isPresent()
+                && taskDefinition.get().concurrencyLimit() > 0
+                && task.getStatus() != null
+                && task.getStatus().isTerminal()) {
             String queueName = QueueUtils.getQueueName(task);
             List<String> nextIds = queueDAO.peekFirstIds(queueName, 1);
             if (nextIds != null && !nextIds.isEmpty()) {
-                logger.debug("Concurrency slot freed for {}, releasing postponed task {}",
-                        task.getTaskDefName(), nextIds.get(0));
+                logger.debug(
+                        "Concurrency slot freed for {}, releasing postponed task {}",
+                        task.getTaskDefName(),
+                        nextIds.get(0));
                 queueDAO.resetOffsetTime(queueName, nextIds.get(0));
             }
         }
