@@ -19,11 +19,15 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.SocketPolicy;
+import okio.BufferedSink;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -148,6 +152,53 @@ class RetryInterceptorTest {
             assertEquals(501, response.code());
         }
 
+        assertEquals(1, server.getRequestCount());
+    }
+
+    @Test
+    void retriesOnIOExceptionThenSucceeds() throws IOException {
+        // First request: socket disconnect (simulates network failure)
+        server.enqueue(new MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START));
+        // Second request: success
+        server.enqueue(new MockResponse().setResponseCode(200).setBody("ok"));
+
+        try (Response response = client.newCall(buildRequest()).execute()) {
+            assertEquals(200, response.code());
+        }
+
+        assertEquals(2, server.getRequestCount());
+    }
+
+    @Test
+    void noRetryForOneShotBody() throws IOException {
+        server.enqueue(new MockResponse().setResponseCode(503));
+
+        RequestBody oneShotBody =
+                new RequestBody() {
+                    @Override
+                    public MediaType contentType() {
+                        return MediaType.get("text/plain");
+                    }
+
+                    @Override
+                    public boolean isOneShot() {
+                        return true;
+                    }
+
+                    @Override
+                    public void writeTo(BufferedSink sink) throws IOException {
+                        sink.writeUtf8("payload");
+                    }
+                };
+
+        Request request =
+                new Request.Builder().url(server.url("/test")).post(oneShotBody).build();
+
+        try (Response response = client.newCall(request).execute()) {
+            assertEquals(503, response.code());
+        }
+
+        // No retry — one-shot body cannot be replayed
         assertEquals(1, server.getRequestCount());
     }
 }

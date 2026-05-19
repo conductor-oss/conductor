@@ -13,7 +13,7 @@
 package org.conductoross.conductor.ai.http;
 
 import java.io.IOException;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 import okhttp3.Interceptor;
 import okhttp3.Request;
@@ -33,8 +33,9 @@ import okhttp3.Response;
  *
  * <p>Backoff formula: {@code min(baseDelayMs * 2^attempt, 30_000ms) + uniform jitter [0, 500ms]}
  *
- * <p>If the request body is one-shot (cannot be replayed), no retry is attempted. On retry
- * exhaustion the last response is returned rather than throwing.
+ * <p>If the request body is one-shot (cannot be replayed), no retry is attempted. On exhaustion,
+ * the last HTTP response is returned if one was received; an IOException is re-thrown if the final
+ * attempt was a network failure.
  */
 public class RetryInterceptor implements Interceptor {
 
@@ -44,7 +45,6 @@ public class RetryInterceptor implements Interceptor {
 
     private final int maxRetries;
     private final long baseDelayMs;
-    private final Random random = new Random();
 
     /**
      * Creates a {@code RetryInterceptor} with the default base delay of 1 second.
@@ -83,14 +83,14 @@ public class RetryInterceptor implements Interceptor {
         IOException lastException = null;
 
         for (int attempt = 0; attempt <= maxRetries; attempt++) {
-            // Close any previous non-successful response before retrying
-            if (lastResponse != null) {
-                lastResponse.close();
-            }
-
-            // Apply backoff delay for all attempts after the first
+            // Apply backoff delay for all attempts after the first, before closing the response
+            // so that header values are still accessible when computing the delay.
             if (attempt > 0) {
                 long delayMs = computeDelay(attempt - 1, lastResponse);
+                // Close any previous non-successful response before retrying
+                if (lastResponse != null) {
+                    lastResponse.close();
+                }
                 sleepUninterrupted(delayMs);
             }
 
@@ -149,7 +149,7 @@ public class RetryInterceptor implements Interceptor {
                 try {
                     long seconds = Long.parseLong(retryAfter.trim());
                     if (seconds >= 0) {
-                        return seconds * 1_000L + jitter();
+                        return Math.min(seconds * 1_000L, MAX_DELAY_MS) + jitter();
                     }
                 } catch (NumberFormatException ignored) {
                     // Fall through to exponential backoff
@@ -166,7 +166,7 @@ public class RetryInterceptor implements Interceptor {
     }
 
     private long jitter() {
-        return (long) (random.nextDouble() * JITTER_MAX_MS);
+        return (long) (ThreadLocalRandom.current().nextDouble() * JITTER_MAX_MS);
     }
 
     private static void sleepUninterrupted(long millis) {
