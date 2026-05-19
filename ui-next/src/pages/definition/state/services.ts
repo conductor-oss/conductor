@@ -58,8 +58,6 @@ export const persistCopyInLocalStorage = (
     localStorage.setItem(wfKey, JSON.stringify(workflowChanges));
     addLocalCopyTime(wfKey);
 
-    logger.log("Saved to local storage");
-
     return Promise.resolve("Saved to local storage");
   }
 

@@ -118,6 +118,7 @@ public class OpenAI implements AIModel {
                         .stopSequences(input.getStopWords())
                         .previousResponseId(input.getPreviousResponseId())
                         .reasoningEffort(input.getReasoningEffort())
+                        .reasoningSummary(input.getReasoningSummary())
                         .jsonOutput(input.isJsonOutput())
                         .responsesApiTools(tools.isEmpty() ? null : tools);
 

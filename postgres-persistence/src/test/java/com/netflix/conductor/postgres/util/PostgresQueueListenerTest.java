@@ -155,7 +155,9 @@ public class PostgresQueueListenerTest {
     public void testHasReadyMessages() {
         assertFalse(listener.hasMessagesReady("dummy-task"));
         sendNotification("dummy-task", 3, System.currentTimeMillis() - 1);
-        assertTrue(listener.hasMessagesReady("dummy-task"));
+        await().atMost(500, TimeUnit.MILLISECONDS)
+                .pollInterval(20, TimeUnit.MILLISECONDS)
+                .until(() -> listener.hasMessagesReady("dummy-task"));
     }
 
     @Test

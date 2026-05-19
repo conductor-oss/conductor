@@ -17,8 +17,8 @@ const CustomSlider = styled(Slider, {
   },
   "& .MuiSlider-thumb": {
     backgroundColor: sliderColor,
-    width: "17px",
-    height: "17px",
+    width: "14px",
+    height: "14px",
   },
 }));
 
@@ -34,6 +34,7 @@ const labelStyle = {
   color: greyText,
   fontSize: "12px",
   fontWeight: 300,
+  lineHeight: 1.2,
 };
 
 const ConductorSliderStateless = ({
@@ -48,49 +49,35 @@ const ConductorSliderStateless = ({
   ...rest
 }: ConductorSliderStatelessProps) => {
   const textFieldStyle = {
-    marginLeft: "10px",
+    flexShrink: 0,
     "& .MuiOutlinedInput-root": {
+      height: "22px",
       "&.Mui-focused fieldset": {
         borderColor: sliderColor,
         borderWidth: "1px",
       },
     },
+    "& .MuiInputBase-input": {
+      padding: "1px 4px",
+      fontSize: "0.75rem",
+    },
   };
 
   return (
-    <Box>
-      <Box display="flex" justifyContent="space-between">
-        {label && <Box sx={labelStyle}>{label}</Box>}
-        {textBox && (
-          <TextField
-            sx={textFieldStyle}
-            value={value?.toString()}
-            size="small"
-            type="number"
-            onChange={handleInputChange}
-            onBlur={handleBlur}
-            inputProps={{
-              min: min,
-              max: max,
-              type: "number",
-              "aria-labelledby": "input-slider",
-              style: {
-                textAlign: "center",
-                width: "30px",
-                fontWeight: 600,
-              },
-            }}
-          />
-        )}
-      </Box>
-
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          px: 2,
-        }}
-      >
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 1.5,
+        py: 0.5,
+      }}
+    >
+      {label && (
+        <Box sx={{ ...labelStyle, minWidth: "100px", flexShrink: 0 }}>
+          {label}
+        </Box>
+      )}
+      <Box sx={{ flex: 1, px: 0.5 }}>
         <CustomSlider
           value={value}
           min={min}
@@ -99,6 +86,27 @@ const ConductorSliderStateless = ({
           {...rest}
         />
       </Box>
+      {textBox && (
+        <TextField
+          sx={textFieldStyle}
+          value={value?.toString()}
+          size="small"
+          type="number"
+          onChange={handleInputChange}
+          onBlur={handleBlur}
+          inputProps={{
+            min: min,
+            max: max,
+            type: "number",
+            "aria-labelledby": "input-slider",
+            style: {
+              textAlign: "center",
+              width: "30px",
+              fontWeight: 600,
+            },
+          }}
+        />
+      )}
     </Box>
   );
 };

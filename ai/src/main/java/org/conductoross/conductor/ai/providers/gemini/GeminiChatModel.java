@@ -34,6 +34,7 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.genai.Client;
+import com.google.genai.types.Candidate;
 import com.google.genai.types.Content;
 import com.google.genai.types.FunctionCall;
 import com.google.genai.types.FunctionDeclaration;
@@ -122,12 +123,26 @@ public class GeminiChatModel implements ChatModel {
                 configBuilder.tools(tools);
             }
 
-            // Thinking
-            if (opts.getThinkingBudgetTokens() != null && opts.getThinkingBudgetTokens() > 0) {
-                configBuilder.thinkingConfig(
-                        ThinkingConfig.builder()
-                                .thinkingBudget(opts.getThinkingBudgetTokens())
-                                .build());
+            // Thinking. ``includeThoughts`` is the gate that controls whether
+            // the model returns thought summary parts; the budget controls how
+            // much reasoning capacity it can spend. Either can be configured
+            // independently — callers who set ``includeThoughts`` without a
+            // budget get whatever the model defaults to; callers who set a
+            // budget without ``includeThoughts`` get reasoning under the hood
+            // with no visible summary.
+            boolean hasBudget =
+                    opts.getThinkingBudgetTokens() != null && opts.getThinkingBudgetTokens() > 0;
+            boolean includeThoughts =
+                    opts.getIncludeThoughts() != null && opts.getIncludeThoughts();
+            if (hasBudget || includeThoughts) {
+                ThinkingConfig.Builder thinkingBuilder = ThinkingConfig.builder();
+                if (hasBudget) {
+                    thinkingBuilder.thinkingBudget(opts.getThinkingBudgetTokens());
+                }
+                if (includeThoughts) {
+                    thinkingBuilder.includeThoughts(true);
+                }
+                configBuilder.thinkingConfig(thinkingBuilder.build());
             }
         } else if (options != null) {
             if (options.getMaxTokens() != null)
@@ -248,10 +263,11 @@ public class GeminiChatModel implements ChatModel {
         return contents;
     }
 
-    private ChatResponse toSpringChatResponse(GenerateContentResponse result, String model) {
+    ChatResponse toSpringChatResponse(GenerateContentResponse result, String model) {
         List<Generation> generations = new ArrayList<>();
         List<AssistantMessage.ToolCall> toolCalls = new ArrayList<>();
         StringBuilder textBuilder = new StringBuilder();
+        StringBuilder reasoningBuilder = new StringBuilder();
 
         // Extract finish reason
         String finishReason = "STOP";
@@ -260,7 +276,10 @@ public class GeminiChatModel implements ChatModel {
             finishReason = geminiFinishReason.toString();
         }
 
-        // Extract text from response
+        // Extract text from response. ``result.text()`` returns concatenated
+        // text from non-thought parts only — the SDK filters out parts whose
+        // ``thought()`` flag is true. We separately iterate the candidates
+        // to surface those thought summaries as reasoning metadata.
         try {
             String text = result.text();
             if (text != null && !text.isEmpty()) {
@@ -268,6 +287,26 @@ public class GeminiChatModel implements ChatModel {
             }
         } catch (Exception e) {
             // text() throws if no text content
+        }
+
+        // Collect thought summary text, if the model returned any. Each
+        // candidate's content carries a list of parts; a part is a "thought
+        // summary" when ``part.thought()`` is true. Concatenate these into a
+        // single reasoning blob mirroring the OpenAI behavior.
+        for (Candidate candidate : result.candidates().orElse(List.of())) {
+            for (Content content : candidate.content().stream().toList()) {
+                for (Part part : content.parts().orElse(List.of())) {
+                    if (part.thought().orElse(false)) {
+                        String thoughtText = part.text().orElse(null);
+                        if (thoughtText != null && !thoughtText.isBlank()) {
+                            if (!reasoningBuilder.isEmpty()) {
+                                reasoningBuilder.append("\n\n");
+                            }
+                            reasoningBuilder.append(thoughtText);
+                        }
+                    }
+                }
+            }
         }
 
         // Extract function calls
@@ -306,11 +345,13 @@ public class GeminiChatModel implements ChatModel {
         // Usage metadata
         int inputTok = 0;
         int outputTok = 0;
+        Integer thoughtsTok = null;
         var usageMeta = result.usageMetadata();
         if (usageMeta.isPresent()) {
             GenerateContentResponseUsageMetadata usage = usageMeta.get();
             inputTok = usage.promptTokenCount().orElse(0);
             outputTok = usage.candidatesTokenCount().orElse(0);
+            thoughtsTok = usage.thoughtsTokenCount().orElse(null);
         }
         DefaultUsage springUsage = new DefaultUsage(inputTok, outputTok, inputTok + outputTok);
 
@@ -319,6 +360,12 @@ public class GeminiChatModel implements ChatModel {
                 ChatResponseMetadata.builder().model(model).usage(springUsage);
         if (responseId != null) {
             metaBuilder.id(responseId);
+        }
+        if (!reasoningBuilder.isEmpty()) {
+            metaBuilder.keyValue("reasoning", reasoningBuilder.toString());
+        }
+        if (thoughtsTok != null) {
+            metaBuilder.keyValue("reasoning_tokens", thoughtsTok);
         }
 
         return new ChatResponse(generations, metaBuilder.build());

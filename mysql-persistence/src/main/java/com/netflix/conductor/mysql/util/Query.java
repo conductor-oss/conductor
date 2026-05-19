@@ -19,6 +19,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -100,6 +101,13 @@ public class Query implements AutoCloseable {
     }
 
     public Query addParameter(final long value) {
+        return addParameterInternal((ps, idx) -> ps.setLong(idx, value));
+    }
+
+    public Query addParameter(final Long value) {
+        if (value == null) {
+            return addParameterInternal((ps, idx) -> ps.setNull(idx, Types.BIGINT));
+        }
         return addParameterInternal((ps, idx) -> ps.setLong(idx, value));
     }
 
