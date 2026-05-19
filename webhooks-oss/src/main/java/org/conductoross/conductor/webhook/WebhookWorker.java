@@ -343,7 +343,7 @@ public class WebhookWorker {
         if (hist == null) {
             webhookConfig.setWebhookExecutionHistory(new java.util.ArrayList<>(List.of(history)));
         } else {
-            if (hist.size() > lastRunWorkflowIdSize) {
+            if (hist.size() >= lastRunWorkflowIdSize) {
                 hist.remove(hist.size() - 1);
             }
             hist.add(0, history);

@@ -21,22 +21,17 @@ dependencies {
     implementation "com.jayway.jsonpath:json-path:${revJsonPath}"
     implementation "io.micrometer:micrometer-core:${revMicrometer}"
     implementation "commons-codec:commons-codec:${revCodec}"
-    implementation "com.stripe:stripe-java:29.4.0"
-    implementation "com.sendgrid:sendgrid-java:4.10.2"
+    // PINNED: webhook verifier-specific clients, not used elsewhere in the project; no shared rev*.
+    implementation "com.stripe:stripe-java:${revStripe}"
+    implementation "com.sendgrid:sendgrid-java:${revSendgrid}"
     implementation "org.apache.commons:commons-lang3"
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-autoconfigure'
 
     compileOnly 'org.springframework.retry:spring-retry'
-    compileOnly 'org.springframework.boot:spring-boot-autoconfigure'
-    compileOnly 'org.springframework.boot:spring-boot-starter-web'
 
     testImplementation 'org.junit.vintage:junit-vintage-engine'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework:spring-web'
-    testImplementation "org.testcontainers:testcontainers:${revTestContainer}"
-    testImplementation "org.testcontainers:postgresql:${revTestContainer}"
-    testImplementation 'org.springframework.retry:spring-retry'
-    testImplementation 'com.zaxxer:HikariCP:5.1.0'
-    testImplementation project(':conductor-postgres-persistence')
 }
 
 test {

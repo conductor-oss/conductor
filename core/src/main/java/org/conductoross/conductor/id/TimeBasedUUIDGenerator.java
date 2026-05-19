@@ -47,29 +47,9 @@ public class TimeBasedUUIDGenerator extends IDGenerator {
         log.info("Using TimeBasedUUIDGenerator to generate Ids");
     }
 
+    @Override
     public String generate() {
-        // TODO: OSS-OrkesRequestContext-removed — orgId prefix is multi-tenant
-        // context that does not exist in OSS. Returning the bare UUID.
-        UUID uuid = UuidUtil.getTimeBasedUuid();
-        return uuid.toString();
-    }
-
-    /**
-     * used for testing only so far
-     *
-     * @param time
-     * @return
-     */
-    public String generate(long time) {
-        // TODO: OSS-OrkesRequestContext-removed — IDUtils.getTimeBasedUuid(time)
-        // is an Orkes-internal helper not ported to OSS. Falling back to random UUID.
-        UUID uuid = UUID.randomUUID();
-        return uuid.toString();
-    }
-
-    public static String getOrgId(String idWithOrgMayBe) {
-        // TODO: OSS-OrkesRequestContext-removed — no orgId in OSS, always default.
-        return "_";
+        return UuidUtil.getTimeBasedUuid().toString();
     }
 
     public static long getDate(String idWithOrgMayBe) {
