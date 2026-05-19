@@ -68,10 +68,23 @@ where `clamp` only applies when `maxRetryDelaySeconds > 0`.
 
 ### Task Concurrent Execution Limits
 
-`concurrentExecLimit` limits the number of simultaneous Task executions at any point.
+`concurrentExecLimit` caps the number of tasks of this type that can be `IN_PROGRESS` at the same time, across all workers.
 
 **Example**
-You have 1000 task executions waiting in the queue, and 1000 workers polling this queue for tasks, but if you have set `concurrentExecLimit` to 10, only 10 tasks would be given to workers (which would lead to starvation). If any of the workers finishes execution, a new task(s) will be removed from the queue, while still keeping the current execution count to 10.
+
+You have 1000 tasks in the queue and 1000 workers polling for them. With `concurrentExecLimit = 10`, only 10 tasks are handed out at a time — the remaining 990 workers are starved until a slot opens.
+
+**How the limit is enforced**
+
+The limit is checked at poll time, not when a task completes. When a worker polls and the limit is already full, Conductor postpones the queued task message and returns nothing to that worker. The task becomes eligible for polling again only after the postpone window expires.
+
+The postpone duration defaults to **60 seconds** and is controlled by [`conductor.app.taskExecutionPostponeDuration`](appconf.md).
+
+**What this means in practice**
+
+If task A finishes in 5ms, task B still waits up to 60 seconds before a worker can pick it up — because release is driven by the postpone timer, not by task completion. This is why tasks with `concurrentExecLimit` often show queue wait times of ~60,000ms even when the task itself runs in milliseconds.
+
+If your tasks are short-lived, lower `conductor.app.taskExecutionPostponeDuration` to reduce queue wait time at the cost of slightly more poll churn.
 
 ### Task Rate Limits
 
