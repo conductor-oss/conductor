@@ -77,6 +77,8 @@ include 'scheduler-cassandra-persistence'
 include 'scheduler-redis-persistence'
 include 'scheduler-sqlite-persistence'
 
+include 'webhooks-oss'
+
 include 'e2e'
 
 rootProject.children.each {it.name="conductor-${it.name}"}
