@@ -42,9 +42,9 @@ export function fetchWithContext(
 }
 
 /**
- * @param {string} path 
+ * @param {string} path
  * @returns path with '/' not duplicated, except at ://
- * 
+ *
  */
 export function cleanDuplicateSlash(path) {
   return path.replace(/(:\/\/)\/*|(\/)+/g, "$1$2");

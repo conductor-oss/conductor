@@ -43,8 +43,7 @@ const useStyles = makeStyles({
 
 export default withFormik({
   enableReinitialize: true,
-  mapPropsToValues: ({ initialData }) =>
-    initData(initialData),
+  mapPropsToValues: ({ initialData }) => initData(initialData),
   validationSchema: validationSchema,
 })(TaskHumanForm);
 
@@ -54,26 +53,22 @@ function initData(data) {
     taskId: _.get(data, "taskId", ""),
     status: _.get(data, "status", ""),
     outputData: _.get(data, "outputData", ""),
-  }
+  };
 }
 
 function TaskHumanForm(props) {
-  const {
-    values,
-    validateForm,
-    completeTask
-  } = props;
+  const { values, validateForm, completeTask } = props;
   const classes = useStyles();
 
   function formDataToRunPayload(form) {
     let payload = {
       workflowInstanceId: form.workflowInstanceId,
       taskId: form.taskId,
-      status: form.status
-    }
+      status: form.status,
+    };
 
     if (form.outputData) {
-      payload.outputData = JSON.parse(form.outputData)
+      payload.outputData = JSON.parse(form.outputData);
     }
 
     return payload;
@@ -83,21 +78,21 @@ function TaskHumanForm(props) {
     validateForm().then((errors) => {
       if (Object.keys(errors).length === 0) {
         const payload = formDataToRunPayload(values);
-        completeTask(payload)
+        completeTask(payload);
       }
-    })
+    });
   }
 
   return (
     <Form>
       <div className={classes.fields}>
-        <FormikInput fullWidth label="Workflow instance ID" name="workflowInstanceId"/>
-        <FormikInput fullWidth label="Task ID" name="taskId"/>
-        <FormikStatusDropdown
+        <FormikInput
           fullWidth
-          label="Status"
-          name="status"
+          label="Workflow instance ID"
+          name="workflowInstanceId"
         />
+        <FormikInput fullWidth label="Task ID" name="taskId" />
+        <FormikStatusDropdown fullWidth label="Status" name="status" />
         <FormikJsonInput
           reinitialize
           height={200}
