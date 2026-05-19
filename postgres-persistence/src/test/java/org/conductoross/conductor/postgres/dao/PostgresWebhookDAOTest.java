@@ -55,7 +55,8 @@ import static org.mockito.Mockito.when;
         properties = {
             "conductor.db.type=postgres",
             "spring.flyway.clean-disabled=false",
-            "conductor.app.workflow.name-validation.enabled=true"
+            "conductor.app.workflow.name-validation.enabled=true",
+            "spring.flyway.ignore-migration-patterns=*:missing"
         })
 @SpringBootTest
 public class PostgresWebhookDAOTest {
