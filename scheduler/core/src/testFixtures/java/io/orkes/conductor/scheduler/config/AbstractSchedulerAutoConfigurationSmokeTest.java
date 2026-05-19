@@ -45,16 +45,20 @@ public abstract class AbstractSchedulerAutoConfigurationSmokeTest {
 
     protected abstract Class<? extends SchedulerDAO> expectedDaoClass();
 
+    /**
+     * Configuration class providing backend-specific test beans, including any named {@link
+     * RetryTemplate} beans the scheduler config expects (e.g. {@code postgresRetryTemplate}). Must
+     * also register {@code onTransientErrorRetryTemplate} so the smoke test exercises the realistic
+     * two-candidate context that exists in production — otherwise an unqualified injection point
+     * would silently bind to the single available bean instead of failing.
+     */
+    protected abstract Class<?> backendTestBeansClass();
+
     @Configuration
     static class SharedTestBeans {
         @Bean
         public ObjectMapper objectMapper() {
             return new ObjectMapperProvider().getObjectMapper();
-        }
-
-        @Bean
-        public RetryTemplate postgresRetryTemplate() {
-            return new RetryTemplate();
         }
     }
 
@@ -63,7 +67,7 @@ public abstract class AbstractSchedulerAutoConfigurationSmokeTest {
                 .withConfiguration(
                         AutoConfigurations.of(
                                 DataSourceAutoConfiguration.class, persistenceAutoConfigClass()))
-                .withUserConfiguration(SharedTestBeans.class)
+                .withUserConfiguration(SharedTestBeans.class, backendTestBeansClass())
                 .withPropertyValues(
                         "spring.datasource.url=" + datasourceUrl(),
                         "spring.datasource.driver-class-name=" + driverClassName(),
