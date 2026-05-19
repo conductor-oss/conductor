@@ -14,14 +14,9 @@ package org.conductoross.conductor.ai.providers.gemini;
 
 import java.util.List;
 
+import org.conductoross.conductor.ai.providers.gemini.api.GeminiApi;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.model.ChatResponse;
-
-import com.google.genai.types.Candidate;
-import com.google.genai.types.Content;
-import com.google.genai.types.GenerateContentResponse;
-import com.google.genai.types.GenerateContentResponseUsageMetadata;
-import com.google.genai.types.Part;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -29,57 +24,46 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Unit tests for {@link GeminiChatModel#toSpringChatResponse(GenerateContentResponse, String)} —
+ * Unit tests for {@link GeminiChatModel#toSpringChatResponse(GeminiApi.GenerateContentResponse, String)} —
  * the response-parsing path that lifts Gemini "thought" parts onto {@code
  * ChatResponseMetadata["reasoning"]} and the {@code thoughtsTokenCount} usage field onto {@code
  * ChatResponseMetadata["reasoning_tokens"]}.
  *
- * <p>The Google GenAI {@link com.google.genai.Client} is a concrete class with public field access,
- * so we exercise the response-parsing logic directly via the package-private method rather than
- * mocking the HTTP transport. The conversion is the part that diverges across providers; the SDK
- * call shape is uninteresting.
+ * <p>We exercise the response-parsing logic directly via the package-private method by constructing
+ * {@link GeminiApi.GenerateContentResponse} records directly.
  */
 class GeminiChatModelReasoningTest {
 
     private static GeminiChatModel newChatModel() {
-        // Client is only used inside ``call()`` which we don't exercise here.
-        // Constructor accepts the field as-is; null is safe for these tests.
+        // api is only used inside call() which we don't exercise here.
+        // null is safe for these tests.
         return new GeminiChatModel(null);
     }
 
-    private static Part thoughtPart(String text) {
-        return Part.builder().thought(true).text(text).build();
+    private static GeminiApi.Part thoughtPart(String text) {
+        return new GeminiApi.Part(text, null, null, null, true);
     }
 
-    private static Part textPart(String text) {
-        return Part.builder().text(text).build();
+    private static GeminiApi.Part textPart(String text) {
+        return GeminiApi.Part.text(text);
     }
 
-    private static Content content(Part... parts) {
-        return Content.builder().role("model").parts(List.of(parts)).build();
+    private static GeminiApi.Content content(GeminiApi.Part... parts) {
+        return new GeminiApi.Content("model", List.of(parts));
     }
 
-    private static GenerateContentResponse responseWith(
-            List<Part> parts, Integer thoughtsTokenCount) {
-        Candidate candidate =
-                Candidate.builder().content(content(parts.toArray(new Part[0]))).build();
-        GenerateContentResponseUsageMetadata.Builder usage =
-                GenerateContentResponseUsageMetadata.builder()
-                        .promptTokenCount(8)
-                        .candidatesTokenCount(20);
-        if (thoughtsTokenCount != null) {
-            usage.thoughtsTokenCount(thoughtsTokenCount);
-        }
-        return GenerateContentResponse.builder()
-                .responseId("resp_xyz")
-                .candidates(candidate)
-                .usageMetadata(usage.build())
-                .build();
+    private static GeminiApi.GenerateContentResponse responseWith(
+            List<GeminiApi.Part> parts, Integer thoughtsTokenCount) {
+        GeminiApi.Candidate candidate =
+                new GeminiApi.Candidate(content(parts.toArray(new GeminiApi.Part[0])), "STOP");
+        GeminiApi.UsageMetadata usage =
+                new GeminiApi.UsageMetadata(8, 20, thoughtsTokenCount);
+        return new GeminiApi.GenerateContentResponse(List.of(candidate), usage, "resp_xyz");
     }
 
     @Test
     void thoughtPartsAreConcatenatedIntoReasoningMetadata() {
-        GenerateContentResponse response =
+        GeminiApi.GenerateContentResponse response =
                 responseWith(
                         List.of(
                                 thoughtPart("Consider option A."),
@@ -110,17 +94,17 @@ class GeminiChatModelReasoningTest {
 
     @Test
     void noThoughtParts_metadataOmitsReasoningKey() {
-        GenerateContentResponse response = responseWith(List.of(textPart("Plain answer.")), null);
+        GeminiApi.GenerateContentResponse response = responseWith(List.of(textPart("Plain answer.")), null);
 
         ChatResponse chat = newChatModel().toSpringChatResponse(response, "gemini-2.5-flash");
 
         assertEquals("Plain answer.", chat.getResult().getOutput().getText());
         assertNull(
                 chat.getMetadata().get("reasoning"),
-                "no thought parts ⇒ metadata['reasoning'] must be absent");
+                "no thought parts => metadata['reasoning'] must be absent");
         assertNull(
                 chat.getMetadata().get("reasoning_tokens"),
-                "no thoughtsTokenCount in usage ⇒ metadata['reasoning_tokens'] must be absent");
+                "no thoughtsTokenCount in usage => metadata['reasoning_tokens'] must be absent");
     }
 
     @Test
@@ -128,7 +112,7 @@ class GeminiChatModelReasoningTest {
         // Caller may set ``thinking_budget`` (reasoning under the hood) without
         // asking for summaries. Gemini bills the reasoning tokens regardless,
         // and we want that visible to operators even when no summary text exists.
-        GenerateContentResponse response = responseWith(List.of(textPart("Answer.")), 12);
+        GeminiApi.GenerateContentResponse response = responseWith(List.of(textPart("Answer.")), 12);
 
         ChatResponse chat = newChatModel().toSpringChatResponse(response, "gemini-2.5-flash");
 
@@ -139,7 +123,7 @@ class GeminiChatModelReasoningTest {
 
     @Test
     void blankThoughtTextIsIgnored() {
-        GenerateContentResponse response =
+        GeminiApi.GenerateContentResponse response =
                 responseWith(
                         List.of(thoughtPart("Real thought."), thoughtPart("   "), textPart("Out.")),
                         7);
@@ -159,36 +143,25 @@ class GeminiChatModelReasoningTest {
         // model still gets a single generation in the existing code path because
         // result.text() merges, but reasoning should not be dropped on the floor
         // for non-first candidates.)
-        Candidate c1 =
-                Candidate.builder()
-                        .content(
-                                Content.builder()
-                                        .role("model")
-                                        .parts(
-                                                List.of(
-                                                        thoughtPart("Cand 1 thought."),
-                                                        textPart("A.")))
-                                        .build())
-                        .build();
-        Candidate c2 =
-                Candidate.builder()
-                        .content(
-                                Content.builder()
-                                        .role("model")
-                                        .parts(List.of(thoughtPart("Cand 2 thought.")))
-                                        .build())
-                        .build();
-        GenerateContentResponse response =
-                GenerateContentResponse.builder()
-                        .responseId("resp_multi")
-                        .candidates(c1, c2)
-                        .usageMetadata(
-                                GenerateContentResponseUsageMetadata.builder()
-                                        .promptTokenCount(1)
-                                        .candidatesTokenCount(1)
-                                        .thoughtsTokenCount(3)
-                                        .build())
-                        .build();
+        GeminiApi.Candidate c1 =
+                new GeminiApi.Candidate(
+                        new GeminiApi.Content(
+                                "model",
+                                List.of(
+                                        thoughtPart("Cand 1 thought."),
+                                        textPart("A."))),
+                        "STOP");
+        GeminiApi.Candidate c2 =
+                new GeminiApi.Candidate(
+                        new GeminiApi.Content(
+                                "model",
+                                List.of(thoughtPart("Cand 2 thought."))),
+                        "STOP");
+        GeminiApi.GenerateContentResponse response =
+                new GeminiApi.GenerateContentResponse(
+                        List.of(c1, c2),
+                        new GeminiApi.UsageMetadata(1, 1, 3),
+                        "resp_multi");
 
         ChatResponse chat = newChatModel().toSpringChatResponse(response, "gemini-2.5-pro");
 

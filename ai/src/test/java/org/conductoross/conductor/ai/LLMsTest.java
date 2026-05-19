@@ -36,7 +36,7 @@ class LLMsTest {
         when(mockModelProvider.getPayloadStoreLocation()).thenReturn("/tmp/test-payload");
         when(mockModelProvider.getModel(any())).thenReturn(mockModel);
 
-        llms = new LLMs(List.of(), null, mockModelProvider);
+        llms = new LLMs(List.of(), null, mockModelProvider, new okhttp3.OkHttpClient());
     }
 
     @Test

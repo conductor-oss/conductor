@@ -13,6 +13,7 @@
 package org.conductoross.conductor.ai.providers.gemini;
 
 import org.conductoross.conductor.ai.ModelConfiguration;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +21,7 @@ import com.google.auth.oauth2.GoogleCredentials;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import okhttp3.OkHttpClient;
 
 @Data
 @Component
@@ -35,6 +37,9 @@ public class GeminiVertexConfiguration implements ModelConfiguration<GeminiVerte
     private String apiKey;
     GoogleCredentials googleCredentials;
 
+    @Autowired(required = false)
+    private OkHttpClient conductorAiHttpClient;
+
     public String getBaseURL() {
         return baseURL == null
                 ? String.format("%s-aiplatform.googleapis.com:443", location)
@@ -43,6 +48,9 @@ public class GeminiVertexConfiguration implements ModelConfiguration<GeminiVerte
 
     @Override
     public GeminiVertex get() {
-        return new GeminiVertex(this);
+        OkHttpClient client = conductorAiHttpClient != null
+                ? conductorAiHttpClient
+                : new OkHttpClient();
+        return new GeminiVertex(this, client);
     }
 }

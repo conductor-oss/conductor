@@ -86,7 +86,7 @@ public class MongoVectorDBTest {
 
         ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
         AIModelProvider provider = new AIModelProvider(List.of(), new StandardEnvironment());
-        LLMs llm = new LLMs(null, new JsonSchemaValidator(objectMapper), provider);
+        LLMs llm = new LLMs(null, new JsonSchemaValidator(objectMapper), provider, new okhttp3.OkHttpClient());
 
         MongoDBConfig mongoConfig = new MongoDBConfig();
         mongoConfig.setDatabase(DATABASE_NAME);

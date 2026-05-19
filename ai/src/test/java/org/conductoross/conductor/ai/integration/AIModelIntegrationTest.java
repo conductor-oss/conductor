@@ -729,7 +729,7 @@ public class AIModelIntegrationTest {
                 }
             }
 
-            gemini = new GeminiVertex(config);
+            gemini = new GeminiVertex(config, new okhttp3.OkHttpClient());
         }
 
         @Test
