@@ -79,6 +79,12 @@ public class OpenAIChatCompletionsApi {
             ResponseBody body = response.body();
             String responseBody = body != null ? body.string() : "";
             if (!response.isSuccessful()) {
+                // Some models (e.g. o-series via compatible endpoints) reject temperature.
+                if (response.code() == 400
+                        && responseBody.contains("temperature")
+                        && request.temperature() != null) {
+                    return createChatCompletion(request.withoutTemperature());
+                }
                 throw new IOException(
                         "Chat Completions API failed with status %d: %s"
                                 .formatted(response.code(), responseBody));
@@ -107,6 +113,11 @@ public class OpenAIChatCompletionsApi {
 
         public static Builder builder() {
             return new Builder();
+        }
+
+        public ChatCompletionRequest withoutTemperature() {
+            return new ChatCompletionRequest(model, messages, null, topP, maxTokens,
+                    stop, frequencyPenalty, presencePenalty, topK, responseFormat, tools, toolChoice);
         }
 
         public static class Builder {

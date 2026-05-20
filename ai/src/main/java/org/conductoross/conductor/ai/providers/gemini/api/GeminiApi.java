@@ -155,9 +155,25 @@ public class GeminiApi {
             throws java.io.IOException {
         GenerateContentRequest req =
                 new GenerateContentRequest(contents, systemInstruction, tools, config);
-        return objectMapper.readValue(
-                executePost(modelUrl(model, "generateContent"), req),
-                GenerateContentResponse.class);
+        String url = modelUrl(model, "generateContent");
+        String json = objectMapper.writeValueAsString(req);
+        try (okhttp3.Response response = httpClient.newCall(authRequest(url)
+                .post(okhttp3.RequestBody.create(json, JSON_MEDIA)).build()).execute()) {
+            String body = response.body() != null ? response.body().string() : "";
+            if (!response.isSuccessful()) {
+                // Some Gemini thinking models reject temperature — retry without it.
+                if (response.code() == 400
+                        && body.contains("temperature")
+                        && config != null
+                        && config.temperature() != null) {
+                    return generateContent(model, contents, systemInstruction, tools,
+                            config.withoutTemperature());
+                }
+                throw new java.io.IOException(
+                        "Gemini API error %d: %s".formatted(response.code(), body));
+            }
+            return objectMapper.readValue(body, GenerateContentResponse.class);
+        }
     }
 
     public EmbedContentResponse embedContent(
@@ -293,7 +309,14 @@ public class GeminiApi {
             @JsonProperty("responseMimeType") String responseMimeType,
             @JsonProperty("responseModalities") List<String> responseModalities,
             @JsonProperty("thinkingConfig") ThinkingConfig thinkingConfig,
-            @JsonProperty("speechConfig") SpeechConfig speechConfig) {}
+            @JsonProperty("speechConfig") SpeechConfig speechConfig) {
+
+        public GenerationConfig withoutTemperature() {
+            return new GenerationConfig(null, topP, topK, maxOutputTokens, stopSequences,
+                    frequencyPenalty, presencePenalty, responseMimeType, responseModalities,
+                    thinkingConfig, speechConfig);
+        }
+    }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record ThinkingConfig(

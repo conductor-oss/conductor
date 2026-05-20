@@ -92,6 +92,12 @@ public class OpenAIResponsesApi {
         try (Response response = httpClient.newCall(httpRequest).execute()) {
             String responseBody = readBody(response);
             if (!response.isSuccessful()) {
+                // o-series and some newer OpenAI models reject temperature — retry without it.
+                if (response.code() == 400
+                        && responseBody.contains("temperature")
+                        && request.temperature() != null) {
+                    return createResponse(request.withoutTemperature());
+                }
                 throw new IOException(
                         "Responses API failed with status %d: %s"
                                 .formatted(response.code(), responseBody));
@@ -139,6 +145,11 @@ public class OpenAIResponsesApi {
 
         public static Builder builder() {
             return new Builder();
+        }
+
+        public ResponseRequest withoutTemperature() {
+            return new ResponseRequest(model, input, instructions, tools, previousResponseId,
+                    null, topP, maxOutputTokens, reasoning, text, toolChoice, store);
         }
 
         public static class Builder {
