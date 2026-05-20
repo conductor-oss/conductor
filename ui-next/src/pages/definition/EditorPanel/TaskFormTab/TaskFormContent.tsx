@@ -350,7 +350,8 @@ const TaskFormContent: FunctionComponent = () => {
     : taskType === TaskType.INTEGRATION
       ? "INTEGRATION"
       : taskType;
-  const taskTypeLabel = taskType === TaskType.INTEGRATION ? "INTEGRATION" : taskType;
+  const taskTypeLabel =
+    taskType === TaskType.INTEGRATION ? "INTEGRATION" : taskType;
   const taskDocUrl = getTaskDocUrl(mcpIntegrationType ?? taskType) ?? "";
 
   return (
