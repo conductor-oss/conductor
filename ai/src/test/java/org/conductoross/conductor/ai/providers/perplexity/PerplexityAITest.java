@@ -22,6 +22,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 
+import okhttp3.OkHttpClient;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class PerplexityAITest {
@@ -37,7 +39,7 @@ class PerplexityAITest {
         void setUp() {
             PerplexityAIConfiguration config = new PerplexityAIConfiguration();
             config.setApiKey("test-api-key");
-            perplexityAI = new PerplexityAI(config);
+            perplexityAI = new PerplexityAI(config, new OkHttpClient());
         }
 
         @Test
@@ -86,7 +88,7 @@ class PerplexityAITest {
         void setUp() {
             PerplexityAIConfiguration config = new PerplexityAIConfiguration();
             config.setApiKey(System.getenv(ENV_API_KEY));
-            perplexityAI = new PerplexityAI(config);
+            perplexityAI = new PerplexityAI(config, new OkHttpClient());
         }
 
         @Test

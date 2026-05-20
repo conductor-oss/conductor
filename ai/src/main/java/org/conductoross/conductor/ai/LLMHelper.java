@@ -69,7 +69,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.networknt.schema.JsonSchemaException;
 import com.networknt.schema.ValidationMessage;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
@@ -83,7 +82,6 @@ import static org.conductoross.conductor.ai.MimeExtensionResolver.getExtension;
 import static org.conductoross.conductor.ai.MimeExtensionResolver.getMimeTypeFromUrl;
 
 @Slf4j
-@RequiredArgsConstructor
 public class LLMHelper {
     private static final TypeReference<Map<String, Object>> MAP_OF_STRING_TO_OBJ =
             new TypeReference<>() {};
@@ -93,6 +91,21 @@ public class LLMHelper {
 
     private final JsonSchemaValidator jsonSchemaValidator;
     private final List<DocumentLoader> documentLoaders;
+    private final OkHttpClient httpClient;
+
+    public LLMHelper(
+            JsonSchemaValidator jsonSchemaValidator, List<DocumentLoader> documentLoaders) {
+        this(jsonSchemaValidator, documentLoaders, new OkHttpClient());
+    }
+
+    public LLMHelper(
+            JsonSchemaValidator jsonSchemaValidator,
+            List<DocumentLoader> documentLoaders,
+            OkHttpClient httpClient) {
+        this.jsonSchemaValidator = jsonSchemaValidator;
+        this.documentLoaders = documentLoaders;
+        this.httpClient = httpClient;
+    }
 
     public LLMResponse chatComplete(
             Task task,
@@ -535,15 +548,9 @@ public class LLMHelper {
      */
     private byte[] downloadImageFromUrl(String url) {
         try {
-            OkHttpClient client =
-                    new OkHttpClient.Builder()
-                            .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-                            .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
-                            .build();
-
             Request request = new Request.Builder().url(url).get().build();
 
-            try (Response response = client.newCall(request).execute()) {
+            try (Response response = httpClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
                     log.error(
                             "Failed to download image from URL {}: HTTP {}", url, response.code());

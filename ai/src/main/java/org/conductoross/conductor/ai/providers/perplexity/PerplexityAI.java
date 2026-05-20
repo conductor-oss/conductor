@@ -24,6 +24,8 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 
+import okhttp3.OkHttpClient;
+
 public class PerplexityAI implements AIModel {
 
     public static final String NAME = "perplexity";
@@ -31,11 +33,14 @@ public class PerplexityAI implements AIModel {
     private final OpenAICompatChatModel chatModel;
 
     public PerplexityAI(PerplexityAIConfiguration config) {
+        this(config, new OkHttpClient());
+    }
+
+    public PerplexityAI(PerplexityAIConfiguration config, OkHttpClient httpClient) {
         this.config = config;
-        long timeoutSecs = config.getTimeout() != null ? config.getTimeout().getSeconds() : 600;
         OpenAIChatCompletionsApi api =
                 new OpenAIChatCompletionsApi(
-                        config.getApiKey(), config.getBaseURL(), "/chat/completions", timeoutSecs);
+                        httpClient, config.getApiKey(), config.getBaseURL(), "/chat/completions");
         this.chatModel = new OpenAICompatChatModel(api);
     }
 
