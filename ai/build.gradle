@@ -13,7 +13,6 @@ dependencies {
     implementation project(':conductor-common')
     implementation project(':conductor-core')
 
-    api "org.springframework.ai:spring-ai-commons:${revSpringAI}"
     api "org.springframework.ai:spring-ai-model:${revSpringAI}"
     api "org.springframework.ai:spring-ai-client-chat:${revSpringAI}"
     api "org.springframework.ai:spring-ai-mistral-ai:${revSpringAI}"
@@ -25,16 +24,11 @@ dependencies {
 
     api("io.modelcontextprotocol.sdk:mcp-core:${revMCP}")
     api "com.squareup.okhttp3:okhttp:4.12.0"
+    api "org.apache.commons:commons-lang3"
 
-    // Markdown parsing for PDF generation
+    // Markdown parsing and PDF generation
     implementation "com.vladsch.flexmark:flexmark-all:${revFlexmark}"
-
-    //Document reader and parsers
-    // Source: https://mvnrepository.com/artifact/org.springframework.ai/spring-ai-pdf-document-reader
-    api "org.springframework.ai:spring-ai-pdf-document-reader:${revSpringAI}"
-    api "org.springframework.ai:spring-ai-tika-document-reader:${revSpringAI}"
-    api "org.springframework.ai:spring-ai-markdown-document-reader:${revSpringAI}"
-    api "org.springframework.ai:spring-ai-jsoup-document-reader:${revSpringAI}"
+    implementation "org.apache.pdfbox:pdfbox:3.0.5"
 
     //Vector Databases
 
