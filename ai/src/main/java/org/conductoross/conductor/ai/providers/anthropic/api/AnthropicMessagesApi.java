@@ -88,6 +88,12 @@ public class AnthropicMessagesApi {
         try (Response response = httpClient.newCall(httpBuilder.build()).execute()) {
             String responseBody = readBody(response);
             if (!response.isSuccessful()) {
+                // Newer Anthropic models deprecate temperature — retry once without it.
+                if (response.code() == 400
+                        && responseBody.contains("temperature")
+                        && request.temperature() != null) {
+                    return createMessage(request.withoutTemperature());
+                }
                 throw new IOException(
                         "Anthropic Messages API failed with status %d: %s"
                                 .formatted(response.code(), responseBody));
@@ -122,6 +128,12 @@ public class AnthropicMessagesApi {
 
         public static Builder builder() {
             return new Builder();
+        }
+
+        /** Returns a copy of this request with temperature removed. */
+        public MessagesRequest withoutTemperature() {
+            return new MessagesRequest(model, maxTokens, messages, system, null,
+                    topP, topK, stopSequences, tools, thinking, betaFeatures);
         }
 
         public static class Builder {
