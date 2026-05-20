@@ -1,3 +1,6 @@
+---
+description: "Related Projects — community SDKs, tools, and integrations built around the Conductor workflow orchestration platform."
+---
 # Community projects related to Conductor
 
 ## Client SDKs

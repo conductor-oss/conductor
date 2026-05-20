@@ -44,7 +44,7 @@ public class BaseDynoDAO {
         this.properties = properties;
     }
 
-    String nsKey(String... nsValues) {
+    protected String nsKey(String... nsValues) {
         String rootNamespace = properties.getWorkflowNamespacePrefix();
         StringBuilder namespacedKey = new StringBuilder();
         if (StringUtils.isNotBlank(rootNamespace)) {
@@ -68,7 +68,7 @@ public class BaseDynoDAO {
         return jedisProxy;
     }
 
-    String toJson(Object value) {
+    protected String toJson(Object value) {
         try {
             return objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException e) {
@@ -76,7 +76,7 @@ public class BaseDynoDAO {
         }
     }
 
-    <T> T readValue(String json, Class<T> clazz) {
+    protected <T> T readValue(String json, Class<T> clazz) {
         try {
             return objectMapper.readValue(json, clazz);
         } catch (IOException e) {

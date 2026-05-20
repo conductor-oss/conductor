@@ -14,9 +14,18 @@ To run the UI on the bundled development server, run `yarn run start`. Navigate 
 
 To enable errors inspector module export env var: `REACT_APP_ENABLE_ERRORS_INSPECTOR=true`, then run `yarn start`.
 
-#### Reverse Proxy configuration
+#### Reverse Proxy Configuration
 
-The default setup expects that the Conductor Server API will be available at `localhost:8080/api`. You may select an alternate port and hostname, or rewrite the API path by editing `setupProxy.js`. Note that `setupProxy.js` is used ONLY by the development server.
+By default, the development server proxies requests to `http://localhost:8080/api`.
+
+To use a different Conductor Server, set the `WF_SERVER` environment variable:
+
+```
+export WF_SERVER=http://localhost:8081
+yarn run start
+```
+
+For additional customization (e.g., path rewriting), edit `setupProxy.js`. Note that this file is only used by the development server.
 
 ### Hosting for Production
 
@@ -27,12 +36,13 @@ Your hosting environment should make the Conductor Server API available on the s
 See `docker/serverAndUI` for an `nginx` based example.
 
 #### Different host path
+
 The static UI would work when rendered from any host route.
 The default is '/'. You can customize this by setting the 'homepage' field in package.json
 Refer
+
 - https://docs.npmjs.com/cli/v9/configuring-npm/package-json#homepage
 - https://create-react-app.dev/docs/deployment/#building-for-relative-paths
-
 
 ### Customization Hooks
 

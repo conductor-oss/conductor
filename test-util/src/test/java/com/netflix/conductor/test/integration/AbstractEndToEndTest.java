@@ -74,6 +74,7 @@ public abstract class AbstractEndToEndTest {
         container.start();
         String httpHostAddress = container.getHttpHostAddress();
         System.setProperty("conductor.elasticsearch.url", "http://" + httpHostAddress);
+        System.setProperty("conductor.elasticsearch.url", "http://" + httpHostAddress);
         log.info("Initialized Elasticsearch {}", container.getContainerId());
     }
 

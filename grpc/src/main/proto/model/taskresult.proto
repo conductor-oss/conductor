@@ -1,6 +1,7 @@
 syntax = "proto3";
 package conductor.proto;
 
+import "model/executionmetadata.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/any.proto";
 
@@ -23,4 +24,5 @@ message TaskResult {
     TaskResult.Status status = 6;
     map<string, google.protobuf.Value> output_data = 7;
     google.protobuf.Any output_message = 8;
+    ExecutionMetadata execution_metadata = 9;
 }

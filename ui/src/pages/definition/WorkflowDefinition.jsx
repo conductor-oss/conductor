@@ -7,10 +7,7 @@ import { makeStyles } from "@material-ui/styles";
 import { Helmet } from "react-helmet";
 import _ from "lodash";
 import Editor from "@monaco-editor/react";
-import {
-  useWorkflowDef,
-  useWorkflowNamesAndVersions,
-} from "../../data/workflow";
+import { useWorkflowDef, useWorkflowVersions } from "../../data/workflow";
 import ResetConfirmationDialog from "./ResetConfirmationDialog";
 import {
   configureMonaco,
@@ -152,12 +149,9 @@ export default function Workflow() {
     [workflowDef]
   );
 
-  const { data: namesAndVersions, refetch: refetchNamesAndVersions } =
-    useWorkflowNamesAndVersions();
-  const versions = useMemo(
-    () => namesAndVersions.get(workflowName) || [],
-    [namesAndVersions, workflowName]
-  );
+  const { data: versionsData, refetch: refetchVersions } =
+    useWorkflowVersions(workflowName);
+  const versions = useMemo(() => versionsData || [], [versionsData]);
 
   // Refs
   const editorRef = useRef();
@@ -226,7 +220,7 @@ export default function Workflow() {
   const handleSaveSuccess = (name, version) => {
     setSaveDialog(null);
     setIsModified(false);
-    refetchNamesAndVersions();
+    refetchVersions();
 
     if (name === workflowName && version === workflowVersion) {
       refetchWorkflow();

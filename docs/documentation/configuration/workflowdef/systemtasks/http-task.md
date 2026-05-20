@@ -1,100 +1,201 @@
+---
+description: "Configure HTTP tasks in Conductor to call remote APIs and services. Supports GET, POST, PUT, DELETE methods with headers, body, and timeout options."
+---
+
 # HTTP Task
 
 ```json
 "type" : "HTTP"
 ```
 
-The `HTTP` task is useful when you have a requirements such as:
+The HTTP task (`HTTP`) is useful for make calls to remote services exposed over HTTP/HTTPS. It supports various HTTP methods, headers, body content, and other configurations needed for interacting with APIs or remote services.
 
-1. Making calls to another service that exposes an API via HTTP
-2. Fetch any resource or data present on an endpoint
-
-The `HTTP` task is moved to `COMPLETED` status once the remote service responds successfully.
+The data returned in the HTTP call can be referenced in subsequent tasks as inputs, enabling you to chain multiple tasks or HTTP calls to create complex flows without writing any additional code.
 
 
-## Use Cases
+## Task parameters
 
-If we have a scenario where we need to make an HTTP call into another service, we can make use of HTTP tasks. You can
-use the data returned from the HTTP call in your subsequent tasks as inputs. Using HTTP tasks you can avoid having to
-write the code that talks to these services and instead let Conductor manage it directly. This can reduce the code you
-have to maintain and allows for a lot of flexibility.
+The HTTP request parameters can be specified directly in `inputParameters` or nested inside `inputParameters.http_request`. Both forms are supported — the flat form is simpler for most use cases.
 
-## Configuration
+| Parameter          | Type                | Description                                       | Required / Optional  |
+| ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
+| uri | String        | The URI for the HTTP service. Supports dynamic references like `${workflow.input.url}`.                                  | Required. |
+| method            | String           | The HTTP method. Supported methods: `GET`, `PUT`, `POST`, `PATCH`, `DELETE`, `OPTIONS`, `HEAD`, `TRACE`.                                       | Required. |
+| accept            | String           | The accept header required by the server. Default: `application/json`.                                     | Optional. |
+| contentType       | String           | The content type for the request. Default: `application/json`.                                                              | Optional. |
+| headers           | Map[String, Any] | A map of additional HTTP headers to be sent along with the request. See [Sending headers](#sending-headers) below.                | Optional. |
+| body              | Map[String, Any]            | The request body.                                          | Required for POST, PUT, or PATCH methods. |
+| asyncComplete     | Boolean          | Whether the task is completed asynchronously. Default: `false`. When `true`, the task stays `IN_PROGRESS` until an external event marks it as complete. | Optional. |
+| connectionTimeOut | Integer          | The connection timeout in milliseconds. Default: 100. Set to 0 for no timeout.                       | Optional. |
+| readTimeOut       | Integer          | Read timeout in milliseconds. Default: 150. Set to 0 for no timeout.                       | Optional. |
 
-HTTP task is configured using the following key inside the `inputParameters`  of a task with type `HTTP`.
+## Configuration JSON
 
-### inputParameters
-| name         | type        | description                              |
-| ------------ | ----------- | ---------------------------------------- |
-| http_request | HttpRequest | JSON object (see [below](#http_request)) |
+Here is the task configuration for an HTTP task. Note that parameters are specified directly in `inputParameters`:
 
-### http_request
+```json
+{
+  "name": "http",
+  "taskReferenceName": "http_ref",
+  "type": "HTTP",
+  "inputParameters": {
+    "uri": "https://api.example.com/data",
+    "method": "POST",
+    "headers": {
+      "Authorization": "Bearer ${workflow.input.api_token}",
+      "X-Request-Id": "${workflow.correlationId}"
+    },
+    "body": {
+      "key": "value"
+    }
+  }
+}
+```
 
-| Name              | Type             | Description                                                                                                                                                                |
-| ----------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| uri               | String           | URI for the service. Can be a partial when using vipAddress or includes the server address.                                                                                |
-| method            | String           | HTTP method. GET, PUT, POST, DELETE, OPTIONS, HEAD                                                                                                                         |
-| accept            | String           | Accept header. Default:  ```application/json```                                                                                                                            |
-| contentType       | String           | Content Type - supported types are ```text/plain```, ```text/html```, and ```application/json``` (Default)                                                                 |
-| headers           | Map[String, Any] | A map of additional http headers to be sent along with the request.                                                                                                        |
-| body              | Map[]            | Request body                                                                                                                                                               |
-| asyncComplete     | Boolean          | ```false``` to mark status COMPLETED upon execution ; ```true``` to keep it IN_PROGRESS, wait for an external event (via Conductor or SQS or EventHandler) to complete it. |
-| connectionTimeOut | Integer          | Connection Time Out in milliseconds. If set to 0, equivalent to infinity. Default: 100.                                                                                    |
-| readTimeOut       | Integer          | Read Time Out in milliseconds. If set to 0, equivalent to infinity. Default: 150.                                                                                          |
+!!! note "Legacy `http_request` form"
+    The nested `inputParameters.http_request` form is still supported for backward compatibility:
+    ```json
+    "inputParameters": {
+      "http_request": {
+        "uri": "https://api.example.com/data",
+        "method": "POST",
+        "body": { "key": "value" }
+      }
+    }
+    ```
+    Both forms work identically. The flat form (shown above) is recommended for new workflows.
 
-!!!tip Asynchronous Requests
-    In the case that remote service sends an asynchronous event to signal the completion of the request, consider setting the `asyncComplete` flag on the HTTP task to `true`. In this case, you will need
-    to transition the HTTP task to COMPLETED manually.
-    
-!!!tip Authorization Header
-    If the remote address that you are connecting to is a secure location, add the Authorization header with `Bearer <access_token>` to headers.
+## Sending headers
+
+Use the `headers` parameter to send custom HTTP headers, including authentication:
+
+### Bearer token authentication
+
+```json
+{
+  "name": "call_api",
+  "taskReferenceName": "call_api_ref",
+  "type": "HTTP",
+  "inputParameters": {
+    "uri": "https://api.example.com/protected/resource",
+    "method": "GET",
+    "headers": {
+      "Authorization": "Bearer ${workflow.input.access_token}"
+    }
+  }
+}
+```
+
+### API key authentication
+
+```json
+{
+  "name": "call_api",
+  "taskReferenceName": "call_api_ref",
+  "type": "HTTP",
+  "inputParameters": {
+    "uri": "https://api.example.com/data",
+    "method": "GET",
+    "headers": {
+      "X-API-Key": "${workflow.input.api_key}"
+    }
+  }
+}
+```
+
+### Basic authentication
+
+```json
+{
+  "name": "call_api",
+  "taskReferenceName": "call_api_ref",
+  "type": "HTTP",
+  "inputParameters": {
+    "uri": "https://api.example.com/data",
+    "method": "GET",
+    "headers": {
+      "Authorization": "Basic ${workflow.input.basic_auth_token}"
+    }
+  }
+}
+```
+
+### Multiple custom headers
+
+```json
+{
+  "name": "call_api",
+  "taskReferenceName": "call_api_ref",
+  "type": "HTTP",
+  "inputParameters": {
+    "uri": "https://api.example.com/data",
+    "method": "POST",
+    "headers": {
+      "Authorization": "Bearer ${workflow.input.token}",
+      "X-Correlation-Id": "${workflow.correlationId}",
+      "X-Request-Source": "conductor",
+      "Accept-Language": "en-US"
+    },
+    "body": {
+      "data": "${workflow.input.payload}"
+    }
+  }
+}
+```
 
 ## Output
 
-| name         | type             | description                                                                 |
-| ------------ | ---------------- | --------------------------------------------------------------------------- |
-| response     | Map              | JSON body containing the response if one is present                         |
-| headers      | Map[String, Any] | Response Headers                                                            |
-| statusCode   | Integer          | [Http Status Code](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes) |
-| reasonPhrase | String           | Http Status Code's reason phrase                                            |
+The HTTP task will return the following parameters.
+
+| Name   | Type | Description                                                                                               |
+| ------ | ---- | --------------------------------------------------------------------------------------------------------- |
+| response     | Map[String, Any]              | The JSON body containing the request response, if available.                         |
+| response.headers      | Map[String, Any] | The response headers.                                                            |
+| response.statusCode   | Integer          | The [HTTP status code](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes) indicating the request outcome. |
+| response.reasonPhrase | String           | The reason phrase associated with the HTTP status code.                                            |
+| response.body | Map[String, Any] | The response body containing the data returned by the endpoint.
+
+## Execution
+
+The HTTP task is moved to COMPLETED status once the remote service responds successfully.
+
+If your HTTP tasks are not getting picked up, you might have too many HTTP tasks in the task queue. Consider using Isolation Groups to prioritize certain HTTP tasks over others. 
 
 ## Examples
+
+Here are some examples for using the HTTP task.
+
+
 ### GET Method
-We can use variables in our URI as show in the example below. 
 
 ```json
 {
   "name": "Get Example",
   "taskReferenceName": "get_example",
+  "type": "HTTP",
   "inputParameters": {
-    "http_request": {
-      "uri": "https://jsonplaceholder.typicode.com/posts/${workflow.input.queryid}",
-      "method": "GET"
-    }
-  },
-  "type": "HTTP"
+    "uri": "https://jsonplaceholder.typicode.com/posts/${workflow.input.queryid}",
+    "method": "GET"
+  }
 }
 ```
 
 ### POST Method
-Here we are using variables for our POST body which happens to be data from a previous task. This is an example of how you can **chain** HTTP calls to make complex flows happen without writing any additional code.
 
 ```json
 {
   "name": "http_post_example",
   "taskReferenceName": "post_example",
+  "type": "HTTP",
   "inputParameters": {
-    "http_request": {
-      "uri": "https://jsonplaceholder.typicode.com/posts/",
-      "method": "POST",
-      "body": {
-        "title": "${get_example.output.response.body.title}",
-        "userId": "${get_example.output.response.body.userId}",
-        "action": "doSomething"
-      }
+    "uri": "https://jsonplaceholder.typicode.com/posts/",
+    "method": "POST",
+    "body": {
+      "title": "${get_example.output.response.body.title}",
+      "userId": "${get_example.output.response.body.userId}",
+      "action": "doSomething"
     }
-  },
-  "type": "HTTP"
+  }
 }
 ```
 
@@ -103,18 +204,16 @@ Here we are using variables for our POST body which happens to be data from a pr
 {
   "name": "http_put_example",
   "taskReferenceName": "put_example",
+  "type": "HTTP",
   "inputParameters": {
-    "http_request": {
-      "uri": "https://jsonplaceholder.typicode.com/posts/1",
-      "method": "PUT",
-      "body": {
-        "title": "${get_example.output.response.body.title}",
-        "userId": "${get_example.output.response.body.userId}",
-        "action": "doSomethingDifferent"
-      }
+    "uri": "https://jsonplaceholder.typicode.com/posts/1",
+    "method": "PUT",
+    "body": {
+      "title": "${get_example.output.response.body.title}",
+      "userId": "${get_example.output.response.body.userId}",
+      "action": "doSomethingDifferent"
     }
-  },
-  "type": "HTTP"
+  }
 }
 ```
 
@@ -123,19 +222,10 @@ Here we are using variables for our POST body which happens to be data from a pr
 {
   "name": "DELETE Example",
   "taskReferenceName": "delete_example",
+  "type": "HTTP",
   "inputParameters": {
-    "http_request": {
-      "uri": "https://jsonplaceholder.typicode.com/posts/1",
-      "method": "DELETE"
-    }
-  },
-  "type": "HTTP"
+    "uri": "https://jsonplaceholder.typicode.com/posts/1",
+    "method": "DELETE"
+  }
 }
 ```
-
-## Isolation Groups
-Why are my HTTP tasks not getting picked up?
-
-We might have too many HTTP tasks in the queue. There is a concept called Isolation Groups that you can rely on
-for prioritizing certain HTTP tasks over others. 
-   

@@ -129,7 +129,7 @@ public class WorkflowClient extends ClientBase {
      * Retrieve all running workflow instances for a given name and version
      *
      * @param workflowName the name of the workflow
-     * @param version      the version of the wokflow definition. Defaults to 1.
+     * @param version      the version of the workflow definition. Defaults to 1.
      * @return the list of running workflow instances
      */
     public List<String> getRunningWorkflow(String workflowName, @Nullable Integer version) {

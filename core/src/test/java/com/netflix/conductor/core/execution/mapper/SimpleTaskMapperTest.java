@@ -16,14 +16,11 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.model.TaskModel;
@@ -38,8 +35,6 @@ public class SimpleTaskMapperTest {
     private SimpleTaskMapper simpleTaskMapper;
 
     private IDGenerator idGenerator = new IDGenerator();
-
-    @Rule public ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void setUp() {
@@ -78,9 +73,9 @@ public class SimpleTaskMapperTest {
     }
 
     @Test
-    public void getMappedTasksException() {
+    public void getMappedTasksWithNoTaskDefinition() {
 
-        // Given
+        // Given a workflow task without a task definition
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setName("simple_task");
         String taskId = idGenerator.generate();
@@ -101,14 +96,12 @@ public class SimpleTaskMapperTest {
                         .withTaskId(taskId)
                         .build();
 
-        // then
-        expectedException.expect(TerminateWorkflowException.class);
-        expectedException.expectMessage(
-                String.format(
-                        "Invalid task. Task %s does not have a definition",
-                        workflowTask.getName()));
-
         // when
-        simpleTaskMapper.getMappedTasks(taskMapperContext);
+        List<TaskModel> mappedTasks = simpleTaskMapper.getMappedTasks(taskMapperContext);
+
+        // then a task is created with default task definition values
+        assertNotNull(mappedTasks);
+        assertEquals(1, mappedTasks.size());
+        assertEquals(TaskModel.Status.SCHEDULED, mappedTasks.get(0).getStatus());
     }
 }

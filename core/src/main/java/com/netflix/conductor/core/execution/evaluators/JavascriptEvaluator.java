@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Conductor Authors.
+ * Copyright 2025 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,14 +12,11 @@
  */
 package com.netflix.conductor.core.execution.evaluators;
 
-import javax.script.ScriptException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.core.events.ScriptEvaluator;
-import com.netflix.conductor.core.exception.TerminateWorkflowException;
 
 @Component(JavascriptEvaluator.NAME)
 public class JavascriptEvaluator implements Evaluator {
@@ -30,14 +27,12 @@ public class JavascriptEvaluator implements Evaluator {
     @Override
     public Object evaluate(String expression, Object input) {
         LOGGER.debug("Javascript evaluator -- expression: {}", expression);
-        try {
-            // Evaluate the expression by using the Javascript evaluation engine.
-            Object result = ScriptEvaluator.eval(expression, input);
-            LOGGER.debug("Javascript evaluator -- result: {}", result);
-            return result;
-        } catch (ScriptException e) {
-            LOGGER.error("Error while evaluating script: {}", expression, e);
-            throw new TerminateWorkflowException(e.getMessage());
-        }
+        // Defensive deep copy so script-side mutations don't leak into the caller's input and so
+        // any PolyglotMap/PolyglotList references created during eval cannot escape a closed
+        // Context (see TaskModelProtoMapper.convertToJsonMap regression that motivated this).
+        Object inputCopy = ScriptEvaluator.deepCopy(input);
+        Object result = ScriptEvaluator.eval(expression, inputCopy);
+        LOGGER.debug("Javascript evaluator -- result: {}", result);
+        return result;
     }
 }

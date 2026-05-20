@@ -19,6 +19,7 @@ dependencies {
     implementation project(':conductor-core')
     implementation project(':conductor-rest')
     implementation project(':conductor-grpc-server')
+    implementation project(':conductor-ai')
 
     //Event Systems
     implementation project(':conductor-amqp')
@@ -62,9 +63,7 @@ dependencies {
     implementation "org.postgresql:postgresql:${revPostgres}"
 
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation ("io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}") {
-    	exclude group: 'com.netflix.conductor', module: 'conductor-core'
-    }
+    implementation "io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}"
 
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
 
@@ -85,6 +84,10 @@ jar {
 
 bootJar {
     mainClass = 'org.conductoross.conductor.Conductor'
+    manifest {
+        attributes('Implementation-Title': project.name,
+                'Implementation-Version': project.version)
+    }
     archiveClassifier = 'standalone'
 }
 

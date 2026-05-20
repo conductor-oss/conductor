@@ -3,6 +3,7 @@ import { Tabs, Tab, ReactJson, Dropdown, Banner } from "../../components";
 import { TabPanel, TabContext } from "@material-ui/lab";
 
 import TaskSummary from "./TaskSummary";
+import TaskHuman from "./TaskHuman";
 import TaskLogs from "./TaskLogs";
 
 import { makeStyles } from "@material-ui/styles";
@@ -12,6 +13,7 @@ import {
   pendingTaskSelection,
   taskWithLatestIteration,
 } from "../../utils/helpers";
+import { useWorkflow } from "../../data/workflow";
 
 const useStyles = makeStyles({
   banner: {
@@ -47,6 +49,13 @@ export default function RightPanel({
     selectedNode?.data?.task?.executionData?.status === "PENDING"
       ? pendingTaskSelection(selectedNode?.data?.task)
       : taskWithLatestIteration(execution?.tasks, selectedTask);
+
+  const { refetch } = useWorkflow(taskResult?.workflowInstanceId);
+
+  const refresh = () => {
+    setTabIndex("summary");
+    return refetch();
+  };
 
   const dfOptions = useMemo(
     () => dag && dag.getSiblings(selectedTask),
@@ -141,6 +150,16 @@ export default function RightPanel({
                   />,
                 ]
               : []),
+            ...(_.get(taskResult, "workflowTask.type") === "HUMAN"
+              ? [
+                  <Tab
+                    label="Execute human task"
+                    disabled={taskResult.status !== "IN_PROGRESS"}
+                    value="executeHuman"
+                    key="executeHuman"
+                  />,
+                ]
+              : []),
           ]}
         </Tabs>
         <>
@@ -186,6 +205,9 @@ export default function RightPanel({
               src={taskResult.workflowTask}
               label="Task Definition at Runtime"
             />
+          </TabPanel>
+          <TabPanel className={classes.tabPanel} value="executeHuman">
+            <TaskHuman taskResult={taskResult} onTaskExecuted={refresh} />
           </TabPanel>
         </>
       </TabContext>

@@ -107,7 +107,7 @@ public class TaskResourceTest {
         List<TaskExecLog> listOfLogs = new ArrayList<>();
         listOfLogs.add(new TaskExecLog("test log"));
         when(mockTaskService.getTaskLogs(anyString())).thenReturn(listOfLogs);
-        assertEquals(listOfLogs, taskResource.getTaskLogs("123"));
+        assertEquals(ResponseEntity.ok(listOfLogs), taskResource.getTaskLogs("123"));
     }
 
     @Test

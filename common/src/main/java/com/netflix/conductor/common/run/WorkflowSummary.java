@@ -99,6 +99,9 @@ public class WorkflowSummary {
     @ProtoField(id = 21)
     private String idempotencyKey;
 
+    @ProtoField(id = 22)
+    private String parentWorkflowId = "";
+
     public WorkflowSummary() {}
 
     public WorkflowSummary(Workflow workflow) {
@@ -146,6 +149,8 @@ public class WorkflowSummary {
             this.taskToDomain = workflow.getTaskToDomain();
         }
         this.createdBy = workflow.getCreatedBy();
+        this.parentWorkflowId =
+                workflow.getParentWorkflowId() != null ? workflow.getParentWorkflowId() : "";
     }
 
     /**
@@ -386,6 +391,14 @@ public class WorkflowSummary {
         this.idempotencyKey = idempotencyKey;
     }
 
+    public String getParentWorkflowId() {
+        return parentWorkflowId;
+    }
+
+    public void setParentWorkflowId(String parentWorkflowId) {
+        this.parentWorkflowId = parentWorkflowId;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -409,7 +422,8 @@ public class WorkflowSummary {
                 && Objects.equals(getReasonForIncompletion(), that.getReasonForIncompletion())
                 && Objects.equals(getEvent(), that.getEvent())
                 && Objects.equals(getCreatedBy(), that.getCreatedBy())
-                && Objects.equals(getTaskToDomain(), that.getTaskToDomain());
+                && Objects.equals(getTaskToDomain(), that.getTaskToDomain())
+                && Objects.equals(getParentWorkflowId(), that.getParentWorkflowId());
     }
 
     @Override
@@ -429,6 +443,7 @@ public class WorkflowSummary {
                 getEvent(),
                 getPriority(),
                 getCreatedBy(),
-                getTaskToDomain());
+                getTaskToDomain(),
+                getParentWorkflowId());
     }
 }

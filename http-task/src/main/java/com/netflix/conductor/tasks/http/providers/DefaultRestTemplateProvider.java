@@ -16,6 +16,9 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.util.Timeout;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,8 +58,13 @@ public class DefaultRestTemplateProvider implements RestTemplateProvider {
         threadLocalRestTemplateBuilder.get().setReadTimeout(timeout);
         RestTemplate restTemplate =
                 threadLocalRestTemplateBuilder.get().setReadTimeout(timeout).build();
+        RequestConfig requestConfig =
+                RequestConfig.custom()
+                        .setResponseTimeout(Timeout.ofMilliseconds(timeout.toMillis()))
+                        .build();
+        HttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build();
         HttpComponentsClientHttpRequestFactory requestFactory =
-                new HttpComponentsClientHttpRequestFactory();
+                new HttpComponentsClientHttpRequestFactory(httpClient);
         SocketConfig.Builder builder = SocketConfig.custom();
         builder.setSoTimeout(
                 Timeout.of(

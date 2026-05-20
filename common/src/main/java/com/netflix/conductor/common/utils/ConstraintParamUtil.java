@@ -17,11 +17,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.commons.lang3.StringUtils;
-
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.utils.EnvUtils.SystemParameters;
+
+import com.jayway.jsonpath.JsonPath;
 
 @SuppressWarnings("unchecked")
 public class ConstraintParamUtil {
@@ -91,8 +91,7 @@ public class ConstraintParamUtil {
         for (String s : values) {
             if (s.startsWith("${") && s.endsWith("}")) {
                 String paramPath = s.substring(2, s.length() - 1);
-
-                if (StringUtils.containsWhitespace(paramPath)) {
+                if (!isValidPath(paramPath)) {
                     String message =
                             String.format(
                                     "key: %s input parameter value: %s is not valid",
@@ -140,5 +139,14 @@ public class ConstraintParamUtil {
             }
         }
         return errorList;
+    }
+
+    public static boolean isValidPath(String path) {
+        try {
+            JsonPath.compile(path);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

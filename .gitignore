@@ -1,3 +1,6 @@
+# Worktrees
+.worktrees/
+
 # Java Build
 .gradle
 .classpath
@@ -36,9 +39,23 @@ build/
 # asdf version file
 .tool-versions
 
+# jenv version file
+.java-version
+
 
 .qodo
 conductorosstest.db
 conductorosstest.db
 /server-lite/src/main/resources/static
 yarn.lock
+.java-version
+server-lite/conductorosstest.db-shm
+server-lite/conductorosstest.db-wal
+/server/src/main/resources/static
+*.factorypath
+server/*.db*
+/site
+*.db
+*.db-shm
+*.db-wal
+docs/superpowers

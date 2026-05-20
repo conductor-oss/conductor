@@ -45,6 +45,8 @@ import com.netflix.conductor.model.WorkflowModel;
  * conductor.workflow-repair-service.enabled</code> property.
  */
 @Service
+// Deprecated and replaced by new workflow sweeper
+@Deprecated
 @ConditionalOnProperty(name = "conductor.workflow-repair-service.enabled", havingValue = "true")
 public class WorkflowRepairService {
 

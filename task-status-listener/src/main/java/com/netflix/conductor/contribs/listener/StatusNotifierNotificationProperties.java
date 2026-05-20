@@ -30,6 +30,8 @@ public class StatusNotifierNotificationProperties {
 
     private String endpointWorkflow;
 
+    private List<String> subscribedWorkflowStatuses;
+
     private String headerPrefer = "";
 
     private String headerPreferValue = "";
@@ -150,5 +152,13 @@ public class StatusNotifierNotificationProperties {
 
     public void setSubscribedTaskStatuses(List<String> subscribedTaskStatuses) {
         this.subscribedTaskStatuses = subscribedTaskStatuses;
+    }
+
+    public List<String> getSubscribedWorkflowStatuses() {
+        return subscribedWorkflowStatuses;
+    }
+
+    public void setSubscribedWorkflowStatuses(List<String> subscribedWorkflowStatuses) {
+        this.subscribedWorkflowStatuses = subscribedWorkflowStatuses;
     }
 }

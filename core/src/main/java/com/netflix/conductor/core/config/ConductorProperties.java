@@ -67,7 +67,7 @@ public class ConductorProperties {
     private boolean eventExecutionIndexingEnabled = true;
 
     /** Used to enable/disable the workflow execution lock. */
-    private boolean workflowExecutionLockEnabled = false;
+    private boolean workflowExecutionLockEnabled = true;
 
     /** The time (in milliseconds) for which the lock is leased for. */
     private Duration lockLeaseTime = Duration.ofMillis(60000);

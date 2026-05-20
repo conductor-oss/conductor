@@ -20,6 +20,7 @@ dependencies {
     implementation "com.datastax.cassandra:cassandra-driver-core:${revCassandra}"
     implementation "org.apache.commons:commons-lang3"
 
+    testImplementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8"
     testImplementation project(':conductor-core').sourceSets.test.output
     testImplementation project(':conductor-common').sourceSets.test.output
 

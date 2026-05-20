@@ -1,0 +1,21 @@
+{
+  "name": "image_gen_workflow",
+  "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "generate_image",
+      "taskReferenceName": "image",
+      "type": "GENERATE_IMAGE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "dall-e-3",
+        "prompt": "A futuristic cityscape at sunset",
+        "width": 1024,
+        "height": 1024,
+        "n": 1,
+        "style": "vivid"
+      }
+    }
+  ]
+}

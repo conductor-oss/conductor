@@ -79,11 +79,11 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
     @Override
     public void indexWorkflow(WorkflowSummary workflow) {
         String INSERT_WORKFLOW_INDEX_SQL =
-                "INSERT INTO workflow_index (workflow_id, correlation_id, workflow_type, start_time, update_time, status, json_data) "
-                        + " VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT (workflow_id) "
+                "INSERT INTO workflow_index (workflow_id, correlation_id, workflow_type, start_time, update_time, status, parent_workflow_id, json_data) "
+                        + " VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (workflow_id) "
                         + " DO UPDATE SET correlation_id = excluded.correlation_id, workflow_type = excluded.workflow_type, "
                         + " start_time = excluded.start_time, status = excluded.status, json_data = excluded.json_data, "
-                        + " update_time = excluded.update_time "
+                        + " update_time = excluded.update_time, parent_workflow_id = excluded.parent_workflow_id "
                         + " WHERE excluded.update_time >= workflow_index.update_time";
 
         if (onlyIndexOnStatusChange) {
@@ -106,6 +106,10 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
                                         .addParameter(startTime.toString())
                                         .addParameter(updateTime.toString())
                                         .addParameter(workflow.getStatus().toString())
+                                        .addParameter(
+                                                workflow.getParentWorkflowId() != null
+                                                        ? workflow.getParentWorkflowId()
+                                                        : "")
                                         .addJsonParameter(workflow)
                                         .executeUpdate());
         logger.debug("Sqlite index workflow rows updated: {}", rowsUpdated);
@@ -256,15 +260,57 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
     @Override
     public SearchResult<String> searchWorkflows(
             String query, String freeText, int start, int count, List<String> sort) {
-        logger.info("searchWorkflows is not supported for Sqlite indexing");
-        return null;
+        SqliteIndexQueryBuilder queryBuilder =
+                new SqliteIndexQueryBuilder(
+                        "workflow_index", query, freeText, start, count, sort, properties);
+
+        List<String> results =
+                queryWithTransaction(
+                        queryBuilder.getQuery("workflow_id"),
+                        q -> {
+                            queryBuilder.addParameters(q);
+                            queryBuilder.addPagingParameters(q);
+                            return q.executeScalarList(String.class);
+                        });
+
+        List<String> totalHitResults =
+                queryWithTransaction(
+                        queryBuilder.getCountQuery(),
+                        q -> {
+                            queryBuilder.addParameters(q);
+                            return q.executeAndFetch(String.class);
+                        });
+
+        int totalHits = Integer.valueOf(totalHitResults.get(0));
+        return new SearchResult<>(totalHits, results);
     }
 
     @Override
     public SearchResult<String> searchTasks(
             String query, String freeText, int start, int count, List<String> sort) {
-        logger.info("searchTasks is not supported for Sqlite indexing");
-        return null;
+        SqliteIndexQueryBuilder queryBuilder =
+                new SqliteIndexQueryBuilder(
+                        "task_index", query, freeText, start, count, sort, properties);
+
+        List<String> results =
+                queryWithTransaction(
+                        queryBuilder.getQuery("task_id"),
+                        q -> {
+                            queryBuilder.addParameters(q);
+                            queryBuilder.addPagingParameters(q);
+                            return q.executeScalarList(String.class);
+                        });
+
+        List<String> totalHitResults =
+                queryWithTransaction(
+                        queryBuilder.getCountQuery(),
+                        q -> {
+                            queryBuilder.addParameters(q);
+                            return q.executeAndFetch(String.class);
+                        });
+
+        int totalHits = Integer.valueOf(totalHitResults.get(0));
+        return new SearchResult<>(totalHits, results);
     }
 
     @Override

@@ -1,6 +1,13 @@
+---
+description: "Complete reference for Conductor workflow definitions — properties, task configurations, input expressions, failure workflows, and timeout policies."
+---
+
 # Workflow Definition
 
-The Workflow Definition contains all the information necessary to define the behavior of a workflow. The most important part of this definition is the `tasks` property, which is an array of [**Task Configurations**](#task-configurations). 
+The Workflow Definition contains all the information necessary to define the behavior of a workflow. The most important part of this definition is the `tasks` property, which is an array of [**Task Configurations**](#task-configurations).
+
+For the formal JSON Schema definitions of workflow and task structures, see the [`schemas/`](https://github.com/conductor-oss/conductor/tree/main/schemas) directory in the repository.
+
 
 ## Workflow Properties
 | Field                         | Type                             | Description                                                                                                                     | Notes                                                                                             |
@@ -37,9 +44,9 @@ The failure workflow gets the _original failed workflow’s input_ along with 3 
 ### Workflow Status Listener
 Setting the `workflowStatusListenerEnabled` field in your Workflow Definition to `true` enables notifications.
 
-To add a custom implementation of the Workflow Status Listener. Refer to [this](../../advanced/extend.md#workflow-status-listener) .
+To add a custom implementation of the Workflow Status Listener. Refer to the [Workflow Status Listener extension guide](../../advanced/extend.md#workflow-status-listener).
 
-The listener can be implemented in such a way as to either send a notification to an external system or to send an event on the conductor queue to complete/fail another task in another workflow as described [here](../../configuration/eventhandlers.md).
+The listener can be implemented in such a way as to either send a notification to an external system or to send an event on the conductor queue to complete/fail another task in another workflow as described in the [event handlers guide](../eventhandlers.md).
 
 ### Default Input with `inputTemplate`
 
@@ -102,7 +109,7 @@ Generally, `inputParameters` can use *expressions* of the following syntax:
 
 
 !!! note "JSON Path Support"
-    Conductor supports [JSONPath](http://goessner.net/articles/JsonPath/) specification and uses Java implementation from [here](https://github.com/jayway/JsonPath).
+    Conductor supports [JSONPath](http://goessner.net/articles/JsonPath/) specification and uses the [jayway/JsonPath](https://github.com/jayway/JsonPath) Java implementation.
 
 !!! note "Escaping expressions"
     To escape an expression, prefix it with an extra _$_ character (ex.: ```$${workflow.input...}```).
@@ -159,7 +166,7 @@ We can configure these two tasks in the `tasks` array of our Workflow Definition
     }
   ],
   "outputParameters": {
-    "trackingNumber": "${shipping_task_ref.output.trackinNumber}"
+    "trackingNumber": "${shipping_task_ref.output.trackingNumber}"
   },
   "failureWorkflow": "shipping_issues",
   "restartable": true,

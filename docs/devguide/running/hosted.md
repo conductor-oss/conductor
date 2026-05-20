@@ -1,3 +1,6 @@
+---
+description: "Hosted Solutions — run Conductor in the cloud with Orkes, offering enterprise-grade hosting and managed infrastructure."
+---
 # Hosted Solutions
 
 ## Orkes

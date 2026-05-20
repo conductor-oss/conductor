@@ -42,8 +42,10 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.exception.ConflictException;
+import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
+import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.core.execution.mapper.*;
 import com.netflix.conductor.core.execution.tasks.*;
@@ -93,7 +95,7 @@ public class TestWorkflowExecutor {
 
         @Bean(TASK_TYPE_SUB_WORKFLOW)
         public SubWorkflow subWorkflow(ObjectMapper objectMapper) {
-            return new SubWorkflow(objectMapper);
+            return new SubWorkflow(objectMapper, new IDGenerator());
         }
 
         @Bean(TASK_TYPE_LAMBDA)
@@ -196,6 +198,7 @@ public class TestWorkflowExecutor {
                         externalPayloadStorageUtils,
                         systemTaskRegistry,
                         taskMappers,
+                        new HashMap<>(),
                         Duration.ofMinutes(60));
         MetadataMapperService metadataMapperService = new MetadataMapperService(metadataDAO);
 
@@ -203,6 +206,7 @@ public class TestWorkflowExecutor {
         when(properties.getActiveWorkerLastPollTimeout()).thenReturn(Duration.ofSeconds(100));
         when(properties.getTaskExecutionPostponeDuration()).thenReturn(Duration.ofSeconds(60));
         when(properties.getWorkflowOffsetTimeout()).thenReturn(Duration.ofSeconds(30));
+        when(properties.getLockLeaseTime()).thenReturn(Duration.ofSeconds(30));
 
         workflowExecutor =
                 new WorkflowExecutorOps(
@@ -217,7 +221,8 @@ public class TestWorkflowExecutor {
                         executionLockService,
                         systemTaskRegistry,
                         parametersUtils,
-                        idGenerator);
+                        idGenerator,
+                        Optional.empty());
     }
 
     @Test
@@ -499,6 +504,140 @@ public class TestWorkflowExecutor {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    public void testTerminateAlreadyTerminatedWorkflow() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("test");
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(def);
+        workflow.setWorkflowId("1");
+        workflow.setStatus(WorkflowModel.Status.TERMINATED);
+        workflow.setOwnerApp("junit_test");
+        workflow.setCreateTime(10L);
+        workflow.setEndTime(100L);
+        workflow.setOutput(Collections.EMPTY_MAP);
+
+        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+
+        AtomicInteger updateWorkflowCalledCounter = new AtomicInteger(0);
+        doAnswer(
+                        invocation -> {
+                            updateWorkflowCalledCounter.incrementAndGet();
+                            return null;
+                        })
+                .when(executionDAOFacade)
+                .updateWorkflow(any());
+
+        AtomicInteger removeQueueEntryCalledCounter = new AtomicInteger(0);
+        doAnswer(
+                        invocation -> {
+                            removeQueueEntryCalledCounter.incrementAndGet();
+                            return null;
+                        })
+                .when(queueDAO)
+                .remove(anyString(), anyString());
+
+        // Attempt to terminate an already terminated workflow
+        workflowExecutor.terminateWorkflow("workflowId", "reason");
+
+        // Verify workflow status remains TERMINATED
+        assertEquals(WorkflowModel.Status.TERMINATED, workflow.getStatus());
+
+        // Verify no database updates occurred (should be 0, not 1)
+        assertEquals(0, updateWorkflowCalledCounter.get());
+
+        // Verify no queue removals occurred (should be 0, not 1)
+        assertEquals(0, removeQueueEntryCalledCounter.get());
+
+        // Verify no workflow status notifications were sent
+        verify(workflowStatusListener, times(0))
+                .onWorkflowTerminatedIfEnabled(any(WorkflowModel.class));
+        verify(workflowStatusListener, times(0))
+                .onWorkflowFinalizedIfEnabled(any(WorkflowModel.class));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testTerminateWorkflowIdempotencyWithNoSideEffects() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("test");
+        def.setWorkflowStatusListenerEnabled(true);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(def);
+        workflow.setWorkflowId("1");
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        workflow.setOwnerApp("junit_test");
+        workflow.setCreateTime(10L);
+        workflow.setEndTime(100L);
+        workflow.setOutput(Collections.EMPTY_MAP);
+
+        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+
+        AtomicInteger updateWorkflowCalledCounter = new AtomicInteger(0);
+        doAnswer(
+                        invocation -> {
+                            updateWorkflowCalledCounter.incrementAndGet();
+                            return null;
+                        })
+                .when(executionDAOFacade)
+                .updateWorkflow(any());
+
+        AtomicInteger updateTasksCalledCounter = new AtomicInteger(0);
+        doAnswer(
+                        invocation -> {
+                            updateTasksCalledCounter.incrementAndGet();
+                            return null;
+                        })
+                .when(executionDAOFacade)
+                .updateTasks(any());
+
+        AtomicInteger removeQueueEntryCalledCounter = new AtomicInteger(0);
+        doAnswer(
+                        invocation -> {
+                            removeQueueEntryCalledCounter.incrementAndGet();
+                            return null;
+                        })
+                .when(queueDAO)
+                .remove(anyString(), anyString());
+
+        // First termination: workflow is RUNNING, should work normally
+        workflowExecutor.terminateWorkflow("workflowId", "first termination");
+
+        // Verify workflow was terminated successfully
+        assertEquals(WorkflowModel.Status.TERMINATED, workflow.getStatus());
+        assertEquals(1, updateWorkflowCalledCounter.get());
+        assertEquals(1, removeQueueEntryCalledCounter.get());
+
+        // Verify workflow status notifications were sent
+        verify(workflowStatusListener, times(1))
+                .onWorkflowTerminatedIfEnabled(any(WorkflowModel.class));
+        verify(workflowStatusListener, times(1))
+                .onWorkflowFinalizedIfEnabled(any(WorkflowModel.class));
+
+        // Reset the mock to clear interaction history for clearer verification
+        reset(workflowStatusListener);
+
+        // Second termination: workflow is already TERMINATED, should be idempotent
+        workflowExecutor.terminateWorkflow("workflowId", "second termination attempt");
+
+        // Verify workflow status is still TERMINATED
+        assertEquals(WorkflowModel.Status.TERMINATED, workflow.getStatus());
+
+        // Verify counters didn't increase (no additional operations)
+        assertEquals(1, updateWorkflowCalledCounter.get()); // Still 1, not 2 - no additional update
+        assertEquals(
+                1, removeQueueEntryCalledCounter.get()); // Still 1, not 2 - no additional removal
+
+        // Verify NO additional workflow status notifications were sent
+        verify(workflowStatusListener, times(0))
+                .onWorkflowTerminatedIfEnabled(any(WorkflowModel.class));
+        verify(workflowStatusListener, times(0))
+                .onWorkflowFinalizedIfEnabled(any(WorkflowModel.class));
+    }
+
+    @Test
     public void testUploadOutputFailuresDuringTerminateWorkflow() {
         WorkflowDef def = new WorkflowDef();
         def.setName("test");
@@ -676,6 +815,176 @@ public class TestWorkflowExecutor {
         assertEquals(workflowDef, argumentCaptor.getAllValues().get(1).getWorkflowDefinition());
     }
 
+    @Test
+    public void testStartWorkflowIdempotentReturnsExistingWorkflowModel() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("existing-workflow");
+        workflowDef.setVersion(1);
+
+        StartWorkflowInput input = new StartWorkflowInput();
+        input.setWorkflowDefinition(workflowDef);
+        input.setName(workflowDef.getName());
+        input.setVersion(workflowDef.getVersion());
+        input.setWorkflowInput(Collections.emptyMap());
+        input.setWorkflowId("existing-workflow-id");
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("existing-workflow-id");
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+
+        when(executionLockService.acquireLock("existing-workflow-id")).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO("existing-workflow-id", false))
+                .thenReturn(workflow);
+
+        WorkflowModel found = workflowExecutor.startWorkflowIdempotent(input);
+
+        assertSame(workflow, found);
+        verify(executionDAOFacade, never()).createWorkflow(any());
+        verify(executionDAOFacade, never()).getWorkflowModel("existing-workflow-id", false);
+        verify(queueDAO, never()).push(anyString(), anyString(), anyInt(), anyLong());
+        verify(queueDAO, never()).postpone(anyString(), anyString(), anyInt(), anyLong());
+        verify(executionLockService).releaseLock("existing-workflow-id");
+    }
+
+    @Test(expected = NonTransientException.class)
+    public void testStartWorkflowIdempotentRejectsExistingWorkflowOwnedByDifferentParentTask() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("owned-workflow");
+        workflowDef.setVersion(1);
+
+        StartWorkflowInput input = new StartWorkflowInput();
+        input.setWorkflowDefinition(workflowDef);
+        input.setName(workflowDef.getName());
+        input.setVersion(workflowDef.getVersion());
+        input.setWorkflowInput(Collections.emptyMap());
+        input.setWorkflowId("owned-workflow-id");
+        input.setParentWorkflowId("parent-workflow");
+        input.setParentWorkflowTaskId("parent-task");
+
+        WorkflowModel existingWorkflow = new WorkflowModel();
+        existingWorkflow.setWorkflowId("owned-workflow-id");
+        existingWorkflow.setStatus(WorkflowModel.Status.RUNNING);
+        existingWorkflow.setParentWorkflowId("other-parent-workflow");
+        existingWorkflow.setParentWorkflowTaskId("other-parent-task");
+
+        when(executionLockService.acquireLock("owned-workflow-id")).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO("owned-workflow-id", false))
+                .thenReturn(existingWorkflow);
+
+        try {
+            workflowExecutor.startWorkflowIdempotent(input);
+        } finally {
+            verify(executionDAOFacade, never()).createWorkflow(any());
+            verify(executionDAOFacade, never()).removeWorkflow(anyString(), anyBoolean());
+            verify(executionLockService).releaseLock("owned-workflow-id");
+        }
+    }
+
+    @Test
+    public void testStartWorkflowIdempotentCreatesWorkflowWhenExistingWorkflowIsNotFound() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("new-workflow");
+        workflowDef.setVersion(1);
+
+        StartWorkflowInput input = new StartWorkflowInput();
+        input.setWorkflowDefinition(workflowDef);
+        input.setName(workflowDef.getName());
+        input.setVersion(workflowDef.getVersion());
+        input.setWorkflowInput(Collections.emptyMap());
+        input.setWorkflowId("new-workflow-id");
+
+        when(executionLockService.acquireLock("new-workflow-id")).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO("new-workflow-id", false))
+                .thenThrow(new NotFoundException("missing"));
+
+        WorkflowModel created = workflowExecutor.startWorkflowIdempotent(input);
+
+        assertEquals("new-workflow-id", created.getWorkflowId());
+        verify(executionDAOFacade).createWorkflow(any());
+        verify(executionDAOFacade, never()).getWorkflowModel("new-workflow-id", false);
+        verify(executionLockService, atLeastOnce()).releaseLock("new-workflow-id");
+    }
+
+    @Test
+    public void testStartWorkflowIdempotentIgnoresIndexOnlyWorkflow() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("indexed-workflow");
+        workflowDef.setVersion(1);
+
+        StartWorkflowInput input = new StartWorkflowInput();
+        input.setWorkflowDefinition(workflowDef);
+        input.setName(workflowDef.getName());
+        input.setVersion(workflowDef.getVersion());
+        input.setWorkflowInput(Collections.emptyMap());
+        input.setWorkflowId("indexed-workflow-id");
+
+        when(executionLockService.acquireLock("indexed-workflow-id")).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO("indexed-workflow-id", false))
+                .thenThrow(new NotFoundException("missing"));
+        when(executionDAOFacade.getWorkflowModel("indexed-workflow-id", false))
+                .thenReturn(new WorkflowModel());
+
+        WorkflowModel created = workflowExecutor.startWorkflowIdempotent(input);
+
+        assertEquals("indexed-workflow-id", created.getWorkflowId());
+        verify(executionDAOFacade).createWorkflow(any());
+        verify(executionDAOFacade, never()).getWorkflowModel("indexed-workflow-id", false);
+        verify(executionLockService, atLeastOnce()).releaseLock("indexed-workflow-id");
+    }
+
+    @Test(expected = TransientException.class)
+    public void testStartWorkflowIdempotentPropagatesExecutionStoreLookupFailure() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("transient-workflow");
+        workflowDef.setVersion(1);
+
+        StartWorkflowInput input = new StartWorkflowInput();
+        input.setWorkflowDefinition(workflowDef);
+        input.setName(workflowDef.getName());
+        input.setVersion(workflowDef.getVersion());
+        input.setWorkflowInput(Collections.emptyMap());
+        input.setWorkflowId("transient-workflow-id");
+
+        when(executionLockService.acquireLock("transient-workflow-id")).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO("transient-workflow-id", false))
+                .thenThrow(new TransientException("execution store unavailable"));
+
+        try {
+            workflowExecutor.startWorkflowIdempotent(input);
+        } finally {
+            verify(executionDAOFacade, never()).createWorkflow(any());
+            verify(executionDAOFacade, never()).removeWorkflow(anyString(), anyBoolean());
+            verify(executionLockService).releaseLock("transient-workflow-id");
+        }
+    }
+
+    @Test
+    public void testStartWorkflowIdempotentCreatesWorkflowAndExpeditesDecider() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("queued-workflow");
+        workflowDef.setVersion(1);
+
+        StartWorkflowInput input = new StartWorkflowInput();
+        input.setWorkflowDefinition(workflowDef);
+        input.setName(workflowDef.getName());
+        input.setVersion(workflowDef.getVersion());
+        input.setWorkflowInput(Collections.emptyMap());
+        input.setWorkflowId("queued-workflow-id");
+
+        when(executionLockService.acquireLock("queued-workflow-id")).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO("queued-workflow-id", false))
+                .thenThrow(new NotFoundException("missing"));
+        when(queueDAO.containsMessage("_deciderQueue", "queued-workflow-id")).thenReturn(true);
+
+        WorkflowModel created = workflowExecutor.startWorkflowIdempotent(input);
+
+        assertEquals("queued-workflow-id", created.getWorkflowId());
+        assertEquals(WorkflowModel.Status.RUNNING, created.getStatus());
+        verify(executionDAOFacade).createWorkflow(any());
+        verify(queueDAO).postpone("_deciderQueue", "queued-workflow-id", 10, 0);
+        verify(executionLockService, atLeastOnce()).releaseLock("queued-workflow-id");
+    }
+
     @Test(expected = NotFoundException.class)
     public void testRetryNonTerminalWorkflow() {
         WorkflowModel workflow = new WorkflowModel();
@@ -709,7 +1018,7 @@ public class TestWorkflowExecutor {
         workflow.setOwnerApp("junit_testRetryWorkflowId");
         workflow.setCreateTime(10L);
         workflow.setEndTime(100L);
-        //noinspection unchecked
+        // noinspection unchecked
         workflow.setOutput(Collections.EMPTY_MAP);
         workflow.setStatus(WorkflowModel.Status.FAILED);
 
@@ -755,7 +1064,7 @@ public class TestWorkflowExecutor {
         workflow.setOwnerApp("junit_testRetryWorkflowId");
         workflow.setCreateTime(10L);
         workflow.setEndTime(100L);
-        //noinspection unchecked
+        // noinspection unchecked
         workflow.setOutput(Collections.EMPTY_MAP);
         workflow.setStatus(WorkflowModel.Status.FAILED);
 
@@ -868,7 +1177,7 @@ public class TestWorkflowExecutor {
         workflow.setOwnerApp("junit_testRetryWorkflowId");
         workflow.setCreateTime(10L);
         workflow.setEndTime(100L);
-        //noinspection unchecked
+        // noinspection unchecked
         workflow.setOutput(Collections.EMPTY_MAP);
         workflow.setStatus(WorkflowModel.Status.FAILED);
 
@@ -947,7 +1256,7 @@ public class TestWorkflowExecutor {
         workflow.setOwnerApp("junit_testRetryWorkflowId");
         workflow.setCreateTime(10L);
         workflow.setEndTime(100L);
-        //noinspection unchecked
+        // noinspection unchecked
         workflow.setOutput(Collections.EMPTY_MAP);
         workflow.setStatus(WorkflowModel.Status.FAILED);
 
@@ -1037,7 +1346,7 @@ public class TestWorkflowExecutor {
         workflow.setOwnerApp("junit_testRetryWorkflowId");
         workflow.setCreateTime(10L);
         workflow.setEndTime(100L);
-        //noinspection unchecked
+        // noinspection unchecked
         workflow.setOutput(Collections.EMPTY_MAP);
         workflow.setStatus(WorkflowModel.Status.FAILED);
 
@@ -1194,7 +1503,7 @@ public class TestWorkflowExecutor {
         workflow.setOwnerApp("junit_testRetryWorkflowId");
         workflow.setCreateTime(10L);
         workflow.setEndTime(100L);
-        //noinspection unchecked
+        // noinspection unchecked
         workflow.setOutput(Collections.EMPTY_MAP);
         workflow.setStatus(WorkflowModel.Status.TIMED_OUT);
 
@@ -1255,6 +1564,63 @@ public class TestWorkflowExecutor {
         assertEquals(1, updateTasksCalledCounter.get());
     }
 
+    @Test
+    public void testRetryWorkflowClearsLegacySubWorkflowIdFromRetriedTask() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("testRetryWorkflowClearsLegacySubWorkflowIdFromRetriedTask");
+        workflow.setStatus(WorkflowModel.Status.FAILED);
+        workflow.setPriority(0);
+        workflow.setReasonForIncompletion("subworkflow failed");
+
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("testRetryWorkflowClearsLegacySubWorkflowIdFromRetriedTask");
+        workflowDef.setVersion(1);
+        workflow.setWorkflowDefinition(workflowDef);
+
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("integration_test_wf");
+        workflowTask.setTaskReferenceName("sub1");
+        workflowTask.setType(SUB_WORKFLOW.name());
+        workflowTask.setTaskDefinition(new TaskDef("integration_test_wf"));
+
+        TaskModel failedSubWorkflowTask = new TaskModel();
+        failedSubWorkflowTask.setTaskId("failed-subworkflow-task");
+        failedSubWorkflowTask.setTaskType(TaskType.TASK_TYPE_SUB_WORKFLOW);
+        failedSubWorkflowTask.setTaskDefName("integration_test_wf");
+        failedSubWorkflowTask.setReferenceTaskName("sub1");
+        failedSubWorkflowTask.setWorkflowTask(workflowTask);
+        failedSubWorkflowTask.setWorkflowInstanceId(workflow.getWorkflowId());
+        failedSubWorkflowTask.setStatus(TaskModel.Status.FAILED);
+        failedSubWorkflowTask.setSeq(1);
+        failedSubWorkflowTask.setReasonForIncompletion("subworkflow failed");
+        failedSubWorkflowTask.setSubWorkflowId("old-subworkflow-id");
+        failedSubWorkflowTask.setExternalOutputPayloadStoragePath("old-output.json");
+        failedSubWorkflowTask.getInputData().put("subWorkflowId", "old-subworkflow-id");
+        failedSubWorkflowTask.getOutputData().put("subWorkflowId", "old-subworkflow-id");
+        failedSubWorkflowTask.getOutputData().put("result", "stale");
+
+        workflow.getTasks().add(failedSubWorkflowTask);
+
+        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+        when(metadataDAO.getWorkflowDef(anyString(), anyInt()))
+                .thenReturn(Optional.of(workflowDef));
+
+        workflowExecutor.retry(workflow.getWorkflowId(), false);
+
+        TaskModel retriedTask =
+                workflow.getTasks().stream()
+                        .filter(task -> "sub1".equals(task.getReferenceTaskName()))
+                        .filter(task -> !task.isRetried())
+                        .findFirst()
+                        .orElseThrow();
+
+        assertNull(retriedTask.getSubWorkflowId());
+        assertFalse(retriedTask.getInputData().containsKey("subWorkflowId"));
+        assertFalse(retriedTask.getOutputData().containsKey("subWorkflowId"));
+        assertNull(retriedTask.getExternalOutputPayloadStoragePath());
+        assertTrue(retriedTask.getOutputData().isEmpty());
+    }
+
     @Test(expected = ConflictException.class)
     public void testRerunNonTerminalWorkflow() {
         WorkflowModel workflow = new WorkflowModel();
@@ -1279,7 +1645,7 @@ public class TestWorkflowExecutor {
         workflow.setOwnerApp("junit_testRerunWorkflowId");
         workflow.setCreateTime(10L);
         workflow.setEndTime(100L);
-        //noinspection unchecked
+        // noinspection unchecked
         workflow.setOutput(Collections.EMPTY_MAP);
         workflow.setStatus(WorkflowModel.Status.FAILED);
         workflow.setReasonForIncompletion("task1 failed");
@@ -1435,7 +1801,7 @@ public class TestWorkflowExecutor {
         workflow.setOwnerApp("junit_testRerunWorkflowId");
         workflow.setCreateTime(10L);
         workflow.setEndTime(100L);
-        //noinspection unchecked
+        // noinspection unchecked
         workflow.setOutput(Collections.EMPTY_MAP);
         workflow.setStatus(WorkflowModel.Status.FAILED);
         workflow.setReasonForIncompletion("task1 failed");
@@ -1962,7 +2328,12 @@ public class TestWorkflowExecutor {
         TaskModel subWorkflowTask = new TaskModel();
         subWorkflowTask.setTaskId(UUID.randomUUID().toString());
         subWorkflowTask.setTaskType(TaskType.SUB_WORKFLOW.name());
+        subWorkflowTask.setSubWorkflowId("child-workflow-id");
         subWorkflowTask.setStatus(TaskModel.Status.IN_PROGRESS);
+        WorkflowModel childWorkflow = new WorkflowModel();
+        childWorkflow.setWorkflowDefinition(new WorkflowDef());
+        when(executionDAOFacade.getWorkflowModel("child-workflow-id", true))
+                .thenReturn(childWorkflow);
 
         TaskModel lambdaTask = new TaskModel();
         lambdaTask.setTaskId(UUID.randomUUID().toString());
@@ -1986,7 +2357,7 @@ public class TestWorkflowExecutor {
         assertEquals(TaskModel.Status.CANCELED, argumentCaptor.getAllValues().get(0).getStatus());
         assertEquals(TaskType.LAMBDA.name(), argumentCaptor.getAllValues().get(1).getTaskType());
         assertEquals(TaskModel.Status.CANCELED, argumentCaptor.getAllValues().get(1).getStatus());
-        verify(workflowStatusListener, times(1))
+        verify(workflowStatusListener, times(2))
                 .onWorkflowFinalizedIfEnabled(any(WorkflowModel.class));
     }
 
@@ -2025,6 +2396,35 @@ public class TestWorkflowExecutor {
         assertEquals(WorkflowModel.Status.PAUSED, workflow.getStatus());
         verify(executionDAOFacade, times(1)).updateWorkflow(any(WorkflowModel.class));
         verify(queueDAO, times(1)).remove(anyString(), anyString());
+    }
+
+    @Test
+    public void testScheduleTaskQueuesAsyncSubWorkflowWithoutInlineStart() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("parent-workflow");
+        workflow.setWorkflowDefinition(new WorkflowDef());
+
+        TaskModel subWorkflowTask = new TaskModel();
+        subWorkflowTask.setTaskId("sub-workflow-task");
+        subWorkflowTask.setTaskType(TaskType.SUB_WORKFLOW.name());
+        subWorkflowTask.setTaskDefName(TaskType.SUB_WORKFLOW.name());
+        subWorkflowTask.setReferenceTaskName("sub_workflow_ref");
+        subWorkflowTask.setWorkflowInstanceId(workflow.getWorkflowId());
+        subWorkflowTask.setStatus(TaskModel.Status.SCHEDULED);
+        subWorkflowTask.setInputData(new HashMap<>());
+
+        boolean stateChanged =
+                workflowExecutor.scheduleTask(workflow, Collections.singletonList(subWorkflowTask));
+
+        assertFalse(stateChanged);
+        verify(executionDAOFacade).createTasks(Collections.singletonList(subWorkflowTask));
+        verify(queueDAO)
+                .push(
+                        eq(TaskType.SUB_WORKFLOW.name()),
+                        eq(subWorkflowTask.getTaskId()),
+                        eq(subWorkflowTask.getWorkflowPriority()),
+                        eq(0L));
+        verify(executionDAOFacade, never()).updateTask(subWorkflowTask);
     }
 
     @Test
@@ -2483,8 +2883,10 @@ public class TestWorkflowExecutor {
         task.setStatus(TaskModel.Status.COMPLETED);
 
         // when:
+        // Dynamic tasks (not in static def, e.g. FORK_JOIN_DYNAMIC forked tasks) now always
+        // trigger decide to avoid workflow stalls caused by the sweeper's 30+ second delay.
         task.setReferenceTaskName("dynamic");
-        assertTrue(workflowExecutor.isLazyEvaluateWorkflow(workflowDef, task));
+        assertFalse(workflowExecutor.isLazyEvaluateWorkflow(workflowDef, task));
 
         task.setReferenceTaskName("branchTask1");
         assertFalse(workflowExecutor.isLazyEvaluateWorkflow(workflowDef, task));
@@ -2539,7 +2941,7 @@ public class TestWorkflowExecutor {
         workflow.setOwnerApp("junit_testRetryWorkflowId");
         workflow.setCreateTime(10L);
         workflow.setEndTime(100L);
-        //noinspection unchecked
+        // noinspection unchecked
         workflow.setOutput(Collections.EMPTY_MAP);
         workflow.setStatus(WorkflowModel.Status.FAILED);
 

@@ -96,7 +96,11 @@ class SubWorkflowSpec extends AbstractSpecification {
         then: "verify that the 'integration_task_1' was polled and acknowledged"
         verifyPolledAndAcknowledgedTask(pollAndCompleteTask)
 
-        and: "verify that the 'integration_task1' is complete and the next task (subworkflow) is in SCHEDULED state"
+        when: "the subworkflow task is started by issuing a system task call"
+        List<String> polledTaskIds = queueDAO.pop('SUB_WORKFLOW', 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
+
+        then: "verify that the 'integration_task1' is complete and the next task (subworkflow) is in IN_PROGRESS state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 2
@@ -106,7 +110,7 @@ class SubWorkflowSpec extends AbstractSpecification {
             tasks[1].status == Task.Status.IN_PROGRESS
         }
 
-        when: "the subworkflow is started by issuing a system task call"
+        when: "the subworkflow task id is captured"
         String subworkflowTaskId = workflowExecutionService.getExecutionStatus(workflowInstanceId, true).getTasks().get(1).getTaskId()
 
         then: "verify that the 'sub_workflow_task' is in a IN_PROGRESS state"
@@ -122,6 +126,7 @@ class SubWorkflowSpec extends AbstractSpecification {
         when: "subworkflow is retrieved"
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowId = workflow.tasks[1].subWorkflowId
+        sweep(subWorkflowId)
 
         then: "verify that the sub workflow is RUNNING, and first task is in SCHEDULED state"
         with(workflowExecutionService.getExecutionStatus(subWorkflowId, true)) {
@@ -166,8 +171,15 @@ class SubWorkflowSpec extends AbstractSpecification {
             tasks[1].status == Task.Status.SCHEDULED
         }
 
-        and: "verify that change flag is set on the sub workflow task in parent"
-        workflowExecutionService.getTask(subworkflowTaskId).subworkflowChanged
+        and: "verify that the parent workflow is resumed with the subworkflow task back in progress"
+        conditions.eventually {
+            with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+                status == Workflow.WorkflowStatus.RUNNING
+                tasks.size() == 2
+                tasks[1].taskType == TaskType.SUB_WORKFLOW.name()
+                tasks[1].status == Task.Status.IN_PROGRESS
+            }
+        }
 
         when: "Polled for simple_task_in_sub_wf task in subworkflow"
         pollAndCompleteTask = workflowTestUtil.pollAndCompleteTask('simple_task_in_sub_wf', 'task1.integration.worker', ['op': 'simple_task_in_sub_wf.done'])
@@ -186,9 +198,10 @@ class SubWorkflowSpec extends AbstractSpecification {
         }
 
         and: "subworkflow task is in a completed state"
-        with(workflowExecutionService.getTask(subworkflowTaskId)) {
-            status == Task.Status.COMPLETED
-            subworkflowChanged
+        conditions.eventually {
+            with(workflowExecutionService.getTask(subworkflowTaskId)) {
+                status == Task.Status.COMPLETED
+            }
         }
 
         and: "the parent workflow is swept"
@@ -242,7 +255,11 @@ class SubWorkflowSpec extends AbstractSpecification {
         then: "verify that the 'integration_task_1' was polled and acknowledged"
         verifyPolledAndAcknowledgedTask(pollAndCompleteTask1Try1)
 
-        and: "verify that the 'integration_task1' is complete and the next task (subworkflow) is in scheduled state"
+        when: "the subworkflow task is started by issuing a system task call"
+        List<String> polledTaskIds = queueDAO.pop('SUB_WORKFLOW', 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
+
+        then: "verify that the 'integration_task1' is complete and the next task (subworkflow) is IN_PROGRESS"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 2
@@ -252,9 +269,10 @@ class SubWorkflowSpec extends AbstractSpecification {
             tasks[1].status == Task.Status.IN_PROGRESS
         }
 
-        when: "Polled for and executed subworkflow task"
+        when: "subworkflow is retrieved"
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowId = workflow.tasks[1].subWorkflowId
+        sweep(subWorkflowId)
 
         then: "verify that the 'sub_workflow_task' is polled and IN_PROGRESS"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -340,7 +358,11 @@ class SubWorkflowSpec extends AbstractSpecification {
         then: "verify that the 'integration_task_1' was polled and acknowledged"
         verifyPolledAndAcknowledgedTask(pollAndCompleteTask)
 
-        and: "verify that the 'integration_task_1' is complete and the next task (subworkflow) is in SCHEDULED state"
+        when: "the subworkflow task is started by issuing a system task call"
+        List<String> polledTaskIds = queueDAO.pop('SUB_WORKFLOW', 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
+
+        then: "verify that the 'integration_task_1' is complete and the next task (subworkflow) is IN_PROGRESS"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 2
@@ -363,6 +385,7 @@ class SubWorkflowSpec extends AbstractSpecification {
         when: "subworkflow is retrieved"
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowId = workflow.tasks[1].subWorkflowId
+        sweep(subWorkflowId)
 
         then: "verify that the sub workflow is RUNNING, and first task is in SCHEDULED state"
         with(workflowExecutionService.getExecutionStatus(subWorkflowId, true)) {
@@ -440,7 +463,6 @@ class SubWorkflowSpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
         }
 
         when: "poll and complete the integration_task_2 task"

@@ -84,7 +84,11 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
                         1000,
                         pollInterval,
                         TimeUnit.MILLISECONDS);
-        LOGGER.info("Started listening for task: {} in queue: {}", systemTask, queueName);
+        LOGGER.info(
+                "Started listening for task: {} in queue: {} at pollInterval of {} ms",
+                systemTask,
+                queueName,
+                pollInterval);
     }
 
     void pollAndExecute(WorkflowSystemTask systemTask, String queueName) {
@@ -122,7 +126,7 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
             Monitors.recordTaskPoll(queueName);
             LOGGER.debug("Polling queue:{}, got {} tasks", queueName, polledTaskIds.size());
 
-            if (polledTaskIds.size() > 0) {
+            if (!polledTaskIds.isEmpty()) {
                 // Immediately release unused slots when number of messages acquired is less than
                 // acquired slots
                 if (polledTaskIds.size() < messagesToAcquire) {

@@ -1,0 +1,48 @@
+{
+  "name": "do_while_cleanup_demo",
+  "description": "Demonstrates DO_WHILE iteration cleanup with keepLastN parameter",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "do_while_loop",
+      "taskReferenceName": "do_while_loop_ref",
+      "inputParameters": {
+        "keepLastN": 3,
+        "max_iterations": "${workflow.input.max_iterations}"
+      },
+      "type": "DO_WHILE",
+      "loopCondition": "if ($.do_while_loop_ref['iteration'] < $.max_iterations) { true; } else { false; }",
+      "loopOver": [
+        {
+          "name": "generate_data",
+          "taskReferenceName": "generate_data_ref",
+          "inputParameters": {
+            "evaluatorType": "javascript",
+            "expression": "(function() { var data = []; for(var i = 0; i < 100; i++) { data.push(Math.random()); } return { iteration: $.do_while_loop_ref['iteration'], data: data, timestamp: Date.now() }; })()"
+          },
+          "type": "INLINE"
+        },
+        {
+          "name": "process_data",
+          "taskReferenceName": "process_data_ref",
+          "inputParameters": {
+            "evaluatorType": "javascript",
+            "expression": "(function() { return { iteration: $.do_while_loop_ref['iteration'], processed: true, count: ${generate_data_ref.output.result.data}.length }; })()"
+          },
+          "type": "INLINE"
+        }
+      ]
+    },
+    {
+      "name": "summary",
+      "taskReferenceName": "summary_ref",
+      "inputParameters": {
+        "evaluatorType": "javascript",
+        "expression": "(function() { return { total_iterations: $.do_while_loop_ref['iteration'], message: 'Workflow completed. Only last 3 iterations retained in output.' }; })()"
+      },
+      "type": "INLINE"
+    }
+  ],
+  "schemaVersion": 2,
+  "ownerEmail": "test@conductor.io"
+}

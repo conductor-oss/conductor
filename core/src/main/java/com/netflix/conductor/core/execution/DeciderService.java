@@ -14,6 +14,7 @@ package com.netflix.conductor.core.execution;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -75,6 +76,7 @@ public class DeciderService {
             ExternalPayloadStorageUtils externalPayloadStorageUtils,
             SystemTaskRegistry systemTaskRegistry,
             @Qualifier("taskMappersByTaskType") Map<String, TaskMapper> taskMappers,
+            @Qualifier("annotatedTaskSystems") Map<String, TaskMapper> annotatedTaskSystems,
             @Value("${conductor.app.taskPendingTimeThreshold:60m}")
                     Duration taskPendingTimeThreshold) {
         this.idGenerator = idGenerator;
@@ -84,6 +86,19 @@ public class DeciderService {
         this.externalPayloadStorageUtils = externalPayloadStorageUtils;
         this.taskPendingTimeThresholdMins = taskPendingTimeThreshold.toMinutes();
         this.systemTaskRegistry = systemTaskRegistry;
+        LOGGER.info("taskMappers: {}", taskMappers.keySet());
+        LOGGER.info("annotatedTaskMappers: {}", annotatedTaskSystems.keySet());
+        // Add annotated mappers only if no existing mapper is registered for that task
+        // type
+        // Existing mappers take precedence over annotated ones
+        annotatedTaskSystems.forEach(
+                (taskType, mapper) -> {
+                    if (this.taskMappers.putIfAbsent(taskType, mapper) != null) {
+                        LOGGER.info(
+                                "Skipping annotated mapper for '{}' - existing mapper already registered",
+                                taskType);
+                    }
+                });
     }
 
     public DeciderOutcome decide(WorkflowModel workflow) throws TerminateWorkflowException {
@@ -135,8 +150,10 @@ public class DeciderService {
         boolean hasSuccessfulTerminateTask = false;
         for (TaskModel task : workflow.getTasks()) {
 
-            // Filter the list of tasks and include only tasks that are not retried, not executed
-            // marked to be skipped and not part of System tasks that is DECISION, FORK, JOIN
+            // Filter the list of tasks and include only tasks that are not retried, not
+            // executed
+            // marked to be skipped and not part of System tasks that is DECISION, FORK,
+            // JOIN
             // This list will be empty for a new workflow being started
             if (!task.isRetried() && !task.getStatus().equals(SKIPPED) && !task.isExecuted()) {
                 pendingTasks.add(task);
@@ -184,16 +201,20 @@ public class DeciderService {
             }
 
             if (taskDefinition.isPresent()) {
+                // Total timeout is checked first: if the overall budget is exhausted any
+                // per-attempt timeout check is moot.
+                checkTotalTimeout(taskDefinition.get(), pendingTask);
                 checkTaskTimeout(taskDefinition.get(), pendingTask);
                 checkTaskPollTimeout(taskDefinition.get(), pendingTask);
-                // If the task has not been updated for "responseTimeoutSeconds" then mark task as
+                // If the task has not been updated for "responseTimeoutSeconds" then mark task
+                // as
                 // TIMED_OUT
                 if (isResponseTimedOut(taskDefinition.get(), pendingTask)) {
                     timeoutTask(taskDefinition.get(), pendingTask);
                 }
             }
 
-            if (!pendingTask.getStatus().isSuccessful()) {
+            if (pendingTask.getStatus().isTerminal() && !pendingTask.getStatus().isSuccessful()) {
                 WorkflowTask workflowTask = pendingTask.getWorkflowTask();
                 if (workflowTask == null) {
                     workflowTask =
@@ -448,7 +469,8 @@ public class DeciderService {
                 return false;
             }
 
-            // If there is a TERMINATE task that has been executed successfuly then the workflow
+            // If there is a TERMINATE task that has been executed successfuly then the
+            // workflow
             // should be marked as completed.
             if (TERMINATE.name().equals(task.getTaskType())
                     && task.getStatus().isTerminal()
@@ -583,11 +605,37 @@ public class DeciderService {
             throw new TerminateWorkflowException(errMsg, status, task);
         }
 
+        // Guard: stop retrying if the total time budget across all attempts is exhausted.
+        // This is checked here (not only in checkTotalTimeout) so that a task timed out by a
+        // per-attempt policy with RETRY does not get re-queued once the total budget is gone.
+        if (taskDefinition.getTotalTimeoutSeconds() > 0 && task.getFirstScheduledTime() > 0) {
+            long totalElapsedSeconds =
+                    (System.currentTimeMillis() - task.getFirstScheduledTime()) / 1000;
+            if (totalElapsedSeconds >= taskDefinition.getTotalTimeoutSeconds()) {
+                final String errMsg =
+                        String.format(
+                                "Task %s/%s exceeded total timeout of %d seconds "
+                                        + "(elapsed %d seconds across all attempts). "
+                                        + "No further retries will be attempted.",
+                                task.getTaskId(),
+                                task.getTaskDefName(),
+                                taskDefinition.getTotalTimeoutSeconds(),
+                                totalElapsedSeconds);
+                WorkflowModel.Status totalTimeoutStatus =
+                        task.getStatus() == TaskModel.Status.TIMED_OUT
+                                ? WorkflowModel.Status.TIMED_OUT
+                                : WorkflowModel.Status.FAILED;
+                updateWorkflowOutput(workflow, task);
+                throw new TerminateWorkflowException(errMsg, totalTimeoutStatus, task);
+            }
+        }
+
         // retry... - but not immediately - put a delay...
         int startDelay = taskDefinition.getRetryDelaySeconds();
         switch (taskDefinition.getRetryLogic()) {
             case FIXED:
                 startDelay = taskDefinition.getRetryDelaySeconds();
+                startDelay = applyMaxRetryDelayCap(startDelay, taskDefinition);
                 break;
             case LINEAR_BACKOFF:
                 int linearRetryDelaySeconds =
@@ -597,6 +645,7 @@ public class DeciderService {
                 // Reset integer overflow to max value
                 startDelay =
                         linearRetryDelaySeconds < 0 ? Integer.MAX_VALUE : linearRetryDelaySeconds;
+                startDelay = applyMaxRetryDelayCap(startDelay, taskDefinition);
                 break;
             case EXPONENTIAL_BACKOFF:
                 int exponentialRetryDelaySeconds =
@@ -607,14 +656,27 @@ public class DeciderService {
                         exponentialRetryDelaySeconds < 0
                                 ? Integer.MAX_VALUE
                                 : exponentialRetryDelaySeconds;
+                startDelay = applyMaxRetryDelayCap(startDelay, taskDefinition);
                 break;
         }
 
         task.setRetried(true);
 
+        // Compute ms-precision total delay: base delay in seconds + random jitter in [0,
+        // maxJitterMs]
+        long jitterMs = 0;
+        if (taskDefinition.getBackoffJitterMs() > 0) {
+            jitterMs =
+                    ThreadLocalRandom.current()
+                            .nextLong(0, taskDefinition.getBackoffJitterMs() + 1);
+        }
+        long totalDelayMs = (long) startDelay * 1000 + jitterMs;
+
         TaskModel rescheduled = task.copy();
+        resetRetriedTaskRuntimeState(rescheduled);
         rescheduled.setStartDelayInSeconds(startDelay);
         rescheduled.setCallbackAfterSeconds(startDelay);
+        rescheduled.setCallbackAfterMs(totalDelayMs);
         rescheduled.setRetryCount(task.getRetryCount() + 1);
         rescheduled.setRetried(false);
         rescheduled.setTaskId(idGenerator.generate());
@@ -622,7 +684,7 @@ public class DeciderService {
         rescheduled.setStatus(SCHEDULED);
         rescheduled.setPollCount(0);
         rescheduled.setInputData(new HashMap<>(task.getInputData()));
-        rescheduled.setReasonForIncompletion(null);
+        rescheduled.setReasonForIncompletion(task.getReasonForIncompletion());
         rescheduled.setSubWorkflowId(null);
         rescheduled.setSeq(0);
         rescheduled.setScheduledTime(0);
@@ -647,6 +709,19 @@ public class DeciderService {
         }
         // for the schema version 1, we do not have to recompute the inputs
         return Optional.of(rescheduled);
+    }
+
+    private void resetRetriedTaskRuntimeState(TaskModel task) {
+        task.setUpdateTime(0);
+        task.setScheduledTime(0);
+        task.setStartTime(0);
+        task.setEndTime(0);
+        task.setWorkerId(null);
+        task.setCallbackAfterMs(0);
+        task.setOutputData(new HashMap<>());
+        task.setExternalOutputPayloadStoragePath(null);
+        task.setOutputMessage(null);
+        task.getInputData().remove("subWorkflowId");
     }
 
     @VisibleForTesting
@@ -692,7 +767,44 @@ public class DeciderService {
         }
     }
 
+    /**
+     * Enforces {@link TaskDef#getTotalTimeoutSeconds()} — a hard wall-clock budget that spans the
+     * entire lifetime of the task including all retry delays, not just a single attempt.
+     *
+     * <p>When the budget is exceeded the task is timed out via the same {@link
+     * #timeoutTaskWithTimeoutPolicy} path used for per-attempt timeouts, so the configured {@link
+     * TaskDef.TimeoutPolicy} still applies (ALERT_ONLY logs, RETRY sets TIMED_OUT which then fails
+     * permanently in {@link #retry}, TIME_OUT_WF terminates the workflow).
+     *
+     * <p>Tasks created before {@code firstScheduledTime} was introduced (value == 0) are skipped to
+     * preserve backward compatibility.
+     */
     @VisibleForTesting
+    void checkTotalTimeout(TaskDef taskDef, TaskModel task) {
+        if (taskDef == null
+                || taskDef.getTotalTimeoutSeconds() <= 0
+                || task.getStatus().isTerminal()
+                || task.getFirstScheduledTime() <= 0) {
+            return;
+        }
+        long totalElapsedSeconds =
+                (System.currentTimeMillis() - task.getFirstScheduledTime()) / 1000;
+        if (totalElapsedSeconds < taskDef.getTotalTimeoutSeconds()) {
+            return;
+        }
+        String reason =
+                String.format(
+                        "Task %s/%s exceeded total timeout of %d seconds "
+                                + "(elapsed %d seconds across all attempts including retry delays). "
+                                + "Timeout policy: %s",
+                        task.getTaskDefName(),
+                        task.getTaskId(),
+                        taskDef.getTotalTimeoutSeconds(),
+                        totalElapsedSeconds,
+                        taskDef.getTimeoutPolicy().name());
+        timeoutTaskWithTimeoutPolicy(reason, taskDef, task);
+    }
+
     void checkTaskTimeout(TaskDef taskDef, TaskModel task) {
 
         if (taskDef == null) {
@@ -869,7 +981,7 @@ public class DeciderService {
 
         String type = taskToSchedule.getType();
 
-        // get tasks already scheduled (in progress/terminal) for  this workflow instance
+        // get tasks already scheduled (in progress/terminal) for this workflow instance
         List<String> tasksInWorkflow =
                 workflow.getTasks().stream()
                         .filter(
@@ -892,10 +1004,13 @@ public class DeciderService {
                         .withDeciderService(this)
                         .build();
 
-        // For static forks, each branch of the fork creates a join task upon completion for
-        // dynamic forks, a join task is created with the fork and also with each branch of the
+        // For static forks, each branch of the fork creates a join task upon completion
+        // for
+        // dynamic forks, a join task is created with the fork and also with each branch
+        // of the
         // fork.
-        // A new task must only be scheduled if a task, with the same reference name is not already
+        // A new task must only be scheduled if a task, with the same reference name is
+        // not already
         // in this workflow instance
         return taskMappers
                 .getOrDefault(type, taskMappers.get(USER_DEFINED.name()))
@@ -903,6 +1018,11 @@ public class DeciderService {
                 .stream()
                 .filter(task -> !tasksInWorkflow.contains(task.getReferenceTaskName()))
                 .collect(Collectors.toList());
+    }
+
+    private int applyMaxRetryDelayCap(int delaySeconds, TaskDef taskDef) {
+        int cap = taskDef.getMaxRetryDelaySeconds();
+        return (cap > 0 && delaySeconds > cap) ? cap : delaySeconds;
     }
 
     private boolean isTaskSkipped(WorkflowTask taskToSchedule, WorkflowModel workflow) {

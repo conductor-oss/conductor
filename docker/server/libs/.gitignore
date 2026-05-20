@@ -1,0 +1,2 @@
+# Staged build artifacts (created by CI, not committed)
+*.jar

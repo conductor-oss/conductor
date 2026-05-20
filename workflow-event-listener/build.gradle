@@ -30,10 +30,13 @@ dependencies {
     testImplementation 'org.springframework.retry:spring-retry'
     testImplementation 'org.springframework.boot:spring-boot-starter-web'
 
-    testImplementation "com.netflix.dyno-queues:dyno-queues-redis:${revDynoQueues}"
+    implementation "io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}"
     testImplementation project(':conductor-test-util').sourceSets.test.output
 
     //In memory
     implementation "org.rarefiedredis.redis:redis-java:${revRarefiedRedis}"
     testImplementation "redis.clients:jedis:${revJedis}"
+
+    // Testcontainers for Redis
+    testImplementation "org.testcontainers:testcontainers:${revTestContainer}"
 }

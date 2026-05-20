@@ -16,6 +16,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
 
@@ -27,6 +28,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.annotation.DirtiesContext.ClassMode;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -41,6 +44,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.*;
 
 @ContextConfiguration(
@@ -60,6 +64,7 @@ import static org.junit.Assert.*;
             "spring.flyway.clean-disabled=false"
         })
 @SpringBootTest
+@DirtiesContext(classMode = ClassMode.AFTER_CLASS)
 public class PostgresPollDataDAOCacheTest {
 
     @Autowired private PollDataDAO pollDataDAO;
@@ -76,8 +81,17 @@ public class PostgresPollDataDAOCacheTest {
     @Before
     public void before() {
         try (Connection conn = dataSource.getConnection()) {
-            conn.setAutoCommit(true);
-            conn.prepareStatement("truncate table poll_data").executeUpdate();
+            // Explicitly disable autoCommit to match HikariCP pool configuration
+            // and ensure we can control transaction boundaries
+            conn.setAutoCommit(false);
+
+            // Use RESTART IDENTITY to reset sequences and CASCADE for foreign keys
+            conn.prepareStatement("truncate table poll_data restart identity cascade")
+                    .executeUpdate();
+
+            // Explicitly commit the truncation in a separate transaction
+            // This ensures the truncation is visible to all subsequent connections
+            conn.commit();
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -92,19 +106,18 @@ public class PostgresPollDataDAOCacheTest {
         }
     }
 
-    private void waitForCacheFlush() throws InterruptedException {
-        long startTime = System.currentTimeMillis();
+    private void waitForCacheFlush() {
         long lastFlushTime = ((PostgresPollDataDAO) pollDataDAO).getLastFlushTime();
-
-        while (System.currentTimeMillis() - startTime < 1000
-                && lastFlushTime <= ((PostgresPollDataDAO) pollDataDAO).getLastFlushTime()) {
-            Thread.sleep(10);
-        }
+        await().atMost(1, TimeUnit.SECONDS)
+                .pollInterval(10, TimeUnit.MILLISECONDS)
+                .until(
+                        () ->
+                                lastFlushTime
+                                        < ((PostgresPollDataDAO) pollDataDAO).getLastFlushTime());
     }
 
     @Test
-    public void cacheFlushTest()
-            throws SQLException, JsonProcessingException, InterruptedException {
+    public void cacheFlushTest() throws SQLException, JsonProcessingException {
         waitForCacheFlush();
         pollDataDAO.updateLastPollData("dummy-task", "dummy-domain", "dummy-worker-id");
 
@@ -125,7 +138,7 @@ public class PostgresPollDataDAOCacheTest {
     }
 
     @Test
-    public void getCachedPollDataByDomainTest() throws InterruptedException, SQLException {
+    public void getCachedPollDataByDomainTest() throws SQLException {
         waitForCacheFlush();
         pollDataDAO.updateLastPollData("dummy-task2", "dummy-domain2", "dummy-worker-id2");
 

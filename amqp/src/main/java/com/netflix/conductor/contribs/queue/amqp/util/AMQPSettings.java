@@ -25,6 +25,8 @@ import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.contribs.queue.amqp.config.AMQPEventQueueProperties;
 
+import lombok.Getter;
+
 import static com.netflix.conductor.contribs.queue.amqp.util.AMQPConfigurations.*;
 
 /**
@@ -34,9 +36,10 @@ public class AMQPSettings {
 
     private static final Pattern URI_PATTERN =
             Pattern.compile(
-                    "^(?:amqp\\_(queue|exchange))?\\:?(?<name>[^\\?]+)\\??(?<params>.*)$",
+                    "^(?<type>amqp_(?:queue|exchange))?:?(?<name>[^?]+)\\??(?<params>.*)$",
                     Pattern.CASE_INSENSITIVE);
 
+    private Type type;
     private String queueOrExchangeName;
     private String eventName;
     private String exchangeType;
@@ -65,8 +68,14 @@ public class AMQPSettings {
         routingKey = StringUtils.EMPTY;
         queueType = properties.getQueueType();
         sequentialProcessing = properties.isSequentialMsgProcessing();
+        type = Type.QUEUE;
         // Set common settings for publishing and consuming
         setDeliveryMode(properties.getDeliveryMode());
+    }
+
+    public AMQPSettings(final AMQPEventQueueProperties properties, final String type) {
+        this(properties);
+        this.type = Type.fromString(type);
     }
 
     public final boolean isDurable() {
@@ -162,6 +171,9 @@ public class AMQPSettings {
 
         // Set name of queue or exchange from group "name"
         LOGGER.info("Queue URI:{}", queueURI);
+        if (Objects.nonNull(matcher.group("type"))) {
+            type = Type.fromString(matcher.group("type"));
+        }
         queueOrExchangeName = matcher.group("name");
         eventName = queueURI;
         if (matcher.groupCount() > 1) {
@@ -311,5 +323,35 @@ public class AMQPSettings {
      */
     public boolean isSequentialProcessing() {
         return sequentialProcessing;
+    }
+
+    /**
+     * Determine observer type - exchange or queue
+     *
+     * @return the observer type
+     */
+    public Type getType() {
+        return type;
+    }
+
+    public enum Type {
+        QUEUE("amqp_queue"),
+        EXCHANGE("amqp_exchange");
+
+        @Getter private String value;
+
+        Type(String value) {
+            this.value = value;
+        }
+
+        public static Type fromString(String value) {
+            for (Type type : Type.values()) {
+                if (type.value.equalsIgnoreCase(value)) {
+                    return type;
+                }
+            }
+
+            return QUEUE;
+        }
     }
 }

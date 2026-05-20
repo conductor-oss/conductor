@@ -21,13 +21,17 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import com.netflix.conductor.ConductorTestApp;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -54,15 +58,22 @@ import static org.junit.Assert.assertEquals;
 @SpringBootTest(
         classes = ConductorTestApp.class,
         properties = {
-            "conductor.db.type=memory",
+            "conductor.db.type=redis_standalone",
+            "conductor.queue.type=redis_standalone",
             "conductor.workflow-status-listener.type=queue_publisher",
             "conductor.workflow-status-listener.queue-publisher.successQueue=dummy",
             "conductor.workflow-status-listener.queue-publisher.failureQueue=dummy",
             "conductor.workflow-status-listener.queue-publisher.finalizeQueue=final",
-            "conductor.app.workflow.name-validation.enabled=true"
+            "conductor.app.workflow.name-validation.enabled=true",
+            "conductor.indexing.enabled=false",
+            "conductor.app.stack=test",
+            "conductor.app.appId=conductor",
+            "conductor.app.workflow-execution-lock-enabled=false",
+            "conductor.workflow-execution-lock.type=local_only"
         })
-@TestPropertySource(locations = "classpath:application-integrationtest.properties")
 public class WorkflowStatusPublisherIntegrationTest {
+
+    private static GenericContainer<?> redis;
 
     private final String CALLBACK_QUEUE = "dummy";
     private final String FINALIZED_QUEUE = "final";
@@ -70,6 +81,30 @@ public class WorkflowStatusPublisherIntegrationTest {
     private static final int WORKFLOW_VERSION = 1;
     private static final String INCOMPLETION_REASON = "test reason";
     private static final String DEFAULT_OWNER_EMAIL = "test@harness.com";
+
+    static {
+        redis =
+                new GenericContainer<>(DockerImageName.parse("redis:6.2-alpine"))
+                        .withExposedPorts(6379);
+        redis.start();
+    }
+
+    @DynamicPropertySource
+    static void dynamicProperties(DynamicPropertyRegistry registry) {
+        registry.add(
+                "conductor.redis.hosts",
+                () -> "localhost:" + redis.getFirstMappedPort() + ":us-east-1c");
+        registry.add(
+                "conductor.redis-lock.serverAddress",
+                () -> String.format("redis://localhost:%s", redis.getFirstMappedPort()));
+    }
+
+    @AfterClass
+    public static void cleanup() {
+        if (redis != null) {
+            redis.stop();
+        }
+    }
 
     @Autowired private ObjectMapper objectMapper;
 

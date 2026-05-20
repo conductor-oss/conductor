@@ -15,6 +15,7 @@ package com.netflix.conductor.core.execution;
 import java.util.Map;
 import java.util.Objects;
 
+import com.netflix.conductor.common.metadata.workflow.IdempotencyStrategy;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest.TaskRateLimitOverride;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -34,6 +35,8 @@ public class StartWorkflowInput {
     private Map<String, String> taskToDomain;
     private String workflowId;
     private String triggeringWorkflowId;
+    private String idempotencyKey;
+    private IdempotencyStrategy idempotencyStrategy;
 
     /** Optional per‐task dynamic rate-limit overrides (copied verbatim from the request). */
     private Map<String, TaskRateLimitOverride> taskRateLimitOverrides;
@@ -167,6 +170,22 @@ public class StartWorkflowInput {
         this.taskRateLimitOverrides = taskRateLimitOverrides;
     }
 
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
+    }
+
+    public IdempotencyStrategy getIdempotencyStrategy() {
+        return idempotencyStrategy;
+    }
+
+    public void setIdempotencyStrategy(IdempotencyStrategy idempotencyStrategy) {
+        this.idempotencyStrategy = idempotencyStrategy;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -186,7 +205,9 @@ public class StartWorkflowInput {
                 && Objects.equals(taskToDomain, that.taskToDomain)
                 && Objects.equals(taskRateLimitOverrides, that.taskRateLimitOverrides)
                 && Objects.equals(triggeringWorkflowId, that.triggeringWorkflowId)
-                && Objects.equals(workflowId, that.workflowId);
+                && Objects.equals(workflowId, that.workflowId)
+                && Objects.equals(idempotencyKey, that.idempotencyKey)
+                && Objects.equals(idempotencyStrategy, that.idempotencyStrategy);
     }
 
     @Override
@@ -205,6 +226,8 @@ public class StartWorkflowInput {
                 taskToDomain,
                 taskRateLimitOverrides,
                 triggeringWorkflowId,
-                workflowId);
+                workflowId,
+                idempotencyKey,
+                idempotencyStrategy);
     }
 }

@@ -1,0 +1,72 @@
+{
+  "name": "ForkJoinSyncNestedTest",
+  "description": "Issue #619: Nested FORK_JOIN with joinMode=SYNC. Branch 1 contains an inner FORK_JOIN(SYNC); Branch 2 is a single task. The outer JOIN(SYNC) waits for the inner_JOIN and outer_c.",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "outerFork",
+      "taskReferenceName": "outer_fork",
+      "type": "FORK_JOIN",
+      "forkTasks": [
+        [
+          {
+            "name": "innerFork",
+            "taskReferenceName": "inner_fork",
+            "type": "FORK_JOIN",
+            "forkTasks": [
+              [
+                {
+                  "name": "integration_task_1",
+                  "taskReferenceName": "inner_a",
+                  "type": "SIMPLE",
+                  "inputParameters": {}
+                }
+              ],
+              [
+                {
+                  "name": "integration_task_2",
+                  "taskReferenceName": "inner_b",
+                  "type": "SIMPLE",
+                  "inputParameters": {}
+                }
+              ]
+            ]
+          },
+          {
+            "name": "innerJoin",
+            "taskReferenceName": "inner_join",
+            "type": "JOIN",
+            "joinMode": "SYNC",
+            "joinOn": ["inner_a", "inner_b"]
+          }
+        ],
+        [
+          {
+            "name": "integration_task_3",
+            "taskReferenceName": "outer_c",
+            "type": "SIMPLE",
+            "inputParameters": {}
+          }
+        ]
+      ]
+    },
+    {
+      "name": "outerJoin",
+      "taskReferenceName": "outer_join",
+      "type": "JOIN",
+      "joinMode": "SYNC",
+      "joinOn": ["inner_join", "outer_c"]
+    },
+    {
+      "name": "integration_task_4",
+      "taskReferenceName": "postJoinTask",
+      "type": "SIMPLE",
+      "inputParameters": {}
+    }
+  ],
+  "schemaVersion": 2,
+  "restartable": true,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}
