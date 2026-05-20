@@ -53,15 +53,18 @@ public class OpenAIVideoApi {
     private final OkHttpClient httpClient;
     private final ObjectMapper objectMapper;
 
-    public OpenAIVideoApi(String apiKey, String baseUrl) {
+    public OpenAIVideoApi(OkHttpClient httpClient, String apiKey, String baseUrl) {
         this.apiKey = apiKey;
         this.baseUrl = baseUrl != null ? baseUrl : "https://api.openai.com";
+        // Video downloads take several minutes; override timeouts while sharing pool/dispatcher.
         this.httpClient =
-                new OkHttpClient.Builder()
+                httpClient
+                        .newBuilder()
                         .connectTimeout(120, TimeUnit.SECONDS)
                         .readTimeout(5, TimeUnit.MINUTES)
-                        .writeTimeout(60, TimeUnit.SECONDS)
                         .followRedirects(true)
+                        // writeTimeout inherited from shared client (default 60s is sufficient for
+                        // form upload)
                         .build();
         this.objectMapper = new ObjectMapperProvider().getObjectMapper();
     }
