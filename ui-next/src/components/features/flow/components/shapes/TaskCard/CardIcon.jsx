@@ -107,7 +107,7 @@ const CardIcon = ({ type, integrationType }) => {
   };
 
   const IconComponent = iconMap[type];
-  if (type === TaskType.MCP) {
+  if (type === TaskType.INTEGRATION) {
     return MCPIntegrationIcon;
   }
 
