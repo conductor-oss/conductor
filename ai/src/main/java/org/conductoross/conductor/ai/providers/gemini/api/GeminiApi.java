@@ -157,8 +157,13 @@ public class GeminiApi {
                 new GenerateContentRequest(contents, systemInstruction, tools, config);
         String url = modelUrl(model, "generateContent");
         String json = objectMapper.writeValueAsString(req);
-        try (okhttp3.Response response = httpClient.newCall(authRequest(url)
-                .post(okhttp3.RequestBody.create(json, JSON_MEDIA)).build()).execute()) {
+        try (okhttp3.Response response =
+                httpClient
+                        .newCall(
+                                authRequest(url)
+                                        .post(okhttp3.RequestBody.create(json, JSON_MEDIA))
+                                        .build())
+                        .execute()) {
             String body = response.body() != null ? response.body().string() : "";
             if (!response.isSuccessful()) {
                 // Some Gemini thinking models reject temperature — retry without it.
@@ -166,8 +171,8 @@ public class GeminiApi {
                         && body.contains("temperature")
                         && config != null
                         && config.temperature() != null) {
-                    return generateContent(model, contents, systemInstruction, tools,
-                            config.withoutTemperature());
+                    return generateContent(
+                            model, contents, systemInstruction, tools, config.withoutTemperature());
                 }
                 throw new java.io.IOException(
                         "Gemini API error %d: %s".formatted(response.code(), body));
@@ -312,9 +317,18 @@ public class GeminiApi {
             @JsonProperty("speechConfig") SpeechConfig speechConfig) {
 
         public GenerationConfig withoutTemperature() {
-            return new GenerationConfig(null, topP, topK, maxOutputTokens, stopSequences,
-                    frequencyPenalty, presencePenalty, responseMimeType, responseModalities,
-                    thinkingConfig, speechConfig);
+            return new GenerationConfig(
+                    null,
+                    topP,
+                    topK,
+                    maxOutputTokens,
+                    stopSequences,
+                    frequencyPenalty,
+                    presencePenalty,
+                    responseMimeType,
+                    responseModalities,
+                    thinkingConfig,
+                    speechConfig);
         }
     }
 

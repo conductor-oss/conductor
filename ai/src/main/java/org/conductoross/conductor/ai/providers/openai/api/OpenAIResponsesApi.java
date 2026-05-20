@@ -148,8 +148,19 @@ public class OpenAIResponsesApi {
         }
 
         public ResponseRequest withoutTemperature() {
-            return new ResponseRequest(model, input, instructions, tools, previousResponseId,
-                    null, topP, maxOutputTokens, reasoning, text, toolChoice, store);
+            return new ResponseRequest(
+                    model,
+                    input,
+                    instructions,
+                    tools,
+                    previousResponseId,
+                    null,
+                    topP,
+                    maxOutputTokens,
+                    reasoning,
+                    text,
+                    toolChoice,
+                    store);
         }
 
         public static class Builder {

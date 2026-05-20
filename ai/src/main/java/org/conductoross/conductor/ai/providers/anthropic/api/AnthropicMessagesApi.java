@@ -132,8 +132,18 @@ public class AnthropicMessagesApi {
 
         /** Returns a copy of this request with temperature removed. */
         public MessagesRequest withoutTemperature() {
-            return new MessagesRequest(model, maxTokens, messages, system, null,
-                    topP, topK, stopSequences, tools, thinking, betaFeatures);
+            return new MessagesRequest(
+                    model,
+                    maxTokens,
+                    messages,
+                    system,
+                    null,
+                    topP,
+                    topK,
+                    stopSequences,
+                    tools,
+                    thinking,
+                    betaFeatures);
         }
 
         public static class Builder {

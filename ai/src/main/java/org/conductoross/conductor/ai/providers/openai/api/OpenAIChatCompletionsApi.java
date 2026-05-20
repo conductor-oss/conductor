@@ -116,8 +116,19 @@ public class OpenAIChatCompletionsApi {
         }
 
         public ChatCompletionRequest withoutTemperature() {
-            return new ChatCompletionRequest(model, messages, null, topP, maxTokens,
-                    stop, frequencyPenalty, presencePenalty, topK, responseFormat, tools, toolChoice);
+            return new ChatCompletionRequest(
+                    model,
+                    messages,
+                    null,
+                    topP,
+                    maxTokens,
+                    stop,
+                    frequencyPenalty,
+                    presencePenalty,
+                    topK,
+                    responseFormat,
+                    tools,
+                    toolChoice);
         }
 
         public static class Builder {
