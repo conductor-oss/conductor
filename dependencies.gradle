@@ -31,7 +31,7 @@ ext {
     revGuava = '33.2.1-jre'
     revHamcrestAllMatchers = '1.8'
     revHealth = '1.1.4'
-    revPostgres = '42.7.2'
+    revPostgres = '42.7.11'
     // Bumped from 4.33.0 to 4.33.6 to remediate CVE-2026-0994 (CVSS 7.5).
     // NVD identifies google:protobuf <= 33.4 as vulnerable; the Java artifact
     // line maps 1:1 (4.33.4 and earlier are affected). 4.33.6 is the latest
