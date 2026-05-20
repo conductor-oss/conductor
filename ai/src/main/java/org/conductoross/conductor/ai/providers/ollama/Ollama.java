@@ -31,10 +31,9 @@ import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.web.client.RestClient;
 
-import okhttp3.OkHttpClient;
-
 import com.google.common.primitives.Floats;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
 
 @Slf4j
 public class Ollama implements AIModel {
@@ -112,17 +111,16 @@ public class Ollama implements AIModel {
     }
 
     private OllamaApi buildOllamaApi() {
-        OkHttpClient effective = (config.getTimeout() != null)
-                ? httpClient.newBuilder().readTimeout(config.getTimeout()).build()
-                : httpClient;
-        var factory = new org.springframework.http.client.OkHttp3ClientHttpRequestFactory(effective);
+        OkHttpClient effective =
+                (config.getTimeout() != null)
+                        ? httpClient.newBuilder().readTimeout(config.getTimeout()).build()
+                        : httpClient;
+        var factory =
+                new org.springframework.http.client.OkHttp3ClientHttpRequestFactory(effective);
         RestClient.Builder builder = RestClient.builder().requestFactory(factory);
         if (StringUtils.isNotBlank(config.getAuthHeaderName())) {
             builder.defaultHeader(config.getAuthHeaderName(), config.getAuthHeader());
         }
-        return OllamaApi.builder()
-                .baseUrl(config.getBaseURL())
-                .restClientBuilder(builder)
-                .build();
+        return OllamaApi.builder().baseUrl(config.getBaseURL()).restClientBuilder(builder).build();
     }
 }

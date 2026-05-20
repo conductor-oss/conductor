@@ -19,9 +19,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-/**
- * DTO types for the Gemini REST API, plus an OkHttp-based HTTP client for all Gemini API calls.
- */
+/** DTO types for the Gemini REST API, plus an OkHttp-based HTTP client for all Gemini API calls. */
 public class GeminiApi {
 
     // ---- HTTP client state ----
@@ -32,34 +30,49 @@ public class GeminiApi {
 
     private final okhttp3.OkHttpClient httpClient;
     private final String endpointBase; // e.g. "https://generativelanguage.googleapis.com/v1beta"
-    private final String apiKey;       // null for Vertex
+    private final String apiKey; // null for Vertex
     private final com.google.auth.oauth2.GoogleCredentials credentials; // null for API key mode
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     /** Factory: API-key mode (AI Studio / generativelanguage.googleapis.com). */
-    public static GeminiApi forApiKey(okhttp3.OkHttpClient httpClient, String apiKey, String customBase) {
-        String base = (customBase != null && !customBase.isBlank())
-                ? customBase + AI_STUDIO_VERSION : AI_STUDIO_BASE + AI_STUDIO_VERSION;
+    public static GeminiApi forApiKey(
+            okhttp3.OkHttpClient httpClient, String apiKey, String customBase) {
+        String base =
+                (customBase != null && !customBase.isBlank())
+                        ? customBase + AI_STUDIO_VERSION
+                        : AI_STUDIO_BASE + AI_STUDIO_VERSION;
         return new GeminiApi(httpClient, base, apiKey, null);
     }
 
     /** Factory: Vertex AI mode. */
-    public static GeminiApi forVertex(okhttp3.OkHttpClient httpClient,
-            String projectId, String location,
+    public static GeminiApi forVertex(
+            okhttp3.OkHttpClient httpClient,
+            String projectId,
+            String location,
             com.google.auth.oauth2.GoogleCredentials credentials) {
-        String base = "https://" + location + "-aiplatform.googleapis.com/v1"
-                + "/projects/" + projectId + "/locations/" + location + "/publishers/google";
+        String base =
+                "https://"
+                        + location
+                        + "-aiplatform.googleapis.com/v1"
+                        + "/projects/"
+                        + projectId
+                        + "/locations/"
+                        + location
+                        + "/publishers/google";
         return new GeminiApi(httpClient, base, null, credentials);
     }
 
-    private GeminiApi(okhttp3.OkHttpClient httpClient, String endpointBase,
-            String apiKey, com.google.auth.oauth2.GoogleCredentials credentials) {
+    private GeminiApi(
+            okhttp3.OkHttpClient httpClient,
+            String endpointBase,
+            String apiKey,
+            com.google.auth.oauth2.GoogleCredentials credentials) {
         this.httpClient = httpClient;
         this.endpointBase = endpointBase;
         this.apiKey = apiKey;
         this.credentials = credentials;
-        this.objectMapper = new com.netflix.conductor.common.config.ObjectMapperProvider()
-                .getObjectMapper();
+        this.objectMapper =
+                new com.netflix.conductor.common.config.ObjectMapperProvider().getObjectMapper();
     }
 
     // ---- URL helpers ----
@@ -93,17 +106,16 @@ public class GeminiApi {
             } else {
                 credentials.refreshIfExpired();
             }
-            builder.header("Authorization", "Bearer "
-                    + credentials.getAccessToken().getTokenValue());
+            builder.header(
+                    "Authorization", "Bearer " + credentials.getAccessToken().getTokenValue());
         }
         return builder;
     }
 
     private String executePost(String url, Object body) throws java.io.IOException {
         String json = objectMapper.writeValueAsString(body);
-        okhttp3.Request request = authRequest(url)
-                .post(okhttp3.RequestBody.create(json, JSON_MEDIA))
-                .build();
+        okhttp3.Request request =
+                authRequest(url).post(okhttp3.RequestBody.create(json, JSON_MEDIA)).build();
         try (okhttp3.Response response = httpClient.newCall(request).execute()) {
             String resp = response.body() != null ? response.body().string() : "";
             if (!response.isSuccessful()) {
@@ -129,16 +141,20 @@ public class GeminiApi {
     // ---- API methods ----
 
     public GenerateContentResponse generateContent(
-            String model, List<Content> contents, GenerationConfig config) throws java.io.IOException {
+            String model, List<Content> contents, GenerationConfig config)
+            throws java.io.IOException {
         return generateContent(model, contents, null, null, config);
     }
 
     public GenerateContentResponse generateContent(
-            String model, List<Content> contents,
-            Content systemInstruction, List<Tool> tools,
-            GenerationConfig config) throws java.io.IOException {
-        GenerateContentRequest req = new GenerateContentRequest(
-                contents, systemInstruction, tools, config);
+            String model,
+            List<Content> contents,
+            Content systemInstruction,
+            List<Tool> tools,
+            GenerationConfig config)
+            throws java.io.IOException {
+        GenerateContentRequest req =
+                new GenerateContentRequest(contents, systemInstruction, tools, config);
         return objectMapper.readValue(
                 executePost(modelUrl(model, "generateContent"), req),
                 GenerateContentResponse.class);
@@ -149,12 +165,12 @@ public class GeminiApi {
         Content content = new Content(null, List.of(Part.text(text)));
         EmbedContentRequest req = new EmbedContentRequest(content, null, outputDimensionality);
         return objectMapper.readValue(
-                executePost(modelUrl(model, "embedContent"), req),
-                EmbedContentResponse.class);
+                executePost(modelUrl(model, "embedContent"), req), EmbedContentResponse.class);
     }
 
     public GenerateImagesResponse generateImages(
-            String model, String promptText, GenerateImagesConfig config) throws java.io.IOException {
+            String model, String promptText, GenerateImagesConfig config)
+            throws java.io.IOException {
         GenerateImagesRequest req = new GenerateImagesRequest(new ImagePrompt(promptText), config);
         return objectMapper.readValue(
                 executePost(modelUrl(model, "generateImages", "predict"), req),
@@ -162,15 +178,22 @@ public class GeminiApi {
     }
 
     public GenerateVideosOperation generateVideos(
-            String model, String text, byte[] inputImageBytes, String inputMimeType,
-            GenerateVideosConfig config) throws java.io.IOException {
+            String model,
+            String text,
+            byte[] inputImageBytes,
+            String inputMimeType,
+            GenerateVideosConfig config)
+            throws java.io.IOException {
         java.util.Map<String, Object> instance = new java.util.LinkedHashMap<>();
         instance.put("prompt", text);
         if (inputImageBytes != null) {
-            instance.put("image", java.util.Map.of(
-                    "bytesBase64Encoded",
-                    java.util.Base64.getEncoder().encodeToString(inputImageBytes),
-                    "mimeType", inputMimeType != null ? inputMimeType : "image/png"));
+            instance.put(
+                    "image",
+                    java.util.Map.of(
+                            "bytesBase64Encoded",
+                            java.util.Base64.getEncoder().encodeToString(inputImageBytes),
+                            "mimeType",
+                            inputMimeType != null ? inputMimeType : "image/png"));
         }
         GenerateVideosRequest req = new GenerateVideosRequest(List.of(instance), config);
         return objectMapper.readValue(
@@ -178,19 +201,18 @@ public class GeminiApi {
                 GenerateVideosOperation.class);
     }
 
-    public GenerateVideosOperation getVideosOperation(String operationName) throws java.io.IOException {
+    public GenerateVideosOperation getVideosOperation(String operationName)
+            throws java.io.IOException {
         if (apiKey != null) {
             // AI Studio: GET the operation resource
             return objectMapper.readValue(
-                    executeGet(operationUrl(operationName)),
-                    GenerateVideosOperation.class);
+                    executeGet(operationUrl(operationName)), GenerateVideosOperation.class);
         } else {
             // Vertex AI: POST to fetchPredictOperation
             String vertexBase = endpointBase.replaceAll("/publishers/google$", "");
             String url = vertexBase + "/" + operationName + ":fetchPredictOperation";
             return objectMapper.readValue(
-                    executePost(url, java.util.Map.of()),
-                    GenerateVideosOperation.class);
+                    executePost(url, java.util.Map.of()), GenerateVideosOperation.class);
         }
     }
 
@@ -204,9 +226,7 @@ public class GeminiApi {
             @JsonProperty("generationConfig") GenerationConfig generationConfig) {}
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record Content(
-            String role,
-            List<Part> parts) {}
+    public record Content(String role, List<Part> parts) {}
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Part(
@@ -259,9 +279,7 @@ public class GeminiApi {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record FunctionDeclaration(
-            String name,
-            String description,
-            @JsonProperty("parameters") Object parameters) {}
+            String name, String description, @JsonProperty("parameters") Object parameters) {}
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record GenerationConfig(
@@ -283,16 +301,14 @@ public class GeminiApi {
             @JsonProperty("includeThoughts") Boolean includeThoughts) {}
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record SpeechConfig(
-            @JsonProperty("voiceConfig") VoiceConfig voiceConfig) {}
+    public record SpeechConfig(@JsonProperty("voiceConfig") VoiceConfig voiceConfig) {}
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record VoiceConfig(
             @JsonProperty("prebuiltVoiceConfig") PrebuiltVoiceConfig prebuiltVoiceConfig) {}
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record PrebuiltVoiceConfig(
-            @JsonProperty("voiceName") String voiceName) {}
+    public record PrebuiltVoiceConfig(@JsonProperty("voiceName") String voiceName) {}
 
     // --- Response DTOs ---
 
@@ -336,9 +352,7 @@ public class GeminiApi {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Candidate(
-            Content content,
-            @JsonProperty("finishReason") String finishReason) {}
+    public record Candidate(Content content, @JsonProperty("finishReason") String finishReason) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record UsageMetadata(
@@ -355,12 +369,10 @@ public class GeminiApi {
             @JsonProperty("outputDimensionality") Integer outputDimensionality) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record EmbedContentResponse(
-            @JsonProperty("embedding") Embedding embedding) {}
+    public record EmbedContentResponse(@JsonProperty("embedding") Embedding embedding) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Embedding(
-            @JsonProperty("values") List<Float> values) {}
+    public record Embedding(@JsonProperty("values") List<Float> values) {}
 
     // --- Image generation ---
 
@@ -413,8 +425,7 @@ public class GeminiApi {
             @JsonProperty("response") GenerateVideosResult response) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record GenerateVideosResult(
-            @JsonProperty("videos") List<GeneratedVideo> videos) {}
+    public record GenerateVideosResult(@JsonProperty("videos") List<GeneratedVideo> videos) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record GeneratedVideo(

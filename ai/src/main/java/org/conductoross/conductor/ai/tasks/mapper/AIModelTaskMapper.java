@@ -73,6 +73,13 @@ public abstract class AIModelTaskMapper<T extends LLMWorkerInput> implements Tas
         if (taskDefinition == null) {
             taskDefinition = new TaskDef();
         }
+
+        if (taskDefinition.getRetryCount() < 1) {
+            taskDefinition.setRetryCount(3);
+            taskDefinition.setRetryDelaySeconds(2);
+            taskDefinition.setRetryLogic(TaskDef.RetryLogic.LINEAR_BACKOFF);
+        }
+
         TaskModel simpleTask = taskMapperContext.createTaskModel();
         simpleTask.setTaskType(workflowTask.getType());
         simpleTask.setStartDelayInSeconds(workflowTask.getStartDelay());

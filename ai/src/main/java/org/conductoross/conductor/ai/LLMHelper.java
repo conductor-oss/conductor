@@ -93,11 +93,14 @@ public class LLMHelper {
     private final List<DocumentLoader> documentLoaders;
     private final OkHttpClient httpClient;
 
-    public LLMHelper(JsonSchemaValidator jsonSchemaValidator, List<DocumentLoader> documentLoaders) {
+    public LLMHelper(
+            JsonSchemaValidator jsonSchemaValidator, List<DocumentLoader> documentLoaders) {
         this(jsonSchemaValidator, documentLoaders, new OkHttpClient());
     }
 
-    public LLMHelper(JsonSchemaValidator jsonSchemaValidator, List<DocumentLoader> documentLoaders,
+    public LLMHelper(
+            JsonSchemaValidator jsonSchemaValidator,
+            List<DocumentLoader> documentLoaders,
             OkHttpClient httpClient) {
         this.jsonSchemaValidator = jsonSchemaValidator;
         this.documentLoaders = documentLoaders;

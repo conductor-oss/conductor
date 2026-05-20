@@ -35,10 +35,8 @@ public class GeminiGenAI implements ImageModel {
         String model = options.getModel();
         String promptText = request.getInstructions().getFirst().getText();
 
-        GeminiApi.GenerateImagesConfig config = new GeminiApi.GenerateImagesConfig(
-                options.getN(),
-                "image/png",
-                true);
+        GeminiApi.GenerateImagesConfig config =
+                new GeminiApi.GenerateImagesConfig(options.getN(), "image/png", true);
 
         GeminiApi.GenerateImagesResponse response;
         try {

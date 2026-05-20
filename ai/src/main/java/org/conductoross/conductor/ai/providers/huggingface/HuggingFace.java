@@ -63,7 +63,8 @@ public class HuggingFace implements AIModel {
 
     @Override
     public ChatModel getChatModel() {
-        HuggingFaceApi api = new HuggingFaceApi(httpClient, config.getApiKey(), config.getBaseURL());
+        HuggingFaceApi api =
+                new HuggingFaceApi(httpClient, config.getApiKey(), config.getBaseURL());
         return new HuggingFaceChatModel(api);
     }
 

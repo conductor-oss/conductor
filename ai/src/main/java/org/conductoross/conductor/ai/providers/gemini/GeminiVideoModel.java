@@ -30,8 +30,8 @@ import lombok.extern.slf4j.Slf4j;
  * <p>The async flow uses long-running operations:
  *
  * <ol>
- *   <li>{@link #call(VideoPrompt)} submits via {@code api.generateVideos()} returning an
- *       operation name
+ *   <li>{@link #call(VideoPrompt)} submits via {@code api.generateVideos()} returning an operation
+ *       name
  *   <li>{@link #checkStatus(String)} polls via {@code api.getVideosOperation()}
  *   <li>When {@code operation.done()} is true, video bytes are extracted from the response
  * </ol>
@@ -54,16 +54,17 @@ public class GeminiVideoModel implements AsyncVideoModel {
             String text = prompt.getInstructions().getFirst().getText();
 
             // Build GenerateVideosConfig from VideoOptions
-            GeminiApi.GenerateVideosConfig config = new GeminiApi.GenerateVideosConfig(
-                    opts.getN() != null ? opts.getN() : 1,
-                    opts.getDuration(),
-                    opts.getAspectRatio(),
-                    opts.getSeed(),
-                    opts.getNegativePrompt(),
-                    opts.getPersonGeneration(),
-                    opts.getResolution(),
-                    opts.getGenerateAudio(),
-                    opts.getFps());
+            GeminiApi.GenerateVideosConfig config =
+                    new GeminiApi.GenerateVideosConfig(
+                            opts.getN() != null ? opts.getN() : 1,
+                            opts.getDuration(),
+                            opts.getAspectRatio(),
+                            opts.getSeed(),
+                            opts.getNegativePrompt(),
+                            opts.getPersonGeneration(),
+                            opts.getResolution(),
+                            opts.getGenerateAudio(),
+                            opts.getFps());
 
             // Resolve input image for image-to-video
             byte[] inputBytes = null;

@@ -56,6 +56,7 @@ import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 
 import okhttp3.OkHttpClient;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**

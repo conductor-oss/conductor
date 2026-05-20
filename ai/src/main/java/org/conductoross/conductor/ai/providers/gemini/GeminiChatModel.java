@@ -84,8 +84,9 @@ public class GeminiChatModel implements ChatModel {
         // Build system instruction content (if any)
         GeminiApi.Content systemInstruction = null;
         if (!systemBuilder.isEmpty()) {
-            systemInstruction = new GeminiApi.Content(
-                    null, List.of(GeminiApi.Part.text(systemBuilder.toString())));
+            systemInstruction =
+                    new GeminiApi.Content(
+                            null, List.of(GeminiApi.Part.text(systemBuilder.toString())));
         }
 
         // Build tools
@@ -116,9 +117,10 @@ public class GeminiChatModel implements ChatModel {
             boolean includeThoughts =
                     opts.getIncludeThoughts() != null && opts.getIncludeThoughts();
             if (hasBudget || includeThoughts) {
-                thinkingConfig = new GeminiApi.ThinkingConfig(
-                        hasBudget ? opts.getThinkingBudgetTokens() : null,
-                        includeThoughts ? true : null);
+                thinkingConfig =
+                        new GeminiApi.ThinkingConfig(
+                                hasBudget ? opts.getThinkingBudgetTokens() : null,
+                                includeThoughts ? true : null);
             }
         } else if (options != null) {
             temperature = options.getTemperature();
@@ -130,33 +132,36 @@ public class GeminiChatModel implements ChatModel {
             presencePenalty = options.getPresencePenalty();
         }
 
-        GeminiApi.GenerationConfig config = new GeminiApi.GenerationConfig(
-                temperature,
-                topP,
-                topK,
-                maxOutputTokens,
-                stopSequences,
-                frequencyPenalty,
-                presencePenalty,
-                null,  // responseMimeType
-                null,  // responseModalities
-                thinkingConfig,
-                null   // speechConfig
-        );
+        GeminiApi.GenerationConfig config =
+                new GeminiApi.GenerationConfig(
+                        temperature,
+                        topP,
+                        topK,
+                        maxOutputTokens,
+                        stopSequences,
+                        frequencyPenalty,
+                        presencePenalty,
+                        null, // responseMimeType
+                        null, // responseModalities
+                        thinkingConfig,
+                        null // speechConfig
+                        );
 
-        String model = opts != null ? opts.getModel() : (options != null ? options.getModel() : null);
+        String model =
+                opts != null ? opts.getModel() : (options != null ? options.getModel() : null);
         if (model == null) {
             model = "gemini-2.5-flash";
         }
 
         GeminiApi.GenerateContentResponse result;
         try {
-            result = api.generateContent(
-                    model,
-                    contents,
-                    systemInstruction,
-                    toolList.isEmpty() ? null : toolList,
-                    config);
+            result =
+                    api.generateContent(
+                            model,
+                            contents,
+                            systemInstruction,
+                            toolList.isEmpty() ? null : toolList,
+                            config);
         } catch (java.io.IOException e) {
             throw new RuntimeException("Gemini generateContent failed: " + e.getMessage(), e);
         }
@@ -184,13 +189,15 @@ public class GeminiChatModel implements ChatModel {
         if (opts.getTools() != null && !opts.getTools().isEmpty()) {
             List<GeminiApi.FunctionDeclaration> declarations = new ArrayList<>();
             for (ToolSpec toolSpec : opts.getTools()) {
-                Object schema = (toolSpec.getInputSchema() != null && !toolSpec.getInputSchema().isEmpty())
-                        ? toolSpec.getInputSchema()
-                        : null;
-                declarations.add(new GeminiApi.FunctionDeclaration(
-                        toolSpec.getName(),
-                        toolSpec.getDescription() != null ? toolSpec.getDescription() : "",
-                        schema));
+                Object schema =
+                        (toolSpec.getInputSchema() != null && !toolSpec.getInputSchema().isEmpty())
+                                ? toolSpec.getInputSchema()
+                                : null;
+                declarations.add(
+                        new GeminiApi.FunctionDeclaration(
+                                toolSpec.getName(),
+                                toolSpec.getDescription() != null ? toolSpec.getDescription() : "",
+                                schema));
             }
             tools.add(GeminiApi.Tool.withFunctionDeclarations(declarations));
         }
@@ -199,14 +206,16 @@ public class GeminiChatModel implements ChatModel {
     }
 
     @SuppressWarnings("unchecked")
-    private List<GeminiApi.Content> convertMessage(org.springframework.ai.chat.messages.Message msg) {
+    private List<GeminiApi.Content> convertMessage(
+            org.springframework.ai.chat.messages.Message msg) {
         List<GeminiApi.Content> contents = new ArrayList<>();
 
         switch (msg.getMessageType()) {
             case USER -> {
                 UserMessage userMsg = (UserMessage) msg;
-                contents.add(new GeminiApi.Content(
-                        "user", List.of(GeminiApi.Part.text(userMsg.getText()))));
+                contents.add(
+                        new GeminiApi.Content(
+                                "user", List.of(GeminiApi.Part.text(userMsg.getText()))));
             }
 
             case ASSISTANT -> {
@@ -301,8 +310,9 @@ public class GeminiChatModel implements ChatModel {
                 String id = fc.name(); // FunctionCallPart has no separate id field
                 String argsJson;
                 try {
-                    argsJson = objectMapper.writeValueAsString(
-                            fc.args() != null ? fc.args() : Map.of());
+                    argsJson =
+                            objectMapper.writeValueAsString(
+                                    fc.args() != null ? fc.args() : Map.of());
                 } catch (Exception e) {
                     argsJson = "{}";
                 }
@@ -334,7 +344,8 @@ public class GeminiChatModel implements ChatModel {
         GeminiApi.UsageMetadata usageMeta = result.usageMetadata();
         if (usageMeta != null) {
             inputTok = usageMeta.promptTokenCount() != null ? usageMeta.promptTokenCount() : 0;
-            outputTok = usageMeta.candidatesTokenCount() != null ? usageMeta.candidatesTokenCount() : 0;
+            outputTok =
+                    usageMeta.candidatesTokenCount() != null ? usageMeta.candidatesTokenCount() : 0;
             thoughtsTok = usageMeta.thoughtsTokenCount();
         }
         DefaultUsage springUsage = new DefaultUsage(inputTok, outputTok, inputTok + outputTok);

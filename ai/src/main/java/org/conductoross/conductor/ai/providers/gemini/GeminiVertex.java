@@ -59,8 +59,11 @@ public class GeminiVertex implements AIModel {
             String customBase = config.getRawBaseURL(); // null if not explicitly set
             return GeminiApi.forApiKey(httpClient, config.getApiKey(), customBase);
         }
-        return GeminiApi.forVertex(httpClient, config.getProjectId(),
-                config.getLocation(), config.getGoogleCredentials());
+        return GeminiApi.forVertex(
+                httpClient,
+                config.getProjectId(),
+                config.getLocation(),
+                config.getGoogleCredentials());
     }
 
     @Override
@@ -76,10 +79,11 @@ public class GeminiVertex implements AIModel {
     @Override
     public List<Float> generateEmbeddings(EmbeddingGenRequest embeddingGenRequest) {
         try {
-            GeminiApi.EmbedContentResponse resp = geminiApi.embedContent(
-                    embeddingGenRequest.getModel(),
-                    embeddingGenRequest.getText(),
-                    embeddingGenRequest.getDimensions());
+            GeminiApi.EmbedContentResponse resp =
+                    geminiApi.embedContent(
+                            embeddingGenRequest.getModel(),
+                            embeddingGenRequest.getText(),
+                            embeddingGenRequest.getDimensions());
             if (resp.embedding() == null || resp.embedding().values() == null) {
                 throw new RuntimeException("No embeddings returned from Gemini API");
             }
@@ -198,18 +202,30 @@ public class GeminiVertex implements AIModel {
 
     @Override
     public LLMResponse generateAudio(AudioGenRequest request) {
-        GeminiApi.SpeechConfig speechConfig = new GeminiApi.SpeechConfig(
-                new GeminiApi.VoiceConfig(new GeminiApi.PrebuiltVoiceConfig(request.getVoice())));
-        GeminiApi.GenerationConfig genConfig = new GeminiApi.GenerationConfig(
-                null, null, null, request.getMaxTokens(), request.getStopWords(),
-                request.getFrequencyPenalty(),
-                null, null, List.of("AUDIO"), null, speechConfig);
+        GeminiApi.SpeechConfig speechConfig =
+                new GeminiApi.SpeechConfig(
+                        new GeminiApi.VoiceConfig(
+                                new GeminiApi.PrebuiltVoiceConfig(request.getVoice())));
+        GeminiApi.GenerationConfig genConfig =
+                new GeminiApi.GenerationConfig(
+                        null,
+                        null,
+                        null,
+                        request.getMaxTokens(),
+                        request.getStopWords(),
+                        request.getFrequencyPenalty(),
+                        null,
+                        null,
+                        List.of("AUDIO"),
+                        null,
+                        speechConfig);
 
         try {
-            GeminiApi.Content userContent = new GeminiApi.Content("user",
-                    List.of(GeminiApi.Part.text(request.getText())));
-            GeminiApi.GenerateContentResponse result = geminiApi.generateContent(
-                    request.getModel(), List.of(userContent), null, null, genConfig);
+            GeminiApi.Content userContent =
+                    new GeminiApi.Content("user", List.of(GeminiApi.Part.text(request.getText())));
+            GeminiApi.GenerateContentResponse result =
+                    geminiApi.generateContent(
+                            request.getModel(), List.of(userContent), null, null, genConfig);
 
             List<Media> media = new ArrayList<>();
             if (result.candidates() != null) {
@@ -217,12 +233,13 @@ public class GeminiVertex implements AIModel {
                     if (c.content() == null || c.content().parts() == null) continue;
                     for (GeminiApi.Part p : c.content().parts()) {
                         if (p.inlineData() != null && p.inlineData().data() != null) {
-                            byte[] bytes = java.util.Base64.getDecoder()
-                                    .decode(p.inlineData().data());
-                            media.add(Media.builder()
-                                    .data(bytes)
-                                    .mimeType("audio/" + request.getResponseFormat())
-                                    .build());
+                            byte[] bytes =
+                                    java.util.Base64.getDecoder().decode(p.inlineData().data());
+                            media.add(
+                                    Media.builder()
+                                            .data(bytes)
+                                            .mimeType("audio/" + request.getResponseFormat())
+                                            .build());
                         }
                     }
                 }

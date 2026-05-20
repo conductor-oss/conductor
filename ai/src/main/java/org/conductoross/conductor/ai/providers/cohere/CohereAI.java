@@ -23,9 +23,8 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.image.ImageModel;
 import org.springframework.web.client.RestClient;
 
-import okhttp3.OkHttpClient;
-
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
 
 /**
  * Cohere AI provider using native SDK (not OpenAI-compatible). Uses CohereApi, CohereChatModel, and
@@ -108,10 +107,12 @@ public class CohereAI implements AIModel {
     // Initialization helpers
 
     private CohereApi createCohereApi(OkHttpClient httpClient) {
-        OkHttpClient effective = (config.getTimeout() != null)
-                ? httpClient.newBuilder().readTimeout(config.getTimeout()).build()
-                : httpClient;
-        var factory = new org.springframework.http.client.OkHttp3ClientHttpRequestFactory(effective);
+        OkHttpClient effective =
+                (config.getTimeout() != null)
+                        ? httpClient.newBuilder().readTimeout(config.getTimeout()).build()
+                        : httpClient;
+        var factory =
+                new org.springframework.http.client.OkHttp3ClientHttpRequestFactory(effective);
         CohereApi.Builder builder =
                 CohereApi.builder()
                         .apiKey(config.getApiKey())

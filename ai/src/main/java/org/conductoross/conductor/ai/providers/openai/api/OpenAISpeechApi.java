@@ -43,7 +43,8 @@ public class OpenAISpeechApi {
     private final OkHttpClient httpClient;
     private final ObjectMapper objectMapper;
 
-    public OpenAISpeechApi(OkHttpClient httpClient, String apiKey, String baseUrl, boolean azureAuth) {
+    public OpenAISpeechApi(
+            OkHttpClient httpClient, String apiKey, String baseUrl, boolean azureAuth) {
         this.baseUrl = baseUrl != null ? baseUrl : "https://api.openai.com/v1";
         this.authHeaderName = azureAuth ? "api-key" : "Authorization";
         this.authHeaderValue = azureAuth ? apiKey : "Bearer " + apiKey;

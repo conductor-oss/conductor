@@ -33,9 +33,8 @@ import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.web.client.RestClient;
 
-import okhttp3.OkHttpClient;
-
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
 
 @Slf4j
 public class MistralAI implements AIModel {
@@ -117,10 +116,12 @@ public class MistralAI implements AIModel {
     // Initialization helpers
 
     private MistralAiApi createMistralAiApi(OkHttpClient httpClient) {
-        OkHttpClient effective = (config.getTimeout() != null)
-                ? httpClient.newBuilder().readTimeout(config.getTimeout()).build()
-                : httpClient;
-        var factory = new org.springframework.http.client.OkHttp3ClientHttpRequestFactory(effective);
+        OkHttpClient effective =
+                (config.getTimeout() != null)
+                        ? httpClient.newBuilder().readTimeout(config.getTimeout()).build()
+                        : httpClient;
+        var factory =
+                new org.springframework.http.client.OkHttp3ClientHttpRequestFactory(effective);
         // Needs accept-encoding headers
         // https://github.com/spring-projects/spring-ai/issues/372
         return MistralAiApi.builder()

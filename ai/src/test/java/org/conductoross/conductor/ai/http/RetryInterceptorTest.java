@@ -121,8 +121,7 @@ class RetryInterceptorTest {
 
     @Test
     void retriesOn429WithRetryAfterHeader() throws IOException {
-        server.enqueue(
-                new MockResponse().setResponseCode(429).addHeader("Retry-After", "1"));
+        server.enqueue(new MockResponse().setResponseCode(429).addHeader("Retry-After", "1"));
         server.enqueue(new MockResponse().setResponseCode(200).setBody("ok"));
 
         try (Response response = client.newCall(buildRequest()).execute()) {
@@ -191,8 +190,7 @@ class RetryInterceptorTest {
                     }
                 };
 
-        Request request =
-                new Request.Builder().url(server.url("/test")).post(oneShotBody).build();
+        Request request = new Request.Builder().url(server.url("/test")).post(oneShotBody).build();
 
         try (Response response = client.newCall(request).execute()) {
             assertEquals(503, response.code());

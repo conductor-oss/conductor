@@ -19,9 +19,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import okhttp3.OkHttpClient;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import okhttp3.OkHttpClient;
 
 @Data
 @Component
@@ -37,8 +37,7 @@ public class OllamaConfiguration implements ModelConfiguration<Ollama> {
 
     private Duration timeout = Duration.ofSeconds(600);
 
-    @Autowired
-    private OkHttpClient conductorAiHttpClient;
+    @Autowired private OkHttpClient conductorAiHttpClient;
 
     public OllamaConfiguration(String baseURL, String authHeaderName, String authHeader) {
         this.baseURL = baseURL;

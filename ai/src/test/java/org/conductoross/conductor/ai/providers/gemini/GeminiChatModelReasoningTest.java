@@ -24,8 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Unit tests for {@link GeminiChatModel#toSpringChatResponse(GeminiApi.GenerateContentResponse, String)} —
- * the response-parsing path that lifts Gemini "thought" parts onto {@code
+ * Unit tests for {@link GeminiChatModel#toSpringChatResponse(GeminiApi.GenerateContentResponse,
+ * String)} — the response-parsing path that lifts Gemini "thought" parts onto {@code
  * ChatResponseMetadata["reasoning"]} and the {@code thoughtsTokenCount} usage field onto {@code
  * ChatResponseMetadata["reasoning_tokens"]}.
  *
@@ -56,8 +56,7 @@ class GeminiChatModelReasoningTest {
             List<GeminiApi.Part> parts, Integer thoughtsTokenCount) {
         GeminiApi.Candidate candidate =
                 new GeminiApi.Candidate(content(parts.toArray(new GeminiApi.Part[0])), "STOP");
-        GeminiApi.UsageMetadata usage =
-                new GeminiApi.UsageMetadata(8, 20, thoughtsTokenCount);
+        GeminiApi.UsageMetadata usage = new GeminiApi.UsageMetadata(8, 20, thoughtsTokenCount);
         return new GeminiApi.GenerateContentResponse(List.of(candidate), usage, "resp_xyz");
     }
 
@@ -94,7 +93,8 @@ class GeminiChatModelReasoningTest {
 
     @Test
     void noThoughtParts_metadataOmitsReasoningKey() {
-        GeminiApi.GenerateContentResponse response = responseWith(List.of(textPart("Plain answer.")), null);
+        GeminiApi.GenerateContentResponse response =
+                responseWith(List.of(textPart("Plain answer.")), null);
 
         ChatResponse chat = newChatModel().toSpringChatResponse(response, "gemini-2.5-flash");
 
@@ -146,22 +146,15 @@ class GeminiChatModelReasoningTest {
         GeminiApi.Candidate c1 =
                 new GeminiApi.Candidate(
                         new GeminiApi.Content(
-                                "model",
-                                List.of(
-                                        thoughtPart("Cand 1 thought."),
-                                        textPart("A."))),
+                                "model", List.of(thoughtPart("Cand 1 thought."), textPart("A."))),
                         "STOP");
         GeminiApi.Candidate c2 =
                 new GeminiApi.Candidate(
-                        new GeminiApi.Content(
-                                "model",
-                                List.of(thoughtPart("Cand 2 thought."))),
+                        new GeminiApi.Content("model", List.of(thoughtPart("Cand 2 thought."))),
                         "STOP");
         GeminiApi.GenerateContentResponse response =
                 new GeminiApi.GenerateContentResponse(
-                        List.of(c1, c2),
-                        new GeminiApi.UsageMetadata(1, 1, 3),
-                        "resp_multi");
+                        List.of(c1, c2), new GeminiApi.UsageMetadata(1, 1, 3), "resp_multi");
 
         ChatResponse chat = newChatModel().toSpringChatResponse(response, "gemini-2.5-pro");
 

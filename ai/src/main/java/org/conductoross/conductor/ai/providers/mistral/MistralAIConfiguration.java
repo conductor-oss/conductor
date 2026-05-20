@@ -19,9 +19,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import okhttp3.OkHttpClient;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import okhttp3.OkHttpClient;
 
 @Data
 @Component
@@ -35,8 +35,7 @@ public class MistralAIConfiguration implements ModelConfiguration<MistralAI> {
 
     private Duration timeout = Duration.ofSeconds(600);
 
-    @Autowired
-    private OkHttpClient conductorAiHttpClient;
+    @Autowired private OkHttpClient conductorAiHttpClient;
 
     public MistralAIConfiguration(String apiKey, String baseURL) {
         this.apiKey = apiKey;

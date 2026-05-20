@@ -22,13 +22,12 @@ import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.models.ToolSpec;
 import org.conductoross.conductor.ai.providers.anthropic.api.AnthropicMessagesApi;
 import org.conductoross.conductor.ai.providers.anthropic.api.AnthropicMessagesApi.Tool;
-
-import okhttp3.OkHttpClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.image.ImageModel;
 
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
 
 @Slf4j
 public class Anthropic implements AIModel {

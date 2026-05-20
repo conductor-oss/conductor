@@ -19,12 +19,12 @@ import org.conductoross.conductor.ai.models.ChatCompletion;
 import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.providers.openai.OpenAICompatChatModel;
 import org.conductoross.conductor.ai.providers.openai.api.OpenAIChatCompletionsApi;
-
-import okhttp3.OkHttpClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+
+import okhttp3.OkHttpClient;
 
 public class PerplexityAI implements AIModel {
 
