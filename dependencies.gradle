@@ -94,6 +94,7 @@ ext {
     pgVector = '0.1.4'
     revMCP = '0.13.0'
     revCommonsCompress = '1.26.1'
+    revConcurrencyLimits = '0.5.4'
     pinecone = '3.0.0'
     revFlexmark = '0.64.8'
 }
