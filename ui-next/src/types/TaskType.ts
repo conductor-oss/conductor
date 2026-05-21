@@ -98,7 +98,7 @@ export interface GrpcTaskDef extends CommonTaskDef {
 }
 
 export interface MCPTaskDef extends CommonTaskDef {
-  type: TaskType.MCP;
+  type: TaskType.INTEGRATION;
   inputParameters?: {
     service?: string;
     method?: string;
@@ -620,7 +620,7 @@ export type FormTaskType =
   | TaskType.LLM_CHAT_COMPLETE
   | TaskType.GET_SIGNED_JWT
   | TaskType.GRPC
-  | TaskType.MCP
+  | TaskType.INTEGRATION
   | TaskType.CHUNK_TEXT
   | TaskType.LIST_FILES
   | TaskType.PARSE_DOCUMENT;

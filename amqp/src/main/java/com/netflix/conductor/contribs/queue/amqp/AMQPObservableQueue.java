@@ -189,12 +189,17 @@ public class AMQPObservableQueue implements ObservableQueue {
 
     public List<String> ack(List<Message> messages) {
         final List<String> failedMessages = new ArrayList<>();
-        for (final Message message : messages) {
-            try {
-                ackMsg(message);
-            } catch (final Exception e) {
-                LOGGER.error("Cannot ACK message with delivery tag {}", message.getReceipt(), e);
-                failedMessages.add(message.getReceipt());
+        if (!useExchange) {
+            // only attempt to ack messages when using queues.
+            // it makes no sense to ack over exchange since the messages are no longer there.
+            for (final Message message : messages) {
+                try {
+                    ackMsg(message);
+                } catch (final Exception e) {
+                    LOGGER.error(
+                            "Cannot ACK message with delivery tag {}", message.getReceipt(), e);
+                    failedMessages.add(message.getReceipt());
+                }
             }
         }
         return failedMessages;

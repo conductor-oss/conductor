@@ -79,8 +79,8 @@ public class TestDeciderService {
     public static class TestConfiguration {
 
         @Bean(TASK_TYPE_SUB_WORKFLOW)
-        public SubWorkflow subWorkflow(ObjectMapper objectMapper) {
-            return new SubWorkflow(objectMapper);
+        public SubWorkflow subWorkflow(ObjectMapper objectMapper, IDGenerator idGenerator) {
+            return new SubWorkflow(objectMapper, idGenerator);
         }
 
         @Bean("asyncCompleteSystemTask")
@@ -942,6 +942,32 @@ public class TestDeciderService {
     }
 
     @Test
+    public void testRetryClearsStaleOutputArtifacts() {
+        WorkflowModel workflow = createDefaultWorkflow();
+
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.FAILED);
+        task.setTaskId("t1");
+        task.setUpdateTime(12345L);
+        task.setExternalOutputPayloadStoragePath("old-output.json");
+        task.getOutputData().put("result", "stale");
+        task.getInputData().put("subWorkflowId", "old-subworkflow-id");
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(10);
+        taskDef.setRetryDelaySeconds(0);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.FIXED);
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        Optional<TaskModel> retried = deciderService.retry(taskDef, workflowTask, task, workflow);
+
+        assertEquals(0, retried.get().getUpdateTime());
+        assertNull(retried.get().getExternalOutputPayloadStoragePath());
+        assertTrue(retried.get().getOutputData().isEmpty());
+        assertFalse(retried.get().getInputData().containsKey("subWorkflowId"));
+    }
+
+    @Test
     public void testJitterWithExponentialBackoff() {
         WorkflowModel workflow = createDefaultWorkflow();
 
@@ -1426,6 +1452,45 @@ public class TestDeciderService {
         assertEquals(1, deciderOutcome.tasksToBeScheduled.size());
         assertEquals("s1", deciderOutcome.tasksToBeScheduled.get(0).getReferenceTaskName());
         assertFalse(deciderOutcome.isComplete);
+    }
+
+    @Test
+    public void testDecideDoesNotFailScheduledSubWorkflowTask() {
+        WorkflowTask subWorkflowTask = new WorkflowTask();
+        subWorkflowTask.setName("child_workflow");
+        subWorkflowTask.setTaskReferenceName("sub1");
+        subWorkflowTask.setType(SUB_WORKFLOW.name());
+        subWorkflowTask.setTaskDefinition(new TaskDef("child_workflow"));
+        subWorkflowTask.setSubWorkflowParam(new SubWorkflowParams());
+
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("scheduled_subworkflow_workflow");
+        workflowDef.setVersion(1);
+        workflowDef.setTasks(Collections.singletonList(subWorkflowTask));
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+
+        TaskModel task = new TaskModel();
+        task.setTaskType(TaskType.TASK_TYPE_SUB_WORKFLOW);
+        task.setTaskDefName("child_workflow");
+        task.setReferenceTaskName("sub1");
+        task.setSeq(1);
+        task.setRetried(false);
+        task.setExecuted(false);
+        task.setStatus(TaskModel.Status.SCHEDULED);
+        task.setWorkflowTask(subWorkflowTask);
+
+        workflow.getTasks().add(task);
+
+        DeciderOutcome outcome = deciderService.decide(workflow);
+
+        assertNotNull(outcome);
+        assertFalse(outcome.isComplete);
+        assertTrue(outcome.tasksToBeUpdated.isEmpty());
+        assertEquals(1, outcome.tasksToBeScheduled.size());
+        assertEquals("sub1", outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
     }
 
     @Test

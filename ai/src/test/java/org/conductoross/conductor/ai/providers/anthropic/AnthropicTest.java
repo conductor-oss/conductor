@@ -24,6 +24,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 
+import okhttp3.OkHttpClient;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class AnthropicTest {
@@ -39,7 +41,7 @@ class AnthropicTest {
         void setUp() {
             AnthropicConfiguration config = new AnthropicConfiguration();
             config.setApiKey("test-api-key");
-            anthropic = new Anthropic(config);
+            anthropic = new Anthropic(config, new OkHttpClient());
         }
 
         @Test
@@ -204,7 +206,7 @@ class AnthropicTest {
         void setUp() {
             AnthropicConfiguration config = new AnthropicConfiguration();
             config.setApiKey(System.getenv(ENV_API_KEY));
-            anthropic = new Anthropic(config);
+            anthropic = new Anthropic(config, new OkHttpClient());
         }
 
         @Test

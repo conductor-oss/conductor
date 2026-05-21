@@ -27,24 +27,28 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.image.ImageModel;
 
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
 
 @Slf4j
 public class Anthropic implements AIModel {
 
     public static final String NAME = "anthropic";
+    public static final int DEFAULT_MAX_TOKENS = 8192;
     private final AnthropicConfiguration config;
 
     private final AnthropicMessagesApi messagesApi;
     private final AnthropicChatModel chatModel;
 
-    @SuppressWarnings("unchecked")
     public Anthropic(AnthropicConfiguration config) {
-        this.config = config;
-        long timeoutSecs = config.getTimeout() != null ? config.getTimeout().getSeconds() : 600;
+        this(config, new OkHttpClient());
+    }
 
+    @SuppressWarnings("unchecked")
+    public Anthropic(AnthropicConfiguration config, OkHttpClient httpClient) {
+        this.config = config;
         this.messagesApi =
                 new AnthropicMessagesApi(
-                        config.getApiKey(), config.getBaseURL(), config.getVersion(), timeoutSecs);
+                        httpClient, config.getApiKey(), config.getBaseURL(), config.getVersion());
         this.chatModel = new AnthropicChatModel(messagesApi);
     }
 
@@ -74,9 +78,14 @@ public class Anthropic implements AIModel {
             temperature = 1.0; // Thinking mode requires temperature=1
         }
 
+        Integer maxTokens = input.getMaxTokens();
+        if (maxTokens == null || maxTokens <= 0) {
+            maxTokens = DEFAULT_MAX_TOKENS;
+        }
+
         return AnthropicChatOptions.builder()
                 .model(input.getModel())
-                .maxTokens(input.getMaxTokens())
+                .maxTokens(maxTokens)
                 .temperature(temperature)
                 .topP(input.getTopP())
                 .topK(input.getTopK())
