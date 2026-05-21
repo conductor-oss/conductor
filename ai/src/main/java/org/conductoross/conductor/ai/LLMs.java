@@ -33,6 +33,7 @@ import org.springframework.stereotype.Component;
 import com.netflix.conductor.common.metadata.tasks.Task;
 
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
 
 @Component
 @Conditional(AIIntegrationEnabledCondition.class)
@@ -50,9 +51,10 @@ public class LLMs {
     public LLMs(
             List<DocumentLoader> documentLoaders,
             JsonSchemaValidator jsonSchemaValidator,
-            AIModelProvider modelProvider) {
+            AIModelProvider modelProvider,
+            OkHttpClient conductorAiHttpClient) {
         this.modelProvider = modelProvider;
-        this.helper = new LLMHelper(jsonSchemaValidator, documentLoaders);
+        this.helper = new LLMHelper(jsonSchemaValidator, documentLoaders, conductorAiHttpClient);
         this.payloadStoreLocation = modelProvider.getPayloadStoreLocation();
     }
 

@@ -22,6 +22,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 
+import okhttp3.OkHttpClient;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class HuggingFaceTest {
@@ -37,7 +39,7 @@ class HuggingFaceTest {
         void setUp() {
             HuggingFaceConfiguration config = new HuggingFaceConfiguration();
             config.setApiKey("test-api-key");
-            huggingFace = new HuggingFace(config);
+            huggingFace = new HuggingFace(config, new OkHttpClient());
         }
 
         @Test
@@ -86,7 +88,7 @@ class HuggingFaceTest {
         void setUp() {
             HuggingFaceConfiguration config = new HuggingFaceConfiguration();
             config.setApiKey(System.getenv(ENV_API_KEY));
-            huggingFace = new HuggingFace(config);
+            huggingFace = new HuggingFace(config, new OkHttpClient());
         }
 
         @Test

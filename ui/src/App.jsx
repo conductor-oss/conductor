@@ -2,7 +2,7 @@ import React from "react";
 
 import { Route, Switch } from "react-router-dom";
 import { makeStyles } from "@material-ui/styles";
-import { loader } from '@monaco-editor/react';
+import { loader } from "@monaco-editor/react";
 import { Button, AppBar, Toolbar } from "@material-ui/core";
 import AppLogo from "./plugins/AppLogo";
 import NavLink from "./components/NavLink";
@@ -34,10 +34,11 @@ import Workbench from "./pages/workbench/Workbench";
 import { getBasename } from "./utils/helpers";
 
 // Feature flag for errors inspector
-const ERRORS_INSPECTOR_ENABLED = process.env.REACT_APP_ENABLE_ERRORS_INSPECTOR === 'true';
+const ERRORS_INSPECTOR_ENABLED =
+  process.env.REACT_APP_ENABLE_ERRORS_INSPECTOR === "true";
 
 // Import ErrorsInspector conditionally based on feature flag
-const ErrorsInspector = ERRORS_INSPECTOR_ENABLED 
+const ErrorsInspector = ERRORS_INSPECTOR_ENABLED
   ? React.lazy(() => import("./pages/errors/ErrorsInspector"))
   : () => <WorkflowSearch />; // Fallback to WorkflowSearch if disabled
 
@@ -105,7 +106,11 @@ export default function App() {
         <React.Suspense fallback={<div>Loading...</div>}>
           <Switch>
             <Route exact path="/">
-              {ERRORS_INSPECTOR_ENABLED ? <ErrorsInspector /> : <WorkflowSearch />}
+              {ERRORS_INSPECTOR_ENABLED ? (
+                <ErrorsInspector />
+              ) : (
+                <WorkflowSearch />
+              )}
             </Route>
             <Route exact path="/executions">
               <WorkflowSearch />
@@ -171,5 +176,5 @@ export default function App() {
 
 if (process.env.REACT_APP_MONACO_EDITOR_USING_CDN === "false") {
   // Change the source of the monaco files, see https://github.com/suren-atoyan/monaco-react/issues/168#issuecomment-762336713
-  loader.config({ paths: { vs: getBasename() + 'monaco-editor/min/vs' } });
+  loader.config({ paths: { vs: getBasename() + "monaco-editor/min/vs" } });
 }

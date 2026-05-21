@@ -131,9 +131,7 @@ export default function SchedulerExecutions() {
   const columns = [
     {
       name: "scheduleName",
-      renderer: (val) => (
-        <NavLink path={`/schedulerDef/${val}`}>{val}</NavLink>
-      ),
+      renderer: (val) => <NavLink path={`/schedulerDef/${val}`}>{val}</NavLink>,
       label: "Schedule Name",
       grow: 2,
     },
