@@ -14,6 +14,8 @@ package org.conductoross.conductor.ai.providers.huggingface;
 
 import org.junit.jupiter.api.Test;
 
+import okhttp3.OkHttpClient;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class HuggingFaceConfigurationTest {
@@ -36,7 +38,7 @@ class HuggingFaceConfigurationTest {
         HuggingFaceConfiguration config = new HuggingFaceConfiguration();
         config.setApiKey("test-key");
 
-        HuggingFace result = config.get();
+        HuggingFace result = new HuggingFace(config, new OkHttpClient());
 
         assertNotNull(result);
         assertEquals("huggingface", result.getModelProvider());

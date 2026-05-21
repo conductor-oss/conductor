@@ -15,7 +15,6 @@ package org.conductoross.conductor.ai.providers.openai.api;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
@@ -53,28 +52,23 @@ public class OpenAIResponsesApi {
     private final ObjectMapper objectMapper;
 
     /**
+     * @param httpClient Shared OkHttpClient instance
      * @param apiKey API key
      * @param baseUrl Base URL (e.g. "https://api.openai.com/v1" or
      *     "https://resource.openai.azure.com/openai/v1")
      * @param azureAuth true for Azure (api-key header), false for OpenAI (Bearer token)
-     * @param timeoutSeconds HTTP timeout in seconds
      */
     public OpenAIResponsesApi(
-            String apiKey, String baseUrl, boolean azureAuth, long timeoutSeconds) {
+            OkHttpClient httpClient, String apiKey, String baseUrl, boolean azureAuth) {
         this.baseUrl = baseUrl != null ? baseUrl : "https://api.openai.com/v1";
         this.authHeaderName = azureAuth ? "api-key" : "Authorization";
         this.authHeaderValue = azureAuth ? apiKey : "Bearer " + apiKey;
-        this.httpClient =
-                new OkHttpClient.Builder()
-                        .connectTimeout(60, TimeUnit.SECONDS)
-                        .readTimeout(timeoutSeconds, TimeUnit.SECONDS)
-                        .writeTimeout(60, TimeUnit.SECONDS)
-                        .build();
+        this.httpClient = httpClient;
         this.objectMapper = new ObjectMapperProvider().getObjectMapper();
     }
 
-    public OpenAIResponsesApi(String apiKey, String baseUrl, boolean azureAuth) {
-        this(apiKey, baseUrl, azureAuth, 600);
+    public OpenAIResponsesApi(OkHttpClient httpClient, String apiKey, String baseUrl) {
+        this(httpClient, apiKey, baseUrl, false);
     }
 
     /**
@@ -98,6 +92,12 @@ public class OpenAIResponsesApi {
         try (Response response = httpClient.newCall(httpRequest).execute()) {
             String responseBody = readBody(response);
             if (!response.isSuccessful()) {
+                // o-series and some newer OpenAI models reject temperature — retry without it.
+                if (response.code() == 400
+                        && responseBody.contains("temperature")
+                        && request.temperature() != null) {
+                    return createResponse(request.withoutTemperature());
+                }
                 throw new IOException(
                         "Responses API failed with status %d: %s"
                                 .formatted(response.code(), responseBody));
@@ -145,6 +145,22 @@ public class OpenAIResponsesApi {
 
         public static Builder builder() {
             return new Builder();
+        }
+
+        public ResponseRequest withoutTemperature() {
+            return new ResponseRequest(
+                    model,
+                    input,
+                    instructions,
+                    tools,
+                    previousResponseId,
+                    null,
+                    topP,
+                    maxOutputTokens,
+                    reasoning,
+                    text,
+                    toolChoice,
+                    store);
         }
 
         public static class Builder {

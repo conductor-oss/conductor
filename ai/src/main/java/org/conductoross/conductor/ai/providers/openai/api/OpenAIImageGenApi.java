@@ -14,7 +14,6 @@ package org.conductoross.conductor.ai.providers.openai.api;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
@@ -47,21 +46,16 @@ public class OpenAIImageGenApi {
     private final ObjectMapper objectMapper;
 
     public OpenAIImageGenApi(
-            String apiKey, String baseUrl, boolean azureAuth, long timeoutSeconds) {
+            OkHttpClient httpClient, String apiKey, String baseUrl, boolean azureAuth) {
         this.baseUrl = baseUrl != null ? baseUrl : "https://api.openai.com/v1";
         this.authHeaderName = azureAuth ? "api-key" : "Authorization";
         this.authHeaderValue = azureAuth ? apiKey : "Bearer " + apiKey;
-        this.httpClient =
-                new OkHttpClient.Builder()
-                        .connectTimeout(60, TimeUnit.SECONDS)
-                        .readTimeout(timeoutSeconds, TimeUnit.SECONDS)
-                        .writeTimeout(60, TimeUnit.SECONDS)
-                        .build();
+        this.httpClient = httpClient;
         this.objectMapper = new ObjectMapperProvider().getObjectMapper();
     }
 
-    public OpenAIImageGenApi(String apiKey, String baseUrl, boolean azureAuth) {
-        this(apiKey, baseUrl, azureAuth, 120);
+    public OpenAIImageGenApi(OkHttpClient httpClient, String apiKey, String baseUrl) {
+        this(httpClient, apiKey, baseUrl, false);
     }
 
     public ImageResult createImage(ImageRequest request) throws IOException {
