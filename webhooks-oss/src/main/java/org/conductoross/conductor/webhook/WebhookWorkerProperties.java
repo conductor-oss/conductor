@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties("conductor.webhook.worker")
 public class WebhookWorkerProperties {
 
+    /** Queue name shared by the producer (IncomingWebhookService) and consumer (WebhookWorker). */
     public static final String WEBHOOK_QUEUE = "_webhook_queue";
 
     private int threadCount = 1;
