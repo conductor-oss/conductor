@@ -18,6 +18,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask
 import com.netflix.conductor.core.exception.NonTransientException
 import com.netflix.conductor.core.utils.IDGenerator
+import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.model.TaskModel
 import com.netflix.conductor.model.WorkflowModel
 
@@ -32,7 +33,7 @@ class CassandraExecutionDAOSpec extends CassandraSpec {
     CassandraExecutionDAO executionDAO
 
     def setup() {
-        executionDAO = new CassandraExecutionDAO(session, objectMapper, cassandraProperties, statements)
+        executionDAO = new CassandraExecutionDAO(session, objectMapper, cassandraProperties, statements, Mock(QueueDAO))
     }
 
     def "verify if tasks are validated"() {
