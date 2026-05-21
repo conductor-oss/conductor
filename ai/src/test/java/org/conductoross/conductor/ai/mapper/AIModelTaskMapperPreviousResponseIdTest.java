@@ -17,6 +17,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.conductoross.conductor.ai.AIModel;
+import org.conductoross.conductor.ai.AIModelProvider;
+import org.conductoross.conductor.ai.models.LLMWorkerInput;
 import org.conductoross.conductor.ai.tasks.mapper.ChatCompleteTaskMapper;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -31,6 +34,9 @@ import com.netflix.conductor.model.WorkflowModel;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@code AIModelTaskMapper.threadPreviousResponseId()} — the auto-injection of
@@ -237,6 +243,132 @@ class AIModelTaskMapperPreviousResponseIdTest {
     }
 
     @Test
+    void localHistoryInjectionIsSkippedWhenProviderRejectsPrefill() {
+        // Provider-agnostic check: the mapper asks the resolved AIModel
+        // whether it accepts assistant-message prefill, and suppresses the
+        // same-refName loop-iteration injection when the provider says no.
+        // Anthropic Claude Sonnet 4.6+ is the original motivating case (it
+        // returns 400 "This model does not support assistant message prefill.
+        // The conversation must end with a user message"), but the suppression
+        // path itself is keyed off the capability flag — not a hardcoded
+        // provider name — so any future provider that declares the same
+        // capability is covered automatically.
+        WorkflowModel workflow = newWorkflowWithLoop();
+        TaskModel prior = completedIteration("ignored_resp");
+        prior.getOutputData().put("result", "Loop-iteration assistant.");
+        prior.setIteration(1); // makes isLoopOverTask() true
+        workflow.getTasks().add(prior);
+
+        Map<String, Object> input = chatInput();
+        input.put("llmProvider", "anthropic");
+        input.put("model", "claude-sonnet-4-6");
+        input.put("messages", new ArrayList<Map<String, Object>>());
+        TaskMapperContext ctx = newContext(workflow, llmTask(), input);
+
+        ChatCompleteTaskMapper mapper = new ChatCompleteTaskMapper(providerFor("anthropic", false));
+        List<TaskModel> mapped = mapper.getMappedTasks(ctx);
+
+        @SuppressWarnings("unchecked")
+        List<org.conductoross.conductor.ai.models.ChatMessage> messages =
+                (List<org.conductoross.conductor.ai.models.ChatMessage>)
+                        mapped.get(0).getInputData().get("messages");
+        assertTrue(
+                messages == null || messages.isEmpty(),
+                "providers that reject prefill must not auto-inject loop assistant history; saw "
+                        + messages);
+    }
+
+    @Test
+    void localHistoryInjectionStillRunsWhenProviderAcceptsPrefill() {
+        // Regression safety: the capability check must not over-suppress.
+        // A provider that accepts prefill (the historical default) should
+        // still receive the auto-injected loop-iteration assistant history,
+        // matching pre-capability behavior for OpenAI without previousResponseId,
+        // Gemini, and similar.
+        WorkflowModel workflow = newWorkflowWithLoop();
+        TaskModel prior = completedIteration("ignored_resp");
+        prior.getOutputData().put("result", "Loop-iteration assistant.");
+        prior.setIteration(1);
+        workflow.getTasks().add(prior);
+
+        Map<String, Object> input = chatInput();
+        input.put("messages", new ArrayList<Map<String, Object>>());
+        TaskMapperContext ctx = newContext(workflow, llmTask(), input);
+
+        ChatCompleteTaskMapper mapper = new ChatCompleteTaskMapper(providerFor("openai", true));
+        List<TaskModel> mapped = mapper.getMappedTasks(ctx);
+
+        @SuppressWarnings("unchecked")
+        List<org.conductoross.conductor.ai.models.ChatMessage> messages =
+                (List<org.conductoross.conductor.ai.models.ChatMessage>)
+                        mapped.get(0).getInputData().get("messages");
+        boolean sawAssistantLoopIteration =
+                messages != null
+                        && messages.stream()
+                                .anyMatch(m -> "Loop-iteration assistant.".equals(m.getMessage()));
+        assertTrue(
+                sawAssistantLoopIteration,
+                "providers that accept prefill must still receive loop-iteration history; saw "
+                        + messages);
+    }
+
+    @Test
+    void participantHistoryIsPreservedWhenProviderRejectsPrefill() {
+        // Regression safety against an over-broad suppression. The capability
+        // gate must scope to the same-refName loop-iteration assistant branch
+        // only — participants (a different refName, registered in participants
+        // map) are legitimate conversation turns and must still flow through.
+        WorkflowModel workflow = newWorkflowWithLoop();
+
+        TaskModel priorChat = completedIteration("ignored_resp");
+        priorChat.getOutputData().put("result", "Loop-iteration assistant.");
+        priorChat.setIteration(1);
+        workflow.getTasks().add(priorChat);
+
+        TaskModel participant = new TaskModel();
+        participant.setStatus(TaskModel.Status.COMPLETED);
+        participant.setTaskType("HUMAN");
+        WorkflowTask participantTask = new WorkflowTask();
+        participantTask.setName("user_proxy");
+        participantTask.setTaskReferenceName("user_proxy_ref");
+        participantTask.setType("HUMAN");
+        participant.setWorkflowTask(participantTask);
+        Map<String, Object> participantOutput = new HashMap<>();
+        participantOutput.put("result", "User says: continue.");
+        participant.setOutputData(participantOutput);
+        workflow.getTasks().add(participant);
+
+        Map<String, Object> input = chatInput();
+        input.put("llmProvider", "anthropic");
+        input.put("model", "claude-sonnet-4-6");
+        input.put("messages", new ArrayList<Map<String, Object>>());
+        Map<String, String> participants = new HashMap<>();
+        participants.put("user_proxy_ref", "user");
+        input.put("participants", participants);
+        TaskMapperContext ctx = newContext(workflow, llmTask(), input);
+
+        ChatCompleteTaskMapper mapper = new ChatCompleteTaskMapper(providerFor("anthropic", false));
+        List<TaskModel> mapped = mapper.getMappedTasks(ctx);
+
+        @SuppressWarnings("unchecked")
+        List<org.conductoross.conductor.ai.models.ChatMessage> messages =
+                (List<org.conductoross.conductor.ai.models.ChatMessage>)
+                        mapped.get(0).getInputData().get("messages");
+        assertTrue(
+                messages != null && !messages.isEmpty(),
+                "participant message must be preserved when provider rejects prefill");
+        boolean sawParticipant =
+                messages.stream().anyMatch(m -> "User says: continue.".equals(m.getMessage()));
+        boolean sawAssistantLoopIteration =
+                messages.stream().anyMatch(m -> "Loop-iteration assistant.".equals(m.getMessage()));
+        assertTrue(sawParticipant, "participant 'user' message must flow through: " + messages);
+        assertTrue(
+                !sawAssistantLoopIteration,
+                "same-refName loop-iteration assistant must NOT flow when provider rejects prefill: "
+                        + messages);
+    }
+
+    @Test
     void inProgressPriorTaskIsSkippedEvenIfItAlreadyHasAResponseId() {
         // A task is only considered if its status is terminal. An in-flight
         // task with a (partial) responseId on its output must not be threaded.
@@ -300,5 +432,20 @@ class AIModelTaskMapperPreviousResponseIdTest {
                 .withRetryCount(0)
                 .withTaskId("task-" + System.nanoTime())
                 .build();
+    }
+
+    /**
+     * Stubs an {@link AIModelProvider} that returns a single {@link AIModel} for the given provider
+     * name, with {@link AIModel#supportsAssistantPrefill()} configured per the second argument. The
+     * model's other abstract methods are never invoked by the mapper code under test, so Mockito's
+     * default returns are fine.
+     */
+    private static AIModelProvider providerFor(String providerName, boolean supportsPrefill) {
+        AIModel model = mock(AIModel.class);
+        when(model.getModelProvider()).thenReturn(providerName);
+        when(model.supportsAssistantPrefill()).thenReturn(supportsPrefill);
+        AIModelProvider provider = mock(AIModelProvider.class);
+        when(provider.getModel(any(LLMWorkerInput.class))).thenReturn(model);
+        return provider;
     }
 }
