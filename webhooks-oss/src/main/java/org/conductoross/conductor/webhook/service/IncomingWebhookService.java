@@ -87,7 +87,7 @@ public class IncomingWebhookService {
                             + "': "
                             + verificationErrors.getMessage();
 
-            log.warn("Rejected webhook event {}: {}", eventId, verificationFailure);
+            log.error("Rejected webhook event {}: {}", eventId, verificationFailure);
             throw new NonTransientException(verificationFailure);
         }
 
