@@ -27,6 +27,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.image.ImageModel;
 
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
 
 @Slf4j
 public class Anthropic implements AIModel {
@@ -38,14 +39,16 @@ public class Anthropic implements AIModel {
     private final AnthropicMessagesApi messagesApi;
     private final AnthropicChatModel chatModel;
 
-    @SuppressWarnings("unchecked")
     public Anthropic(AnthropicConfiguration config) {
-        this.config = config;
-        long timeoutSecs = config.getTimeout() != null ? config.getTimeout().getSeconds() : 600;
+        this(config, new OkHttpClient());
+    }
 
+    @SuppressWarnings("unchecked")
+    public Anthropic(AnthropicConfiguration config, OkHttpClient httpClient) {
+        this.config = config;
         this.messagesApi =
                 new AnthropicMessagesApi(
-                        config.getApiKey(), config.getBaseURL(), config.getVersion(), timeoutSecs);
+                        httpClient, config.getApiKey(), config.getBaseURL(), config.getVersion());
         this.chatModel = new AnthropicChatModel(messagesApi);
     }
 

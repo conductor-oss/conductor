@@ -15,11 +15,13 @@ package org.conductoross.conductor.ai.providers.anthropic;
 import java.time.Duration;
 
 import org.conductoross.conductor.ai.ModelConfiguration;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import okhttp3.OkHttpClient;
 
 @Data
 @Component
@@ -38,6 +40,8 @@ public class AnthropicConfiguration implements ModelConfiguration<Anthropic> {
     private String completionsPath;
 
     private Duration timeout = Duration.ofSeconds(600);
+
+    @Autowired private OkHttpClient conductorAiHttpClient;
 
     public AnthropicConfiguration(
             String apiKey,
@@ -58,6 +62,6 @@ public class AnthropicConfiguration implements ModelConfiguration<Anthropic> {
 
     @Override
     public Anthropic get() {
-        return new Anthropic(this);
+        return new Anthropic(this, conductorAiHttpClient);
     }
 }
