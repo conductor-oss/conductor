@@ -23,6 +23,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 
+import okhttp3.OkHttpClient;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class GeminiVertexTest {
@@ -40,7 +42,7 @@ class GeminiVertexTest {
             GeminiVertexConfiguration config = new GeminiVertexConfiguration();
             config.setProjectId("test-project");
             config.setLocation("us-central1");
-            geminiVertex = new GeminiVertex(config);
+            geminiVertex = new GeminiVertex(config, new OkHttpClient());
         }
 
         @Test
@@ -103,7 +105,7 @@ class GeminiVertexTest {
         void testGetChatOptions_withWebSearchFlag_apiKeyPath() {
             GeminiVertexConfiguration apiKeyConfig = new GeminiVertexConfiguration();
             apiKeyConfig.setApiKey("test-api-key");
-            GeminiVertex apiKeyGemini = new GeminiVertex(apiKeyConfig);
+            GeminiVertex apiKeyGemini = new GeminiVertex(apiKeyConfig, new OkHttpClient());
 
             ChatCompletion input = new ChatCompletion();
             input.setModel("gemini-2.5-flash");
@@ -164,7 +166,7 @@ class GeminiVertexTest {
                     System.getenv(ENV_LOCATION) != null
                             ? System.getenv(ENV_LOCATION)
                             : "us-central1");
-            geminiVertex = new GeminiVertex(config);
+            geminiVertex = new GeminiVertex(config, new OkHttpClient());
         }
 
         @Test

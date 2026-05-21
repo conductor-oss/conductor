@@ -78,6 +78,8 @@ public class MetadataServiceTest {
             Map<String, TaskDef> taskDefinitions = new HashMap<>();
 
             when(metadataDAO.getAllWorkflowDefs()).thenReturn(mockWorkflowDefs());
+            when(metadataDAO.getWorkflowNames())
+                    .thenReturn(Arrays.asList("alpha_workflow", "beta_workflow"));
             when(metadataDAO.getWorkflowVersions("test_workflow_def"))
                     .thenReturn(mockWorkflowVersions());
 
@@ -542,6 +544,15 @@ public class MetadataServiceTest {
             throw ex;
         }
         fail("metadataService.addEventHandler did not throw ConstraintViolationException !");
+    }
+
+    @Test
+    public void testWorkflowNames() {
+        List<String> names = metadataService.getWorkflowNames();
+        assertNotNull(names);
+        assertEquals(2, names.size());
+        assertEquals("alpha_workflow", names.get(0));
+        assertEquals("beta_workflow", names.get(1));
     }
 
     @Test

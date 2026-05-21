@@ -90,6 +90,20 @@ public interface MetadataDAO {
     List<WorkflowDef> getAllWorkflowDefsLatestVersions();
 
     /**
+     * Returns distinct workflow definition names without loading full definition bodies.
+     * Persistence modules should override this with an optimized query (e.g. SELECT DISTINCT name).
+     *
+     * @return sorted list of unique workflow names
+     */
+    default List<String> getWorkflowNames() {
+        return getAllWorkflowDefs().stream()
+                .map(WorkflowDef::getName)
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Returns lightweight version summaries for a single workflow, without loading full definition
      * bodies. Persistence modules should override with an optimized query that avoids reading
      * json_data.

@@ -52,6 +52,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AnthropicChatModel implements ChatModel {
 
+    private static final int DEFAULT_MAX_TOKENS = 8192;
+
     private final AnthropicMessagesApi messagesApi;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -64,7 +66,7 @@ public class AnthropicChatModel implements ChatModel {
         try {
             MessagesRequest request = buildRequest(prompt);
             MessagesResponse result = messagesApi.createMessage(request);
-            return toSpringChatResponse(result);
+            return toSpringChatResponse(result, prompt.getOptions());
         } catch (IOException e) {
             throw new RuntimeException("Anthropic Messages API call failed: " + e.getMessage(), e);
         }
@@ -93,15 +95,18 @@ public class AnthropicChatModel implements ChatModel {
             messages.addAll(convertMessage(msg));
         }
 
-        // Extract options
+        // Extract options — Spring AI's ChatClient may merge AnthropicChatOptions with
+        // ToolCallingChatOptions (the model's default), producing a non-Anthropic type.
+        // We handle both cases and always guarantee max_tokens (required by Anthropic API).
         AnthropicChatOptions opts = options instanceof AnthropicChatOptions aco ? aco : null;
 
         MessagesRequest.Builder builder =
                 MessagesRequest.builder().messages(messages).system(system);
 
         if (opts != null) {
+            Integer maxTokens = opts.getMaxTokens();
             builder.model(opts.getModel())
-                    .maxTokens(opts.getMaxTokens())
+                    .maxTokens(maxTokens != null && maxTokens > 0 ? maxTokens : DEFAULT_MAX_TOKENS)
                     .temperature(opts.getTemperature())
                     .topP(opts.getTopP())
                     .topK(opts.getTopK())
@@ -123,12 +128,15 @@ public class AnthropicChatModel implements ChatModel {
                 }
             }
         } else if (options != null) {
+            Integer maxTokens = options.getMaxTokens();
             builder.model(options.getModel())
-                    .maxTokens(options.getMaxTokens())
+                    .maxTokens(maxTokens != null && maxTokens > 0 ? maxTokens : DEFAULT_MAX_TOKENS)
                     .temperature(options.getTemperature())
                     .topP(options.getTopP())
                     .topK(options.getTopK())
                     .stopSequences(options.getStopSequences());
+        } else {
+            builder.maxTokens(DEFAULT_MAX_TOKENS);
         }
 
         return builder.build();
@@ -185,11 +193,16 @@ public class AnthropicChatModel implements ChatModel {
         return messages;
     }
 
-    private ChatResponse toSpringChatResponse(MessagesResponse result) {
+    private ChatResponse toSpringChatResponse(MessagesResponse result, ChatOptions options) {
         List<Generation> generations = new ArrayList<>();
         List<AssistantMessage.ToolCall> toolCalls = new ArrayList<>();
         StringBuilder textBuilder = new StringBuilder();
+        StringBuilder reasoningBuilder = new StringBuilder();
         String finishReason = mapStopReason(result.stopReason());
+        boolean surfaceReasoning =
+                options instanceof AnthropicChatOptions aco
+                        && aco.getReasoningSummary() != null
+                        && !aco.getReasoningSummary().isBlank();
 
         if (result.content() != null) {
             for (ResponseContentBlock block : result.content()) {
@@ -215,7 +228,19 @@ public class AnthropicChatModel implements ChatModel {
                         finishReason = "TOOL_CALLS";
                     }
                     case "thinking" -> {
-                        // Thinking blocks are internal reasoning — skip in main output
+                        // Anthropic thinking blocks carry the model's chain-of-thought
+                        // when extended thinking is enabled (via thinking_budget_tokens).
+                        // We surface them on ChatResponseMetadata["reasoning"] only when
+                        // the caller opted in via reasoningSummary, matching the gate
+                        // we use for OpenAI and Gemini.
+                        if (surfaceReasoning
+                                && block.thinking() != null
+                                && !block.thinking().isBlank()) {
+                            if (!reasoningBuilder.isEmpty()) {
+                                reasoningBuilder.append("\n\n");
+                            }
+                            reasoningBuilder.append(block.thinking());
+                        }
                     }
                     default -> {
                         // web_search_tool_result, code_execution_tool_result, etc.
@@ -253,6 +278,12 @@ public class AnthropicChatModel implements ChatModel {
                         .id(result.id())
                         .model(result.model())
                         .usage(springUsage);
+
+        // Anthropic does not break out a separate reasoning_tokens counter — extended
+        // thinking is billed under output_tokens — so we only surface the text blob.
+        if (!reasoningBuilder.isEmpty()) {
+            metaBuilder.keyValue("reasoning", reasoningBuilder.toString());
+        }
 
         return new ChatResponse(generations, metaBuilder.build());
     }

@@ -68,6 +68,27 @@ public interface AIModel {
     }
 
     /**
+     * Whether this provider accepts a chat-completion request whose last message has the {@code
+     * assistant} role — i.e. assistant-message prefill, used to nudge the model's response to start
+     * a certain way (and, in this codebase, the format in which {@link
+     * org.conductoross.conductor.ai.tasks.mapper.ChatCompleteTaskMapper}'s loop-history injection
+     * carries prior DO_WHILE iteration outputs back into the next iteration).
+     *
+     * <p>When this returns {@code false}, the mapper suppresses the same-refName loop-iteration
+     * assistant injection: those auto-attached assistant messages would either be rejected outright
+     * by the provider's API (e.g. Anthropic Claude Sonnet 4.6+ returns {@code 400 "This model does
+     * not support assistant message prefill. The conversation must end with a user message."}) or
+     * be silently mis-handled. Participants, tool calls, and sub-workflow context are unaffected by
+     * this flag.
+     *
+     * <p>Default is {@code true} to preserve historical behavior for providers (OpenAI Responses
+     * API with {@code previousResponseId}, Gemini, etc.) that accept trailing assistant messages.
+     */
+    default boolean supportsAssistantPrefill() {
+        return true;
+    }
+
+    /**
      * Embedding generation
      *
      * @param embeddingGenRequest request

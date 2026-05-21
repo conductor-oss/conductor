@@ -23,6 +23,7 @@ import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.models.LLMResponse;
 import org.conductoross.conductor.ai.models.Media;
 import org.conductoross.conductor.ai.models.VideoGenRequest;
+import org.conductoross.conductor.ai.providers.gemini.api.GeminiApi;
 import org.conductoross.conductor.ai.video.Video;
 import org.conductoross.conductor.ai.video.VideoGeneration;
 import org.conductoross.conductor.ai.video.VideoModel;
@@ -33,18 +34,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.image.ImageModel;
 
-import com.google.genai.Client;
-import com.google.genai.types.Blob;
-import com.google.genai.types.Candidate;
-import com.google.genai.types.Content;
-import com.google.genai.types.ContentEmbedding;
-import com.google.genai.types.EmbedContentConfig;
-import com.google.genai.types.EmbedContentResponse;
-import com.google.genai.types.GenerateContentConfig;
-import com.google.genai.types.GenerateContentResponse;
-import com.google.genai.types.PrebuiltVoiceConfig;
-import com.google.genai.types.SpeechConfig;
-import com.google.genai.types.VoiceConfig;
+import okhttp3.OkHttpClient;
 
 public class GeminiVertex implements AIModel {
 
@@ -53,9 +43,27 @@ public class GeminiVertex implements AIModel {
     public static final String ALIAS = "google_gemini";
 
     private final GeminiVertexConfiguration config;
+    private final OkHttpClient httpClient;
+    private final GeminiApi geminiApi;
 
-    public GeminiVertex(GeminiVertexConfiguration config) {
+    public GeminiVertex(GeminiVertexConfiguration config, OkHttpClient httpClient) {
         this.config = config;
+        this.httpClient = httpClient;
+        this.geminiApi = createApi();
+    }
+
+    private GeminiApi createApi() {
+        if (config.getApiKey() != null && !config.getApiKey().isBlank()) {
+            // For API key mode, only pass a custom base URL if explicitly configured.
+            // config.getBaseURL() defaults to a Vertex AI URL which is wrong for API key mode.
+            String customBase = config.getRawBaseURL(); // null if not explicitly set
+            return GeminiApi.forApiKey(httpClient, config.getApiKey(), customBase);
+        }
+        return GeminiApi.forVertex(
+                httpClient,
+                config.getProjectId(),
+                config.getLocation(),
+                config.getGoogleCredentials());
     }
 
     @Override
@@ -70,29 +78,26 @@ public class GeminiVertex implements AIModel {
 
     @Override
     public List<Float> generateEmbeddings(EmbeddingGenRequest embeddingGenRequest) {
-        Client client = createGenAIClient();
-        EmbedContentConfig.Builder configBuilder = EmbedContentConfig.builder();
-        if (embeddingGenRequest.getDimensions() != null) {
-            configBuilder.outputDimensionality(embeddingGenRequest.getDimensions());
+        try {
+            GeminiApi.EmbedContentResponse resp =
+                    geminiApi.embedContent(
+                            embeddingGenRequest.getModel(),
+                            embeddingGenRequest.getText(),
+                            embeddingGenRequest.getDimensions());
+            if (resp.embedding() == null || resp.embedding().values() == null) {
+                throw new RuntimeException("No embeddings returned from Gemini API");
+            }
+            return resp.embedding().values();
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Gemini embedContent failed", e);
         }
-        EmbedContentResponse response =
-                client.models.embedContent(
-                        embeddingGenRequest.getModel(),
-                        embeddingGenRequest.getText(),
-                        configBuilder.build());
-        return response.embeddings()
-                .flatMap(
-                        embeddings ->
-                                embeddings.isEmpty()
-                                        ? java.util.Optional.empty()
-                                        : java.util.Optional.of(embeddings.getFirst()))
-                .flatMap(ContentEmbedding::values)
-                .orElseThrow(() -> new RuntimeException("No embeddings returned from Gemini API"));
     }
 
     @Override
     public ChatModel getChatModel() {
-        return new GeminiChatModel(createGenAIClient());
+        return new GeminiChatModel(geminiApi);
     }
 
     @Override
@@ -114,24 +119,32 @@ public class GeminiVertex implements AIModel {
                                 : null)
                 .thinkingBudgetTokens(
                         input.getThinkingTokenLimit() > 0 ? input.getThinkingTokenLimit() : null)
+                // Any non-blank reasoningSummary opts the request into emitting
+                // thought summaries. Gemini 2.5 will not return thought text
+                // without ``includeThoughts=true`` even when a budget is set.
+                .includeThoughts(
+                        input.getReasoningSummary() != null
+                                        && !input.getReasoningSummary().isBlank()
+                                ? Boolean.TRUE
+                                : null)
                 .build();
     }
 
     @Override
     public ImageModel getImageModel() {
-        return new GeminiGenAI(createGenAIClient());
+        return new GeminiGenAI(geminiApi);
     }
 
     @Override
     public VideoModel getVideoModel() {
-        return new GeminiVideoModel(createGenAIClient());
+        return new GeminiVideoModel(geminiApi, httpClient);
     }
 
     @Override
     public LLMResponse generateVideo(VideoGenRequest request) {
         VideoOptions options = getVideoOptions(request);
         VideoPrompt videoPrompt = new VideoPrompt(request.getPrompt(), options);
-        GeminiVideoModel videoModel = new GeminiVideoModel(createGenAIClient());
+        GeminiVideoModel videoModel = new GeminiVideoModel(geminiApi, httpClient);
         VideoResponse response = videoModel.call(videoPrompt);
 
         return LLMResponse.builder()
@@ -142,7 +155,7 @@ public class GeminiVertex implements AIModel {
 
     @Override
     public LLMResponse checkVideoStatus(VideoGenRequest request) {
-        GeminiVideoModel videoModel = new GeminiVideoModel(createGenAIClient());
+        GeminiVideoModel videoModel = new GeminiVideoModel(geminiApi, httpClient);
         VideoResponse response = videoModel.checkStatus(request.getJobId());
         String status = response.getMetadata().getStatus();
 
@@ -173,26 +186,9 @@ public class GeminiVertex implements AIModel {
         return builder.build();
     }
 
-    /** Creates a Google GenAI Client, using API key when available, otherwise Vertex AI. */
-    private Client createGenAIClient() {
-        if (config.getApiKey() != null && !config.getApiKey().isBlank()) {
-            return Client.builder().apiKey(config.getApiKey()).build();
-        }
-        Client.Builder builder =
-                Client.builder()
-                        .vertexAI(true)
-                        .location(config.getLocation())
-                        .project(config.getProjectId());
-        if (config.getGoogleCredentials() != null) {
-            builder.credentials(config.getGoogleCredentials());
-        }
-        return builder.build();
-    }
-
     private byte[] downloadFromUrl(String url) {
-        okhttp3.OkHttpClient client = new okhttp3.OkHttpClient();
         okhttp3.Request request = new okhttp3.Request.Builder().url(url).get().build();
-        try (okhttp3.Response response = client.newCall(request).execute()) {
+        try (okhttp3.Response response = httpClient.newCall(request).execute()) {
             if (response.body() == null) {
                 throw new RuntimeException("Empty response downloading from " + url);
             }
@@ -206,54 +202,53 @@ public class GeminiVertex implements AIModel {
 
     @Override
     public LLMResponse generateAudio(AudioGenRequest request) {
-        var client = createGenAIClient();
-        GenerateContentConfig config =
-                GenerateContentConfig.builder()
-                        .speechConfig(
-                                SpeechConfig.builder()
-                                        .voiceConfig(
-                                                VoiceConfig.builder()
-                                                        .prebuiltVoiceConfig(
-                                                                PrebuiltVoiceConfig.builder()
-                                                                        .voiceName(
-                                                                                request.getVoice())
-                                                                        .build())
-                                                        .build())
-                                        .build())
-                        .responseModalities(List.of("AUDIO"))
-                        .frequencyPenalty(
-                                request.getFrequencyPenalty() != null
-                                        ? request.getFrequencyPenalty().floatValue()
-                                        : null)
-                        .maxOutputTokens(request.getMaxTokens())
-                        .stopSequences(request.getStopWords())
-                        .build();
-        GenerateContentResponse response =
-                client.models.generateContent(request.getModel(), request.getText(), config);
-        List<Candidate> candiates = response.candidates().orElse(new ArrayList<>());
-        List<Media> media = new ArrayList<>();
-        for (Candidate candiate : candiates) {
-            candiate.content()
-                    .flatMap(Content::parts)
-                    .ifPresent(
-                            parts -> {
-                                parts.forEach(
-                                        part ->
-                                                part.inlineData()
-                                                        .flatMap(Blob::data)
-                                                        .ifPresent(
-                                                                bytes -> {
-                                                                    media.add(
-                                                                            Media.builder()
-                                                                                    .data(bytes)
-                                                                                    .mimeType(
-                                                                                            "audio/"
-                                                                                                    + request
-                                                                                                            .getResponseFormat())
-                                                                                    .build());
-                                                                }));
-                            });
+        GeminiApi.SpeechConfig speechConfig =
+                new GeminiApi.SpeechConfig(
+                        new GeminiApi.VoiceConfig(
+                                new GeminiApi.PrebuiltVoiceConfig(request.getVoice())));
+        GeminiApi.GenerationConfig genConfig =
+                new GeminiApi.GenerationConfig(
+                        null,
+                        null,
+                        null,
+                        request.getMaxTokens(),
+                        request.getStopWords(),
+                        request.getFrequencyPenalty(),
+                        null,
+                        null,
+                        List.of("AUDIO"),
+                        null,
+                        speechConfig);
+
+        try {
+            GeminiApi.Content userContent =
+                    new GeminiApi.Content("user", List.of(GeminiApi.Part.text(request.getText())));
+            GeminiApi.GenerateContentResponse result =
+                    geminiApi.generateContent(
+                            request.getModel(), List.of(userContent), null, null, genConfig);
+
+            List<Media> media = new ArrayList<>();
+            if (result.candidates() != null) {
+                for (GeminiApi.Candidate c : result.candidates()) {
+                    if (c.content() == null || c.content().parts() == null) continue;
+                    for (GeminiApi.Part p : c.content().parts()) {
+                        if (p.inlineData() != null && p.inlineData().data() != null) {
+                            byte[] bytes =
+                                    java.util.Base64.getDecoder().decode(p.inlineData().data());
+                            media.add(
+                                    Media.builder()
+                                            .data(bytes)
+                                            .mimeType("audio/" + request.getResponseFormat())
+                                            .build());
+                        }
+                    }
+                }
+            }
+            return LLMResponse.builder().media(media).build();
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Gemini generateAudio failed", e);
         }
-        return LLMResponse.builder().media(media).build();
     }
 }

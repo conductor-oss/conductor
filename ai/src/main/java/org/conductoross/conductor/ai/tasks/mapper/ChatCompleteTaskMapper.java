@@ -19,6 +19,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.conductoross.conductor.ai.AIModel;
+import org.conductoross.conductor.ai.AIModelProvider;
 import org.conductoross.conductor.ai.models.ChatCompletion;
 import org.conductoross.conductor.ai.models.ChatMessage;
 import org.conductoross.conductor.ai.models.LLMResponse;
@@ -26,7 +28,9 @@ import org.conductoross.conductor.ai.models.Media;
 import org.conductoross.conductor.ai.models.ToolCall;
 import org.conductoross.conductor.common.utils.StringTemplate;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -50,8 +54,22 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
     private static final Set<String> toolTaskTypes =
             Set.of(TASK_TYPE_HTTP, TASK_TYPE_SIMPLE, "MCP", "CALL_MCP_TOOL");
 
+    /**
+     * Nullable: present at runtime under Spring (auto-wired via the AI integration condition);
+     * nullable in unit tests that instantiate the mapper directly. When null, the mapper falls back
+     * to the historical "every provider supports prefill" assumption — same behavior as before this
+     * dependency was introduced.
+     */
+    @Nullable private final AIModelProvider aiModelProvider;
+
     public ChatCompleteTaskMapper() {
+        this(null);
+    }
+
+    @Autowired
+    public ChatCompleteTaskMapper(@Nullable AIModelProvider aiModelProvider) {
         super(ChatCompletion.NAME);
+        this.aiModelProvider = aiModelProvider;
     }
 
     @Override
@@ -67,6 +85,13 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
             if (chatCompletion.getUserInput() != null && chatCompletion.getMessages().isEmpty()) {
                 history.add(new ChatMessage(ChatMessage.Role.user, chatCompletion.getUserInput()));
             }
+            // getHistory() internally skips prior loop-iteration assistant messages
+            // for this same task refName when (a) previousResponseId is in play
+            // (OpenAI Responses API server-side store owns the prior turns) or
+            // (b) the provider declares it doesn't accept assistant-message
+            // prefill (AIModel.supportsAssistantPrefill — e.g. Anthropic, where
+            // Claude Sonnet 4.6+ rejects prefill outright). Participants, tool
+            // calls, and sub-workflow context are still preserved in both cases.
             getHistory(workflowModel, taskModel, chatCompletion);
             updateTaskModel(chatCompletion, taskModel);
 
@@ -104,6 +129,28 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
         simpleTask.getInputData().put("tools", chatCompletion.getTools());
     }
 
+    /**
+     * Resolves the configured {@link AIModel} for this chat completion and asks it whether it
+     * accepts assistant-message prefill. Returns {@code true} (the historical default) if no
+     * provider registry is wired in (unit tests), if the request specifies no provider, or if the
+     * provider name doesn't match a registered model — those cases preserve the pre-capability
+     * behavior so we don't silently change history-injection semantics for unrelated callers.
+     */
+    private boolean providerSupportsAssistantPrefill(ChatCompletion chatCompletion) {
+        if (aiModelProvider == null || chatCompletion.getLlmProvider() == null) {
+            return true;
+        }
+        try {
+            AIModel model = aiModelProvider.getModel(chatCompletion);
+            return model.supportsAssistantPrefill();
+        } catch (RuntimeException unknownProvider) {
+            log.debug(
+                    "Provider '{}' not registered; defaulting supportsAssistantPrefill=true",
+                    chatCompletion.getLlmProvider());
+            return true;
+        }
+    }
+
     private void getHistory(
             WorkflowModel workflow, TaskModel chatCompleteTask, ChatCompletion chatCompletion) {
         Map<String, List<TaskModel>> refNameToTask = new HashMap<>();
@@ -125,6 +172,27 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
         if (chatCompleteTask.getParentTaskReferenceName() != null) {
             historyContextTaskRefName = chatCompleteTask.getParentTaskReferenceName();
         }
+        // Suppress the same-refName loop-iteration assistant injection when either:
+        //   (a) previousResponseId is set — OpenAI's Responses API server-side store
+        //       already has every prior turn for this loop; re-injecting them
+        //       duplicates context and, because we only emit the assistant side
+        //       (not the matching user prompt), leaves the model staring at
+        //       orphaned replies.
+        //   (b) the provider declares it doesn't accept assistant-message prefill
+        //       (see AIModel.supportsAssistantPrefill). The loop-iteration messages
+        //       arrive as a trailing assistant turn on the next call — if the
+        //       provider's API rejects that shape (e.g. Anthropic Sonnet 4.6+:
+        //       400 "This model does not support assistant message prefill. The
+        //       conversation must end with a user message."), the whole turn
+        //       fails. Workflow authors who need prior-iteration state should
+        //       template it into the user message via ${...output.result}.
+        // Participants, tool calls, and sub-workflow context are not suppressed
+        // in either case — those are legitimate conversation turns the server
+        // (or model) has never seen.
+        String prevRespId = chatCompletion.getPreviousResponseId();
+        boolean suppressLoopAssistantHistory =
+                (prevRespId != null && !prevRespId.isBlank())
+                        || !providerSupportsAssistantPrefill(chatCompletion);
         List<ChatMessage> history = new ArrayList<>();
         for (TaskModel task : workflow.getTasks()) {
             if (!task.getStatus().isTerminal()) {
@@ -139,7 +207,9 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
                     && task.getWorkflowTask()
                             .getTaskReferenceName()
                             .equals(historyContextTaskRefName)) {
-                skipTask = false;
+                // Same-refName loop iterations are exactly the assistant-message
+                // duplication the Responses API has already absorbed; skip them.
+                skipTask = suppressLoopAssistantHistory;
             } else if (chatCompletion.getParticipants() != null) {
                 ChatMessage.Role participantRole =
                         chatCompletion

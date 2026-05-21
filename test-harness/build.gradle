@@ -12,6 +12,8 @@ dependencies {
     testImplementation project(':conductor-grpc-client')
     testImplementation project(':conductor-json-jq-task')
     testImplementation project(':conductor-http-task')
+    testImplementation project(':conductor-scheduler-core')
+    testImplementation project(':conductor-ai')
 
     testImplementation "org.conductoross:conductor-client:${revConductorClient}"
 

@@ -40,6 +40,7 @@ import org.springframework.ai.image.ImageModel;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
 
 @Slf4j
 public class OpenAI implements AIModel {
@@ -62,19 +63,20 @@ public class OpenAI implements AIModel {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public OpenAI(OpenAIConfiguration config) {
+        this(config, new OkHttpClient());
+    }
+
+    public OpenAI(OpenAIConfiguration config, OkHttpClient httpClient) {
         this.config = config;
-        long timeoutSecs = config.getTimeout() != null ? config.getTimeout().getSeconds() : 600;
         String baseUrl = config.getBaseURL();
-
-        this.responsesApi = new OpenAIResponsesApi(config.getApiKey(), baseUrl, false, timeoutSecs);
-        this.embeddingsApi =
-                new OpenAIEmbeddingsApi(config.getApiKey(), baseUrl, false, timeoutSecs);
-        this.imageGenApi = new OpenAIImageGenApi(config.getApiKey(), baseUrl, false, timeoutSecs);
-
-        // Audio and Video APIs need base URL without /v1 suffix
         String baseUrlNoV1 = stripV1(baseUrl);
-        this.speechApi = new OpenAISpeechApi(config.getApiKey(), baseUrl, false, timeoutSecs);
-        this.videoApi = new OpenAIVideoApi(config.getApiKey(), baseUrlNoV1);
+
+        this.responsesApi = new OpenAIResponsesApi(httpClient, config.getApiKey(), baseUrl, false);
+        this.embeddingsApi =
+                new OpenAIEmbeddingsApi(httpClient, config.getApiKey(), baseUrl, false);
+        this.imageGenApi = new OpenAIImageGenApi(httpClient, config.getApiKey(), baseUrl, false);
+        this.speechApi = new OpenAISpeechApi(httpClient, config.getApiKey(), baseUrl, false);
+        this.videoApi = new OpenAIVideoApi(httpClient, config.getApiKey(), baseUrlNoV1);
 
         this.chatModel = new OpenAIResponsesChatModel(responsesApi);
         this.imageModel = new OpenAIHttpImageModel(imageGenApi);
@@ -118,6 +120,7 @@ public class OpenAI implements AIModel {
                         .stopSequences(input.getStopWords())
                         .previousResponseId(input.getPreviousResponseId())
                         .reasoningEffort(input.getReasoningEffort())
+                        .reasoningSummary(input.getReasoningSummary())
                         .jsonOutput(input.isJsonOutput())
                         .responsesApiTools(tools.isEmpty() ? null : tools);
 

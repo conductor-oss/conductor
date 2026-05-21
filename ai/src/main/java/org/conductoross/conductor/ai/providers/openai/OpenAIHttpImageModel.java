@@ -51,17 +51,26 @@ public class OpenAIHttpImageModel implements ImageModel {
                 size = options.getWidth() + "x" + options.getHeight();
             }
 
+            String model = options != null ? options.getModel() : null;
+            // gpt-image-1 always returns b64_json and rejects response_format / style;
+            // sending either yields a 400 from the OpenAI API.
+            boolean isGptImage = model != null && model.toLowerCase().startsWith("gpt-image");
+            String style = (options != null && !isGptImage) ? options.getStyle() : null;
+            String responseFormat =
+                    isGptImage
+                            ? null
+                            : (options != null && options.getResponseFormat() != null
+                                    ? options.getResponseFormat()
+                                    : "b64_json");
+
             var request =
                     OpenAIImageGenApi.ImageRequest.builder()
-                            .model(options != null ? options.getModel() : null)
+                            .model(model)
                             .prompt(promptText)
                             .n(options != null && options.getN() != null ? options.getN() : 1)
                             .size(size)
-                            .style(options != null ? options.getStyle() : null)
-                            .responseFormat(
-                                    options != null && options.getResponseFormat() != null
-                                            ? options.getResponseFormat()
-                                            : "b64_json")
+                            .style(style)
+                            .responseFormat(responseFormat)
                             .build();
 
             var result = imageGenApi.createImage(request);

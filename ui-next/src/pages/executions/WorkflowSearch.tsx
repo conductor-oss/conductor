@@ -126,7 +126,8 @@ export default function WorkflowPanel() {
 
   const pushHistory = usePushHistory();
 
-  const getTableTitle = (resultObj: TaskExecutionResult) => {
+  const getTableTitle = (resultObj: TaskExecutionResult | undefined) => {
+    if (!resultObj?.results) return null;
     const { results, totalHits } = resultObj;
     return (
       <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>

@@ -36,7 +36,7 @@ public class LLMWorkerInput {
     private Integer topK;
     private Double presencePenalty;
     private List<String> stopWords;
-    private Integer maxTokens;
+    private Integer maxTokens = 8192;
     private int maxResults = 1;
     private boolean allowRawPrompts;
 
