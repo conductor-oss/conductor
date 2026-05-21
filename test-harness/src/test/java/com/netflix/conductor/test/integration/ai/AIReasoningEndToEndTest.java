@@ -128,6 +128,7 @@ class AIReasoningEndToEndTest {
     @Autowired private ExecutionService executionService;
     @Autowired private AIModelProvider aiModelProvider;
     @Autowired private FakeChatModel fakeChatModel;
+    @Autowired private FakeAIModel fakeAIModel;
     @Autowired private QueueDAO queueDAO;
     @Autowired private AsyncSystemTaskExecutor asyncSystemTaskExecutor;
 
@@ -143,6 +144,7 @@ class AIReasoningEndToEndTest {
     @BeforeEach
     void resetFakeBetweenRuns() {
         fakeChatModel.reset();
+        fakeAIModel.setSupportsAssistantPrefill(true);
     }
 
     @Test
@@ -275,6 +277,190 @@ class AIReasoningEndToEndTest {
                 "loop iterations must NOT auto-thread previousResponseId — re-enable only after the history rebuild emits a strict delta");
     }
 
+    @Test
+    void loopHistoryInjectionIsSuppressedWhenProviderRejectsPrefill() {
+        // Reproduces the original Anthropic Sonnet 4.6 production failure path
+        // end-to-end. The fake provider declares supportsAssistantPrefill=false;
+        // a 2-iteration DO_WHILE runs the chat task twice; iteration 2's
+        // resolved messages array must NOT contain a trailing assistant message
+        // from iteration 1. Before this fix, ChatCompleteTaskMapper.getHistory()
+        // appended the prior iteration's output as an assistant turn, which
+        // Anthropic 4.6+ rejects with HTTP 400 "This model does not support
+        // assistant message prefill."
+        fakeAIModel.setSupportsAssistantPrefill(false);
+        fakeChatModel.stageResponse("Turn one.", null, null, "resp_t1");
+        fakeChatModel.stageResponse("Turn two.", null, null, "resp_t2");
+
+        String wfName = "ai_loop_prefill_off_e2e_" + UUID.randomUUID();
+        registerLoopWorkflow(wfName);
+
+        Workflow completed = runLoopWorkflow(wfName);
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
+
+        List<Map<String, Object>> iter2Messages = messagesForLoopIteration(completed, "chat", 2);
+        assertTrue(
+                iter2Messages.stream().noneMatch(m -> "assistant".equals(m.get("role"))),
+                "iteration 2 must NOT carry a trailing assistant message when the provider "
+                        + "rejects prefill; saw "
+                        + iter2Messages);
+        // Sanity-check: iteration 2 still has the user turn so the model has a
+        // prompt to answer — the suppression isn't accidentally dropping
+        // everything.
+        assertTrue(
+                iter2Messages.stream().anyMatch(m -> "user".equals(m.get("role"))),
+                "iteration 2 must retain its user message; saw " + iter2Messages);
+    }
+
+    @Test
+    void loopHistoryInjectionStillRunsWhenProviderAcceptsPrefill() {
+        // Regression safety: the capability gate must not over-suppress.
+        // Providers that accept assistant prefill (OpenAI without
+        // previousResponseId, Gemini, etc.) should still receive the
+        // auto-injected prior iteration assistant message — that's the
+        // historical agentic-flow behavior the loop-history injection was
+        // designed for. Iteration 2 here MUST carry an assistant turn whose
+        // content matches iteration 1's output.
+        fakeAIModel.setSupportsAssistantPrefill(true);
+        fakeChatModel.stageResponse("Turn one.", null, null, "resp_t1");
+        fakeChatModel.stageResponse("Turn two.", null, null, "resp_t2");
+
+        String wfName = "ai_loop_prefill_on_e2e_" + UUID.randomUUID();
+        registerLoopWorkflow(wfName);
+
+        Workflow completed = runLoopWorkflow(wfName);
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
+
+        List<Map<String, Object>> iter2Messages = messagesForLoopIteration(completed, "chat", 2);
+        boolean sawTurnOneAssistant =
+                iter2Messages.stream()
+                        .anyMatch(
+                                m ->
+                                        "assistant".equals(m.get("role"))
+                                                && String.valueOf(m.get("message"))
+                                                        .contains("Turn one."));
+        assertTrue(
+                sawTurnOneAssistant,
+                "iteration 2 must carry iter 1's assistant output when the provider accepts "
+                        + "prefill; saw "
+                        + iter2Messages);
+    }
+
+    @Test
+    void explicitPreviousResponseIdPropagatesToProvider() {
+        // Auto-threading is intentionally OFF (see
+        // doWhileLoopDoesNotAutoThreadPreviousResponseId), but an EXPLICIT
+        // previousResponseId set on the chat task's input must still reach
+        // the provider — that's how callers thread multi-turn conversations
+        // through the OpenAI Responses API today.
+        fakeChatModel.stageResponse("Reply.", null, null, "resp_explicit");
+        AtomicReference<String> seenPreviousId = new AtomicReference<>();
+        fakeChatModel.onCall(
+                (callIndex, opts) -> {
+                    if (opts instanceof FakeChatOptions f) {
+                        seenPreviousId.set(f.previousResponseId);
+                    }
+                });
+
+        String wfName = "ai_explicit_prev_resp_id_e2e_" + UUID.randomUUID();
+        registerWorkflowWithPreviousResponseId(wfName);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("llmProvider", FAKE_PROVIDER);
+        input.put("model", "fake-explicit");
+        input.put("instructions", "Continue.");
+        input.put("userInput", "Continue.");
+        input.put("previousResponseId", "resp_caller_supplied_xyz");
+
+        StartWorkflowInput swi = new StartWorkflowInput();
+        swi.setName(wfName);
+        swi.setVersion(1);
+        swi.setWorkflowInput(input);
+        String workflowId = workflowExecutor.startWorkflow(swi);
+
+        Workflow completed = awaitWorkflow(workflowId);
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
+        assertEquals(
+                "resp_caller_supplied_xyz",
+                seenPreviousId.get(),
+                "an explicit previousResponseId on workflow input must propagate end-to-end "
+                        + "through the mapper to the provider's ChatOptions");
+    }
+
+    @Test
+    void explicitPreviousResponseIdSuppressesLoopHistoryInjection() {
+        // Two independent suppression triggers exist — this one was here before
+        // the supportsAssistantPrefill capability was added: when
+        // previousResponseId is set, the OpenAI Responses API server-side store
+        // owns prior turns, so the mapper must not also inject them locally.
+        // Verify end-to-end that even with a prefill-accepting provider,
+        // setting previousResponseId on the loop body's chat input keeps the
+        // mapper from adding the iter-1 assistant message into iter 2's
+        // messages array.
+        fakeAIModel.setSupportsAssistantPrefill(true);
+        fakeChatModel.stageResponse("Turn one.", null, null, "resp_t1");
+        fakeChatModel.stageResponse("Turn two.", null, null, "resp_t2");
+
+        String wfName = "ai_loop_explicit_prev_resp_id_e2e_" + UUID.randomUUID();
+        registerLoopWorkflowWithPreviousResponseId(wfName);
+
+        Workflow completed = runLoopWorkflow(wfName);
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
+
+        List<Map<String, Object>> iter2Messages = messagesForLoopIteration(completed, "chat", 2);
+        assertTrue(
+                iter2Messages.stream().noneMatch(m -> "assistant".equals(m.get("role"))),
+                "iteration 2 must NOT carry a trailing assistant message when "
+                        + "previousResponseId is set, regardless of provider prefill support; "
+                        + "saw "
+                        + iter2Messages);
+    }
+
+    private Workflow runLoopWorkflow(String wfName) {
+        Map<String, Object> input = new HashMap<>();
+        input.put("llmProvider", FAKE_PROVIDER);
+        input.put("model", "fake-loop");
+        input.put("instructions", "Iterate.");
+        input.put("userInput", "Iterate.");
+
+        StartWorkflowInput swi = new StartWorkflowInput();
+        swi.setName(wfName);
+        swi.setVersion(1);
+        swi.setWorkflowInput(input);
+        String workflowId = workflowExecutor.startWorkflow(swi);
+        return awaitWorkflow(workflowId);
+    }
+
+    /**
+     * Walks {@link Workflow#getTasks()} to find the LLM_CHAT_COMPLETE task that ran as the given
+     * iteration of the named loop body, then returns its mapper-resolved {@code messages} input —
+     * i.e. exactly what {@link ChatCompleteTaskMapper} produced before the worker called the
+     * provider. Reading at this layer rather than the post-LLMHelper sanitized prompt lets the
+     * assertions speak to mapper behavior directly, independent of downstream message normalization
+     * in {@code LLMHelper.ensureLastMessageIsFromUser}.
+     */
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> messagesForLoopIteration(
+            Workflow workflow, String loopBodyRef, int iteration) {
+        return workflow.getTasks().stream()
+                .filter(t -> "LLM_CHAT_COMPLETE".equals(t.getTaskType()))
+                .filter(t -> t.getIteration() == iteration)
+                .filter(
+                        t ->
+                                t.getReferenceTaskName() != null
+                                        && t.getReferenceTaskName().startsWith(loopBodyRef))
+                .findFirst()
+                .map(t -> (List<Map<String, Object>>) t.getInputData().get("messages"))
+                .orElseThrow(
+                        () ->
+                                new IllegalStateException(
+                                        "no LLM_CHAT_COMPLETE task found for ref '"
+                                                + loopBodyRef
+                                                + "' iteration "
+                                                + iteration
+                                                + "; tasks: "
+                                                + workflow.getTasks()));
+    }
+
     // -- workflow registration helpers --
 
     private void registerWorkflow(String name) {
@@ -352,6 +538,84 @@ class AIReasoningEndToEndTest {
         metadataService.updateWorkflowDef(List.of(def));
     }
 
+    private void registerWorkflowWithPreviousResponseId(String name) {
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("LLM_CHAT_COMPLETE");
+        taskDef.setRetryCount(0);
+        taskDef.setTimeoutSeconds(60);
+        try {
+            metadataService.registerTaskDef(List.of(taskDef));
+        } catch (Exception ignore) {
+        }
+
+        WorkflowTask task = new WorkflowTask();
+        task.setName("LLM_CHAT_COMPLETE");
+        task.setTaskReferenceName("chat");
+        task.setType("LLM_CHAT_COMPLETE");
+        Map<String, Object> taskInput = new HashMap<>();
+        taskInput.put("llmProvider", "${workflow.input.llmProvider}");
+        taskInput.put("model", "${workflow.input.model}");
+        taskInput.put("instructions", "${workflow.input.instructions}");
+        taskInput.put("userInput", "${workflow.input.userInput}");
+        // Explicit previousResponseId from workflow input — proves the caller-set
+        // value flows through to the provider's ChatOptions.
+        taskInput.put("previousResponseId", "${workflow.input.previousResponseId}");
+        task.setInputParameters(taskInput);
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName(name);
+        def.setVersion(1);
+        def.setOwnerEmail("ai-e2e@conductor.test");
+        def.setTasks(List.of(task));
+        metadataService.updateWorkflowDef(List.of(def));
+    }
+
+    private void registerLoopWorkflowWithPreviousResponseId(String name) {
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("LLM_CHAT_COMPLETE");
+        taskDef.setRetryCount(0);
+        taskDef.setTimeoutSeconds(60);
+        try {
+            metadataService.registerTaskDef(List.of(taskDef));
+        } catch (Exception ignore) {
+        }
+        TaskDef loopDef = new TaskDef();
+        loopDef.setName("DO_WHILE");
+        loopDef.setRetryCount(0);
+        try {
+            metadataService.registerTaskDef(List.of(loopDef));
+        } catch (Exception ignore) {
+        }
+
+        WorkflowTask chat = new WorkflowTask();
+        chat.setName("LLM_CHAT_COMPLETE");
+        chat.setTaskReferenceName("chat");
+        chat.setType("LLM_CHAT_COMPLETE");
+        Map<String, Object> taskInput = new HashMap<>();
+        taskInput.put("llmProvider", "${workflow.input.llmProvider}");
+        taskInput.put("model", "${workflow.input.model}");
+        taskInput.put("instructions", "${workflow.input.instructions}");
+        taskInput.put("userInput", "${workflow.input.userInput}");
+        // Constant on every iteration — what matters for this test is that
+        // *any* non-blank previousResponseId triggers the suppression branch.
+        taskInput.put("previousResponseId", "resp_loop_explicit_threading");
+        chat.setInputParameters(taskInput);
+
+        WorkflowTask loop = new WorkflowTask();
+        loop.setName("loop");
+        loop.setTaskReferenceName("loop");
+        loop.setType(TaskType.DO_WHILE.name());
+        loop.setLoopCondition("if ( $.loop['iteration'] < 2 ) { true; } else { false; }");
+        loop.setLoopOver(List.of(chat));
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName(name);
+        def.setVersion(1);
+        def.setOwnerEmail("ai-e2e@conductor.test");
+        def.setTasks(List.of(loop));
+        metadataService.updateWorkflowDef(List.of(def));
+    }
+
     private Workflow awaitWorkflow(String workflowId) {
         AtomicReference<Workflow> latest = new AtomicReference<>();
         Awaitility.await()
@@ -405,8 +669,13 @@ class AIReasoningEndToEndTest {
         }
 
         @Bean
-        ModelConfiguration<FakeAIModel> fakeAIModelConfiguration(FakeChatModel fakeChatModel) {
-            return () -> new FakeAIModel(fakeChatModel);
+        FakeAIModel fakeAIModel(FakeChatModel fakeChatModel) {
+            return new FakeAIModel(fakeChatModel);
+        }
+
+        @Bean
+        ModelConfiguration<FakeAIModel> fakeAIModelConfiguration(FakeAIModel fakeAIModel) {
+            return () -> fakeAIModel;
         }
     }
 
@@ -417,13 +686,30 @@ class AIReasoningEndToEndTest {
 
         private final FakeChatModel chatModel;
 
+        /**
+         * Mutable per-test so a single {@link FakeAIModel} bean can simulate both an
+         * Anthropic-Sonnet-4.6-like provider (rejects prefill) and an OpenAI-like provider (accepts
+         * prefill) without re-wiring the Spring context between tests. Reset to {@code true} in
+         * {@link #resetFakeBetweenRuns}.
+         */
+        private volatile boolean supportsAssistantPrefill = true;
+
         FakeAIModel(FakeChatModel chatModel) {
             this.chatModel = chatModel;
+        }
+
+        void setSupportsAssistantPrefill(boolean value) {
+            this.supportsAssistantPrefill = value;
         }
 
         @Override
         public String getModelProvider() {
             return FAKE_PROVIDER;
+        }
+
+        @Override
+        public boolean supportsAssistantPrefill() {
+            return supportsAssistantPrefill;
         }
 
         @Override
