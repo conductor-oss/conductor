@@ -10,7 +10,7 @@ const useStyles = makeStyles({
     display: "flex",
     flexDirection: "column",
     position: "relative",
-  }
+  },
 });
 
 export default function TaskHuman({ taskResult, onTaskExecuted }) {
@@ -25,21 +25,18 @@ export default function TaskHuman({ taskResult, onTaskExecuted }) {
 
   const completeTask = (payload) => {
     updateTask({
-      body: payload
+      body: payload,
     });
-  }
+  };
 
   const initData = {
     workflowInstanceId: taskResult.workflowInstanceId,
-    taskId: taskResult.taskId
-  }
+    taskId: taskResult.taskId,
+  };
 
   return (
     <div className={classes.wrapper}>
-      <TaskHumanForm
-        initialData={initData}
-        completeTask={completeTask}
-      />
+      <TaskHumanForm initialData={initData} completeTask={completeTask} />
     </div>
   );
 }

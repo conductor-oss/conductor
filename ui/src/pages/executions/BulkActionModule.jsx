@@ -60,7 +60,7 @@ export default function BulkActionModule({ selectedRows }) {
     mutate: terminateWithReasonAction,
     isLoading: terminateWithReasonLoading,
   } = useBulkTerminateWithReasonAction({ onSuccess });
-  const { mutate: deleteAction, isLoading: deleteLoading } = 
+  const { mutate: deleteAction, isLoading: deleteLoading } =
     useBulkDeleteAction({ onSuccess });
 
   const isLoading =

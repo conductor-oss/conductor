@@ -15,11 +15,13 @@ package org.conductoross.conductor.ai.providers.mistral;
 import java.time.Duration;
 
 import org.conductoross.conductor.ai.ModelConfiguration;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import okhttp3.OkHttpClient;
 
 @Data
 @Component
@@ -33,6 +35,8 @@ public class MistralAIConfiguration implements ModelConfiguration<MistralAI> {
 
     private Duration timeout = Duration.ofSeconds(600);
 
+    @Autowired private OkHttpClient conductorAiHttpClient;
+
     public MistralAIConfiguration(String apiKey, String baseURL) {
         this.apiKey = apiKey;
         this.baseURL = baseURL;
@@ -44,6 +48,8 @@ public class MistralAIConfiguration implements ModelConfiguration<MistralAI> {
 
     @Override
     public MistralAI get() {
-        return new MistralAI(this);
+        return conductorAiHttpClient != null
+                ? new MistralAI(this, conductorAiHttpClient)
+                : new MistralAI(this);
     }
 }
