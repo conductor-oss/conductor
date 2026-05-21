@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.integration;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -76,6 +77,21 @@ public class AIModelIntegrationTest {
     private static final String EMBEDDING_TEXT =
             "Hello, world! This is a test sentence for embeddings.";
     private static final String AUDIO_TEXT = "Hello, this is a test of text to speech.";
+
+    /**
+     * Builds an OkHttp client whose timeouts match the production {@code conductorAiHttpClient}
+     * Spring bean ({@code AIHttpClientProperties}). The default {@code new OkHttpClient()} ships
+     * with a 10s read timeout that's too short for slow provider operations — notably {@code
+     * gpt-image-1} image generation at 1024×1024, which regularly takes 30–60s and was failing this
+     * suite as a result.
+     */
+    private static OkHttpClient testHttpClient() {
+        return new OkHttpClient.Builder()
+                .connectTimeout(Duration.ofSeconds(60))
+                .readTimeout(Duration.ofSeconds(600))
+                .writeTimeout(Duration.ofSeconds(60))
+                .build();
+    }
 
     // ========================================================================
     // Environment variable helpers
@@ -165,7 +181,7 @@ public class AIModelIntegrationTest {
             OpenAIConfiguration config = new OpenAIConfiguration();
             config.setApiKey(System.getenv("OPENAI_API_KEY"));
             config.setBaseURL(System.getenv("OPENAI_BASE_URL"));
-            openAI = new OpenAI(config, new OkHttpClient());
+            openAI = new OpenAI(config, testHttpClient());
         }
 
         @Test
@@ -562,7 +578,7 @@ public class AIModelIntegrationTest {
             AnthropicConfiguration config = new AnthropicConfiguration();
             config.setApiKey(System.getenv("ANTHROPIC_API_KEY"));
             config.setBaseURL(System.getenv("ANTHROPIC_BASE_URL"));
-            anthropic = new Anthropic(config, new OkHttpClient());
+            anthropic = new Anthropic(config, testHttpClient());
         }
 
         @Test
@@ -1136,7 +1152,7 @@ public class AIModelIntegrationTest {
             GrokAIConfiguration config = new GrokAIConfiguration();
             config.setApiKey(System.getenv("GROK_API_KEY"));
             config.setBaseURL(System.getenv("GROK_BASE_URL"));
-            grok = new Grok(config, new OkHttpClient());
+            grok = new Grok(config, testHttpClient());
         }
 
         @Test
@@ -1299,7 +1315,7 @@ public class AIModelIntegrationTest {
             AzureOpenAIConfiguration config = new AzureOpenAIConfiguration();
             config.setApiKey(System.getenv("AZURE_OPENAI_API_KEY"));
             config.setBaseURL(System.getenv("AZURE_OPENAI_ENDPOINT"));
-            azureOpenAI = new AzureOpenAI(config, new OkHttpClient());
+            azureOpenAI = new AzureOpenAI(config, testHttpClient());
         }
 
         @Test
@@ -1438,7 +1454,7 @@ public class AIModelIntegrationTest {
             PerplexityAIConfiguration config = new PerplexityAIConfiguration();
             config.setApiKey(System.getenv("PERPLEXITY_API_KEY"));
             config.setBaseURL(System.getenv("PERPLEXITY_BASE_URL"));
-            perplexity = new PerplexityAI(config, new OkHttpClient());
+            perplexity = new PerplexityAI(config, testHttpClient());
         }
 
         @Test
