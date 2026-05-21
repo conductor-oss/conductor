@@ -27,6 +27,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 
+import okhttp3.OkHttpClient;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class AzureOpenAITest {
@@ -45,7 +47,7 @@ class AzureOpenAITest {
             config.setApiKey("test-api-key");
             config.setBaseURL("https://myresource.openai.azure.com");
             config.setDeploymentName("gpt-4");
-            azureOpenAI = new AzureOpenAI(config);
+            azureOpenAI = new AzureOpenAI(config, new OkHttpClient());
         }
 
         @Test
@@ -111,7 +113,7 @@ class AzureOpenAITest {
                     System.getenv("AZURE_OPENAI_DEPLOYMENT") != null
                             ? System.getenv("AZURE_OPENAI_DEPLOYMENT")
                             : "gpt-4o-mini");
-            azureOpenAI = new AzureOpenAI(config);
+            azureOpenAI = new AzureOpenAI(config, new OkHttpClient());
         }
 
         @Test

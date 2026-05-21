@@ -27,6 +27,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.image.ImageModel;
 
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
 
 @Slf4j
 public class Anthropic implements AIModel {
@@ -38,20 +39,38 @@ public class Anthropic implements AIModel {
     private final AnthropicMessagesApi messagesApi;
     private final AnthropicChatModel chatModel;
 
-    @SuppressWarnings("unchecked")
     public Anthropic(AnthropicConfiguration config) {
-        this.config = config;
-        long timeoutSecs = config.getTimeout() != null ? config.getTimeout().getSeconds() : 600;
+        this(config, new OkHttpClient());
+    }
 
+    @SuppressWarnings("unchecked")
+    public Anthropic(AnthropicConfiguration config, OkHttpClient httpClient) {
+        this.config = config;
         this.messagesApi =
                 new AnthropicMessagesApi(
-                        config.getApiKey(), config.getBaseURL(), config.getVersion(), timeoutSecs);
+                        httpClient, config.getApiKey(), config.getBaseURL(), config.getVersion());
         this.chatModel = new AnthropicChatModel(messagesApi);
     }
 
     @Override
     public String getModelProvider() {
         return NAME;
+    }
+
+    /**
+     * Anthropic Claude Sonnet 4.6+ rejects requests whose final message has the {@code assistant}
+     * role with {@code 400 "This model does not support assistant message prefill. The conversation
+     * must end with a user message."} Earlier Claude models (Sonnet 4.5 and below) silently
+     * accepted prefill, which is the only reason {@link
+     * org.conductoross.conductor.ai.tasks.mapper.ChatCompleteTaskMapper}'s loop-history
+     * auto-injection ever worked on Anthropic — the injected messages arrived as accidental
+     * prefill. We declare {@code false} here so the mapper suppresses that injection across all
+     * Anthropic models; workflows that need prior-iteration state on an Anthropic loop should
+     * template it into the user message via {@code ${...output.result}}.
+     */
+    @Override
+    public boolean supportsAssistantPrefill() {
+        return false;
     }
 
     @Override
