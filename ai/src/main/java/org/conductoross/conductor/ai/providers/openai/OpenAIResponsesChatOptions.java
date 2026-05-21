@@ -40,6 +40,7 @@ public class OpenAIResponsesChatOptions implements ChatOptions {
     // Responses API specific
     private String previousResponseId;
     private String reasoningEffort;
+    private String reasoningSummary;
     private Boolean jsonOutput;
     private List<OpenAIResponsesApi.Tool> responsesApiTools;
 
@@ -60,6 +61,7 @@ public class OpenAIResponsesChatOptions implements ChatOptions {
                 .stopSequences(stopSequences)
                 .previousResponseId(previousResponseId)
                 .reasoningEffort(reasoningEffort)
+                .reasoningSummary(reasoningSummary)
                 .jsonOutput(jsonOutput)
                 .responsesApiTools(responsesApiTools)
                 .build();

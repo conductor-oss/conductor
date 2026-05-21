@@ -27,6 +27,7 @@ import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
 
 /**
  * Stability AI provider for image generation using the v2beta REST API.
@@ -70,7 +71,11 @@ public class StabilityAI implements AIModel {
     private final ImageModel imageModel;
 
     public StabilityAI(StabilityAIConfiguration config) {
-        this.api = new StabilityAiApi(config.getApiKey());
+        this(config, new OkHttpClient());
+    }
+
+    public StabilityAI(StabilityAIConfiguration config, OkHttpClient httpClient) {
+        this.api = new StabilityAiApi(httpClient, config.getApiKey(), null);
 
         // Create an ImageModel adapter that delegates to our v2beta API client.
         // The adapter translates Spring AI's ImagePrompt into StabilityAiApi calls,

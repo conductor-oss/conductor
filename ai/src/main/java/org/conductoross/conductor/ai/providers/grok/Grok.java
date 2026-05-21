@@ -27,6 +27,8 @@ import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 
+import okhttp3.OkHttpClient;
+
 public class Grok implements AIModel {
 
     public static final String NAME = "Grok";
@@ -34,14 +36,17 @@ public class Grok implements AIModel {
     private final OpenAICompatChatModel chatModel;
 
     public Grok(GrokAIConfiguration config) {
+        this(config, new OkHttpClient());
+    }
+
+    public Grok(GrokAIConfiguration config, OkHttpClient httpClient) {
         this.config = config;
-        long timeoutSecs = config.getTimeout() != null ? config.getTimeout().getSeconds() : 600;
         OpenAIChatCompletionsApi api =
                 new OpenAIChatCompletionsApi(
+                        httpClient,
                         config.getApiKey(),
                         config.getBaseURL(),
-                        "/v1/chat/completions",
-                        timeoutSecs);
+                        "/v1/chat/completions");
         this.chatModel = new OpenAICompatChatModel(api);
     }
 

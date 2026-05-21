@@ -23,9 +23,11 @@ import org.springframework.stereotype.Component;
 import com.netflix.conductor.common.metadata.workflow.IdempotencyStrategy;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.exception.NonTransientException;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -38,12 +40,15 @@ public class SubWorkflow extends WorkflowSystemTask {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SubWorkflow.class);
     private static final String SUB_WORKFLOW_ID = "subWorkflowId";
+    private static final String SUB_WORKFLOW_LAUNCH_ERROR = "subWorkflowLaunchError";
 
     private final ObjectMapper objectMapper;
+    private final IDGenerator idGenerator;
 
-    public SubWorkflow(ObjectMapper objectMapper) {
+    public SubWorkflow(ObjectMapper objectMapper, IDGenerator idGenerator) {
         super(TASK_TYPE_SUB_WORKFLOW);
         this.objectMapper = objectMapper;
+        this.idGenerator = idGenerator;
     }
 
     @SuppressWarnings("unchecked")
@@ -152,35 +157,58 @@ public class SubWorkflow extends WorkflowSystemTask {
         String correlationId = workflow.getCorrelationId();
 
         try {
+            // Derive the parent reference from the task itself, not from the
+            // caller-supplied `workflow` argument. `task.workflowInstanceId` is
+            // stamped on the task when it's scheduled and always identifies the
+            // workflow that owns the task. Reading it from `workflow` would let
+            // a wrong-context caller (e.g. updateParentWorkflowTask invoking
+            // SubWorkflow.execute with the child workflow as `workflow`) compute
+            // a divergent deterministic child id and mint a phantom workflow.
+            // Using the task-intrinsic ref makes the id derivation idempotent
+            // across all callers, so the existing child-id lock inside
+            // startWorkflowIdempotent serializes concurrent attempts onto the
+            // same workflow.
+            String parentWorkflowId = task.getWorkflowInstanceId();
+            String subWorkflowId =
+                    idGenerator.generateSubWorkflowId(
+                            parentWorkflowId, task.getTaskId(), task.getRetryCount());
+            LOGGER.debug(
+                    "Launching sub-workflow task {} in parent workflow {} with deterministic child workflow id {}",
+                    task.getTaskId(),
+                    parentWorkflowId,
+                    subWorkflowId);
+
             StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
             startWorkflowInput.setWorkflowDefinition(workflowDefinition);
             startWorkflowInput.setName(name);
             startWorkflowInput.setVersion(resolvedVersion);
             startWorkflowInput.setWorkflowInput(wfInput);
             startWorkflowInput.setCorrelationId(correlationId);
-            startWorkflowInput.setParentWorkflowId(workflow.getWorkflowId());
+            startWorkflowInput.setParentWorkflowId(parentWorkflowId);
             startWorkflowInput.setParentWorkflowTaskId(task.getTaskId());
             startWorkflowInput.setTaskToDomain(taskToDomain);
+            startWorkflowInput.setWorkflowId(subWorkflowId);
             startWorkflowInput.setPriority(priority);
             startWorkflowInput.setIdempotencyKey(idempotencyKey);
             startWorkflowInput.setIdempotencyStrategy(idempotencyStrategy);
 
-            String subWorkflowId = workflowExecutor.startWorkflow(startWorkflowInput);
-
-            task.setSubWorkflowId(subWorkflowId);
-            // For backwards compatibility
-            task.addOutput(SUB_WORKFLOW_ID, subWorkflowId);
-
-            // Set task status based on current sub-workflow status, as the status can change in
-            // recursion by the time we update here.
-            WorkflowModel subWorkflow = workflowExecutor.getWorkflow(subWorkflowId, false);
-            updateTaskStatus(subWorkflow, task);
+            // Attach to the created child as soon as the workflow record exists. The child's
+            // initial decide continues asynchronously through the decider queue.
+            WorkflowModel subWorkflow =
+                    workflowExecutor.startWorkflowIdempotent(startWorkflowInput);
+            attachToSubWorkflow(task, subWorkflow);
         } catch (TransientException te) {
+            task.setStatus(TaskModel.Status.SCHEDULED);
+            task.setReasonForIncompletion(
+                    String.format(
+                            "Transient error starting sub workflow %s: %s", name, te.getMessage()));
+            task.addOutput(SUB_WORKFLOW_LAUNCH_ERROR, te.getMessage());
             LOGGER.info(
                     "A transient backend error happened when task {} in {} tried to start sub workflow {}.",
                     task.getTaskId(),
                     workflow.toShortString(),
-                    name);
+                    name,
+                    te);
         } catch (Exception ae) {
             task.setStatus(TaskModel.Status.FAILED);
             task.setReasonForIncompletion(ae.getMessage());
@@ -197,6 +225,21 @@ public class SubWorkflow extends WorkflowSystemTask {
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         String workflowId = task.getSubWorkflowId();
         if (StringUtils.isEmpty(workflowId)) {
+            // SCHEDULED-recovery: the parent task is scheduled but its child
+            // workflow id was never attached (e.g. async worker crashed mid-
+            // launch). Re-run start() — safe in any caller context because
+            // start() derives the deterministic id from task.workflowInstanceId,
+            // and the child-id lock inside startWorkflowIdempotent serializes
+            // any concurrent re-entry onto the same workflow.
+            if (task.getStatus() == TaskModel.Status.SCHEDULED) {
+                LOGGER.info(
+                        "Retrying sub-workflow launch for task {} in parent workflow {} because it is scheduled without an attached child workflow id",
+                        task.getTaskId(),
+                        task.getWorkflowInstanceId());
+                start(workflow, task, workflowExecutor);
+                return StringUtils.isNotEmpty(task.getSubWorkflowId())
+                        || task.getStatus().isTerminal();
+            }
             return false;
         }
 
@@ -221,8 +264,30 @@ public class SubWorkflow extends WorkflowSystemTask {
     public void cancel(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         String workflowId = task.getSubWorkflowId();
         if (StringUtils.isEmpty(workflowId)) {
-            return;
+            workflowId =
+                    idGenerator.generateSubWorkflowId(
+                            workflow.getWorkflowId(), task.getTaskId(), task.getRetryCount());
+            LOGGER.info(
+                    "Checking deterministic child workflow {} for unattached sub-workflow task {} in parent workflow {} during cancel",
+                    workflowId,
+                    task.getTaskId(),
+                    workflow.getWorkflowId());
+            try {
+                terminateSubWorkflow(workflow, workflowExecutor, workflowId);
+            } catch (NotFoundException e) {
+                LOGGER.info(
+                        "No deterministic child workflow {} exists for unattached sub-workflow task {} in parent workflow {} during cancel",
+                        workflowId,
+                        task.getTaskId(),
+                        workflow.getWorkflowId());
+            }
+        } else {
+            terminateSubWorkflow(workflow, workflowExecutor, workflowId);
         }
+    }
+
+    private void terminateSubWorkflow(
+            WorkflowModel workflow, WorkflowExecutor workflowExecutor, String workflowId) {
         WorkflowModel subWorkflow = workflowExecutor.getWorkflow(workflowId, true);
         if (subWorkflow == null) {
             // Sub-workflow may have already been deleted (e.g. data-store TTL expired).
@@ -250,6 +315,11 @@ public class SubWorkflow extends WorkflowSystemTask {
      */
     @Override
     public boolean isAsyncComplete(TaskModel task) {
+        return true;
+    }
+
+    @Override
+    public boolean isAsync() {
         return true;
     }
 
@@ -302,5 +372,19 @@ public class SubWorkflow extends WorkflowSystemTask {
     @Override
     public boolean isTaskRetrievalRequired() {
         return false;
+    }
+
+    private void attachToSubWorkflow(TaskModel task, WorkflowModel subWorkflow) {
+        LOGGER.info(
+                "Attached sub-workflow task {} in parent workflow {} to child workflow {} with status {}",
+                task.getTaskId(),
+                task.getWorkflowInstanceId(),
+                subWorkflow.getWorkflowId(),
+                subWorkflow.getStatus());
+        task.setReasonForIncompletion(null);
+        task.setSubWorkflowId(subWorkflow.getWorkflowId());
+        task.addOutput(SUB_WORKFLOW_ID, subWorkflow.getWorkflowId());
+        task.getOutputData().remove(SUB_WORKFLOW_LAUNCH_ERROR);
+        updateTaskStatus(subWorkflow, task);
     }
 }

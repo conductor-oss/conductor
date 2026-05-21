@@ -193,4 +193,13 @@ public interface QueueDAO {
         throw new UnsupportedOperationException(
                 "Please ensure your provided Queue implementation overrides and implements this method.");
     }
+
+    /**
+     * Returns the first {@code count} message ids in the queue ordered by score, regardless of
+     * whether their visibility time has elapsed. Intended for inspecting or releasing postponed
+     * messages without popping them.
+     */
+    default List<String> peekFirstIds(String queueName, int count) {
+        return List.of();
+    }
 }

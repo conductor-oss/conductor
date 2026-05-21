@@ -69,7 +69,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.networknt.schema.JsonSchemaException;
 import com.networknt.schema.ValidationMessage;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
@@ -83,7 +82,6 @@ import static org.conductoross.conductor.ai.MimeExtensionResolver.getExtension;
 import static org.conductoross.conductor.ai.MimeExtensionResolver.getMimeTypeFromUrl;
 
 @Slf4j
-@RequiredArgsConstructor
 public class LLMHelper {
     private static final TypeReference<Map<String, Object>> MAP_OF_STRING_TO_OBJ =
             new TypeReference<>() {};
@@ -93,6 +91,21 @@ public class LLMHelper {
 
     private final JsonSchemaValidator jsonSchemaValidator;
     private final List<DocumentLoader> documentLoaders;
+    private final OkHttpClient httpClient;
+
+    public LLMHelper(
+            JsonSchemaValidator jsonSchemaValidator, List<DocumentLoader> documentLoaders) {
+        this(jsonSchemaValidator, documentLoaders, new OkHttpClient());
+    }
+
+    public LLMHelper(
+            JsonSchemaValidator jsonSchemaValidator,
+            List<DocumentLoader> documentLoaders,
+            OkHttpClient httpClient) {
+        this.jsonSchemaValidator = jsonSchemaValidator;
+        this.documentLoaders = documentLoaders;
+        this.httpClient = httpClient;
+    }
 
     public LLMResponse chatComplete(
             Task task,
@@ -438,12 +451,32 @@ public class LLMHelper {
             responseId = rid;
         }
 
+        // Reasoning summary + reasoning token count. Surfaced by the OpenAI
+        // Responses API, Anthropic extended thinking, and Gemini thought
+        // summaries — the chat-model adapters normalize all three onto these
+        // two metadata keys before we read them here.
+        String reasoning = null;
+        Object reasoningObj = chatResponse.getMetadata().get("reasoning");
+        if (reasoningObj instanceof String r && !r.isBlank()) {
+            reasoning = r;
+        }
+        Integer reasoningTokens = null;
+        Object rtObj = chatResponse.getMetadata().get("reasoning_tokens");
+        // ``Number`` rather than ``Integer`` so a Long survives the Jackson
+        // round-trip ChatResponseMetadata may go through. Token counts won't
+        // overflow int — convert and move on.
+        if (rtObj instanceof Number rt) {
+            reasoningTokens = rt.intValue();
+        }
+
         return LLMResponse.builder()
                 .result(result)
                 .media(media)
                 .toolCalls(tools)
                 .finishReason(finishReason)
                 .responseId(responseId)
+                .reasoning(reasoning)
+                .reasoningTokens(reasoningTokens)
                 .completionTokens(chatResponse.getMetadata().getUsage().getCompletionTokens())
                 .promptTokens(chatResponse.getMetadata().getUsage().getPromptTokens())
                 .tokenUsed(chatResponse.getMetadata().getUsage().getTotalTokens())
@@ -515,15 +548,9 @@ public class LLMHelper {
      */
     private byte[] downloadImageFromUrl(String url) {
         try {
-            OkHttpClient client =
-                    new OkHttpClient.Builder()
-                            .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-                            .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
-                            .build();
-
             Request request = new Request.Builder().url(url).get().build();
 
-            try (Response response = client.newCall(request).execute()) {
+            try (Response response = httpClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
                     log.error(
                             "Failed to download image from URL {}: HTTP {}", url, response.code());

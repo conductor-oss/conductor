@@ -42,6 +42,11 @@ public class GeminiChatOptions implements ChatOptions {
     private boolean googleSearchRetrieval;
     private boolean codeExecution;
     private Integer thinkingBudgetTokens;
+    // When true, the request asks Gemini to emit thought summaries on response
+    // parts (each ``Part.thought() == true``). Without this, gemini-2.5 will
+    // run reasoning under the hood but never return summary text. Driven by
+    // ChatCompletion.reasoningSummary at the provider entry point.
+    private Boolean includeThoughts;
 
     @Override
     public ChatOptions copy() {
@@ -58,6 +63,7 @@ public class GeminiChatOptions implements ChatOptions {
                 .googleSearchRetrieval(googleSearchRetrieval)
                 .codeExecution(codeExecution)
                 .thinkingBudgetTokens(thinkingBudgetTokens)
+                .includeThoughts(includeThoughts)
                 .build();
     }
 }
