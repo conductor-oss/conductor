@@ -5,9 +5,9 @@
  * any additional items registered by plugins (enterprise features).
  *
  * Core OSS items:
- * - Executions submenu (Workflow, Queue Monitor)
+ * - Executions submenu (Workflow, Scheduler, Queue Monitor)
  * - Run Workflow button
- * - Definitions submenu (Workflow, Task, Event Handler)
+ * - Definitions submenu (Workflow, Task, Event Handler, Scheduler)
  * - API Docs
  * - Help menu
  *

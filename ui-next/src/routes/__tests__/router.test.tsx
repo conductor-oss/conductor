@@ -471,6 +471,19 @@ describe("router (OSS)", () => {
       expect(allPaths).toContain("/runWorkflow");
     });
 
+    it("should include all scheduler routes as core OSS routes", () => {
+      const routes = getRoutes();
+      const allPaths = collectPaths(routes);
+
+      // Scheduler definitions (list, edit by name, create new)
+      expect(allPaths).toContain("/scheduleDef");
+      expect(allPaths).toContain("/scheduleDef/:name");
+      expect(allPaths).toContain("/scheduleDef/new");
+
+      // Scheduler executions search
+      expect(allPaths).toContain("/schedulerExecs");
+    });
+
     it("should not change route count for SHOW_GET_STARTED_PAGE without plugins", () => {
       mockFeatureFlags.isEnabled.mockImplementation(() => false);
       const countDisabled = countAllRoutes(getRoutes());
