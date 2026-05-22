@@ -107,6 +107,7 @@ public class Anthropic implements AIModel {
                 .topK(input.getTopK())
                 .stopSequences(input.getStopWords())
                 .thinkingBudgetTokens(thinkingBudget)
+                .reasoningEffort(input.getReasoningEffort())
                 .reasoningSummary(input.getReasoningSummary())
                 .tools(tools.isEmpty() ? null : tools)
                 .build();
