@@ -67,16 +67,24 @@ public class StripeVerifier implements WebhookVerifier {
             return ErrorList.singleton("Failed to verify Stripe signature: " + e.getMessage());
         }
 
+        String rawApiVersion = event.getApiVersion(); // e.g., "2025-07-30.basil"
+        if (rawApiVersion == null) {
+            // Signature already verified above. Stripe omits api_version on
+            // older event payloads (and synthetic test payloads); treat the
+            // same as the pre-deserializer branch below — both ultimately
+            // return empty errors.
+            return ErrorList.empty();
+        }
+
         Date apiDate;
 
         try {
-            String rawApiVersion = event.getApiVersion(); // e.g., "2025-07-30.basil"
             String datePart = rawApiVersion.split("[^0-9-]")[0];
             apiDate = DateUtils.parseDate(datePart, DATE_PATTERN);
         } catch (ParseException e) {
             return ErrorList.singleton(
                     "Failed to parse date from: "
-                            + event.getApiVersion()
+                            + rawApiVersion
                             + ". Expected format: "
                             + DATE_PATTERN);
         }
