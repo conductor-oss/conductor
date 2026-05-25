@@ -26,9 +26,11 @@ import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.core.exception.NonTransientException;
+import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.PollDataDAO;
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.dao.RateLimitingDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
@@ -43,9 +45,15 @@ import com.google.common.collect.Lists;
 public class MySQLExecutionDAO extends MySQLBaseDAO
         implements ExecutionDAO, RateLimitingDAO, PollDataDAO, ConcurrentExecutionLimitDAO {
 
+    private final QueueDAO queueDAO;
+
     public MySQLExecutionDAO(
-            RetryTemplate retryTemplate, ObjectMapper objectMapper, DataSource dataSource) {
+            RetryTemplate retryTemplate,
+            ObjectMapper objectMapper,
+            DataSource dataSource,
+            QueueDAO queueDAO) {
         super(retryTemplate, objectMapper, dataSource);
+        this.queueDAO = queueDAO;
     }
 
     private static String dateStr(Long timeInMs) {
@@ -146,6 +154,21 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
     @Override
     public void updateTask(TaskModel task) {
         withTransaction(connection -> updateTask(connection, task));
+        Optional<TaskDef> taskDefinition = task.getTaskDefinition();
+        if (taskDefinition.isPresent()
+                && taskDefinition.get().concurrencyLimit() > 0
+                && task.getStatus() != null
+                && task.getStatus().isTerminal()) {
+            String queueName = QueueUtils.getQueueName(task);
+            List<String> nextIds = queueDAO.peekFirstIds(queueName, 1);
+            if (nextIds != null && !nextIds.isEmpty()) {
+                logger.debug(
+                        "Concurrency slot freed for {}, releasing postponed task {}",
+                        task.getTaskDefName(),
+                        nextIds.get(0));
+                queueDAO.resetOffsetTime(queueName, nextIds.get(0));
+            }
+        }
     }
 
     /**

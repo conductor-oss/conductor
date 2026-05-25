@@ -118,7 +118,7 @@ const TaskCard = ({
           <CardIcon
             type={type}
             integrationType={
-              task.type === TaskType.MCP
+              task.type === TaskType.INTEGRATION
                 ? (task as MCPTaskDef).inputParameters?.integrationType
                 : undefined
             }
@@ -179,7 +179,7 @@ const TaskCard = ({
             type={type}
             displayDescription={false}
             integrationIconName={
-              task.type === TaskType.MCP
+              task.type === TaskType.INTEGRATION
                 ? (task as MCPTaskDef).inputParameters?.integrationType
                 : undefined
             }

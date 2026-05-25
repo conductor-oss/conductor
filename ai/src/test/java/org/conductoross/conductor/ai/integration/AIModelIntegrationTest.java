@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.integration;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -76,6 +77,21 @@ public class AIModelIntegrationTest {
     private static final String EMBEDDING_TEXT =
             "Hello, world! This is a test sentence for embeddings.";
     private static final String AUDIO_TEXT = "Hello, this is a test of text to speech.";
+
+    /**
+     * Builds an OkHttp client whose timeouts match the production {@code conductorAiHttpClient}
+     * Spring bean ({@code AIHttpClientProperties}). The default {@code new OkHttpClient()} ships
+     * with a 10s read timeout that's too short for slow provider operations — notably {@code
+     * gpt-image-1} image generation at 1024×1024, which regularly takes 30–60s and was failing this
+     * suite as a result.
+     */
+    private static OkHttpClient testHttpClient() {
+        return new OkHttpClient.Builder()
+                .connectTimeout(Duration.ofSeconds(60))
+                .readTimeout(Duration.ofSeconds(600))
+                .writeTimeout(Duration.ofSeconds(60))
+                .build();
+    }
 
     // ========================================================================
     // Environment variable helpers
@@ -165,7 +181,7 @@ public class AIModelIntegrationTest {
             OpenAIConfiguration config = new OpenAIConfiguration();
             config.setApiKey(System.getenv("OPENAI_API_KEY"));
             config.setBaseURL(System.getenv("OPENAI_BASE_URL"));
-            openAI = new OpenAI(config, new OkHttpClient());
+            openAI = new OpenAI(config, testHttpClient());
         }
 
         @Test
@@ -562,7 +578,7 @@ public class AIModelIntegrationTest {
             AnthropicConfiguration config = new AnthropicConfiguration();
             config.setApiKey(System.getenv("ANTHROPIC_API_KEY"));
             config.setBaseURL(System.getenv("ANTHROPIC_BASE_URL"));
-            anthropic = new Anthropic(config, new OkHttpClient());
+            anthropic = new Anthropic(config, testHttpClient());
         }
 
         @Test
@@ -618,7 +634,7 @@ public class AIModelIntegrationTest {
             ChatModel chatModel = anthropic.getChatModel();
 
             ChatCompletion input = new ChatCompletion();
-            input.setModel("claude-sonnet-4-5"); // Sonnet 4.5 supports thinking
+            input.setModel("claude-sonnet-4-6"); // Sonnet 4.6 supports legacy thinking
             input.setMaxTokens(16000); // Thinking requires larger token limit
             input.setThinkingTokenLimit(8000); // Enable thinking mode
             // Note: Temperature is forced to 1.0 when thinking is enabled
@@ -633,6 +649,67 @@ public class AIModelIntegrationTest {
             String text = response.getResult().getOutput().getText();
             assertNotNull(text);
             assertTrue(text.contains("345"), "Expected 345 in response, got: " + text);
+        }
+
+        @Test
+        @DisplayName(
+                "Opus 4.7 + thinkingTokenLimit must be rewritten to adaptive thinking (regression)")
+        void testOpus47ThinkingBudget_routesThroughAdaptive() {
+            // Regression for the production HTTP 400:
+            //   "thinking.type.enabled" is not supported for this model.
+            //   Use "thinking.type.adaptive" and "output_config.effort" ...
+            //
+            // The adapter must translate ``thinkingTokenLimit`` into
+            // ``thinking.type=adaptive`` + ``output_config.effort`` whenever the
+            // model id targets Opus 4.7 (Opus 4.6 / Sonnet 4.6 still accept the
+            // legacy ``enabled`` + ``budget_tokens`` shape and are exercised by
+            // ``testThinkingMode`` above). If that translation regresses, this
+            // call returns HTTP 400 with the exact message quoted above.
+            ChatModel chatModel = anthropic.getChatModel();
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("claude-opus-4-7");
+            input.setMaxTokens(16000);
+            input.setThinkingTokenLimit(10000);
+
+            var chatOptions = anthropic.getChatOptions(input);
+            Prompt prompt = new Prompt("What is 2 + 2? Think step by step.", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertFalse(text.isEmpty());
+            assertTrue(
+                    text.contains("4"), "Expected the model to reach the answer '4'; got: " + text);
+        }
+
+        @Test
+        @DisplayName("Opus 4.7 + reasoningEffort only (no thinkingTokenLimit) is accepted")
+        void testOpus47ReasoningEffortOnly() {
+            // Opus 4.7 also accepts ``output_config.effort`` without an
+            // accompanying ``thinking`` block. The adapter must forward
+            // ``reasoningEffort`` straight through without attaching any
+            // thinking configuration.
+            ChatModel chatModel = anthropic.getChatModel();
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("claude-opus-4-7");
+            input.setMaxTokens(1024);
+            input.setReasoningEffort("low");
+
+            var chatOptions = anthropic.getChatOptions(input);
+            Prompt prompt = new Prompt("Say hi.", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertFalse(text.isEmpty());
         }
 
         @Test
@@ -1136,7 +1213,7 @@ public class AIModelIntegrationTest {
             GrokAIConfiguration config = new GrokAIConfiguration();
             config.setApiKey(System.getenv("GROK_API_KEY"));
             config.setBaseURL(System.getenv("GROK_BASE_URL"));
-            grok = new Grok(config, new OkHttpClient());
+            grok = new Grok(config, testHttpClient());
         }
 
         @Test
@@ -1299,7 +1376,7 @@ public class AIModelIntegrationTest {
             AzureOpenAIConfiguration config = new AzureOpenAIConfiguration();
             config.setApiKey(System.getenv("AZURE_OPENAI_API_KEY"));
             config.setBaseURL(System.getenv("AZURE_OPENAI_ENDPOINT"));
-            azureOpenAI = new AzureOpenAI(config, new OkHttpClient());
+            azureOpenAI = new AzureOpenAI(config, testHttpClient());
         }
 
         @Test
@@ -1438,7 +1515,7 @@ public class AIModelIntegrationTest {
             PerplexityAIConfiguration config = new PerplexityAIConfiguration();
             config.setApiKey(System.getenv("PERPLEXITY_API_KEY"));
             config.setBaseURL(System.getenv("PERPLEXITY_BASE_URL"));
-            perplexity = new PerplexityAI(config, new OkHttpClient());
+            perplexity = new PerplexityAI(config, testHttpClient());
         }
 
         @Test

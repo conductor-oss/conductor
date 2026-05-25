@@ -47,7 +47,9 @@ dependencies {
     implementation project(':conductor-webhooks-oss')
 
     //Metrics
-    implementation project(':conductor-metrics')
+    implementation "io.micrometer:micrometer-registry-cloudwatch2:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-azure-monitor:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-prometheus:${revMicrometer}"
 
     //Event Listener
     implementation project(':conductor-workflow-event-listener')

@@ -122,6 +122,7 @@ public class AnthropicMessagesApi {
             @JsonProperty("stop_sequences") List<String> stopSequences,
             List<Tool> tools,
             Thinking thinking,
+            @JsonProperty("output_config") OutputConfig outputConfig,
             // Not serialized — used to set the anthropic-beta HTTP header
             @JsonIgnoreProperties @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
                     List<String> betaFeatures) {
@@ -143,6 +144,7 @@ public class AnthropicMessagesApi {
                     stopSequences,
                     tools,
                     thinking,
+                    outputConfig,
                     betaFeatures);
         }
 
@@ -157,6 +159,7 @@ public class AnthropicMessagesApi {
             private List<String> stopSequences;
             private List<Tool> tools;
             private Thinking thinking;
+            private OutputConfig outputConfig;
             private List<String> betaFeatures;
 
             public Builder model(String model) {
@@ -209,6 +212,11 @@ public class AnthropicMessagesApi {
                 return this;
             }
 
+            public Builder outputConfig(OutputConfig outputConfig) {
+                this.outputConfig = outputConfig;
+                return this;
+            }
+
             public Builder betaFeatures(List<String> betaFeatures) {
                 this.betaFeatures = betaFeatures;
                 return this;
@@ -226,6 +234,7 @@ public class AnthropicMessagesApi {
                         stopSequences,
                         tools,
                         thinking,
+                        outputConfig,
                         betaFeatures);
             }
         }
@@ -316,16 +325,37 @@ public class AnthropicMessagesApi {
         }
     }
 
-    /** Thinking configuration for extended thinking mode. */
+    /**
+     * Thinking configuration. Two shapes:
+     *
+     * <ul>
+     *   <li>{@code {"type":"enabled","budget_tokens":N}} — manual extended thinking, used by Claude
+     *       Opus 4.5 and earlier. Deprecated on Opus 4.6 / Sonnet 4.6 and rejected with HTTP 400 by
+     *       Opus 4.7.
+     *   <li>{@code {"type":"adaptive"}} — adaptive thinking, where the model picks the budget and
+     *       the caller controls depth via {@link OutputConfig#effort()}. Required on Opus 4.7;
+     *       recommended on Opus/Sonnet 4.6.
+     * </ul>
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record Thinking(
-            String type, // "enabled" or "disabled"
-            @JsonProperty("budget_tokens") Integer budgetTokens) {
+    public record Thinking(String type, @JsonProperty("budget_tokens") Integer budgetTokens) {
 
         public static Thinking enabled(int budgetTokens) {
             return new Thinking("enabled", budgetTokens);
         }
+
+        public static Thinking adaptive() {
+            return new Thinking("adaptive", null);
+        }
     }
+
+    /**
+     * Top-level {@code output_config} object. Carries the {@code effort} parameter (one of {@code
+     * low}, {@code medium}, {@code high}, {@code xhigh}, {@code max}) — the recommended way to
+     * control thinking depth and overall token spend on Claude Opus 4.6+ and Sonnet 4.6+.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record OutputConfig(String effort) {}
 
     // -- Response DTOs --
 
