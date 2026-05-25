@@ -96,6 +96,17 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
     }
 
     @Override
+    public List<String> peekFirstIds(String queueName, int count) {
+        final String SQL =
+                "SELECT message_id FROM queue_message "
+                        + "WHERE queue_name = ? AND popped = false "
+                        + "ORDER BY deliver_on, priority DESC, created_on LIMIT ?";
+        return queryWithTransaction(
+                SQL,
+                q -> q.addParameter(queueName).addParameter(count).executeScalarList(String.class));
+    }
+
+    @Override
     public List<String> pop(String queueName, int count, int timeout) {
         List<Message> messages =
                 getWithTransactionWithOutErrorPropagation(

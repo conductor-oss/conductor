@@ -230,8 +230,13 @@ class AnthropicTest {
 
         @Test
         void testChatCompletion_withThinking() {
+            // Lightweight smoke check for the legacy ``thinking.type=enabled`` shape on a model
+            // that still accepts it. Coverage for the Opus 4.7 adaptive-thinking translation
+            // (the production fix that motivates the regression suite) lives in
+            // ``AIModelIntegrationTest.AnthropicTests`` so it sits alongside the other live
+            // provider tests.
             ChatCompletion input = new ChatCompletion();
-            input.setModel("claude-sonnet-4-5");
+            input.setModel("claude-sonnet-4-6");
             input.setMaxTokens(16000);
             input.setThinkingTokenLimit(10000);
 
