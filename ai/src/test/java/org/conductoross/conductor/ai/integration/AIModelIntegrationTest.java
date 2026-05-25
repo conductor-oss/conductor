@@ -634,7 +634,7 @@ public class AIModelIntegrationTest {
             ChatModel chatModel = anthropic.getChatModel();
 
             ChatCompletion input = new ChatCompletion();
-            input.setModel("claude-sonnet-4-5"); // Sonnet 4.5 supports thinking
+            input.setModel("claude-sonnet-4-6"); // Sonnet 4.6 supports legacy thinking
             input.setMaxTokens(16000); // Thinking requires larger token limit
             input.setThinkingTokenLimit(8000); // Enable thinking mode
             // Note: Temperature is forced to 1.0 when thinking is enabled
@@ -649,6 +649,67 @@ public class AIModelIntegrationTest {
             String text = response.getResult().getOutput().getText();
             assertNotNull(text);
             assertTrue(text.contains("345"), "Expected 345 in response, got: " + text);
+        }
+
+        @Test
+        @DisplayName(
+                "Opus 4.7 + thinkingTokenLimit must be rewritten to adaptive thinking (regression)")
+        void testOpus47ThinkingBudget_routesThroughAdaptive() {
+            // Regression for the production HTTP 400:
+            //   "thinking.type.enabled" is not supported for this model.
+            //   Use "thinking.type.adaptive" and "output_config.effort" ...
+            //
+            // The adapter must translate ``thinkingTokenLimit`` into
+            // ``thinking.type=adaptive`` + ``output_config.effort`` whenever the
+            // model id targets Opus 4.7 (Opus 4.6 / Sonnet 4.6 still accept the
+            // legacy ``enabled`` + ``budget_tokens`` shape and are exercised by
+            // ``testThinkingMode`` above). If that translation regresses, this
+            // call returns HTTP 400 with the exact message quoted above.
+            ChatModel chatModel = anthropic.getChatModel();
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("claude-opus-4-7");
+            input.setMaxTokens(16000);
+            input.setThinkingTokenLimit(10000);
+
+            var chatOptions = anthropic.getChatOptions(input);
+            Prompt prompt = new Prompt("What is 2 + 2? Think step by step.", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertFalse(text.isEmpty());
+            assertTrue(
+                    text.contains("4"), "Expected the model to reach the answer '4'; got: " + text);
+        }
+
+        @Test
+        @DisplayName("Opus 4.7 + reasoningEffort only (no thinkingTokenLimit) is accepted")
+        void testOpus47ReasoningEffortOnly() {
+            // Opus 4.7 also accepts ``output_config.effort`` without an
+            // accompanying ``thinking`` block. The adapter must forward
+            // ``reasoningEffort`` straight through without attaching any
+            // thinking configuration.
+            ChatModel chatModel = anthropic.getChatModel();
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("claude-opus-4-7");
+            input.setMaxTokens(1024);
+            input.setReasoningEffort("low");
+
+            var chatOptions = anthropic.getChatOptions(input);
+            Prompt prompt = new Prompt("Say hi.", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertFalse(text.isEmpty());
         }
 
         @Test

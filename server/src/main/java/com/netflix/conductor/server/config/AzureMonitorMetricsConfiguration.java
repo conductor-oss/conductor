@@ -10,43 +10,42 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.contribs.metrics;
+package com.netflix.conductor.server.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import io.micrometer.cloudwatch2.CloudWatchConfig;
-import io.micrometer.cloudwatch2.CloudWatchMeterRegistry;
+import io.micrometer.azuremonitor.AzureMonitorConfig;
+import io.micrometer.azuremonitor.AzureMonitorMeterRegistry;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
-import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
 
-@ConditionalOnProperty(value = "management.cloudwatch.metrics.export.enabled", havingValue = "true")
+@ConditionalOnProperty(
+        value = "management.azuremonitor.metrics.export.enabled",
+        havingValue = "true")
 @Configuration
 @Slf4j
-public class CloudWatchMetricsConfiguration {
+public class AzureMonitorMetricsConfiguration {
 
     @Bean
-    public MeterRegistry getCloudWatchMetrics(
-            @Value("${management.cloudwatch.metrics.export.namespace:conductor}")
-                    String namespace) {
-        CloudWatchConfig cloudWatchConfig =
-                new CloudWatchConfig() {
+    public MeterRegistry getAzureMonitorMeterRegistry(
+            @Value("${management.azuremonitor.metrics.export.instrumentationKey:null}")
+                    String instrumentationKey) {
+        AzureMonitorConfig azureMonitorConfig =
+                new AzureMonitorConfig() {
                     @Override
-                    public String get(String s) {
-                        return null;
+                    public String instrumentationKey() {
+                        return instrumentationKey;
                     }
 
                     @Override
-                    public String namespace() {
-                        return namespace;
+                    public String get(String key) {
+                        return null;
                     }
                 };
-        log.info("Using namespace '{}' for cloudwatch metrics", namespace);
-        return new CloudWatchMeterRegistry(
-                cloudWatchConfig, Clock.SYSTEM, CloudWatchAsyncClient.create());
+        return new AzureMonitorMeterRegistry(azureMonitorConfig, Clock.SYSTEM);
     }
 }
