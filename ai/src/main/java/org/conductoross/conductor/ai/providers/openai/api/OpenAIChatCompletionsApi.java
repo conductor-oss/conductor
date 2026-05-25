@@ -14,7 +14,6 @@ package org.conductoross.conductor.ai.providers.openai.api;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
@@ -48,24 +47,19 @@ public class OpenAIChatCompletionsApi {
     private final ObjectMapper objectMapper;
 
     public OpenAIChatCompletionsApi(
-            String apiKey, String baseUrl, String completionsPath, long timeoutSeconds) {
+            OkHttpClient httpClient, String apiKey, String baseUrl, String completionsPath) {
         this.baseUrl =
                 baseUrl != null && baseUrl.endsWith("/")
                         ? baseUrl.substring(0, baseUrl.length() - 1)
                         : baseUrl;
         this.apiKey = apiKey;
         this.completionsPath = completionsPath != null ? completionsPath : "/chat/completions";
-        this.httpClient =
-                new OkHttpClient.Builder()
-                        .connectTimeout(60, TimeUnit.SECONDS)
-                        .readTimeout(timeoutSeconds, TimeUnit.SECONDS)
-                        .writeTimeout(60, TimeUnit.SECONDS)
-                        .build();
+        this.httpClient = httpClient;
         this.objectMapper = new ObjectMapperProvider().getObjectMapper();
     }
 
-    public OpenAIChatCompletionsApi(String apiKey, String baseUrl, long timeoutSeconds) {
-        this(apiKey, baseUrl, null, timeoutSeconds);
+    public OpenAIChatCompletionsApi(OkHttpClient httpClient, String apiKey, String baseUrl) {
+        this(httpClient, apiKey, baseUrl, null);
     }
 
     public ChatCompletionResult createChatCompletion(ChatCompletionRequest request)
@@ -85,6 +79,12 @@ public class OpenAIChatCompletionsApi {
             ResponseBody body = response.body();
             String responseBody = body != null ? body.string() : "";
             if (!response.isSuccessful()) {
+                // Some models (e.g. o-series via compatible endpoints) reject temperature.
+                if (response.code() == 400
+                        && responseBody.contains("temperature")
+                        && request.temperature() != null) {
+                    return createChatCompletion(request.withoutTemperature());
+                }
                 throw new IOException(
                         "Chat Completions API failed with status %d: %s"
                                 .formatted(response.code(), responseBody));
@@ -113,6 +113,22 @@ public class OpenAIChatCompletionsApi {
 
         public static Builder builder() {
             return new Builder();
+        }
+
+        public ChatCompletionRequest withoutTemperature() {
+            return new ChatCompletionRequest(
+                    model,
+                    messages,
+                    null,
+                    topP,
+                    maxTokens,
+                    stop,
+                    frequencyPenalty,
+                    presencePenalty,
+                    topK,
+                    responseFormat,
+                    tools,
+                    toolChoice);
         }
 
         public static class Builder {

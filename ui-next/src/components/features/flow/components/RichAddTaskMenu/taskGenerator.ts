@@ -160,7 +160,7 @@ export const generateMCPTask: GenerateTaskFn<MCPTaskDef> = ({
   nameGenerator = generateNameAndTaskReference,
 } = DEFAULT_ARGS): MCPTaskDef => ({
   ...nameGenerator("integration"),
-  type: TaskType.MCP,
+  type: TaskType.INTEGRATION,
   ...overrides,
 });
 
@@ -772,7 +772,7 @@ export const taskGeneratorMap = {
   [TaskType.GET_WORKFLOW]: generateGetWorkflowTask,
   [TaskType.LLM_CHAT_COMPLETE]: generateAITask(TaskType.LLM_CHAT_COMPLETE),
   [TaskType.GRPC]: generateGRPCTask,
-  [TaskType.MCP]: generateMCPTask,
+  [TaskType.INTEGRATION]: generateMCPTask,
   [TaskType.CHUNK_TEXT]: generateChunkTextTask,
   [TaskType.LIST_FILES]: generateListFilesTask,
   [TaskType.PARSE_DOCUMENT]: generateParseDocumentTask,

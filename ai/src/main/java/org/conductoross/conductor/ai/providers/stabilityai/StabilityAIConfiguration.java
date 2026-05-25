@@ -13,12 +13,13 @@
 package org.conductoross.conductor.ai.providers.stabilityai;
 
 import org.conductoross.conductor.ai.ModelConfiguration;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import okhttp3.OkHttpClient;
 
 /**
  * Configuration for the Stability AI image generation provider.
@@ -31,13 +32,18 @@ import lombok.NoArgsConstructor;
 @Component
 @ConfigurationProperties(prefix = "conductor.ai.stabilityai")
 @NoArgsConstructor
-@AllArgsConstructor
 public class StabilityAIConfiguration implements ModelConfiguration<StabilityAI> {
 
     private String apiKey;
 
+    @Autowired private OkHttpClient conductorAiHttpClient;
+
+    public StabilityAIConfiguration(String apiKey) {
+        this.apiKey = apiKey;
+    }
+
     @Override
     public StabilityAI get() {
-        return new StabilityAI(this);
+        return new StabilityAI(this, conductorAiHttpClient);
     }
 }

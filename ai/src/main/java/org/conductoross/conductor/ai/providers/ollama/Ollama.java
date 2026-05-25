@@ -29,20 +29,26 @@ import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
 import com.google.common.primitives.Floats;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
 
 @Slf4j
 public class Ollama implements AIModel {
 
     public static final String NAME = "ollama";
     private final OllamaConfiguration config;
+    private final OkHttpClient httpClient;
 
     public Ollama(OllamaConfiguration config) {
+        this(config, new OkHttpClient());
+    }
+
+    public Ollama(OllamaConfiguration config, OkHttpClient httpClient) {
         this.config = config;
+        this.httpClient = httpClient;
     }
 
     @Override
@@ -52,7 +58,7 @@ public class Ollama implements AIModel {
 
     @Override
     public List<Float> generateEmbeddings(EmbeddingGenRequest embeddingGenRequest) {
-        OllamaApi api = OllamaApi.builder().baseUrl(config.getBaseURL()).build();
+        OllamaApi api = buildOllamaApi();
         var options =
                 OllamaEmbeddingOptions.builder().model(embeddingGenRequest.getModel()).build();
         var embeddingModel =
@@ -96,24 +102,25 @@ public class Ollama implements AIModel {
 
     @Override
     public ChatModel getChatModel() {
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setReadTimeout(config.getTimeout());
-
-        RestClient.Builder restClientBuilder = RestClient.builder().requestFactory(factory);
-        if (StringUtils.isNotBlank(config.getAuthHeaderName())) {
-            restClientBuilder.defaultHeader(config.getAuthHeaderName(), config.getAuthHeader());
-        }
-
-        OllamaApi api =
-                OllamaApi.builder()
-                        .baseUrl(config.getBaseURL())
-                        .restClientBuilder(restClientBuilder)
-                        .build();
-        return OllamaChatModel.builder().ollamaApi(api).build();
+        return OllamaChatModel.builder().ollamaApi(buildOllamaApi()).build();
     }
 
     @Override
     public ImageModel getImageModel() {
         throw new UnsupportedOperationException("Image generation not supported by the model yet");
+    }
+
+    private OllamaApi buildOllamaApi() {
+        OkHttpClient effective =
+                (config.getTimeout() != null)
+                        ? httpClient.newBuilder().readTimeout(config.getTimeout()).build()
+                        : httpClient;
+        var factory =
+                new org.springframework.http.client.OkHttp3ClientHttpRequestFactory(effective);
+        RestClient.Builder builder = RestClient.builder().requestFactory(factory);
+        if (StringUtils.isNotBlank(config.getAuthHeaderName())) {
+            builder.defaultHeader(config.getAuthHeaderName(), config.getAuthHeader());
+        }
+        return OllamaApi.builder().baseUrl(config.getBaseURL()).restClientBuilder(builder).build();
     }
 }

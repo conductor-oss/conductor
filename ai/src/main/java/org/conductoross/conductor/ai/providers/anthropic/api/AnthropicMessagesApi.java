@@ -15,7 +15,6 @@ package org.conductoross.conductor.ai.providers.anthropic.api;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
@@ -50,21 +49,16 @@ public class AnthropicMessagesApi {
     private final OkHttpClient httpClient;
     private final ObjectMapper objectMapper;
 
-    public AnthropicMessagesApi(String apiKey, String baseUrl, long timeoutSeconds) {
-        this(apiKey, baseUrl, null, timeoutSeconds);
+    public AnthropicMessagesApi(OkHttpClient httpClient, String apiKey, String baseUrl) {
+        this(httpClient, apiKey, baseUrl, null);
     }
 
     public AnthropicMessagesApi(
-            String apiKey, String baseUrl, String anthropicVersion, long timeoutSeconds) {
+            OkHttpClient httpClient, String apiKey, String baseUrl, String anthropicVersion) {
         this.baseUrl = baseUrl != null ? baseUrl : "https://api.anthropic.com";
         this.apiKey = apiKey;
         this.anthropicVersion = anthropicVersion != null ? anthropicVersion : DEFAULT_VERSION;
-        this.httpClient =
-                new OkHttpClient.Builder()
-                        .connectTimeout(60, TimeUnit.SECONDS)
-                        .readTimeout(timeoutSeconds, TimeUnit.SECONDS)
-                        .writeTimeout(60, TimeUnit.SECONDS)
-                        .build();
+        this.httpClient = httpClient;
         this.objectMapper = new ObjectMapperProvider().getObjectMapper();
     }
 
@@ -94,6 +88,12 @@ public class AnthropicMessagesApi {
         try (Response response = httpClient.newCall(httpBuilder.build()).execute()) {
             String responseBody = readBody(response);
             if (!response.isSuccessful()) {
+                // Newer Anthropic models deprecate temperature — retry once without it.
+                if (response.code() == 400
+                        && responseBody.contains("temperature")
+                        && request.temperature() != null) {
+                    return createMessage(request.withoutTemperature());
+                }
                 throw new IOException(
                         "Anthropic Messages API failed with status %d: %s"
                                 .formatted(response.code(), responseBody));
@@ -122,12 +122,30 @@ public class AnthropicMessagesApi {
             @JsonProperty("stop_sequences") List<String> stopSequences,
             List<Tool> tools,
             Thinking thinking,
+            @JsonProperty("output_config") OutputConfig outputConfig,
             // Not serialized — used to set the anthropic-beta HTTP header
             @JsonIgnoreProperties @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
                     List<String> betaFeatures) {
 
         public static Builder builder() {
             return new Builder();
+        }
+
+        /** Returns a copy of this request with temperature removed. */
+        public MessagesRequest withoutTemperature() {
+            return new MessagesRequest(
+                    model,
+                    maxTokens,
+                    messages,
+                    system,
+                    null,
+                    topP,
+                    topK,
+                    stopSequences,
+                    tools,
+                    thinking,
+                    outputConfig,
+                    betaFeatures);
         }
 
         public static class Builder {
@@ -141,6 +159,7 @@ public class AnthropicMessagesApi {
             private List<String> stopSequences;
             private List<Tool> tools;
             private Thinking thinking;
+            private OutputConfig outputConfig;
             private List<String> betaFeatures;
 
             public Builder model(String model) {
@@ -193,6 +212,11 @@ public class AnthropicMessagesApi {
                 return this;
             }
 
+            public Builder outputConfig(OutputConfig outputConfig) {
+                this.outputConfig = outputConfig;
+                return this;
+            }
+
             public Builder betaFeatures(List<String> betaFeatures) {
                 this.betaFeatures = betaFeatures;
                 return this;
@@ -210,6 +234,7 @@ public class AnthropicMessagesApi {
                         stopSequences,
                         tools,
                         thinking,
+                        outputConfig,
                         betaFeatures);
             }
         }
@@ -300,16 +325,37 @@ public class AnthropicMessagesApi {
         }
     }
 
-    /** Thinking configuration for extended thinking mode. */
+    /**
+     * Thinking configuration. Two shapes:
+     *
+     * <ul>
+     *   <li>{@code {"type":"enabled","budget_tokens":N}} — manual extended thinking, used by Claude
+     *       Opus 4.5 and earlier. Deprecated on Opus 4.6 / Sonnet 4.6 and rejected with HTTP 400 by
+     *       Opus 4.7.
+     *   <li>{@code {"type":"adaptive"}} — adaptive thinking, where the model picks the budget and
+     *       the caller controls depth via {@link OutputConfig#effort()}. Required on Opus 4.7;
+     *       recommended on Opus/Sonnet 4.6.
+     * </ul>
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record Thinking(
-            String type, // "enabled" or "disabled"
-            @JsonProperty("budget_tokens") Integer budgetTokens) {
+    public record Thinking(String type, @JsonProperty("budget_tokens") Integer budgetTokens) {
 
         public static Thinking enabled(int budgetTokens) {
             return new Thinking("enabled", budgetTokens);
         }
+
+        public static Thinking adaptive() {
+            return new Thinking("adaptive", null);
+        }
     }
+
+    /**
+     * Top-level {@code output_config} object. Carries the {@code effort} parameter (one of {@code
+     * low}, {@code medium}, {@code high}, {@code xhigh}, {@code max}) — the recommended way to
+     * control thinking depth and overall token spend on Claude Opus 4.6+ and Sonnet 4.6+.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record OutputConfig(String effort) {}
 
     // -- Response DTOs --
 
