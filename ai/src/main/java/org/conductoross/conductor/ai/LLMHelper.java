@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -67,8 +66,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
-import com.networknt.schema.JsonSchemaException;
-import com.networknt.schema.ValidationMessage;
+import com.networknt.schema.Error;
+import com.networknt.schema.InvalidSchemaException;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
@@ -330,20 +329,18 @@ public class LLMHelper {
                 return null;
             }
 
-            Set<ValidationMessage> validationMessages =
-                    jsonSchemaValidator.validate(schemaContent, data);
+            List<Error> validationMessages = jsonSchemaValidator.validate(schemaContent, data);
 
             if (validationMessages != null && !validationMessages.isEmpty()) {
                 return String.format(
                         "Schema validation failed %s",
                         validationMessages.stream()
-                                .map(ValidationMessage::getMessage)
+                                .map(Error::getMessage)
                                 .collect(Collectors.joining(", ")));
             }
             return null;
-        } catch (JsonSchemaException jpe) {
-            throw new RuntimeException(
-                    "Bad/Unsupported schema? : " + jpe.getValidationMessages().toString());
+        } catch (InvalidSchemaException jpe) {
+            throw new RuntimeException("Bad/Unsupported schema? : " + jpe.getErrors().toString());
         } catch (JsonProcessingException jpe) {
             throw new RuntimeException("Error parsing the json schema : " + jpe.getMessage(), jpe);
         }
