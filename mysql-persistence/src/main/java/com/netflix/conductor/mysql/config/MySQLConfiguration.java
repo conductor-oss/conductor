@@ -25,6 +25,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.backoff.NoBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
@@ -33,6 +34,7 @@ import org.springframework.retry.support.RetryTemplate;
 import com.netflix.conductor.mysql.dao.MySQLExecutionDAO;
 import com.netflix.conductor.mysql.dao.MySQLMetadataDAO;
 import com.netflix.conductor.mysql.dao.MySQLQueueDAO;
+import com.netflix.conductor.mysql.dao.MySQLSchemaDAO;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -54,6 +56,16 @@ public class MySQLConfiguration {
             DataSource dataSource,
             MySQLProperties properties) {
         return new MySQLMetadataDAO(retryTemplate, objectMapper, dataSource, properties);
+    }
+
+    @Bean
+    @DependsOn({"flyway", "flywayInitializer"})
+    @Primary
+    public MySQLSchemaDAO mySqlSchemaDAO(
+            @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper,
+            DataSource dataSource) {
+        return new MySQLSchemaDAO(retryTemplate, objectMapper, dataSource);
     }
 
     @Bean

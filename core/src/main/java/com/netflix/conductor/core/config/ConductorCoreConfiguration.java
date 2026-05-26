@@ -21,6 +21,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+import org.conductoross.conductor.dao.InMemorySchemaDAO;
+import org.conductoross.conductor.dao.SchemaDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -132,6 +134,12 @@ public class ConductorCoreConfiguration {
             List<EventQueueProvider> eventQueueProviders) {
         return eventQueueProviders.stream()
                 .collect(Collectors.toMap(EventQueueProvider::getQueueType, identity()));
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(SchemaDAO.class)
+    public SchemaDAO schemaDAO() {
+        return new InMemorySchemaDAO();
     }
 
     @Bean
