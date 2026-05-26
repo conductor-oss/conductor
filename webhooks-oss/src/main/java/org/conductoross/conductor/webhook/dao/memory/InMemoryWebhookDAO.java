@@ -14,27 +14,19 @@ package org.conductoross.conductor.webhook.dao.memory;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.conductoross.conductor.dao.webhook.WebhookDAO;
+import org.conductoross.conductor.service.webhook.WebhookMatcherComputer;
 import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
 import org.conductoross.conductor.webhook.model.WebhookConfig;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
-import com.netflix.conductor.common.metadata.tasks.TaskType;
-import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.dao.MetadataDAO;
-
-import static org.conductoross.conductor.service.webhook.WebhookTaskService.Constants.WAIT_FOR_WEBHOOK;
-import static org.conductoross.conductor.service.webhook.WebhookTaskService.Constants.WEBHOOK_DELIMITER;
 
 /**
  * Default single-node implementation of {@link WebhookDAO}.
@@ -100,11 +92,7 @@ public class InMemoryWebhookDAO implements WebhookDAO {
 
     @Override
     public Map<String, Map<String, Object>> getMatchers(String webhookId) {
-        Map<String, Integer> targets = targetWorkflows.get(webhookId);
-        if (targets == null || targets.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        return computeMatchers(targets);
+        return WebhookMatcherComputer.compute(targetWorkflows.get(webhookId), metadataDAO);
     }
 
     @Override
@@ -121,35 +109,5 @@ public class InMemoryWebhookDAO implements WebhookDAO {
     @Override
     public void removeMatchers(String id) {
         targetWorkflows.remove(id);
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Map<String, Object>> computeMatchers(Map<String, Integer> targets) {
-        Map<String, Map<String, Object>> computed = new HashMap<>();
-        targets.forEach(
-                (workflowName, wfVersion) -> {
-                    Optional<WorkflowDef> def = metadataDAO.getWorkflowDef(workflowName, wfVersion);
-                    if (def.isEmpty()) {
-                        return;
-                    }
-                    for (WorkflowTask task : def.get().collectTasks()) {
-                        String type = task.getType();
-                        if (!WAIT_FOR_WEBHOOK.equals(type)
-                                && !TaskType.WAIT.toString().equals(type)) {
-                            continue;
-                        }
-                        Object raw = task.getInputParameters().get("matches");
-                        if (raw instanceof Map<?, ?> m && !CollectionUtils.isEmpty(m)) {
-                            String key =
-                                    workflowName
-                                            + WEBHOOK_DELIMITER
-                                            + wfVersion
-                                            + WEBHOOK_DELIMITER
-                                            + task.getTaskReferenceName();
-                            computed.put(key, (Map<String, Object>) m);
-                        }
-                    }
-                });
-        return computed;
     }
 }

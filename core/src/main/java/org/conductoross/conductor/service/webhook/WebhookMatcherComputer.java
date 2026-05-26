@@ -1,0 +1,86 @@
+/*
+ * Copyright 2026 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+package org.conductoross.conductor.service.webhook;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+import org.springframework.util.CollectionUtils;
+
+import com.netflix.conductor.common.metadata.tasks.TaskType;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.dao.MetadataDAO;
+
+import static org.conductoross.conductor.service.webhook.WebhookTaskService.Constants.WAIT_FOR_WEBHOOK;
+import static org.conductoross.conductor.service.webhook.WebhookTaskService.Constants.WEBHOOK_DELIMITER;
+
+/**
+ * Matcher computation shared by every {@link org.conductoross.conductor.dao.webhook.WebhookDAO}
+ * impl. Must be identical across impls — a WorkflowDef edit produces the same matcher set
+ * regardless of which persistence module is backing {@code WebhookDAO}.
+ *
+ * <p>Each backing persists only the {@code workflowName → version} target snapshot (taken at
+ * config-create time so any expression evaluation is preserved). The actual {@code matches}
+ * criteria are recomputed from {@link MetadataDAO} on every {@code getMatchers()} call so
+ * WorkflowDef updates take effect without re-registering the webhook.
+ */
+public final class WebhookMatcherComputer {
+
+    private WebhookMatcherComputer() {}
+
+    /**
+     * Build the matcher map for a single webhook from its persisted target-workflow snapshot.
+     *
+     * @param targets workflowName → workflowVersion snapshot stored by the DAO
+     * @param metadataDAO source of truth for current WorkflowDef state
+     * @return {@code workflowName;version;taskRefName → matches} for every {@code
+     *     WAIT_FOR_WEBHOOK}/{@code WAIT} task with a non-empty {@code matches} input parameter.
+     *     Empty (immutable) if {@code targets} is null or empty.
+     */
+    @SuppressWarnings("unchecked")
+    public static Map<String, Map<String, Object>> compute(
+            Map<String, Integer> targets, MetadataDAO metadataDAO) {
+        if (targets == null || targets.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, Map<String, Object>> computed = new HashMap<>();
+        targets.forEach(
+                (workflowName, wfVersion) -> {
+                    Optional<WorkflowDef> def = metadataDAO.getWorkflowDef(workflowName, wfVersion);
+                    if (def.isEmpty()) {
+                        return;
+                    }
+                    for (WorkflowTask task : def.get().collectTasks()) {
+                        String type = task.getType();
+                        if (!WAIT_FOR_WEBHOOK.equals(type)
+                                && !TaskType.WAIT.toString().equals(type)) {
+                            continue;
+                        }
+                        Object raw = task.getInputParameters().get("matches");
+                        if (raw instanceof Map<?, ?> m && !CollectionUtils.isEmpty(m)) {
+                            String key =
+                                    workflowName
+                                            + WEBHOOK_DELIMITER
+                                            + wfVersion
+                                            + WEBHOOK_DELIMITER
+                                            + task.getTaskReferenceName();
+                            computed.put(key, (Map<String, Object>) m);
+                        }
+                    }
+                });
+        return computed;
+    }
+}

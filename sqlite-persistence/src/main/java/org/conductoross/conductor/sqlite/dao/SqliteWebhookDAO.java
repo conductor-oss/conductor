@@ -14,32 +14,24 @@ package org.conductoross.conductor.sqlite.dao;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import javax.sql.DataSource;
 
 import org.conductoross.conductor.dao.webhook.WebhookDAO;
+import org.conductoross.conductor.service.webhook.WebhookMatcherComputer;
 import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
 import org.conductoross.conductor.webhook.model.WebhookConfig;
 import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
-import org.springframework.util.CollectionUtils;
 
-import com.netflix.conductor.common.metadata.tasks.TaskType;
-import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.sqlite.dao.SqliteBaseDAO;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-
-import static org.conductoross.conductor.service.webhook.WebhookTaskService.Constants.WAIT_FOR_WEBHOOK;
-import static org.conductoross.conductor.service.webhook.WebhookTaskService.Constants.WEBHOOK_DELIMITER;
 
 /**
  * SQLite-backed {@link WebhookDAO}. Same matcher-recomputation-on-read design as the postgres impl
@@ -148,11 +140,7 @@ public class SqliteWebhookDAO extends SqliteBaseDAO implements WebhookDAO {
 
     @Override
     public Map<String, Map<String, Object>> getMatchers(String webhookId) {
-        Map<String, Integer> targets = loadTargets(webhookId);
-        if (targets.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        return computeMatchers(targets);
+        return WebhookMatcherComputer.compute(loadTargets(webhookId), metadataDAO);
     }
 
     @Override
@@ -184,35 +172,5 @@ public class SqliteWebhookDAO extends SqliteBaseDAO implements WebhookDAO {
             return Collections.emptyMap();
         }
         return readValue(json, Map.class);
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Map<String, Object>> computeMatchers(Map<String, Integer> targets) {
-        Map<String, Map<String, Object>> computed = new HashMap<>();
-        targets.forEach(
-                (workflowName, wfVersion) -> {
-                    Optional<WorkflowDef> def = metadataDAO.getWorkflowDef(workflowName, wfVersion);
-                    if (def.isEmpty()) {
-                        return;
-                    }
-                    for (WorkflowTask task : def.get().collectTasks()) {
-                        String type = task.getType();
-                        if (!WAIT_FOR_WEBHOOK.equals(type)
-                                && !TaskType.WAIT.toString().equals(type)) {
-                            continue;
-                        }
-                        Object raw = task.getInputParameters().get("matches");
-                        if (raw instanceof Map<?, ?> m && !CollectionUtils.isEmpty(m)) {
-                            String key =
-                                    workflowName
-                                            + WEBHOOK_DELIMITER
-                                            + wfVersion
-                                            + WEBHOOK_DELIMITER
-                                            + task.getTaskReferenceName();
-                            computed.put(key, (Map<String, Object>) m);
-                        }
-                    }
-                });
-        return computed;
     }
 }
