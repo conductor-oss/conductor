@@ -36,6 +36,18 @@ import static org.conductoross.conductor.service.webhook.WebhookTaskService.Cons
  * config-create time so any expression evaluation is preserved). The actual {@code matches}
  * criteria are recomputed from {@link MetadataDAO} on every {@code getMatchers()} call so
  * WorkflowDef updates take effect without re-registering the webhook.
+ *
+ * <p><b>Performance note.</b> {@link #compute} fetches one {@link MetadataDAO#getWorkflowDef}
+ * per target workflow per invocation. This is the read hot path for inbound webhook events.
+ *
+ * <ul>
+ *   <li>On Cassandra, {@code CacheableMetadataDAO} (in {@code cassandra-persistence}) wraps the
+ *       primary DAO so these fetches resolve from a process-local cache.
+ *   <li>On Postgres / MySQL / SQLite / Redis, there is no equivalent wrapper today — each
+ *       fetch is a backend round-trip. Acceptable when a webhook targets a small number of
+ *       workflows; revisit if matcher fanout grows or if traffic-per-webhook makes the cost
+ *       visible in profiles.
+ * </ul>
  */
 public final class WebhookMatcherComputer {
 
