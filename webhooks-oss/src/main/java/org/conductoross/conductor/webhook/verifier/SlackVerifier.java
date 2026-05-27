@@ -131,6 +131,13 @@ public class SlackVerifier implements WebhookVerifier {
         return WebhookConfig.Verifier.SLACK_BASED.toString();
     }
 
+    @Override
+    public String dedupKey(WebhookConfig webhookConfig, IncomingWebhookEvent event) {
+        var values =
+                event.getHeaders() == null ? null : event.getHeaders().get(SIGNATURE_HEADER);
+        return (values == null || values.isEmpty()) ? null : values.getFirst();
+    }
+
     public String extractChallenge(
             IncomingWebhookEvent incomingWebhookEvent, WebhookConfig webhookConfig) {
         try {

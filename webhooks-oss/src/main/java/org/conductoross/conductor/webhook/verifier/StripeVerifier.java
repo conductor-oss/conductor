@@ -102,4 +102,11 @@ public class StripeVerifier implements WebhookVerifier {
     public String getType() {
         return WebhookConfig.Verifier.STRIPE.toString();
     }
+
+    @Override
+    public String dedupKey(WebhookConfig webhookConfig, IncomingWebhookEvent event) {
+        var values = event.getHeaders() == null ? null
+                : event.getHeaders().get(STRIPE_SIGNATURE);
+        return (values == null || values.isEmpty()) ? null : values.getFirst();
+    }
 }

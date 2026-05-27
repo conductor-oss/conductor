@@ -12,6 +12,8 @@
  */
 package org.conductoross.conductor.webhook.dao.memory;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -50,6 +52,10 @@ public class InMemoryWebhookDAO implements WebhookDAO {
     // re-registering the webhook.
     private final ConcurrentHashMap<String, Map<String, Integer>> targetWorkflows =
             new ConcurrentHashMap<>();
+
+    // webhookId|signature -> expires_at (epoch millis). Reaped lazily on each
+    // call. Single-node store; clustered deployments use a persistent DAO.
+    private final ConcurrentHashMap<String, Long> signatureDedup = new ConcurrentHashMap<>();
 
     public InMemoryWebhookDAO(MetadataDAO metadataDAO) {
         this.metadataDAO = metadataDAO;
@@ -109,5 +115,26 @@ public class InMemoryWebhookDAO implements WebhookDAO {
     @Override
     public void removeMatchers(String id) {
         targetWorkflows.remove(id);
+    }
+
+    @Override
+    public boolean tryRecordSignature(String webhookId, String signature, Duration ttl) {
+        long now = Instant.now().toEpochMilli();
+        long expiresAt = now + ttl.toMillis();
+        String key = webhookId + "|" + signature;
+        // putIfAbsent is atomic. If a live (non-expired) entry exists, reject.
+        // If the entry expired, prune-and-retry once.
+        Long existing = signatureDedup.putIfAbsent(key, expiresAt);
+        if (existing == null) {
+            return true;
+        }
+        if (existing >= now) {
+            return false;
+        }
+        // Expired: best-effort prune + retry. The race between prune and put is
+        // benign — at worst two events race and one wins; the loser observes a
+        // live entry it just lost and is correctly rejected.
+        signatureDedup.remove(key, existing);
+        return signatureDedup.putIfAbsent(key, expiresAt) == null;
     }
 }

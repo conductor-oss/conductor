@@ -12,6 +12,9 @@
  */
 package org.conductoross.conductor.sqlite.dao;
 
+import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -66,6 +69,10 @@ public class SqliteWebhookDAO extends SqliteBaseDAO implements WebhookDAO {
             "SELECT json_data FROM webhook_target_workflows WHERE webhook_id = ?";
     private static final String DELETE_TARGETS =
             "DELETE FROM webhook_target_workflows WHERE webhook_id = ?";
+
+    private static final String INSERT_DEDUP =
+            "INSERT OR IGNORE INTO webhook_signature_dedup "
+                    + "(webhook_id, signature, seen_at, expires_at) VALUES (?, ?, ?, ?)";
 
     private final MetadataDAO metadataDAO;
 
@@ -160,6 +167,23 @@ public class SqliteWebhookDAO extends SqliteBaseDAO implements WebhookDAO {
     @Override
     public void removeMatchers(String id) {
         queryWithTransaction(DELETE_TARGETS, q -> q.addParameter(id).executeUpdate());
+    }
+
+    @Override
+    public boolean tryRecordSignature(String webhookId, String signature, Duration ttl) {
+        Instant now = Instant.now();
+        Timestamp seenAt = Timestamp.from(now);
+        Timestamp expiresAt = Timestamp.from(now.plus(ttl));
+        Integer affected =
+                queryWithTransaction(
+                        INSERT_DEDUP,
+                        q ->
+                                q.addParameter(webhookId)
+                                        .addParameter(signature)
+                                        .addParameter(seenAt)
+                                        .addParameter(expiresAt)
+                                        .executeUpdate());
+        return affected != null && affected > 0;
     }
 
     @SuppressWarnings("unchecked")

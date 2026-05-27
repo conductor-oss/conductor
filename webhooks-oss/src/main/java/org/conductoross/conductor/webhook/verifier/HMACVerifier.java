@@ -81,6 +81,13 @@ public class HMACVerifier implements WebhookVerifier {
         return WebhookConfig.Verifier.HMAC_BASED.toString();
     }
 
+    @Override
+    public String dedupKey(WebhookConfig webhookConfig, IncomingWebhookEvent event) {
+        var values = event.getHeaders() == null ? null
+                : event.getHeaders().get(webhookConfig.getHeaderKey());
+        return (values == null || values.isEmpty()) ? null : values.getFirst();
+    }
+
     public static byte[] decodeFromString(String src) {
         if (src.isEmpty()) {
             return new byte[0];

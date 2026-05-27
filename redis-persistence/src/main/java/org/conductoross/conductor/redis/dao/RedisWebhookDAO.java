@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.redis.dao;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -58,6 +59,7 @@ public class RedisWebhookDAO extends BaseDynoDAO implements WebhookDAO {
     private static final String WEBHOOK_CONFIG = "WEBHOOK_CONFIG";
     private static final String WEBHOOK_EVENT = "WEBHOOK_EVENT";
     private static final String WEBHOOK_TARGETS = "WEBHOOK_TARGETS";
+    private static final String WEBHOOK_DEDUP = "WEBHOOK_DEDUP";
 
     private final MetadataDAO metadataDAO;
 
@@ -138,6 +140,15 @@ public class RedisWebhookDAO extends BaseDynoDAO implements WebhookDAO {
     @Override
     public void removeMatchers(String id) {
         jedisProxy.hdel(nsKey(WEBHOOK_TARGETS), id);
+    }
+
+    @Override
+    public boolean tryRecordSignature(String webhookId, String signature, Duration ttl) {
+        // Atomic SET NX PX: only succeeds if the key doesn't exist; auto-expires on TTL.
+        String key = nsKey(WEBHOOK_DEDUP, webhookId, signature);
+        String result =
+                jedisProxy.setWithExpiryInMilliIfNotExists(key, "1", ttl.toMillis());
+        return "OK".equals(result);
     }
 
     @SuppressWarnings("unchecked")

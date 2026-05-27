@@ -79,4 +79,11 @@ public class SignatureBasedVerifier implements WebhookVerifier {
     public String getType() {
         return WebhookConfig.Verifier.SIGNATURE_BASED.toString();
     }
+
+    @Override
+    public String dedupKey(WebhookConfig webhookConfig, IncomingWebhookEvent event) {
+        var values = event.getHeaders() == null ? null
+                : event.getHeaders().get(webhookConfig.getHeaderKey());
+        return (values == null || values.isEmpty()) ? null : values.getFirst();
+    }
 }

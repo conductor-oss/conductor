@@ -12,6 +12,9 @@
  */
 package org.conductoross.conductor.postgres.dao;
 
+import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -64,6 +67,11 @@ public class PostgresWebhookDAO extends PostgresBaseDAO implements WebhookDAO {
             "INSERT INTO webhook_target_workflows (webhook_id, json_data) VALUES (?, ?) "
                     + "ON CONFLICT (webhook_id) DO UPDATE "
                     + "SET json_data = EXCLUDED.json_data";
+
+    private static final String INSERT_DEDUP =
+            "INSERT INTO webhook_signature_dedup (webhook_id, signature, seen_at, expires_at) "
+                    + "VALUES (?, ?, ?, ?) "
+                    + "ON CONFLICT (webhook_id, signature) DO NOTHING";
     private static final String SELECT_TARGETS =
             "SELECT json_data FROM webhook_target_workflows WHERE webhook_id = ?";
     private static final String DELETE_TARGETS =
@@ -162,6 +170,23 @@ public class PostgresWebhookDAO extends PostgresBaseDAO implements WebhookDAO {
     @Override
     public void removeMatchers(String id) {
         queryWithTransaction(DELETE_TARGETS, q -> q.addParameter(id).executeUpdate());
+    }
+
+    @Override
+    public boolean tryRecordSignature(String webhookId, String signature, Duration ttl) {
+        Instant now = Instant.now();
+        Timestamp seenAt = Timestamp.from(now);
+        Timestamp expiresAt = Timestamp.from(now.plus(ttl));
+        Integer affected =
+                queryWithTransaction(
+                        INSERT_DEDUP,
+                        q ->
+                                q.addParameter(webhookId)
+                                        .addParameter(signature)
+                                        .addParameter(seenAt)
+                                        .addParameter(expiresAt)
+                                        .executeUpdate());
+        return affected != null && affected > 0;
     }
 
     @SuppressWarnings("unchecked")

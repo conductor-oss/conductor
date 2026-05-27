@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.webhook.service;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -36,6 +37,12 @@ import static org.conductoross.conductor.webhook.WebhookWorkerProperties.WEBHOOK
 @Service
 @Slf4j
 public class IncomingWebhookService {
+
+    /**
+     * Replay-protection window. An event whose signature has been seen for the same webhook
+     * within this duration is rejected. Sized to match Slack's signing-secret tolerance.
+     */
+    static final Duration REPLAY_DEDUP_TTL = Duration.ofMinutes(5);
 
     private final WebhookDAO webhookDAO;
     private final QueueDAO queueDAO;
@@ -99,6 +106,20 @@ public class IncomingWebhookService {
 
             log.error("Rejected webhook event {}: {}", eventId, verificationFailure);
             throw new NonTransientException(verificationFailure);
+        }
+
+        // Replay protection: signed events whose signature we've seen for this webhook
+        // inside REPLAY_DEDUP_TTL are rejected. Verifiers without signature material
+        // (HEADER_BASED, SENDGRID) return null from dedupKey and skip dedup.
+        String dedupKey = verifier.dedupKey(webhookConfig, incomingWebhookEvent);
+        if (dedupKey != null
+                && !webhookDAO.tryRecordSignature(id, dedupKey, REPLAY_DEDUP_TTL)) {
+            log.warn(
+                    "Rejected webhook event {}: replay detected for webhook {}",
+                    eventId,
+                    id);
+            throw new NonTransientException(
+                    "Replay detected: signature already seen for webhook " + id);
         }
 
         boolean update = false;
