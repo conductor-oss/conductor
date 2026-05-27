@@ -50,7 +50,6 @@ public final class WebhookMatcherComputer {
      *     WAIT_FOR_WEBHOOK}/{@code WAIT} task with a non-empty {@code matches} input parameter.
      *     Empty (immutable) if {@code targets} is null or empty.
      */
-    @SuppressWarnings("unchecked")
     public static Map<String, Map<String, Object>> compute(
             Map<String, Integer> targets, MetadataDAO metadataDAO) {
         if (targets == null || targets.isEmpty()) {
@@ -71,13 +70,23 @@ public final class WebhookMatcherComputer {
                         }
                         Object raw = task.getInputParameters().get("matches");
                         if (raw instanceof Map<?, ?> m && !CollectionUtils.isEmpty(m)) {
+                            // 'matches' is authored in JSON / WorkflowDef DSL — keys MUST be strings.
+                            // A non-string key means a corrupted/illegal def; skip it rather than
+                            // ClassCastException downstream when callers iterate the map.
+                            boolean allStringKeys =
+                                    m.keySet().stream().allMatch(k -> k instanceof String);
+                            if (!allStringKeys) {
+                                continue;
+                            }
+                            Map<String, Object> typed = new HashMap<>(m.size());
+                            m.forEach((k, v) -> typed.put((String) k, v));
                             String key =
                                     workflowName
                                             + WEBHOOK_DELIMITER
                                             + wfVersion
                                             + WEBHOOK_DELIMITER
                                             + task.getTaskReferenceName();
-                            computed.put(key, (Map<String, Object>) m);
+                            computed.put(key, typed);
                         }
                     }
                 });
