@@ -77,6 +77,17 @@ public class IncomingWebhookService {
 
         String verifierName = webhookConfig.getVerifier().toString();
         WebhookVerifier verifier = this.webhookVerifiers.get(verifierName);
+        if (verifier == null) {
+            // Reachable when the verifier string on a persisted config doesn't match any
+            // registered @Component (e.g. across a removed-enum-value upgrade or hand-edited row).
+            // Reject the event cleanly rather than NPE downstream.
+            log.error(
+                    "Rejected webhook event {}: no verifier registered for type {}",
+                    eventId,
+                    verifierName);
+            throw new NonTransientException(
+                    "No verifier registered for type '" + verifierName + "'");
+        }
 
         var verificationErrors = verifier.verify(webhookConfig, incomingWebhookEvent);
 
