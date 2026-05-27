@@ -45,11 +45,11 @@ public class StripeVerifier implements WebhookVerifier {
     @Override
     public ErrorList verify(
             WebhookConfig webhookConfig, IncomingWebhookEvent incomingWebhookEvent) {
-        var header = webhookConfig.getSecretValue();
+        var signingSecret = webhookConfig.getSecretValue();
         var headerValues = incomingWebhookEvent.getHeaders().get(STRIPE_SIGNATURE);
 
         if (headerValues == null || headerValues.isEmpty()) {
-            return ErrorList.singleton(header + " is not present in the header");
+            return ErrorList.singleton(STRIPE_SIGNATURE + " is not present in the header");
         } else if (headerValues.size() > 1) {
             return ErrorList.singleton(
                     "Multiple " + STRIPE_SIGNATURE + " is present in the header");
@@ -62,7 +62,7 @@ public class StripeVerifier implements WebhookVerifier {
         try {
             event =
                     Webhook.constructEvent(
-                            incomingWebhookEvent.getBody(), requestSignature, header);
+                            incomingWebhookEvent.getBody(), requestSignature, signingSecret);
         } catch (SignatureVerificationException e) {
             return ErrorList.singleton("Failed to verify Stripe signature: " + e.getMessage());
         }
