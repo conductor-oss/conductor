@@ -12,7 +12,9 @@
  */
 package org.conductoross.conductor.webhook.verifier;
 
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import org.conductoross.conductor.common.utils.ErrorList;
@@ -58,7 +60,9 @@ public class SignatureBasedVerifier implements WebhookVerifier {
                     requestSignature,
                     computedSignature);
 
-            if (!computedSignature.equals(requestSignature)) {
+            byte[] computedBytes = computedSignature.getBytes(StandardCharsets.UTF_8);
+            byte[] requestBytes = requestSignature.getBytes(StandardCharsets.UTF_8);
+            if (!MessageDigest.isEqual(computedBytes, requestBytes)) {
                 return ErrorList.singleton(
                         "Computed signature does not match the request signature.");
             }
