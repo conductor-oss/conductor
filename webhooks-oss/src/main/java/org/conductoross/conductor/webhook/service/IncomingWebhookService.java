@@ -29,7 +29,6 @@ import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.dao.QueueDAO;
 
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import static org.conductoross.conductor.webhook.WebhookWorkerProperties.WEBHOOK_QUEUE;
@@ -127,7 +126,6 @@ public class IncomingWebhookService {
         queueDAO.push(WEBHOOK_QUEUE, incomingWebhookEvent.getId(), 0);
     }
 
-    @SneakyThrows
     public String handlePing(String id, Map<String, Object> requestParams) {
         WebhookConfig webhookConfig = webhookDAO.getWebhook(id);
         if (webhookConfig == null) {
@@ -136,6 +134,12 @@ public class IncomingWebhookService {
         }
         String verifierName = webhookConfig.getVerifier().toString();
         WebhookVerifier verifier = this.webhookVerifiers.get(verifierName);
+        if (verifier == null) {
+            log.error(
+                    "Webhook ping rejected: no verifier registered for type {}", verifierName);
+            throw new NonTransientException(
+                    "No verifier registered for type '" + verifierName + "'");
+        }
         String response = verifier.handlePing(webhookConfig, requestParams);
         if (response != null) {
             // Ping event
