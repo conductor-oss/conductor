@@ -25,6 +25,14 @@ CREATE TABLE webhook_target_workflows (
 -- Hash-indexed waiting tasks. Populated by Webhook.start() when a workflow
 -- reaches a WAIT_FOR_WEBHOOK task. Worker looks up matching task ids by hash
 -- and completes them when a matching event arrives.
+--
+-- 'hash' holds a delimited deterministic key built by WebhookTaskHashing
+-- (workflowName;version;taskRef;value1;value2;...) — NOT a fixed-width crypto
+-- hash. Length is bounded only by the user's workflow def + match values, so
+-- TEXT is intentional here. Compare to mysql-persistence/V10__webhook.sql,
+-- which uses VARCHAR(255) and is at latent risk of silent truncation on long
+-- keys — follow-up: either raise the MySQL cap or SHA-256 the key on both
+-- write and read sites so every backend can share varchar(64).
 CREATE TABLE webhook_hash_to_taskid (
     hash TEXT NOT NULL,
     task_id VARCHAR(255) NOT NULL,

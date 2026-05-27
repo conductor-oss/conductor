@@ -21,6 +21,10 @@ CREATE TABLE IF NOT EXISTS webhook_target_workflows (
 );
 
 -- Hash-indexed waiting tasks.
+--
+-- 'hash' holds a delimited deterministic key built by WebhookTaskHashing
+-- (workflowName;version;taskRef;value1;value2;...) — NOT a fixed-width crypto
+-- hash. SQLite TEXT has no length cap, so this is safe.
 CREATE TABLE IF NOT EXISTS webhook_hash_to_taskid (
     hash    TEXT NOT NULL,
     task_id VARCHAR(255) NOT NULL,

@@ -22,6 +22,16 @@ CREATE TABLE IF NOT EXISTS webhook_target_workflows (
     PRIMARY KEY (webhook_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- 'hash' holds a delimited deterministic key built by WebhookTaskHashing
+-- (workflowName;version;taskRef;value1;value2;...) — NOT a fixed-width crypto
+-- hash. Length is bounded only by the workflow def + match values.
+--
+-- KNOWN LATENT BUG: VARCHAR(255) (set here for InnoDB index-prefix headroom)
+-- may silently truncate on long keys produced by large workflow defs or
+-- multi-value matches. utf8mb4 + InnoDB's 3072-byte PK limit caps a usable
+-- single-column varchar prefix at ~768 chars, and there's a second column
+-- in this PK. Follow-up: hash the deterministic key to SHA-256 in both
+-- write and read sites so every backend can share a fixed varchar(64).
 CREATE TABLE IF NOT EXISTS webhook_hash_to_taskid (
     hash    VARCHAR(255) NOT NULL,
     task_id VARCHAR(255) NOT NULL,
