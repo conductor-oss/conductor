@@ -45,12 +45,14 @@ public class IncomingWebhookResource {
             @RequestBody String bodyStr,
             @RequestParam Map<String, Object> requestParams,
             @RequestHeader HttpHeaders headers) {
+        // Intentionally do NOT log payload, params, or headers — they routinely carry
+        // signature material, bearer tokens, and PII. Log id + sizes only.
         log.debug(
-                "Webhook Event id={} payload={} params={} headers={}",
+                "Webhook event id={} bodyLen={} paramKeys={} headerKeys={}",
                 id,
-                bodyStr,
-                requestParams,
-                headers);
+                bodyStr == null ? 0 : bodyStr.length(),
+                requestParams == null ? 0 : requestParams.size(),
+                headers == null ? 0 : headers.size());
         return incomingWebhookService.handleWebhook(id, bodyStr, requestParams, headers);
     }
 

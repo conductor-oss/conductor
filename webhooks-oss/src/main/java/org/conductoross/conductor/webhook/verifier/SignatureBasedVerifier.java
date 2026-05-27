@@ -55,11 +55,6 @@ public class SignatureBasedVerifier implements WebhookVerifier {
                     this.computeSignature(
                             webhookConfig.getSecretValue(), incomingWebhookEvent.getBody());
 
-            log.debug(
-                    "requestSignature: {} computedSignature :{}",
-                    requestSignature,
-                    computedSignature);
-
             byte[] computedBytes = computedSignature.getBytes(StandardCharsets.UTF_8);
             byte[] requestBytes = requestSignature.getBytes(StandardCharsets.UTF_8);
             if (!MessageDigest.isEqual(computedBytes, requestBytes)) {

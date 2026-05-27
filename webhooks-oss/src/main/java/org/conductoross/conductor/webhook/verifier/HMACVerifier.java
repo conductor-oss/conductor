@@ -67,12 +67,6 @@ public class HMACVerifier implements WebhookVerifier {
 
         String requestSignature = headerValues.getFirst().replace("HMAC", "").stripLeading();
 
-        log.debug(
-                "requestSignature: "
-                        + requestSignature
-                        + " computedSignature:"
-                        + computedSignature);
-
         byte[] computedBytes = computedSignature.getBytes(StandardCharsets.UTF_8);
         byte[] requestBytes = requestSignature.getBytes(StandardCharsets.UTF_8);
         if (!MessageDigest.isEqual(computedBytes, requestBytes)) {
