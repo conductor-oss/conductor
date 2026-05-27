@@ -154,3 +154,12 @@ curl -X POST "http://localhost:8080/api/webhook/<webhook-id>" \
 - **Verification failure**: returns 500, event is NOT enqueued. Caller should retry with a corrected signature.
 - **Worker dispatch failure** (DB blip, OOM, etc.): the message is NOT acked, and the underlying queue's unack timeout will redeliver. Poison messages eventually hit the queue impl's dead-letter behavior (varies by `conductor.queue.type`).
 - **Rejected events** are logged at WARN level. Persistent audit-log capture is a planned enhancement.
+
+## Deployment: authentication and network exposure
+
+The webhook configuration endpoints — `POST/PUT/DELETE/GET /api/metadata/webhook` — follow conductor OSS's standard model: **the OSS server ships without authentication**, and securing it is a deployment concern.
+
+- The `/api/metadata/webhook` endpoints will create, modify, delete, or read webhook configurations for any caller that can reach them on the network. Anyone with reachability can register a webhook (and its secret) or delete an existing one.
+- The inbound `/api/webhook/{id}` event endpoint is signature-verified per the webhook's configured verifier — see the table above — but it does not check caller identity beyond that.
+
+When deploying conductor with webhooks enabled, place the server behind an authenticating proxy or API gateway (mTLS, OAuth-bearer, IP allowlist, or your platform's equivalent) and restrict `/api/metadata/*` to operator identities. Treat `/api/webhook/*` as the public-facing surface and `/api/metadata/webhook` as the operator-facing surface — they have different exposure requirements.
