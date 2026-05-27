@@ -12,10 +12,12 @@
  */
 package org.conductoross.conductor.redis.dao;
 
+import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
 import org.springframework.beans.factory.annotation.Value;
@@ -58,8 +60,12 @@ import lombok.extern.slf4j.Slf4j;
 public class RedisWebhookCleanupJob extends BaseDynoDAO {
 
     private static final String WEBHOOK_EVENT = "WEBHOOK_EVENT";
+    private static final String CLEANUP_LEASE = "WEBHOOK_CLEANUP_LEASE";
 
     private Duration retentionDuration;
+    private Duration leaseTtl = Duration.ofMinutes(5);
+    private final String holderId =
+            ManagementFactory.getRuntimeMXBean().getName() + "/" + UUID.randomUUID();
 
     public RedisWebhookCleanupJob(
             JedisProxy jedisProxy,
@@ -76,8 +82,34 @@ public class RedisWebhookCleanupJob extends BaseDynoDAO {
         this.retentionDuration = retentionDuration;
     }
 
+    void setLeaseTtl(Duration leaseTtl) {
+        this.leaseTtl = leaseTtl;
+    }
+
+    /**
+     * Atomically claim the cleanup lease via {@code SET key value NX PX ttl}. Returns true iff
+     * no live lease exists. The key auto-expires so a crashed lease holder doesn't block other
+     * instances beyond {@link #leaseTtl}.
+     */
+    private boolean tryAcquireLease() {
+        try {
+            String leaseKey = nsKey(CLEANUP_LEASE);
+            String acquired =
+                    jedisProxy.setWithExpiryInMilliIfNotExists(
+                            leaseKey, holderId, leaseTtl.toMillis());
+            return "OK".equals(acquired);
+        } catch (Exception e) {
+            log.warn("webhook cleanup lease acquisition failed", e);
+            return false;
+        }
+    }
+
     @Scheduled(cron = "${conductor.webhooks.cleanup.cron:0 0 * * * *}")
     public void run() {
+        if (!tryAcquireLease()) {
+            log.debug("webhook event cleanup: lease held elsewhere, skipping tick");
+            return;
+        }
         String key = nsKey(WEBHOOK_EVENT);
         Map<String, String> all = jedisProxy.hgetAll(key);
         if (all == null || all.isEmpty()) {

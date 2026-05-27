@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.postgres.dao;
 
+import java.lang.management.ManagementFactory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -19,6 +20,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.UUID;
 
 import javax.sql.DataSource;
 
@@ -53,14 +55,30 @@ public class PostgresWebhookCleanupJob {
                     + "  RETURNING ctid"
                     + ") SELECT count(1) FROM deleted";
 
+    private static final String LEASE_TASK = "webhook-event-cleanup";
+    private static final String ACQUIRE_LEASE =
+            "UPDATE webhook_cleanup_lease "
+                    + "SET holder = ?, acquired_at = ?, expires_at = ? "
+                    + "WHERE task = ? AND expires_at < ?";
+
     private final DataSource dataSource;
+    private final String holderId = computeHolderId();
 
     private Duration retentionDuration = Duration.ofDays(7);
     private int batchSize = 1000;
     private Duration maxRuntime = Duration.ofSeconds(60);
+    private Duration leaseTtl = Duration.ofMinutes(5);
 
     public PostgresWebhookCleanupJob(DataSource dataSource) {
         this.dataSource = dataSource;
+    }
+
+    public void setLeaseTtl(Duration leaseTtl) {
+        this.leaseTtl = leaseTtl;
+    }
+
+    private static String computeHolderId() {
+        return ManagementFactory.getRuntimeMXBean().getName() + "/" + UUID.randomUUID();
     }
 
     public void setRetentionDuration(Duration retentionDuration) {
@@ -77,6 +95,10 @@ public class PostgresWebhookCleanupJob {
 
     @Scheduled(cron = "${conductor.webhooks.cleanup.cron:0 0 * * * *}")
     public void run() {
+        if (!tryAcquireLease()) {
+            log.debug("webhook event cleanup: lease held elsewhere, skipping tick");
+            return;
+        }
         long deadline = System.currentTimeMillis() + maxRuntime.toMillis();
         int totalDeleted = 0;
 
@@ -112,6 +134,28 @@ public class PostgresWebhookCleanupJob {
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? rs.getInt(1) : 0;
             }
+        }
+    }
+
+    /**
+     * Atomically claim the cleanup lease for this tick. Returns true iff the prior holder's
+     * lease expired and this instance successfully took it. Acquisition is a single conditional
+     * UPDATE on a pre-seeded row so the outcome doesn't depend on transaction isolation.
+     */
+    private boolean tryAcquireLease() {
+        try (Connection conn = dataSource.getConnection();
+                PreparedStatement ps = conn.prepareStatement(ACQUIRE_LEASE)) {
+            conn.setAutoCommit(true);
+            Instant now = Instant.now();
+            ps.setString(1, holderId);
+            ps.setTimestamp(2, Timestamp.from(now));
+            ps.setTimestamp(3, Timestamp.from(now.plus(leaseTtl)));
+            ps.setString(4, LEASE_TASK);
+            ps.setTimestamp(5, Timestamp.from(now));
+            return ps.executeUpdate() == 1;
+        } catch (SQLException e) {
+            log.warn("webhook cleanup lease acquisition failed", e);
+            return false;
         }
     }
 }
