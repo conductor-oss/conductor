@@ -41,8 +41,14 @@ public class SignatureBasedVerifier implements WebhookVerifier {
             return ErrorList.singleton("Multiple " + header + " is present in the header");
         }
 
+        var rawHeader = headerValues.getFirst();
+        if (!rawHeader.startsWith(SHA_256)) {
+            return ErrorList.singleton(
+                    header + " must be prefixed with '" + SHA_256 + "'");
+        }
+
         try {
-            var requestSignature = headerValues.getFirst().substring(SHA_256.length());
+            var requestSignature = rawHeader.substring(SHA_256.length());
             var computedSignature =
                     this.computeSignature(
                             webhookConfig.getSecretValue(), incomingWebhookEvent.getBody());
