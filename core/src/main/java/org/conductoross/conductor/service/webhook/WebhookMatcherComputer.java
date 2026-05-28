@@ -37,16 +37,16 @@ import static org.conductoross.conductor.service.webhook.WebhookTaskService.Cons
  * criteria are recomputed from {@link MetadataDAO} on every {@code getMatchers()} call so
  * WorkflowDef updates take effect without re-registering the webhook.
  *
- * <p><b>Performance note.</b> {@link #compute} fetches one {@link MetadataDAO#getWorkflowDef}
- * per target workflow per invocation. This is the read hot path for inbound webhook events.
+ * <p><b>Performance note.</b> {@link #compute} fetches one {@link MetadataDAO#getWorkflowDef} per
+ * target workflow per invocation. This is the read hot path for inbound webhook events.
  *
  * <ul>
  *   <li>On Cassandra, {@code CacheableMetadataDAO} (in {@code cassandra-persistence}) wraps the
  *       primary DAO so these fetches resolve from a process-local cache.
- *   <li>On Postgres / MySQL / SQLite / Redis, there is no equivalent wrapper today — each
- *       fetch is a backend round-trip. Acceptable when a webhook targets a small number of
- *       workflows; revisit if matcher fanout grows or if traffic-per-webhook makes the cost
- *       visible in profiles.
+ *   <li>On Postgres / MySQL / SQLite / Redis, there is no equivalent wrapper today — each fetch is
+ *       a backend round-trip. Acceptable when a webhook targets a small number of workflows;
+ *       revisit if matcher fanout grows or if traffic-per-webhook makes the cost visible in
+ *       profiles.
  * </ul>
  */
 public final class WebhookMatcherComputer {
@@ -82,7 +82,8 @@ public final class WebhookMatcherComputer {
                         }
                         Object raw = task.getInputParameters().get("matches");
                         if (raw instanceof Map<?, ?> m && !CollectionUtils.isEmpty(m)) {
-                            // 'matches' is authored in JSON / WorkflowDef DSL — keys MUST be strings.
+                            // 'matches' is authored in JSON / WorkflowDef DSL — keys MUST be
+                            // strings.
                             // A non-string key means a corrupted/illegal def; skip it rather than
                             // ClassCastException downstream when callers iterate the map.
                             boolean allStringKeys =

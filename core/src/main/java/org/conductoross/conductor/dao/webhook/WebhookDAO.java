@@ -43,17 +43,17 @@ public interface WebhookDAO {
     void createIncomingWebhookEvent(String id, IncomingWebhookEvent incomingWebhookEvent);
 
     /**
-     * Atomically record a webhook event signature for replay protection. Returns {@code true}
-     * iff the {@code (webhookId, signature)} pair has not been recorded in the last {@code ttl}.
-     * A returned {@code false} means the inbound event is a replay.
+     * Atomically record a webhook event signature for replay protection. Returns {@code true} iff
+     * the {@code (webhookId, signature)} pair has not been recorded in the last {@code ttl}. A
+     * returned {@code false} means the inbound event is a replay.
      *
-     * <p>The default implementation accepts everything — backends that don't yet implement
-     * dedup retain the prior behavior. Implement to enforce replay protection.
+     * <p>The default implementation accepts everything — backends that don't yet implement dedup
+     * retain the prior behavior. Implement to enforce replay protection.
      *
      * @param webhookId the webhook config id receiving the event (scopes the dedup namespace)
      * @param signature the verifier-supplied signature string from the inbound request
-     * @param ttl how long the signature is remembered; events with the same signature inside
-     *     this window are rejected as replays
+     * @param ttl how long the signature is remembered; events with the same signature inside this
+     *     window are rejected as replays
      */
     default boolean tryRecordSignature(String webhookId, String signature, Duration ttl) {
         return true;
