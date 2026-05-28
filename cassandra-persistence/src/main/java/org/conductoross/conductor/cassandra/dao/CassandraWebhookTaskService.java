@@ -53,14 +53,15 @@ public class CassandraWebhookTaskService extends CassandraBaseDAO implements Web
         ensureTables();
         ConsistencyLevel readConsistency = properties.getReadConsistencyLevel();
         ConsistencyLevel writeConsistency = properties.getWriteConsistencyLevel();
+        String table = properties.getKeyspace() + "." + TABLE;
         insertStmt =
-                session.prepare("INSERT INTO " + TABLE + " (hash, task_id) VALUES (?, ?)")
+                session.prepare("INSERT INTO " + table + " (hash, task_id) VALUES (?, ?)")
                         .setConsistencyLevel(writeConsistency);
         selectByHashStmt =
-                session.prepare("SELECT task_id FROM " + TABLE + " WHERE hash = ?")
+                session.prepare("SELECT task_id FROM " + table + " WHERE hash = ?")
                         .setConsistencyLevel(readConsistency);
         deleteStmt =
-                session.prepare("DELETE FROM " + TABLE + " WHERE hash = ? AND task_id = ?")
+                session.prepare("DELETE FROM " + table + " WHERE hash = ? AND task_id = ?")
                         .setConsistencyLevel(writeConsistency);
     }
 

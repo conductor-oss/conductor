@@ -100,53 +100,56 @@ public class CassandraWebhookDAO extends CassandraBaseDAO implements WebhookDAO 
 
         ConsistencyLevel readConsistency = properties.getReadConsistencyLevel();
         ConsistencyLevel writeConsistency = properties.getWriteConsistencyLevel();
+        String webhookTable = properties.getKeyspace() + "." + TABLE_WEBHOOK;
+        String eventTable = properties.getKeyspace() + "." + TABLE_EVENT;
+        String targetsTable = properties.getKeyspace() + "." + TABLE_TARGETS;
 
         insertWebhookStmt =
                 session.prepare(
                                 "INSERT INTO "
-                                        + TABLE_WEBHOOK
+                                        + webhookTable
                                         + " (bucket, webhook_id, json_data) VALUES (?, ?, ?)")
                         .setConsistencyLevel(writeConsistency);
         selectWebhookStmt =
                 session.prepare(
                                 "SELECT json_data FROM "
-                                        + TABLE_WEBHOOK
+                                        + webhookTable
                                         + " WHERE bucket = ? AND webhook_id = ?")
                         .setConsistencyLevel(readConsistency);
         selectAllWebhooksStmt =
-                session.prepare("SELECT json_data FROM " + TABLE_WEBHOOK + " WHERE bucket = ?")
+                session.prepare("SELECT json_data FROM " + webhookTable + " WHERE bucket = ?")
                         .setConsistencyLevel(readConsistency);
         deleteWebhookStmt =
                 session.prepare(
                                 "DELETE FROM "
-                                        + TABLE_WEBHOOK
+                                        + webhookTable
                                         + " WHERE bucket = ? AND webhook_id = ?")
                         .setConsistencyLevel(writeConsistency);
 
         insertEventStmt =
                 session.prepare(
                                 "INSERT INTO "
-                                        + TABLE_EVENT
+                                        + eventTable
                                         + " (event_id, json_data) VALUES (?, ?)")
                         .setConsistencyLevel(writeConsistency);
         selectEventStmt =
-                session.prepare("SELECT json_data FROM " + TABLE_EVENT + " WHERE event_id = ?")
+                session.prepare("SELECT json_data FROM " + eventTable + " WHERE event_id = ?")
                         .setConsistencyLevel(readConsistency);
         deleteEventStmt =
-                session.prepare("DELETE FROM " + TABLE_EVENT + " WHERE event_id = ?")
+                session.prepare("DELETE FROM " + eventTable + " WHERE event_id = ?")
                         .setConsistencyLevel(writeConsistency);
 
         insertTargetsStmt =
                 session.prepare(
                                 "INSERT INTO "
-                                        + TABLE_TARGETS
+                                        + targetsTable
                                         + " (webhook_id, json_data) VALUES (?, ?)")
                         .setConsistencyLevel(writeConsistency);
         selectTargetsStmt =
-                session.prepare("SELECT json_data FROM " + TABLE_TARGETS + " WHERE webhook_id = ?")
+                session.prepare("SELECT json_data FROM " + targetsTable + " WHERE webhook_id = ?")
                         .setConsistencyLevel(readConsistency);
         deleteTargetsStmt =
-                session.prepare("DELETE FROM " + TABLE_TARGETS + " WHERE webhook_id = ?")
+                session.prepare("DELETE FROM " + targetsTable + " WHERE webhook_id = ?")
                         .setConsistencyLevel(writeConsistency);
     }
 
