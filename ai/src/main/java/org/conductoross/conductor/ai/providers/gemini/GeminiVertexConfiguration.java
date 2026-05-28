@@ -37,11 +37,12 @@ public class GeminiVertexConfiguration implements ModelConfiguration<GeminiVerte
     private String apiKey;
     GoogleCredentials googleCredentials;
 
-    private OkHttpClient conductorAiHttpClient;
+    private OkHttpClient httpClient;
 
     @Autowired
-    public void setConductorAiHttpClient(OkHttpClient conductorAiHttpClient) {
-        this.conductorAiHttpClient = conductorAiHttpClient;
+    @Override
+    public void setHttpClient(OkHttpClient httpClient) {
+        this.httpClient = httpClient;
     }
 
     public String getBaseURL() {
@@ -60,8 +61,7 @@ public class GeminiVertexConfiguration implements ModelConfiguration<GeminiVerte
 
     @Override
     public GeminiVertex get() {
-        OkHttpClient client =
-                conductorAiHttpClient != null ? conductorAiHttpClient : new OkHttpClient();
+        OkHttpClient client = httpClient != null ? httpClient : new OkHttpClient();
         return new GeminiVertex(this, client);
     }
 }

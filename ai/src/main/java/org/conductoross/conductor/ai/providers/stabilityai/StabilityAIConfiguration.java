@@ -36,20 +36,21 @@ public class StabilityAIConfiguration implements ModelConfiguration<StabilityAI>
 
     private String apiKey;
 
-    private OkHttpClient conductorAiHttpClient;
+    private OkHttpClient httpClient;
 
-    public StabilityAIConfiguration(String apiKey, OkHttpClient conductorAiHttpClient) {
+    public StabilityAIConfiguration(String apiKey, OkHttpClient httpClient) {
         this.apiKey = apiKey;
-        this.conductorAiHttpClient = conductorAiHttpClient;
+        this.httpClient = httpClient;
     }
 
     @Autowired
-    public void setConductorAiHttpClient(OkHttpClient conductorAiHttpClient) {
-        this.conductorAiHttpClient = conductorAiHttpClient;
+    @Override
+    public void setHttpClient(OkHttpClient httpClient) {
+        this.httpClient = httpClient;
     }
 
     @Override
     public StabilityAI get() {
-        return new StabilityAI(this, conductorAiHttpClient);
+        return new StabilityAI(this, httpClient);
     }
 }

@@ -14,6 +14,7 @@ package org.conductoross.conductor.ai.providers.bedrock;
 
 import java.time.Duration;
 
+import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.ModelConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -55,6 +56,11 @@ public class BedrockConfiguration implements ModelConfiguration<Bedrock> {
     @Override
     public Bedrock get() {
         return new Bedrock(this);
+    }
+
+    @Override
+    public void setHttpClient(OkHttpClient httpClient) {
+        // Not required
     }
 
     public AwsCredentialsProvider getAwsCredentialsProvider() {

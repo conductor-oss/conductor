@@ -12,7 +12,11 @@
  */
 package org.conductoross.conductor.ai;
 
+import okhttp3.OkHttpClient;
+
 /** Marker interface for model configuration */
 public interface ModelConfiguration<T extends AIModel> {
     T get();
+
+    void setHttpClient(OkHttpClient httpClient);
 }
