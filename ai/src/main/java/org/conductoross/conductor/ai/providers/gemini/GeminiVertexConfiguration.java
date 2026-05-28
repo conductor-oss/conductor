@@ -37,8 +37,12 @@ public class GeminiVertexConfiguration implements ModelConfiguration<GeminiVerte
     private String apiKey;
     GoogleCredentials googleCredentials;
 
-    @Autowired(required = false)
     private OkHttpClient conductorAiHttpClient;
+
+    @Autowired
+    public void setConductorAiHttpClient(OkHttpClient conductorAiHttpClient) {
+        this.conductorAiHttpClient = conductorAiHttpClient;
+    }
 
     public String getBaseURL() {
         return baseURL == null

@@ -35,11 +35,18 @@ public class CohereAIConfiguration implements ModelConfiguration<CohereAI> {
     private String baseURL = "https://api.cohere.ai";
     private Duration timeout = Duration.ofSeconds(600);
 
-    @Autowired private OkHttpClient conductorAiHttpClient;
+    private OkHttpClient conductorAiHttpClient;
 
-    public CohereAIConfiguration(String apiKey, String baseURL) {
+    public CohereAIConfiguration(
+            String apiKey, String baseURL, OkHttpClient conductorAiHttpClient) {
         this.apiKey = apiKey;
         this.baseURL = baseURL;
+        this.conductorAiHttpClient = conductorAiHttpClient;
+    }
+
+    @Autowired
+    public void setConductorAiHttpClient(OkHttpClient conductorAiHttpClient) {
+        this.conductorAiHttpClient = conductorAiHttpClient;
     }
 
     @Override

@@ -35,14 +35,24 @@ public class AzureOpenAIConfiguration implements ModelConfiguration<AzureOpenAI>
     private String deploymentName;
     private Duration timeout = Duration.ofSeconds(600);
 
-    @Autowired private OkHttpClient conductorAiHttpClient;
+    private OkHttpClient conductorAiHttpClient;
 
     public AzureOpenAIConfiguration(
-            String apiKey, String baseURL, String user, String deploymentName) {
+            String apiKey,
+            String baseURL,
+            String user,
+            String deploymentName,
+            OkHttpClient conductorAiHttpClient) {
         this.apiKey = apiKey;
         this.baseURL = baseURL;
         this.user = user;
         this.deploymentName = deploymentName;
+        this.conductorAiHttpClient = conductorAiHttpClient;
+    }
+
+    @Autowired
+    public void setConductorAiHttpClient(OkHttpClient conductorAiHttpClient) {
+        this.conductorAiHttpClient = conductorAiHttpClient;
     }
 
     @Override
