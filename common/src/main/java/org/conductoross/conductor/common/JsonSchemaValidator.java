@@ -12,16 +12,17 @@
  */
 package org.conductoross.conductor.common;
 
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.networknt.schema.Error;
-import com.networknt.schema.Schema;
-import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.JsonSchema;
+import com.networknt.schema.JsonSchemaFactory;
+import com.networknt.schema.SpecVersionDetector;
+import com.networknt.schema.ValidationMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
@@ -32,13 +33,15 @@ public class JsonSchemaValidator {
     private final ObjectMapper mapper;
 
     @SneakyThrows
-    public Schema getJsonSchema(String schemaContent) {
+    public JsonSchema getJsonSchema(String schemaContent) {
         JsonNode jsonNode = mapper.readTree(schemaContent);
-        return SchemaRegistry.builder().build().getSchema(jsonNode);
+        JsonSchemaFactory factory =
+                JsonSchemaFactory.getInstance(SpecVersionDetector.detect(jsonNode));
+        return factory.getSchema(jsonNode);
     }
 
-    public List<Error> validate(String schemaContent, Map<String, Object> body) {
-        Schema schema = getJsonSchema(schemaContent);
+    public Set<ValidationMessage> validate(String schemaContent, Map<String, Object> body) {
+        JsonSchema schema = getJsonSchema(schemaContent);
         schema.initializeValidators();
         JsonNode node = getJsonNode(body);
         return schema.validate(node);
