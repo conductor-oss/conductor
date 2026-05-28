@@ -81,7 +81,6 @@ nav:
       - documentation/api/eventhandlers.md
       - documentation/api/taskdomains.md
       - documentation/api/scheduler.md
-      - documentation/mcp/workflow.md
     - Workflow Definition:
       - documentation/configuration/workflowdef/index.md
     - System Tasks:
