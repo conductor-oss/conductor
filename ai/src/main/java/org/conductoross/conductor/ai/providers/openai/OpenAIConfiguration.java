@@ -40,10 +40,7 @@ public class OpenAIConfiguration implements ModelConfiguration<OpenAI> {
     private OkHttpClient httpClient;
 
     public OpenAIConfiguration(
-            String apiKey,
-            String baseURL,
-            String organizationId,
-            OkHttpClient httpClient) {
+            String apiKey, String baseURL, String organizationId, OkHttpClient httpClient) {
         this.apiKey = apiKey;
         this.baseURL = baseURL;
         this.organizationId = organizationId;

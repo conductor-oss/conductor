@@ -35,8 +35,7 @@ public class GrokAIConfiguration implements ModelConfiguration<Grok> {
 
     private OkHttpClient httpClient;
 
-    public GrokAIConfiguration(
-            String apiKey, String baseURL, OkHttpClient httpClient) {
+    public GrokAIConfiguration(String apiKey, String baseURL, OkHttpClient httpClient) {
         this.apiKey = apiKey;
         this.baseURL = baseURL;
         this.httpClient = httpClient;

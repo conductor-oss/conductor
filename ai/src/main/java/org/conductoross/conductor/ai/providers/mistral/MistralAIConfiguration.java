@@ -37,8 +37,7 @@ public class MistralAIConfiguration implements ModelConfiguration<MistralAI> {
 
     private OkHttpClient httpClient;
 
-    public MistralAIConfiguration(
-            String apiKey, String baseURL, OkHttpClient httpClient) {
+    public MistralAIConfiguration(String apiKey, String baseURL, OkHttpClient httpClient) {
         this.apiKey = apiKey;
         this.baseURL = baseURL;
         this.httpClient = httpClient;
@@ -56,8 +55,6 @@ public class MistralAIConfiguration implements ModelConfiguration<MistralAI> {
 
     @Override
     public MistralAI get() {
-        return httpClient != null
-                ? new MistralAI(this, httpClient)
-                : new MistralAI(this);
+        return httpClient != null ? new MistralAI(this, httpClient) : new MistralAI(this);
     }
 }

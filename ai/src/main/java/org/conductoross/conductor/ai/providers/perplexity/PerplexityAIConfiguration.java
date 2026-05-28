@@ -35,8 +35,7 @@ public class PerplexityAIConfiguration implements ModelConfiguration<PerplexityA
 
     private OkHttpClient httpClient;
 
-    public PerplexityAIConfiguration(
-            String apiKey, String baseURL, OkHttpClient httpClient) {
+    public PerplexityAIConfiguration(String apiKey, String baseURL, OkHttpClient httpClient) {
         this.apiKey = apiKey;
         this.baseURL = baseURL;
         this.httpClient = httpClient;

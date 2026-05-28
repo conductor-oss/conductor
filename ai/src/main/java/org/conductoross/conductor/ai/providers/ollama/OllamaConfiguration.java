@@ -40,10 +40,7 @@ public class OllamaConfiguration implements ModelConfiguration<Ollama> {
     private OkHttpClient httpClient;
 
     public OllamaConfiguration(
-            String baseURL,
-            String authHeaderName,
-            String authHeader,
-            OkHttpClient httpClient) {
+            String baseURL, String authHeaderName, String authHeader, OkHttpClient httpClient) {
         this.baseURL = baseURL;
         this.authHeaderName = authHeaderName;
         this.authHeader = authHeader;
@@ -62,8 +59,6 @@ public class OllamaConfiguration implements ModelConfiguration<Ollama> {
 
     @Override
     public Ollama get() {
-        return httpClient != null
-                ? new Ollama(this, httpClient)
-                : new Ollama(this);
+        return httpClient != null ? new Ollama(this, httpClient) : new Ollama(this);
     }
 }

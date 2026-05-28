@@ -33,8 +33,7 @@ public class HuggingFaceConfiguration implements ModelConfiguration<HuggingFace>
 
     private OkHttpClient httpClient;
 
-    public HuggingFaceConfiguration(
-            String apiKey, String baseURL, OkHttpClient httpClient) {
+    public HuggingFaceConfiguration(String apiKey, String baseURL, OkHttpClient httpClient) {
         this.apiKey = apiKey;
         this.baseURL = baseURL;
         this.httpClient = httpClient;

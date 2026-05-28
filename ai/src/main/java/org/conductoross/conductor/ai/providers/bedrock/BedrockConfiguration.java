@@ -14,7 +14,6 @@ package org.conductoross.conductor.ai.providers.bedrock;
 
 import java.time.Duration;
 
-import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.ModelConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -22,6 +21,7 @@ import org.springframework.stereotype.Component;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import okhttp3.OkHttpClient;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;

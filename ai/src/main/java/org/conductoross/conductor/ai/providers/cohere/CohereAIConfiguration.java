@@ -37,8 +37,7 @@ public class CohereAIConfiguration implements ModelConfiguration<CohereAI> {
 
     private OkHttpClient httpClient;
 
-    public CohereAIConfiguration(
-            String apiKey, String baseURL, OkHttpClient httpClient) {
+    public CohereAIConfiguration(String apiKey, String baseURL, OkHttpClient httpClient) {
         this.apiKey = apiKey;
         this.baseURL = baseURL;
         this.httpClient = httpClient;
@@ -52,8 +51,6 @@ public class CohereAIConfiguration implements ModelConfiguration<CohereAI> {
 
     @Override
     public CohereAI get() {
-        return httpClient != null
-                ? new CohereAI(this, httpClient)
-                : new CohereAI(this);
+        return httpClient != null ? new CohereAI(this, httpClient) : new CohereAI(this);
     }
 }
