@@ -84,7 +84,9 @@ class WebhookWorkerTest {
         webhookDAO = new InMemoryWebhookDAO(metadataDAO);
         webhookTaskService = new InMemoryWebhookTaskService();
         targetWorkflowCollector =
-                new TargetWorkflowCollector(Map.<String, com.netflix.conductor.core.execution.evaluators.Evaluator>of(), parametersUtils);
+                new TargetWorkflowCollector(
+                        Map.<String, com.netflix.conductor.core.execution.evaluators.Evaluator>of(),
+                        parametersUtils);
         hashingService = new WebhookHashingService();
         WebhookWorkerProperties properties = new WebhookWorkerProperties();
         properties.setThreadCount(0); // disable polling thread
@@ -122,7 +124,8 @@ class WebhookWorkerTest {
         worker.pollAndExecute();
 
         // Acked → message removed from queue.
-        assertThat(queueDAO.contains(WebhookWorkerProperties.WEBHOOK_QUEUE, "ev-success")).isFalse();
+        assertThat(queueDAO.contains(WebhookWorkerProperties.WEBHOOK_QUEUE, "ev-success"))
+                .isFalse();
     }
 
     @Test
