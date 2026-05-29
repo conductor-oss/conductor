@@ -57,10 +57,23 @@ public class SqliteWebhookCleanupJobTest {
         flyway.migrate();
         // flyway.clean() leaks rows across tests on the shared sqlite file in this
         // test runner — explicit DELETE guarantees a clean slate per method.
-        try (Connection conn = dataSource.getConnection();
-                PreparedStatement ps =
-                        conn.prepareStatement("DELETE FROM incoming_webhook_event")) {
-            ps.executeUpdate();
+        // The cleanup-lease row also leaks: the V5 migration seeds it with
+        // INSERT OR IGNORE so re-running migrate() after a partial-clean doesn't
+        // reset expires_at. Without this reset, the first test acquires the
+        // lease and sets expires_at = now + 5min, and subsequent tests'
+        // tryAcquireLease() returns false so job.run() does nothing.
+        try (Connection conn = dataSource.getConnection()) {
+            try (PreparedStatement ps =
+                    conn.prepareStatement("DELETE FROM incoming_webhook_event")) {
+                ps.executeUpdate();
+            }
+            try (PreparedStatement ps =
+                    conn.prepareStatement(
+                            "UPDATE webhook_cleanup_lease SET holder = 'unclaimed',"
+                                    + " expires_at = '1970-01-01T00:00:00'"
+                                    + " WHERE task = 'webhook-event-cleanup'")) {
+                ps.executeUpdate();
+            }
         }
     }
 
