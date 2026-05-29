@@ -67,11 +67,21 @@ public class SqliteWebhookCleanupJobTest {
                     conn.prepareStatement("DELETE FROM incoming_webhook_event")) {
                 ps.executeUpdate();
             }
+            // INSERT OR REPLACE so the row exists regardless of whether
+            // flyway.clean() dropped the table and V5's INSERT OR IGNORE
+            // re-seeded it. Bind expires_at as a Timestamp parameter (not a
+            // text literal): the xerial sqlite-jdbc driver stores Timestamp
+            // as INTEGER (epoch millis), and SQLite's type comparison says
+            // INTEGER < TEXT, so a text literal here compares as greater
+            // than the cleanup job's now-Timestamp and its expires_at < ?
+            // check always returns false — the lease could never be
+            // re-acquired.
             try (PreparedStatement ps =
                     conn.prepareStatement(
-                            "UPDATE webhook_cleanup_lease SET holder = 'unclaimed',"
-                                    + " expires_at = '1970-01-01T00:00:00'"
-                                    + " WHERE task = 'webhook-event-cleanup'")) {
+                            "INSERT OR REPLACE INTO webhook_cleanup_lease"
+                                    + " (task, holder, expires_at)"
+                                    + " VALUES ('webhook-event-cleanup', 'unclaimed', ?)")) {
+                ps.setTimestamp(1, new Timestamp(0L));
                 ps.executeUpdate();
             }
         }
