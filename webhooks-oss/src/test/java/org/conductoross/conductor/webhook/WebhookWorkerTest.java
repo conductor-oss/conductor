@@ -14,10 +14,11 @@ package org.conductoross.conductor.webhook;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import org.conductoross.conductor.service.webhook.TargetWorkflowCollector;
+import org.conductoross.conductor.webhook.dao.memory.InMemoryMetadataDAO;
+import org.conductoross.conductor.webhook.dao.memory.InMemoryQueueDAO;
 import org.conductoross.conductor.webhook.dao.memory.InMemoryWebhookDAO;
 import org.conductoross.conductor.webhook.dao.memory.InMemoryWebhookTaskService;
 import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
@@ -36,27 +37,22 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.core.utils.ParametersUtils;
-import com.netflix.conductor.dao.MetadataDAO;
-import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
  * Worker-internal tests. Uses real in-memory implementations of WebhookDAO, WebhookTaskService,
- * hashing service, and the target-collector — mocks only the deep infra (QueueDAO,
- * WorkflowExecutor, ExecutionDAOFacade, MetadataDAO, ParametersUtils). Per AGENTS.md preference:
- * real beans over mocks.
+ * hashing service, QueueDAO, MetadataDAO, ParametersUtils, and the target-collector — mocks only
+ * the deep workflow-engine infrastructure (WorkflowExecutor, ExecutionDAOFacade) that cannot be
+ * exercised without a full persistence stack.
  *
  * <p>The full register→receive→dispatch end-to-end is covered by {@link WebhooksOssEndToEndTest}.
  * This class focuses on worker-specific semantics: handleMessage edge cases and pollAndExecute ack
@@ -65,14 +61,16 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class WebhookWorkerTest {
 
-    @Mock private QueueDAO queueDAO;
+    // Only the workflow-engine layer stays as a mock — it cannot be instantiated without a full
+    // persistence stack.
     @Mock private WorkflowExecutor workflowExecutor;
     @Mock private ExecutionDAOFacade executionDAOFacade;
-    @Mock private MetadataDAO metadataDAO;
-    @Mock private ParametersUtils parametersUtils;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ParametersUtils parametersUtils = new ParametersUtils(objectMapper);
 
+    private InMemoryMetadataDAO metadataDAO;
+    private InMemoryQueueDAO queueDAO;
     private InMemoryWebhookDAO webhookDAO;
     private InMemoryWebhookTaskService webhookTaskService;
     private TargetWorkflowCollector targetWorkflowCollector;
@@ -81,10 +79,12 @@ class WebhookWorkerTest {
 
     @BeforeEach
     void setUp() {
+        metadataDAO = new InMemoryMetadataDAO();
+        queueDAO = new InMemoryQueueDAO();
         webhookDAO = new InMemoryWebhookDAO(metadataDAO);
         webhookTaskService = new InMemoryWebhookTaskService();
         targetWorkflowCollector =
-                new TargetWorkflowCollector(Map.<String, Evaluator>of(), parametersUtils);
+                new TargetWorkflowCollector(Map.<String, com.netflix.conductor.core.execution.evaluators.Evaluator>of(), parametersUtils);
         hashingService = new WebhookHashingService();
         WebhookWorkerProperties properties = new WebhookWorkerProperties();
         properties.setThreadCount(0); // disable polling thread
@@ -105,34 +105,30 @@ class WebhookWorkerTest {
 
     @Test
     void pollAndExecute_emptyBatch_noop() {
-        when(queueDAO.pop(eq(WebhookWorkerProperties.WEBHOOK_QUEUE), anyInt(), anyInt()))
-                .thenReturn(List.of());
-
+        // Queue is empty — nothing to process.
         worker.pollAndExecute();
 
-        verify(queueDAO, never()).ack(anyString(), anyString());
+        assertThat(queueDAO.getSize(WebhookWorkerProperties.WEBHOOK_QUEUE)).isZero();
     }
 
     @Test
     void pollAndExecute_success_acks() {
-        // event exists but webhookConfig doesn't → handleMessage returns cleanly.
+        // Event exists but webhookConfig doesn't → handleMessage returns cleanly → acked.
         IncomingWebhookEvent event =
                 IncomingWebhookEvent.builder().id("ev-success").webhookId("hook-missing").build();
         webhookDAO.createIncomingWebhookEvent("ev-success", event);
-
-        when(queueDAO.pop(eq(WebhookWorkerProperties.WEBHOOK_QUEUE), anyInt(), anyInt()))
-                .thenReturn(List.of("ev-success"));
+        queueDAO.push(WebhookWorkerProperties.WEBHOOK_QUEUE, "ev-success", 0);
 
         worker.pollAndExecute();
 
-        verify(queueDAO).ack(WebhookWorkerProperties.WEBHOOK_QUEUE, "ev-success");
+        // Acked → message removed from queue.
+        assertThat(queueDAO.contains(WebhookWorkerProperties.WEBHOOK_QUEUE, "ev-success")).isFalse();
     }
 
     @Test
     void pollAndExecute_handleMessageThrows_doesNotAck() {
-        // queueDAO returns a message id whose getWebhookEvent will throw.
-        when(queueDAO.pop(eq(WebhookWorkerProperties.WEBHOOK_QUEUE), anyInt(), anyInt()))
-                .thenReturn(List.of("ev-poison"));
+        queueDAO.push(WebhookWorkerProperties.WEBHOOK_QUEUE, "ev-poison", 0);
+
         InMemoryWebhookDAO failingDao =
                 new InMemoryWebhookDAO(metadataDAO) {
                     @Override
@@ -155,13 +151,11 @@ class WebhookWorkerTest {
         failingWorker.pollAndExecute();
 
         // Regression: prior impl acked in a finally block, silently dropping the event.
-        verify(queueDAO, never()).ack(anyString(), anyString());
+        assertThat(queueDAO.contains(WebhookWorkerProperties.WEBHOOK_QUEUE, "ev-poison")).isTrue();
     }
 
     @Test
     void pollAndExecute_mixedBatch_acksOnlySuccesses() {
-        // ev-ok: event present (no config) → handleMessage returns cleanly → ack.
-        // ev-bad: getWebhookEvent throws → no ack.
         IncomingWebhookEvent okEvent =
                 IncomingWebhookEvent.builder().id("ev-ok").webhookId("hook-missing").build();
         InMemoryWebhookDAO mixedDao =
@@ -175,9 +169,8 @@ class WebhookWorkerTest {
                     }
                 };
         mixedDao.createIncomingWebhookEvent("ev-ok", okEvent);
-
-        when(queueDAO.pop(eq(WebhookWorkerProperties.WEBHOOK_QUEUE), anyInt(), anyInt()))
-                .thenReturn(List.of("ev-ok", "ev-bad"));
+        queueDAO.push(WebhookWorkerProperties.WEBHOOK_QUEUE, "ev-ok", 0);
+        queueDAO.push(WebhookWorkerProperties.WEBHOOK_QUEUE, "ev-bad", 0);
 
         WebhookWorker w =
                 new WebhookWorker(
@@ -192,15 +185,14 @@ class WebhookWorkerTest {
                         targetWorkflowCollector);
         w.pollAndExecute();
 
-        verify(queueDAO).ack(WebhookWorkerProperties.WEBHOOK_QUEUE, "ev-ok");
-        verify(queueDAO, never()).ack(WebhookWorkerProperties.WEBHOOK_QUEUE, "ev-bad");
+        assertThat(queueDAO.contains(WebhookWorkerProperties.WEBHOOK_QUEUE, "ev-ok")).isFalse();
+        assertThat(queueDAO.contains(WebhookWorkerProperties.WEBHOOK_QUEUE, "ev-bad")).isTrue();
     }
 
     // ---------- handleMessage edge cases ----------
 
     @Test
     void handleMessage_eventNotFound_returnsEarly() {
-        // Event was never stored; should return without throwing.
         worker.handleMessage("missing");
 
         verify(workflowExecutor, never()).startWorkflow(any(StartWorkflowInput.class));
@@ -225,7 +217,9 @@ class WebhookWorkerTest {
     @Test
     void handleMessage_workflowsToStart_invokesExecutor() {
         WebhookConfig config = registerConfig("hook-1", "my-hook", "alice", Map.of("wf-a", 1));
-        when(metadataDAO.getWorkflowDef("wf-a", 1)).thenReturn(Optional.empty());
+        // metadataDAO has no "wf-a" def → getMatchers() returns empty (no WAIT_FOR_WEBHOOK tasks).
+        config.setWorkflowsToStart(Map.of("wf-a", 1));
+        config.setReceiverWorkflowNamesToVersions(null);
 
         IncomingWebhookEvent event =
                 IncomingWebhookEvent.builder()
@@ -235,10 +229,6 @@ class WebhookWorkerTest {
                         .requestParams(Map.of())
                         .build();
         webhookDAO.createIncomingWebhookEvent("ev-1", event);
-
-        // Configure workflowsToStart instead of receiverWorkflowNamesToVersions.
-        config.setWorkflowsToStart(Map.of("wf-a", 1));
-        config.setReceiverWorkflowNamesToVersions(null);
 
         when(workflowExecutor.startWorkflow(any(StartWorkflowInput.class))).thenReturn("wf-id");
 
@@ -284,11 +274,10 @@ class WebhookWorkerTest {
         def.setName("wf-a");
         def.setVersion(1);
         def.setTasks(List.of(waitTask));
-        when(metadataDAO.getWorkflowDef("wf-a", 1)).thenReturn(Optional.of(def));
+        metadataDAO.putWorkflowDef(def);
 
         WebhookConfig config = registerConfig("hook-1", "my-hook", null, Map.of("wf-a", 1));
 
-        // Register a waiting task with the matching criteria, via the system task path.
         TaskModel waitingTask = new TaskModel();
         waitingTask.setTaskId("task-1");
         waitingTask.setWorkflowType("wf-a");
@@ -313,7 +302,6 @@ class WebhookWorkerTest {
         ArgumentCaptor<TaskResult> resultCaptor = ArgumentCaptor.forClass(TaskResult.class);
         verify(workflowExecutor).updateTask(resultCaptor.capture());
         assertThat(resultCaptor.getValue().getStatus()).isEqualTo(TaskResult.Status.COMPLETED);
-        // Task removed from the hash store after completion.
         assertThat(webhookTaskService.get("wf-a;1;wait_ref;push")).isEmpty();
     }
 
@@ -327,7 +315,7 @@ class WebhookWorkerTest {
         def.setName("wf-a");
         def.setVersion(1);
         def.setTasks(List.of(waitTask));
-        when(metadataDAO.getWorkflowDef("wf-a", 1)).thenReturn(Optional.of(def));
+        metadataDAO.putWorkflowDef(def);
 
         WebhookConfig config = registerConfig("hook-1", "my-hook", null, Map.of("wf-a", 1));
 
@@ -440,10 +428,5 @@ class WebhookWorkerTest {
         webhookDAO.createWebhook(id, config);
         webhookDAO.createMatchers(config, targetWorkflows);
         return config;
-    }
-
-    // Mockito imports
-    static int anyInt() {
-        return org.mockito.ArgumentMatchers.anyInt();
     }
 }

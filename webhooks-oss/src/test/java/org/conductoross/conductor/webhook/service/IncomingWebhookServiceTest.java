@@ -18,35 +18,39 @@ import java.util.Map;
 import java.util.Set;
 
 import org.conductoross.conductor.common.utils.ErrorList;
-import org.conductoross.conductor.dao.webhook.WebhookDAO;
+import org.conductoross.conductor.webhook.dao.memory.InMemoryMetadataDAO;
+import org.conductoross.conductor.webhook.dao.memory.InMemoryQueueDAO;
+import org.conductoross.conductor.webhook.dao.memory.InMemoryWebhookDAO;
 import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
 import org.conductoross.conductor.webhook.model.WebhookConfig;
 import org.conductoross.conductor.webhook.verifier.WebhookVerifier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.utils.IDGenerator;
-import com.netflix.conductor.dao.QueueDAO;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.conductoross.conductor.webhook.WebhookWorkerProperties.WEBHOOK_QUEUE;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 class IncomingWebhookServiceTest {
 
-    @Mock private WebhookDAO webhookDAO;
-    @Mock private QueueDAO queueDAO;
-    @Mock private IDGenerator idGenerator;
+    // Deterministic ID so tests can reference the generated event ID by name.
+    private static final String EVENT_ID = "test-event-id";
+
+    private final IDGenerator idGenerator =
+            new IDGenerator() {
+                @Override
+                public String generate() {
+                    return EVENT_ID;
+                }
+            };
+
+    private InMemoryWebhookDAO webhookDAO;
+    private InMemoryQueueDAO queueDAO;
 
     private WebhookVerifier passingVerifier;
     private WebhookVerifier failingVerifier;
@@ -54,7 +58,8 @@ class IncomingWebhookServiceTest {
 
     @BeforeEach
     void setUp() {
-        lenient().when(idGenerator.generate()).thenReturn("event-id-1");
+        webhookDAO = new InMemoryWebhookDAO(new InMemoryMetadataDAO());
+        queueDAO = new InMemoryQueueDAO();
 
         passingVerifier =
                 new WebhookVerifier() {
@@ -91,21 +96,19 @@ class IncomingWebhookServiceTest {
 
     @Test
     void handleWebhook_webhookNotFound_throwsNotFoundException() {
-        when(webhookDAO.getWebhook("hook-1")).thenReturn(null);
-
         assertThatThrownBy(
                         () ->
                                 service.handleWebhook(
                                         "hook-1", "{}", Map.of(), new HttpHeaders()))
                 .isInstanceOf(NotFoundException.class);
 
-        verify(queueDAO, never()).push(anyString(), anyString(), anyInt());
+        assertThat(queueDAO.getSize(WEBHOOK_QUEUE)).isZero();
     }
 
     @Test
     void handleWebhook_noVerifierRegistered_throwsNonTransientException() {
         WebhookConfig config = configWith(WebhookConfig.Verifier.STRIPE);
-        when(webhookDAO.getWebhook("hook-1")).thenReturn(config);
+        webhookDAO.createWebhook("hook-1", config);
 
         // Service was built with only HMAC_BASED verifier; STRIPE is unregistered.
         assertThatThrownBy(
@@ -115,7 +118,7 @@ class IncomingWebhookServiceTest {
                 .isInstanceOf(NonTransientException.class)
                 .hasMessageContaining("STRIPE");
 
-        verify(queueDAO, never()).push(anyString(), anyString(), anyInt());
+        assertThat(queueDAO.getSize(WEBHOOK_QUEUE)).isZero();
     }
 
     @Test
@@ -125,7 +128,7 @@ class IncomingWebhookServiceTest {
                         webhookDAO, Set.of(failingVerifier), queueDAO, idGenerator);
 
         WebhookConfig config = configWith(WebhookConfig.Verifier.HMAC_BASED);
-        when(webhookDAO.getWebhook("hook-1")).thenReturn(config);
+        webhookDAO.createWebhook("hook-1", config);
 
         assertThatThrownBy(
                         () ->
@@ -133,7 +136,7 @@ class IncomingWebhookServiceTest {
                                         "hook-1", "{}", Map.of(), new HttpHeaders()))
                 .isInstanceOf(NonTransientException.class);
 
-        verify(queueDAO, never()).push(anyString(), anyString(), anyInt());
+        assertThat(queueDAO.getSize(WEBHOOK_QUEUE)).isZero();
     }
 
     @Test
@@ -161,10 +164,9 @@ class IncomingWebhookServiceTest {
                         webhookDAO, Set.of(replayableVerifier), queueDAO, idGenerator);
 
         WebhookConfig config = configWith(WebhookConfig.Verifier.HMAC_BASED);
-        when(webhookDAO.getWebhook("hook-1")).thenReturn(config);
-        // First call: already seen — replay.
-        when(webhookDAO.tryRecordSignature(eq("hook-1"), eq("sig-abc"), any(Duration.class)))
-                .thenReturn(false);
+        webhookDAO.createWebhook("hook-1", config);
+        // Pre-record the signature so the service sees it as already-seen (replay).
+        webhookDAO.tryRecordSignature("hook-1", "sig-abc", Duration.ofMinutes(5));
 
         assertThatThrownBy(
                         () ->
@@ -199,66 +201,66 @@ class IncomingWebhookServiceTest {
                         webhookDAO, Set.of(challengeVerifier), queueDAO, idGenerator);
 
         WebhookConfig config = configWith(WebhookConfig.Verifier.HMAC_BASED);
-        when(webhookDAO.getWebhook("hook-1")).thenReturn(config);
+        webhookDAO.createWebhook("hook-1", config);
 
         String result = service.handleWebhook("hook-1", "{}", Map.of(), new HttpHeaders());
 
         assertThat(result).isEqualTo("challenge-token");
-        verify(queueDAO, never()).push(anyString(), anyString(), anyInt());
+        assertThat(queueDAO.getSize(WEBHOOK_QUEUE)).isZero();
     }
 
     @Test
     void handleWebhook_happyPath_storesEventAndPushesToQueue() {
         WebhookConfig config = configWith(WebhookConfig.Verifier.HMAC_BASED);
         config.setUrlVerified(true);
-        when(webhookDAO.getWebhook("hook-1")).thenReturn(config);
+        webhookDAO.createWebhook("hook-1", config);
 
         service.handleWebhook("hook-1", "{\"k\":\"v\"}", Map.of(), new HttpHeaders());
 
-        verify(webhookDAO).createIncomingWebhookEvent(eq("event-id-1"), any());
-        verify(queueDAO).push(WEBHOOK_QUEUE, "event-id-1", 0);
+        assertThat(webhookDAO.getWebhookEvent(EVENT_ID)).isNotNull();
+        assertThat(queueDAO.contains(WEBHOOK_QUEUE, EVENT_ID)).isTrue();
     }
 
     @Test
     void handleWebhook_firstEvent_setsUrlVerifiedAndUpdatesDAO() {
         WebhookConfig config = configWith(WebhookConfig.Verifier.HMAC_BASED);
         config.setUrlVerified(false);
-        when(webhookDAO.getWebhook("hook-1")).thenReturn(config);
+        webhookDAO.createWebhook("hook-1", config);
 
         service.handleWebhook("hook-1", "{}", Map.of(), new HttpHeaders());
 
-        assertThat(config.isUrlVerified()).isTrue();
-        verify(webhookDAO).createWebhook(eq("hook-1"), same(config));
+        assertThat(webhookDAO.getWebhook("hook-1").isUrlVerified()).isTrue();
     }
 
     @Test
     void handleWebhook_alreadyVerified_doesNotUpdateDAO() {
+        TrackingWebhookDAO tracking = new TrackingWebhookDAO();
         WebhookConfig config = configWith(WebhookConfig.Verifier.HMAC_BASED);
         config.setUrlVerified(true);
-        when(webhookDAO.getWebhook("hook-1")).thenReturn(config);
+        tracking.createWebhook("hook-1", config);
+        tracking.resetUpdateCount(); // don't count the setup call
 
-        service.handleWebhook("hook-1", "{}", Map.of(), new HttpHeaders());
+        IncomingWebhookService svc =
+                new IncomingWebhookService(tracking, Set.of(passingVerifier), queueDAO, idGenerator);
+        svc.handleWebhook("hook-1", "{}", Map.of(), new HttpHeaders());
 
-        // createWebhook should NOT be called just to re-persist urlVerified=true.
-        verify(webhookDAO, never()).createWebhook(anyString(), any());
+        assertThat(tracking.updateCount).isZero();
     }
 
     // --- handlePing ---
 
     @Test
     void handlePing_webhookNotFound_returnsNull() {
-        when(webhookDAO.getWebhook("hook-1")).thenReturn(null);
-
         String result = service.handlePing("hook-1", Map.of());
 
         assertThat(result).isNull();
-        verify(queueDAO, never()).push(anyString(), anyString(), anyInt());
+        assertThat(queueDAO.getSize(WEBHOOK_QUEUE)).isZero();
     }
 
     @Test
     void handlePing_noVerifierRegistered_throwsNonTransientException() {
         WebhookConfig config = configWith(WebhookConfig.Verifier.STRIPE);
-        when(webhookDAO.getWebhook("hook-1")).thenReturn(config);
+        webhookDAO.createWebhook("hook-1", config);
 
         assertThatThrownBy(() -> service.handlePing("hook-1", Map.of()))
                 .isInstanceOf(NonTransientException.class)
@@ -291,29 +293,26 @@ class IncomingWebhookServiceTest {
 
         WebhookConfig config = configWith(WebhookConfig.Verifier.HMAC_BASED);
         config.setUrlVerified(false);
-        when(webhookDAO.getWebhook("hook-1")).thenReturn(config);
+        webhookDAO.createWebhook("hook-1", config);
 
         String result = service.handlePing("hook-1", Map.of("challenge", "xyz"));
 
         assertThat(result).isEqualTo("pong");
-        assertThat(config.isUrlVerified()).isTrue();
-        verify(webhookDAO).createWebhook("hook-1", config);
-        verify(queueDAO, never()).push(anyString(), anyString(), anyInt());
+        assertThat(webhookDAO.getWebhook("hook-1").isUrlVerified()).isTrue();
+        assertThat(queueDAO.getSize(WEBHOOK_QUEUE)).isZero();
     }
 
     @Test
     void handlePing_webhookEvent_storesEventAndPushesToQueue() {
-        // handlePing with verifier.handlePing() returning null = webhook event, not a ping.
         WebhookConfig config = configWith(WebhookConfig.Verifier.HMAC_BASED);
-        when(webhookDAO.getWebhook("hook-1")).thenReturn(config);
+        webhookDAO.createWebhook("hook-1", config);
 
         service.handlePing("hook-1", Map.of("action", "push"));
 
-        ArgumentCaptor<IncomingWebhookEvent> eventCaptor =
-                ArgumentCaptor.forClass(IncomingWebhookEvent.class);
-        verify(webhookDAO).createIncomingWebhookEvent(eq("event-id-1"), eventCaptor.capture());
-        assertThat(eventCaptor.getValue().getRequestParams()).containsEntry("action", "push");
-        verify(queueDAO).push(WEBHOOK_QUEUE, "event-id-1", 0);
+        assertThat(webhookDAO.getWebhookEvent(EVENT_ID)).isNotNull();
+        assertThat(webhookDAO.getWebhookEvent(EVENT_ID).getRequestParams())
+                .containsEntry("action", "push");
+        assertThat(queueDAO.contains(WEBHOOK_QUEUE, EVENT_ID)).isTrue();
     }
 
     // --- helpers ---
@@ -323,5 +322,25 @@ class IncomingWebhookServiceTest {
         c.setId("hook-1");
         c.setVerifier(verifier);
         return c;
+    }
+
+    /** Counts post-setup {@code createWebhook} calls to detect unnecessary DAO writes. */
+    private class TrackingWebhookDAO extends InMemoryWebhookDAO {
+
+        int updateCount = 0;
+
+        TrackingWebhookDAO() {
+            super(new InMemoryMetadataDAO());
+        }
+
+        @Override
+        public void createWebhook(String id, WebhookConfig config) {
+            updateCount++;
+            super.createWebhook(id, config);
+        }
+
+        void resetUpdateCount() {
+            updateCount = 0;
+        }
     }
 }
