@@ -352,7 +352,7 @@ const TaskFormContent: FunctionComponent = () => {
       : taskType;
   const taskTypeLabel =
     taskType === TaskType.INTEGRATION ? "INTEGRATION" : taskType;
-  const taskDocUrl = getTaskDocUrl(mcpIntegrationType ?? taskType) ?? "";
+  const taskDocUrl = getTaskDocUrl(mcpIntegrationType ?? taskType);
 
   return (
     <Box
@@ -431,63 +431,64 @@ const TaskFormContent: FunctionComponent = () => {
                 pointerEvents: "auto",
               }}
             >
-              {taskDescription ? (
-                <ConductorTooltip
-                  title={`${taskType} Task`}
-                  content={taskDescription}
-                  placement="left"
-                  children={
-                    <Link
-                      href={taskDocUrl}
-                      tabIndex={-1}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        fontSize: "9pt",
-                        fontWeight: 500,
-                        textDecoration: "none",
-                      }}
-                    >
-                      <DocsIcon color={colors.blueLightMode} />
-                      <div
+              {taskDocUrl &&
+                (taskDescription ? (
+                  <ConductorTooltip
+                    title={`${taskType} Task`}
+                    content={taskDescription}
+                    placement="left"
+                    children={
+                      <Link
+                        href={taskDocUrl}
+                        tabIndex={-1}
+                        target="_blank"
+                        rel="noreferrer"
                         style={{
-                          marginLeft: "4px",
-                          color: colors.blueLightMode,
+                          display: "flex",
+                          alignItems: "center",
+                          fontSize: "9pt",
+                          fontWeight: 500,
+                          textDecoration: "none",
                         }}
                       >
-                        {truncate(taskType)} Docs
-                      </div>
-                    </Link>
-                  }
-                />
-              ) : (
-                <Link
-                  href={taskDocUrl}
-                  tabIndex={-1}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    fontSize: "9pt",
-                    fontWeight: 500,
-                    textDecoration: "none",
-                  }}
-                >
-                  <DocsIcon color={colors.blueLightMode} />
-                  <div
+                        <DocsIcon color={colors.blueLightMode} />
+                        <div
+                          style={{
+                            marginLeft: "4px",
+                            color: colors.blueLightMode,
+                          }}
+                        >
+                          {truncate(taskType)} Docs
+                        </div>
+                      </Link>
+                    }
+                  />
+                ) : (
+                  <Link
+                    href={taskDocUrl}
+                    tabIndex={-1}
+                    target="_blank"
+                    rel="noreferrer"
                     style={{
-                      marginLeft: "4px",
-                      color: colors.blueLightMode,
+                      display: "flex",
+                      alignItems: "center",
+                      fontSize: "9pt",
+                      fontWeight: 500,
+                      textDecoration: "none",
                     }}
                   >
-                    {taskTypeLabelForDoc}
-                    {" Docs"}
-                  </div>
-                </Link>
-              )}
+                    <DocsIcon color={colors.blueLightMode} />
+                    <div
+                      style={{
+                        marginLeft: "4px",
+                        color: colors.blueLightMode,
+                      }}
+                    >
+                      {taskTypeLabelForDoc}
+                      {" Docs"}
+                    </div>
+                  </Link>
+                ))}
               {taskType !== TaskType.JOIN && (
                 <Box pl={3}>
                   <OpenTestTaskButton
