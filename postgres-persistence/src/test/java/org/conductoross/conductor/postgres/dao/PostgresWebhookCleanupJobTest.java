@@ -22,7 +22,6 @@ import java.time.Instant;
 
 import javax.sql.DataSource;
 
-import org.flywaydb.core.Flyway;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -64,12 +63,30 @@ public class PostgresWebhookCleanupJobTest {
 
     @Autowired private PostgresWebhookCleanupJob job;
     @Autowired private DataSource dataSource;
-    @Autowired private Flyway flyway;
 
+    // flyway.clean() can't be used here: PostgresConfiguration builds its Flyway
+    // bean manually rather than via Spring auto-config, so spring.flyway.clean-disabled
+    // doesn't propagate and Flyway defaults to cleanDisabled=true. Truncate the
+    // tables this test touches directly, and reset the cleanup-lease row (which
+    // tryAcquireLease() conditionally updates but never releases) so the second
+    // test in this class can re-acquire the lease.
     @Before
-    public void before() {
-        flyway.clean();
-        flyway.migrate();
+    public void before() throws SQLException {
+        try (Connection conn = dataSource.getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps =
+                    conn.prepareStatement("TRUNCATE TABLE incoming_webhook_event")) {
+                ps.executeUpdate();
+            }
+            try (PreparedStatement ps =
+                    conn.prepareStatement(
+                            "UPDATE webhook_cleanup_lease SET holder = 'unclaimed',"
+                                    + " expires_at = TIMESTAMP '1970-01-02 00:00:00'"
+                                    + " WHERE task = 'webhook-event-cleanup'")) {
+                ps.executeUpdate();
+            }
+            conn.commit();
+        }
     }
 
     @Test

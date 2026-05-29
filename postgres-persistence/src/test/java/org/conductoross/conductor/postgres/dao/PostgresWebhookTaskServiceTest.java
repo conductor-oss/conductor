@@ -12,10 +12,14 @@
  */
 package org.conductoross.conductor.postgres.dao;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.Map;
 import java.util.Set;
 
-import org.flywaydb.core.Flyway;
+import javax.sql.DataSource;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -59,12 +63,19 @@ import static org.junit.Assert.assertTrue;
 public class PostgresWebhookTaskServiceTest {
 
     @Autowired private PostgresWebhookTaskService service;
-    @Autowired private Flyway flyway;
+    @Autowired private DataSource dataSource;
 
+    // See PostgresWebhookCleanupJobTest for why we truncate rather than flyway.clean().
     @Before
-    public void before() {
-        flyway.clean();
-        flyway.migrate();
+    public void before() throws SQLException {
+        try (Connection conn = dataSource.getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps =
+                    conn.prepareStatement("TRUNCATE TABLE webhook_hash_to_taskid")) {
+                ps.executeUpdate();
+            }
+            conn.commit();
+        }
     }
 
     @Test
