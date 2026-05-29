@@ -170,4 +170,18 @@ public interface WorkflowExecutor {
      * @return id of the workflow
      */
     String startWorkflow(StartWorkflowInput input);
+
+    /**
+     * Starts a new workflow execution for a caller-provided workflow id, or returns the existing
+     * workflow if that id has already been created, without running the child workflow's initial
+     * decide inline.
+     *
+     * <p>This is intended for parent/child orchestration flows such as {@code SUB_WORKFLOW}, where
+     * the parent needs to attach to the created child quickly and the child can be evaluated
+     * asynchronously through the normal decider queue.
+     *
+     * @param input starts a workflow execution with a caller-provided workflow id
+     * @return created or existing workflow model
+     */
+    WorkflowModel startWorkflowIdempotent(StartWorkflowInput input);
 }

@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.integration;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -55,6 +56,8 @@ import org.springframework.ai.image.ImageOptionsBuilder;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 
+import okhttp3.OkHttpClient;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -74,6 +77,21 @@ public class AIModelIntegrationTest {
     private static final String EMBEDDING_TEXT =
             "Hello, world! This is a test sentence for embeddings.";
     private static final String AUDIO_TEXT = "Hello, this is a test of text to speech.";
+
+    /**
+     * Builds an OkHttp client whose timeouts match the production {@code conductorAiHttpClient}
+     * Spring bean ({@code AIHttpClientProperties}). The default {@code new OkHttpClient()} ships
+     * with a 10s read timeout that's too short for slow provider operations — notably {@code
+     * gpt-image-1} image generation at 1024×1024, which regularly takes 30–60s and was failing this
+     * suite as a result.
+     */
+    private static OkHttpClient testHttpClient() {
+        return new OkHttpClient.Builder()
+                .connectTimeout(Duration.ofSeconds(60))
+                .readTimeout(Duration.ofSeconds(600))
+                .writeTimeout(Duration.ofSeconds(60))
+                .build();
+    }
 
     // ========================================================================
     // Environment variable helpers
@@ -163,7 +181,7 @@ public class AIModelIntegrationTest {
             OpenAIConfiguration config = new OpenAIConfiguration();
             config.setApiKey(System.getenv("OPENAI_API_KEY"));
             config.setBaseURL(System.getenv("OPENAI_BASE_URL"));
-            openAI = new OpenAI(config);
+            openAI = new OpenAI(config, testHttpClient());
         }
 
         @Test
@@ -198,7 +216,7 @@ public class AIModelIntegrationTest {
             // Use generic ImageOptions to set model and parameters
             var imageOptions =
                     ImageOptionsBuilder.builder()
-                            .model("dall-e-3")
+                            .model("gpt-image-1")
                             .height(1024)
                             .width(1024)
                             .build();
@@ -438,6 +456,104 @@ public class AIModelIntegrationTest {
         }
 
         @Test
+        @DisplayName("Reasoning round-trip against gpt-5.3-codex (live)")
+        void testReasoningSummary_codex() {
+            // gpt-5.3-codex is the Codex-tuned variant of gpt-5.3 reasoning models.
+            // Verifies the nested-reasoning request shape that works for gpt-5-mini
+            // also reaches the Codex endpoint without 400s, and that the response
+            // carries the reasoning_tokens metadata key. Empirically Codex sometimes
+            // returns reasoning_tokens=0 for short coding prompts even with effort
+            // requested — accepted as the model's prerogative — so the hard invariant
+            // is just that the field surfaces (i.e. the metadata plumbing works).
+            ChatModel chatModel = openAI.getChatModel();
+            assertNotNull(chatModel);
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gpt-5.3-codex");
+            input.setMaxTokens(4000);
+            input.setReasoningEffort("high");
+            input.setReasoningSummary("auto");
+
+            var chatOptions = openAI.getChatOptions(input);
+            Prompt prompt =
+                    new Prompt(
+                            "Implement a Python function that returns all permutations of a list"
+                                    + " using only recursion and tuple swaps — no Python stdlib helpers."
+                                    + " Walk through your algorithm choice before writing the code.",
+                            chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+
+            // The metadata key must be present — that's the part our adapter is
+            // responsible for. The value itself is whatever the model decided.
+            Object reasoningTokens = response.getMetadata().get("reasoning_tokens");
+            assertNotNull(
+                    reasoningTokens,
+                    "Expected reasoning_tokens metadata key on a gpt-5.3-codex response");
+
+            Object reasoning = response.getMetadata().get("reasoning");
+            // Best-effort visibility for the live behavior — we don't fail if the
+            // model returns no summary, but log enough to diagnose if the round
+            // trip breaks in the future.
+            System.out.println(
+                    "gpt-5.3-codex reasoning_tokens="
+                            + reasoningTokens
+                            + ", summary_present="
+                            + (reasoning != null)
+                            + (reasoning != null ? "\n--\n" + reasoning + "\n--" : ""));
+
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertFalse(text.isEmpty(), "Expected code output from Codex reasoning model");
+        }
+
+        @Test
+        @DisplayName(
+                "Reasoning request shape is plumbed correctly against live OpenAI (smoke check)")
+        void testReasoningSummary() {
+            // Smoke check that the request reaches OpenAI with the nested
+            // reasoning block intact and that the reasoning pathway engages.
+            // Deterministic coverage of the response-side parsing
+            // (reasoning summary → metadata["reasoning"], reasoning_tokens →
+            // metadata["reasoning_tokens"])
+            // lives in OpenAIResponsesChatModelTest, which stubs the HTTP layer
+            // and pins the contract without depending on what OpenAI happens
+            // to emit on any given call. This test only asserts the hard
+            // request-side invariant: a reasoning model should bill some
+            // reasoning tokens — anything less means we silently lost the
+            // ``reasoning`` block on the wire.
+            ChatModel chatModel = openAI.getChatModel();
+            assertNotNull(chatModel);
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gpt-5-mini");
+            input.setMaxTokens(2000);
+            input.setReasoningEffort("medium");
+            input.setReasoningSummary("auto");
+
+            var chatOptions = openAI.getChatOptions(input);
+            Prompt prompt =
+                    new Prompt(
+                            "If a train leaves at 3pm and travels 60mph for 2.5 hours, what time"
+                                    + " does it arrive and how far has it gone? Explain.",
+                            chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+
+            Object reasoningTokens = response.getMetadata().get("reasoning_tokens");
+            assertNotNull(
+                    reasoningTokens,
+                    "Expected reasoning_tokens metadata on a reasoning model response");
+            assertTrue(
+                    ((Number) reasoningTokens).intValue() > 0,
+                    "Expected reasoning_tokens > 0 on a reasoning model, got: " + reasoningTokens);
+        }
+
+        @Test
         @DisplayName("Model provider name")
         void testModelProviderName() {
             assertEquals("openai", openAI.getModelProvider());
@@ -462,7 +578,7 @@ public class AIModelIntegrationTest {
             AnthropicConfiguration config = new AnthropicConfiguration();
             config.setApiKey(System.getenv("ANTHROPIC_API_KEY"));
             config.setBaseURL(System.getenv("ANTHROPIC_BASE_URL"));
-            anthropic = new Anthropic(config);
+            anthropic = new Anthropic(config, testHttpClient());
         }
 
         @Test
@@ -518,7 +634,7 @@ public class AIModelIntegrationTest {
             ChatModel chatModel = anthropic.getChatModel();
 
             ChatCompletion input = new ChatCompletion();
-            input.setModel("claude-sonnet-4-5"); // Sonnet 4.5 supports thinking
+            input.setModel("claude-sonnet-4-6"); // Sonnet 4.6 supports legacy thinking
             input.setMaxTokens(16000); // Thinking requires larger token limit
             input.setThinkingTokenLimit(8000); // Enable thinking mode
             // Note: Temperature is forced to 1.0 when thinking is enabled
@@ -533,6 +649,67 @@ public class AIModelIntegrationTest {
             String text = response.getResult().getOutput().getText();
             assertNotNull(text);
             assertTrue(text.contains("345"), "Expected 345 in response, got: " + text);
+        }
+
+        @Test
+        @DisplayName(
+                "Opus 4.7 + thinkingTokenLimit must be rewritten to adaptive thinking (regression)")
+        void testOpus47ThinkingBudget_routesThroughAdaptive() {
+            // Regression for the production HTTP 400:
+            //   "thinking.type.enabled" is not supported for this model.
+            //   Use "thinking.type.adaptive" and "output_config.effort" ...
+            //
+            // The adapter must translate ``thinkingTokenLimit`` into
+            // ``thinking.type=adaptive`` + ``output_config.effort`` whenever the
+            // model id targets Opus 4.7 (Opus 4.6 / Sonnet 4.6 still accept the
+            // legacy ``enabled`` + ``budget_tokens`` shape and are exercised by
+            // ``testThinkingMode`` above). If that translation regresses, this
+            // call returns HTTP 400 with the exact message quoted above.
+            ChatModel chatModel = anthropic.getChatModel();
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("claude-opus-4-7");
+            input.setMaxTokens(16000);
+            input.setThinkingTokenLimit(10000);
+
+            var chatOptions = anthropic.getChatOptions(input);
+            Prompt prompt = new Prompt("What is 2 + 2? Think step by step.", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertFalse(text.isEmpty());
+            assertTrue(
+                    text.contains("4"), "Expected the model to reach the answer '4'; got: " + text);
+        }
+
+        @Test
+        @DisplayName("Opus 4.7 + reasoningEffort only (no thinkingTokenLimit) is accepted")
+        void testOpus47ReasoningEffortOnly() {
+            // Opus 4.7 also accepts ``output_config.effort`` without an
+            // accompanying ``thinking`` block. The adapter must forward
+            // ``reasoningEffort`` straight through without attaching any
+            // thinking configuration.
+            ChatModel chatModel = anthropic.getChatModel();
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("claude-opus-4-7");
+            input.setMaxTokens(1024);
+            input.setReasoningEffort("low");
+
+            var chatOptions = anthropic.getChatOptions(input);
+            Prompt prompt = new Prompt("Say hi.", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertFalse(text.isEmpty());
         }
 
         @Test
@@ -630,7 +807,7 @@ public class AIModelIntegrationTest {
                 }
             }
 
-            gemini = new GeminiVertex(config);
+            gemini = new GeminiVertex(config, new okhttp3.OkHttpClient());
         }
 
         @Test
@@ -1036,7 +1213,7 @@ public class AIModelIntegrationTest {
             GrokAIConfiguration config = new GrokAIConfiguration();
             config.setApiKey(System.getenv("GROK_API_KEY"));
             config.setBaseURL(System.getenv("GROK_BASE_URL"));
-            grok = new Grok(config);
+            grok = new Grok(config, testHttpClient());
         }
 
         @Test
@@ -1199,7 +1376,7 @@ public class AIModelIntegrationTest {
             AzureOpenAIConfiguration config = new AzureOpenAIConfiguration();
             config.setApiKey(System.getenv("AZURE_OPENAI_API_KEY"));
             config.setBaseURL(System.getenv("AZURE_OPENAI_ENDPOINT"));
-            azureOpenAI = new AzureOpenAI(config);
+            azureOpenAI = new AzureOpenAI(config, testHttpClient());
         }
 
         @Test
@@ -1338,7 +1515,7 @@ public class AIModelIntegrationTest {
             PerplexityAIConfiguration config = new PerplexityAIConfiguration();
             config.setApiKey(System.getenv("PERPLEXITY_API_KEY"));
             config.setBaseURL(System.getenv("PERPLEXITY_BASE_URL"));
-            perplexity = new PerplexityAI(config);
+            perplexity = new PerplexityAI(config, testHttpClient());
         }
 
         @Test

@@ -24,6 +24,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 
+import okhttp3.OkHttpClient;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class AnthropicTest {
@@ -39,7 +41,7 @@ class AnthropicTest {
         void setUp() {
             AnthropicConfiguration config = new AnthropicConfiguration();
             config.setApiKey("test-api-key");
-            anthropic = new Anthropic(config);
+            anthropic = new Anthropic(config, new OkHttpClient());
         }
 
         @Test
@@ -204,7 +206,7 @@ class AnthropicTest {
         void setUp() {
             AnthropicConfiguration config = new AnthropicConfiguration();
             config.setApiKey(System.getenv(ENV_API_KEY));
-            anthropic = new Anthropic(config);
+            anthropic = new Anthropic(config, new OkHttpClient());
         }
 
         @Test
@@ -228,8 +230,13 @@ class AnthropicTest {
 
         @Test
         void testChatCompletion_withThinking() {
+            // Lightweight smoke check for the legacy ``thinking.type=enabled`` shape on a model
+            // that still accepts it. Coverage for the Opus 4.7 adaptive-thinking translation
+            // (the production fix that motivates the regression suite) lives in
+            // ``AIModelIntegrationTest.AnthropicTests`` so it sits alongside the other live
+            // provider tests.
             ChatCompletion input = new ChatCompletion();
-            input.setModel("claude-sonnet-4-5");
+            input.setModel("claude-sonnet-4-6");
             input.setMaxTokens(16000);
             input.setThinkingTokenLimit(10000);
 

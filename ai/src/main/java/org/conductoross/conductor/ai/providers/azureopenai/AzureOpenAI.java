@@ -32,6 +32,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.image.ImageModel;
 
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
 
 /**
  * Azure OpenAI provider backed by OkHttp calls to the Azure OpenAI Responses API.
@@ -52,16 +53,16 @@ public class AzureOpenAI implements AIModel {
     private final OpenAIHttpImageModel imageModel;
 
     public AzureOpenAI(AzureOpenAIConfiguration config) {
-        this.config = config;
-        long timeoutSecs = config.getTimeout() != null ? config.getTimeout().getSeconds() : 600;
+        this(config, new OkHttpClient());
+    }
 
-        // Azure base URL format: https://RESOURCE.openai.azure.com/openai/v1
+    public AzureOpenAI(AzureOpenAIConfiguration config, OkHttpClient httpClient) {
+        this.config = config;
         String baseUrl = toAzureV1Url(config.getBaseURL());
 
-        this.responsesApi = new OpenAIResponsesApi(config.getApiKey(), baseUrl, true, timeoutSecs);
-        this.embeddingsApi =
-                new OpenAIEmbeddingsApi(config.getApiKey(), baseUrl, true, timeoutSecs);
-        this.imageGenApi = new OpenAIImageGenApi(config.getApiKey(), baseUrl, true, timeoutSecs);
+        this.responsesApi = new OpenAIResponsesApi(httpClient, config.getApiKey(), baseUrl, true);
+        this.embeddingsApi = new OpenAIEmbeddingsApi(httpClient, config.getApiKey(), baseUrl, true);
+        this.imageGenApi = new OpenAIImageGenApi(httpClient, config.getApiKey(), baseUrl, true);
         this.chatModel = new OpenAIResponsesChatModel(responsesApi);
         this.imageModel = new OpenAIHttpImageModel(imageGenApi);
     }
@@ -106,6 +107,7 @@ public class AzureOpenAI implements AIModel {
                         .stopSequences(input.getStopWords())
                         .previousResponseId(input.getPreviousResponseId())
                         .reasoningEffort(input.getReasoningEffort())
+                        .reasoningSummary(input.getReasoningSummary())
                         .jsonOutput(input.isJsonOutput())
                         .responsesApiTools(tools.isEmpty() ? null : tools);
 

@@ -164,20 +164,9 @@ public class WorkflowRetryTests {
         String workflowId = workflowClient.startWorkflow(startWorkflowRequest);
         System.out.print("Workflow id is " + workflowId);
 
-        await().atMost(10, TimeUnit.SECONDS)
-                .pollInterval(100, TimeUnit.MILLISECONDS)
-                .untilAsserted(
-                        () -> {
-                            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
-                            assertNotNull(workflow);
-                            assertEquals(1, workflow.getTasks().size());
-                            assertNotNull(workflow.getTasks().get(0).getSubWorkflowId());
-                        });
         // Fail the simple task
-        Workflow workflow = workflowClient.getWorkflow(workflowId, true);
-        String subworkflowId = workflow.getTasks().get(0).getSubWorkflowId();
-        Workflow subWorkflow = workflowClient.getWorkflow(subworkflowId, true);
-        String taskId = subWorkflow.getTasks().get(0).getTaskId();
+        String subworkflowId = awaitSubWorkflowId(workflowId);
+        String taskId = awaitTaskId(subworkflowId, 0);
         TaskResult taskResult = new TaskResult();
         taskResult.setWorkflowInstanceId(subworkflowId);
         taskResult.setTaskId(taskId);
@@ -213,7 +202,7 @@ public class WorkflowRetryTests {
                                     workflow1.getTasks().get(1).getStatus().name(),
                                     Task.Status.SCHEDULED.name());
                         });
-        taskId = workflowClient.getWorkflow(subworkflowId, true).getTasks().get(1).getTaskId();
+        taskId = awaitTaskId(subworkflowId, 1);
 
         taskResult = new TaskResult();
         taskResult.setWorkflowInstanceId(subworkflowId);
@@ -234,11 +223,9 @@ public class WorkflowRetryTests {
         // Check retry at parent workflow level.
         String newWorkflowId = workflowClient.startWorkflow(startWorkflowRequest);
         System.out.print("Workflow id is " + newWorkflowId);
-        Workflow newWorkflow = workflowClient.getWorkflow(newWorkflowId, true);
         // Fail the simple task
-        String newSubworkflowId = newWorkflow.getTasks().get(0).getSubWorkflowId();
-        Workflow newSubWorkflow = workflowClient.getWorkflow(newSubworkflowId, true);
-        taskId = newSubWorkflow.getTasks().get(0).getTaskId();
+        String newSubworkflowId = awaitSubWorkflowId(newWorkflowId);
+        taskId = awaitTaskId(newSubworkflowId, 0);
         taskResult = new TaskResult();
         taskResult.setWorkflowInstanceId(newSubworkflowId);
         taskResult.setTaskId(taskId);
@@ -270,10 +257,8 @@ public class WorkflowRetryTests {
                                     Workflow.WorkflowStatus.RUNNING.name());
                         });
 
-        newWorkflow = workflowClient.getWorkflow(newWorkflowId, true);
-        newSubworkflowId = newWorkflow.getTasks().get(0).getSubWorkflowId();
-        newSubWorkflow = workflowClient.getWorkflow(newSubworkflowId, true);
-        taskId = newSubWorkflow.getTasks().get(1).getTaskId();
+        newSubworkflowId = awaitSubWorkflowId(newWorkflowId);
+        taskId = awaitTaskId(newSubworkflowId, 1);
         taskResult = new TaskResult();
         taskResult.setWorkflowInstanceId(newSubworkflowId);
         taskResult.setTaskId(taskId);
@@ -415,5 +400,36 @@ public class WorkflowRetryTests {
                 throw e;
             }
         }
+    }
+
+    private String awaitSubWorkflowId(String workflowId) {
+        final String[] subWorkflowId = new String[1];
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
+                            assertNotNull(workflow);
+                            assertFalse(workflow.getTasks().isEmpty());
+                            subWorkflowId[0] = workflow.getTasks().get(0).getSubWorkflowId();
+                            assertNotNull(subWorkflowId[0]);
+                            assertFalse(subWorkflowId[0].isBlank());
+                        });
+        return subWorkflowId[0];
+    }
+
+    private String awaitTaskId(String workflowId, int taskIndex) {
+        final String[] taskId = new String[1];
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
+                            assertTrue(workflow.getTasks().size() > taskIndex);
+                            taskId[0] = workflow.getTasks().get(taskIndex).getTaskId();
+                            assertNotNull(taskId[0]);
+                            assertFalse(taskId[0].isBlank());
+                        });
+        return taskId[0];
     }
 }

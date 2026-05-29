@@ -20,10 +20,10 @@ export default function FormikVersionDropdown(props) {
       versionObj &&
       timestampRenderer(versionObj.updateTime || versionObj.createTime)
     );
-  }
+  };
 
   const handleResetVersion = (version) => {
-    setFieldValue('workflowVersion', "" + version)
+    setFieldValue("workflowVersion", "" + version);
   };
 
   useEffect(() => {
@@ -43,31 +43,33 @@ export default function FormikVersionDropdown(props) {
 
   const versionList = versions || [];
 
-  return <Select
-    value={_.isUndefined(workflowVersion) ? "" : workflowVersion}
-    displayEmpty
-    renderValue={(v) =>
-      isLoading
-        ? "Loading versions..."
-        : v === ""
-        ? "Latest Version"
-        : `Version ${v}`
-    }
-    onChange={(evt) => handleResetVersion(evt.target.value)}
-    disabled={isLoading}
-    {...props}
-  >
-    <MenuItem value="">Latest Version</MenuItem>
-    {isLoading && (
-      <MenuItem disabled>
-        <CircularProgress size={16} style={{ marginRight: 8 }} />
-        Loading...
-      </MenuItem>
-    )}
-    {versionList.map((row) => (
-      <MenuItem value={row.version} key={row.version}>
-        Version {row.version} ({versionTime(row)})
-      </MenuItem>
-    ))}
-  </Select>;
+  return (
+    <Select
+      value={_.isUndefined(workflowVersion) ? "" : workflowVersion}
+      displayEmpty
+      renderValue={(v) =>
+        isLoading
+          ? "Loading versions..."
+          : v === ""
+          ? "Latest Version"
+          : `Version ${v}`
+      }
+      onChange={(evt) => handleResetVersion(evt.target.value)}
+      disabled={isLoading}
+      {...props}
+    >
+      <MenuItem value="">Latest Version</MenuItem>
+      {isLoading && (
+        <MenuItem disabled>
+          <CircularProgress size={16} style={{ marginRight: 8 }} />
+          Loading...
+        </MenuItem>
+      )}
+      {versionList.map((row) => (
+        <MenuItem value={row.version} key={row.version}>
+          Version {row.version} ({versionTime(row)})
+        </MenuItem>
+      ))}
+    </Select>
+  );
 }

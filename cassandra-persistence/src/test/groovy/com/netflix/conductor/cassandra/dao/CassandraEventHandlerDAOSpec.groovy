@@ -14,6 +14,7 @@ package com.netflix.conductor.cassandra.dao
 
 import com.netflix.conductor.common.metadata.events.EventExecution
 import com.netflix.conductor.common.metadata.events.EventHandler
+import com.netflix.conductor.dao.QueueDAO
 
 import spock.lang.Subject
 
@@ -26,7 +27,7 @@ class CassandraEventHandlerDAOSpec extends CassandraSpec {
 
     def setup() {
         eventHandlerDAO = new CassandraEventHandlerDAO(session, objectMapper, cassandraProperties, statements)
-        executionDAO = new CassandraExecutionDAO(session, objectMapper, cassandraProperties, statements)
+        executionDAO = new CassandraExecutionDAO(session, objectMapper, cassandraProperties, statements, Mock(QueueDAO))
     }
 
     def testEventHandlerCRUD() {

@@ -48,7 +48,7 @@ export function astToQuery(node) {
 
     return `${wrapper ? "(" : ""}${clauses.join(` ${combinator} `)}${
       wrapper ? ")" : ""
-      }`;
+    }`;
   } else {
     return "";
   }
@@ -109,7 +109,8 @@ export const taskWithLatestIteration = (tasksList = [], selectedTask) => {
   const findTaskById = (task) => task?.taskId === selectedTask?.id;
 
   // If reference name is not provided, use taskId to find the task
-  const findTask = selectedTask?.ref == null ? findTaskById : findTaskByReferenceName;
+  const findTask =
+    selectedTask?.ref == null ? findTaskById : findTaskByReferenceName;
 
   const filteredTasks = tasksList?.filter(findTask);
 
