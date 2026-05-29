@@ -27,7 +27,14 @@ dependencies {
     api "org.apache.commons:commons-lang3"
 
     // Markdown parsing and PDF generation
-    implementation "com.vladsch.flexmark:flexmark-all:${revFlexmark}"
+    // Exclude openhtmltopdf-pdfbox (pulled in by flexmark-pdf-converter inside flexmark-all):
+    // it was compiled against fontbox 2.x and calls TTFParser.parse(InputStream) which was
+    // removed in fontbox 3.x, causing a NoSuchMethodError at runtime in GENERATE_PDF tasks.
+    // The custom MarkdownToPdfConverter uses PDFBox 3.x directly and does not need openhtmltopdf.
+    implementation("com.vladsch.flexmark:flexmark-all:${revFlexmark}") {
+        exclude group: "com.openhtmltopdf", module: "openhtmltopdf-pdfbox"
+        exclude group: "de.rototor.pdfbox", module: "graphics2d"
+    }
     implementation "org.apache.pdfbox:pdfbox:3.0.5"
 
     //Vector Databases
