@@ -53,7 +53,13 @@ public class AzureOpenAI implements AIModel {
     private final OpenAIHttpImageModel imageModel;
 
     public AzureOpenAI(AzureOpenAIConfiguration config) {
-        this(config, new OkHttpClient());
+        this(
+                config,
+                new OkHttpClient.Builder()
+                        .connectTimeout(java.time.Duration.ofSeconds(60))
+                        .readTimeout(java.time.Duration.ofSeconds(600))
+                        .writeTimeout(java.time.Duration.ofSeconds(60))
+                        .build());
     }
 
     public AzureOpenAI(AzureOpenAIConfiguration config, OkHttpClient httpClient) {

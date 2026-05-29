@@ -31,7 +31,13 @@ public class HuggingFace implements AIModel {
     private final OkHttpClient httpClient;
 
     public HuggingFace(HuggingFaceConfiguration config) {
-        this(config, new OkHttpClient());
+        this(
+                config,
+                new OkHttpClient.Builder()
+                        .connectTimeout(java.time.Duration.ofSeconds(60))
+                        .readTimeout(java.time.Duration.ofSeconds(600))
+                        .writeTimeout(java.time.Duration.ofSeconds(60))
+                        .build());
     }
 
     public HuggingFace(HuggingFaceConfiguration config, OkHttpClient httpClient) {

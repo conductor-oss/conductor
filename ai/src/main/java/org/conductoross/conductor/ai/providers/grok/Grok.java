@@ -36,7 +36,13 @@ public class Grok implements AIModel {
     private final OpenAICompatChatModel chatModel;
 
     public Grok(GrokAIConfiguration config) {
-        this(config, new OkHttpClient());
+        this(
+                config,
+                new OkHttpClient.Builder()
+                        .connectTimeout(java.time.Duration.ofSeconds(60))
+                        .readTimeout(java.time.Duration.ofSeconds(600))
+                        .writeTimeout(java.time.Duration.ofSeconds(60))
+                        .build());
     }
 
     public Grok(GrokAIConfiguration config, OkHttpClient httpClient) {

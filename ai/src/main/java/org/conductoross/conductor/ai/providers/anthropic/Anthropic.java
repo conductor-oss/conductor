@@ -40,7 +40,13 @@ public class Anthropic implements AIModel {
     private final AnthropicChatModel chatModel;
 
     public Anthropic(AnthropicConfiguration config) {
-        this(config, new OkHttpClient());
+        this(
+                config,
+                new OkHttpClient.Builder()
+                        .connectTimeout(java.time.Duration.ofSeconds(60))
+                        .readTimeout(java.time.Duration.ofSeconds(600))
+                        .writeTimeout(java.time.Duration.ofSeconds(60))
+                        .build());
     }
 
     @SuppressWarnings("unchecked")

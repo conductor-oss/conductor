@@ -210,7 +210,12 @@ public class PineconeDB extends VectorDB {
         }
         Pinecone pinecone =
                 new Pinecone.Builder(apiKey)
-                        .withOkHttpClient(new OkHttpClient.Builder().build())
+                        .withOkHttpClient(
+                                new OkHttpClient.Builder()
+                                        .connectTimeout(java.time.Duration.ofSeconds(60))
+                                        .readTimeout(java.time.Duration.ofSeconds(600))
+                                        .writeTimeout(java.time.Duration.ofSeconds(60))
+                                        .build())
                         .build();
         return pinecone.getIndexConnection(indexName);
     }

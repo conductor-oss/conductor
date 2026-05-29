@@ -48,7 +48,13 @@ public class MistralAI implements AIModel {
     private final MistralAiEmbeddingModel embeddingModel;
 
     public MistralAI(MistralAIConfiguration config) {
-        this(config, new OkHttpClient());
+        this(
+                config,
+                new OkHttpClient.Builder()
+                        .connectTimeout(java.time.Duration.ofSeconds(60))
+                        .readTimeout(java.time.Duration.ofSeconds(600))
+                        .writeTimeout(java.time.Duration.ofSeconds(60))
+                        .build());
     }
 
     public MistralAI(MistralAIConfiguration config, OkHttpClient httpClient) {

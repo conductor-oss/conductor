@@ -61,7 +61,14 @@ public class GeminiVertexConfiguration implements ModelConfiguration<GeminiVerte
 
     @Override
     public GeminiVertex get() {
-        OkHttpClient client = httpClient != null ? httpClient : new OkHttpClient();
+        OkHttpClient client =
+                httpClient != null
+                        ? httpClient
+                        : new OkHttpClient.Builder()
+                                .connectTimeout(java.time.Duration.ofSeconds(60))
+                                .readTimeout(java.time.Duration.ofSeconds(600))
+                                .writeTimeout(java.time.Duration.ofSeconds(60))
+                                .build();
         return new GeminiVertex(this, client);
     }
 }

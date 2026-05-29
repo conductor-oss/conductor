@@ -33,7 +33,13 @@ public class PerplexityAI implements AIModel {
     private final OpenAICompatChatModel chatModel;
 
     public PerplexityAI(PerplexityAIConfiguration config) {
-        this(config, new OkHttpClient());
+        this(
+                config,
+                new OkHttpClient.Builder()
+                        .connectTimeout(java.time.Duration.ofSeconds(60))
+                        .readTimeout(java.time.Duration.ofSeconds(600))
+                        .writeTimeout(java.time.Duration.ofSeconds(60))
+                        .build());
     }
 
     public PerplexityAI(PerplexityAIConfiguration config, OkHttpClient httpClient) {

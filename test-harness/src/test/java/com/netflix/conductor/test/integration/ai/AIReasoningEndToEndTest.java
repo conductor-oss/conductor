@@ -65,16 +65,16 @@ import static org.junit.jupiter.api.Assertions.*;
  * <p>Optional overrides:
  *
  * <ul>
- *   <li>{@code ANTHROPIC_THINKING_MODEL} — model with extended thinking support (default:
- *       {@code claude-3-7-sonnet-20250219})
- *   <li>{@code ANTHROPIC_MODEL} — lightweight model without thinking (default:
- *       {@code claude-3-5-haiku-20241022})
+ *   <li>{@code ANTHROPIC_THINKING_MODEL} — model with extended thinking support (default: {@code
+ *       claude-3-7-sonnet-20250219})
+ *   <li>{@code ANTHROPIC_MODEL} — lightweight model without thinking (default: {@code
+ *       claude-3-5-haiku-20241022})
  *   <li>{@code OPENAI_MODEL} — chat model for OpenAI tests (default: {@code gpt-4o-mini})
  * </ul>
  *
  * <p>Assertions are intentionally coarser than unit tests: we verify that fields are present or
- * absent on task output and that the mapper-resolved {@code messages} array (stored on
- * {@code task.getInputData()}) has the correct shape — not exact LLM response content, which is
+ * absent on task output and that the mapper-resolved {@code messages} array (stored on {@code
+ * task.getInputData()}) has the correct shape — not exact LLM response content, which is
  * non-deterministic.
  */
 @SpringBootTest(classes = ConductorTestApp.class)
@@ -153,8 +153,8 @@ class AIReasoningEndToEndTest {
         private static final String PROVIDER = "anthropic";
 
         private static final String THINKING_MODEL =
-                System.getenv().getOrDefault(
-                        "ANTHROPIC_THINKING_MODEL", "claude-3-7-sonnet-20250219");
+                System.getenv()
+                        .getOrDefault("ANTHROPIC_THINKING_MODEL", "claude-3-7-sonnet-20250219");
 
         private static final String BASIC_MODEL =
                 System.getenv().getOrDefault("ANTHROPIC_MODEL", "claude-3-5-haiku-20241022");

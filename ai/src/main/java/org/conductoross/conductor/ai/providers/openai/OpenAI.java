@@ -63,7 +63,13 @@ public class OpenAI implements AIModel {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public OpenAI(OpenAIConfiguration config) {
-        this(config, new OkHttpClient());
+        this(
+                config,
+                new OkHttpClient.Builder()
+                        .connectTimeout(java.time.Duration.ofSeconds(60))
+                        .readTimeout(java.time.Duration.ofSeconds(600))
+                        .writeTimeout(java.time.Duration.ofSeconds(60))
+                        .build());
     }
 
     public OpenAI(OpenAIConfiguration config, OkHttpClient httpClient) {
@@ -80,7 +86,7 @@ public class OpenAI implements AIModel {
 
         this.chatModel = new OpenAIResponsesChatModel(responsesApi);
         this.imageModel = new OpenAIHttpImageModel(imageGenApi);
-        this.videoModel = new OpenAIVideoModel(videoApi);
+        this.videoModel = new OpenAIVideoModel(videoApi, httpClient);
     }
 
     @Override
