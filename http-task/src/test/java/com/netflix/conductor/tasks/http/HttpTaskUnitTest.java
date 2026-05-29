@@ -24,12 +24,14 @@ import org.springframework.http.MediaType;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.tasks.http.config.HttpTaskProperties;
 import com.netflix.conductor.tasks.http.providers.DefaultRestTemplateProvider;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for HttpTask that do not require Docker/Testcontainers. Tests input resolution (with
@@ -40,15 +42,17 @@ public class HttpTaskUnitTest {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private WorkflowExecutor workflowExecutor;
     private HttpTask httpTask;
+    private HttpTaskProperties properties;
     private final WorkflowModel workflow = new WorkflowModel();
 
     @Before
     public void setup() {
         workflowExecutor = mock(WorkflowExecutor.class);
+        properties = mock(HttpTaskProperties.class);
         DefaultRestTemplateProvider restTemplateProvider =
                 new DefaultRestTemplateProvider(
                         java.time.Duration.ofMillis(150), java.time.Duration.ofMillis(100));
-        httpTask = new HttpTask(restTemplateProvider, objectMapper);
+        httpTask = new HttpTask(restTemplateProvider, objectMapper, properties);
     }
 
     // ---- Accept parameter tests (Input deserialization) ----
@@ -221,5 +225,56 @@ public class HttpTaskUnitTest {
         assertTrue(
                 "Should fail with missing URI",
                 task.getReasonForIncompletion().contains("Missing HTTP URI"));
+    }
+
+    @Test
+    public void testUriAllowed() {
+        TaskModel task = new TaskModel();
+        Map<String, Object> input = new HashMap<>();
+        input.put("uri", "https://api.example.com/v1/users");
+        input.put("method", "GET");
+        task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
+
+        when(properties.getUrlAllowList())
+                .thenReturn(Arrays.asList("https://api\\.example\\.com/.*"));
+
+        httpTask.start(workflow, task, workflowExecutor);
+
+        // Status will be FAILED because it tries to call real external URI in unit test,
+        // but it should NOT be FAILED_WITH_TERMINAL_ERROR (which is our security failure status).
+        assertNotEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+    }
+
+    @Test
+    public void testUriDisallowed() {
+        TaskModel task = new TaskModel();
+        Map<String, Object> input = new HashMap<>();
+        input.put("uri", "http://localhost:8080/admin");
+        input.put("method", "GET");
+        task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
+
+        when(properties.getUrlAllowList())
+                .thenReturn(Arrays.asList("https://api\\.example\\.com/.*"));
+
+        httpTask.start(workflow, task, workflowExecutor);
+
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertTrue(task.getReasonForIncompletion().contains("not allowed by the security policy"));
+    }
+
+    @Test
+    public void testUriAllowListEmpty() {
+        TaskModel task = new TaskModel();
+        Map<String, Object> input = new HashMap<>();
+        input.put("uri", "http://localhost:8080/admin");
+        input.put("method", "GET");
+        task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
+
+        when(properties.getUrlAllowList()).thenReturn(Arrays.asList());
+
+        httpTask.start(workflow, task, workflowExecutor);
+
+        // Should not fail with terminal error when allow-list is empty
+        assertNotEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
     }
 }
