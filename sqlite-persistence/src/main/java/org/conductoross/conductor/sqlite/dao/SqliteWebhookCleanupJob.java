@@ -121,9 +121,9 @@ public class SqliteWebhookCleanupJob {
     }
 
     /**
-     * Atomically claim the cleanup lease for this tick. Returns true iff the prior holder's
-     * lease expired and this instance took it. SQLite deployments are typically single-instance,
-     * but the lease is consulted unconditionally for symmetry with postgres/mysql.
+     * Atomically claim the cleanup lease for this tick. Returns true iff the prior holder's lease
+     * expired and this instance took it. SQLite deployments are typically single-instance, but the
+     * lease is consulted unconditionally for symmetry with postgres/mysql.
      */
     private boolean tryAcquireLease() {
         try (Connection conn = dataSource.getConnection();

@@ -119,9 +119,9 @@ public class MySQLWebhookCleanupJob {
     }
 
     /**
-     * Atomically claim the cleanup lease for this tick. Returns true iff the prior holder's
-     * lease expired and this instance took it. Acquisition is a single conditional UPDATE on
-     * a pre-seeded row so the outcome doesn't depend on transaction isolation.
+     * Atomically claim the cleanup lease for this tick. Returns true iff the prior holder's lease
+     * expired and this instance took it. Acquisition is a single conditional UPDATE on a pre-seeded
+     * row so the outcome doesn't depend on transaction isolation.
      */
     private boolean tryAcquireLease() {
         try (Connection conn = dataSource.getConnection();

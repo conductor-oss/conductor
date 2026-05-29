@@ -48,8 +48,8 @@ public interface WebhookVerifier {
     /**
      * Return a string suitable for replay-protection deduplication, or {@code null} if this
      * verifier has no signature material on which to dedup (e.g. {@link HeaderBasedVerifier}).
-     * Implementations should return the signature header value used in {@link #verify} so the
-     * dedup store keys on the exact bytes that authenticated the event.
+     * Implementations should return the signature header value used in {@link #verify} so the dedup
+     * store keys on the exact bytes that authenticated the event.
      */
     default String dedupKey(WebhookConfig webhookConfig, IncomingWebhookEvent event) {
         return null;

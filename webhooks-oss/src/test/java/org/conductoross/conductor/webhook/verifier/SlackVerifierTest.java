@@ -172,10 +172,11 @@ public class SlackVerifierTest {
     }
 
     private static String signature(long timestamp, String body, String secret) throws Exception {
-        String basestring =
-                SlackVerifier.SIGNATURE_VERSION + ":" + timestamp + ":" + body;
+        String basestring = SlackVerifier.SIGNATURE_VERSION + ":" + timestamp + ":" + body;
         Mac mac = Mac.getInstance(SlackVerifier.ALGORITHM);
-        mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), SlackVerifier.ALGORITHM));
+        mac.init(
+                new SecretKeySpec(
+                        secret.getBytes(StandardCharsets.UTF_8), SlackVerifier.ALGORITHM));
         byte[] hmac = mac.doFinal(basestring.getBytes(StandardCharsets.UTF_8));
         return SlackVerifier.SIGNATURE_VERSION + "=" + Hex.encodeHexString(hmac);
     }

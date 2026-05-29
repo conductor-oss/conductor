@@ -39,8 +39,8 @@ import static org.conductoross.conductor.webhook.WebhookWorkerProperties.WEBHOOK
 public class IncomingWebhookService {
 
     /**
-     * Replay-protection window. An event whose signature has been seen for the same webhook
-     * within this duration is rejected. Sized to match Slack's signing-secret tolerance.
+     * Replay-protection window. An event whose signature has been seen for the same webhook within
+     * this duration is rejected. Sized to match Slack's signing-secret tolerance.
      */
     static final Duration REPLAY_DEDUP_TTL = Duration.ofMinutes(5);
 
@@ -112,12 +112,8 @@ public class IncomingWebhookService {
         // inside REPLAY_DEDUP_TTL are rejected. Verifiers without signature material
         // (HEADER_BASED, SENDGRID) return null from dedupKey and skip dedup.
         String dedupKey = verifier.dedupKey(webhookConfig, incomingWebhookEvent);
-        if (dedupKey != null
-                && !webhookDAO.tryRecordSignature(id, dedupKey, REPLAY_DEDUP_TTL)) {
-            log.warn(
-                    "Rejected webhook event {}: replay detected for webhook {}",
-                    eventId,
-                    id);
+        if (dedupKey != null && !webhookDAO.tryRecordSignature(id, dedupKey, REPLAY_DEDUP_TTL)) {
+            log.warn("Rejected webhook event {}: replay detected for webhook {}", eventId, id);
             throw new NonTransientException(
                     "Replay detected: signature already seen for webhook " + id);
         }
@@ -156,8 +152,7 @@ public class IncomingWebhookService {
         String verifierName = webhookConfig.getVerifier().toString();
         WebhookVerifier verifier = this.webhookVerifiers.get(verifierName);
         if (verifier == null) {
-            log.error(
-                    "Webhook ping rejected: no verifier registered for type {}", verifierName);
+            log.error("Webhook ping rejected: no verifier registered for type {}", verifierName);
             throw new NonTransientException(
                     "No verifier registered for type '" + verifierName + "'");
         }

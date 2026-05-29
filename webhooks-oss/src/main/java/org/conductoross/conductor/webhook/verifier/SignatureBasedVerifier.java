@@ -45,8 +45,7 @@ public class SignatureBasedVerifier implements WebhookVerifier {
 
         var rawHeader = headerValues.getFirst();
         if (!rawHeader.startsWith(SHA_256)) {
-            return ErrorList.singleton(
-                    header + " must be prefixed with '" + SHA_256 + "'");
+            return ErrorList.singleton(header + " must be prefixed with '" + SHA_256 + "'");
         }
 
         try {
@@ -82,8 +81,10 @@ public class SignatureBasedVerifier implements WebhookVerifier {
 
     @Override
     public String dedupKey(WebhookConfig webhookConfig, IncomingWebhookEvent event) {
-        var values = event.getHeaders() == null ? null
-                : event.getHeaders().get(webhookConfig.getHeaderKey());
+        var values =
+                event.getHeaders() == null
+                        ? null
+                        : event.getHeaders().get(webhookConfig.getHeaderKey());
         return (values == null || values.isEmpty()) ? null : values.getFirst();
     }
 }

@@ -146,8 +146,7 @@ public class RedisWebhookDAO extends BaseDynoDAO implements WebhookDAO {
     public boolean tryRecordSignature(String webhookId, String signature, Duration ttl) {
         // Atomic SET NX PX: only succeeds if the key doesn't exist; auto-expires on TTL.
         String key = nsKey(WEBHOOK_DEDUP, webhookId, signature);
-        String result =
-                jedisProxy.setWithExpiryInMilliIfNotExists(key, "1", ttl.toMillis());
+        String result = jedisProxy.setWithExpiryInMilliIfNotExists(key, "1", ttl.toMillis());
         return "OK".equals(result);
     }
 

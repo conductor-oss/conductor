@@ -36,18 +36,17 @@ import lombok.extern.slf4j.Slf4j;
  * Verifies Slack webhook events using Slack's signing-secret protocol:
  *
  * <pre>{@code
- *   X-Slack-Signature: v0=<hex_hmac_sha256(timestamp + ":" + body)>
- *   X-Slack-Request-Timestamp: <unix_seconds>
+ * X-Slack-Signature: v0=<hex_hmac_sha256(timestamp + ":" + body)>
+ * X-Slack-Request-Timestamp: <unix_seconds>
  * }</pre>
  *
  * <p>The URL-verification handshake (the {@code challenge} field on first delivery) is still
  * honored — {@link #extractChallenge} returns the challenge so {@link
- * org.conductoross.conductor.webhook.service.IncomingWebhookService} can echo it back — but
- * passing the handshake no longer disables signing-secret checks. Every subsequent event is
- * verified against the configured signing secret.
+ * org.conductoross.conductor.webhook.service.IncomingWebhookService} can echo it back — but passing
+ * the handshake no longer disables signing-secret checks. Every subsequent event is verified
+ * against the configured signing secret.
  *
- * <p>References: Slack's docs at
- * https://api.slack.com/authentication/verifying-requests-from-slack
+ * <p>References: Slack's docs at https://api.slack.com/authentication/verifying-requests-from-slack
  */
 @Slf4j
 @Component
@@ -133,8 +132,7 @@ public class SlackVerifier implements WebhookVerifier {
 
     @Override
     public String dedupKey(WebhookConfig webhookConfig, IncomingWebhookEvent event) {
-        var values =
-                event.getHeaders() == null ? null : event.getHeaders().get(SIGNATURE_HEADER);
+        var values = event.getHeaders() == null ? null : event.getHeaders().get(SIGNATURE_HEADER);
         return (values == null || values.isEmpty()) ? null : values.getFirst();
     }
 
@@ -143,8 +141,7 @@ public class SlackVerifier implements WebhookVerifier {
         try {
             String requestBody = incomingWebhookEvent.getBody();
             if (requestBody != null && requestBody.contains(CHALLENGE_FIELD)) {
-                log.info(
-                        "Slack url verification initiated for webhook {}", webhookConfig.getId());
+                log.info("Slack url verification initiated for webhook {}", webhookConfig.getId());
                 DocumentContext jsonContext = JsonPath.parse(requestBody);
                 return jsonContext.read(CHALLENGE_FIELD);
             }

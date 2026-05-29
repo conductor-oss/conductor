@@ -87,8 +87,8 @@ public class RedisWebhookCleanupJob extends BaseDynoDAO {
     }
 
     /**
-     * Atomically claim the cleanup lease via {@code SET key value NX PX ttl}. Returns true iff
-     * no live lease exists. The key auto-expires so a crashed lease holder doesn't block other
+     * Atomically claim the cleanup lease via {@code SET key value NX PX ttl}. Returns true iff no
+     * live lease exists. The key auto-expires so a crashed lease holder doesn't block other
      * instances beyond {@link #leaseTtl}.
      */
     private boolean tryAcquireLease() {
