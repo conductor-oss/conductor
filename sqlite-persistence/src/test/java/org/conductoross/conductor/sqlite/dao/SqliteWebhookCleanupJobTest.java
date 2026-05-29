@@ -56,26 +56,15 @@ public class SqliteWebhookCleanupJobTest {
         flyway.clean();
         flyway.migrate();
         // flyway.clean() leaks rows across tests on the shared sqlite file in this
-        // test runner — explicit DELETE guarantees a clean slate per method.
-        // The cleanup-lease row also leaks: the V5 migration seeds it with
-        // INSERT OR IGNORE so re-running migrate() after a partial-clean doesn't
-        // reset expires_at. Without this reset, the first test acquires the
-        // lease and sets expires_at = now + 5min, and subsequent tests'
-        // tryAcquireLease() returns false so job.run() does nothing.
+        // test runner. The event table needs an explicit delete, and the
+        // cleanup-lease row needs an explicit reset — once one test acquires
+        // the lease and pushes expires_at to now + 5min, the next test's
+        // tryAcquireLease() would return false and job.run() would no-op.
         try (Connection conn = dataSource.getConnection()) {
             try (PreparedStatement ps =
                     conn.prepareStatement("DELETE FROM incoming_webhook_event")) {
                 ps.executeUpdate();
             }
-            // INSERT OR REPLACE so the row exists regardless of whether
-            // flyway.clean() dropped the table and V5's INSERT OR IGNORE
-            // re-seeded it. Bind expires_at as a Timestamp parameter (not a
-            // text literal): the xerial sqlite-jdbc driver stores Timestamp
-            // as INTEGER (epoch millis), and SQLite's type comparison says
-            // INTEGER < TEXT, so a text literal here compares as greater
-            // than the cleanup job's now-Timestamp and its expires_at < ?
-            // check always returns false — the lease could never be
-            // re-acquired.
             try (PreparedStatement ps =
                     conn.prepareStatement(
                             "INSERT OR REPLACE INTO webhook_cleanup_lease"

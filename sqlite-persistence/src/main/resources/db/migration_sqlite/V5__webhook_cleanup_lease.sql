@@ -10,5 +10,11 @@ CREATE TABLE IF NOT EXISTS webhook_cleanup_lease (
     expires_at   TIMESTAMP    NOT NULL
 );
 
+-- expires_at is seeded as INTEGER 0 (not a text literal): the xerial sqlite-jdbc
+-- driver stores java.sql.Timestamp as INTEGER (epoch millis), and SQLite's
+-- type-comparison rule says INTEGER < TEXT. A text seed would always compare
+-- greater than the cleanup job's now-Timestamp, so its "expires_at < ?" check
+-- would never match — the lease could never be acquired and the cleanup job
+-- would no-op forever.
 INSERT OR IGNORE INTO webhook_cleanup_lease (task, holder, expires_at)
-VALUES ('webhook-event-cleanup', 'unclaimed', '1970-01-01T00:00:00');
+VALUES ('webhook-event-cleanup', 'unclaimed', 0);
