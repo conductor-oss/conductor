@@ -50,7 +50,14 @@ import static org.junit.Assert.assertEquals;
             "conductor.db.type=postgres",
             "spring.flyway.clean-disabled=false",
             "conductor.app.workflow.name-validation.enabled=true",
-            "spring.flyway.ignore-migration-patterns=*:missing"
+            // PostgresConfiguration builds Flyway via Flyway.configure() rather than
+            // Spring auto-config, so spring.flyway.ignore-migration-patterns has no
+            // effect. Other tests in this module (PostgresQueueListenerTest,
+            // PostgresGrpcEndToEndTest) set experimentalQueueNotify=true and apply
+            // V10.1 from migration_postgres_notify to the shared testcontainer DB.
+            // Match that location set here so Flyway validation passes when this
+            // test runs after them.
+            "conductor.postgres.experimentalQueueNotify=true"
         })
 @SpringBootTest
 public class PostgresWebhookCleanupJobTest {

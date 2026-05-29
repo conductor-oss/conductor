@@ -56,7 +56,11 @@ import static org.mockito.Mockito.when;
             "conductor.db.type=postgres",
             "spring.flyway.clean-disabled=false",
             "conductor.app.workflow.name-validation.enabled=true",
-            "spring.flyway.ignore-migration-patterns=*:missing"
+            // See PostgresWebhookCleanupJobTest for why we need this — Flyway in
+            // PostgresConfiguration is built manually and ignores Spring's
+            // ignore-migration-patterns property, so we have to include the
+            // notify location to match what other tests in this module apply.
+            "conductor.postgres.experimentalQueueNotify=true"
         })
 @SpringBootTest
 public class PostgresWebhookDAOTest {
