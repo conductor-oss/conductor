@@ -19,6 +19,7 @@ import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -41,9 +42,10 @@ import static com.mysql.cj.exceptions.MysqlErrorNumbers.ER_LOCK_DEADLOCK;
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(MySQLProperties.class)
 @ConditionalOnProperty(name = "conductor.db.type", havingValue = "mysql")
-// Import the DataSourceAutoConfiguration when mysql database is selected.
-// By default the datasource configuration is excluded in the main module.
-@Import(DataSourceAutoConfiguration.class)
+// Import DataSourceAutoConfiguration and FlywayAutoConfiguration when mysql database is selected.
+// By default these are excluded in the main module. FlywayAutoConfiguration is required so that
+// the 'flyway' and 'flywayInitializer' beans exist before the MySQL DAOs are initialized.
+@Import({DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
 public class MySQLConfiguration {
 
     @Bean
