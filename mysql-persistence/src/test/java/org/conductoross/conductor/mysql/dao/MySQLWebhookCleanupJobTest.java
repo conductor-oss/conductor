@@ -96,6 +96,10 @@ public class MySQLWebhookCleanupJobTest {
     }
 
     private void insertEvent(String id, Timestamp createdOn) throws SQLException {
+        // The test datasource is configured with hikari auto-commit=false (see
+        // src/test/resources/application.properties) so an explicit commit is
+        // required before the connection returns to the pool, otherwise the
+        // insert is rolled back.
         try (Connection conn = dataSource.getConnection();
                 PreparedStatement ps =
                         conn.prepareStatement(
@@ -105,6 +109,7 @@ public class MySQLWebhookCleanupJobTest {
             ps.setString(2, "{}");
             ps.setTimestamp(3, createdOn);
             ps.executeUpdate();
+            conn.commit();
         }
     }
 
