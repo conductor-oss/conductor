@@ -2,14 +2,14 @@ import { Box, Grid, Typography } from "@mui/material";
 import { path as _path, pipe as _pipe, assoc as _assoc } from "lodash/fp";
 import { useState } from "react";
 
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
-import { ConductorFlatMapForm } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorFlatMapForm } from "components/FlatMapForm/ConductorFlatMapForm";
 import { TaskType } from "types";
 import { updateField } from "utils/fieldHelpers";
 import TaskFormSection from "./TaskFormSection";
 import { TaskFormProps } from "./types";
 import { Optional } from "./OptionalFieldForm";
-import { ConductorAutoComplete } from "components/v1";
+import { ConductorAutoComplete } from "components/ui/inputs";
 import { useGetIntegration } from "utils/hooks";
 import { MaybeVariable } from "./MaybeVariable";
 

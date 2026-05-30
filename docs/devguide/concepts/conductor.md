@@ -74,7 +74,7 @@ No other open source workflow engine matches this combination:
 - **3 vector databases for built-in RAG** — Pinecone, pgvector, MongoDB Atlas. Embed, index, search, and generate in one workflow.
 - **Content generation tasks** — image, audio, video, and PDF generation as system tasks.
 - **6 message brokers** — Kafka, NATS, NATS Streaming, SQS, AMQP (RabbitMQ), and internal queuing.
-- **8+ persistence backends** — Redis, PostgreSQL, MySQL, Cassandra, SQLite, Elasticsearch, OpenSearch, and more.
+- **5 persistence backends** — Redis, PostgreSQL, MySQL, Cassandra, and SQLite.
 - **7+ language SDKs** — Java, Python, Go, JavaScript, C#, Clojure, Ruby, and Rust.
 - **Battle-tested at scale** — proven in production at Netflix, Tesla, LinkedIn, and JP Morgan.
 - **JSON-native and code-first workflow definitions** — define workflows as JSON or as code using SDKs. Workflow as code for developers who want type safety; JSON for runtime generation and LLM-driven workflows.

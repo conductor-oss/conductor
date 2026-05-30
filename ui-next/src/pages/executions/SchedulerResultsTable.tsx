@@ -3,17 +3,17 @@ import { DataTable, LinearProgress, NavLink, Paper, Text } from "components";
 import { AlertTitle } from "@mui/material";
 import BulkActionModule from "./BulkActionModule";
 import executionsStyles from "./executionsStyles";
-import ClipboardCopy from "components/ClipboardCopy";
+import ClipboardCopy from "components/ui/ClipboardCopy";
 import StatusBadge from "components/StatusBadge";
-import { SnackbarMessage } from "components/SnackbarMessage";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
 import { totalPages } from "utils/index";
-import { ColumnCustomType, LegacyColumn } from "components/DataTable/types";
-import MuiAlert from "components/MuiAlert";
-import NoDataComponent from "components/NoDataComponent";
+import { ColumnCustomType, LegacyColumn } from "components/ui/DataTable/types";
+import MuiAlert from "components/ui/MuiAlert";
+import NoDataComponent from "components/ui/NoDataComponent";
 import { colors } from "theme/tokens/variables";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { SCHEDULER_DEFINITION_URL } from "utils/constants/route";
-import { useAuth } from "shared/auth";
+import { useAuth } from "components/features/auth";
 
 const executionFields: LegacyColumn[] = [
   {

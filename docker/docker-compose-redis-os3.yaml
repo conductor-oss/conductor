@@ -12,11 +12,11 @@ services:
       dockerfile: docker/server/Dockerfile
       args:
         YARN_OPTS: ${YARN_OPTS}
-        INDEXING_BACKEND: opensearch
+        INDEXING_BACKEND: opensearch3
     networks:
       - internal
     ports:
-      - 8081:8080
+      - 8000:8080
       - 8128:5000
     healthcheck:
       test: ["CMD", "curl","-I" ,"-XGET", "http://localhost:8080/health"]
@@ -43,8 +43,6 @@ services:
       - ../server/config/redis.conf:/usr/local/etc/redis/redis.conf
     networks:
       - internal
-    ports:
-      - 6380:6379
     healthcheck:
       test: [ "CMD", "redis-cli","ping" ]
 
@@ -58,12 +56,11 @@ services:
       - discovery.seed_hosts=conductor-opensearch # Nodes to look for when discovering the cluster
       - cluster.initial_cluster_manager_nodes=conductor-opensearch # Nodes eligible to serve as cluster manager
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=P4zzW)rd>>123_
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
     volumes:
       - osdata3-conductor:/usr/share/opensearch/data
     networks:
       - internal
-    ports:
-      - 9202:9200
     healthcheck:
       test: curl http://localhost:9200/_cluster/health -o /dev/null
       interval: 5s

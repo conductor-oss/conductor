@@ -1,13 +1,19 @@
 import { fetchWithContext, useFetchContext } from "plugins/fetch";
 import { useQuery } from "react-query";
 import { EnvironmentVariables } from "types/EnvVariables";
-import { STALE_TIME_SEARCH, useAuthHeaders } from "utils/query";
+import { FEATURES, featureFlags } from "utils/flags";
+import {
+  computeFetchBaseEnabled,
+  STALE_TIME_SEARCH,
+  useAuthHeaders,
+} from "utils/query";
 
 const ENVIRONMENT_VARIABLES_PATH = "/environment";
 
 export const useGetEnvironmentVariables = () => {
   const fetchContext = useFetchContext();
-  const fetchParams = { headers: useAuthHeaders() };
+  const headers = useAuthHeaders();
+  const fetchParams = { headers };
 
   return useQuery<EnvironmentVariables[]>(
     [fetchContext.stack, ENVIRONMENT_VARIABLES_PATH],
@@ -17,7 +23,9 @@ export const useGetEnvironmentVariables = () => {
       // staletime to ensure stable view when paginating back and forth (even if underlying results change)
     },
     {
-      enabled: fetchContext.ready,
+      enabled:
+        computeFetchBaseEnabled(fetchContext, headers) &&
+        featureFlags.isEnabled(FEATURES.INTEGRATIONS),
       keepPreviousData: true,
       staleTime: STALE_TIME_SEARCH,
       retry: (failureCount: number, error: any) => {

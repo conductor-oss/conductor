@@ -1,12 +1,26 @@
 import { PaletteMode, Theme } from "@mui/material";
 import { Components } from "@mui/material/styles";
 
-import { colors, fontSizes } from "../../tokens/variables";
-import baseTheme from "../baseTheme";
+import { colors, fontSizes, fontWeights } from "theme/tokens/variables";
+import baseTheme from "theme/material/baseTheme";
+
+// TODO: get rid of these components after applying new inputs whole app
+const enabledNewInputs = true;
 
 export const SMALL_INPUT_HEIGHT = "36px";
 
-export const inputLabelIdleStyles = {};
+export const inputLabelIdleStyles = enabledNewInputs
+  ? {}
+  : {
+      transform: "none",
+      position: "relative",
+      fontWeight: fontWeights.fontWeight1,
+      fontSize: fontSizes.fontSize2,
+      paddingLeft: 0,
+      marginBottom: ".3em",
+      marginTop: 0,
+      color: colors.gray07,
+    };
 
 export const inputLabelFocusedStyles = {
   color: colors.black,
@@ -81,6 +95,18 @@ const formControls = (mode: PaletteMode): Components<Theme> => {
           marginLeft: 8,
           height: 20,
           width: 40,
+          // These selectors live inside the root override so they share its
+          // cascade position (injected after MUI's own styles), which beats
+          // the .MuiSwitch-sizeSmall .MuiSwitch-switchBase specificity that
+          // size="small" adds and that the switchBase slot alone cannot win.
+          "& .MuiSwitch-switchBase": {
+            padding: 2,
+            top: 0,
+          },
+          "& .MuiSwitch-switchBase.Mui-checked": {
+            // With padding:2 the switchBase is 20px wide; translateX = 40-20.
+            transform: "translateX(20px)",
+          },
           "&:hover": {
             "& > $track": {
               backgroundColor: colors.gray05,
@@ -111,7 +137,6 @@ const formControls = (mode: PaletteMode): Components<Theme> => {
         switchBase: {
           padding: 2,
           "&$checked": {
-            // transform: "translateX(100%)",
             "& + $track": {
               opacity: 1,
             },
@@ -134,7 +159,35 @@ const formControls = (mode: PaletteMode): Components<Theme> => {
         }),
       },
     },
-    MuiOutlinedInput: {},
+    MuiOutlinedInput: enabledNewInputs
+      ? {}
+      : {
+          defaultProps: {
+            notched: false,
+          },
+          styleOverrides: {
+            notchedOutline: {
+              top: 0,
+              "& legend": {
+                // force-disable notched legends
+                display: "none",
+              },
+            },
+            root: {
+              borderColor: mode === "light" ? colors.gray12 : colors.gray06,
+              top: 0,
+              backgroundColor: mode === "light" ? "white" : "none",
+              "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: mode === "light" ? colors.gray09 : colors.gray09,
+              },
+            },
+            input: ({ theme }) => ({
+              paddingLeft: theme.spacing(3),
+              paddingRight: theme.spacing(3),
+              marginBottom: "-2px",
+            }),
+          },
+        },
     MuiFormControlLabel: {
       styleOverrides: {
         root: {
@@ -148,9 +201,10 @@ const formControls = (mode: PaletteMode): Components<Theme> => {
       },
       styleOverrides: {
         root: {
-          pointerEvents: "auto",
+          pointerEvents: enabledNewInputs ? "auto" : "none",
           color: baseTheme.palette.text.primary,
           "&.MuiInputLabel-outlined": {
+            "&.MuiInputLabel-shrink": inputLabelIdleStyles,
             "&.MuiInputLabel-focused": inputLabelFocusedStyles,
           },
         },
@@ -173,6 +227,13 @@ const formControls = (mode: PaletteMode): Components<Theme> => {
         },
       },
     },
+    // MuiPickersClockNumber: {
+    //   defaultProps: {
+    //     clockNumber: {
+    //       top: 6,
+    //     },
+    //   },
+    // },
     MuiAutocomplete: {
       defaultProps: {
         componentsProps: {

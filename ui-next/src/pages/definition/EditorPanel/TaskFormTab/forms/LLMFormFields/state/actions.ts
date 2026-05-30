@@ -49,3 +49,7 @@ export const persistError = assign<
 >({
   error: (_, { data }) => ({ message: data, severity: "error" }),
 });
+
+export const persistSelectedPrompt = assign<LLMFormFieldsMachineContext, any>({
+  selectedPrompt: (_, event: any) => event.prompt,
+});

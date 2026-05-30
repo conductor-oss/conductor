@@ -1,10 +1,10 @@
 import { Box, CircularProgress, FormControlLabel, Grid } from "@mui/material";
 import { useInterpret } from "@xstate/react";
-import Button from "components/MuiButton";
-import MuiCheckbox from "components/MuiCheckbox";
-import { ConductorAutoComplete } from "components/v1/ConductorAutoComplete";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
-import { ConductorFlatMapFormBase } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+import Button from "components/ui/buttons/MuiButton";
+import MuiCheckbox from "components/ui/MuiCheckbox";
+import { ConductorAutoComplete } from "components/ui/inputs/ConductorAutoComplete";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import { path as _path } from "lodash/fp";
 import _isEmpty from "lodash/isEmpty";
 import _isNil from "lodash/isNil";

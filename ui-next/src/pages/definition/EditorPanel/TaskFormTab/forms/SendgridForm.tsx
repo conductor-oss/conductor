@@ -1,5 +1,5 @@
 import { Box, Grid } from "@mui/material";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 import { UseQueryResult } from "react-query";
 import { IntegrationCategory, IntegrationDef } from "types";
 import { EMAIL_CONTENT_TYPE_SUGGESTIONS } from "utils/constants/emailContentTypeSuggestions";

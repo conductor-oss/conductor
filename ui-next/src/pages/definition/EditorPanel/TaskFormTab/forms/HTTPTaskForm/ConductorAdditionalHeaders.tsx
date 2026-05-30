@@ -7,11 +7,11 @@ import _last from "lodash/last";
 import { FunctionComponent, useMemo, useState } from "react";
 
 import { Button } from "components";
-import { ConductorAutoComplete } from "components/v1";
-import { ConductorEmptyGroupField } from "components/v1/ConductorEmptyGroupField";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
-import AddIcon from "components/v1/icons/AddIcon";
-import TrashIcon from "components/v1/icons/TrashIcon";
+import { ConductorAutoComplete } from "components/ui/inputs";
+import { ConductorEmptyGroupField } from "components/ui/inputs/ConductorEmptyGroupField";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
+import AddIcon from "components/icons/AddIcon";
+import TrashIcon from "components/icons/TrashIcon";
 import { HEADER_SUGGESTIONS } from "utils/constants/httpSuggestions";
 import { OBJECT_PROPERTY_NAME_REGEX } from "utils/regex";
 import maybeVariable from "../maybeVariableHOC";

@@ -4,7 +4,7 @@ import {
   TaskFormEvents,
   TaskFormMachineContext,
 } from "./types";
-import { FlowActionTypes } from "components/flow/state";
+import { FlowActionTypes } from "components/features/flow/state";
 import * as actions from "./actions";
 import * as guards from "./guards";
 import { taskStatsMachine } from "../TaskStats/state";
@@ -59,6 +59,9 @@ export const formMachine = createMachine<
           [FormMachineActionTypes.UPDATE_CRUMBS]: {
             // Note it will use incoming task if task is SWITCH and has changes else it will ignore
             actions: ["updateCrumbsAndOriginalTask"],
+          },
+          [FormMachineActionTypes.FORCE_REFRESH_TASK]: {
+            actions: ["forceRefreshTask"],
           },
           [FlowActionTypes.SELECT_EDGE_EVT]: {
             actions: ["maybePersistSelectedSwitchBranch"],

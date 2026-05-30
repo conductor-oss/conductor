@@ -119,7 +119,6 @@ export const removeCachedChangesFromWorkflow = (
 
     removeLocalCopyTime(wfKeyLastVersion);
     removeLocalCopyTime(wfKey);
-    logger.log("Removing version from storage", wfKey);
   }
 };
 

@@ -1,6 +1,6 @@
 import { useSelector } from "@xstate/react";
 import { useMemo } from "react";
-import { crumbsToTaskSteps } from "components/flow/nodes";
+import { crumbsToTaskSteps } from "components/features/flow/nodes";
 import _initial from "lodash/initial";
 import { extractVariablesFromTask } from "../helpers";
 import { ActorRef } from "xstate";

@@ -9,11 +9,11 @@ import {
   Tab,
   Tabs,
 } from "components";
-import ClipboardCopy from "components/ClipboardCopy";
-import { dowhileHasAllIterationsInOutput } from "components/flow/components/shapes/TaskCard/helpers";
-import { SnackbarMessage } from "components/SnackbarMessage";
+import ClipboardCopy from "components/ui/ClipboardCopy";
+import { dowhileHasAllIterationsInOutput } from "components/features/flow/components/shapes/TaskCard/helpers";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
 import StatusBadge from "components/StatusBadge";
-import ConductorTooltip from "components/conductorTooltip/ConductorTooltip";
+import ConductorTooltip from "components/ui/ConductorTooltip";
 import _nth from "lodash/nth";
 import { FunctionComponent, useMemo } from "react";
 import { useContainerQuery } from "react-container-query";

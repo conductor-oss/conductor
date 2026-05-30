@@ -4,14 +4,14 @@ import { FunctionComponent, useMemo } from "react";
 import fastDeepEqual from "fast-deep-equal";
 import { omit } from "lodash";
 import { colors } from "theme/tokens/variables";
-import Button, { MuiButtonProps } from "components/MuiButton";
+import Button, { MuiButtonProps } from "components/ui/buttons/MuiButton";
 import _isEmpty from "lodash/isEmpty";
 import { tryToJson } from "utils/utils";
-import ResetIcon from "components/v1/icons/ResetIcon";
-import SaveIcon from "components/v1/icons/SaveIcon";
-import TrashIcon from "components/v1/icons/TrashIcon";
-import XCloseIcon from "components/v1/icons/XCloseIcon";
-import { useAuth } from "shared/auth";
+import ResetIcon from "components/icons/ResetIcon";
+import SaveIcon from "components/icons/SaveIcon";
+import TrashIcon from "components/icons/TrashIcon";
+import XCloseIcon from "components/icons/XCloseIcon";
+import { useAuth } from "components/features/auth";
 
 const withFormState =
   (

@@ -19,7 +19,7 @@ import {
   LinearProgress,
 } from "components";
 import executionsStyles from "./executionsStyles";
-import { useAuth } from "shared/auth";
+import { useAuth } from "components/features/auth";
 
 interface TabPanelProps {
   children?: React.ReactNode;

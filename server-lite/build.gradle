@@ -46,7 +46,9 @@ dependencies {
     implementation project(':conductor-kafka')
 
     //Metrics
-    implementation project(':conductor-metrics')
+    implementation "io.micrometer:micrometer-registry-cloudwatch2:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-azure-monitor:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-prometheus:${revMicrometer}"
 
     //Event Listener
     implementation project(':conductor-workflow-event-listener')
@@ -63,9 +65,7 @@ dependencies {
     implementation "org.postgresql:postgresql:${revPostgres}"
 
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation ("io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}") {
-    	exclude group: 'com.netflix.conductor', module: 'conductor-core'
-    }
+    implementation "io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}"
 
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
 
@@ -86,6 +86,10 @@ jar {
 
 bootJar {
     mainClass = 'org.conductoross.conductor.Conductor'
+    manifest {
+        attributes('Implementation-Title': project.name,
+                'Implementation-Version': project.version)
+    }
     archiveClassifier = 'standalone'
 }
 

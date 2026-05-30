@@ -52,6 +52,7 @@ public class ExecutionService {
     private final WorkflowExecutor workflowExecutor;
     private final ExecutionDAOFacade executionDAOFacade;
     private final QueueDAO queueDAO;
+    private final ConductorProperties properties;
     private final ExternalPayloadStorage externalPayloadStorage;
     private final SystemTaskRegistry systemTaskRegistry;
     private final TaskStatusListener taskStatusListener;
@@ -73,6 +74,7 @@ public class ExecutionService {
         this.workflowExecutor = workflowExecutor;
         this.executionDAOFacade = executionDAOFacade;
         this.queueDAO = queueDAO;
+        this.properties = properties;
         this.externalPayloadStorage = externalPayloadStorage;
 
         this.queueTaskMessagePostponeSecs =
@@ -177,6 +179,7 @@ public class ExecutionService {
                 taskModel.setWorkerId(workerId);
                 taskModel.incrementPollCount();
                 executionDAOFacade.updateTask(taskModel);
+                adjustDeciderQueuePostpone(taskModel, taskDef);
                 tasks.add(taskModel.toTask());
             } catch (Exception e) {
                 // db operation failed for dequeued message, re-enqueue with a delay
@@ -206,6 +209,37 @@ public class ExecutionService {
         Monitors.recordTaskPoll(queueName);
         tasks.forEach(this::ackTaskReceived);
         return tasks;
+    }
+
+    /**
+     * When a task transitions SCHEDULED → IN_PROGRESS the relevant deadline changes from
+     * pollTimeoutSeconds to responseTimeoutSeconds. Advance the decider queue entry to fire at the
+     * response timeout so the sweeper doesn't wait for the now-stale poll-based postpone.
+     *
+     * <p>Uses {@link QueueDAO#setUnackTimeoutIfShorter} so we never push the evaluation further out
+     * than whatever the sweeper already scheduled (e.g. for another in-flight task with a shorter
+     * remaining timeout).
+     */
+    private void adjustDeciderQueuePostpone(TaskModel taskModel, TaskDef taskDef) {
+        long responseTimeoutSeconds =
+                (taskDef != null && taskDef.getResponseTimeoutSeconds() != 0)
+                        ? taskDef.getResponseTimeoutSeconds()
+                        : taskModel.getResponseTimeoutSeconds();
+        if (responseTimeoutSeconds == 0) {
+            return; // no response timeout — nothing to adjust
+        }
+        try {
+            queueDAO.setUnackTimeoutIfShorter(
+                    Utils.DECIDER_QUEUE,
+                    taskModel.getWorkflowInstanceId(),
+                    responseTimeoutSeconds * 1000);
+        } catch (Exception e) {
+            LOGGER.warn(
+                    "Failed to adjust decider queue postpone for workflow: {} after polling task: {}",
+                    taskModel.getWorkflowInstanceId(),
+                    taskModel.getTaskId(),
+                    e);
+        }
     }
 
     public Task getLastPollTask(String taskType, String workerId, String domain) {

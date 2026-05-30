@@ -93,6 +93,19 @@ public class DoWhile extends WorkflowSystemTask {
         // if the loopOverTasks collection is empty, no tasks inside the loop have been scheduled.
         // so schedule it and exit the method.
         if (loopOverTasks.isEmpty()) {
+            // For list iteration, check if the items list is empty before scheduling iteration 1.
+            // An empty items list means there is nothing to iterate over, so complete immediately.
+            if (isListIteration(doWhileTaskModel)) {
+                List<Object> itemsList = evaluateItemsList(workflow, doWhileTaskModel);
+                if (itemsList.isEmpty()) {
+                    LOGGER.debug(
+                            "Task {} has an empty items list, completing without executing loop tasks",
+                            doWhileTaskModel.getTaskId());
+                    doWhileTaskModel.addOutput("iteration", 0);
+                    return markTaskSuccess(doWhileTaskModel);
+                }
+            }
+
             doWhileTaskModel.setIteration(1);
             doWhileTaskModel.addOutput("iteration", doWhileTaskModel.getIteration());
 
@@ -123,7 +136,7 @@ public class DoWhile extends WorkflowSystemTask {
                         .map(value -> (Integer) value);
         if (keepLastN.isPresent() && doWhileTaskModel.getIteration() > keepLastN.get()) {
             Integer iteration = doWhileTaskModel.getIteration();
-            IntStream.range(0, iteration - keepLastN.get() - 1)
+            IntStream.rangeClosed(1, iteration - keepLastN.get())
                     .mapToObj(Integer::toString)
                     .forEach(doWhileTaskModel::removeOutput);
 
@@ -300,8 +313,45 @@ public class DoWhile extends WorkflowSystemTask {
         // Check all the tasks in referenceNameToModel are completed or not. These are set of tasks
         // which are not directly inside loopOver tasks, but they are under hierarchy
         // loopOver -> [decisionTask -> COMPLETED [ task1 -> COMPLETED, task2 -> IN_PROGRESS]]
-        return referenceNameToModel.values().stream()
-                .noneMatch(taskModel -> !taskModel.getStatus().isTerminal());
+        if (referenceNameToModel.values().stream()
+                .anyMatch(taskModel -> !taskModel.getStatus().isTerminal())) {
+            return false;
+        }
+
+        // Check that every terminal task's successor within the DO_WHILE hierarchy has been
+        // scheduled. This guards against premature iteration advancement caused by intra-loop
+        // ordering in decide(): INLINE (and other sync system tasks) share the
+        // tasksToBeScheduled loop with DO_WHILE. If the sync task executes first it becomes
+        // terminal in memory, but the decider hasn't yet run to schedule its successor. Without
+        // this check DO_WHILE would declare the iteration complete and advance.
+        // loopOver -> [SWITCH -> COMPLETED [ task1 -> COMPLETED, task2 -> NOT_YET_SCHEDULED ]]
+        String doWhileRef = doWhileTaskModel.getWorkflowTask().getTaskReferenceName();
+        for (TaskModel task : referenceNameToModel.values()) {
+            if (task.getStatus().isTerminal()) {
+                String refNameWithoutIteration =
+                        TaskUtils.removeIterationFromTaskRefName(task.getReferenceTaskName());
+                WorkflowTask nextWorkflowTask =
+                        doWhileTaskModel.getWorkflowTask().next(refNameWithoutIteration, null);
+                // A non-null next task that is still within the DO_WHILE hierarchy (i.e. not the
+                // DO_WHILE task itself, which is returned for the last task in the sequence) means
+                // there is a successor that must be scheduled before the iteration is complete.
+                if (nextWorkflowTask != null
+                        && !doWhileRef.equals(nextWorkflowTask.getTaskReferenceName())
+                        && doWhileTaskModel
+                                .getWorkflowTask()
+                                .has(nextWorkflowTask.getTaskReferenceName())) {
+                    String nextTaskRef =
+                            TaskUtils.appendIteration(
+                                    nextWorkflowTask.getTaskReferenceName(), iteration);
+                    if (!referenceNameToModel.containsKey(nextTaskRef)) {
+                        // Successor task not yet scheduled — iteration is not complete.
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
     }
 
     boolean scheduleNextIteration(

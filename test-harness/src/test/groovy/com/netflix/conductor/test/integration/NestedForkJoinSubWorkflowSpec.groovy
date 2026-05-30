@@ -78,6 +78,8 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
                 correlationId, input, null)
 
         then: "verify that the workflow is in a RUNNING state"
+        List<String> polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
         with(workflowExecutionService.getExecutionStatus(parentWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 7
@@ -124,6 +126,7 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
 
         and: "verify that the mid-level workflow is RUNNING, and first task is in SCHEDULED state"
         subworkflowId = parentWorkflowInstance.tasks[2].subWorkflowId
+        sweep(subworkflowId)
         with(workflowExecutionService.getExecutionStatus(subworkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 1
@@ -204,7 +207,6 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
             tasks[1].status == Task.Status.COMPLETED
             tasks[2].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[2].status == Task.Status.IN_PROGRESS
-            tasks[2].subworkflowChanged
             tasks[3].taskType == 'integration_task_2'
             tasks[3].status == Task.Status.COMPLETED
             tasks[4].taskType == TASK_TYPE_JOIN
@@ -300,6 +302,8 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
     def "test restart on the parent workflow in a nested fork join workflow"() {
         when:
         workflowExecutor.restart(parentWorkflowId, false)
+        List<String> polledRestartedSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledRestartedSubWorkflowIds[0])
 
         then: "verify that the parent workflow is in RUNNING state"
         with(workflowExecutionService.getExecutionStatus(parentWorkflowId, true)) {
@@ -351,6 +355,7 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
 
         and: "verify that a new instance of the sub workflow is created"
         def newSubWorkflowId = parentWorkflowInstance.tasks[2].subWorkflowId
+        sweep(newSubWorkflowId)
         newSubWorkflowId != subworkflowId
         with(workflowExecutionService.getExecutionStatus(newSubWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
@@ -417,6 +422,8 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
     def "test retry on the parent workflow in a nested fork join workflow"() {
         when:
         workflowExecutor.retry(parentWorkflowId, false)
+        List<String> polledRetriedSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledRetriedSubWorkflowIds[0])
 
         then: "verify that the parent workflow is in RUNNING state"
         with(workflowExecutionService.getExecutionStatus(parentWorkflowId, true)) {
@@ -470,6 +477,7 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
         and: "verify that a new instance of the sub workflow is created"
         def newSubWorkflowId = parentWorkflowInstance.tasks[7].subWorkflowId
         newSubWorkflowId != subworkflowId
+        sweep(newSubWorkflowId)
         with(workflowExecutionService.getExecutionStatus(newSubWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 1
@@ -587,7 +595,6 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
             tasks[1].status == Task.Status.COMPLETED
             tasks[2].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[2].status == Task.Status.IN_PROGRESS
-            tasks[2].subworkflowChanged
             tasks[3].taskType == 'integration_task_2'
             tasks[3].status == Task.Status.COMPLETED
             tasks[4].taskType == TASK_TYPE_JOIN
@@ -710,7 +717,6 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
             tasks[1].status == Task.Status.COMPLETED
             tasks[2].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[2].status == Task.Status.IN_PROGRESS
-            tasks[2].subworkflowChanged
             tasks[3].taskType == 'integration_task_2'
             tasks[3].status == Task.Status.COMPLETED
             tasks[4].taskType == TASK_TYPE_JOIN

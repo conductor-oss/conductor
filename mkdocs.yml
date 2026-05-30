@@ -28,6 +28,7 @@ nav:
       - devguide/how-tos/Workflows/versioning-workflows.md
       - devguide/how-tos/Workflows/searching-workflows.md
       - devguide/how-tos/Workflows/viewing-workflow-executions.md
+      - devguide/how-tos/Workflows/scheduling-workflows.md
     - Tasks:
       - devguide/how-tos/Tasks/creating-tasks.md
       - devguide/how-tos/Tasks/task-inputs.md
@@ -41,20 +42,23 @@ nav:
     - Microservice Orchestration: devguide/cookbook/microservice-orchestration.md
     - Dynamic Parallelism: devguide/cookbook/dynamic-parallelism.md
     - Wait & Timer Patterns: devguide/cookbook/wait-and-timers.md
+    - Task Timeouts & Retries: devguide/cookbook/task-timeouts-and-retries.md
     - Event-Driven Recipes: devguide/cookbook/event-driven.md
     - AI & LLM Recipes: devguide/cookbook/ai-llm.md
+    - Scheduled Workflows: devguide/cookbook/workflow-scheduling.md
     - Dynamic Workflows in Code: devguide/cookbook/dynamic-workflows.md
   - AI Cookbook:
     - devguide/ai/index.md
     - Build Your First AI Agent: devguide/ai/first-ai-agent.md
+    - AI & LLM Recipes: devguide/cookbook/ai-llm.md
+    - LLM Orchestration: devguide/ai/llm-orchestration.md
+    - MCP Integration: devguide/ai/mcp-guide.md
     - Production Agent Architecture: devguide/ai/production-agent-architecture.md
     - Failure Semantics: devguide/ai/failure-semantics.md
     - Why Conductor for Agents: devguide/ai/why-conductor.md
-    - MCP Integration: devguide/ai/mcp-guide.md
     - Durable Agents: devguide/ai/durable-agents.md
     - Human-in-the-Loop: devguide/ai/human-in-the-loop.md
     - Dynamic Workflows: devguide/ai/dynamic-workflows.md
-    - LLM Orchestration: devguide/ai/llm-orchestration.md
     - Token Efficiency: devguide/ai/token-efficiency.md
   - SDKs:
     - documentation/clientsdks/index.md
@@ -72,9 +76,11 @@ nav:
       - documentation/api/startworkflow.md
       - documentation/api/workflow.md
       - documentation/api/task.md
+      - documentation/api/files.md
       - documentation/api/bulk.md
       - documentation/api/eventhandlers.md
       - documentation/api/taskdomains.md
+      - documentation/api/scheduler.md
     - Workflow Definition:
       - documentation/configuration/workflowdef/index.md
     - System Tasks:
@@ -116,6 +122,7 @@ nav:
       - documentation/advanced/isolationgroups.md
       - documentation/advanced/archival-of-workflows.md
       - documentation/advanced/externalpayloadstorage.md
+      - documentation/advanced/file-storage.md
       - documentation/advanced/redis.md
       - documentation/advanced/postgresql.md
       - documentation/advanced/opensearch.md

@@ -13,14 +13,15 @@
 package org.conductoross.conductor.ai.sql;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.annotation.PreDestroy;
 import javax.sql.DataSource;
 
 import org.springframework.stereotype.Component;
 
 import com.zaxxer.hikari.HikariDataSource;
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -55,10 +56,12 @@ public class JDBCProvider {
     /**
      * Retrieves a DataSource by its configured name.
      *
-     * @param name The name of the JDBC instance as configured
+     * @param input input
      * @return The DataSource, or null if not found
      */
-    public DataSource get(String name) {
+    public DataSource get(JDBCInput input) {
+        String name =
+                Optional.ofNullable(input.getConnectionId()).orElse(input.getIntegrationName());
         if (name == null) {
             log.warn("JDBC instance name is null");
             return null;

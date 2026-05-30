@@ -8,8 +8,8 @@ import {
 import {
   START_TASK_FAKE_TASK_REFERENCE_NAME,
   END_TASK_FAKE_TASK_REFERENCE_NAME,
-} from "components/flow/nodes";
-import { SelectNodeEvent } from "components/flow/state";
+} from "components/features/flow/nodes";
+import { SelectNodeEvent } from "components/features/flow/state";
 
 import _isNil from "lodash/isNil";
 import _last from "lodash/last";
@@ -18,6 +18,7 @@ import {
   ChangeTabEvent,
   PerformOperationEvent,
   SaveAndRunRequestEvent,
+  SaveRequestEvent,
   DONT_SHOW_IMPORT_SUCCESSFUL_DIALOG_TUTORIAL_AGAIN,
 } from "./types";
 import { WorkflowWithNoErrorsEvent } from "../errorInspector/state";
@@ -145,7 +146,11 @@ export const selectedTaskIsInSwitchBranch = ({
   return false;
 };
 
-export const isDescriptionEmpty = (context: DefinitionMachineContext) =>
+export const isDescriptionEmpty = (
+  context: DefinitionMachineContext,
+  event: SaveRequestEvent,
+) =>
+  !event?.skipDescriptionCheck &&
   (context.workflowChanges?.description ?? "").trim() === "";
 
 export const isSaveAndRunRequest = (
