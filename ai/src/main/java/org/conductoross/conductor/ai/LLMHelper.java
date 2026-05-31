@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.document.DocumentLoader;
+import org.conductoross.conductor.ai.http.AIHttpClients;
 import org.conductoross.conductor.ai.models.AudioGenRequest;
 import org.conductoross.conductor.ai.models.ChatCompletion;
 import org.conductoross.conductor.ai.models.ChatMessage;
@@ -95,14 +96,7 @@ public class LLMHelper {
 
     public LLMHelper(
             JsonSchemaValidator jsonSchemaValidator, List<DocumentLoader> documentLoaders) {
-        this(
-                jsonSchemaValidator,
-                documentLoaders,
-                new OkHttpClient.Builder()
-                        .connectTimeout(java.time.Duration.ofSeconds(60))
-                        .readTimeout(java.time.Duration.ofSeconds(600))
-                        .writeTimeout(java.time.Duration.ofSeconds(60))
-                        .build());
+        this(jsonSchemaValidator, documentLoaders, AIHttpClients.defaultClient());
     }
 
     public LLMHelper(

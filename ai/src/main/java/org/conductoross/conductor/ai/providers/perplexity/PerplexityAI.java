@@ -15,6 +15,7 @@ package org.conductoross.conductor.ai.providers.perplexity;
 import java.util.List;
 
 import org.conductoross.conductor.ai.AIModel;
+import org.conductoross.conductor.ai.http.AIHttpClients;
 import org.conductoross.conductor.ai.models.ChatCompletion;
 import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.providers.openai.OpenAICompatChatModel;
@@ -33,13 +34,7 @@ public class PerplexityAI implements AIModel {
     private final OpenAICompatChatModel chatModel;
 
     public PerplexityAI(PerplexityAIConfiguration config) {
-        this(
-                config,
-                new OkHttpClient.Builder()
-                        .connectTimeout(java.time.Duration.ofSeconds(60))
-                        .readTimeout(java.time.Duration.ofSeconds(600))
-                        .writeTimeout(java.time.Duration.ofSeconds(60))
-                        .build());
+        this(config, AIHttpClients.defaultClient());
     }
 
     public PerplexityAI(PerplexityAIConfiguration config, OkHttpClient httpClient) {

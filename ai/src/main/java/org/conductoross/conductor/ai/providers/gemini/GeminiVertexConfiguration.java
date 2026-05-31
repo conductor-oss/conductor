@@ -13,6 +13,7 @@
 package org.conductoross.conductor.ai.providers.gemini;
 
 import org.conductoross.conductor.ai.ModelConfiguration;
+import org.conductoross.conductor.ai.http.AIHttpClients;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -61,14 +62,7 @@ public class GeminiVertexConfiguration implements ModelConfiguration<GeminiVerte
 
     @Override
     public GeminiVertex get() {
-        OkHttpClient client =
-                httpClient != null
-                        ? httpClient
-                        : new OkHttpClient.Builder()
-                                .connectTimeout(java.time.Duration.ofSeconds(60))
-                                .readTimeout(java.time.Duration.ofSeconds(600))
-                                .writeTimeout(java.time.Duration.ofSeconds(60))
-                                .build();
+        OkHttpClient client = httpClient != null ? httpClient : AIHttpClients.defaultClient();
         return new GeminiVertex(this, client);
     }
 }

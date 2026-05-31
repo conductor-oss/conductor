@@ -89,7 +89,13 @@ public class SchedulerResource {
             @RequestParam(value = "start", required = false, defaultValue = "0") int start,
             @RequestParam(value = "size", required = false, defaultValue = "100") int size,
             @RequestParam(value = "sort", required = false) String sort) {
-        List<String> sortOptions = sort != null ? Arrays.asList(sort.split(",")) : List.of();
+        List<String> sortOptions =
+                sort == null || sort.isBlank()
+                        ? List.of()
+                        : Arrays.stream(sort.split(","))
+                                .map(String::trim)
+                                .filter(s -> !s.isEmpty())
+                                .toList();
         return schedulerService.searchSchedules(
                 workflowName, scheduleName, paused, freeText, start, size, sortOptions);
     }
@@ -178,7 +184,13 @@ public class SchedulerResource {
             @RequestParam(value = "start", required = false, defaultValue = "0") int start,
             @RequestParam(value = "size", required = false, defaultValue = "100") int size,
             @RequestParam(value = "sort", required = false) String sort) {
-        List<String> sortOptions = sort != null ? Arrays.asList(sort.split(",")) : List.of();
+        List<String> sortOptions =
+                sort == null || sort.isBlank()
+                        ? List.of()
+                        : Arrays.stream(sort.split(","))
+                                .map(String::trim)
+                                .filter(s -> !s.isEmpty())
+                                .toList();
         return schedulerService.searchScheduledExecutions(
                 query, freeText, start, size, sortOptions);
     }

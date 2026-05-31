@@ -16,6 +16,7 @@ import java.util.Base64;
 import java.util.List;
 
 import org.conductoross.conductor.ai.AIModel;
+import org.conductoross.conductor.ai.http.AIHttpClients;
 import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.models.ImageGenRequest;
 import org.springframework.ai.chat.model.ChatModel;
@@ -71,13 +72,7 @@ public class StabilityAI implements AIModel {
     private final ImageModel imageModel;
 
     public StabilityAI(StabilityAIConfiguration config) {
-        this(
-                config,
-                new OkHttpClient.Builder()
-                        .connectTimeout(java.time.Duration.ofSeconds(60))
-                        .readTimeout(java.time.Duration.ofSeconds(600))
-                        .writeTimeout(java.time.Duration.ofSeconds(60))
-                        .build());
+        this(config, AIHttpClients.defaultClient());
     }
 
     public StabilityAI(StabilityAIConfiguration config, OkHttpClient httpClient) {

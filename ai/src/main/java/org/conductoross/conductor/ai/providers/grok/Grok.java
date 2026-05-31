@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.conductoross.conductor.ai.AIModel;
+import org.conductoross.conductor.ai.http.AIHttpClients;
 import org.conductoross.conductor.ai.models.ChatCompletion;
 import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.providers.openai.OpenAICompatChatModel;
@@ -36,13 +37,7 @@ public class Grok implements AIModel {
     private final OpenAICompatChatModel chatModel;
 
     public Grok(GrokAIConfiguration config) {
-        this(
-                config,
-                new OkHttpClient.Builder()
-                        .connectTimeout(java.time.Duration.ofSeconds(60))
-                        .readTimeout(java.time.Duration.ofSeconds(600))
-                        .writeTimeout(java.time.Duration.ofSeconds(60))
-                        .build());
+        this(config, AIHttpClients.defaultClient());
     }
 
     public Grok(GrokAIConfiguration config, OkHttpClient httpClient) {

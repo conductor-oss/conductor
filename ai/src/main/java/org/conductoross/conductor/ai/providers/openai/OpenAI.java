@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.conductoross.conductor.ai.AIModel;
+import org.conductoross.conductor.ai.http.AIHttpClients;
 import org.conductoross.conductor.ai.models.AudioGenRequest;
 import org.conductoross.conductor.ai.models.ChatCompletion;
 import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
@@ -63,13 +64,7 @@ public class OpenAI implements AIModel {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public OpenAI(OpenAIConfiguration config) {
-        this(
-                config,
-                new OkHttpClient.Builder()
-                        .connectTimeout(java.time.Duration.ofSeconds(60))
-                        .readTimeout(java.time.Duration.ofSeconds(600))
-                        .writeTimeout(java.time.Duration.ofSeconds(60))
-                        .build());
+        this(config, AIHttpClients.defaultClient());
     }
 
     public OpenAI(OpenAIConfiguration config, OkHttpClient httpClient) {
