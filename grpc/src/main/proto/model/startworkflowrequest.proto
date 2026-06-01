@@ -10,8 +10,8 @@ option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model"
 
 message StartWorkflowRequest {
     message TaskRateLimitOverride {
-        int32 rate_limit_per_frequency = 1;
-        int32 rate_limit_frequency_in_seconds = 2;
+        optional int32 rate_limit_per_frequency = 1;
+        optional int32 rate_limit_frequency_in_seconds = 2;
     }
     string name = 1;
     int32 version = 2;

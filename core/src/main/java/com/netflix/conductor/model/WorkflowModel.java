@@ -511,6 +511,7 @@ public class WorkflowModel {
         this.taskRateLimitOverrides = taskRateLimitOverrides;
     }
 
+    @Override
     public String toString() {
         String name = workflowDefinition != null ? workflowDefinition.getName() : null;
         Integer version = workflowDefinition != null ? workflowDefinition.getVersion() : null;

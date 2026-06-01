@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.core.execution.mapper;
+package org.conductoross.conductor.core.utils;
 
 import java.util.Map;
 import java.util.Optional;
@@ -25,8 +25,8 @@ import com.netflix.conductor.model.WorkflowModel;
 public class TaskMapperUtils {
 
     /**
-     * Applies dynamic rate limiting to a task model. This method checks for runtime overrides in
-     * the workflow model and applies them if present, otherwise falls back to the static values
+     * Applies dynamic rate limiting to a task model. Checks for runtime overrides supplied at
+     * workflow start and applies them when present, otherwise falls back to the static values
      * defined in the task definition.
      *
      * <p>The lookup order for overrides is:
@@ -36,6 +36,11 @@ public class TaskMapperUtils {
      *   <li>By task definition name (applies to all instances of this task type)
      *   <li>Fallback to static TaskDef values (default behavior)
      * </ol>
+     *
+     * <p>The by-def-name lookup prefers {@link TaskDef#getName()} when available because it is the
+     * authoritative source for the task definition identifier. For system task types where no
+     * {@link TaskDef} is registered, {@link WorkflowTask#getName()} (the user-chosen task name in
+     * the workflow definition) is used as a fallback.
      *
      * @param workflowModel the workflow model containing potential rate limit overrides
      * @param workflowTask the workflow task definition
@@ -48,20 +53,16 @@ public class TaskMapperUtils {
             TaskDef taskDefinition,
             TaskModel taskModel) {
 
-        // Start with defaults from TaskDef
         int perFreq = taskDefinition != null ? taskDefinition.getRateLimitPerFrequency() : 0;
         int freqSecs = taskDefinition != null ? taskDefinition.getRateLimitFrequencyInSeconds() : 0;
 
-        // Get overrides from WorkflowModel (if any)
         Map<String, TaskRateLimitOverride> overrides =
                 Optional.ofNullable(workflowModel.getTaskRateLimitOverrides()).orElse(Map.of());
 
-        // Look up override by reference name first, then by task name
+        String defName = taskDefinition != null ? taskDefinition.getName() : workflowTask.getName();
         TaskRateLimitOverride override =
-                overrides.getOrDefault(
-                        workflowTask.getTaskReferenceName(), overrides.get(workflowTask.getName()));
+                overrides.getOrDefault(workflowTask.getTaskReferenceName(), overrides.get(defName));
 
-        // Apply override values if present
         if (override != null) {
             if (override.getRateLimitPerFrequency() != null) {
                 perFreq = override.getRateLimitPerFrequency();
@@ -71,11 +72,9 @@ public class TaskMapperUtils {
             }
         }
 
-        // Set the final values on the TaskModel
         taskModel.setRateLimitPerFrequency(perFreq);
         taskModel.setRateLimitFrequencyInSeconds(freqSecs);
     }
 
-    // Private constructor to prevent instantiation
     private TaskMapperUtils() {}
 }

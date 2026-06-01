@@ -22,6 +22,7 @@ import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.netflix.conductor.common.metadata.Auditable;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 
 import jakarta.validation.constraints.Max;
@@ -128,6 +129,16 @@ public class Workflow extends Auditable {
 
     @ProtoField(id = 26)
     private List<Workflow> history = new LinkedList<>();
+
+    /*
+     * Per-task dynamic rate-limit overrides supplied at workflow start.
+     * Mirrors WorkflowModel.taskRateLimitOverrides so BeanUtils.copyProperties
+     * carries the map across the model<->DTO boundary, which is required for
+     * the field to survive suspend/resume (DAO persists the Workflow DTO).
+     */
+    @ProtoField(id = 27)
+    private Map<String, StartWorkflowRequest.TaskRateLimitOverride> taskRateLimitOverrides =
+            new HashMap<>();
 
     private String idempotencyKey;
     private String rateLimitKey;
@@ -478,6 +489,16 @@ public class Workflow extends Auditable {
         return StringUtils.isNotEmpty(parentWorkflowId);
     }
 
+    public Map<String, StartWorkflowRequest.TaskRateLimitOverride> getTaskRateLimitOverrides() {
+        return taskRateLimitOverrides;
+    }
+
+    public void setTaskRateLimitOverrides(
+            Map<String, StartWorkflowRequest.TaskRateLimitOverride> taskRateLimitOverrides) {
+        this.taskRateLimitOverrides =
+                taskRateLimitOverrides == null ? new HashMap<>() : taskRateLimitOverrides;
+    }
+
     public Set<String> getFailedTaskNames() {
         return failedTaskNames;
     }
@@ -536,6 +557,7 @@ public class Workflow extends Auditable {
         copy.setFailedReferenceTaskNames(failedReferenceTaskNames);
         copy.setExternalInputPayloadStoragePath(externalInputPayloadStoragePath);
         copy.setExternalOutputPayloadStoragePath(externalOutputPayloadStoragePath);
+        copy.setTaskRateLimitOverrides(new HashMap<>(taskRateLimitOverrides));
         return copy;
     }
 

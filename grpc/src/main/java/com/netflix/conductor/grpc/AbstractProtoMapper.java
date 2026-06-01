@@ -702,16 +702,24 @@ public abstract class AbstractProtoMapper {
     public StartWorkflowRequestPb.StartWorkflowRequest.TaskRateLimitOverride toProto(
             StartWorkflowRequest.TaskRateLimitOverride from) {
         StartWorkflowRequestPb.StartWorkflowRequest.TaskRateLimitOverride.Builder to = StartWorkflowRequestPb.StartWorkflowRequest.TaskRateLimitOverride.newBuilder();
-        to.setRateLimitPerFrequency( from.getRateLimitPerFrequency() );
-        to.setRateLimitFrequencyInSeconds( from.getRateLimitFrequencyInSeconds() );
+        if (from.getRateLimitPerFrequency() != null) {
+            to.setRateLimitPerFrequency( from.getRateLimitPerFrequency() );
+        }
+        if (from.getRateLimitFrequencyInSeconds() != null) {
+            to.setRateLimitFrequencyInSeconds( from.getRateLimitFrequencyInSeconds() );
+        }
         return to.build();
     }
 
     public StartWorkflowRequest.TaskRateLimitOverride fromProto(
             StartWorkflowRequestPb.StartWorkflowRequest.TaskRateLimitOverride from) {
         StartWorkflowRequest.TaskRateLimitOverride to = new StartWorkflowRequest.TaskRateLimitOverride();
-        to.setRateLimitPerFrequency( from.getRateLimitPerFrequency() );
-        to.setRateLimitFrequencyInSeconds( from.getRateLimitFrequencyInSeconds() );
+        if (from.hasRateLimitPerFrequency()) {
+            to.setRateLimitPerFrequency( from.getRateLimitPerFrequency() );
+        }
+        if (from.hasRateLimitFrequencyInSeconds()) {
+            to.setRateLimitFrequencyInSeconds( from.getRateLimitFrequencyInSeconds() );
+        }
         return to;
     }
 
