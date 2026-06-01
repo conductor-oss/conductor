@@ -12,11 +12,8 @@
  */
 package org.conductoross.conductor.webhook.model;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -65,13 +62,6 @@ public class WebhookConfig {
         TWITTER,
         HMAC_BASED,
         SENDGRID
-    }
-
-    @JsonIgnore
-    public List<String> getWorkflowNames() {
-        return receiverWorkflowNamesToVersions == null
-                ? List.of()
-                : new ArrayList<>(receiverWorkflowNamesToVersions.keySet());
     }
 
     public void accept(WebhookConfigVisitor visitor) {
