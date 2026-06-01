@@ -16,8 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.conductoross.conductor.common.metadata.tags.Tag;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
@@ -55,7 +53,6 @@ public class WebhookConfig {
     private String secretValue;
 
     private String createdBy;
-    private List<Tag> tags;
 
     private List<WebhookExecutionHistory> webhookExecutionHistory; // TODO Remove this
 
