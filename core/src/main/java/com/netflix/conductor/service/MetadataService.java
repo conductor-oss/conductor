@@ -23,6 +23,8 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.common.model.BulkResponse;
+import com.netflix.conductor.dao.TaskMetricInfo;
+import com.netflix.conductor.dao.WorkflowMetricInfo;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
@@ -170,4 +172,16 @@ public interface MetadataService {
      */
     List<WorkflowDefSummary> getWorkflowVersions(
             @NotEmpty(message = "Workflow name cannot be null or empty") String name);
+
+    /**
+     * @return Lightweight projection of the latest version of each workflow definition (name and
+     *     owner app only), used to publish monitoring metrics.
+     */
+    List<WorkflowMetricInfo> getWorkflowMetricInfo();
+
+    /**
+     * @return Lightweight projection of task definitions (name, owner app, concurrency limit), used
+     *     to publish monitoring metrics.
+     */
+    List<TaskMetricInfo> getTaskMetricInfo();
 }
