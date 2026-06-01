@@ -89,7 +89,6 @@ public class WebhookConfigService {
             webhookConfig.setSecretValue(existing.getSecretValue());
         }
         webhookConfig.setUrlVerified(existing.isUrlVerified());
-        webhookConfig.setWebhookExecutionHistory(existing.getWebhookExecutionHistory());
         storeWebhook(webhookConfig);
     }
 }

@@ -14,7 +14,6 @@ package org.conductoross.conductor.webhook;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.conductoross.conductor.service.webhook.TargetWorkflowCollector;
 import org.conductoross.conductor.webhook.dao.memory.InMemoryMetadataDAO;
@@ -23,7 +22,6 @@ import org.conductoross.conductor.webhook.dao.memory.InMemoryWebhookDAO;
 import org.conductoross.conductor.webhook.dao.memory.InMemoryWebhookTaskService;
 import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
 import org.conductoross.conductor.webhook.model.WebhookConfig;
-import org.conductoross.conductor.webhook.model.WebhookExecutionHistory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -368,55 +366,6 @@ class WebhookWorkerTest {
         verify(workflowExecutor).startWorkflow(captor.capture());
         assertThat(captor.getValue().getWorkflowInput()).containsKey("request");
         assertThat(captor.getValue().getWorkflowInput().get("request")).isInstanceOf(List.class);
-    }
-
-    @Test
-    void handleMessage_recordHistory_atCapacity_trimsOldestEntry() {
-        WebhookWorkerProperties props = new WebhookWorkerProperties();
-        props.setLastRunWorkflowIdSize(2);
-        props.setThreadCount(0);
-        WebhookWorker smallHistoryWorker =
-                new WebhookWorker(
-                        objectMapper,
-                        queueDAO,
-                        webhookDAO,
-                        props,
-                        hashingService,
-                        workflowExecutor,
-                        webhookTaskService,
-                        executionDAOFacade,
-                        targetWorkflowCollector);
-
-        WebhookConfig config = registerConfig("hook-1", "my-hook", null, null);
-        WebhookExecutionHistory old1 =
-                WebhookExecutionHistory.builder()
-                        .eventId("ev-old1")
-                        .workflowIds(Set.of())
-                        .payload("{}")
-                        .build();
-        WebhookExecutionHistory old2 =
-                WebhookExecutionHistory.builder()
-                        .eventId("ev-old2")
-                        .workflowIds(Set.of())
-                        .payload("{}")
-                        .build();
-        config.setWebhookExecutionHistory(new java.util.ArrayList<>(List.of(old1, old2)));
-
-        IncomingWebhookEvent event =
-                IncomingWebhookEvent.builder()
-                        .id("ev-new")
-                        .webhookId(config.getId())
-                        .body("{}")
-                        .requestParams(Map.of())
-                        .build();
-        webhookDAO.createIncomingWebhookEvent("ev-new", event);
-
-        smallHistoryWorker.handleMessage("ev-new");
-
-        List<WebhookExecutionHistory> hist = config.getWebhookExecutionHistory();
-        assertThat(hist).hasSize(2);
-        assertThat(hist.get(0).getEventId()).isEqualTo("ev-new");
-        assertThat(hist.get(1).getEventId()).isEqualTo("ev-old1");
     }
 
     private WebhookConfig registerConfig(

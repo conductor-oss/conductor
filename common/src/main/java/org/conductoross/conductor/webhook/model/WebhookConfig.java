@@ -54,8 +54,6 @@ public class WebhookConfig {
 
     private String createdBy;
 
-    private List<WebhookExecutionHistory> webhookExecutionHistory; // TODO Remove this
-
     private String expression;
     private String evaluatorType;
 

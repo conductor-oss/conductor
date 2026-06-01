@@ -26,7 +26,6 @@ import org.conductoross.conductor.service.webhook.TargetWorkflowCollector;
 import org.conductoross.conductor.service.webhook.WebhookTaskService;
 import org.conductoross.conductor.webhook.model.IncomingWebhookEvent;
 import org.conductoross.conductor.webhook.model.WebhookConfig;
-import org.conductoross.conductor.webhook.model.WebhookExecutionHistory;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
@@ -72,7 +71,6 @@ public class WebhookWorker {
     private final int threadCount;
     private final int pollingIntervalMs;
     private final int pollBatchSize;
-    private final int lastRunWorkflowIdSize;
 
     private ScheduledExecutorService executorService;
 
@@ -97,7 +95,6 @@ public class WebhookWorker {
         this.threadCount = properties.getThreadCount();
         this.pollingIntervalMs = properties.getPollingInterval();
         this.pollBatchSize = properties.getPollBatchSize();
-        this.lastRunWorkflowIdSize = properties.getLastRunWorkflowIdSize();
     }
 
     @PostConstruct
@@ -203,7 +200,6 @@ public class WebhookWorker {
         }
 
         webhookConfig.accept(targetWorkflowCollector);
-        recordHistory(matchedWorkflowIds, webhookConfig, event);
 
         Map<String, Object> requestBody = getPayload(event);
         String idempotencyKey = targetWorkflowCollector.popIdempotencyKey(requestBody);
@@ -333,31 +329,5 @@ public class WebhookWorker {
         request.setCreatedBy(createdBy);
         request.setPriority(0);
         return request;
-    }
-
-    @SneakyThrows
-    private void recordHistory(
-            Set<String> matchedWorkflowIds,
-            WebhookConfig webhookConfig,
-            IncomingWebhookEvent event) {
-        String payload = objectMapper.writeValueAsString(event);
-        boolean matched = !matchedWorkflowIds.isEmpty();
-        WebhookExecutionHistory history =
-                new WebhookExecutionHistory(
-                        event.getId(), matched, matchedWorkflowIds, payload, event.getTimeStamp());
-
-        List<WebhookExecutionHistory> hist = webhookConfig.getWebhookExecutionHistory();
-        if (hist == null) {
-            webhookConfig.setWebhookExecutionHistory(new java.util.ArrayList<>(List.of(history)));
-        } else {
-            if (hist.size() >= lastRunWorkflowIdSize) {
-                hist.remove(hist.size() - 1);
-            }
-            hist.add(0, history);
-        }
-        if (matched) {
-            webhookConfig.setUrlVerified(true);
-        }
-        webhookDAO.createWebhook(webhookConfig.getId(), webhookConfig);
     }
 }

@@ -28,16 +28,6 @@ public class WebhookWorkerProperties {
 
     private int pollBatchSize = 10;
 
-    private int lastRunWorkflowIdSize = 10;
-
-    public int getLastRunWorkflowIdSize() {
-        return lastRunWorkflowIdSize;
-    }
-
-    public void setLastRunWorkflowIdSize(int lastRunWorkflowIdSize) {
-        this.lastRunWorkflowIdSize = lastRunWorkflowIdSize;
-    }
-
     public int getThreadCount() {
         return threadCount;
     }
