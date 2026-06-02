@@ -1,0 +1,89 @@
+#
+# conductor:server-next - Conductor Server + ui-next
+#
+# Identical to Dockerfile but uses ui-next (Vite/pnpm/React 18) instead of ui.
+# Produces the :next Docker tag alongside the existing :latest.
+#
+# Ports:
+#   8080 - Conductor API + Swagger (Spring Boot)
+#   5000 - ui-next (nginx)
+#
+# Two modes:
+#   Default:        Builds JAR and UI from source (local dev / docker compose)
+#   PREBUILT=true:  Skips builds, uses pre-built artifacts (CI multi-arch)
+#
+
+# ===========================================================================================================
+# 0. Server builder stage
+# ===========================================================================================================
+FROM azul/zulu-openjdk-debian:21 AS builder
+
+ARG PREBUILT=false
+ARG INDEXING_BACKEND=elasticsearch
+
+LABEL maintainer="Orkes OSS <oss@orkes.io>"
+
+COPY . /conductor
+WORKDIR /conductor
+
+RUN if [ "$PREBUILT" = "true" ]; then \
+      rm -rf server/build/libs && mkdir -p server/build/libs && \
+      cp docker/server/libs/conductor-server.jar server/build/libs/conductor-server-boot.jar && \
+      echo "Using pre-built server JAR"; \
+    else \
+      ./gradlew build -x test -x spotlessCheck -x shadowJar \
+        -PindexingBackend=${INDEXING_BACKEND} \
+        -Dorg.gradle.jvmargs=-Xmx2g \
+        --no-daemon --no-parallel; \
+    fi
+
+# ===========================================================================================================
+# 1. UI builder stage  (ui-next — pnpm + Vite)
+# ===========================================================================================================
+FROM node:22 AS ui-builder
+
+ARG PREBUILT=false
+
+LABEL maintainer="Orkes OSS <oss@orkes.io>"
+
+RUN corepack enable
+
+COPY ui-next /conductor/ui-next
+WORKDIR /conductor/ui-next
+
+RUN if [ "$PREBUILT" = "false" ]; then \
+      pnpm install && NODE_OPTIONS=--max-old-space-size=4096 pnpm build; \
+    else \
+      echo "Using pre-built ui-next/dist assets"; \
+    fi
+
+# ===========================================================================================================
+# 2. Final stage
+# ===========================================================================================================
+FROM debian:stable-slim
+
+LABEL maintainer="Orkes OSS <oss@orkes.io>"
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openjdk-21-jre-headless nginx curl ca-certificates \
+    && rm -f /etc/nginx/sites-enabled/default \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /app/config /app/logs /app/libs
+
+COPY docker/server/bin /app
+COPY docker/server/config /app/config
+COPY --from=builder /conductor/server/build/libs/*boot*.jar /app/libs/conductor-server.jar
+
+# ui-next dist served by nginx on port 5000
+WORKDIR /usr/share/nginx/html
+RUN rm -rf ./*
+COPY --from=ui-builder /conductor/ui-next/dist .
+COPY docker/server/nginx/nginx.conf /etc/nginx/conf.d/default.conf
+
+RUN chmod +x /app/startup.sh
+
+HEALTHCHECK --interval=60s --timeout=30s --retries=10 CMD curl -I -XGET http://localhost:8080/health || exit 1
+
+CMD [ "/app/startup.sh" ]
+ENTRYPOINT [ "/bin/sh"]

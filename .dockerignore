@@ -28,6 +28,7 @@
 **/out
 **/target
 **/dist
+!ui-next/dist
 **/coverage
 
 # Python
