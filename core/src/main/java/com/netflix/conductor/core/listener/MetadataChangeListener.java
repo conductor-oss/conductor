@@ -16,34 +16,8 @@ import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 
-import com.fasterxml.jackson.annotation.JsonValue;
-
 /** Listener for metadata changes: workflow definitions, task definitions, and event handlers. */
 public interface MetadataChangeListener {
-
-    enum MetadataChangeType {
-        CREATED,
-        UPDATED,
-        DELETED;
-
-        @JsonValue
-        @Override
-        public String toString() {
-            return name().toLowerCase();
-        }
-    }
-
-    enum MetadataResourceType {
-        WORKFLOW_DEF,
-        TASK_DEF,
-        EVENT_HANDLER;
-
-        @JsonValue
-        @Override
-        public String toString() {
-            return name().toLowerCase();
-        }
-    }
 
     default void onWorkflowDefRegistered(WorkflowDef workflowDef) {}
 

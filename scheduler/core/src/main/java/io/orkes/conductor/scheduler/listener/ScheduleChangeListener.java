@@ -12,25 +12,10 @@
  */
 package io.orkes.conductor.scheduler.listener;
 
-import com.fasterxml.jackson.annotation.JsonValue;
 import io.orkes.conductor.scheduler.model.WorkflowSchedule;
 
 /** Listener for changes to workflow schedule registrations. */
 public interface ScheduleChangeListener {
-
-    enum ScheduleChangeType {
-        CREATED,
-        UPDATED,
-        DELETED,
-        PAUSED,
-        RESUMED;
-
-        @JsonValue
-        @Override
-        public String toString() {
-            return name().toLowerCase();
-        }
-    }
 
     default void onScheduleRegistered(WorkflowSchedule schedule) {}
 
