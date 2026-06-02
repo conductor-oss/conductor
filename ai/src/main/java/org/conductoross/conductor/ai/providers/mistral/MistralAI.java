@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.conductoross.conductor.ai.AIModel;
+import org.conductoross.conductor.ai.http.AIHttpClients;
 import org.conductoross.conductor.ai.models.ChatCompletion;
 import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
 import org.springframework.ai.chat.model.ChatModel;
@@ -48,7 +49,7 @@ public class MistralAI implements AIModel {
     private final MistralAiEmbeddingModel embeddingModel;
 
     public MistralAI(MistralAIConfiguration config) {
-        this(config, new OkHttpClient());
+        this(config, AIHttpClients.defaultClient());
     }
 
     public MistralAI(MistralAIConfiguration config, OkHttpClient httpClient) {

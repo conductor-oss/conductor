@@ -37,12 +37,20 @@ public class OpenAIConfiguration implements ModelConfiguration<OpenAI> {
 
     private Duration timeout = Duration.ofSeconds(600);
 
-    @Autowired private OkHttpClient conductorAiHttpClient;
+    private OkHttpClient httpClient;
 
-    public OpenAIConfiguration(String apiKey, String baseURL, String organizationId) {
+    public OpenAIConfiguration(
+            String apiKey, String baseURL, String organizationId, OkHttpClient httpClient) {
         this.apiKey = apiKey;
         this.baseURL = baseURL;
         this.organizationId = organizationId;
+        this.httpClient = httpClient;
+    }
+
+    @Autowired
+    @Override
+    public void setHttpClient(OkHttpClient httpClient) {
+        this.httpClient = httpClient;
     }
 
     public String getBaseURL() {
@@ -51,6 +59,6 @@ public class OpenAIConfiguration implements ModelConfiguration<OpenAI> {
 
     @Override
     public OpenAI get() {
-        return new OpenAI(this, conductorAiHttpClient);
+        return new OpenAI(this, httpClient);
     }
 }
