@@ -47,7 +47,7 @@ class HuggingFaceConfigurationTest {
     @Test
     void testAllArgsConstructor() {
         HuggingFaceConfiguration config =
-                new HuggingFaceConfiguration("api-key", "https://custom.url");
+                new HuggingFaceConfiguration("api-key", "https://custom.url", null);
 
         assertEquals("api-key", config.getApiKey());
         assertEquals("https://custom.url", config.getBaseURL());

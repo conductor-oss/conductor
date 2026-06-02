@@ -41,19 +41,27 @@ public class AnthropicConfiguration implements ModelConfiguration<Anthropic> {
 
     private Duration timeout = Duration.ofSeconds(600);
 
-    @Autowired private OkHttpClient conductorAiHttpClient;
+    private OkHttpClient httpClient;
 
     public AnthropicConfiguration(
             String apiKey,
             String baseURL,
             String version,
             String betaVersion,
-            String completionsPath) {
+            String completionsPath,
+            OkHttpClient httpClient) {
         this.apiKey = apiKey;
         this.baseURL = baseURL;
         this.version = version;
         this.betaVersion = betaVersion;
         this.completionsPath = completionsPath;
+        this.httpClient = httpClient;
+    }
+
+    @Autowired
+    @Override
+    public void setHttpClient(OkHttpClient httpClient) {
+        this.httpClient = httpClient;
     }
 
     public String getBaseURL() {
@@ -62,6 +70,6 @@ public class AnthropicConfiguration implements ModelConfiguration<Anthropic> {
 
     @Override
     public Anthropic get() {
-        return new Anthropic(this, conductorAiHttpClient);
+        return new Anthropic(this, httpClient);
     }
 }
