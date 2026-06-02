@@ -107,13 +107,7 @@ function ServiceRegistryPopulator({
     });
   }, [selectedMethod?.requestParams, requestParams, serviceType]);
 
-  const isSelectionValid = Boolean(
-    selectedService?.name &&
-    selectedMethod?.methodType &&
-    (selectedService?.serviceURI || selectedHost),
-  );
-
-  const disabledReason = useMemo(() => {
+  const disabledReason = (() => {
     if (!isInIdleState) return "";
     if (!selectedService?.name) return "Select a service";
     if (!(selectedService?.serviceURI || selectedHost)) {
@@ -122,15 +116,7 @@ function ServiceRegistryPopulator({
     if (!selectedMethod?.methodType) return "Select a service method";
     if (!isParamsValid) return "Fill all required parameters";
     return "";
-  }, [
-    isInIdleState,
-    selectedService?.name,
-    selectedService?.serviceURI,
-    selectedHost,
-    selectedMethod?.methodType,
-    isParamsValid,
-    serviceType,
-  ]);
+  })();
 
   const handleExecute = () => {
     if (
@@ -441,7 +427,7 @@ function ServiceRegistryPopulator({
             <span>
               <Button
                 onClick={handleExecute}
-                disabled={!isSelectionValid || !isParamsValid || !isInIdleState}
+                disabled={!isInIdleState || Boolean(disabledReason)}
               >
                 {isInIdleState ? (
                   "Populate"
