@@ -13,6 +13,7 @@
 package org.conductoross.conductor.ai.providers.gemini;
 
 import org.conductoross.conductor.ai.ModelConfiguration;
+import org.conductoross.conductor.ai.http.AIHttpClients;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -37,8 +38,13 @@ public class GeminiVertexConfiguration implements ModelConfiguration<GeminiVerte
     private String apiKey;
     GoogleCredentials googleCredentials;
 
-    @Autowired(required = false)
-    private OkHttpClient conductorAiHttpClient;
+    private OkHttpClient httpClient;
+
+    @Autowired
+    @Override
+    public void setHttpClient(OkHttpClient httpClient) {
+        this.httpClient = httpClient;
+    }
 
     public String getBaseURL() {
         return baseURL == null
@@ -56,8 +62,7 @@ public class GeminiVertexConfiguration implements ModelConfiguration<GeminiVerte
 
     @Override
     public GeminiVertex get() {
-        OkHttpClient client =
-                conductorAiHttpClient != null ? conductorAiHttpClient : new OkHttpClient();
+        OkHttpClient client = httpClient != null ? httpClient : AIHttpClients.defaultClient();
         return new GeminiVertex(this, client);
     }
 }

@@ -37,12 +37,20 @@ public class OllamaConfiguration implements ModelConfiguration<Ollama> {
 
     private Duration timeout = Duration.ofSeconds(600);
 
-    @Autowired private OkHttpClient conductorAiHttpClient;
+    private OkHttpClient httpClient;
 
-    public OllamaConfiguration(String baseURL, String authHeaderName, String authHeader) {
+    public OllamaConfiguration(
+            String baseURL, String authHeaderName, String authHeader, OkHttpClient httpClient) {
         this.baseURL = baseURL;
         this.authHeaderName = authHeaderName;
         this.authHeader = authHeader;
+        this.httpClient = httpClient;
+    }
+
+    @Autowired
+    @Override
+    public void setHttpClient(OkHttpClient httpClient) {
+        this.httpClient = httpClient;
     }
 
     public String getBaseURL() {
@@ -51,8 +59,6 @@ public class OllamaConfiguration implements ModelConfiguration<Ollama> {
 
     @Override
     public Ollama get() {
-        return conductorAiHttpClient != null
-                ? new Ollama(this, conductorAiHttpClient)
-                : new Ollama(this);
+        return httpClient != null ? new Ollama(this, httpClient) : new Ollama(this);
     }
 }
