@@ -1125,6 +1125,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         watch.start();
         boolean lockAcquired = executionLockService.acquireLock(workflowId);
         if (!lockAcquired) {
+            enqueueWorkflowForDecision(
+                    workflowId, "workflow execution lock was not available while trying to decide");
             return null;
         }
         try {
@@ -1148,15 +1150,34 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     @Override
     public WorkflowModel decideWithLock(WorkflowModel workflow) {
         if (!executionLockService.acquireLock(workflow.getWorkflowId())) {
-            LOGGER.debug(
-                    "decideWithLock couldn't acquire lock for workflow {}",
-                    workflow.getWorkflowId());
+            enqueueWorkflowForDecision(
+                    workflow.getWorkflowId(),
+                    "workflow execution lock was not available while trying to decideWithLock");
             return null;
         }
         try {
             return decide(workflow);
         } finally {
             executionLockService.releaseLock(workflow.getWorkflowId());
+        }
+    }
+
+    private void enqueueWorkflowForDecision(String workflowId, String reason) {
+        try {
+            // A task completion is the edge that schedules its successor. If that edge races with
+            // another decide() call holding the workflow lock, the current decide() cannot safely
+            // inspect the newly persisted task state. Re-queue the workflow immediately so the
+            // decider retries after the lock holder exits instead of leaving the completed task as
+            // the last visible workflow event.
+            queueDAO.push(DECIDER_QUEUE, workflowId, EXPEDITED_PRIORITY, 0);
+            LOGGER.info("Pushed workflow {} to {} because {}", workflowId, DECIDER_QUEUE, reason);
+        } catch (Exception e) {
+            LOGGER.warn(
+                    "Unable to push workflow {} to {} after skipped decide: {}",
+                    workflowId,
+                    DECIDER_QUEUE,
+                    reason,
+                    e);
         }
     }
 

@@ -985,6 +985,33 @@ public class TestWorkflowExecutor {
         verify(executionLockService, atLeastOnce()).releaseLock("queued-workflow-id");
     }
 
+    @Test
+    public void testDecideRequeuesWorkflowWhenLockIsNotAcquired() {
+        String workflowId = "lock-busy-workflow-id";
+        when(executionLockService.acquireLock(workflowId)).thenReturn(false);
+
+        WorkflowModel result = workflowExecutor.decide(workflowId);
+
+        assertNull(result);
+        verify(queueDAO).push("_deciderQueue", workflowId, 10, 0);
+        verify(executionDAOFacade, never()).getWorkflowModel(anyString(), anyBoolean());
+        verify(executionLockService, never()).releaseLock(workflowId);
+    }
+
+    @Test
+    public void testDecideWithLockRequeuesWorkflowWhenLockIsNotAcquired() {
+        String workflowId = "lock-busy-wl-workflow-id";
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId(workflowId);
+        when(executionLockService.acquireLock(workflowId)).thenReturn(false);
+
+        WorkflowModel result = workflowExecutor.decideWithLock(workflow);
+
+        assertNull(result);
+        verify(queueDAO).push("_deciderQueue", workflowId, 10, 0);
+        verify(executionLockService, never()).releaseLock(workflowId);
+    }
+
     @Test(expected = NotFoundException.class)
     public void testRetryNonTerminalWorkflow() {
         WorkflowModel workflow = new WorkflowModel();
@@ -2447,6 +2474,8 @@ public class TestWorkflowExecutor {
         // if workflow is in PAUSED state
         workflow.setStatus(WorkflowModel.Status.PAUSED);
         when(executionDAOFacade.getWorkflowModel(workflowId, false)).thenReturn(workflow);
+        when(executionDAOFacade.getWorkflowModel(workflowId, true)).thenReturn(null);
+        when(executionLockService.acquireLock(workflowId)).thenReturn(true);
         workflowExecutor.resumeWorkflow(workflowId);
         assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
         assertTrue(workflow.getLastRetriedTime() > 0);
