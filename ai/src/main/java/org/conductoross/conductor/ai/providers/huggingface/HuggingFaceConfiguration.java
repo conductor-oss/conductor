@@ -31,11 +31,18 @@ public class HuggingFaceConfiguration implements ModelConfiguration<HuggingFace>
 
     private String baseURL;
 
-    @Autowired private OkHttpClient conductorAiHttpClient;
+    private OkHttpClient httpClient;
 
-    public HuggingFaceConfiguration(String apiKey, String baseURL) {
+    public HuggingFaceConfiguration(String apiKey, String baseURL, OkHttpClient httpClient) {
         this.apiKey = apiKey;
         this.baseURL = baseURL;
+        this.httpClient = httpClient;
+    }
+
+    @Autowired
+    @Override
+    public void setHttpClient(OkHttpClient httpClient) {
+        this.httpClient = httpClient;
     }
 
     public String getBaseURL() {
@@ -44,6 +51,6 @@ public class HuggingFaceConfiguration implements ModelConfiguration<HuggingFace>
 
     @Override
     public HuggingFace get() {
-        return new HuggingFace(this, conductorAiHttpClient);
+        return new HuggingFace(this, httpClient);
     }
 }
