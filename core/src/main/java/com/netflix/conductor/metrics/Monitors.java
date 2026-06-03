@@ -478,6 +478,43 @@ public class Monitors {
         counter("workflow_archived", "workflowName", workflowType, "workflowStatus", status.name());
     }
 
+    public static void recordWebhookPublishSuccess(
+            String notificationType, String name, String status) {
+        counter(
+                "webhook_publish_success",
+                "notificationType",
+                notificationType,
+                "name",
+                StringUtils.defaultIfBlank(name, "unknown"),
+                "status",
+                StringUtils.defaultIfBlank(status, "unknown"));
+    }
+
+    public static void recordWebhookPublishFailure(
+            String notificationType, String name, String errorType) {
+        counter(
+                "webhook_publish_failure",
+                "notificationType",
+                notificationType,
+                "name",
+                StringUtils.defaultIfBlank(name, "unknown"),
+                "errorType",
+                StringUtils.defaultIfBlank(errorType, "unknown"));
+    }
+
+    public static void recordWebhookEnqueueFailure(String notificationType, String name) {
+        counter(
+                "webhook_enqueue_failure",
+                "notificationType",
+                notificationType,
+                "name",
+                StringUtils.defaultIfBlank(name, "unknown"));
+    }
+
+    public static void recordWebhookQueueDepth(String notificationType, int size) {
+        gauge("webhook_queue_depth", size, "notificationType", notificationType);
+    }
+
     public static void recordArchivalDelayQueueSize(int val) {
         gauge("workflow_archival_delay_queue_size", val);
     }

@@ -25,12 +25,14 @@ import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.listener.TaskStatusListener;
+import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 
 @Singleton
 public class TaskStatusPublisher implements TaskStatusListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskStatusPublisher.class);
+    private static final String NOTIFICATION_TYPE = "TASK";
     private static final Integer QDEPTH =
             Integer.parseInt(
                     System.getenv().getOrDefault("ENV_TASK_NOTIFICATION_QUEUE_SIZE", "50"));
@@ -74,6 +76,10 @@ public class TaskStatusPublisher implements TaskStatusListener {
                     }
                     publishTaskNotification(taskNotification);
                     LOGGER.debug("Task {} publish is successful.", taskNotification.getTaskId());
+                    Monitors.recordWebhookPublishSuccess(
+                            NOTIFICATION_TYPE,
+                            task.getTaskDefName(),
+                            task.getStatus().name());
                     Thread.sleep(5);
                 } catch (Exception e) {
                     if (taskNotification != null) {
@@ -87,6 +93,12 @@ public class TaskStatusPublisher implements TaskStatusListener {
                         LOGGER.error("Failed to publish task: Task is NULL");
                     }
                     LOGGER.error("Error on publishing ", e);
+                    if (task != null) {
+                        Monitors.recordWebhookPublishFailure(
+                                NOTIFICATION_TYPE,
+                                task.getTaskDefName(),
+                                e.getClass().getSimpleName());
+                    }
                 }
             }
         }
@@ -118,6 +130,7 @@ public class TaskStatusPublisher implements TaskStatusListener {
     private void enqueueTask(TaskModel task) {
         try {
             blockingQueue.put(task);
+            Monitors.recordWebhookQueueDepth(NOTIFICATION_TYPE, blockingQueue.size());
         } catch (Exception e) {
             LOGGER.debug(
                     "Failed to enqueue task: Id {} Type {} of workflow {} ",
@@ -125,6 +138,7 @@ public class TaskStatusPublisher implements TaskStatusListener {
                     task.getTaskType(),
                     task.getWorkflowInstanceId());
             LOGGER.debug(e.toString());
+            Monitors.recordWebhookEnqueueFailure(NOTIFICATION_TYPE, task.getTaskDefName());
         }
     }
 
