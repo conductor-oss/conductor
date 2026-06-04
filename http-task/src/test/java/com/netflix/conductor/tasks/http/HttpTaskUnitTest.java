@@ -30,7 +30,10 @@ import com.netflix.conductor.tasks.http.providers.DefaultRestTemplateProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 /**
@@ -228,7 +231,7 @@ public class HttpTaskUnitTest {
     }
 
     @Test
-    public void testUriAllowed() {
+    public void testUriAllowed() throws Exception {
         TaskModel task = new TaskModel();
         Map<String, Object> input = new HashMap<>();
         input.put("uri", "https://api.example.com/v1/users");
@@ -238,11 +241,14 @@ public class HttpTaskUnitTest {
         when(properties.getUrlAllowList())
                 .thenReturn(Arrays.asList("https://api\\.example\\.com/.*"));
 
-        httpTask.start(workflow, task, workflowExecutor);
+        HttpTask spyTask = spy(httpTask);
+        HttpTask.HttpResponse mockResponse = new HttpTask.HttpResponse();
+        mockResponse.statusCode = 200;
+        doReturn(mockResponse).when(spyTask).httpCall(any());
 
-        // Status will be FAILED because it tries to call real external URI in unit test,
-        // but it should NOT be FAILED_WITH_TERMINAL_ERROR (which is our security failure status).
-        assertNotEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        spyTask.start(workflow, task, workflowExecutor);
+
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
     }
 
     @Test
@@ -263,7 +269,7 @@ public class HttpTaskUnitTest {
     }
 
     @Test
-    public void testUriAllowListEmpty() {
+    public void testUriAllowListEmpty() throws Exception {
         TaskModel task = new TaskModel();
         Map<String, Object> input = new HashMap<>();
         input.put("uri", "http://localhost:8080/admin");
@@ -272,9 +278,15 @@ public class HttpTaskUnitTest {
 
         when(properties.getUrlAllowList()).thenReturn(Arrays.asList());
 
-        httpTask.start(workflow, task, workflowExecutor);
+        HttpTask spyTask = spy(httpTask);
+        HttpTask.HttpResponse mockResponse = new HttpTask.HttpResponse();
+        mockResponse.statusCode = 200;
+        doReturn(mockResponse).when(spyTask).httpCall(any());
+
+        spyTask.start(workflow, task, workflowExecutor);
 
         // Should not fail with terminal error when allow-list is empty
         assertNotEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
     }
 }
