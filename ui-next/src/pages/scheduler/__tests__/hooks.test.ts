@@ -30,6 +30,8 @@ const baseState: ScheduleType = {
   scheduleEndTime: "",
   priority: "",
   zoneId: "UTC",
+  cronSchedules: [],
+  cronMode: "single",
 };
 
 /** Wrapper that wires up all the state needed by useScheduleFormHandlers */
@@ -464,6 +466,65 @@ describe("useScheduleState", () => {
     });
 
     expect(result.current.scheduleState).toStrictEqual(stateBefore);
+  });
+
+  it("initializeFromSchedule enters multi mode and normalizes cronSchedules", () => {
+    const { result } = renderHook(() => useScheduleState(null, null));
+
+    act(() => {
+      result.current.initializeFromSchedule({
+        name: "multi-sched",
+        cronSchedules: [
+          { cronExpression: "0 0 8 * * ?", zoneId: "Europe/London" },
+          { cronExpression: "0 0 20 * * ?" },
+        ],
+        startWorkflowRequest: { name: "wf", version: 1, input: {} },
+      });
+    });
+
+    expect(result.current.scheduleState.cronMode).toBe("multi");
+    expect(result.current.scheduleState.cronSchedules).toEqual([
+      { cronExpression: "0 0 8 * * ?", zoneId: "Europe/London" },
+      { cronExpression: "0 0 20 * * ?", zoneId: "UTC" },
+    ]);
+    // original tracks cronSchedules (not cronExpression) for multi-cron
+    expect(result.current.original.cronSchedules).toEqual([
+      { cronExpression: "0 0 8 * * ?", zoneId: "Europe/London" },
+      { cronExpression: "0 0 20 * * ?", zoneId: "UTC" },
+    ]);
+  });
+
+  it("initializeFromSchedule stays in single mode for a plain cronExpression", () => {
+    const { result } = renderHook(() => useScheduleState(null, null));
+
+    act(() => {
+      result.current.initializeFromSchedule({
+        name: "single-sched",
+        cronExpression: "0 0 12 * * ?",
+        zoneId: "Asia/Tokyo",
+        startWorkflowRequest: { name: "wf", version: 1, input: {} },
+      });
+    });
+
+    expect(result.current.scheduleState.cronMode).toBe("single");
+    expect(result.current.scheduleState.cronSchedules).toEqual([]);
+    expect(result.current.scheduleState.cronExpression).toBe("0 0 12 * * ?");
+  });
+
+  it("initializeFromSchedule treats an empty cronSchedules array as single mode", () => {
+    const { result } = renderHook(() => useScheduleState(null, null));
+
+    act(() => {
+      result.current.initializeFromSchedule({
+        name: "empty-multi",
+        cronExpression: "0 0 12 * * ?",
+        cronSchedules: [],
+        startWorkflowRequest: { name: "wf", version: 1, input: {} },
+      });
+    });
+
+    expect(result.current.scheduleState.cronMode).toBe("single");
+    expect(result.current.scheduleState.cronSchedules).toEqual([]);
   });
 
   it("original state is set correctly after initializeFromSchedule", () => {
