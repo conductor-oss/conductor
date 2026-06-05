@@ -79,7 +79,9 @@
     "@datasert/cronjs-matcher": "^1.4.0",
     "@growthbook/growthbook": "^1.5.1",
     "@growthbook/growthbook-react": "^1.5.1",
+    "@mui/types": "^9.0.0",
     "@phosphor-icons/react": "^2.1.10",
+    "@use-gesture/core": "^10.3.1",
     "@use-gesture/react": "^10.2.21",
     "@xstate/inspect": "^0.8.0",
     "@xstate/react": "^3.2.1",
@@ -184,6 +186,7 @@
   },
   "resolutions": {
     "vis-timeline": "7.3.6",
+    "vis-data": "7.1.9",
     "mini-css-extract-plugin": "2.4.5"
   },
   "pnpm": {
@@ -192,5 +195,5 @@
       "mini-css-extract-plugin": "2.4.5"
     }
   },
-  "packageManager": "pnpm@10.32.0+sha512.9b2634bb3fed5601c33633f2d92593f506270a3963b8c51d2b2d6a828da615ce4e9deebef9614ccebbc13ac8d3c0f9c9ccceb583c69c8578436fa477dbb20d70"
+  "packageManager": "pnpm@11.5.2+sha512.71c631e382066efc25625d5cf029075de07b61b37f6e27350fbd84b1bda5864c8c1967adc280776b45c30a715c0359a3be08fef42d5bb09e2b99029979692916"
 }
