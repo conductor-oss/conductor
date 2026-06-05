@@ -12,7 +12,6 @@
  */
 package org.conductoross.conductor.ai.mcp;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -27,7 +26,6 @@ import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -47,6 +45,11 @@ public class MCPService {
     private static final Logger log = LoggerFactory.getLogger(MCPService.class);
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
     private final JsonTextParser jsonTextParser = new JsonTextParser(objectMapper);
+    private final OkHttpClient httpClient;
+
+    public MCPService(OkHttpClient conductorAiHttpClient) {
+        this.httpClient = conductorAiHttpClient;
+    }
 
     /**
      * Lists all tools available from an MCP server.
@@ -97,13 +100,6 @@ public class MCPService {
             request.put("jsonrpc", "2.0");
             request.put("method", "tools/list");
             request.put("id", 1);
-
-            // Make HTTP POST request with OkHttp
-            OkHttpClient httpClient =
-                    new OkHttpClient.Builder()
-                            .connectTimeout(Duration.ofSeconds(30))
-                            .readTimeout(Duration.ofSeconds(30))
-                            .build();
 
             Request.Builder requestBuilder =
                     new Request.Builder()
@@ -222,13 +218,6 @@ public class MCPService {
             params.put("name", toolName);
             params.set("arguments", objectMapper.valueToTree(arguments));
             request.set("params", params);
-
-            // Make HTTP POST request with OkHttp
-            OkHttpClient httpClient =
-                    new OkHttpClient.Builder()
-                            .connectTimeout(Duration.ofSeconds(30))
-                            .readTimeout(Duration.ofSeconds(30))
-                            .build();
 
             Request.Builder requestBuilder =
                     new Request.Builder()
@@ -381,15 +370,6 @@ public class MCPService {
             return objectMapper.readTree(jsonData.toString());
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse SSE data as JSON: " + jsonData, e);
-        }
-    }
-
-    /** Closes an HTTP MCP client. */
-    private void closeClient(McpSyncClient client) {
-        try {
-            client.close();
-        } catch (Exception e) {
-            log.warn("Error closing MCP client: {}", e.getMessage());
         }
     }
 

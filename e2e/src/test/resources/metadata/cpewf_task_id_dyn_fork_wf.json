@@ -71,5 +71,6 @@
   "timeoutPolicy": "ALERT_ONLY",
   "timeoutSeconds": 0,
   "variables": {},
-  "inputTemplate": {}
+  "inputTemplate": {},
+  "ownerEmail": "test@conductor.io"
 }

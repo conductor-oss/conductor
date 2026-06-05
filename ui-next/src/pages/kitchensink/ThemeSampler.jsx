@@ -1,6 +1,6 @@
 import { Box } from "@mui/material";
-import Button from "components/MuiButton";
-import MuiTypography from "components/MuiTypography";
+import Button from "components/ui/buttons/MuiButton";
+import MuiTypography from "components/ui/MuiTypography";
 
 export default function ThemeSampler() {
   const variants = ["contained", "solid", "outlined"];

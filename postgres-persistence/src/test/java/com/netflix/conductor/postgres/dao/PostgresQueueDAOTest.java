@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
@@ -44,6 +45,7 @@ import com.netflix.conductor.postgres.util.Query;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -336,7 +338,7 @@ public class PostgresQueueDAOTest {
      * @since 1.8.2-rc5
      */
     @Test
-    public void pollDeferredMessagesTest() throws InterruptedException {
+    public void pollDeferredMessagesTest() {
         final List<Message> messages = new ArrayList<>();
         final String queueName = "issue448_testQueue";
         final int totalSize = 10;
@@ -384,9 +386,20 @@ public class PostgresQueueDAOTest {
 
         final int secondPollSize = 3;
 
-        // Sleep a bit to get the next batch of messages
-        LOGGER.info("Sleeping for second poll...");
-        Thread.sleep(5_000);
+        // Wait for delayed messages to become available for polling
+        final String COUNT_READY =
+                "SELECT COUNT(*) FROM queue_message WHERE queue_name = ? AND popped = false AND deliver_on <= current_timestamp";
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(500, TimeUnit.MILLISECONDS)
+                .until(
+                        () -> {
+                            try (Connection c = dataSource.getConnection()) {
+                                try (Query q = new Query(objectMapper, c, COUNT_READY)) {
+                                    return q.addParameter(queueName).executeCount()
+                                            >= secondPollSize;
+                                }
+                            }
+                        });
 
         // Poll for many more messages than expected
         List<Message> secondPoll = queueDAO.pollMessages(queueName, secondPollSize + 10, 100);
@@ -418,6 +431,101 @@ public class PostgresQueueDAOTest {
         } catch (Exception ex) {
             fail(ex.getMessage());
         }
+    }
+
+    @Test
+    public void setUnackTimeoutIfShorterShortensDueTime() {
+        String queueName = "setUnackIfShorter_shorten";
+        String messageId = "msg-shorten";
+
+        // Push with a 1-hour delay so it is not immediately poppable
+        queueDAO.push(queueName, messageId, 3600L);
+        assertEquals(0, queueDAO.pop(queueName, 1, 100).size());
+
+        // Shorten delivery to now (0 s) — should succeed and return true
+        boolean shortened = queueDAO.setUnackTimeoutIfShorter(queueName, messageId, 0L);
+        assertTrue(
+                "setUnackTimeoutIfShorter should return true when it actually shortens", shortened);
+
+        // Message must now be immediately poppable
+        List<String> popped = queueDAO.pop(queueName, 1, 100);
+        assertEquals(1, popped.size());
+        assertEquals(messageId, popped.get(0));
+    }
+
+    @Test
+    public void setUnackTimeoutIfShorterDoesNotExtend() {
+        String queueName = "setUnackIfShorter_noextend";
+        String messageId = "msg-noextend";
+
+        // Push with offset 0 so it is immediately available
+        queueDAO.push(queueName, messageId, 0L);
+
+        // Try to push deliver_on far into the future — must be rejected
+        boolean extended = queueDAO.setUnackTimeoutIfShorter(queueName, messageId, 3_600_000L);
+        assertFalse(
+                "setUnackTimeoutIfShorter must not extend an already-closer delivery time",
+                extended);
+
+        // Message must still be immediately poppable
+        List<String> popped = queueDAO.pop(queueName, 1, 100);
+        assertEquals(1, popped.size());
+        assertEquals(messageId, popped.get(0));
+    }
+
+    @Test
+    public void setUnackTimeoutIfShorterReturnsFalseForNonExistent() {
+        String queueName = "setUnackIfShorter_nonexistent";
+        boolean updated = queueDAO.setUnackTimeoutIfShorter(queueName, "no-such-message", 0L);
+        assertFalse(
+                "setUnackTimeoutIfShorter must return false for a non-existent message", updated);
+    }
+
+    /**
+     * Boundary: when the new timeout would result in the same delivery time as the current one, the
+     * message is NOT shorter — method must return false and leave deliver_on unchanged.
+     */
+    @Test
+    public void setUnackTimeoutIfShorterReturnsFalseWhenEqualTimeout() {
+        String queueName = "setUnackIfShorter_equal";
+        String messageId = "msg-equal";
+
+        // Push with offset 0 so deliver_on ≈ now
+        queueDAO.push(queueName, messageId, 0L);
+
+        // Try to set unack timeout to 0 again — deliver_on = LEAST(≈now, ≈now+0) = no change
+        // The WHERE condition `deliver_on > now + 0` is false, so returns false
+        boolean result = queueDAO.setUnackTimeoutIfShorter(queueName, messageId, 0L);
+        assertFalse("Equal timeout must not update deliver_on — returns false", result);
+
+        // Message remains immediately poppable (deliver_on unchanged)
+        List<String> popped = queueDAO.pop(queueName, 1, 100);
+        assertEquals(1, popped.size());
+        assertEquals(messageId, popped.get(0));
+    }
+
+    /**
+     * Boundary: a very large timeout (1 hour) is correctly rejected when message is already
+     * overdue, and a subsequent shortened call (0 ms) is accepted.
+     */
+    @Test
+    public void setUnackTimeoutIfShorterRejectsExtensionThenAcceptsShortening() {
+        String queueName = "setUnackIfShorter_reject_then_accept";
+        String messageId = "msg-reject-accept";
+
+        queueDAO.push(queueName, messageId, 3600L); // 1 hour delay
+
+        // Try to extend to 2 hours — must be rejected
+        boolean extended = queueDAO.setUnackTimeoutIfShorter(queueName, messageId, 7_200_000L);
+        assertFalse("Extending an already-future deliver_on must return false", extended);
+
+        // Shorten to immediate — must be accepted
+        boolean shortened = queueDAO.setUnackTimeoutIfShorter(queueName, messageId, 0L);
+        assertTrue("Shortening to now must return true", shortened);
+
+        List<String> popped = queueDAO.pop(queueName, 1, 100);
+        assertEquals(1, popped.size());
+        assertEquals(messageId, popped.get(0));
     }
 
     // @Test

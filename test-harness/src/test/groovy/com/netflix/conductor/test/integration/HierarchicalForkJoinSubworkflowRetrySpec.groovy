@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.test.integration
 
+import java.util.concurrent.TimeUnit
+
 import org.springframework.beans.factory.annotation.Autowired
 
 import com.netflix.conductor.common.metadata.tasks.Task
@@ -28,6 +30,8 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_FOR
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_JOIN
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
+
+import static org.awaitility.Awaitility.await
 
 class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
 
@@ -80,6 +84,8 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
                 correlationId, input, null)
 
         then: "verify that the workflow is in a RUNNING state"
+        List<String> polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -106,14 +112,19 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
             tasks.size() == 4
         }
 
-        when: "poll and complete the integration_task_2 task"
+        and: "sweep the mid-level workflow so its tasks get scheduled"
+        midLevelWorkflowId = rootWorkflowInstance.tasks[1].subWorkflowId
+        sweep(midLevelWorkflowId)
+
+        when: "poll and complete the integration_task_2 task in the mid-level workflow"
         pollAndCompleteTask = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker', ['op': 'task2.done'])
 
         then: "verify that the 'integration_task_2' was polled and acknowledged"
         verifyPolledAndAcknowledgedTask(pollAndCompleteTask)
 
-        and: "verify that the mid-level workflow is RUNNING, and first task is in SCHEDULED state"
-        midLevelWorkflowId = rootWorkflowInstance.tasks[1].subWorkflowId
+        and: "start the exact mid-level SUB_WORKFLOW task to avoid re-executing a stale parent queue item"
+        def midLevelSubWorkflowTaskId = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true).tasks[1].taskId
+        asyncSystemTaskExecutor.execute(subWorkflowTask, midLevelSubWorkflowTaskId)
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -130,9 +141,10 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         and: "poll and complete the integration_task_1 task in the mid-level workflow"
         workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker', ['op': 'task2.done'])
         def midLevelWorkflowInstance = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
+        leafWorkflowId = midLevelWorkflowInstance.tasks[1].subWorkflowId
+        sweep(leafWorkflowId)
 
         then: "verify that the leaf workflow is RUNNING, and first task is in SCHEDULED state"
-        leafWorkflowId = midLevelWorkflowInstance.tasks[1].subWorkflowId
         def leafWorkflowInstance = workflowExecutionService.getExecutionStatus(leafWorkflowId, true)
         with(leafWorkflowInstance) {
             status == Workflow.WorkflowStatus.RUNNING
@@ -143,6 +155,7 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
 
         when: "poll and fail the integration_task_2 task"
         workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker', ['op': 'task1.done'])
+        sweep(leafWorkflowId)
         workflowTestUtil.pollAndFailTask('integration_task_2', 'task2.integration.worker', 'failed')
 
         then: "the leaf workflow ends up in a FAILED state"
@@ -208,6 +221,8 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         //region Test case
         when: "do a retry on the root workflow"
         workflowExecutor.retry(rootWorkflowId, false)
+        List<String> polledRetriedRootSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledRetriedRootSubWorkflowIds[0])
 
         then: "verify that the root workflow created a new SUB_WORKFLOW task"
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
@@ -230,6 +245,9 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         when: "the subworkflow task should be in SCHEDULED state and is started by issuing a system task call"
         def newMidLevelWorkflowId = workflowExecutionService.getExecutionStatus(rootWorkflowId, true).getTasks().get(4).subWorkflowId
         def rootJoinId = workflowExecutionService.getExecutionStatus(rootWorkflowId, true).getTaskByRefName("fanouttask_join").taskId
+        sweep(newMidLevelWorkflowId)
+        List<String> polledNewMidSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledNewMidSubWorkflowIds[0])
 
         then: "verify that a new mid level workflow is created and is in RUNNING state"
         newMidLevelWorkflowId != midLevelWorkflowId
@@ -250,6 +268,7 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker', ['op': 'task2.done'])
         def midJoinId = workflowExecutionService.getExecutionStatus(newMidLevelWorkflowId, true).getTaskByRefName("fanouttask_join").taskId
         def newLeafWorkflowId = workflowExecutionService.getExecutionStatus(newMidLevelWorkflowId, true).getTasks().get(1).subWorkflowId
+        sweep(newLeafWorkflowId)
 
         then: "verify that a new leaf workflow is created and is in RUNNING state"
         newLeafWorkflowId != leafWorkflowId
@@ -303,6 +322,8 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         //region Test case
         when: "do a retry on the mid level workflow"
         workflowExecutor.retry(midLevelWorkflowId, false)
+        List<String> polledRetriedMidSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledRetriedMidSubWorkflowIds[0])
 
         then: "verify that the mid workflow created a new SUB_WORKFLOW task"
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
@@ -323,6 +344,12 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         }
 
         and: "verify the SUB_WORKFLOW task in root workflow is IN_PROGRESS state"
+        // retry() updates parents asynchronously via the decider queue; the background
+        // sweeper re-decides the JOIN from CANCELED to IN_PROGRESS (same sweeper race as #1047).
+        await().atMost(10, TimeUnit.SECONDS).until {
+            workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
+                    .tasks[3].status == Task.Status.IN_PROGRESS
+        }
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -330,15 +357,15 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
             tasks[2].taskType == 'integration_task_2'
             tasks[2].status == Task.Status.COMPLETED
             tasks[3].taskType == TASK_TYPE_JOIN
-            tasks[3].status == Task.Status.CANCELED
+            tasks[3].status == Task.Status.IN_PROGRESS
         }
 
         when: "the SUB_WORKFLOW task in mid level workflow is started by issuing a system task call"
         def newLeafWorkflowId = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true).getTasks().get(4).subWorkflowId
+        sweep(newLeafWorkflowId)
 
         then: "verify that a new leaf workflow is created and is in RUNNING state"
         newLeafWorkflowId != leafWorkflowId
@@ -408,6 +435,12 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         }
 
         then: "verify that the mid-level workflow's SUB_WORKFLOW task is updated"
+        // retry() updates parents asynchronously via the decider queue; the background
+        // sweeper re-decides the JOIN from CANCELED to IN_PROGRESS (same sweeper race as #1047).
+        await().atMost(10, TimeUnit.SECONDS).until {
+            workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
+                    .tasks[3].status == Task.Status.IN_PROGRESS
+        }
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -415,14 +448,17 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
             tasks[2].taskType == 'integration_task_2'
             tasks[2].status == Task.Status.COMPLETED
             tasks[3].taskType == TASK_TYPE_JOIN
-            tasks[3].status == Task.Status.CANCELED
+            tasks[3].status == Task.Status.IN_PROGRESS
         }
 
         and: "verify that the root workflow's SUB_WORKFLOW task is updated"
+        await().atMost(10, TimeUnit.SECONDS).until {
+            workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
+                    .tasks[3].status == Task.Status.IN_PROGRESS
+        }
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -430,11 +466,10 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
             tasks[2].taskType == 'integration_task_2'
             tasks[2].status == Task.Status.COMPLETED
             tasks[3].taskType == TASK_TYPE_JOIN
-            tasks[3].status == Task.Status.CANCELED
+            tasks[3].status == Task.Status.IN_PROGRESS
         }
 
         when: "the mid level and root workflows are 'decided'"
@@ -519,6 +554,12 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         workflowExecutor.retry(rootWorkflowId, true)
 
         then: "verify that the sub workflow task in root workflow is IN_PROGRESS state"
+        // retry() updates parents asynchronously via the decider queue; the background
+        // sweeper re-decides the JOIN from CANCELED to IN_PROGRESS (same sweeper race as #1047).
+        await().atMost(10, TimeUnit.SECONDS).until {
+            workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
+                    .tasks[3].status == Task.Status.IN_PROGRESS
+        }
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -526,14 +567,17 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
             tasks[2].taskType == 'integration_task_2'
             tasks[2].status == Task.Status.COMPLETED
             tasks[3].taskType == TASK_TYPE_JOIN
-            tasks[3].status == Task.Status.CANCELED
+            tasks[3].status == Task.Status.IN_PROGRESS
         }
 
         and: "verify that the sub workflow task in mid level workflow is IN_PROGRESS state"
+        await().atMost(10, TimeUnit.SECONDS).until {
+            workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
+                    .tasks[3].status == Task.Status.IN_PROGRESS
+        }
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -541,11 +585,10 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
             tasks[2].taskType == 'integration_task_2'
             tasks[2].status == Task.Status.COMPLETED
             tasks[3].taskType == TASK_TYPE_JOIN
-            tasks[3].status == Task.Status.CANCELED
+            tasks[3].status == Task.Status.IN_PROGRESS
         }
 
         and: "verify that the previously failed task in leaf workflow is in SCHEDULED state"
@@ -641,6 +684,12 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         workflowExecutor.retry(midLevelWorkflowId, true)
 
         then: "verify that the sub workflow task in root workflow is updated"
+        // retry() updates parents asynchronously via the decider queue; the background
+        // sweeper re-decides the JOIN from CANCELED to IN_PROGRESS (same sweeper race as #1047).
+        await().atMost(10, TimeUnit.SECONDS).until {
+            workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
+                    .tasks[3].status == Task.Status.IN_PROGRESS
+        }
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -648,14 +697,17 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
             tasks[2].taskType == 'integration_task_2'
             tasks[2].status == Task.Status.COMPLETED
             tasks[3].taskType == TASK_TYPE_JOIN
-            tasks[3].status == Task.Status.CANCELED
+            tasks[3].status == Task.Status.IN_PROGRESS
         }
 
         and: "verify that the sub workflow task in mid level workflow is updated"
+        await().atMost(10, TimeUnit.SECONDS).until {
+            workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
+                    .tasks[3].status == Task.Status.IN_PROGRESS
+        }
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -663,11 +715,10 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
             tasks[2].taskType == 'integration_task_2'
             tasks[2].status == Task.Status.COMPLETED
             tasks[3].taskType == TASK_TYPE_JOIN
-            tasks[3].status == Task.Status.CANCELED
+            tasks[3].status == Task.Status.IN_PROGRESS
         }
 
         and: "verify that the previously failed task in leaf workflow is in SCHEDULED state"
@@ -775,6 +826,12 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         }
 
         then: "verify that the mid-level workflow is updated"
+        // retry() updates parents asynchronously via the decider queue; the background
+        // sweeper re-decides the JOIN from CANCELED to IN_PROGRESS (same sweeper race as #1047).
+        await().atMost(10, TimeUnit.SECONDS).until {
+            workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
+                    .tasks[3].status == Task.Status.IN_PROGRESS
+        }
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -782,14 +839,17 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
             tasks[2].taskType == 'integration_task_2'
             tasks[2].status == Task.Status.COMPLETED
             tasks[3].taskType == TASK_TYPE_JOIN
-            tasks[3].status == Task.Status.CANCELED
+            tasks[3].status == Task.Status.IN_PROGRESS
         }
 
         and: "verify that the root workflow is updated"
+        await().atMost(10, TimeUnit.SECONDS).until {
+            workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
+                    .tasks[3].status == Task.Status.IN_PROGRESS
+        }
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -797,11 +857,10 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
             tasks[2].taskType == 'integration_task_2'
             tasks[2].status == Task.Status.COMPLETED
             tasks[3].taskType == TASK_TYPE_JOIN
-            tasks[3].status == Task.Status.CANCELED
+            tasks[3].status == Task.Status.IN_PROGRESS
         }
 
         when: "the mid level and root workflows are 'decided'"

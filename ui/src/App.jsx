@@ -2,7 +2,7 @@ import React from "react";
 
 import { Route, Switch } from "react-router-dom";
 import { makeStyles } from "@material-ui/styles";
-import { loader } from '@monaco-editor/react';
+import { loader } from "@monaco-editor/react";
 import { Button, AppBar, Toolbar } from "@material-ui/core";
 import AppLogo from "./plugins/AppLogo";
 import NavLink from "./components/NavLink";
@@ -17,6 +17,9 @@ import TaskDefinitions from "./pages/definitions/Task";
 import TaskDefinition from "./pages/definition/TaskDefinition";
 import EventHandlerDefinitions from "./pages/definitions/EventHandler";
 import EventHandlerDefinition from "./pages/definition/EventHandlerDefinition";
+import SchedulerDefinitions from "./pages/definitions/Scheduler";
+import SchedulerDefinition from "./pages/definition/SchedulerDefinition";
+import SchedulerExecutions from "./pages/executions/SchedulerExecutions";
 import TaskQueue from "./pages/misc/TaskQueue";
 import KitchenSink from "./pages/kitchensink/KitchenSink";
 import DiagramTest from "./pages/kitchensink/DiagramTest";
@@ -31,10 +34,11 @@ import Workbench from "./pages/workbench/Workbench";
 import { getBasename } from "./utils/helpers";
 
 // Feature flag for errors inspector
-const ERRORS_INSPECTOR_ENABLED = process.env.REACT_APP_ENABLE_ERRORS_INSPECTOR === 'true';
+const ERRORS_INSPECTOR_ENABLED =
+  process.env.REACT_APP_ENABLE_ERRORS_INSPECTOR === "true";
 
 // Import ErrorsInspector conditionally based on feature flag
-const ErrorsInspector = ERRORS_INSPECTOR_ENABLED 
+const ErrorsInspector = ERRORS_INSPECTOR_ENABLED
   ? React.lazy(() => import("./pages/errors/ErrorsInspector"))
   : () => <WorkflowSearch />; // Fallback to WorkflowSearch if disabled
 
@@ -82,6 +86,9 @@ export default function App() {
           <Button component={NavLink} path="/workflowDefs">
             Definitions
           </Button>
+          <Button component={NavLink} path="/schedulerExecs">
+            Scheduler
+          </Button>
           <Button component={NavLink} path="/taskQueue">
             Task Queues
           </Button>
@@ -99,7 +106,11 @@ export default function App() {
         <React.Suspense fallback={<div>Loading...</div>}>
           <Switch>
             <Route exact path="/">
-              {ERRORS_INSPECTOR_ENABLED ? <ErrorsInspector /> : <WorkflowSearch />}
+              {ERRORS_INSPECTOR_ENABLED ? (
+                <ErrorsInspector />
+              ) : (
+                <WorkflowSearch />
+              )}
             </Route>
             <Route exact path="/executions">
               <WorkflowSearch />
@@ -127,6 +138,15 @@ export default function App() {
             </Route>
             <Route exact path="/eventHandlerDef/:event?/:name?">
               <EventHandlerDefinition />
+            </Route>
+            <Route exact path="/schedulerDefs">
+              <SchedulerDefinitions />
+            </Route>
+            <Route exact path="/schedulerDef/:name?">
+              <SchedulerDefinition />
+            </Route>
+            <Route exact path="/schedulerExecs">
+              <SchedulerExecutions />
             </Route>
             <Route exact path="/taskQueue/:name?">
               <TaskQueue />
@@ -156,5 +176,5 @@ export default function App() {
 
 if (process.env.REACT_APP_MONACO_EDITOR_USING_CDN === "false") {
   // Change the source of the monaco files, see https://github.com/suren-atoyan/monaco-react/issues/168#issuecomment-762336713
-  loader.config({ paths: { vs: getBasename() + 'monaco-editor/min/vs' } });
+  loader.config({ paths: { vs: getBasename() + "monaco-editor/min/vs" } });
 }

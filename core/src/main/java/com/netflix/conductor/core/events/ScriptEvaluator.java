@@ -17,6 +17,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import org.graalvm.polyglot.*;
+import org.graalvm.polyglot.io.IOAccess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,13 +31,58 @@ public class ScriptEvaluator {
 
     private static final int DEFAULT_MAX_EXECUTION_SECONDS = 4;
     private static final int DEFAULT_CONTEXT_POOL_SIZE = 10;
+    // Pool reuse changes JS semantics: a Context's global scope persists across calls, so a
+    // user script with top-level `const x = ...` or `let x = ...` throws SyntaxError on the
+    // second call (identifier already declared). Default off; users who fully control their
+    // scripts can opt in via CONDUCTOR_SCRIPT_CONTEXT_POOL_ENABLED=true. The shared Engine and
+    // Source cache below still apply when the pool is disabled, so Context creation is much
+    // cheaper than before.
     private static final boolean DEFAULT_CONTEXT_POOL_ENABLED = false;
+    private static final int DEFAULT_SOURCE_CACHE_SIZE = 1024;
 
     private static Duration maxExecutionTimeSeconds;
     private static ExecutorService executorService;
     private static BlockingQueue<ScriptExecutionContext> contextPool;
     private static boolean contextPoolEnabled;
     private static boolean initialized = false;
+    private static int sourceCacheMaxSize = DEFAULT_SOURCE_CACHE_SIZE;
+
+    /**
+     * Shared GraalVM Engine reused across all Contexts so the Truffle compilation cache (and JIT
+     * code, when a compiling Truffle runtime is on the classpath) is shared instead of duplicated
+     * per Context.
+     */
+    private static final Engine ENGINE = buildEngine();
+
+    private static Engine buildEngine() {
+        // allowExperimentalOptions is required because js.load / js.print /
+        // js.console are flagged experimental in current Graal even though
+        // they are the documented switches for disabling those features.
+        // The "experimental" tag means the option name/semantics may change
+        // between Graal versions — not that the option is unsafe.
+        Engine engine =
+                Engine.newBuilder("js")
+                        .allowExperimentalOptions(true)
+                        .option("engine.WarnInterpreterOnly", "false")
+                        .option("js.load", "false")
+                        .option("js.print", "false")
+                        .option("js.console", "false")
+                        .build();
+        // Log once so operators can confirm whether the optimizing runtime is engaged.
+        // "GraalVM" => JIT-compiling Truffle runtime; "Default" => interpreter-only fallback.
+        LOGGER.info(
+                "GraalVM polyglot engine: implementation={}, version={}",
+                engine.getImplementationName(),
+                engine.getVersion());
+        return engine;
+    }
+
+    /**
+     * Cache of compiled JS Sources keyed by raw script text. Pairing a stable Source instance with
+     * the shared {@link #ENGINE} lets GraalJS reuse parsed/compiled code across invocations of the
+     * same expression.
+     */
+    private static final ConcurrentMap<String, Source> SOURCE_CACHE = new ConcurrentHashMap<>();
 
     private ScriptEvaluator() {}
 
@@ -98,6 +144,11 @@ public class ScriptEvaluator {
                         getEnv(
                                 "CONDUCTOR_SCRIPT_CONTEXT_POOL_ENABLED",
                                 String.valueOf(DEFAULT_CONTEXT_POOL_ENABLED)));
+        sourceCacheMaxSize =
+                Integer.parseInt(
+                        getEnv(
+                                "CONDUCTOR_SCRIPT_SOURCE_CACHE_SIZE",
+                                String.valueOf(DEFAULT_SOURCE_CACHE_SIZE)));
 
         initialize(maxSeconds, poolSize, poolEnabled, null);
     }
@@ -114,10 +165,94 @@ public class ScriptEvaluator {
     }
 
     private static Context createNewContext() {
+        HostAccess hostAccess =
+                HostAccess.newBuilder(HostAccess.ALL)
+                        .denyAccess(Class.class)
+                        .denyAccess(ClassLoader.class)
+                        .denyAccess(java.lang.reflect.Method.class)
+                        .denyAccess(java.lang.reflect.Field.class)
+                        .denyAccess(java.lang.reflect.Constructor.class)
+                        .denyAccess(java.lang.reflect.Array.class)
+                        .denyAccess(Runtime.class)
+                        .denyAccess(ProcessBuilder.class)
+                        .denyAccess(Process.class)
+                        .denyAccess(System.class)
+                        .denyAccess(Thread.class)
+                        .denyAccess(ThreadGroup.class)
+                        .build();
         return Context.newBuilder("js")
-                .allowHostAccess(HostAccess.ALL)
-                .option("engine.WarnInterpreterOnly", "false")
+                .engine(ENGINE)
+                .allowHostAccess(hostAccess)
+                .allowHostClassLoading(false)
+                .allowNativeAccess(false)
+                .allowCreateThread(false)
+                .allowCreateProcess(false)
+                .allowIO(IOAccess.NONE)
+                .allowEnvironmentAccess(EnvironmentAccess.NONE)
                 .build();
+    }
+
+    /**
+     * Returns a defensive deep copy of {@code input} so script-side mutations (e.g. {@code $.data.x
+     * = 1}) cannot leak back into the caller's data structures and so {@code PolyglotMap} /{@code
+     * PolyglotList} references created during evaluation cannot escape a closed Context. Recurses
+     * through Maps, Lists, Sets, and arrays; immutable scalars (String, Number, Boolean, etc.) are
+     * shared by reference. Cheaper than a JSON round-trip.
+     */
+    public static Object deepCopy(Object input) {
+        if (input == null) {
+            return null;
+        }
+        if (input instanceof Map<?, ?> m) {
+            Map<Object, Object> copy = new LinkedHashMap<>(m.size());
+            for (Map.Entry<?, ?> e : m.entrySet()) {
+                copy.put(e.getKey(), deepCopy(e.getValue()));
+            }
+            return copy;
+        }
+        if (input instanceof List<?> l) {
+            List<Object> copy = new ArrayList<>(l.size());
+            for (Object item : l) {
+                copy.add(deepCopy(item));
+            }
+            return copy;
+        }
+        if (input instanceof Set<?> s) {
+            Set<Object> copy = new LinkedHashSet<>(s.size());
+            for (Object item : s) {
+                copy.add(deepCopy(item));
+            }
+            return copy;
+        }
+        Class<?> cls = input.getClass();
+        if (cls.isArray()) {
+            int len = java.lang.reflect.Array.getLength(input);
+            List<Object> copy = new ArrayList<>(len);
+            for (int i = 0; i < len; i++) {
+                copy.add(deepCopy(java.lang.reflect.Array.get(input, i)));
+            }
+            return copy;
+        }
+        // Immutable scalars (String, Number, Boolean, enums, etc.) — safe to share.
+        return input;
+    }
+
+    /**
+     * Returns a cached compiled {@link Source} for the given script, creating it on first use.
+     * Bounded by {@link #sourceCacheMaxSize}; on overflow the cache is cleared (workflow scripts
+     * are typically a small, stable set, so the simplest strategy suffices).
+     */
+    private static Source getSource(String script) {
+        Source cached = SOURCE_CACHE.get(script);
+        if (cached != null) {
+            return cached;
+        }
+        if (SOURCE_CACHE.size() >= sourceCacheMaxSize) {
+            SOURCE_CACHE.clear();
+        }
+        Source source = Source.newBuilder("js", script, "inline").cached(true).buildLiteral();
+        Source existing = SOURCE_CACHE.putIfAbsent(script, source);
+        return existing != null ? existing : source;
     }
 
     /**
@@ -154,6 +289,8 @@ public class ScriptEvaluator {
     public static Object eval(String script, Object input, ConsoleBridge console) {
         ensureInitialized();
 
+        final Source source = getSource(script);
+
         if (contextPoolEnabled) {
             // Context pool implementation
             ScriptExecutionContext scriptContext = null;
@@ -162,8 +299,7 @@ public class ScriptEvaluator {
                 final ScriptExecutionContext finalScriptContext = scriptContext;
                 finalScriptContext.prepareBindings(input, console);
                 Future<Value> futureResult =
-                        executorService.submit(
-                                () -> finalScriptContext.getContext().eval("js", script));
+                        executorService.submit(() -> finalScriptContext.getContext().eval(source));
                 Value value =
                         futureResult.get(maxExecutionTimeSeconds.getSeconds(), TimeUnit.SECONDS);
                 return getObject(value);
@@ -200,7 +336,7 @@ public class ScriptEvaluator {
                     jsBindings.putMember("console", console);
                 }
                 final Future<Value> futureResult =
-                        executorService.submit(() -> context.eval("js", script));
+                        executorService.submit(() -> context.eval(source));
                 Value value =
                         futureResult.get(maxExecutionTimeSeconds.getSeconds(), TimeUnit.SECONDS);
                 return getObject(value);

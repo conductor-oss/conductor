@@ -22,34 +22,133 @@ The Sub Workflow task can also be used to overcome the limitations of other task
 
 Use these parameters inside `subWorkflowParam` in the Sub Workflow task configuration.
 
-| Parameter          | Type                | Description                                       | Required / Optional  |
-| ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
-| subWorkflowParam.name               | String              | Name of the workflow to be executed. This workflow should have a pre-existing definition in Conductor.                                                                      | Required. |
-| subWorkflowParam.version            | Integer              | The version of the workflow to be executed. If unspecified, the latest version will be used.                                     | Required. |
-| subWorkflowParam.taskToDomain       | Map[String, String]               | Allows scheduling the sub-workflow's tasks to specific domain mappings. <br/> Refer to [Task Domains](../../../api/taskdomains.md) for how to configure `taskToDomain`. | Optional. |
+| Parameter | Type | Description | Required / Optional |
+| --------- | ---- | ----------- | ------------------- |
+| subWorkflowParam.name | String | Name of the workflow to be executed. Must match a pre-registered workflow definition when no inline `workflowDefinition` is supplied. | Required. |
+| subWorkflowParam.version | Integer | The version of the workflow to be executed. If unspecified, the latest version will be used. Ignored when an inline `workflowDefinition` is supplied. | Optional. |
+| subWorkflowParam.workflowDefinition | Object _or_ String | Inline workflow definition to execute without prior registration. Accepts two forms: **(1) object** — a full `WorkflowDef` JSON object embedded directly in the task definition; **(2) String expression** — a `${ref.output.field}` expression resolved at runtime to a `WorkflowDef`-shaped Map produced by an earlier task (e.g. a planner agent). See [Inline workflow definition](#inline-workflow-definition) below. | Optional. |
+| subWorkflowParam.taskToDomain | Map[String, String] | Allows scheduling the sub-workflow's tasks to specific domain mappings. Refer to [Task Domains](../../../api/taskdomains.md) for how to configure `taskToDomain`. | Optional. |
 | inputParameters | Map[String, Any] | Contains the sub-workflow's input parameters, if any. | Optional. |
 
 ## Task configuration
-Here is the task configuration for a Start Workflow task.​
+
+Here is the task configuration for a Sub Workflow task.
 
 ```json
 {
-  "name": "start_workflow",
-  "taskReferenceName": "start_workflow_ref",
+  "name": "sub_workflow",
+  "taskReferenceName": "sub_workflow_ref",
   "inputParameters": {
-    "startWorkflow": {
-      "name": "someName",
-      "input": {
-        "someParameter": "someValue",
-        "anotherParameter": "anotherValue"
-      },
-      "version": 1,
-      "correlationId": ""
-    }
+    "someParameter": "someValue"
   },
-  "type": "START_WORKFLOW"
+  "type": "SUB_WORKFLOW",
+  "subWorkflowParam": {
+    "name": "my_workflow",
+    "version": 1
+  }
 }
 ```
+
+## Inline workflow definition
+
+`subWorkflowParam.workflowDefinition` allows you to execute a sub-workflow without registering it in the metadata store first. This supports two usage patterns.
+
+### Static inline definition
+
+Embed a complete `WorkflowDef` object directly inside the task definition. Conductor passes it straight through to the sub-workflow executor.
+
+```json
+{
+  "name": "exec_plan",
+  "taskReferenceName": "exec",
+  "type": "SUB_WORKFLOW",
+  "inputParameters": {
+    "threshold": "${workflow.input.threshold}"
+  },
+  "subWorkflowParam": {
+    "name": "my_inline_workflow",
+    "version": 1,
+    "workflowDefinition": {
+      "name": "my_inline_workflow",
+      "version": 1,
+      "schemaVersion": 2,
+      "tasks": [
+        {
+          "name": "some_task",
+          "taskReferenceName": "t1",
+          "type": "SIMPLE",
+          "inputParameters": {
+            "p1": "${workflow.input.threshold}"
+          }
+        }
+      ],
+      "outputParameters": {
+        "result": "${t1.output.result}"
+      }
+    }
+  }
+}
+```
+
+### Dynamic inline definition (String expression)
+
+Set `workflowDefinition` to a `${ref.output.field}` expression. Conductor resolves the expression at task-scheduling time and uses the resulting `WorkflowDef`-shaped Map as the sub-workflow definition. No HTTP registration is required — the workflow is started directly from the Map.
+
+This pattern is useful when an earlier task (such as a planner agent or an LLM step) generates the execution plan at runtime:
+
+```json
+{
+  "name": "exec_plan",
+  "taskReferenceName": "exec",
+  "type": "SUB_WORKFLOW",
+  "inputParameters": {
+    "threshold": "${workflow.input.threshold}",
+    "iterations": "${workflow.input.iterations}"
+  },
+  "subWorkflowParam": {
+    "name": "dynamic_plan_wf",
+    "version": 1,
+    "workflowDefinition": "${planner.output.workflow_def}"
+  }
+}
+```
+
+The task referenced by the expression (`planner` in this example) must output a Map that matches the `WorkflowDef` schema — the same JSON structure you would `POST` to `/api/metadata/workflow`. Conductor converts the Map to a `WorkflowDef` via its internal ObjectMapper and starts it as a sub-workflow.
+
+A typical parent workflow using this pattern:
+
+```json
+{
+  "name": "parent_wf",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "planner_task",
+      "taskReferenceName": "planner",
+      "type": "SIMPLE",
+      "inputParameters": {
+        "goal": "${workflow.input.goal}"
+      }
+    },
+    {
+      "name": "exec_plan",
+      "taskReferenceName": "exec",
+      "type": "SUB_WORKFLOW",
+      "inputParameters": {
+        "threshold": "${workflow.input.threshold}",
+        "iterations": "${workflow.input.iterations}"
+      },
+      "subWorkflowParam": {
+        "name": "dynamic_plan_wf",
+        "version": 1,
+        "workflowDefinition": "${planner.output.workflow_def}"
+      }
+    }
+  ]
+}
+```
+
+The `planner_task` worker returns a `workflow_def` key in its output containing the full `WorkflowDef` Map (tasks, inputParameters, outputParameters, etc.). The `exec` SUB_WORKFLOW task resolves the expression and executes that definition inline — no prior call to the metadata API needed.
 
 ## Output
 

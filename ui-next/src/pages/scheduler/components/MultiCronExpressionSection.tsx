@@ -4,8 +4,8 @@ import {
 } from "@mui/icons-material";
 import { Box, Grid, IconButton, Paper } from "@mui/material";
 import { Button, Text } from "components";
-import MuiTypography from "components/MuiTypography";
-import ConductorInput from "components/v1/ConductorInput";
+import MuiTypography from "components/ui/MuiTypography";
+import ConductorInput from "components/ui/inputs/ConductorInput";
 import { useMemo } from "react";
 import { ICronSchedule } from "types/Schedulers";
 import {

@@ -23,6 +23,7 @@ export enum CodeMachineEventTypes {
   EDIT_DEBOUNCE_EVT = "EDIT_DEBOUNCE_EVT",
   HIGHLIGHT_TEXT_REFERENCE = "HIGHLIGHT_TEXT_REFERENCE",
   JUMP_TO_FIRST_ERROR = "JUMP_TO_FIRST_ERROR",
+  FORCE_WORKFLOW = "FORCE_WORKFLOW",
 }
 
 export type EditEvent = {
@@ -44,9 +45,15 @@ export type JumpToFirstErrorEvent = {
   type: CodeMachineEventTypes.JUMP_TO_FIRST_ERROR;
 };
 
+export type ForceWorkflowEvent = {
+  type: CodeMachineEventTypes.FORCE_WORKFLOW;
+  workflow: Partial<WorkflowDef>;
+};
+
 export type CodeMachineEvents =
   | EditEvent
   | DebounceEditEvent
   | WorkflowWithNoErrorsEvent
   | HighlightTextReferenceEvent
-  | JumpToFirstErrorEvent;
+  | JumpToFirstErrorEvent
+  | ForceWorkflowEvent;

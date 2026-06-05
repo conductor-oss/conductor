@@ -1,10 +1,10 @@
 import { Box, CircularProgress, Stack } from "@mui/material";
 import { Intersect } from "@phosphor-icons/react";
-import Button from "components/MuiButton";
-import IconButton from "components/MuiIconButton";
-import MuiTypography from "components/MuiTypography";
-import StrikedText from "components/StrikedText";
-import Text from "components/Text";
+import Button from "components/ui/buttons/MuiButton";
+import IconButton from "components/ui/buttons/MuiIconButton";
+import MuiTypography from "components/ui/MuiTypography";
+import StrikedText from "components/ui/StrikedText";
+import Text from "components/ui/Text";
 import { FunctionComponent, useCallback, useMemo } from "react";
 import { Link } from "@mui/material";
 import { TaskDef } from "types";

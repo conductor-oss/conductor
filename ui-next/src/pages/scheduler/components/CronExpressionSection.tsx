@@ -1,7 +1,7 @@
 import { Box, Grid, Paper, SxProps, Theme, useMediaQuery } from "@mui/material";
 import { Text } from "components";
-import MuiTypography from "components/MuiTypography";
-import ConductorInput from "components/v1/ConductorInput";
+import MuiTypography from "components/ui/MuiTypography";
+import ConductorInput from "components/ui/inputs/ConductorInput";
 import {
   formatInTimeZone,
   guessUserTimeZone,

@@ -1,7 +1,10 @@
 import { useInterpret, useSelector } from "@xstate/react";
-import { FlowActionTypes, SelectNodeEvent } from "components/flow/state";
-import { selectNodes } from "components/flow/state/selectors";
-import { MessageContext } from "components/v1/layout/MessageContext";
+import {
+  FlowActionTypes,
+  SelectNodeEvent,
+} from "components/features/flow/state";
+import { selectNodes } from "components/features/flow/state/selectors";
+import { MessageContext } from "components/providers/messageContext";
 import _isEmpty from "lodash/isEmpty";
 import { useContext, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
@@ -14,7 +17,6 @@ import {
 } from "utils/constants/route";
 import { featureFlags, FEATURES } from "utils/flags";
 import { useAuthHeaders, useCurrentUserInfo } from "utils/query";
-
 import { taskWithLatestIteration } from "../helpers";
 import {
   RightPanelContextEventTypes,
@@ -28,6 +30,7 @@ import {
 } from "./types";
 
 const isPlayground = featureFlags.isEnabled(FEATURES.PLAYGROUND);
+
 export const useExecutionMachine = () => {
   const authHeaders = useAuthHeaders();
   const { setMessage } = useContext(MessageContext);
@@ -281,6 +284,11 @@ export const useExecutionMachine = () => {
     (state) => state.context.doWhileSelection,
   );
 
+  const selectedTask = useSelector(
+    service,
+    (state) => state.context.selectedTask,
+  );
+
   const isAssistantPanelOpen = useSelector(
     service,
     (state) => state.context.isAssistantPanelOpen,
@@ -308,6 +316,7 @@ export const useExecutionMachine = () => {
     doWhileSelection,
     nodes,
     isAssistantPanelOpen,
+    selectedTask,
   };
 
   return [

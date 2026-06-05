@@ -11,8 +11,8 @@ import {
   Typography,
   createTheme,
 } from "@mui/material";
-import { BookIcon, GearIcon } from "@phosphor-icons/react";
-import { ConductorAutoComplete } from "components/v1";
+import { GearIcon } from "@phosphor-icons/react";
+import { ConductorAutoComplete } from "components/ui/inputs";
 import { IntegrationIcon } from "components/IntegrationIcon";
 import { useNavigate } from "react-router";
 import { colors } from "theme/tokens/variables";
@@ -244,7 +244,7 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
         value={task?.inputParameters}
         onChange={(val) => onChange(updateField("inputParameters", val, task))}
         path={"inputParameters"}
-        taskType={TaskType.MCP}
+        taskType={TaskType.INTEGRATION}
       >
         <TaskFormSection accordionAdditionalProps={{ defaultExpanded: true }}>
           {isToolDataLoading ? (
@@ -324,24 +324,6 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                     >
                       Configuration{" "}
                       <GearIcon
-                        size={16}
-                        weight="bold"
-                        color={colors.blueLightMode}
-                      />
-                    </Box>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "4px",
-                        color: colors.blueLightMode,
-                        cursor: "pointer",
-                        fontSize: "12px",
-                        fontWeight: 500,
-                      }}
-                    >
-                      Docs{" "}
-                      <BookIcon
                         size={16}
                         weight="bold"
                         color={colors.blueLightMode}

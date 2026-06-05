@@ -96,6 +96,17 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
     }
 
     @Override
+    public List<String> peekFirstIds(String queueName, int count) {
+        final String SQL =
+                "SELECT message_id FROM queue_message "
+                        + "WHERE queue_name = ? AND popped = false "
+                        + "ORDER BY deliver_on, priority DESC, created_on LIMIT ?";
+        return queryWithTransaction(
+                SQL,
+                q -> q.addParameter(queueName).addParameter(count).executeScalarList(String.class));
+    }
+
+    @Override
     public List<String> pop(String queueName, int count, int timeout) {
         List<Message> messages =
                 getWithTransactionWithOutErrorPropagation(
@@ -148,6 +159,28 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
                                         .addParameter(updatedOffsetTimeInSecond)
                                         .addParameter(queueName)
                                         .addParameter(messageId)
+                                        .executeUpdate())
+                == 1;
+    }
+
+    @Override
+    public boolean setUnackTimeoutIfShorter(String queueName, String messageId, long unackTimeout) {
+        long updatedOffsetTimeInSecond = unackTimeout / 1000;
+
+        // Only update when the proposed deliver_on is earlier than what is already set,
+        // mirroring the ZADD LT semantics used by the Redis implementation.
+        final String UPDATE_UNACK_TIMEOUT_IF_SHORTER =
+                "UPDATE queue_message SET offset_time_seconds = ?, deliver_on = TIMESTAMPADD(SECOND, ?, CURRENT_TIMESTAMP)"
+                        + " WHERE queue_name = ? AND message_id = ? AND deliver_on > TIMESTAMPADD(SECOND, ?, CURRENT_TIMESTAMP)";
+
+        return queryWithTransaction(
+                        UPDATE_UNACK_TIMEOUT_IF_SHORTER,
+                        q ->
+                                q.addParameter(updatedOffsetTimeInSecond)
+                                        .addParameter(updatedOffsetTimeInSecond)
+                                        .addParameter(queueName)
+                                        .addParameter(messageId)
+                                        .addParameter(updatedOffsetTimeInSecond)
                                         .executeUpdate())
                 == 1;
     }

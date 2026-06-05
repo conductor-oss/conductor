@@ -1,6 +1,6 @@
 import { Box, Grid } from "@mui/material";
 
-import { ConductorFlatMapForm } from "components/v1/FlatMapForm/ConductorFlatMapForm";
+import { ConductorFlatMapForm } from "components/FlatMapForm/ConductorFlatMapForm";
 import TaskFormSection from "pages/definition/EditorPanel/TaskFormTab/forms/TaskFormSection";
 import { TaskFormProps } from "pages/definition/EditorPanel/TaskFormTab/forms/types";
 import { TaskType } from "types";

@@ -12,16 +12,13 @@
  */
 package com.netflix.conductor.dao;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-
-import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.core.events.queue.Message;
 
 /** DAO responsible for managing queuing for the tasks. */
-@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
-@Component
 public interface QueueDAO {
 
     /**
@@ -40,6 +37,16 @@ public interface QueueDAO {
      *     (for timed queues)
      */
     void push(String queueName, String id, int priority, long offsetTimeInSecond);
+
+    /**
+     * @param queueName name of the queue
+     * @param id message id
+     * @param priority message priority (between 0 and 99)
+     * @param offsetTime time after which the message should be marked visible.
+     */
+    default void push(String queueName, String id, int priority, Duration offsetTime) {
+        push(queueName, id, priority, offsetTime.getSeconds());
+    }
 
     /**
      * @param queueName Name of the queue
@@ -115,6 +122,24 @@ public interface QueueDAO {
     boolean setUnackTimeout(String queueName, String messageId, long unackTimeout);
 
     /**
+     * Updates the unack timeout only if the new value would result in an earlier delivery than the
+     * currently scheduled time — i.e. never postpones further than what is already set.
+     *
+     * <p>Implementations should perform this as an atomic compare-and-set where possible (e.g.
+     * {@code ZADD XX LT} in Redis, {@code LEAST(deliver_on, …)} in SQL). The default falls back to
+     * an unconditional {@link #setUnackTimeout}.
+     *
+     * @param queueName Name of the queue
+     * @param messageId Message Id
+     * @param unackTimeout timeout in milliseconds
+     * @return true if the timeout was updated
+     */
+    default boolean setUnackTimeoutIfShorter(
+            String queueName, String messageId, long unackTimeout) {
+        return setUnackTimeout(queueName, messageId, unackTimeout);
+    }
+
+    /**
      * @param queueName Name of the queue
      */
     void flush(String queueName);
@@ -167,5 +192,14 @@ public interface QueueDAO {
     default boolean containsMessage(String queueName, String messageId) {
         throw new UnsupportedOperationException(
                 "Please ensure your provided Queue implementation overrides and implements this method.");
+    }
+
+    /**
+     * Returns the first {@code count} message ids in the queue ordered by score, regardless of
+     * whether their visibility time has elapsed. Intended for inspecting or releasing postponed
+     * messages without popping them.
+     */
+    default List<String> peekFirstIds(String queueName, int count) {
+        return List.of();
     }
 }

@@ -980,6 +980,8 @@ public abstract class AbstractProtoMapper {
         if (from.getBackoffScaleFactor() != null) {
             to.setBackoffScaleFactor( from.getBackoffScaleFactor() );
         }
+        to.setMaxRetryDelaySeconds( from.getMaxRetryDelaySeconds() );
+        to.setBackoffJitterMs( from.getBackoffJitterMs() );
         if (from.getBaseType() != null) {
             to.setBaseType( from.getBaseType() );
         }
@@ -1013,6 +1015,8 @@ public abstract class AbstractProtoMapper {
         to.setOwnerEmail( from.getOwnerEmail() );
         to.setPollTimeoutSeconds( from.getPollTimeoutSeconds() );
         to.setBackoffScaleFactor( from.getBackoffScaleFactor() );
+        to.setMaxRetryDelaySeconds( from.getMaxRetryDelaySeconds() );
+        to.setBackoffJitterMs( from.getBackoffJitterMs() );
         to.setBaseType( from.getBaseType() );
         to.setTotalTimeoutSeconds( from.getTotalTimeoutSeconds() );
         to.setTaskStatusListenerEnabled( from.getTaskStatusListenerEnabled() );
@@ -1544,6 +1548,9 @@ public abstract class AbstractProtoMapper {
         if (from.getCreateTime() != null) {
             to.setCreateTime( from.getCreateTime() );
         }
+        if (from.getUpdateTime() != null) {
+            to.setUpdateTime( from.getUpdateTime() );
+        }
         return to.build();
     }
 
@@ -1552,6 +1559,7 @@ public abstract class AbstractProtoMapper {
         to.setName( from.getName() );
         to.setVersion( from.getVersion() );
         to.setCreateTime( from.getCreateTime() );
+        to.setUpdateTime( from.getUpdateTime() );
         return to;
     }
 
@@ -1610,6 +1618,9 @@ public abstract class AbstractProtoMapper {
         if (from.getIdempotencyKey() != null) {
             to.setIdempotencyKey( from.getIdempotencyKey() );
         }
+        if (from.getParentWorkflowId() != null) {
+            to.setParentWorkflowId( from.getParentWorkflowId() );
+        }
         return to.build();
     }
 
@@ -1636,6 +1647,7 @@ public abstract class AbstractProtoMapper {
         to.setCreatedBy( from.getCreatedBy() );
         to.setTaskToDomain( from.getTaskToDomainMap() );
         to.setIdempotencyKey( from.getIdempotencyKey() );
+        to.setParentWorkflowId( from.getParentWorkflowId() );
         return to;
     }
 

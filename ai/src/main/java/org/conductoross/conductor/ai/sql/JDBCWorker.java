@@ -49,22 +49,16 @@ public class JDBCWorker implements AnnotatedSystemTaskWorker {
     @WorkerTask(NAME)
     public TaskResult execute(JDBCInput input) {
         Task task = TaskContext.get().getTask();
-        log.info(
-                "Executing JDBC task: type={}, connectionId={}",
-                input.getType(),
-                input.getConnectionId());
-
-        if (input.getConnectionId() == null || input.getStatement() == null) {
-            task.setStatus(Task.Status.FAILED);
-            task.setReasonForIncompletion("Missing JDBC input connectionId and/or statement");
+        if (input.getStatement() == null) {
+            task.setStatus(Task.Status.FAILED_WITH_TERMINAL_ERROR);
+            task.setReasonForIncompletion("Missing JDBC statement");
             return new TaskResult(task);
         }
 
-        DataSource ds = jdbcProvider.get(input.getConnectionId());
+        DataSource ds = jdbcProvider.get(input);
         if (ds == null) {
-            task.setStatus(Task.Status.FAILED);
-            task.setReasonForIncompletion(
-                    "No such datasource configured for connectionId: " + input.getConnectionId());
+            task.setStatus(Task.Status.FAILED_WITH_TERMINAL_ERROR);
+            task.setReasonForIncompletion("No such datasource configured.  input: " + input);
             return new TaskResult(task);
         }
 
@@ -110,7 +104,7 @@ public class JDBCWorker implements AnnotatedSystemTaskWorker {
                 result.add(row);
             }
 
-            log.info("Executed SELECT, found {} rows", result.size());
+            log.debug("Executed SELECT, found {} rows", result.size());
             task.getOutputData().put("result", result);
             task.setStatus(Task.Status.COMPLETED);
             return new TaskResult(task);
@@ -162,10 +156,10 @@ public class JDBCWorker implements AnnotatedSystemTaskWorker {
             }
 
             int count = pstmt.executeUpdate();
-            log.info("updated {} rows", count);
+            log.debug("updated {} rows", count);
 
             if (input.getExpectedUpdateCount() > 0 && count != input.getExpectedUpdateCount()) {
-                log.info(
+                log.debug(
                         "row update count {} does not match with expected update {}.  Going to rollback",
                         count,
                         input.getExpectedUpdateCount());

@@ -1,16 +1,16 @@
 import { Box, Button, Grid, Stack } from "@mui/material";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 import React, { ReactElement, useState } from "react";
 import { useServiceMethodsDefinition } from "./state/hook";
 import { ActorRef } from "xstate";
 import { ServiceMethodsMachineEvents } from "./state/types";
-import UIModal from "components/UIModal";
+import UIModal from "components/ui/dialogs/UIModal";
 import { Edit } from "@mui/icons-material";
-import ConductorInputNumber from "components/v1/ConductorInputNumber";
-import MuiTypography from "components/MuiTypography";
+import ConductorInputNumber from "components/ui/inputs/ConductorInputNumber";
+import MuiTypography from "components/ui/MuiTypography";
 
-import XCloseIcon from "components/v1/icons/XCloseIcon";
-import SaveIcon from "components/v1/icons/SaveIcon";
+import XCloseIcon from "components/icons/XCloseIcon";
+import SaveIcon from "components/icons/SaveIcon";
 import { NotePencil } from "@phosphor-icons/react";
 
 const EditTaskDefConfigModal = ({

@@ -1,6 +1,6 @@
 import Editor from "@monaco-editor/react";
 import { Box } from "@mui/material";
-import { DiffEditor } from "components/DiffEditor/DiffEditor";
+import { DiffEditor } from "components/ui/DiffEditor";
 import { useContext, useRef } from "react";
 import { defaultEditorOptions } from "shared/editor";
 import { ColorModeContext } from "theme/material/ColorModeContext";

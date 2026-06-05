@@ -36,5 +36,6 @@
       "type": "SIMPLE"
     }
   ],
-  "schemaVersion": 2
+  "schemaVersion": 2,
+  "ownerEmail": "test@conductor.io"
 }

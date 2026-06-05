@@ -1,20 +1,22 @@
 import {
   Box,
   FormControl,
+  FormControlLabel,
   Grid,
   InputLabel,
+  Switch,
   useMediaQuery,
 } from "@mui/material";
 import { Theme } from "@mui/material/styles";
 import { Button, Paper } from "components";
-import { DEFAULT_ROWS_PER_PAGE } from "components/DataTable/DataTable";
+import { DEFAULT_ROWS_PER_PAGE } from "components/ui/DataTable/DataTable";
 import StatusBadge from "components/StatusBadge";
 import { renderStatusTagChip } from "components/StatusTagChip";
-import { ConductorAutoComplete } from "components/v1";
-import ConductorInput from "components/v1/ConductorInput";
-import SplitButton from "components/v1/ConductorSplitButton";
-import ResetIcon from "components/v1/icons/ResetIcon";
-import SearchIcon from "components/v1/icons/SearchIcon";
+import { ConductorAutoComplete } from "components/ui/inputs";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import SplitButton from "components/ui/buttons/ConductorSplitButton";
+import ResetIcon from "components/icons/ResetIcon";
+import SearchIcon from "components/icons/SearchIcon";
 import _isEmpty from "lodash/isEmpty";
 import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -75,6 +77,8 @@ export interface BasicSearchProps {
   setStartOpenDatePicker: (val: boolean) => void;
   openEndDatePicker: boolean;
   setEndOpenDatePicker: (val: boolean) => void;
+  excludeSubWorkflows: boolean;
+  setExcludeSubWorkflows: (val: boolean) => void;
   recentSearches: { start: string; end: string };
 }
 
@@ -108,6 +112,8 @@ export default function BasicSearch({
   setStartOpenDatePicker,
   openEndDatePicker,
   setEndOpenDatePicker,
+  excludeSubWorkflows,
+  setExcludeSubWorkflows,
   recentSearches,
 }: BasicSearchProps) {
   const [page, setPage] = useQueryState("page", 1);
@@ -180,6 +186,7 @@ export default function BasicSearch({
     setModifiedTo("");
     setEndTimeFrom("");
     setEndTimeTo("");
+    setExcludeSubWorkflows(false);
     setToDisplayTime("Now");
     setFromDisplayTime("Last 72 Hours");
   };
@@ -246,6 +253,10 @@ export default function BasicSearch({
       clauses.push(`idempotencyKey IN (${idempotencyKey.join(",")})`);
     }
 
+    if (excludeSubWorkflows) {
+      clauses.push(`parentWorkflowId=""`);
+    }
+
     return {
       query: clauses.join(" AND "),
       freeText: _isEmpty(freeText) ? "*" : freeText,
@@ -263,6 +274,7 @@ export default function BasicSearch({
     idempotencyKey,
     endTimeFrom,
     endTimeTo,
+    excludeSubWorkflows,
   ]);
 
   const [queryFT, setQueryFT] = useState(buildQuery);
@@ -610,7 +622,7 @@ export default function BasicSearch({
                 xs: 12,
                 sm: 6,
                 md: 6,
-                lg: 3,
+                lg: 2,
               }}
             >
               <ConductorInput
@@ -623,12 +635,38 @@ export default function BasicSearch({
             </Grid>
             <Grid
               display="flex"
+              alignItems="end"
+              size={{
+                xs: 12,
+                sm: 6,
+                md: 3,
+                lg: 2,
+              }}
+            >
+              <FormControlLabel
+                sx={{ whiteSpace: "nowrap", mb: 0.5 }}
+                control={
+                  <Switch
+                    color="primary"
+                    checked={excludeSubWorkflows}
+                    onChange={(e) => setExcludeSubWorkflows(e.target.checked)}
+                    size="small"
+                  />
+                }
+                label="Exclude sub-workflows"
+                slotProps={{
+                  typography: { variant: "body2" },
+                }}
+              />
+            </Grid>
+            <Grid
+              display="flex"
               justifyContent="end"
               size={{
                 xs: 12,
                 sm: 6,
-                md: 6,
-                lg: 3,
+                md: 3,
+                lg: 2,
               }}
             >
               <Grid size={5}>

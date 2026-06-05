@@ -41,7 +41,17 @@ public enum TaskType {
     KAFKA_PUBLISH,
     JSON_JQ_TRANSFORM,
     SET_VARIABLE,
-    NOOP;
+    NOOP,
+    LLM_TEXT_COMPLETE,
+    LLM_CHAT_COMPLETE,
+    LLM_INDEX_TEXT,
+    LLM_SEARCH_INDEX,
+    LLM_GENERATE_EMBEDDINGS,
+    LLM_STORE_EMBEDDINGS,
+    LLM_GET_EMBEDDINGS,
+    LIST_MCP_TOOLS,
+    CALL_MCP_TOOL,
+    PULL_WORKFLOW_MESSAGES;
 
     /**
      * TaskType constants representing each of the possible enumeration values. Motivation: to not
@@ -71,6 +81,7 @@ public enum TaskType {
     public static final String TASK_TYPE_SET_VARIABLE = "SET_VARIABLE";
     public static final String TASK_TYPE_FORK = "FORK";
     public static final String TASK_TYPE_NOOP = "NOOP";
+    public static final String TASK_TYPE_PULL_WORKFLOW_MESSAGES = "PULL_WORKFLOW_MESSAGES";
 
     private static final Set<String> BUILT_IN_TASKS = new HashSet<>();
 

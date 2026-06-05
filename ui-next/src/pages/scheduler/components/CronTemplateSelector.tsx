@@ -1,5 +1,5 @@
 import { Box, MenuItem } from "@mui/material";
-import ConductorSelect from "components/v1/ConductorSelect";
+import ConductorSelect from "components/ui/inputs/ConductorSelect";
 import cronstrue from "cronstrue";
 import { CRON_COLORS_BY_POSITION } from "../constants";
 import { cronTemplateSamples } from "./cronTemplateSamples";

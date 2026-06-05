@@ -30,5 +30,5 @@
   "schemaVersion": 2,
   "restartable": true,
   "workflowStatusListenerEnabled": false,
-  "ownerEmail": "e2e@orkes.io"
+  "ownerEmail": "test@conductor.io"
 }

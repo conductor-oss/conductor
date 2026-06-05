@@ -1,9 +1,9 @@
 import { Box, Link } from "@mui/material";
 import { WarningIcon } from "@phosphor-icons/react";
 import { useActor, useSelector } from "@xstate/react";
-import ConductorTooltip from "components/conductorTooltip/ConductorTooltip";
-import theme from "components/flow/theme";
-import DocsIcon from "components/v1/icons/DocsIcon";
+import ConductorTooltip from "components/ui/ConductorTooltip";
+import theme from "components/features/flow/theme";
+import DocsIcon from "components/icons/DocsIcon";
 import {
   BusinessRuleForm,
   DoWhileForm,
@@ -44,13 +44,12 @@ import {
   useRef,
   useState,
 } from "react";
-import { useAuth } from "shared/auth";
+import { useAuth } from "components/features/auth";
 import { colors } from "theme/tokens/variables";
 import { FormTaskType, TaskDef, TaskType } from "types";
 import { updateField } from "utils/fieldHelpers";
 import { FEATURES, featureFlags } from "utils/flags";
 import { TaskStats } from "./TaskStats/TaskStats";
-import BoundaryTimerSection from "./forms/BoundaryTimerSection";
 import { ConductorCacheOutput } from "./forms/ConductorCacheOutputForm";
 import { MCPTaskForm } from "./forms/MCPTaskForm";
 import { MaybeVariable } from "./forms/MaybeVariable";
@@ -99,7 +98,7 @@ const getTaskForm = (type: string) => {
       return GetSignedJwtForm;
     case TaskType.UPDATE_TASK:
       return UpdateTaskForm;
-    case TaskType.MCP:
+    case TaskType.INTEGRATION:
       return MCPTaskForm;
 
     // Operators
@@ -342,6 +341,19 @@ const TaskFormContent: FunctionComponent = () => {
     });
   };
 
+  const mcpIntegrationType =
+    taskType === TaskType.INTEGRATION
+      ? (task?.inputParameters?.integrationType as string | undefined)
+      : undefined;
+  const taskTypeLabelForDoc = mcpIntegrationType
+    ? mcpIntegrationType.replace(/-mcp$/i, "").replace(/-/g, " ").toUpperCase()
+    : taskType === TaskType.INTEGRATION
+      ? "INTEGRATION"
+      : taskType;
+  const taskTypeLabel =
+    taskType === TaskType.INTEGRATION ? "INTEGRATION" : taskType;
+  const taskDocUrl = getTaskDocUrl(mcpIntegrationType ?? taskType) ?? "";
+
   return (
     <Box
       ref={panelRef}
@@ -377,7 +389,7 @@ const TaskFormContent: FunctionComponent = () => {
                 color: "black",
               }}
             >
-              {taskType}
+              {taskTypeLabel}
             </Box>
             {taskType === TaskType.DECISION && (
               <Box
@@ -426,9 +438,7 @@ const TaskFormContent: FunctionComponent = () => {
                   placement="left"
                   children={
                     <Link
-                      href={
-                        getTaskDocUrl(taskType) || getTaskDocUrl(TaskType.HTTP)
-                      }
+                      href={taskDocUrl}
                       tabIndex={-1}
                       target="_blank"
                       rel="noreferrer"
@@ -454,7 +464,7 @@ const TaskFormContent: FunctionComponent = () => {
                 />
               ) : (
                 <Link
-                  href={getTaskDocUrl(taskType) || getTaskDocUrl(TaskType.HTTP)}
+                  href={taskDocUrl}
                   tabIndex={-1}
                   target="_blank"
                   rel="noreferrer"
@@ -473,7 +483,8 @@ const TaskFormContent: FunctionComponent = () => {
                       color: colors.blueLightMode,
                     }}
                   >
-                    {taskType} Docs
+                    {taskTypeLabelForDoc}
+                    {" Docs"}
                   </div>
                 </Link>
               )}
@@ -514,7 +525,6 @@ const TaskFormContent: FunctionComponent = () => {
           )}
         </Box>
         {ENABLE_TASK_STATS && <TaskStats />}
-        <BoundaryTimerSection />
         {/*<TaskFormFooter {...{ selectedNode, onChange }} />*/}
       </Box>
     </Box>
