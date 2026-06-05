@@ -133,9 +133,9 @@ describe("getScheduleCronSchedules", () => {
   });
 
   it("defaults zone to UTC for the single-cron fallback", () => {
-    expect(
-      getScheduleCronSchedules({ cronExpression: "0 0 1 * * ?" }),
-    ).toEqual([{ cronExpression: "0 0 1 * * ?", zoneId: DEFAULT_CRON_ZONE }]);
+    expect(getScheduleCronSchedules({ cronExpression: "0 0 1 * * ?" })).toEqual(
+      [{ cronExpression: "0 0 1 * * ?", zoneId: DEFAULT_CRON_ZONE }],
+    );
   });
 
   it("returns [] when neither cronSchedules nor cronExpression is set", () => {
