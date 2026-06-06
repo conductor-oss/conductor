@@ -1,6 +1,7 @@
 syntax = "proto3";
 package conductor.proto;
 
+import "google/protobuf/struct.proto";
 
 option java_package = "com.netflix.conductor.proto";
 option java_outer_classname = "SchemaDefPb";
@@ -15,4 +16,6 @@ message SchemaDef {
     string name = 1;
     int32 version = 2;
     SchemaDef.Type type = 3;
+    map<string, google.protobuf.Value> data = 4;
+    string external_ref = 5;
 }

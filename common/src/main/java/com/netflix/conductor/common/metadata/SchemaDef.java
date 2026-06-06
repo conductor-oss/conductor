@@ -54,9 +54,11 @@ public class SchemaDef extends Auditable {
     private Type type;
 
     // Schema definition stored here
+    @ProtoField(id = 4)
     private Map<String, Object> data;
 
     // Externalized schema definition (eg. via AVRO, Protobuf registry)
     // If using Orkes Schema registry, this points to the name of the schema in the registry
+    @ProtoField(id = 5)
     private String externalRef;
 }

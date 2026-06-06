@@ -14,6 +14,7 @@ package com.netflix.conductor.common.workflow;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,6 +33,9 @@ import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @TestPropertySource(properties = "conductor.app.workflow.name-validation.enabled=true")
@@ -354,5 +358,198 @@ public class WorkflowDefValidatorTest {
         Validator validator = factory.getValidator();
         Set<ConstraintViolation<Object>> result = validator.validate(workflowDef);
         assertEquals(0, result.size());
+    }
+
+    // -------------------------------------------------------------------------
+    // Default values
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void testDefaultValues() {
+        WorkflowDef def = new WorkflowDef();
+        assertEquals(1, def.getVersion());
+        assertEquals(2, def.getSchemaVersion());
+        assertTrue(def.isRestartable());
+        assertFalse(def.isWorkflowStatusListenerEnabled());
+        assertEquals(WorkflowDef.TimeoutPolicy.ALERT_ONLY, def.getTimeoutPolicy());
+        assertNotNull(def.getTasks());
+        assertTrue(def.getTasks().isEmpty());
+        assertNotNull(def.getInputParameters());
+        assertTrue(def.getInputParameters().isEmpty());
+        assertNotNull(def.getOutputParameters());
+        assertTrue(def.getOutputParameters().isEmpty());
+        assertNotNull(def.getVariables());
+        assertTrue(def.getVariables().isEmpty());
+        assertNotNull(def.getInputTemplate());
+        assertTrue(def.getInputTemplate().isEmpty());
+        assertNotNull(def.getMetadata());
+        assertTrue(def.getMetadata().isEmpty());
+        assertNotNull(def.getMaskedFields());
+        assertTrue(def.getMaskedFields().isEmpty());
+    }
+
+    // -------------------------------------------------------------------------
+    // equals / hashCode — PK is (name, version)
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void testEqualsReflexive() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("wf");
+        assertEquals(def, def);
+    }
+
+    @Test
+    public void testEqualsSymmetric() {
+        WorkflowDef a = new WorkflowDef();
+        a.setName("wf");
+        WorkflowDef b = new WorkflowDef();
+        b.setName("wf");
+        assertEquals(a, b);
+        assertEquals(b, a);
+    }
+
+    @Test
+    public void testEqualsNull() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("wf");
+        assertNotEquals(null, def);
+    }
+
+    @Test
+    public void testEqualsDifferentClass() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("wf");
+        assertFalse(def.equals("wf"));
+    }
+
+    @Test
+    public void testEqualsSameNameAndVersion() {
+        WorkflowDef a = new WorkflowDef();
+        a.setName("wf");
+        a.setVersion(2);
+        WorkflowDef b = new WorkflowDef();
+        b.setName("wf");
+        b.setVersion(2);
+        // unrelated fields differ — must still be equal
+        b.setDescription("something else");
+        b.setOwnerEmail("owner@test.com");
+        assertEquals(a, b);
+    }
+
+    @Test
+    public void testEqualsDifferentName() {
+        WorkflowDef a = new WorkflowDef();
+        a.setName("wf-a");
+        WorkflowDef b = new WorkflowDef();
+        b.setName("wf-b");
+        assertNotEquals(a, b);
+    }
+
+    @Test
+    public void testEqualsDifferentVersion() {
+        WorkflowDef a = new WorkflowDef();
+        a.setName("wf");
+        a.setVersion(1);
+        WorkflowDef b = new WorkflowDef();
+        b.setName("wf");
+        b.setVersion(2);
+        assertNotEquals(a, b);
+    }
+
+    @Test
+    public void testEqualsBothDefaultVersion() {
+        WorkflowDef a = new WorkflowDef();
+        a.setName("wf");
+        WorkflowDef b = new WorkflowDef();
+        b.setName("wf");
+        assertEquals(a, b);
+    }
+
+    @Test
+    public void testHashCodeConsistency() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("wf");
+        def.setVersion(3);
+        assertEquals(def.hashCode(), def.hashCode());
+    }
+
+    @Test
+    public void testHashCodeEqualObjects() {
+        WorkflowDef a = new WorkflowDef();
+        a.setName("wf");
+        a.setVersion(2);
+        WorkflowDef b = new WorkflowDef();
+        b.setName("wf");
+        b.setVersion(2);
+        assertEquals(a.hashCode(), b.hashCode());
+    }
+
+    @Test
+    public void testHashSetDeduplication() {
+        WorkflowDef a = new WorkflowDef();
+        a.setName("wf");
+        WorkflowDef b = new WorkflowDef();
+        b.setName("wf");
+        b.setDescription("different description");
+
+        Set<WorkflowDef> set = new HashSet<>();
+        set.add(a);
+        set.add(b);
+        assertEquals(1, set.size());
+    }
+
+    @Test
+    public void testHashSetDistinctVersions() {
+        WorkflowDef v1 = new WorkflowDef();
+        v1.setName("wf");
+        v1.setVersion(1);
+        WorkflowDef v2 = new WorkflowDef();
+        v2.setName("wf");
+        v2.setVersion(2);
+
+        Set<WorkflowDef> set = new HashSet<>();
+        set.add(v1);
+        set.add(v2);
+        assertEquals(2, set.size());
+    }
+
+    // -------------------------------------------------------------------------
+    // key() / getKey()
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void testKeyMethod() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("my-workflow");
+        def.setVersion(3);
+        assertEquals("my-workflow.3", def.key());
+    }
+
+    @Test
+    public void testGetKeyStatic() {
+        assertEquals("my-workflow.1", WorkflowDef.getKey("my-workflow", 1));
+        assertEquals("my-workflow.5", WorkflowDef.getKey("my-workflow", 5));
+    }
+
+    @Test
+    public void testKeyUsesDefaultVersion() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("my-workflow");
+        assertEquals("my-workflow.1", def.key());
+    }
+
+    // -------------------------------------------------------------------------
+    // toString
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void testToStringContainsNameAndVersion() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("my-workflow");
+        def.setVersion(2);
+        String s = def.toString();
+        assertTrue(s.contains("my-workflow"));
+        assertTrue(s.contains("2"));
     }
 }
