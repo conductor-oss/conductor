@@ -1,0 +1,31 @@
+{
+  "name": "crabbox_simple_worker_workflow",
+  "description": "Run a trusted command through an external Crabbox SIMPLE worker.",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": [
+    "command",
+    "workspaceDir"
+  ],
+  "tasks": [
+    {
+      "name": "crabbox_run",
+      "taskReferenceName": "crabbox_run",
+      "type": "SIMPLE",
+      "inputParameters": {
+        "provider": "local-container",
+        "command": "${workflow.input.command}",
+        "workspaceDir": "${workflow.input.workspaceDir}",
+        "shell": true,
+        "timeoutSeconds": 900,
+        "keepOnFailure": true
+      }
+    }
+  ],
+  "outputParameters": {
+    "status": "${crabbox_run.output.status}",
+    "exitCode": "${crabbox_run.output.exitCode}",
+    "reason": "${crabbox_run.output.reason}",
+    "outputTail": "${crabbox_run.output.outputTail}"
+  }
+}

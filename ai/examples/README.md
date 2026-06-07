@@ -56,6 +56,14 @@ mcp-testkit --transport http
 
 The server will be available at `http://localhost:3001/mcp`.
 
+### 4. Crabbox Bridge (for Crabbox examples)
+
+Install Crabbox and start either the example MCP server or the example
+`SIMPLE` worker from `integrations/crabbox`. The examples use Crabbox's
+`local-container` provider by default, which needs Docker but no cloud
+credentials. Set `provider` to `islo` only when `CRABBOX_ISLO_API_KEY` or
+`ISLO_API_KEY` is available.
+
 ---
 
 ## Available Examples
@@ -84,6 +92,8 @@ The server will be available at `http://localhost:3001/mcp`.
 | `20-extended-thinking.json` | Extended thinking with token budget for reasoning | Anthropic |
 | `21-web-search-research-agent.json` | Research agent: web search → synthesize → PDF | OpenAI, Anthropic |
 | `22-multi-turn-chain.json` | Multi-turn conversation chaining with previousResponseId | OpenAI |
+| `23-crabbox-mcp-run.json` | Run a trusted command through a Crabbox MCP tool | Crabbox, MCP Server |
+| `24-crabbox-simple-worker.json` | Run a trusted command through an external Crabbox worker | Crabbox, SIMPLE Worker |
 
 ---
 
@@ -436,6 +446,45 @@ curl -X POST 'http://localhost:8080/api/metadata/workflow' \
 curl -X POST 'http://localhost:8080/api/workflow/multi_turn_chain' \
   -H 'Content-Type: application/json' \
   -d '{"topic": "Real-time collaborative document editor"}'
+```
+
+### 23. Crabbox MCP Run
+
+```bash
+# Start integrations/crabbox/crabbox_mcp_server.py first
+
+# Register
+curl -X POST 'http://localhost:8080/api/metadata/workflow' \
+  -H 'Content-Type: application/json' \
+  -d @23-crabbox-mcp-run.json
+
+# Execute
+curl -X POST 'http://localhost:8080/api/workflow/crabbox_mcp_run_workflow' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "mcpServer": "http://localhost:3001/mcp",
+    "command": "python3 --version",
+    "workspaceDir": "/path/to/repo"
+  }'
+```
+
+### 24. Crabbox SIMPLE Worker
+
+```bash
+# Register the task definition and start integrations/crabbox/conductor_crabbox_worker.py first
+
+# Register
+curl -X POST 'http://localhost:8080/api/metadata/workflow' \
+  -H 'Content-Type: application/json' \
+  -d @24-crabbox-simple-worker.json
+
+# Execute
+curl -X POST 'http://localhost:8080/api/workflow/crabbox_simple_worker_workflow' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "command": "python3 --version",
+    "workspaceDir": "/path/to/repo"
+  }'
 ```
 
 ---

@@ -1,0 +1,25 @@
+provider: islo
+target: linux
+sync:
+  include:
+    - integrations/crabbox
+    - ai/examples/23-crabbox-mcp-run.json
+    - ai/examples/24-crabbox-simple-worker.json
+    - docs/devguide/ai/crabbox-sandbox.md
+    - mkdocs.yml
+  exclude:
+    - .git
+    - build
+    - .gradle
+    - ui/node_modules
+    - ui-next/node_modules
+env:
+  allow:
+    - CI
+    - PYTHONPATH
+islo:
+  image: docker.io/library/python:3.12-slim
+  workdir: conductor-crabbox
+  vcpus: 2
+  memoryMB: 4096
+  diskGB: 20
