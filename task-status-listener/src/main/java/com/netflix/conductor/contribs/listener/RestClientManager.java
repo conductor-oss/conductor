@@ -243,7 +243,7 @@ public class RestClientManager {
     private void executePost(HttpPost httpPost) throws IOException {
         try (CloseableHttpResponse response = client.execute(httpPost)) {
             int sc = response.getStatusLine().getStatusCode();
-            if (!(sc == HttpStatus.SC_ACCEPTED || sc == HttpStatus.SC_OK)) {
+            if (!(sc >= 200 && sc < 300)) {
                 throw new ClientProtocolException("Unexpected response status: " + sc);
             }
         } finally {
