@@ -60,10 +60,18 @@ export type Server = {
   type: "OPENAPI_SPEC" | "USER_DEFINED";
 };
 
+type RequestParam = {
+  name: string;
+  type: string;
+  required: boolean;
+  schema?: { type?: string };
+};
+
 type commonServiceDef = {
   name: string;
   type: string;
   methods: Method[];
+  requestParams?: RequestParam[];
   serviceURI?: string;
   config: Config;
   circuitBreakerEnabled?: boolean;

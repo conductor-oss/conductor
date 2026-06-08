@@ -15,6 +15,7 @@ declare global {
       authorizationEndpoint?: string;
       tokenEndpoint?: string;
       endSessionEndpoint?: string;
+      isTestEnvironment?: boolean;
     };
     auth0Identifiers?: {
       domain?: string;
