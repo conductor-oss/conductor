@@ -21,12 +21,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.document.DocumentLoader;
+import org.conductoross.conductor.ai.http.AIHttpClients;
 import org.conductoross.conductor.ai.models.AudioGenRequest;
 import org.conductoross.conductor.ai.models.ChatCompletion;
 import org.conductoross.conductor.ai.models.ChatMessage;
@@ -66,8 +68,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
-import com.networknt.schema.Error;
-import com.networknt.schema.InvalidSchemaException;
+import com.networknt.schema.JsonSchemaException;
+import com.networknt.schema.ValidationMessage;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
@@ -94,7 +96,7 @@ public class LLMHelper {
 
     public LLMHelper(
             JsonSchemaValidator jsonSchemaValidator, List<DocumentLoader> documentLoaders) {
-        this(jsonSchemaValidator, documentLoaders, new OkHttpClient());
+        this(jsonSchemaValidator, documentLoaders, AIHttpClients.defaultClient());
     }
 
     public LLMHelper(
@@ -329,18 +331,20 @@ public class LLMHelper {
                 return null;
             }
 
-            List<Error> validationMessages = jsonSchemaValidator.validate(schemaContent, data);
+            Set<ValidationMessage> validationMessages =
+                    jsonSchemaValidator.validate(schemaContent, data);
 
             if (validationMessages != null && !validationMessages.isEmpty()) {
                 return String.format(
                         "Schema validation failed %s",
                         validationMessages.stream()
-                                .map(Error::getMessage)
+                                .map(ValidationMessage::getMessage)
                                 .collect(Collectors.joining(", ")));
             }
             return null;
-        } catch (InvalidSchemaException jpe) {
-            throw new RuntimeException("Bad/Unsupported schema? : " + jpe.getErrors().toString());
+        } catch (JsonSchemaException jpe) {
+            throw new RuntimeException(
+                    "Bad/Unsupported schema? : " + jpe.getValidationMessages().toString());
         } catch (JsonProcessingException jpe) {
             throw new RuntimeException("Error parsing the json schema : " + jpe.getMessage(), jpe);
         }

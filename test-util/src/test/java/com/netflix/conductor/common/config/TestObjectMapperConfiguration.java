@@ -14,7 +14,6 @@ package com.netflix.conductor.common.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -23,7 +22,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class TestObjectMapperConfiguration {
 
     @Bean
-    @Primary
     public ObjectMapper testObjectMapper() {
         return new ObjectMapperProvider().getObjectMapper();
     }
