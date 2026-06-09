@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.sqlite.config;
 
+import org.conductoross.conductor.sqlite.dao.SqliteFileMetadataDAO;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -195,6 +196,15 @@ public class SqliteConfiguration {
         retryTemplate.setRetryPolicy(retryPolicy);
         retryTemplate.setBackOffPolicy(backOffPolicy);
         return retryTemplate;
+    }
+
+    @Bean
+    @DependsOn({"flywayForPrimaryDb"})
+    @ConditionalOnProperty(name = "conductor.file-storage.enabled", havingValue = "true")
+    public SqliteFileMetadataDAO sqliteFileMetadataDAO(
+            @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        return new SqliteFileMetadataDAO(retryTemplate, objectMapper, dataSource);
     }
 
     public static class CustomRetryPolicy extends SimpleRetryPolicy {
