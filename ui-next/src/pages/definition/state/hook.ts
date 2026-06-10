@@ -65,7 +65,8 @@ export const useWorkflowDefinition = (currentUser: User) => {
   );
 
   const handleTaskReferenceName = useCallback(
-    (value: string | undefined) => setLiveQueryParam("taskReferenceName", value),
+    (value: string | undefined) =>
+      setLiveQueryParam("taskReferenceName", value),
     [setLiveQueryParam],
   );
 

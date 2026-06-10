@@ -15,25 +15,31 @@ describe("nextQueryString", () => {
   });
 
   it("updates an existing param's value", () => {
-    expect(nextQueryString("?taskReferenceName=old", "taskReferenceName", "new")).toEqual(
-      "taskReferenceName=new",
-    );
+    expect(
+      nextQueryString("?taskReferenceName=old", "taskReferenceName", "new"),
+    ).toEqual("taskReferenceName=new");
   });
 
   it("removes a param when the value is empty", () => {
-    expect(nextQueryString("?taskReferenceName=ref&foo=bar", "taskReferenceName", "")).toEqual(
-      "foo=bar",
-    );
+    expect(
+      nextQueryString(
+        "?taskReferenceName=ref&foo=bar",
+        "taskReferenceName",
+        "",
+      ),
+    ).toEqual("foo=bar");
   });
 
   it("removes a param when the value is undefined", () => {
-    expect(nextQueryString("?taskReferenceName=ref", "taskReferenceName", undefined)).toEqual(
-      "",
-    );
+    expect(
+      nextQueryString("?taskReferenceName=ref", "taskReferenceName", undefined),
+    ).toEqual("");
   });
 
   it("returns null (skip navigation) when setting the same value", () => {
-    expect(nextQueryString("?taskReferenceName=ref", "taskReferenceName", "ref")).toBeNull();
+    expect(
+      nextQueryString("?taskReferenceName=ref", "taskReferenceName", "ref"),
+    ).toBeNull();
   });
 
   it("returns null (skip navigation) when clearing a param that is absent", () => {
