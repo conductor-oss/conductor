@@ -251,6 +251,18 @@ public class WorkflowResource {
         return workflowService.getWorkflows(name, includeClosed, includeTasks, correlationIds);
     }
 
+    @GetMapping("/{workflowId}/dowhile/{taskReferenceName}/iterations")
+    @Operation(
+            summary =
+                    "Gets paginated DO_WHILE iteration outputs in descending order (latest first)")
+    public SearchResult<DoWhileIterationOutput> getDoWhileIterations(
+            @PathVariable("workflowId") String workflowId,
+            @PathVariable("taskReferenceName") String taskReferenceName,
+            @RequestParam(value = "start", defaultValue = "0", required = false) Integer start,
+            @RequestParam(value = "count", defaultValue = "50", required = false) Integer count) {
+        return workflowService.getDoWhileIterations(workflowId, taskReferenceName, start, count);
+    }
+
     @GetMapping("/{workflowId}")
     @Operation(summary = "Gets the workflow by workflow id")
     public Workflow getExecutionStatus(

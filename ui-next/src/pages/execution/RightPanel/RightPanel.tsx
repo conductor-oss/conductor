@@ -9,12 +9,10 @@ import {
   Tab,
   Tabs,
 } from "components";
+import { InlineTaskIterations } from "./InlineTaskIterations";
 import ClipboardCopy from "components/ui/ClipboardCopy";
-import { dowhileHasAllIterationsInOutput } from "components/features/flow/components/shapes/TaskCard/helpers";
 import { SnackbarMessage } from "components/ui/SnackbarMessage";
 import StatusBadge from "components/StatusBadge";
-import ConductorTooltip from "components/ui/ConductorTooltip";
-import _nth from "lodash/nth";
 import { FunctionComponent, useMemo } from "react";
 import { useContainerQuery } from "react-container-query";
 import { colors } from "theme/tokens/variables";
@@ -26,7 +24,6 @@ import {
 } from "types/Execution";
 import { TaskStatus } from "types/TaskStatus";
 import { featureFlags, FEATURES } from "utils/flags";
-import { usePushHistory } from "utils/hooks/usePushHistory";
 import { ActorRef } from "xstate";
 import { UpdateTaskStatusForm } from "..";
 import {
@@ -42,229 +39,25 @@ import TaskSummary from "../TaskSummary";
 import { RightPanelContextEventTypes, RightPanelEvents } from "./state";
 import { useRightPanelActor } from "./state/hook";
 import { SummaryTask } from "./SummaryTask";
+import { dropdownIcon } from "./dropdownIcon";
+import { SecondaryActions } from "./SecondaryActions";
+import { DoWhileIteration } from "./DoWhileIteration";
 
 const executionTaskHeaderContainerQuery = {
-  small: {
-    maxWidth: 699,
-  },
-  large: {
-    minWidth: 700,
-  },
+  small: { maxWidth: 699 },
+  large: { minWidth: 700 },
 };
 
 const rerunFromForkAndDowhileTasksEnabled = featureFlags.isEnabled(
   FEATURES.ENABLE_RERUN_FROM_FORK_AND_DOWHILE_TASKS,
 );
 
-interface SecondaryActionsProps {
-  selectedTask: ExecutionTask;
-  containerQueryState: any;
-  dynamicForkInstances: any;
-}
-interface LabelRendererProps {
-  iterationTask: any;
-  isIteration?: boolean;
-  hideTaskId?: boolean;
-}
-
-interface RightPanelProps {
+export interface RightPanelProps {
   rightPanelActor: ActorRef<RightPanelEvents>;
   workflowName: string;
   workflowStatus: string;
   doWhileSelection?: DoWhileSelection[];
 }
-
-const SecondaryActions = ({
-  selectedTask,
-  containerQueryState,
-  dynamicForkInstances,
-}: SecondaryActionsProps) => {
-  const navigate = usePushHistory();
-  return selectedTask?.workflowTask?.type === "SIMPLE" ? ( // Within  dynamic forks. Tasks cant be simple. the task name is used as the type. since the name is generated
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 2,
-        alignItems: containerQueryState["small"] ? "start" : "end",
-      }}
-    >
-      <Box
-        sx={{
-          display: "flex",
-          gap: 2,
-          flexGrow: 0,
-          flexShrink: 0,
-        }}
-      >
-        <Button
-          color="secondary"
-          size="small"
-          onClick={() => {
-            navigate(`/taskDef/${encodeURIComponent(selectedTask.taskType)}`);
-          }}
-        >
-          Go to definition
-        </Button>
-      </Box>
-    </Box>
-  ) : (
-    dynamicForkInstances
-  );
-};
-
-const LabelRenderer = ({
-  iterationTask,
-  isIteration,
-  hideTaskId = false,
-}: LabelRendererProps) => {
-  const textLabel = isIteration
-    ? `Iteration ${iterationTask.iteration} ${
-        iterationTask?.retryCount > 0
-          ? " - retry attempt " + iterationTask.retryCount
-          : ""
-      }`
-    : `Attempt #${iterationTask.retryCount}`;
-  return (
-    <Box sx={{ marginRight: "auto" }}>
-      {dropdownIcon(iterationTask.status)}{" "}
-      {`${textLabel} ${hideTaskId ? "" : `- ${iterationTask.taskId}`}`}
-    </Box>
-  );
-};
-function getOrderedIterationKeys(
-  outputData: Record<string, any>,
-  selectedTask: { iteration?: number },
-): number[] {
-  // Extract keys that are numbers
-  const keys = Object.keys(outputData)
-    .map(Number)
-    .filter((k) => !isNaN(k));
-  // Sort numerically
-  keys.sort((a, b) => b - a);
-
-  // Prepend the selected iteration if it is not in the list
-  if (
-    typeof selectedTask.iteration === "number" &&
-    !keys.includes(selectedTask.iteration)
-  ) {
-    return [selectedTask.iteration, ...keys];
-  }
-  return keys;
-}
-
-const DoWhileIteration = ({
-  selectedTask,
-  handleSelectDoWhileIteration,
-  doWhileSelection,
-}: {
-  selectedTask: ExecutionTask;
-  handleSelectDoWhileIteration: (data: DoWhileSelection) => void;
-  doWhileSelection?: DoWhileSelection[];
-}) => {
-  const isTaskProcessing = [
-    TaskStatus.PENDING,
-    TaskStatus.SCHEDULED,
-    TaskStatus.IN_PROGRESS,
-  ].includes(selectedTask.status);
-  const retryIterationOptions = getOrderedIterationKeys(
-    selectedTask?.outputData ?? {},
-    selectedTask,
-  );
-
-  const currentIteration = _nth(
-    doWhileSelection?.filter(
-      (item) =>
-        item.doWhileTaskReferenceName === selectedTask?.referenceTaskName,
-    ),
-    0,
-  )?.selectedIteration;
-
-  const dropIconRender = (option: number) => {
-    const completedIterations = Object.keys(selectedTask?.outputData ?? {});
-    if (completedIterations.includes(option.toString())) {
-      return dropdownIcon("COMPLETED");
-    }
-    return dropdownIcon(selectedTask.status);
-  };
-
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        justifyContent: "flex-start",
-      }}
-    >
-      <Box pt={2}>
-        <DropdownButton
-          buttonProps={{
-            color: "secondary",
-            variant: "outlined",
-            size: "small",
-            style: {
-              color: colors.gray04,
-              fontSize: "9pt",
-              minWidth: "300px",
-            },
-          }}
-          options={
-            retryIterationOptions?.map((option: number) => {
-              return {
-                label: (
-                  <Box sx={{ marginRight: "auto", minWidth: "300px" }}>
-                    {dropIconRender(option)} {`iteration ${option}`}
-                  </Box>
-                ),
-                handler: () =>
-                  handleSelectDoWhileIteration({
-                    doWhileTaskReferenceName: selectedTask?.referenceTaskName,
-                    selectedIteration: option,
-                  }),
-              };
-            }) ?? []
-          }
-        >
-          <Box
-            sx={{ marginRight: "auto", minWidth: "300px", textAlign: "left" }}
-          >
-            {currentIteration != null ? (
-              <>
-                {dropIconRender(currentIteration)}{" "}
-                {`iteration ${currentIteration}`}
-              </>
-            ) : null}
-          </Box>
-        </DropdownButton>
-        {selectedTask?.inputData?.keepLastN != null ? (
-          <ConductorTooltip
-            title=""
-            content={`keepLastN is set to ${selectedTask?.inputData?.keepLastN}`}
-            placement="top"
-          >
-            <img
-              alt="info"
-              src="/icons/info-icon.svg"
-              style={{ paddingLeft: "3px" }}
-            />
-          </ConductorTooltip>
-        ) : !isTaskProcessing &&
-          !dowhileHasAllIterationsInOutput(selectedTask?.outputData ?? {}) ? (
-          <ConductorTooltip
-            title=""
-            content={`The workflow has been summarized from its original size.`}
-            placement="top"
-          >
-            <img
-              alt="info"
-              src="/icons/info-icon.svg"
-              style={{ paddingLeft: "3px" }}
-            />
-          </ConductorTooltip>
-        ) : null}
-      </Box>
-    </Box>
-  );
-};
 
 export const RightPanel: FunctionComponent<RightPanelProps> = ({
   rightPanelActor,
@@ -286,6 +79,8 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
       currentTab,
       maybeSiblings,
       isReRunFromTaskInProgress,
+      executionId,
+      authHeaders,
     },
     {
       handleChangeTaskStatus: onChangeTaskStatus,
@@ -342,6 +137,8 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
   if (selectedTask?.taskType === "TASK_SUMMARY")
     return <SummaryTask selectedTask={selectedTask} onClose={onClosePanel!} />;
 
+  const isKeptLastNPruned = (selectedTask as any)?._summarized === true;
+
   return !selectedTask ? null : (
     <Paper square elevation={0} id="execution-page-right-panel">
       {errorMessage && (
@@ -351,11 +148,7 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
           onDismiss={clearErrorMessage}
         />
       )}
-      <Box
-        sx={{
-          display: "flex",
-        }}
-      >
+      <Box sx={{ display: "flex" }}>
         <Box
           sx={{
             display: "flex",
@@ -371,18 +164,12 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
             size="small"
             aria-label="Close button"
             onClick={onClosePanel}
-            sx={{
-              opacity: 0.5,
-            }}
+            sx={{ opacity: 0.5 }}
           >
             <CloseIcon />
           </IconButton>
         </Box>
-        <Box
-          sx={{
-            width: "100%",
-          }}
-        >
+        <Box sx={{ width: "100%" }}>
           <Box
             ref={containerRef}
             sx={{
@@ -396,7 +183,7 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
                 theme.palette?.mode === "dark" ? colors.black : colors.white,
             }}
           >
-            <Box>
+            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
               <Box
                 sx={{
                   display: "flex",
@@ -421,12 +208,7 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
                 <StatusBadge status={selectedTask?.status} />
               </Box>
               {selectedTask?.status === "PENDING" ? null : (
-                <Box
-                  sx={{
-                    fontSize: 14,
-                    width: "100%",
-                  }}
-                >
+                <Box sx={{ fontSize: 14, width: "100%" }}>
                   <ClipboardCopy value={selectedTask?.taskId || ""}>
                     <Box
                       sx={{
@@ -441,58 +223,24 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
                   </ClipboardCopy>
                 </Box>
               )}
-              <Box>
+              <Box sx={{ width: "100%", mt: 1 }}>
                 {retryIterationOptions && retryIterationOptions?.length > 1 ? (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "flex-start",
-                      flexDirection: containerQueryState["small"]
-                        ? "column"
-                        : "row",
-                    }}
-                  >
-                    <Box pt={2}>
-                      <DropdownButton
-                        buttonProps={{
-                          id: "iteration-dropdown-btn",
-                          color: "secondary",
-                          variant: "outlined",
-                          size: "small",
-                          style: {
-                            color: colors.gray04,
-                            fontSize: "9pt",
-                            minWidth: "300px",
-                          },
-                        }}
-                        options={
-                          retryIterationOptions.map((option: ExecutionTask) => {
-                            return {
-                              label: (
-                                <LabelRenderer
-                                  isIteration={isIteration}
-                                  iterationTask={option}
-                                />
-                              ),
-                              handler: () => handleSelectTask(option),
-                            };
-                          }) ?? []
-                        }
-                      >
-                        <LabelRenderer
-                          isIteration={isIteration}
-                          iterationTask={selectedTask}
-                          hideTaskId
-                        />
-                      </DropdownButton>
-                    </Box>
-                  </Box>
+                  <InlineTaskIterations
+                    retryIterationOptions={retryIterationOptions}
+                    selectedTask={selectedTask}
+                    isIteration={isIteration ?? false}
+                    handleSelectTask={handleSelectTask}
+                    executionId={executionId}
+                    authHeaders={authHeaders}
+                  />
                 ) : null}
                 {selectedTask?.taskType === TaskType.DO_WHILE && (
                   <DoWhileIteration
                     selectedTask={selectedTask}
                     doWhileSelection={doWhileSelection}
                     handleSelectDoWhileIteration={handleSelectDoWhileIteration}
+                    executionId={executionId}
+                    authHeaders={authHeaders}
                   />
                 )}
               </Box>
@@ -520,9 +268,7 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
                       buttonProps={{
                         color: "secondary",
                         size: "small",
-                        style: {
-                          fontSize: "9pt",
-                        },
+                        style: { fontSize: "9pt" },
                       }}
                       options={dfOptions.map((option: ExecutionTask) => ({
                         label: (
@@ -545,139 +291,137 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
         </Box>
       </Box>
 
-      <Tabs
-        value={currentTab}
-        style={{ marginBottom: 0 }}
-        contextual
-        variant="scrollable"
-        scrollButtons={containerQueryState["small"] ? true : "auto"}
-        allowScrollButtonsMobile
-      >
-        <Tab label="Summary" onClick={() => changeCurrentTab(SUMMARY_TAB)} />
-        <Tab
-          label="Input"
-          onClick={() => changeCurrentTab(INPUT_TAB)}
-          disabled={!selectedTask.status}
-        />
-        <Tab
-          label="Output"
-          onClick={() => changeCurrentTab(OUTPUT_TAB)}
-          disabled={!selectedTask.status}
-        />
-        <Tab
-          label="Logs"
-          onClick={() => changeCurrentTab(LOGS_TAB)}
-          disabled={!selectedTask.status}
-        />
-        <Tab
-          label="JSON"
-          onClick={() => changeCurrentTab(JSON_TAB)}
-          disabled={!selectedTask.status}
-        />
-        <Tab
-          label="Definition"
-          onClick={() => changeCurrentTab(DEFINITION_TAB)}
-        />
-      </Tabs>
-      <Paper square elevation={0}>
-        {currentTab === SUMMARY_TAB && (
-          <Box
-            style={{
-              overflowY: "auto",
-              overflowX: "hidden",
-              maxHeight: "calc(100vh - 100px)",
-            }}
-          >
-            <TaskSummary taskResult={selectedTask} />
-            {maybeStatusForm}
+      {isKeptLastNPruned ? (
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 1,
+            py: 6,
+            textAlign: "center",
+            color: "text.secondary",
+            fontSize: 14,
+          }}
+        >
+          <Box>This iteration&apos;s data was pruned from storage.</Box>
+          <Box sx={{ fontSize: 12 }}>
+            The workflow was configured with <strong>keepLastN</strong>.
           </Box>
-        )}
-        {currentTab === INPUT_TAB && (
-          <ReactJson
-            src={selectedTask.inputData ?? {}}
-            title="Task input"
-            overflowY="auto"
-            overflowX="hidden"
-            workflowName={workflowName}
-            editorHeight="calc(100vh - 280px)"
-          />
-        )}
-        {currentTab === OUTPUT_TAB && (
-          <ReactJson
-            src={
-              isReRunFromTaskInProgress ? {} : (selectedTask.outputData ?? {})
-            }
-            title="Task output"
-            overflowY="auto"
-            overflowX="hidden"
-            workflowName={workflowName}
-            editorHeight="calc(100vh - 280px)"
-          />
-        )}
-        {currentTab === LOGS_TAB && (
-          <Box
-            style={{
-              overflowY: "auto",
-              overflowX: "hidden",
-              maxHeight: "calc(100vh - 200px)",
-            }}
+        </Box>
+      ) : (
+        <>
+          <Tabs
+            value={currentTab}
+            style={{ marginBottom: 0 }}
+            contextual
+            variant="scrollable"
+            scrollButtons={containerQueryState["small"] ? true : "auto"}
+            allowScrollButtonsMobile
           >
-            <TaskLogs
-              rightPanelActor={rightPanelActor}
-              containerQueryState={containerQueryState}
+            <Tab
+              label="Summary"
+              onClick={() => changeCurrentTab(SUMMARY_TAB)}
             />
-          </Box>
-        )}
-        {currentTab === JSON_TAB && (
-          <ReactJson
-            src={selectedTask}
-            title="Task Execution JSON"
-            overflowY="auto"
-            overflowX="hidden"
-            workflowName={workflowName}
-            editorHeight="calc(100vh - 280px)"
-          />
-        )}
-        {currentTab === DEFINITION_TAB && (
-          <ReactJson
-            src={selectedTask.workflowTask}
-            title="Task definition/Runtime config"
-            overflowY="auto"
-            overflowX="hidden"
-            workflowName={workflowName}
-            editorHeight="calc(100vh - 280px)"
-          />
-        )}
-      </Paper>
+            <Tab
+              label="Input"
+              onClick={() => changeCurrentTab(INPUT_TAB)}
+              disabled={!selectedTask.status}
+            />
+            <Tab
+              label="Output"
+              onClick={() => changeCurrentTab(OUTPUT_TAB)}
+              disabled={!selectedTask.status}
+            />
+            <Tab
+              label="Logs"
+              onClick={() => changeCurrentTab(LOGS_TAB)}
+              disabled={!selectedTask.status}
+            />
+            <Tab
+              label="JSON"
+              onClick={() => changeCurrentTab(JSON_TAB)}
+              disabled={!selectedTask.status}
+            />
+            <Tab
+              label="Definition"
+              onClick={() => changeCurrentTab(DEFINITION_TAB)}
+            />
+          </Tabs>
+          <Paper square elevation={0}>
+            {currentTab === SUMMARY_TAB && (
+              <Box
+                style={{
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  maxHeight: "calc(100vh - 100px)",
+                }}
+              >
+                <TaskSummary taskResult={selectedTask} />
+                {maybeStatusForm}
+              </Box>
+            )}
+            {currentTab === INPUT_TAB && (
+              <ReactJson
+                src={selectedTask.inputData ?? {}}
+                title="Task input"
+                overflowY="auto"
+                overflowX="hidden"
+                workflowName={workflowName}
+                editorHeight="calc(100vh - 280px)"
+              />
+            )}
+            {currentTab === OUTPUT_TAB && (
+              <ReactJson
+                src={
+                  isReRunFromTaskInProgress
+                    ? {}
+                    : (selectedTask.outputData ?? {})
+                }
+                title="Task output"
+                overflowY="auto"
+                overflowX="hidden"
+                workflowName={workflowName}
+                editorHeight="calc(100vh - 280px)"
+              />
+            )}
+            {currentTab === LOGS_TAB && (
+              <Box
+                style={{
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  maxHeight: "calc(100vh - 200px)",
+                }}
+              >
+                <TaskLogs
+                  rightPanelActor={rightPanelActor}
+                  containerQueryState={containerQueryState}
+                />
+              </Box>
+            )}
+            {currentTab === JSON_TAB && (
+              <ReactJson
+                src={selectedTask}
+                title="Task Execution JSON"
+                overflowY="auto"
+                overflowX="hidden"
+                workflowName={workflowName}
+                editorHeight="calc(100vh - 280px)"
+              />
+            )}
+            {currentTab === DEFINITION_TAB && (
+              <ReactJson
+                src={selectedTask.workflowTask}
+                title="Task definition/Runtime config"
+                overflowY="auto"
+                overflowX="hidden"
+                workflowName={workflowName}
+                editorHeight="calc(100vh - 280px)"
+              />
+            )}
+          </Paper>
+        </>
+      )}
     </Paper>
   );
 };
-
-function dropdownIcon(status: string) {
-  let icon;
-  switch (status) {
-    case TaskStatus.COMPLETED:
-      icon = "\u2705";
-      break; // Green-checkmark
-    case TaskStatus.COMPLETED_WITH_ERRORS:
-      icon = "\u2757";
-      break; // Exclamation
-    case TaskStatus.CANCELED:
-      icon = "\uD83D\uDED1";
-      break; // stopsign
-    case TaskStatus.IN_PROGRESS:
-    case TaskStatus.SCHEDULED:
-      icon = "\u231B";
-      break; // hourglass
-    case TaskStatus.TIMED_OUT:
-      icon = "\u26D4";
-      break;
-    case TaskStatus.FAILED:
-      icon = "\u2757";
-      break;
-    default:
-      icon = "\u274C"; // red-X
-  }
-
-  return icon + "\u2003";
-}

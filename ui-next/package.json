@@ -80,6 +80,7 @@
     "@growthbook/growthbook": "^1.5.1",
     "@growthbook/growthbook-react": "^1.5.1",
     "@phosphor-icons/react": "^2.1.10",
+    "@tanstack/react-virtual": "^3.14.2",
     "@use-gesture/react": "^10.2.21",
     "@xstate/inspect": "^0.8.0",
     "@xstate/react": "^3.2.1",
