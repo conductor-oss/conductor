@@ -22,11 +22,11 @@ import org.springframework.stereotype.Service;
 
 import com.netflix.conductor.annotations.Audit;
 import com.netflix.conductor.annotations.Trace;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.run.DoWhileIterationOutput;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
@@ -546,11 +546,12 @@ public class WorkflowServiceImpl implements WorkflowService {
             Object iterOutput = outputData.get(String.valueOf(iterationNumber));
             boolean summarized = isSummarizedOrAbsent(iterOutput);
             @SuppressWarnings("unchecked")
-            Map<String, Object> outputMap =
-                    summarized ? null : (Map<String, Object>) iterOutput;
+            Map<String, Object> outputMap = summarized ? null : (Map<String, Object>) iterOutput;
             Map<String, Object> inputMap = inputByIteration.getOrDefault(iterationNumber, null);
             Map<String, String> taskIdMap = taskIdByIteration.getOrDefault(iterationNumber, null);
-            results.add(new DoWhileIterationOutput(iterationNumber, outputMap, inputMap, taskIdMap, summarized));
+            results.add(
+                    new DoWhileIterationOutput(
+                            iterationNumber, outputMap, inputMap, taskIdMap, summarized));
         }
 
         return new SearchResult<>(totalIterations, results);

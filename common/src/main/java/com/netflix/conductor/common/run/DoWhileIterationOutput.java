@@ -31,15 +31,15 @@ public class DoWhileIterationOutput {
     private Map<String, Object> output;
 
     /**
-     * Map of inner-task reference name (without iteration suffix) to that task's input data.
-     * {@code null} when the task records have been pruned (e.g. via keepLastN).
+     * Map of inner-task reference name (without iteration suffix) to that task's input data. {@code
+     * null} when the task records have been pruned (e.g. via keepLastN).
      */
     private Map<String, Object> inputData;
 
     /**
-     * Map of inner-task reference name (without iteration suffix) to that task's taskId.
-     * Used by the UI to fetch logs for a specific iteration's task.
-     * {@code null} when the task records have been pruned.
+     * Map of inner-task reference name (without iteration suffix) to that task's taskId. Used by
+     * the UI to fetch logs for a specific iteration's task. {@code null} when the task records have
+     * been pruned.
      */
     private Map<String, String> taskIds;
 
@@ -51,7 +51,12 @@ public class DoWhileIterationOutput {
 
     public DoWhileIterationOutput() {}
 
-    public DoWhileIterationOutput(int iteration, Map<String, Object> output, Map<String, Object> inputData, Map<String, String> taskIds, boolean summarized) {
+    public DoWhileIterationOutput(
+            int iteration,
+            Map<String, Object> output,
+            Map<String, Object> inputData,
+            Map<String, String> taskIds,
+            boolean summarized) {
         this.iteration = iteration;
         this.output = output;
         this.inputData = inputData;

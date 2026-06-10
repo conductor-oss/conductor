@@ -282,6 +282,10 @@ export const DoWhileIteration = ({
       items={iterationOptions}
       headerLabel={headerLabel}
       trailing={keepLastNTrailing}
+      totalItems={iterationOptions.length}
+      getOptionLabel={(option) => `Iteration ${option}`}
+      getItemValue={(option) => option}
+      onJumpTo={handleJumpToIteration}
       onSelect={(option) => handleSelect(option)}
       isItemSelected={(option) => currentIteration === option}
       renderItem={(option) => (

@@ -5,9 +5,9 @@ import { useInfiniteQuery, useQueryClient } from "react-query";
 import { colors } from "theme/tokens/variables";
 import { AuthHeaders } from "types/common";
 import { ExecutionTask } from "types/Execution";
-import { dropdownIcon } from "./dropdownIcon";
-import { LabelRenderer } from "./LabelRenderer";
+import { TaskStatus } from "types/TaskStatus";
 import { CollapsibleIterationList } from "./CollapsibleIterationList";
+import { IterationStatusIcon } from "./IterationStatusIcon";
 import {
   pageStartForIteration,
   IterationPlaceholder,
@@ -33,6 +33,7 @@ export interface InlineTaskIterationsProps {
   handleSelectTask: (task: ExecutionTask) => void;
   executionId?: string;
   authHeaders?: AuthHeaders;
+  parentDoWhileRef?: string;
 }
 
 export const InlineTaskIterations = ({
@@ -42,14 +43,8 @@ export const InlineTaskIterations = ({
   handleSelectTask,
   executionId,
   authHeaders,
+  parentDoWhileRef,
 }: InlineTaskIterationsProps) => {
-  const parentDoWhileRef = useMemo(
-    () =>
-      retryIterationOptions.find((opt) => opt._parentDoWhileRef)
-        ?._parentDoWhileRef,
-    [retryIterationOptions],
-  );
-
   const innerTaskRef = selectedTask?.workflowTask?.taskReferenceName;
 
   const currentIteration = selectedTask.iteration;
@@ -228,7 +223,18 @@ export const InlineTaskIterations = ({
     ? `Iteration ${effectiveIteration ?? ""}`
     : `Attempt #${selectedTask.retryCount ?? 0}`;
 
-  const headerLabel = `${dropdownIcon(selectedTask.status)}${headerText}`;
+  const headerLabel = (
+    <Box
+      component="span"
+      sx={{ display: "inline-flex", alignItems: "center", gap: 0.75 }}
+    >
+      <IterationStatusIcon
+        status={selectedTask.status as TaskStatus}
+        size={13}
+      />
+      <span>{headerText}</span>
+    </Box>
+  );
 
   if (fetchedIterations.length > 0) {
     return (
@@ -270,13 +276,82 @@ export const InlineTaskIterations = ({
           }
         }}
         isItemSelected={(item) => selectedTask.iteration === item.iteration}
-        renderItem={(item) => (
+        renderItem={(item) => {
+          const taskId = item.taskIds?.[innerTaskRef ?? ""];
+          return (
+            <>
+              <Box
+                component="span"
+                sx={{ minWidth: 18, display: "flex", alignItems: "center" }}
+              >
+                <IterationStatusIcon
+                  status={(item.status as TaskStatus) ?? TaskStatus.COMPLETED}
+                  size={13}
+                />
+              </Box>
+              <Box component="span">Iteration {item.iteration}</Box>
+              {!item.summarized && taskId && (
+                <Typography
+                  component="span"
+                  sx={{ fontSize: "8pt", color: colors.gray04, ml: 1 }}
+                >
+                  {taskId}
+                </Typography>
+              )}
+              {item.summarized && (
+                <Typography
+                  component="span"
+                  sx={{
+                    fontSize: "8pt",
+                    color: colors.gray04,
+                    opacity: 0.7,
+                    ml: 1,
+                  }}
+                >
+                  (summarized)
+                </Typography>
+              )}
+            </>
+          );
+        }}
+      />
+    );
+  }
+
+  return (
+    <CollapsibleIterationList
+      items={retryIterationOptions}
+      headerLabel={headerLabel}
+      totalItems={retryIterationOptions.length}
+      getOptionLabel={(item) => `Iteration ${item.iteration ?? ""}`}
+      getItemValue={(item) => item.iteration ?? 0}
+      onJumpTo={handleJumpToIteration}
+      onScrollEnd={handleScrollEnd}
+      onSelect={(option) => handleSelectTask(option as ExecutionTask)}
+      isItemSelected={(option) => option.iteration === selectedTask.iteration}
+      renderItem={(option) => {
+        const task = option as AugmentedExecutionTask;
+        return (
           <>
-            <Box component="span" sx={{ minWidth: 18, lineHeight: 1 }}>
-              {dropdownIcon(item.summarized ? "COMPLETED" : "COMPLETED")}
+            <Box
+              component="span"
+              sx={{ minWidth: 18, display: "flex", alignItems: "center" }}
+            >
+              <IterationStatusIcon
+                status={(task.status as TaskStatus) ?? TaskStatus.COMPLETED}
+                size={13}
+              />
             </Box>
-            <Box component="span">Iteration {item.iteration}</Box>
-            {item.summarized && (
+            <Box component="span">Iteration {task.iteration}</Box>
+            {!task._summarized && task.taskId && (
+              <Typography
+                component="span"
+                sx={{ fontSize: "8pt", color: colors.gray04, ml: 1 }}
+              >
+                {task.taskId}
+              </Typography>
+            )}
+            {task._summarized && (
               <Typography
                 component="span"
                 sx={{
@@ -290,23 +365,8 @@ export const InlineTaskIterations = ({
               </Typography>
             )}
           </>
-        )}
-      />
-    );
-  }
-
-  return (
-    <CollapsibleIterationList
-      items={retryIterationOptions}
-      headerLabel={headerLabel}
-      onSelect={(option) => handleSelectTask(option as ExecutionTask)}
-      isItemSelected={(option) => {
-        const taskId = (option as AugmentedExecutionTask).taskId;
-        return !!taskId && taskId === selectedTask.taskId;
+        );
       }}
-      renderItem={(option) => (
-        <LabelRenderer isIteration={isIteration} iterationTask={option} />
-      )}
     />
   );
 };

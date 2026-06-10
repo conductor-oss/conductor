@@ -424,8 +424,8 @@ public interface WorkflowService {
 
     /**
      * Returns a paginated page of DO_WHILE iteration outputs for the given task. Results are
-     * ordered descending (latest iteration first) so {@code start=0} always returns the most
-     * recent iterations.
+     * ordered descending (latest iteration first) so {@code start=0} always returns the most recent
+     * iterations.
      *
      * @param workflowId Id of the workflow execution.
      * @param taskReferenceName Reference name of the DO_WHILE task.

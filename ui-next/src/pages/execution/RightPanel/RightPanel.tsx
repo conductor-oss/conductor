@@ -75,6 +75,7 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
       selectedTask,
       isIteration,
       retryIterationOptions,
+      parentDoWhileRef,
       errorMessage,
       currentTab,
       maybeSiblings,
@@ -232,6 +233,7 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
                     handleSelectTask={handleSelectTask}
                     executionId={executionId}
                     authHeaders={authHeaders}
+                    parentDoWhileRef={parentDoWhileRef}
                   />
                 ) : null}
                 {selectedTask?.taskType === TaskType.DO_WHILE && (

@@ -38,6 +38,11 @@ export const useRightPanelActor = (
     }
   }, [executionStatusMap, selectedTask]);
 
+  const parentDoWhileRef = useMemo(() => {
+    const parentLoop = selectedTaskInStatusMap?.parentLoop as any;
+    return parentLoop?.referenceTaskName as string | undefined;
+  }, [selectedTaskInStatusMap]);
+
   const retryIterationOptions = useMemo(() => {
     const loopOver = selectedTaskInStatusMap?.loopOver;
     if (!loopOver?.length) return loopOver;
@@ -51,10 +56,10 @@ export const useRightPanelActor = (
     return fillIterationPlaceholders(
       loopOver,
       totalIterations,
-      parentLoop?.referenceTaskName as string | undefined,
+      parentDoWhileRef,
       selectedTaskInStatusMap?.workflowTask,
     );
-  }, [selectedTaskInStatusMap]);
+  }, [selectedTaskInStatusMap, parentDoWhileRef]);
   const maybeSiblings = selectedTaskInStatusMap?.related?.siblings || [];
 
   const isSelectedTaskInProgressStatus = useSelector(
@@ -88,6 +93,7 @@ export const useRightPanelActor = (
     {
       selectedTask,
       retryIterationOptions,
+      parentDoWhileRef,
       maybeSiblings,
       executionId,
       authHeaders,
