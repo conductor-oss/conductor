@@ -10,7 +10,7 @@ import {
 import { usePanelChanges } from "pages/definition/state/usePanelChanges";
 import { removeDeletedWorkflow } from "pages/runWorkflow/runWorkflowUtils";
 import { fetchWithContext, useFetchContext } from "plugins/fetch";
-import { useContext, useEffect, useMemo } from "react";
+import { useCallback, useContext, useEffect, useMemo } from "react";
 import { useQueryClient } from "react-query";
 import { Location, useLocation, useNavigate, useParams } from "react-router";
 import { useQueryState } from "react-router-use-location-state";
@@ -25,6 +25,7 @@ import { WORKFLOW_DEFINITION_URL } from "utils/constants/route";
 import { useActionWithPath, useAuthHeaders } from "utils/query";
 import { ActorRef, State } from "xstate";
 import { workflowDefinitionMachine } from "./machine";
+import { nextQueryString } from "./queryParam";
 
 const WORKFLOW_FETCH_FAILED = "Failed to fetch workflow";
 const WORKFLOW_FETCH_FORBIDDEN =
@@ -37,21 +38,41 @@ export const useWorkflowDefinition = (currentUser: User) => {
   const queryClient = useQueryClient();
   const fetchContext = useFetchContext(); // Maintain compatibility
   const { setMessage } = useContext(MessageContext);
-  const [timeInParameter, setTimeInParameter] = useQueryState<string>(
-    "showImportSuccess",
-    "",
-  );
+  // Read-only; writers are defined below (see setLiveQueryParam).
+  const [timeInParameter] = useQueryState<string>("showImportSuccess", "");
   const [blogUrl] = useQueryState<string>("blogUrl", "");
-  const [taskReferenceName, handleTaskReferenceName] = useQueryState<string>(
-    "taskReferenceName",
-    "",
-  );
+  const [taskReferenceName] = useQueryState<string>("taskReferenceName", "");
   const authHeaders = useAuthHeaders();
 
   const setDefinitionService = useSetAtom(setDefinitionServiceAtom);
 
   // Needed stuff for compatibility mode
   const navigate = useNavigate();
+
+  // Writes a query param off the live window.location (not a render-captured
+  // one) and skips no-op writes, so a setter firing right after pushToHistory
+  // can't rebuild a stale url and revert the navigation.
+  const setLiveQueryParam = useCallback(
+    (key: string, value: string | undefined) => {
+      const { pathname, search } = window.location;
+      const next = nextQueryString(search, key, value);
+      if (next === null) {
+        return;
+      }
+      navigate({ pathname, search: next }, { replace: true });
+    },
+    [navigate],
+  );
+
+  const handleTaskReferenceName = useCallback(
+    (value: string | undefined) => setLiveQueryParam("taskReferenceName", value),
+    [setLiveQueryParam],
+  );
+
+  const setTimeInParameter = useCallback(
+    (value: string) => setLiveQueryParam("showImportSuccess", value),
+    [setLiveQueryParam],
+  );
 
   const { authService } = useContext(AuthContext);
 
