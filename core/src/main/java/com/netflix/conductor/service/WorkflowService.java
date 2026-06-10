@@ -430,7 +430,7 @@ public interface WorkflowService {
      * @param workflowId Id of the workflow execution.
      * @param taskReferenceName Reference name of the DO_WHILE task.
      * @param start Zero-based offset into the descending iteration list.
-     * @param count Maximum number of iterations to return (capped at 1 000).
+     * @param count Maximum number of iterations to return (capped at 100).
      * @return paginated {@link SearchResult} of {@link DoWhileIterationOutput}.
      */
     SearchResult<DoWhileIterationOutput> getDoWhileIterations(
@@ -439,7 +439,7 @@ public interface WorkflowService {
                     String taskReferenceName,
             int start,
             @Max(
-                            value = 1_000,
+                            value = 100,
                             message =
                                     "Cannot return more than {value} iterations per page. Please use pagination.")
                     int count);

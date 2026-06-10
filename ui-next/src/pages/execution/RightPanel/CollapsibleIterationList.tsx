@@ -1,4 +1,10 @@
-import { Box, Collapse, Divider, InputBase, Typography } from "@mui/material";
+import {
+  Box,
+  Collapse,
+  InputAdornment,
+  OutlinedInput,
+  Typography,
+} from "@mui/material";
 import { CaretDown, CaretRight, X } from "@phosphor-icons/react";
 import React, {
   ReactNode,
@@ -156,25 +162,29 @@ export function CollapsibleIterationList<T>({
           sx={{
             overflow: "hidden",
             width: "100%",
+            // pt: 0.5,
+            // pb: 1,
+            p: 2,
           }}
         >
           {/* ── Selected ── */}
           {(selectedItem || selectedLabel) && (
-            <>
+            <Box marginBottom={3}>
               <SectionLabel>Selected</SectionLabel>
-              <IterationRow
-                onClick={() => {
-                  if (selectedItem) onSelect(selectedItem, selectedIndex);
-                }}
-                selected
-                clickable={!!selectedItem}
-              >
-                {selectedItem
-                  ? renderItem(selectedItem, selectedIndex)
-                  : selectedLabel}
-              </IterationRow>
-              <Divider />
-            </>
+              <Box sx={{ mx: 1, borderRadius: 1, overflow: "hidden" }}>
+                <IterationRow
+                  onClick={() => {
+                    if (selectedItem) onSelect(selectedItem, selectedIndex);
+                  }}
+                  selected
+                  clickable={!!selectedItem}
+                >
+                  {selectedItem
+                    ? renderItem(selectedItem, selectedIndex)
+                    : selectedLabel}
+                </IterationRow>
+              </Box>
+            </Box>
           )}
 
           {/* ── Compact preview ── */}
@@ -220,54 +230,34 @@ export function CollapsibleIterationList<T>({
           {showAll && (
             <>
               {/* Search input */}
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  borderBottom: "1px solid",
-                  borderColor: "divider",
-                  px: 1.5,
-                }}
-              >
-                <InputBase
+              <Box sx={{ px: 1.5, py: 1 }}>
+                <OutlinedInput
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search or jump to iteration"
                   fullWidth
                   autoFocus
-                  sx={{ fontSize: 14, py: 0.75, color: "text.primary" }}
+                  size="small"
+                  sx={{ fontSize: 13 }}
+                  endAdornment={
+                    query ? (
+                      <InputAdornment position="end">
+                        <Box
+                          onClick={() => setQuery("")}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            color: colors.gray04,
+                            cursor: "pointer",
+                            "&:hover": { color: "text.primary" },
+                          }}
+                        >
+                          <X size={13} />
+                        </Box>
+                      </InputAdornment>
+                    ) : null
+                  }
                 />
-                {query ? (
-                  <Box
-                    onClick={() => setQuery("")}
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      color: colors.gray04,
-                      cursor: "pointer",
-                      pl: 1,
-                      flexShrink: 0,
-                      "&:hover": { color: "text.primary" },
-                    }}
-                  >
-                    <X size={13} />
-                  </Box>
-                ) : (
-                  <Box
-                    onClick={() => setShowAll(false)}
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      color: colors.gray04,
-                      cursor: "pointer",
-                      pl: 1,
-                      flexShrink: 0,
-                      "&:hover": { color: "text.primary" },
-                    }}
-                  >
-                    <X size={13} />
-                  </Box>
-                )}
               </Box>
 
               {/* Browse mode */}
@@ -406,9 +396,11 @@ function IterationRow({
         color: "text.primary",
         cursor: clickable ? "pointer" : "default",
         backgroundColor: selected ? "action.selected" : "transparent",
+        borderRadius: selected ? 1 : 0,
         "&:hover": clickable
           ? {
               backgroundColor: selected ? "action.selected" : "action.hover",
+              borderRadius: 1,
               opacity: selected ? 0.85 : 1,
             }
           : {},
@@ -416,7 +408,6 @@ function IterationRow({
           ? {
               position: "absolute",
               top: 0,
-              left: 0,
               width: "100%",
               transform: `translateY(${top}px)`,
             }
@@ -428,7 +419,7 @@ function IterationRow({
   );
 }
 
-function SectionLabel({ children }: { children: ReactNode }) {
+function SectionLabel({ children, sx }: { children: ReactNode; sx?: object }) {
   return (
     <Typography
       sx={{
@@ -439,6 +430,7 @@ function SectionLabel({ children }: { children: ReactNode }) {
         fontWeight: 600,
         color: colors.gray04,
         userSelect: "none",
+        ...sx,
       }}
     >
       {children}

@@ -1,5 +1,5 @@
 import { Box, Typography } from "@mui/material";
-import { fetchDoWhileIterations, DoWhileIterationOutput } from "commonServices";
+import { DoWhileIterationOutput, fetchDoWhileIterations } from "commonServices";
 import { useCallback, useEffect, useMemo } from "react";
 import { useInfiniteQuery, useQueryClient } from "react-query";
 import { colors } from "theme/tokens/variables";
@@ -7,11 +7,11 @@ import { AuthHeaders } from "types/common";
 import { ExecutionTask } from "types/Execution";
 import { TaskStatus } from "types/TaskStatus";
 import { CollapsibleIterationList } from "./CollapsibleIterationList";
-import { IterationStatusIcon } from "./IterationStatusIcon";
 import {
-  pageStartForIteration,
   IterationPlaceholder,
+  pageStartForIteration,
 } from "./iterationHelpers";
+import { IterationStatusIcon } from "./IterationStatusIcon";
 
 const PAGE_SIZE = 50;
 
