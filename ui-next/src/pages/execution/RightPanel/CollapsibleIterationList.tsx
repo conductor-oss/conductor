@@ -51,11 +51,10 @@ export function CollapsibleIterationList<T>({
   getOptionLabel,
   getItemValue,
 }: CollapsibleIterationListProps<T>) {
-  const PREVIEW_COUNT = 3;
   const searchMode = !!getOptionLabel;
 
   const [expanded, setExpanded] = useState(true);
-  const [showAll, setShowAll] = useState(false);
+  const showAll = true;
   const [query, setQuery] = useState("");
   const scrollElRef = useRef<HTMLDivElement | null>(null);
 
@@ -98,8 +97,6 @@ export function CollapsibleIterationList<T>({
 
   const listHeight = Math.min(items.length * ITEM_HEIGHT, MAX_LIST_HEIGHT);
   const isSearching = !!query;
-  const previewItems = items.slice(0, PREVIEW_COUNT);
-  const remainingCount = (totalItems ?? items.length) - PREVIEW_COUNT;
 
   if (!searchMode) {
     return (
@@ -142,7 +139,15 @@ export function CollapsibleIterationList<T>({
           "&:hover": { backgroundColor: "action.hover" },
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 2,
+            width: "100%",
+          }}
+        >
           <Typography
             sx={{ fontSize: 14, fontWeight: 500, color: "text.primary" }}
           >
@@ -185,45 +190,6 @@ export function CollapsibleIterationList<T>({
                 </IterationRow>
               </Box>
             </Box>
-          )}
-
-          {/* ── Compact preview ── */}
-          {!showAll && (
-            <>
-              {previewItems.length > 0 && (
-                <>
-                  <SectionLabel>Recent</SectionLabel>
-                  {previewItems.map((item, i) => {
-                    const selected = isItemSelected?.(item, i) ?? false;
-                    return (
-                      <IterationRow
-                        key={i}
-                        onClick={() => onSelect(item, i)}
-                        selected={selected}
-                        clickable
-                      >
-                        {renderItem(item, i)}
-                      </IterationRow>
-                    );
-                  })}
-                </>
-              )}
-              {remainingCount > 0 && (
-                <Box
-                  onClick={() => setShowAll(true)}
-                  sx={{
-                    px: 1.5,
-                    py: 1,
-                    fontSize: 13,
-                    color: "primary.main",
-                    cursor: "pointer",
-                    "&:hover": { backgroundColor: "action.hover" },
-                  }}
-                >
-                  Show {remainingCount} more...
-                </Box>
-              )}
-            </>
           )}
 
           {/* ── Full list (search + browse) ── */}

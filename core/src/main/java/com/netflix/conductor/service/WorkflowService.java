@@ -21,7 +21,6 @@ import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.common.run.DoWhileIterationOutput;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
@@ -422,25 +421,4 @@ public interface WorkflowService {
     ExternalStorageLocation getExternalStorageLocation(
             String path, String operation, String payloadType);
 
-    /**
-     * Returns a paginated page of DO_WHILE iteration outputs for the given task. Results are
-     * ordered descending (latest iteration first) so {@code start=0} always returns the most recent
-     * iterations.
-     *
-     * @param workflowId Id of the workflow execution.
-     * @param taskReferenceName Reference name of the DO_WHILE task.
-     * @param start Zero-based offset into the descending iteration list.
-     * @param count Maximum number of iterations to return (capped at 100).
-     * @return paginated {@link SearchResult} of {@link DoWhileIterationOutput}.
-     */
-    SearchResult<DoWhileIterationOutput> getDoWhileIterations(
-            @NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId,
-            @NotEmpty(message = "Task reference name cannot be null or empty.")
-                    String taskReferenceName,
-            int start,
-            @Max(
-                            value = 100,
-                            message =
-                                    "Cannot return more than {value} iterations per page. Please use pagination.")
-                    int count);
 }

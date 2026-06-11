@@ -140,6 +140,19 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
 
   const isKeptLastNPruned = (selectedTask as any)?._summarized === true;
 
+  const prunedNotice = (
+    <Box
+      sx={{
+        px: 2,
+        py: 3,
+        color: "text.secondary",
+        fontSize: 13,
+      }}
+    >
+      This data isn&apos;t available in summarize mode.
+    </Box>
+  );
+
   return !selectedTask ? null : (
     <Paper square elevation={0} id="execution-page-right-panel">
       {errorMessage && (
@@ -208,7 +221,8 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
                 </Heading>
                 <StatusBadge status={selectedTask?.status} />
               </Box>
-              {selectedTask?.status === "PENDING" ? null : (
+              {selectedTask?.status === "PENDING" ||
+              isKeptLastNPruned ? null : (
                 <Box sx={{ fontSize: 14, width: "100%" }}>
                   <ClipboardCopy value={selectedTask?.taskId || ""}>
                     <Box
@@ -293,101 +307,84 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
         </Box>
       </Box>
 
-      {isKeptLastNPruned ? (
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 1,
-            py: 6,
-            textAlign: "center",
-            color: "text.secondary",
-            fontSize: 14,
-          }}
+      <>
+        <Tabs
+          value={currentTab}
+          style={{ marginBottom: 0 }}
+          contextual
+          variant="scrollable"
+          scrollButtons={containerQueryState["small"] ? true : "auto"}
+          allowScrollButtonsMobile
         >
-          <Box>This iteration&apos;s data was pruned from storage.</Box>
-          <Box sx={{ fontSize: 12 }}>
-            The workflow was configured with <strong>keepLastN</strong>.
-          </Box>
-        </Box>
-      ) : (
-        <>
-          <Tabs
-            value={currentTab}
-            style={{ marginBottom: 0 }}
-            contextual
-            variant="scrollable"
-            scrollButtons={containerQueryState["small"] ? true : "auto"}
-            allowScrollButtonsMobile
-          >
-            <Tab
-              label="Summary"
-              onClick={() => changeCurrentTab(SUMMARY_TAB)}
-            />
-            <Tab
-              label="Input"
-              onClick={() => changeCurrentTab(INPUT_TAB)}
-              disabled={!selectedTask.status}
-            />
-            <Tab
-              label="Output"
-              onClick={() => changeCurrentTab(OUTPUT_TAB)}
-              disabled={!selectedTask.status}
-            />
-            <Tab
-              label="Logs"
-              onClick={() => changeCurrentTab(LOGS_TAB)}
-              disabled={!selectedTask.status}
-            />
-            <Tab
-              label="JSON"
-              onClick={() => changeCurrentTab(JSON_TAB)}
-              disabled={!selectedTask.status}
-            />
-            <Tab
-              label="Definition"
-              onClick={() => changeCurrentTab(DEFINITION_TAB)}
-            />
-          </Tabs>
-          <Paper square elevation={0}>
-            {currentTab === SUMMARY_TAB && (
-              <Box
-                style={{
-                  overflowY: "auto",
-                  overflowX: "hidden",
-                  maxHeight: "calc(100vh - 100px)",
-                }}
-              >
-                <TaskSummary taskResult={selectedTask} />
-                {maybeStatusForm}
-              </Box>
-            )}
-            {currentTab === INPUT_TAB && (
+          <Tab label="Summary" onClick={() => changeCurrentTab(SUMMARY_TAB)} />
+          <Tab
+            label="Input"
+            onClick={() => changeCurrentTab(INPUT_TAB)}
+            disabled={!selectedTask.status}
+          />
+          <Tab
+            label="Output"
+            onClick={() => changeCurrentTab(OUTPUT_TAB)}
+            disabled={!selectedTask.status}
+          />
+          <Tab
+            label="Logs"
+            onClick={() => changeCurrentTab(LOGS_TAB)}
+            disabled={!selectedTask.status}
+          />
+          <Tab
+            label="JSON"
+            onClick={() => changeCurrentTab(JSON_TAB)}
+            disabled={!selectedTask.status}
+          />
+          <Tab
+            label="Definition"
+            onClick={() => changeCurrentTab(DEFINITION_TAB)}
+          />
+        </Tabs>
+        <Paper square elevation={0}>
+          {currentTab === SUMMARY_TAB && (
+            <Box
+              style={{
+                overflowY: "auto",
+                overflowX: "hidden",
+                maxHeight: "calc(100vh - 100px)",
+              }}
+            >
+              <TaskSummary taskResult={selectedTask} />
+              {maybeStatusForm}
+            </Box>
+          )}
+          {currentTab === INPUT_TAB &&
+            (!selectedTask.inputData ? (
+              prunedNotice
+            ) : (
               <ReactJson
-                src={selectedTask.inputData ?? {}}
+                src={selectedTask.inputData}
                 title="Task input"
                 overflowY="auto"
                 overflowX="hidden"
                 workflowName={workflowName}
                 editorHeight="calc(100vh - 280px)"
               />
-            )}
-            {currentTab === OUTPUT_TAB && (
+            ))}
+          {currentTab === OUTPUT_TAB &&
+            (!selectedTask.outputData ? (
+              prunedNotice
+            ) : (
               <ReactJson
-                src={
-                  isReRunFromTaskInProgress
-                    ? {}
-                    : (selectedTask.outputData ?? {})
-                }
+                src={isReRunFromTaskInProgress ? {} : selectedTask.outputData}
                 title="Task output"
                 overflowY="auto"
                 overflowX="hidden"
                 workflowName={workflowName}
                 editorHeight="calc(100vh - 280px)"
               />
-            )}
-            {currentTab === LOGS_TAB && (
+            ))}
+          {currentTab === LOGS_TAB &&
+            (isKeptLastNPruned ? (
+              prunedNotice
+            ) : (
               <Box
                 style={{
                   overflowY: "auto",
@@ -400,30 +397,29 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
                   containerQueryState={containerQueryState}
                 />
               </Box>
-            )}
-            {currentTab === JSON_TAB && (
-              <ReactJson
-                src={selectedTask}
-                title="Task Execution JSON"
-                overflowY="auto"
-                overflowX="hidden"
-                workflowName={workflowName}
-                editorHeight="calc(100vh - 280px)"
-              />
-            )}
-            {currentTab === DEFINITION_TAB && (
-              <ReactJson
-                src={selectedTask.workflowTask}
-                title="Task definition/Runtime config"
-                overflowY="auto"
-                overflowX="hidden"
-                workflowName={workflowName}
-                editorHeight="calc(100vh - 280px)"
-              />
-            )}
-          </Paper>
-        </>
-      )}
+            ))}
+          {currentTab === JSON_TAB && (
+            <ReactJson
+              src={selectedTask}
+              title="Task Execution JSON"
+              overflowY="auto"
+              overflowX="hidden"
+              workflowName={workflowName}
+              editorHeight="calc(100vh - 280px)"
+            />
+          )}
+          {currentTab === DEFINITION_TAB && (
+            <ReactJson
+              src={selectedTask.workflowTask}
+              title="Task definition/Runtime config"
+              overflowY="auto"
+              overflowX="hidden"
+              workflowName={workflowName}
+              editorHeight="calc(100vh - 280px)"
+            />
+          )}
+        </Paper>
+      </>
     </Paper>
   );
 };

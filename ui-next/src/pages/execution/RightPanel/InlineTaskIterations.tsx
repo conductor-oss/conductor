@@ -1,19 +1,19 @@
 import { Box, Typography } from "@mui/material";
-import { DoWhileIterationOutput, fetchDoWhileIterations } from "commonServices";
-import { useCallback, useEffect, useMemo } from "react";
-import { useInfiniteQuery, useQueryClient } from "react-query";
+import { fetchExecutionFull } from "commonServices";
+import { useMemo, useState } from "react";
+import { useQuery } from "react-query";
 import { colors } from "theme/tokens/variables";
 import { AuthHeaders } from "types/common";
 import { ExecutionTask } from "types/Execution";
 import { TaskStatus } from "types/TaskStatus";
 import { CollapsibleIterationList } from "./CollapsibleIterationList";
-import {
-  IterationPlaceholder,
-  pageStartForIteration,
-} from "./iterationHelpers";
 import { IterationStatusIcon } from "./IterationStatusIcon";
-
-const PAGE_SIZE = 50;
+import {
+  fillIterationPlaceholders,
+  IterationPlaceholder,
+} from "./iterationHelpers";
+import { SummarizeConfirmDialog } from "./SummarizeConfirmDialog";
+import { SummarizeToggle } from "./SummarizeToggle";
 
 /**
  * ExecutionTask augmented with UI-internal fields injected by hook.ts when
@@ -45,174 +45,55 @@ export const InlineTaskIterations = ({
   authHeaders,
   parentDoWhileRef,
 }: InlineTaskIterationsProps) => {
+  const [isSummarized, setIsSummarized] = useState(true);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
   const innerTaskRef = selectedTask?.workflowTask?.taskReferenceName;
 
-  const currentIteration = selectedTask.iteration;
-  const isCurrentSummarized = selectedTask._summarized === true;
-
-  const {
-    data: pagesData,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useInfiniteQuery(
-    ["dowhile-iterations", executionId, parentDoWhileRef],
-    ({ pageParam = 0 }) =>
-      fetchDoWhileIterations({
+  // Shared query with DoWhileIteration — one fetch, cached for both.
+  const { data: fullWorkflow, isFetching } = useQuery(
+    ["workflow-full", executionId],
+    () =>
+      fetchExecutionFull({
         authHeaders: authHeaders as any,
         executionId: executionId!,
-        taskReferenceName: parentDoWhileRef!,
-        start: pageParam,
-        count: PAGE_SIZE,
       }),
     {
-      enabled: !!executionId && !!parentDoWhileRef && !!innerTaskRef,
+      enabled: !isSummarized && !!executionId,
       staleTime: Infinity,
-      getNextPageParam: (lastPage, allPages) => {
-        const fetched = allPages.length * PAGE_SIZE;
-        return fetched < lastPage.totalHits ? fetched : undefined;
-      },
     },
   );
 
-  const fetchedIterations: DoWhileIterationOutput[] = useMemo(
-    () => pagesData?.pages.flatMap((p) => p.results) ?? [],
-    [pagesData],
-  );
+  // When full data is available, rebuild the iteration list from the complete
+  // task list rather than the summarized loopOver. This resolves placeholder
+  // items that were created because the initial load used summarize=true.
+  const resolvedOptions = useMemo(() => {
+    if (isSummarized || !fullWorkflow?.tasks) return retryIterationOptions;
 
-  const totalHits = pagesData?.pages[0]?.totalHits ?? 0;
-
-  // Auto-upgrade: when the data for a summarized placeholder's iteration
-  // arrives via lazy loading, replace the placeholder with real data so the
-  // normal detail tabs render.
-  useEffect(() => {
-    if (!isCurrentSummarized) return;
-    if (currentIteration == null || fetchedIterations.length === 0) return;
-
-    const item = fetchedIterations.find(
-      (i) => i.iteration === currentIteration,
+    const innerTasks: AugmentedExecutionTask[] = fullWorkflow.tasks.filter(
+      (t: ExecutionTask) =>
+        t.workflowTask?.taskReferenceName === innerTaskRef &&
+        (t.iteration ?? 0) > 0,
     );
-    if (!item || item.summarized) return;
 
-    const matchingTask = retryIterationOptions.find(
-      (opt: any) => opt.iteration === currentIteration,
-    );
-    if (!matchingTask) return;
+    // totalIterations is preserved from the original (possibly summarized) list
+    // since retryIterationOptions always has length == total iteration count.
+    const totalIterations = retryIterationOptions.length;
 
-    const taskRef = innerTaskRef ?? "";
-    handleSelectTask({
-      ...matchingTask,
-      _summarized: false,
-      taskId:
-        item.taskIds?.[taskRef] ?? (matchingTask as any).taskId ?? undefined,
-      inputData:
-        (item.inputData?.[taskRef] as Record<string, unknown>) ?? undefined,
-      outputData:
-        (item.output?.[taskRef] as Record<string, unknown>) ?? undefined,
-    } as any);
-  }, [fetchedIterations, isCurrentSummarized, currentIteration]);
-
-  const handleScrollEnd = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
-    }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-
-  const queryClient = useQueryClient();
-  const queryKey = ["dowhile-iterations", executionId, parentDoWhileRef];
-
-  const fetchPageForIteration = useCallback(
-    async (iterationNum: number) => {
-      if (!executionId || !parentDoWhileRef || totalHits === 0) return;
-      const alreadyLoaded = fetchedIterations.some(
-        (i) => i.iteration === iterationNum,
-      );
-      if (alreadyLoaded) return;
-      const pageStart = pageStartForIteration(
-        iterationNum,
-        totalHits,
-        PAGE_SIZE,
-      );
-      if (pageStart === null) return;
-      try {
-        const page = await fetchDoWhileIterations({
-          authHeaders: authHeaders as any,
-          executionId,
-          taskReferenceName: parentDoWhileRef,
-          start: pageStart,
-          count: PAGE_SIZE,
-        });
-        queryClient.setQueryData<any>(queryKey, (old: any) => {
-          if (!old) return { pages: [page], pageParams: [pageStart] };
-          const existingStarts = new Set(old.pageParams as number[]);
-          if (existingStarts.has(pageStart)) return old;
-          return {
-            pages: [...old.pages, page],
-            pageParams: [...old.pageParams, pageStart],
-          };
-        });
-      } catch {
-        // Silently fail
-      }
-    },
-    [
-      executionId,
+    return fillIterationPlaceholders(
+      innerTasks,
+      totalIterations,
       parentDoWhileRef,
-      authHeaders,
-      totalHits,
-      fetchedIterations,
-      queryClient,
-      queryKey,
-    ],
-  );
-
-  const handlePrefetchPage = useCallback(
-    (iterationNum: number) => {
-      fetchPageForIteration(iterationNum);
-    },
-    [fetchPageForIteration],
-  );
-
-  const handleJumpToIteration = useCallback(
-    async (iterationNum: number) => {
-      await fetchPageForIteration(iterationNum);
-
-      const loaded = fetchedIterations.find(
-        (i) => i.iteration === iterationNum,
-      );
-      const matchingTask = retryIterationOptions.find(
-        (opt: any) => opt.iteration === iterationNum,
-      );
-
-      if (loaded && !loaded.summarized) {
-        const taskRef = innerTaskRef ?? "";
-        handleSelectTask({
-          ...(matchingTask ?? selectedTask),
-          _summarized: false,
-          iteration: iterationNum,
-          taskId:
-            loaded.taskIds?.[taskRef] ??
-            (matchingTask as any)?.taskId ??
-            undefined,
-          inputData:
-            (loaded.inputData?.[taskRef] as Record<string, unknown>) ??
-            undefined,
-          outputData:
-            (loaded.output?.[taskRef] as Record<string, unknown>) ?? undefined,
-        } as any);
-      } else if (matchingTask) {
-        handleSelectTask(matchingTask as ExecutionTask);
-      }
-    },
-    [
-      fetchPageForIteration,
-      fetchedIterations,
-      retryIterationOptions,
-      innerTaskRef,
-      handleSelectTask,
-      selectedTask,
-    ],
-  );
+      selectedTask.workflowTask,
+    );
+  }, [
+    isSummarized,
+    fullWorkflow,
+    retryIterationOptions,
+    innerTaskRef,
+    parentDoWhileRef,
+    selectedTask.workflowTask,
+  ]);
 
   const effectiveIteration = selectedTask.iteration;
   const hasKnownIteration =
@@ -236,48 +117,47 @@ export const InlineTaskIterations = ({
     </Box>
   );
 
-  if (fetchedIterations.length > 0) {
-    return (
-      <CollapsibleIterationList
-        items={fetchedIterations}
-        headerLabel={headerLabel}
-        headerText={headerText}
-        selectedLabel={hasKnownIteration ? headerText : undefined}
-        totalItems={totalHits}
-        onPrefetch={handlePrefetchPage}
-        onJumpTo={handleJumpToIteration}
-        onScrollEnd={handleScrollEnd}
-        getOptionLabel={(item) => `Iteration ${item.iteration}`}
-        getItemValue={(item) => item.iteration}
-        onSelect={(item) => {
-          const matchingTask = retryIterationOptions.find(
-            (opt) => opt.iteration === item.iteration,
-          );
-          if (!matchingTask) return;
-
-          if (item.summarized) {
-            handleSelectTask(matchingTask as ExecutionTask);
-          } else {
-            const taskRef = innerTaskRef ?? "";
-            handleSelectTask({
-              ...matchingTask,
-              _summarized: false,
-              taskId:
-                item.taskIds?.[taskRef] ??
-                (matchingTask as AugmentedExecutionTask).taskId ??
-                undefined,
-              inputData:
-                (item.inputData?.[taskRef] as Record<string, unknown>) ??
-                undefined,
-              outputData:
-                (item.output?.[taskRef] as Record<string, unknown>) ??
-                undefined,
-            } as AugmentedExecutionTask);
-          }
+  return (
+    <>
+      <SummarizeConfirmDialog
+        open={confirmOpen}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          setIsSummarized(false);
+          setConfirmOpen(false);
         }}
-        isItemSelected={(item) => selectedTask.iteration === item.iteration}
-        renderItem={(item) => {
-          const taskId = item.taskIds?.[innerTaskRef ?? ""];
+      />
+
+      <CollapsibleIterationList
+        items={resolvedOptions}
+        headerLabel={headerLabel}
+        trailing={
+          <SummarizeToggle
+            checked={isSummarized}
+            onChange={(checked) => {
+              if (checked) {
+                setIsSummarized(true);
+              } else {
+                setConfirmOpen(true);
+              }
+            }}
+          />
+        }
+        totalItems={resolvedOptions.length}
+        getOptionLabel={(item) => `Iteration ${item.iteration ?? ""}`}
+        getItemValue={(item) => item.iteration ?? 0}
+        onJumpTo={(iterationNum) => {
+          const match = resolvedOptions.find(
+            (opt) => opt.iteration === iterationNum,
+          );
+          if (match) handleSelectTask(match as ExecutionTask);
+        }}
+        onSelect={(option) => handleSelectTask(option as ExecutionTask)}
+        isItemSelected={(option) => option.iteration === selectedTask.iteration}
+        renderItem={(option) => {
+          const task = option as AugmentedExecutionTask;
+          const showSummarized = task._summarized === true;
+          const isLoading = isFetching && task._summarized === true;
           return (
             <>
               <Box
@@ -285,20 +165,36 @@ export const InlineTaskIterations = ({
                 sx={{ minWidth: 18, display: "flex", alignItems: "center" }}
               >
                 <IterationStatusIcon
-                  status={(item.status as TaskStatus) ?? TaskStatus.COMPLETED}
+                  status={(task.status as TaskStatus) ?? TaskStatus.COMPLETED}
                   size={13}
                 />
               </Box>
-              <Box component="span">Iteration {item.iteration}</Box>
-              {!item.summarized && taskId && (
+              <Box component="span">Iteration {task.iteration}</Box>
+              {!showSummarized && task.taskId && (
+                <Typography
+                  component="span"
+                  sx={{
+                    fontSize: "8pt",
+                    color: colors.gray04,
+                    ml: 1,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    minWidth: 0,
+                  }}
+                >
+                  {task.taskId}
+                </Typography>
+              )}
+              {isLoading && (
                 <Typography
                   component="span"
                   sx={{ fontSize: "8pt", color: colors.gray04, ml: 1 }}
                 >
-                  {taskId}
+                  loading…
                 </Typography>
               )}
-              {item.summarized && (
+              {!isLoading && showSummarized && (
                 <Typography
                   component="span"
                   sx={{
@@ -315,58 +211,6 @@ export const InlineTaskIterations = ({
           );
         }}
       />
-    );
-  }
-
-  return (
-    <CollapsibleIterationList
-      items={retryIterationOptions}
-      headerLabel={headerLabel}
-      totalItems={retryIterationOptions.length}
-      getOptionLabel={(item) => `Iteration ${item.iteration ?? ""}`}
-      getItemValue={(item) => item.iteration ?? 0}
-      onJumpTo={handleJumpToIteration}
-      onScrollEnd={handleScrollEnd}
-      onSelect={(option) => handleSelectTask(option as ExecutionTask)}
-      isItemSelected={(option) => option.iteration === selectedTask.iteration}
-      renderItem={(option) => {
-        const task = option as AugmentedExecutionTask;
-        return (
-          <>
-            <Box
-              component="span"
-              sx={{ minWidth: 18, display: "flex", alignItems: "center" }}
-            >
-              <IterationStatusIcon
-                status={(task.status as TaskStatus) ?? TaskStatus.COMPLETED}
-                size={13}
-              />
-            </Box>
-            <Box component="span">Iteration {task.iteration}</Box>
-            {!task._summarized && task.taskId && (
-              <Typography
-                component="span"
-                sx={{ fontSize: "8pt", color: colors.gray04, ml: 1 }}
-              >
-                {task.taskId}
-              </Typography>
-            )}
-            {task._summarized && (
-              <Typography
-                component="span"
-                sx={{
-                  fontSize: "8pt",
-                  color: colors.gray04,
-                  opacity: 0.7,
-                  ml: 1,
-                }}
-              >
-                (summarized)
-              </Typography>
-            )}
-          </>
-        );
-      }}
-    />
+    </>
   );
 };

@@ -19,6 +19,27 @@ export function deriveFallbackIterationStatus(
     : taskStatus;
 }
 
+/**
+ * Returns true when the iteration's output data entry carries the _summarized
+ * sentinel, or when the key is absent and the task is no longer processing
+ * (implying older records were pruned by keepLastN).
+ */
+export function isIterationSummarized(
+  option: number,
+  outputData: Record<string, unknown>,
+  isTaskProcessing: boolean,
+): boolean {
+  if (!Object.prototype.hasOwnProperty.call(outputData, option.toString())) {
+    return !isTaskProcessing;
+  }
+  const val = outputData[option.toString()];
+  return (
+    val !== null &&
+    typeof val === "object" &&
+    (val as Record<string, unknown>)["_summarized"] === true
+  );
+}
+
 export function getOrderedIterationKeys(
   outputData: Record<string, any>,
   selectedTask: { iteration?: number },

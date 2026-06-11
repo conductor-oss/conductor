@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.service;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,12 +21,10 @@ import org.springframework.stereotype.Service;
 
 import com.netflix.conductor.annotations.Audit;
 import com.netflix.conductor.annotations.Trace;
-import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.common.run.DoWhileIterationOutput;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
@@ -477,91 +474,4 @@ public class WorkflowServiceImpl implements WorkflowService {
         return executionService.getExternalStorageLocation(path, operation, type);
     }
 
-    @Override
-    public SearchResult<DoWhileIterationOutput> getDoWhileIterations(
-            String workflowId, String taskReferenceName, int start, int count) {
-        Workflow workflow = getExecutionStatus(workflowId, true);
-
-        com.netflix.conductor.common.metadata.tasks.Task doWhileTask =
-                workflow.getTasks().stream()
-                        .filter(
-                                t ->
-                                        TaskType.DO_WHILE.name().equals(t.getTaskType())
-                                                && (taskReferenceName.equals(
-                                                                t.getReferenceTaskName())
-                                                        || (t.getWorkflowTask() != null
-                                                                && taskReferenceName.equals(
-                                                                        t.getWorkflowTask()
-                                                                                .getTaskReferenceName()))))
-                        .findFirst()
-                        .orElseThrow(
-                                () ->
-                                        new NotFoundException(
-                                                "DO_WHILE task '%s' not found in workflow '%s'.",
-                                                taskReferenceName, workflowId));
-
-        Map<String, Object> outputData = doWhileTask.getOutputData();
-        if (outputData == null || outputData.isEmpty()) {
-            return new SearchResult<>(0, List.of());
-        }
-
-        Object iterationVal = outputData.get("iteration");
-        if (!(iterationVal instanceof Number)) {
-            return new SearchResult<>(0, List.of());
-        }
-        int totalIterations = ((Number) iterationVal).intValue();
-        if (totalIterations <= 0) {
-            return new SearchResult<>(0, List.of());
-        }
-
-        // Descending order: start=0 returns the most recent iterations.
-        // Index i (0-based) maps to iteration number (totalIterations - i).
-        int fromIndex = Math.min(start, totalIterations);
-        int toIndex = Math.min(start + count, totalIterations);
-
-        // Build lookups of inner-task input data and task IDs, keyed by iteration number then by
-        // workflowTask.taskReferenceName. This comes from the full (unsummarized) task
-        // list already loaded above — no extra DB call needed.
-        java.util.Map<Integer, Map<String, Object>> inputByIteration = new java.util.HashMap<>();
-        java.util.Map<Integer, Map<String, String>> taskIdByIteration = new java.util.HashMap<>();
-        for (com.netflix.conductor.common.metadata.tasks.Task t : workflow.getTasks()) {
-            if (t.getIteration() > 0 && t.getWorkflowTask() != null) {
-                String ref = t.getWorkflowTask().getTaskReferenceName();
-                if (t.getInputData() != null) {
-                    inputByIteration
-                            .computeIfAbsent(t.getIteration(), k -> new java.util.HashMap<>())
-                            .put(ref, t.getInputData());
-                }
-                if (t.getTaskId() != null) {
-                    taskIdByIteration
-                            .computeIfAbsent(t.getIteration(), k -> new java.util.HashMap<>())
-                            .put(ref, t.getTaskId());
-                }
-            }
-        }
-
-        List<DoWhileIterationOutput> results = new ArrayList<>(toIndex - fromIndex);
-        for (int i = fromIndex; i < toIndex; i++) {
-            int iterationNumber = totalIterations - i;
-            Object iterOutput = outputData.get(String.valueOf(iterationNumber));
-            boolean summarized = isSummarizedOrAbsent(iterOutput);
-            @SuppressWarnings("unchecked")
-            Map<String, Object> outputMap = summarized ? null : (Map<String, Object>) iterOutput;
-            Map<String, Object> inputMap = inputByIteration.getOrDefault(iterationNumber, null);
-            Map<String, String> taskIdMap = taskIdByIteration.getOrDefault(iterationNumber, null);
-            results.add(
-                    new DoWhileIterationOutput(
-                            iterationNumber, outputMap, inputMap, taskIdMap, summarized));
-        }
-
-        return new SearchResult<>(totalIterations, results);
-    }
-
-    private boolean isSummarizedOrAbsent(Object value) {
-        if (value == null) return true;
-        if (!(value instanceof Map)) return false;
-        @SuppressWarnings("unchecked")
-        Map<String, Object> map = (Map<String, Object>) value;
-        return Boolean.TRUE.equals(map.get("_summarized"));
-    }
 }
