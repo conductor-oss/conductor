@@ -32,6 +32,25 @@ public interface WebhookTaskService {
      */
     void put(TaskModel taskModel, int workflowVersion);
 
+    /**
+     * Returns all task IDs waiting on the given webhookId. Implementations that maintain a
+     * webhookId secondary index override this; others return an empty set.
+     *
+     * @param webhookId webhook identifier value from the task's matches map
+     * @return snapshot set of task IDs (never null)
+     */
+    default Set<String> getByWebhookId(String webhookId) {
+        return Set.of();
+    }
+
+    /**
+     * Removes a task from the webhookId index. No-op if the implementation does not maintain one.
+     *
+     * @param webhookId webhook identifier value from the task's matches map
+     * @param taskId task ID to remove
+     */
+    default void removeByWebhookId(String webhookId, String taskId) {}
+
     class Constants {
         public static final String WAIT_FOR_WEBHOOK = "WAIT_FOR_WEBHOOK";
         public static final String WEBHOOK_DELIMITER = ";";

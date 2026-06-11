@@ -21,6 +21,7 @@ include 'server'
 include 'server-lite'
 include 'common'
 include 'core'
+include 'webhooks'
 
 include 'cassandra-persistence'
 include 'redis-configuration'

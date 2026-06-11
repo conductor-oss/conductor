@@ -1,0 +1,8 @@
+dependencies {
+    implementation project(':conductor-core')
+    implementation project(':conductor-common')
+
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+
+    testImplementation 'junit:junit:4.13.2'
+}
