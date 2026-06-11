@@ -140,7 +140,6 @@ export const DoWhileIteration = ({
         }
         trailing={trailing}
         totalItems={iterationOptions.length}
-        getOptionLabel={(option) => `Iteration ${option}`}
         getItemValue={(option) => option}
         onJumpTo={handleSelect}
         onSelect={(option) => handleSelect(option)}

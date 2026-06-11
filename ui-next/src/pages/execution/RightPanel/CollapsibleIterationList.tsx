@@ -23,7 +23,6 @@ const MAX_LIST_HEIGHT = 300;
 export interface CollapsibleIterationListProps<T> {
   items: T[];
   headerLabel: ReactNode;
-  headerText?: string;
   selectedLabel?: string;
   renderItem: (item: T, index: number) => ReactNode;
   onSelect: (item: T, index: number) => void;
@@ -33,8 +32,7 @@ export interface CollapsibleIterationListProps<T> {
   onPrefetch?: (value: number) => void;
   onJumpTo?: (value: number) => void;
   onScrollEnd?: () => void;
-  getOptionLabel?: (item: T) => string;
-  getItemValue?: (item: T) => number;
+  getItemValue: (item: T) => number;
 }
 
 export function CollapsibleIterationList<T>({
@@ -48,11 +46,8 @@ export function CollapsibleIterationList<T>({
   totalItems,
   onJumpTo,
   onScrollEnd,
-  getOptionLabel,
   getItemValue,
 }: CollapsibleIterationListProps<T>) {
-  const searchMode = !!getOptionLabel;
-
   const [expanded, setExpanded] = useState(true);
   const showAll = true;
   const [query, setQuery] = useState("");
@@ -82,12 +77,12 @@ export function CollapsibleIterationList<T>({
   const selectedItem = selectedIndex >= 0 ? items[selectedIndex] : undefined;
 
   const loadedMatches = useMemo(() => {
-    if (!query || !getItemValue) return [];
+    if (!query) return [];
     return items.filter((item) => String(getItemValue(item)).startsWith(query));
   }, [items, query, getItemValue]);
 
   const jumpHints = useMemo((): number[] => {
-    if (!query || !totalItems || !getItemValue) return [];
+    if (!query || !totalItems) return [];
     const num = parseInt(query, 10);
     if (isNaN(num) || num < 1 || num > totalItems) return [];
     const alreadyLoaded = items.some((item) => getItemValue(item) === num);
@@ -97,20 +92,6 @@ export function CollapsibleIterationList<T>({
 
   const listHeight = Math.min(items.length * ITEM_HEIGHT, MAX_LIST_HEIGHT);
   const isSearching = !!query;
-
-  if (!searchMode) {
-    return (
-      <FallbackList
-        items={items}
-        headerLabel={headerLabel}
-        trailing={trailing}
-        renderItem={renderItem}
-        onSelect={onSelect}
-        isItemSelected={isItemSelected}
-        onScrollEnd={onScrollEnd}
-      />
-    );
-  }
 
   return (
     <Box
@@ -151,7 +132,7 @@ export function CollapsibleIterationList<T>({
           <Typography
             sx={{ fontSize: 14, fontWeight: 500, color: "text.primary" }}
           >
-            Iterations
+            {headerLabel}
           </Typography>
           {trailing}
         </Box>
@@ -401,149 +382,5 @@ function SectionLabel({ children, sx }: { children: ReactNode; sx?: object }) {
     >
       {children}
     </Typography>
-  );
-}
-
-function FallbackList<T>({
-  items,
-  headerLabel,
-  trailing,
-  renderItem,
-  onSelect,
-  isItemSelected,
-  onScrollEnd,
-}: {
-  items: T[];
-  headerLabel: ReactNode;
-  trailing?: ReactNode;
-  renderItem: (item: T, index: number) => ReactNode;
-  onSelect: (item: T, index: number) => void;
-  isItemSelected?: (item: T, index: number) => boolean;
-  onScrollEnd?: () => void;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
-
-  const virtualizer = useVirtualizer({
-    count: expanded ? items.length : 0,
-    getScrollElement: () => scrollEl,
-    estimateSize: () => ITEM_HEIGHT,
-    overscan: 10,
-  });
-
-  const listHeight = Math.min(items.length * ITEM_HEIGHT, MAX_LIST_HEIGHT);
-
-  const handleScroll = useCallback(
-    (e: React.UIEvent<HTMLDivElement>) => {
-      if (!onScrollEnd) return;
-      const el = e.currentTarget;
-      if (el.scrollHeight - el.scrollTop - el.clientHeight < 200) {
-        onScrollEnd();
-      }
-    },
-    [onScrollEnd],
-  );
-
-  return (
-    <Box
-      sx={{
-        width: "100%",
-        border: "1px solid",
-        borderColor: "divider",
-        borderRadius: 1,
-        overflow: "hidden",
-        backgroundColor: "background.paper",
-      }}
-    >
-      <Box
-        onClick={() => setExpanded((v) => !v)}
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          px: 1.5,
-          py: 0.75,
-          cursor: "pointer",
-          userSelect: "none",
-          borderBottom: expanded ? "1px solid" : "none",
-          borderColor: "divider",
-          "&:hover": { backgroundColor: "action.hover" },
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography
-            sx={{ fontSize: 14, fontWeight: 500, color: "text.primary" }}
-          >
-            {headerLabel}
-          </Typography>
-          {trailing}
-        </Box>
-        <Box
-          sx={{
-            color: colors.gray04,
-            display: "flex",
-            alignItems: "center",
-          }}
-        >
-          {expanded ? <CaretDown size={14} /> : <CaretRight size={14} />}
-        </Box>
-      </Box>
-
-      <Collapse in={expanded} unmountOnExit>
-        <Box
-          ref={setScrollEl}
-          onScroll={handleScroll}
-          sx={{
-            height: listHeight,
-            overflowY: "auto",
-            width: "100%",
-          }}
-        >
-          <div
-            style={{
-              height: virtualizer.getTotalSize(),
-              width: "100%",
-              position: "relative",
-            }}
-          >
-            {virtualizer.getVirtualItems().map((vItem) => {
-              const item = items[vItem.index];
-              const selected = isItemSelected?.(item, vItem.index) ?? false;
-              return (
-                <Box
-                  key={vItem.index}
-                  onClick={() => onSelect(item, vItem.index)}
-                  sx={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: `${vItem.size}px`,
-                    transform: `translateY(${vItem.start}px)`,
-                    display: "flex",
-                    alignItems: "center",
-                    px: 1.5,
-                    cursor: "pointer",
-                    fontSize: 14,
-                    fontWeight: selected ? 600 : 400,
-                    color: "text.primary",
-                    backgroundColor: selected
-                      ? "action.selected"
-                      : "transparent",
-                    "&:hover": {
-                      backgroundColor: selected
-                        ? "action.selected"
-                        : "action.hover",
-                    },
-                  }}
-                >
-                  {renderItem(item, vItem.index)}
-                </Box>
-              );
-            })}
-          </div>
-        </Box>
-      </Collapse>
-    </Box>
   );
 }

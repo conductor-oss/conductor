@@ -116,7 +116,6 @@ export const InlineTaskIterations = ({
           ) : undefined
         }
         totalItems={resolvedOptions.length}
-        getOptionLabel={(item) => `Iteration ${item.iteration ?? ""}`}
         getItemValue={(item) => item.iteration ?? 0}
         onJumpTo={(iterationNum) => {
           const match = resolvedOptions.find(
