@@ -1,0 +1,40 @@
+/*
+ * Copyright 2026 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+package org.conductoross.conductor.dao;
+
+import java.util.List;
+import java.util.Optional;
+
+import com.netflix.conductor.common.metadata.SchemaDef;
+
+/** Data access layer for centrally managed input and output schema definitions. */
+public interface SchemaDAO {
+
+    /**
+     * Save the supplied schema in the scope identified by {@code orgId}. The org id is part of the
+     * OSS contract so Orkes can inject its tenant id while OSS always uses the default org.
+     */
+    void save(String orgId, SchemaDef schemaDef);
+
+    Optional<SchemaDef> getSchemaByNameWithLatestVersion(String orgId, String name);
+
+    Optional<SchemaDef> getSchemaByNameAndVersion(String orgId, String name, int version);
+
+    List<SchemaDef> getAllSchemas(String orgId);
+
+    void deleteSchemaByName(String orgId, String name);
+
+    void deleteSchemaByNameAndVersion(String orgId, String name, int version);
+
+    Optional<Integer> getLatestVersion(String orgId, String name);
+}
