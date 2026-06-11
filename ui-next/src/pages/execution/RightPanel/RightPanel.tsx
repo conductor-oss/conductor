@@ -9,7 +9,7 @@ import {
   Tab,
   Tabs,
 } from "components";
-import { InlineTaskIterations } from "./InlineTaskIterations";
+import { IterationSection } from "./IterationSection";
 import ClipboardCopy from "components/ui/ClipboardCopy";
 import { SnackbarMessage } from "components/ui/SnackbarMessage";
 import StatusBadge from "components/StatusBadge";
@@ -41,7 +41,6 @@ import { useRightPanelActor } from "./state/hook";
 import { SummaryTask } from "./SummaryTask";
 import { dropdownIcon } from "./dropdownIcon";
 import { SecondaryActions } from "./SecondaryActions";
-import { DoWhileIteration } from "./DoWhileIteration";
 
 const executionTaskHeaderContainerQuery = {
   small: { maxWidth: 699 },
@@ -238,28 +237,23 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
                   </ClipboardCopy>
                 </Box>
               )}
-              <Box sx={{ width: "100%", mt: 1 }}>
-                {retryIterationOptions && retryIterationOptions?.length > 1 ? (
-                  <InlineTaskIterations
-                    retryIterationOptions={retryIterationOptions}
+              {((retryIterationOptions != null &&
+                retryIterationOptions.length > 1) ||
+                selectedTask?.taskType === TaskType.DO_WHILE) && (
+                <Box sx={{ width: "100%", mt: 1 }}>
+                  <IterationSection
                     selectedTask={selectedTask}
+                    retryIterationOptions={retryIterationOptions ?? []}
                     isIteration={isIteration ?? false}
                     handleSelectTask={handleSelectTask}
+                    handleSelectDoWhileIteration={handleSelectDoWhileIteration}
+                    doWhileSelection={doWhileSelection}
                     executionId={executionId}
                     authHeaders={authHeaders}
                     parentDoWhileRef={parentDoWhileRef}
                   />
-                ) : null}
-                {selectedTask?.taskType === TaskType.DO_WHILE && (
-                  <DoWhileIteration
-                    selectedTask={selectedTask}
-                    doWhileSelection={doWhileSelection}
-                    handleSelectDoWhileIteration={handleSelectDoWhileIteration}
-                    executionId={executionId}
-                    authHeaders={authHeaders}
-                  />
-                )}
-              </Box>
+                </Box>
+              )}
               {((selectedTask?.workflowTask?.type !== TaskType.DO_WHILE &&
                 selectedTask?.workflowTask?.type !== TaskType.FORK_JOIN) ||
                 rerunFromForkAndDowhileTasksEnabled) && (

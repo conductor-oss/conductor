@@ -1,9 +1,7 @@
 import { Box, Typography } from "@mui/material";
-import { fetchExecutionFull } from "commonServices";
 import ConductorTooltip from "components/ui/ConductorTooltip";
 import _nth from "lodash/nth";
-import { useCallback, useMemo, useState } from "react";
-import { useQuery } from "react-query";
+import { useCallback, useMemo } from "react";
 import { colors } from "theme/tokens/variables";
 import { AuthHeaders } from "types/common";
 import { DoWhileSelection, ExecutionTask } from "types/Execution";
@@ -14,9 +12,10 @@ import {
   getOrderedIterationKeys,
   isIterationSummarized,
 } from "./doWhileIterationHelpers";
+import { IterationHeaderLabel } from "./IterationHeaderLabel";
 import { IterationStatusIcon } from "./IterationStatusIcon";
-import { SummarizeConfirmDialog } from "./SummarizeConfirmDialog";
 import { SummarizeToggle } from "./SummarizeToggle";
+import { useFullWorkflowQuery } from "./useFullWorkflowQuery";
 
 export interface DoWhileIterationProps {
   selectedTask: ExecutionTask;
@@ -24,6 +23,8 @@ export interface DoWhileIterationProps {
   doWhileSelection?: DoWhileSelection[];
   executionId?: string;
   authHeaders?: AuthHeaders;
+  isSummarized: boolean;
+  onToggleSummarize?: (checked: boolean) => void;
 }
 
 export const DoWhileIteration = ({
@@ -32,24 +33,16 @@ export const DoWhileIteration = ({
   doWhileSelection,
   executionId,
   authHeaders,
+  isSummarized,
+  onToggleSummarize,
 }: DoWhileIterationProps) => {
-  const [isSummarized, setIsSummarized] = useState(true);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-
   const taskReferenceName = selectedTask?.referenceTaskName;
 
   // Shared query with InlineTaskIterations — one fetch, cached for both.
-  const { data: fullWorkflow } = useQuery(
-    ["workflow-full", executionId],
-    () =>
-      fetchExecutionFull({
-        authHeaders: authHeaders as any,
-        executionId: executionId!,
-      }),
-    {
-      enabled: !isSummarized && !!executionId,
-      staleTime: Infinity,
-    },
+  const { data: fullWorkflow } = useFullWorkflowQuery(
+    executionId,
+    authHeaders,
+    !isSummarized,
   );
 
   // When full data is available use the DO_WHILE task's real outputData
@@ -107,16 +100,6 @@ export const DoWhileIteration = ({
       ? `Iteration ${currentIteration}`
       : `Iterations (${iterationOptions.length})`;
 
-  const headerLabel = (
-    <Box
-      component="span"
-      sx={{ display: "inline-flex", alignItems: "center", gap: 0.75 }}
-    >
-      <IterationStatusIcon status={selectedTask.status} size={13} />
-      <span>{headerText}</span>
-    </Box>
-  );
-
   const keepLastNTrailing =
     selectedTask?.inputData?.keepLastN != null ? (
       <ConductorTooltip
@@ -132,36 +115,29 @@ export const DoWhileIteration = ({
       </ConductorTooltip>
     ) : null;
 
-  const trailing = (
-    <>
-      {keepLastNTrailing}
-      <SummarizeToggle
-        checked={isSummarized}
-        onChange={(checked) => {
-          if (checked) {
-            setIsSummarized(true);
-          } else {
-            setConfirmOpen(true);
-          }
-        }}
-      />
-    </>
-  );
+  const trailing =
+    keepLastNTrailing || onToggleSummarize ? (
+      <>
+        {keepLastNTrailing}
+        {onToggleSummarize && (
+          <SummarizeToggle
+            checked={isSummarized}
+            onChange={onToggleSummarize}
+          />
+        )}
+      </>
+    ) : undefined;
 
   return (
     <>
-      <SummarizeConfirmDialog
-        open={confirmOpen}
-        onCancel={() => setConfirmOpen(false)}
-        onConfirm={() => {
-          setIsSummarized(false);
-          setConfirmOpen(false);
-        }}
-      />
-
       <CollapsibleIterationList
         items={iterationOptions}
-        headerLabel={headerLabel}
+        headerLabel={
+          <IterationHeaderLabel
+            status={selectedTask.status}
+            text={headerText}
+          />
+        }
         trailing={trailing}
         totalItems={iterationOptions.length}
         getOptionLabel={(option) => `Iteration ${option}`}

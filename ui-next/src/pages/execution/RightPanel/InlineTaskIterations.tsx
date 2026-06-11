@@ -1,19 +1,18 @@
 import { Box, Typography } from "@mui/material";
-import { fetchExecutionFull } from "commonServices";
-import { useMemo, useState } from "react";
-import { useQuery } from "react-query";
+import { useMemo } from "react";
 import { colors } from "theme/tokens/variables";
 import { AuthHeaders } from "types/common";
 import { ExecutionTask } from "types/Execution";
 import { TaskStatus } from "types/TaskStatus";
 import { CollapsibleIterationList } from "./CollapsibleIterationList";
-import { IterationStatusIcon } from "./IterationStatusIcon";
+import { IterationHeaderLabel } from "./IterationHeaderLabel";
 import {
   fillIterationPlaceholders,
   IterationPlaceholder,
 } from "./iterationHelpers";
-import { SummarizeConfirmDialog } from "./SummarizeConfirmDialog";
+import { IterationStatusIcon } from "./IterationStatusIcon";
 import { SummarizeToggle } from "./SummarizeToggle";
+import { useFullWorkflowQuery } from "./useFullWorkflowQuery";
 
 /**
  * ExecutionTask augmented with UI-internal fields injected by hook.ts when
@@ -34,6 +33,8 @@ export interface InlineTaskIterationsProps {
   executionId?: string;
   authHeaders?: AuthHeaders;
   parentDoWhileRef?: string;
+  isSummarized: boolean;
+  onToggleSummarize?: (checked: boolean) => void;
 }
 
 export const InlineTaskIterations = ({
@@ -44,24 +45,16 @@ export const InlineTaskIterations = ({
   executionId,
   authHeaders,
   parentDoWhileRef,
+  isSummarized,
+  onToggleSummarize,
 }: InlineTaskIterationsProps) => {
-  const [isSummarized, setIsSummarized] = useState(true);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-
   const innerTaskRef = selectedTask?.workflowTask?.taskReferenceName;
 
   // Shared query with DoWhileIteration — one fetch, cached for both.
-  const { data: fullWorkflow, isFetching } = useQuery(
-    ["workflow-full", executionId],
-    () =>
-      fetchExecutionFull({
-        authHeaders: authHeaders as any,
-        executionId: executionId!,
-      }),
-    {
-      enabled: !isSummarized && !!executionId,
-      staleTime: Infinity,
-    },
+  const { data: fullWorkflow, isFetching } = useFullWorkflowQuery(
+    executionId,
+    authHeaders,
+    !isSummarized,
   );
 
   // When full data is available, rebuild the iteration list from the complete
@@ -104,44 +97,23 @@ export const InlineTaskIterations = ({
     ? `Iteration ${effectiveIteration ?? ""}`
     : `Attempt #${selectedTask.retryCount ?? 0}`;
 
-  const headerLabel = (
-    <Box
-      component="span"
-      sx={{ display: "inline-flex", alignItems: "center", gap: 0.75 }}
-    >
-      <IterationStatusIcon
-        status={selectedTask.status as TaskStatus}
-        size={13}
-      />
-      <span>{headerText}</span>
-    </Box>
-  );
-
   return (
     <>
-      <SummarizeConfirmDialog
-        open={confirmOpen}
-        onCancel={() => setConfirmOpen(false)}
-        onConfirm={() => {
-          setIsSummarized(false);
-          setConfirmOpen(false);
-        }}
-      />
-
       <CollapsibleIterationList
         items={resolvedOptions}
-        headerLabel={headerLabel}
-        trailing={
-          <SummarizeToggle
-            checked={isSummarized}
-            onChange={(checked) => {
-              if (checked) {
-                setIsSummarized(true);
-              } else {
-                setConfirmOpen(true);
-              }
-            }}
+        headerLabel={
+          <IterationHeaderLabel
+            status={selectedTask.status as TaskStatus}
+            text={headerText}
           />
+        }
+        trailing={
+          onToggleSummarize ? (
+            <SummarizeToggle
+              checked={isSummarized}
+              onChange={onToggleSummarize}
+            />
+          ) : undefined
         }
         totalItems={resolvedOptions.length}
         getOptionLabel={(item) => `Iteration ${item.iteration ?? ""}`}

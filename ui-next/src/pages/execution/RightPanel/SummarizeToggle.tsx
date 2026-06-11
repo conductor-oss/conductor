@@ -10,7 +10,7 @@ export function SummarizeToggle({ checked, onChange }: SummarizeToggleProps) {
     <Box
       component="span"
       onClick={(e) => e.stopPropagation()}
-      sx={{ display: "inline-flex", alignItems: "center", ml: 0.5, gap: 1 }}
+      sx={{ display: "inline-flex", alignItems: "center", ml: 0.5, gap: 2 }}
     >
       <Typography
         component="span"
