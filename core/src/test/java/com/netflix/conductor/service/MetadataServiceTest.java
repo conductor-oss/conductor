@@ -14,6 +14,7 @@ package com.netflix.conductor.service;
 
 import java.util.*;
 
+import org.conductoross.conductor.core.listener.MetadataChangeListenerStub;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.stubbing.Answer;
@@ -32,7 +33,6 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.model.BulkResponse;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.NotFoundException;
-import com.netflix.conductor.core.listener.MetadataChangeListenerStub;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 

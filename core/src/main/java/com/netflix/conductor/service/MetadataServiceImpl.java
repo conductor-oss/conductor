@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeSet;
 
+import org.conductoross.conductor.core.listener.MetadataChangeListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -31,7 +32,6 @@ import com.netflix.conductor.common.model.BulkResponse;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.NotFoundException;
-import com.netflix.conductor.core.listener.MetadataChangeListener;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.validations.ValidationContext;

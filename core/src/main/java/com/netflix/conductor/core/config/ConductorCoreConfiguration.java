@@ -21,6 +21,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+import org.conductoross.conductor.core.listener.MetadataChangeListener;
+import org.conductoross.conductor.core.listener.MetadataChangeListenerStub;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -36,8 +38,6 @@ import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
-import com.netflix.conductor.core.listener.MetadataChangeListener;
-import com.netflix.conductor.core.listener.MetadataChangeListenerStub;
 import com.netflix.conductor.core.listener.TaskStatusListener;
 import com.netflix.conductor.core.listener.TaskStatusListenerStub;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
