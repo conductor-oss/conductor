@@ -17,7 +17,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.netflix.conductor.common.run.SearchResult;
 
+import io.orkes.conductor.scheduler.config.SchedulerConditions;
 import io.orkes.conductor.scheduler.model.WorkflowSchedule;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
 import io.orkes.conductor.scheduler.service.SchedulerService;
@@ -47,7 +48,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
  * {@code /api/scheduler}.
  */
 @RestController
-@ConditionalOnBean(SchedulerService.class)
+@Conditional(SchedulerConditions.class)
 @RequestMapping("/api/scheduler")
 @Tag(name = "Scheduler", description = "Workflow scheduling API")
 public class SchedulerResource {
