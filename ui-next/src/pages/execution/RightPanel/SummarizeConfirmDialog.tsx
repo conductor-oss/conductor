@@ -30,7 +30,7 @@ export function SummarizeConfirmDialog({
     >
       <DialogTitle>Show full iteration data?</DialogTitle>
       <DialogContent>
-        <Box mt={2}>
+        <Box mt={5}>
           <Text
             sx={{ opacity: 0.8, fontSize: "15px", lineHeight: 1.5 }}
             component="div"

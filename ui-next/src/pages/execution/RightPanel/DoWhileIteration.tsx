@@ -1,7 +1,7 @@
 import { Box, Typography } from "@mui/material";
 import ConductorTooltip from "components/ui/ConductorTooltip";
 import _nth from "lodash/nth";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { colors } from "theme/tokens/variables";
 import { AuthHeaders } from "types/common";
 import { DoWhileSelection, ExecutionTask } from "types/Execution";
@@ -17,9 +17,14 @@ import { IterationStatusIcon } from "./IterationStatusIcon";
 import { SummarizeToggle } from "./SummarizeToggle";
 import { useFullWorkflowQuery } from "./useFullWorkflowQuery";
 
+interface AugmentedDoWhileTask extends ExecutionTask {
+  _summarized?: boolean;
+}
+
 export interface DoWhileIterationProps {
   selectedTask: ExecutionTask;
   handleSelectDoWhileIteration: (data: DoWhileSelection) => void;
+  handleSelectTask?: (task: ExecutionTask) => void;
   doWhileSelection?: DoWhileSelection[];
   executionId?: string;
   authHeaders?: AuthHeaders;
@@ -30,6 +35,7 @@ export interface DoWhileIterationProps {
 export const DoWhileIteration = ({
   selectedTask,
   handleSelectDoWhileIteration,
+  handleSelectTask,
   doWhileSelection,
   executionId,
   authHeaders,
@@ -70,6 +76,19 @@ export const DoWhileIteration = ({
     () => getOrderedIterationKeys(outputData, selectedTask),
     [outputData, selectedTask],
   );
+
+  // When the user toggles off summarize, re-select the DO_WHILE task with its
+  // full version so Input/Output tabs reflect the newly loaded data.
+  useEffect(() => {
+    if (isSummarized || !fullDoWhileTask || !handleSelectTask) return;
+    const isCurrentlySummarized =
+      (selectedTask as AugmentedDoWhileTask)._summarized === true;
+    if (isCurrentlySummarized) {
+      handleSelectTask(fullDoWhileTask);
+    }
+    // handleSelectTask is intentionally omitted — it's a stable actor dispatch
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSummarized, fullDoWhileTask, selectedTask]);
 
   const isTaskProcessing = [
     TaskStatus.PENDING,

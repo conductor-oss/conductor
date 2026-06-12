@@ -1,5 +1,5 @@
 import { Box, Typography } from "@mui/material";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { colors } from "theme/tokens/variables";
 import { AuthHeaders } from "types/common";
 import { ExecutionTask } from "types/Execution";
@@ -87,6 +87,20 @@ export const InlineTaskIterations = ({
     parentDoWhileRef,
     selectedTask.workflowTask,
   ]);
+
+  // When the user toggles off summarize, re-select the current task with its
+  // full version so Input/Output tabs reflect the newly loaded data.
+  useEffect(() => {
+    if (isSummarized || !fullWorkflow || !selectedTask._summarized) return;
+    const fullTask = resolvedOptions.find(
+      (opt) => opt.iteration === selectedTask.iteration,
+    );
+    if (fullTask && !("_placeholder" in fullTask)) {
+      handleSelectTask(fullTask as ExecutionTask);
+    }
+    // handleSelectTask is intentionally omitted — it's a stable actor dispatch
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSummarized, fullWorkflow, resolvedOptions]);
 
   const effectiveIteration = selectedTask.iteration;
   const hasKnownIteration =

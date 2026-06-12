@@ -86,6 +86,7 @@ export function IterationSection({
           selectedTask={selectedTask}
           doWhileSelection={doWhileSelection}
           handleSelectDoWhileIteration={handleSelectDoWhileIteration}
+          handleSelectTask={handleSelectTask}
           executionId={executionId}
           authHeaders={authHeaders}
           {...toggleProps}
