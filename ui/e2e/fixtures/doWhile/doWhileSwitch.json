@@ -1,0 +1,416 @@
+{
+  "ownerApp": "nq_mwi_conductor_ui_server",
+  "createTime": 1660252744369,
+  "status": "COMPLETED",
+  "endTime": 1660252745449,
+  "workflowId": "9aaf69a6-9c61-4460-93b5-0a657a084ba4",
+  "tasks": [
+    {
+      "taskType": "INLINE",
+      "status": "COMPLETED",
+      "inputData": {
+        "evaluatorType": "javascript",
+        "expression": "1",
+        "value": null
+      },
+      "referenceTaskName": "inline_task_outside",
+      "retryCount": 0,
+      "seq": 1,
+      "pollCount": 0,
+      "taskDefName": "inline_task_outside",
+      "scheduledTime": 1660252744439,
+      "startTime": 1660252744437,
+      "endTime": 1660252744504,
+      "updateTime": 1660252744446,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": true,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "9aaf69a6-9c61-4460-93b5-0a657a084ba4",
+      "workflowType": "LoopTestWithSwitch",
+      "taskId": "07ae873e-5316-4e89-9c1e-a9cab711f1a2",
+      "callbackAfterSeconds": 0,
+      "outputData": {
+        "result": 1
+      },
+      "workflowTask": {
+        "name": "inline_task_outside",
+        "taskReferenceName": "inline_task_outside",
+        "inputParameters": {
+          "value": "${workflow.input.value}",
+          "evaluatorType": "javascript",
+          "expression": "1"
+        },
+        "type": "INLINE",
+        "startDelay": 0,
+        "optional": false,
+        "asyncComplete": false
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 0,
+      "workflowPriority": 0,
+      "iteration": 0,
+      "subworkflowChanged": false,
+      "taskDefinition": null,
+      "queueWaitTime": -2,
+      "loopOverTask": false
+    },
+    {
+      "taskType": "DO_WHILE",
+      "status": "COMPLETED",
+      "inputData": {
+        "value": null
+      },
+      "referenceTaskName": "LoopTask",
+      "retryCount": 0,
+      "seq": 2,
+      "pollCount": 0,
+      "taskDefName": "Loop Task",
+      "scheduledTime": 1660252744620,
+      "startTime": 1660252744618,
+      "endTime": 1660252745337,
+      "updateTime": 1660252744808,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "9aaf69a6-9c61-4460-93b5-0a657a084ba4",
+      "workflowType": "LoopTestWithSwitch",
+      "taskId": "790126b0-81e8-4286-ac65-d1f4c8eca271",
+      "callbackAfterSeconds": 0,
+      "outputData": {
+        "1": {
+          "inline_task": {
+            "result": {
+              "result": "NODE_2"
+            }
+          },
+          "switch_task": {
+            "evaluationResult": ["null"]
+          }
+        },
+        "iteration": 1
+      },
+      "workflowTask": {
+        "name": "Loop Task",
+        "taskReferenceName": "LoopTask",
+        "inputParameters": {
+          "value": "${workflow.input.value}"
+        },
+        "type": "DO_WHILE",
+        "startDelay": 0,
+        "optional": false,
+        "asyncComplete": false,
+        "loopCondition": "false",
+        "loopOver": [
+          {
+            "name": "inline_task",
+            "taskReferenceName": "inline_task",
+            "inputParameters": {
+              "value": "${workflow.input.value}",
+              "evaluatorType": "javascript",
+              "expression": "function e() { if ($.value == 1){return {\"result\": 'NODE_1'}} else { return {\"result\": 'NODE_2'}}} e();"
+            },
+            "type": "INLINE",
+            "startDelay": 0,
+            "optional": false,
+            "asyncComplete": false
+          },
+          {
+            "name": "switch_task",
+            "taskReferenceName": "switch_task",
+            "inputParameters": {
+              "switchCaseValue": "${inline_task_1.output.result.result}"
+            },
+            "type": "SWITCH",
+            "decisionCases": {
+              "NODE_1": [
+                {
+                  "name": "Set_NODE_1",
+                  "taskReferenceName": "Set_NODE_1",
+                  "inputParameters": {
+                    "node": "NODE_1"
+                  },
+                  "type": "SET_VARIABLE",
+                  "startDelay": 0,
+                  "optional": false,
+                  "asyncComplete": false
+                }
+              ],
+              "NODE_2": [
+                {
+                  "name": "Set_NODE_2",
+                  "taskReferenceName": "Set_NODE_2",
+                  "inputParameters": {
+                    "node": "NODE_2"
+                  },
+                  "type": "SET_VARIABLE",
+                  "startDelay": 0,
+                  "optional": false,
+                  "asyncComplete": false
+                }
+              ]
+            },
+            "startDelay": 0,
+            "optional": false,
+            "asyncComplete": false,
+            "evaluatorType": "value-param",
+            "expression": "switchCaseValue"
+          }
+        ]
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 1,
+      "workflowPriority": 0,
+      "iteration": 1,
+      "subworkflowChanged": false,
+      "taskDefinition": null,
+      "queueWaitTime": -2,
+      "loopOverTask": true
+    },
+    {
+      "taskType": "INLINE",
+      "status": "COMPLETED",
+      "inputData": {
+        "evaluatorType": "javascript",
+        "expression": "function e() { if ($.value == 1){return {\"result\": 'NODE_1'}} else { return {\"result\": 'NODE_2'}}} e();",
+        "value": null
+      },
+      "referenceTaskName": "inline_task__1",
+      "retryCount": 0,
+      "seq": 3,
+      "pollCount": 0,
+      "taskDefName": "inline_task",
+      "scheduledTime": 1660252744696,
+      "startTime": 1660252744693,
+      "endTime": 1660252744931,
+      "updateTime": 1660252744702,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": true,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "9aaf69a6-9c61-4460-93b5-0a657a084ba4",
+      "workflowType": "LoopTestWithSwitch",
+      "taskId": "27f7fbc4-325b-43c4-872f-37dc64c9dab0",
+      "callbackAfterSeconds": 0,
+      "outputData": {
+        "result": {
+          "result": "NODE_2"
+        }
+      },
+      "workflowTask": {
+        "name": "inline_task",
+        "taskReferenceName": "inline_task",
+        "inputParameters": {
+          "value": "${workflow.input.value}",
+          "evaluatorType": "javascript",
+          "expression": "function e() { if ($.value == 1){return {\"result\": 'NODE_1'}} else { return {\"result\": 'NODE_2'}}} e();"
+        },
+        "type": "INLINE",
+        "startDelay": 0,
+        "optional": false,
+        "asyncComplete": false
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 0,
+      "workflowPriority": 0,
+      "iteration": 1,
+      "subworkflowChanged": false,
+      "taskDefinition": null,
+      "queueWaitTime": -3,
+      "loopOverTask": true
+    },
+    {
+      "taskType": "SWITCH",
+      "status": "COMPLETED",
+      "inputData": {
+        "case": "null"
+      },
+      "referenceTaskName": "switch_task__1",
+      "retryCount": 0,
+      "seq": 4,
+      "pollCount": 0,
+      "taskDefName": "SWITCH",
+      "scheduledTime": 1660252745049,
+      "startTime": 1660252745047,
+      "endTime": 1660252745163,
+      "updateTime": 1660252745056,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": true,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "9aaf69a6-9c61-4460-93b5-0a657a084ba4",
+      "workflowType": "LoopTestWithSwitch",
+      "taskId": "2e2a0836-a2e6-4902-9e41-9bbc2c75e0ed",
+      "callbackAfterSeconds": 0,
+      "outputData": {
+        "evaluationResult": ["null"]
+      },
+      "workflowTask": {
+        "name": "switch_task",
+        "taskReferenceName": "switch_task",
+        "inputParameters": {
+          "switchCaseValue": "${inline_task_1.output.result.result}"
+        },
+        "type": "SWITCH",
+        "decisionCases": {
+          "NODE_1": [
+            {
+              "name": "Set_NODE_1",
+              "taskReferenceName": "Set_NODE_1",
+              "inputParameters": {
+                "node": "NODE_1"
+              },
+              "type": "SET_VARIABLE",
+              "startDelay": 0,
+              "optional": false,
+              "asyncComplete": false
+            }
+          ],
+          "NODE_2": [
+            {
+              "name": "Set_NODE_2",
+              "taskReferenceName": "Set_NODE_2",
+              "inputParameters": {
+                "node": "NODE_2"
+              },
+              "type": "SET_VARIABLE",
+              "startDelay": 0,
+              "optional": false,
+              "asyncComplete": false
+            }
+          ]
+        },
+        "startDelay": 0,
+        "optional": false,
+        "asyncComplete": false,
+        "evaluatorType": "value-param",
+        "expression": "switchCaseValue"
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 0,
+      "workflowPriority": 0,
+      "iteration": 1,
+      "subworkflowChanged": false,
+      "taskDefinition": null,
+      "queueWaitTime": -2,
+      "loopOverTask": true
+    }
+  ],
+  "input": {},
+  "output": {
+    "evaluationResult": ["null"]
+  },
+  "taskToDomain": {},
+  "failedReferenceTaskNames": [],
+  "workflowDefinition": {
+    "createTime": 1660244498873,
+    "updateTime": 1660252731854,
+    "name": "LoopTestWithSwitch",
+    "description": "Loop Test With Switch WF",
+    "version": 3,
+    "tasks": [
+      {
+        "name": "inline_task_outside",
+        "taskReferenceName": "inline_task_outside",
+        "inputParameters": {
+          "value": "${workflow.input.value}",
+          "evaluatorType": "javascript",
+          "expression": "1"
+        },
+        "type": "INLINE",
+        "startDelay": 0,
+        "optional": false,
+        "asyncComplete": false
+      },
+      {
+        "name": "Loop Task",
+        "taskReferenceName": "LoopTask",
+        "inputParameters": {
+          "value": "${workflow.input.value}"
+        },
+        "type": "DO_WHILE",
+        "startDelay": 0,
+        "optional": false,
+        "asyncComplete": false,
+        "loopCondition": "false",
+        "loopOver": [
+          {
+            "name": "inline_task",
+            "taskReferenceName": "inline_task",
+            "inputParameters": {
+              "value": "${workflow.input.value}",
+              "evaluatorType": "javascript",
+              "expression": "function e() { if ($.value == 1){return {\"result\": 'NODE_1'}} else { return {\"result\": 'NODE_2'}}} e();"
+            },
+            "type": "INLINE",
+            "startDelay": 0,
+            "optional": false,
+            "asyncComplete": false
+          },
+          {
+            "name": "switch_task",
+            "taskReferenceName": "switch_task",
+            "inputParameters": {
+              "switchCaseValue": "${inline_task_1.output.result.result}"
+            },
+            "type": "SWITCH",
+            "decisionCases": {
+              "NODE_1": [
+                {
+                  "name": "Set_NODE_1",
+                  "taskReferenceName": "Set_NODE_1",
+                  "inputParameters": {
+                    "node": "NODE_1"
+                  },
+                  "type": "SET_VARIABLE",
+                  "startDelay": 0,
+                  "optional": false,
+                  "asyncComplete": false
+                }
+              ],
+              "NODE_2": [
+                {
+                  "name": "Set_NODE_2",
+                  "taskReferenceName": "Set_NODE_2",
+                  "inputParameters": {
+                    "node": "NODE_2"
+                  },
+                  "type": "SET_VARIABLE",
+                  "startDelay": 0,
+                  "optional": false,
+                  "asyncComplete": false
+                }
+              ]
+            },
+            "startDelay": 0,
+            "optional": false,
+            "asyncComplete": false,
+            "evaluatorType": "value-param",
+            "expression": "switchCaseValue"
+          }
+        ]
+      }
+    ],
+    "inputParameters": [],
+    "outputParameters": {},
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": true,
+    "ownerEmail": "abc@example.com",
+    "timeoutPolicy": "ALERT_ONLY",
+    "timeoutSeconds": 0,
+    "variables": {},
+    "inputTemplate": {}
+  },
+  "priority": 0,
+  "variables": {},
+  "lastRetriedTime": 0,
+  "startTime": 1660252744369,
+  "workflowName": "LoopTestWithSwitch",
+  "workflowVersion": 3
+}

@@ -1,0 +1,55 @@
+@mixin barColor($colorfg, $colorbg: #fff) {
+  background-color: $colorbg;
+  border-color: $colorfg;
+  color: $colorfg;
+}
+
+.vis-timeline {
+  border: none;
+}
+
+.vis-panel {
+  &.vis-top,
+  &.vis-center {
+    border-left: none;
+  }
+}
+.vis-label {
+  .vis-inner {
+    margin-left: 5px;
+  }
+  &.vis-nested-group.vis-group-level-2 {
+    background: white;
+  }
+}
+
+.vis-item {
+  &.status_COMPLETED {
+    @include barColor(#163e1d, #aee1b8);
+  }
+  &.status_COMPLETED_WITH_ERRORS {
+    @include barColor(#8b5b02, #feeac5);
+  }
+  &.status_IN_PROGRESS,
+  &.status_SCHEDULED {
+    @include barColor(#11497a, #cbe2f7);
+  }
+  //&.status_CANCELED { @include barColor(#26194b, #ded5f8); }
+  &.status_FAILED,
+  &.status_FAILED_WITH_TERMINAL_ERROR,
+  &.status_TIMED_OUT,
+  &.status_DF_PARTIAL,
+  &.status_CANCELED {
+    @include barColor(#7f050b, #f9c6c9);
+  }
+  &.status_SKIPPED {
+    @include barColor(gray);
+  }
+  &.vis-selected {
+    filter: brightness(70%);
+  }
+  .vis-item-content {
+    font-size: 10px;
+    padding: 0px 3px 0px 3px;
+  }
+}

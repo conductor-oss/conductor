@@ -1,0 +1,61 @@
+# Worktrees
+.worktrees/
+
+# Java Build
+.gradle
+.classpath
+dump.rdb
+out
+bin
+target
+buildscan.log
+/docs/site
+
+# Python
+/polyglot-clients/python/conductor.egg-info
+*.pyc
+
+# OS & IDE
+.DS_Store
+.settings
+.vscode
+.idea
+.project
+*.iml
+
+# JS & UI Related
+node_modules
+/ui/build
+/ui/public/monaco-editor
+
+# publishing secrets
+secrets/signing-key
+
+# local builds
+lib/
+build/
+*/build/
+
+# asdf version file
+.tool-versions
+
+# jenv version file
+.java-version
+
+
+.qodo
+conductorosstest.db
+conductorosstest.db
+/server-lite/src/main/resources/static
+yarn.lock
+.java-version
+server-lite/conductorosstest.db-shm
+server-lite/conductorosstest.db-wal
+/server/src/main/resources/static
+*.factorypath
+server/*.db*
+/site
+*.db
+*.db-shm
+*.db-wal
+docs/superpowers

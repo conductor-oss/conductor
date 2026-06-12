@@ -1,0 +1,220 @@
+/*
+ * Copyright 2022 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+package com.netflix.conductor.core.reconciliation;
+
+import java.time.Instant;
+import java.util.Optional;
+import java.util.Random;
+import java.util.concurrent.CompletableFuture;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Component;
+
+import com.netflix.conductor.annotations.VisibleForTesting;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
+import com.netflix.conductor.core.WorkflowContext;
+import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.dal.ExecutionDAOFacade;
+import com.netflix.conductor.core.exception.NotFoundException;
+import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.metrics.Monitors;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.TaskModel.Status;
+import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.ExecutionLockService;
+
+import static com.netflix.conductor.core.config.SchedulerConfiguration.SWEEPER_EXECUTOR_NAME;
+import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
+
+// Deprecated in favor of org.conductoross.conductor.core.execution.WorkflowSweeper
+@Deprecated(forRemoval = true)
+@Component
+@ConditionalOnProperty(
+        name = "conductor.app.legacy.sweeper.enabled",
+        havingValue = "true",
+        matchIfMissing = false)
+public class WorkflowSweeper {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowSweeper.class);
+
+    private final ConductorProperties properties;
+    private final WorkflowExecutor workflowExecutor;
+    private final WorkflowRepairService workflowRepairService;
+    private final QueueDAO queueDAO;
+    private final ExecutionDAOFacade executionDAOFacade;
+    private final ExecutionLockService executionLockService;
+
+    private static final String CLASS_NAME = WorkflowSweeper.class.getSimpleName();
+
+    public WorkflowSweeper(
+            WorkflowExecutor workflowExecutor,
+            Optional<WorkflowRepairService> workflowRepairService,
+            ConductorProperties properties,
+            QueueDAO queueDAO,
+            ExecutionDAOFacade executionDAOFacade,
+            ExecutionLockService executionLockService) {
+        this.properties = properties;
+        this.queueDAO = queueDAO;
+        this.workflowExecutor = workflowExecutor;
+        this.executionDAOFacade = executionDAOFacade;
+        this.workflowRepairService = workflowRepairService.orElse(null);
+        this.executionLockService = executionLockService;
+        LOGGER.info("WorkflowSweeper initialized.");
+    }
+
+    @Async(SWEEPER_EXECUTOR_NAME)
+    public CompletableFuture<Void> sweepAsync(String workflowId) {
+        sweep(workflowId);
+        return CompletableFuture.completedFuture(null);
+    }
+
+    public void sweep(String workflowId) {
+        WorkflowContext workflowContext = new WorkflowContext(properties.getAppId());
+        WorkflowContext.set(workflowContext);
+        WorkflowModel workflow = null;
+        try {
+            if (!executionLockService.acquireLock(workflowId)) {
+                return;
+            }
+            workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
+            LOGGER.debug("Running sweeper for workflow {}", workflowId);
+            if (workflowRepairService != null) {
+                // Verify and repair tasks in the workflow.
+                workflowRepairService.verifyAndRepairWorkflowTasks(workflow);
+            }
+            long decideStartTime = System.currentTimeMillis();
+            workflow = workflowExecutor.decide(workflow.getWorkflowId());
+            Monitors.recordWorkflowDecisionTime(System.currentTimeMillis() - decideStartTime);
+            if (workflow != null && workflow.getStatus().isTerminal()) {
+                queueDAO.remove(DECIDER_QUEUE, workflowId);
+                return;
+            }
+        } catch (NotFoundException nfe) {
+            queueDAO.remove(DECIDER_QUEUE, workflowId);
+            LOGGER.info(
+                    "Workflow NOT found for id:{}. Removed it from decider queue", workflowId, nfe);
+            return;
+        } catch (Exception e) {
+            Monitors.error(CLASS_NAME, "sweep");
+            LOGGER.error("Error running sweep for " + workflowId, e);
+        } finally {
+            executionLockService.releaseLock(workflowId);
+        }
+        long workflowOffsetTimeout =
+                workflowOffsetWithJitter(properties.getWorkflowOffsetTimeout().getSeconds());
+        if (workflow != null) {
+            long startTime = Instant.now().toEpochMilli();
+            unack(workflow, workflowOffsetTimeout);
+            long endTime = Instant.now().toEpochMilli();
+            Monitors.recordUnackTime(workflow.getWorkflowName(), endTime - startTime);
+        } else {
+            LOGGER.warn(
+                    "Workflow with {} id can not be found. Attempting to unack using the id",
+                    workflowId);
+            queueDAO.setUnackTimeout(DECIDER_QUEUE, workflowId, workflowOffsetTimeout * 1000);
+        }
+    }
+
+    /**
+     * Calculates the next decider queue unack delay by evaluating active tasks and choosing the
+     * smallest eligible delay. This prevents long-running tasks from delaying evaluation when a
+     * shorter timeout is due, while still honoring maxPostpone caps.
+     */
+    @VisibleForTesting
+    void unack(WorkflowModel workflowModel, long workflowOffsetTimeout) {
+        // Pick the minimum next-evaluation delay across eligible tasks, capped by maxPostpone.
+        Long postponeDurationSeconds = null;
+        long maxPostponeSeconds = properties.getMaxPostponeDurationSeconds().getSeconds();
+        for (TaskModel taskModel : workflowModel.getTasks()) {
+            Long candidateSeconds = null;
+            if (taskModel.getStatus() == Status.IN_PROGRESS) {
+                // Active tasks: delay based on wait/response timeout or workflow offset.
+                if (taskModel.getTaskType().equals(TaskType.TASK_TYPE_WAIT)) {
+                    if (taskModel.getWaitTimeout() == 0) {
+                        candidateSeconds = workflowOffsetTimeout;
+                    } else {
+                        // waitTimeout is an absolute epoch ms; compute remaining seconds.
+                        long deltaInSeconds =
+                                (taskModel.getWaitTimeout() - System.currentTimeMillis()) / 1000;
+                        candidateSeconds = (deltaInSeconds > 0) ? deltaInSeconds : 0;
+                    }
+                } else if (taskModel.getTaskType().equals(TaskType.TASK_TYPE_HUMAN)) {
+                    candidateSeconds = workflowOffsetTimeout;
+                } else {
+                    candidateSeconds =
+                            (taskModel.getResponseTimeoutSeconds() != 0)
+                                    // Add 1s so the response timeout window fully elapses.
+                                    ? taskModel.getResponseTimeoutSeconds() + 1
+                                    : workflowOffsetTimeout;
+                }
+            } else if (taskModel.getStatus() == Status.SCHEDULED) {
+                // Scheduled tasks: use poll timeout when present, else workflow timeout or offset.
+                Optional<TaskDef> taskDefinition = taskModel.getTaskDefinition();
+                if (taskDefinition.isPresent()) {
+                    TaskDef taskDef = taskDefinition.get();
+                    if (taskDef.getPollTimeoutSeconds() != null
+                            && taskDef.getPollTimeoutSeconds() != 0) {
+                        candidateSeconds = taskDef.getPollTimeoutSeconds().longValue() + 1;
+                    } else {
+                        candidateSeconds =
+                                (workflowModel.getWorkflowDefinition().getTimeoutSeconds() != 0)
+                                        ? workflowModel.getWorkflowDefinition().getTimeoutSeconds()
+                                                + 1
+                                        : workflowOffsetTimeout;
+                    }
+                } else {
+                    candidateSeconds =
+                            (workflowModel.getWorkflowDefinition().getTimeoutSeconds() != 0)
+                                    ? workflowModel.getWorkflowDefinition().getTimeoutSeconds() + 1
+                                    : workflowOffsetTimeout;
+                }
+            }
+
+            if (candidateSeconds == null) {
+                continue;
+            }
+            if (candidateSeconds < 0) {
+                candidateSeconds = 0L;
+            }
+            // Cap every candidate to avoid excessive unack delay.
+            if (candidateSeconds > maxPostponeSeconds) {
+                candidateSeconds = maxPostponeSeconds;
+            }
+            if (postponeDurationSeconds == null || candidateSeconds < postponeDurationSeconds) {
+                postponeDurationSeconds = candidateSeconds;
+            }
+        }
+        // Default to immediate re-evaluation if no eligible task delay is found.
+        long unackSeconds = (postponeDurationSeconds != null) ? postponeDurationSeconds : 0;
+        queueDAO.setUnackTimeout(DECIDER_QUEUE, workflowModel.getWorkflowId(), unackSeconds * 1000);
+    }
+
+    /**
+     * jitter will be +- (1/3) workflowOffsetTimeout for example, if workflowOffsetTimeout is 45
+     * seconds, this function returns values between [30-60] seconds
+     *
+     * @param workflowOffsetTimeout
+     * @return
+     */
+    @VisibleForTesting
+    long workflowOffsetWithJitter(long workflowOffsetTimeout) {
+        long range = workflowOffsetTimeout / 3;
+        long jitter = new Random().nextInt((int) (2 * range + 1)) - range;
+        return workflowOffsetTimeout + jitter;
+    }
+}

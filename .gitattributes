@@ -1,0 +1,11 @@
+gradlew eol=lf
+*.gradle eol=lf
+*.java eol=lf
+*.groovy eol=lf
+spring.factories eol=lf
+*.sh eol=lf
+
+docs/* linguist-documentation
+server/src/main/resources/swagger-ui/* linguist-vendored
+
+

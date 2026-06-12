@@ -1,0 +1,445 @@
+/*
+ * Copyright 2022 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+package com.netflix.conductor.core.dal;
+
+import java.io.InputStream;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+
+import org.apache.commons.io.IOUtils;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
+import com.netflix.conductor.common.metadata.events.EventExecution;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.run.SearchResult;
+import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.utils.ExternalPayloadStorage;
+import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.exception.NotFoundException;
+import com.netflix.conductor.core.exception.TerminateWorkflowException;
+import com.netflix.conductor.core.execution.TestDeciderService;
+import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
+import com.netflix.conductor.dao.*;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+@ContextConfiguration(classes = {TestObjectMapperConfiguration.class})
+@RunWith(SpringRunner.class)
+public class ExecutionDAOFacadeTest {
+
+    private ExecutionDAO executionDAO;
+    private IndexDAO indexDAO;
+    private ExecutionDAOFacade executionDAOFacade;
+    private ExternalPayloadStorageUtils externalPayloadStorageUtils;
+
+    @Autowired private ObjectMapper objectMapper;
+
+    @Before
+    public void setUp() {
+        executionDAO = mock(ExecutionDAO.class);
+        QueueDAO queueDAO = mock(QueueDAO.class);
+        indexDAO = mock(IndexDAO.class);
+        externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
+        RateLimitingDAO rateLimitingDao = mock(RateLimitingDAO.class);
+        ConcurrentExecutionLimitDAO concurrentExecutionLimitDAO =
+                mock(ConcurrentExecutionLimitDAO.class);
+        PollDataDAO pollDataDAO = mock(PollDataDAO.class);
+        ConductorProperties properties = mock(ConductorProperties.class);
+        when(properties.isEventExecutionIndexingEnabled()).thenReturn(true);
+        when(properties.isAsyncIndexingEnabled()).thenReturn(true);
+        when(properties.isTaskIndexingEnabled()).thenReturn(true);
+        executionDAOFacade =
+                new ExecutionDAOFacade(
+                        executionDAO,
+                        queueDAO,
+                        indexDAO,
+                        rateLimitingDao,
+                        concurrentExecutionLimitDAO,
+                        pollDataDAO,
+                        objectMapper,
+                        properties,
+                        externalPayloadStorageUtils);
+    }
+
+    @Test
+    public void testGetWorkflow() throws Exception {
+        when(executionDAO.getWorkflow(any(), anyBoolean())).thenReturn(new WorkflowModel());
+        Workflow workflow = executionDAOFacade.getWorkflow("workflowId", true);
+        assertNotNull(workflow);
+        verify(indexDAO, never()).get(any(), any());
+    }
+
+    @Test
+    public void testGetWorkflowModel() throws Exception {
+        when(executionDAO.getWorkflow(any(), anyBoolean())).thenReturn(new WorkflowModel());
+        WorkflowModel workflowModel = executionDAOFacade.getWorkflowModel("workflowId", true);
+        assertNotNull(workflowModel);
+        verify(indexDAO, never()).get(any(), any());
+
+        when(executionDAO.getWorkflow(any(), anyBoolean())).thenReturn(null);
+        InputStream stream = ExecutionDAOFacadeTest.class.getResourceAsStream("/test.json");
+        byte[] bytes = IOUtils.toByteArray(stream);
+        String jsonString = new String(bytes);
+        when(indexDAO.get(any(), any())).thenReturn(jsonString);
+        workflowModel = executionDAOFacade.getWorkflowModel("wokflowId", true);
+        assertNotNull(workflowModel);
+        verify(indexDAO, times(1)).get(any(), any());
+    }
+
+    @Test
+    public void testGetWorkflowModelFromExecutionDAODoesNotFallbackToIndex() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("workflowId");
+        when(executionDAO.getWorkflow("workflowId", false)).thenReturn(workflow);
+
+        WorkflowModel found =
+                executionDAOFacade.getWorkflowModelFromExecutionDAO("workflowId", false);
+        assertSame(workflow, found);
+        verify(indexDAO, never()).get(any(), any());
+    }
+
+    @Test(expected = NotFoundException.class)
+    public void testGetWorkflowModelFromExecutionDAODoesNotUseIndexOnMiss() {
+        when(executionDAO.getWorkflow("missingWorkflow", false)).thenReturn(null);
+        when(indexDAO.get(any(), any())).thenReturn("{\"workflowId\":\"missingWorkflow\"}");
+
+        try {
+            executionDAOFacade.getWorkflowModelFromExecutionDAO("missingWorkflow", false);
+        } finally {
+            verify(indexDAO, never()).get(any(), any());
+        }
+    }
+
+    @Test
+    public void testGetWorkflowsByCorrelationId() {
+        when(executionDAO.canSearchAcrossWorkflows()).thenReturn(true);
+        when(executionDAO.getWorkflowsByCorrelationId(any(), any(), anyBoolean()))
+                .thenReturn(Collections.singletonList(new WorkflowModel()));
+        List<Workflow> workflows =
+                executionDAOFacade.getWorkflowsByCorrelationId(
+                        "workflowName", "correlationId", true);
+
+        assertNotNull(workflows);
+        assertEquals(1, workflows.size());
+        verify(indexDAO, never())
+                .searchWorkflows(anyString(), anyString(), anyInt(), anyInt(), any());
+
+        when(executionDAO.canSearchAcrossWorkflows()).thenReturn(false);
+        List<String> workflowIds = new ArrayList<>();
+        workflowIds.add("workflowId");
+        SearchResult<String> searchResult = new SearchResult<>();
+        searchResult.setResults(workflowIds);
+        when(indexDAO.searchWorkflows(anyString(), anyString(), anyInt(), anyInt(), any()))
+                .thenReturn(searchResult);
+        when(executionDAO.getWorkflow("workflowId", true)).thenReturn(new WorkflowModel());
+        workflows =
+                executionDAOFacade.getWorkflowsByCorrelationId(
+                        "workflowName", "correlationId", true);
+        assertNotNull(workflows);
+        assertEquals(1, workflows.size());
+    }
+
+    @Test
+    public void testRemoveWorkflow() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("workflowId");
+        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+
+        TaskModel task = new TaskModel();
+        task.setTaskId("taskId");
+        task.setStatus(TaskModel.Status.COMPLETED);
+        workflow.setTasks(Collections.singletonList(task));
+
+        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
+        executionDAOFacade.removeWorkflow("workflowId", false);
+        verify(executionDAO, times(1)).removeWorkflow(anyString());
+        verify(executionDAO, never()).removeTask(anyString());
+        verify(indexDAO, never()).updateWorkflow(anyString(), any(), any());
+        verify(indexDAO, never()).updateTask(anyString(), anyString(), any(), any());
+        verify(indexDAO, times(1)).asyncRemoveWorkflow(anyString());
+        verify(indexDAO, times(1)).asyncRemoveTask(anyString(), anyString());
+    }
+
+    @Test
+    public void testRemoveWorkflowContinuesOnIndexNotFound() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("workflowId");
+        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+
+        TaskModel task = new TaskModel();
+        task.setTaskId("taskId");
+        workflow.setTasks(Collections.singletonList(task));
+
+        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
+        doThrow(new NotFoundException("missing workflow"))
+                .when(indexDAO)
+                .asyncRemoveWorkflow(anyString());
+
+        executionDAOFacade.removeWorkflow("workflowId", false);
+
+        verify(executionDAO, times(1)).removeWorkflow(anyString());
+    }
+
+    @Test
+    public void testRemoveWorkflowContinuesOnTaskIndexNotFound() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("workflowId");
+        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+
+        TaskModel task = new TaskModel();
+        task.setTaskId("taskId");
+        workflow.setTasks(Collections.singletonList(task));
+
+        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
+        doThrow(new NotFoundException("missing task"))
+                .when(indexDAO)
+                .asyncRemoveTask(anyString(), anyString());
+
+        executionDAOFacade.removeWorkflow("workflowId", false);
+
+        verify(executionDAO, times(1)).removeWorkflow(anyString());
+    }
+
+    @Test
+    public void testArchiveWorkflow() throws Exception {
+        InputStream stream = TestDeciderService.class.getResourceAsStream("/completed.json");
+        WorkflowModel workflow = objectMapper.readValue(stream, WorkflowModel.class);
+
+        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
+        executionDAOFacade.removeWorkflow("workflowId", true);
+        verify(executionDAO, times(1)).removeWorkflow(anyString());
+        verify(executionDAO, never()).removeTask(anyString());
+        verify(indexDAO, times(1)).updateWorkflow(anyString(), any(), any());
+        verify(indexDAO, times(15)).updateTask(anyString(), anyString(), any(), any());
+        verify(indexDAO, never()).removeWorkflow(anyString());
+        verify(indexDAO, never()).removeTask(anyString(), anyString());
+    }
+
+    @Test
+    public void testArchiveWorkflowSkipsRemovalOnIndexFailure() throws Exception {
+        InputStream stream = TestDeciderService.class.getResourceAsStream("/completed.json");
+        WorkflowModel workflow = objectMapper.readValue(stream, WorkflowModel.class);
+
+        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
+        doThrow(new RuntimeException("index failure"))
+                .when(indexDAO)
+                .updateWorkflow(anyString(), any(), any());
+
+        assertThrows(
+                RuntimeException.class,
+                () -> executionDAOFacade.removeWorkflow("workflowId", true));
+
+        verify(executionDAO, never()).removeWorkflow(anyString());
+    }
+
+    @Test
+    public void testArchiveWorkflowSkipsRemovalOnTaskArchiveFailure() {
+        WorkflowModel workflow = new WorkflowModel();
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("workflowName");
+        workflowDef.setVersion(1);
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setWorkflowId("workflowId");
+        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+
+        TaskModel task = new TaskModel();
+        task.setTaskId("taskId");
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        workflow.setTasks(Collections.singletonList(task));
+
+        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> executionDAOFacade.removeWorkflow("workflowId", true));
+
+        verify(indexDAO, times(1)).updateWorkflow(anyString(), any(), any());
+        verify(executionDAO, never()).removeWorkflow(anyString());
+    }
+
+    @Test
+    public void testArchiveWorkflowWithScheduledTasksDoesNotThrow() {
+        // Regression test for: archival fails with IllegalArgumentException when a workflow is
+        // terminated while tasks are still in SCHEDULED state (before cancelNonTerminalTasks runs).
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("testWorkflow");
+        workflowDef.setVersion(1);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("workflowId");
+        workflow.setStatus(WorkflowModel.Status.TERMINATED);
+        workflow.setWorkflowDefinition(workflowDef);
+
+        TaskModel scheduledTask = new TaskModel();
+        scheduledTask.setTaskId("scheduledTaskId");
+        scheduledTask.setStatus(TaskModel.Status.SCHEDULED);
+
+        TaskModel completedTask = new TaskModel();
+        completedTask.setTaskId("completedTaskId");
+        completedTask.setStatus(TaskModel.Status.COMPLETED);
+
+        workflow.setTasks(List.of(scheduledTask, completedTask));
+
+        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
+
+        // Should NOT throw IllegalArgumentException for SCHEDULED task
+        executionDAOFacade.removeWorkflow("workflowId", true);
+
+        verify(executionDAO, times(1)).removeWorkflow(anyString());
+        // COMPLETED task should be archived
+        verify(indexDAO, times(1)).updateTask(anyString(), eq("completedTaskId"), any(), any());
+        // SCHEDULED task should be skipped (not archived, not removed)
+        verify(indexDAO, never()).updateTask(anyString(), eq("scheduledTaskId"), any(), any());
+        verify(indexDAO, never()).asyncRemoveTask(anyString(), anyString());
+    }
+
+    @Test
+    public void testUpdateWorkflowSkipsTaskIndexingWhenDisabled() {
+        WorkflowModel workflow = new WorkflowModel();
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("workflowName");
+        workflowDef.setVersion(1);
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setWorkflowId("workflowId");
+        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+        workflow.setCreateTime(System.currentTimeMillis() - 10_000);
+
+        TaskModel task = new TaskModel();
+        task.setTaskId("taskId");
+        task.setStatus(TaskModel.Status.COMPLETED);
+        workflow.setTasks(Collections.singletonList(task));
+
+        ConductorProperties properties = mock(ConductorProperties.class);
+        when(properties.isEventExecutionIndexingEnabled()).thenReturn(true);
+        when(properties.isAsyncIndexingEnabled()).thenReturn(true);
+        when(properties.isTaskIndexingEnabled()).thenReturn(false);
+        when(properties.getAsyncUpdateShortRunningWorkflowDuration())
+                .thenReturn(Duration.ofSeconds(1));
+        when(properties.getAsyncUpdateDelay()).thenReturn(Duration.ofSeconds(0));
+        ExecutionDAOFacade disabledTaskIndexingFacade =
+                new ExecutionDAOFacade(
+                        executionDAO,
+                        mock(QueueDAO.class),
+                        indexDAO,
+                        mock(RateLimitingDAO.class),
+                        mock(ConcurrentExecutionLimitDAO.class),
+                        mock(PollDataDAO.class),
+                        objectMapper,
+                        properties,
+                        externalPayloadStorageUtils);
+
+        disabledTaskIndexingFacade.updateWorkflow(workflow);
+
+        verify(indexDAO, never()).asyncIndexTask(any());
+    }
+
+    @Test
+    public void testRemoveWorkflowWithTaskIndexingDisabled() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("workflowId");
+        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+
+        TaskModel task = new TaskModel();
+        task.setTaskId("taskId");
+        workflow.setTasks(Collections.singletonList(task));
+
+        ConductorProperties properties = mock(ConductorProperties.class);
+        when(properties.isEventExecutionIndexingEnabled()).thenReturn(true);
+        when(properties.isAsyncIndexingEnabled()).thenReturn(true);
+        when(properties.isTaskIndexingEnabled()).thenReturn(false);
+        ExecutionDAOFacade disabledTaskIndexingFacade =
+                new ExecutionDAOFacade(
+                        executionDAO,
+                        mock(QueueDAO.class),
+                        indexDAO,
+                        mock(RateLimitingDAO.class),
+                        mock(ConcurrentExecutionLimitDAO.class),
+                        mock(PollDataDAO.class),
+                        objectMapper,
+                        properties,
+                        externalPayloadStorageUtils);
+
+        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
+
+        disabledTaskIndexingFacade.removeWorkflow("workflowId", false);
+
+        verify(indexDAO, times(1)).asyncRemoveWorkflow(anyString());
+        verify(indexDAO, never()).asyncRemoveTask(anyString(), anyString());
+        verify(indexDAO, never()).updateTask(anyString(), anyString(), any(), any());
+    }
+
+    @Test
+    public void testRemoveWorkflowSkipsRemovalOnIndexFailure() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("workflowId");
+        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+
+        TaskModel task = new TaskModel();
+        task.setTaskId("taskId");
+        workflow.setTasks(Collections.singletonList(task));
+
+        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
+        doThrow(new RuntimeException("index failure"))
+                .when(indexDAO)
+                .asyncRemoveWorkflow(anyString());
+
+        assertThrows(
+                RuntimeException.class,
+                () -> executionDAOFacade.removeWorkflow("workflowId", false));
+
+        verify(executionDAO, never()).removeWorkflow(anyString());
+    }
+
+    @Test
+    public void testAddEventExecution() {
+        when(executionDAO.addEventExecution(any())).thenReturn(false);
+        boolean added = executionDAOFacade.addEventExecution(new EventExecution());
+        assertFalse(added);
+        verify(indexDAO, never()).addEventExecution(any());
+
+        when(executionDAO.addEventExecution(any())).thenReturn(true);
+        added = executionDAOFacade.addEventExecution(new EventExecution());
+        assertTrue(added);
+        verify(indexDAO, times(1)).asyncAddEventExecution(any());
+    }
+
+    @Test(expected = TerminateWorkflowException.class)
+    public void testUpdateTaskThrowsTerminateWorkflowException() {
+        TaskModel task = new TaskModel();
+        task.setScheduledTime(1L);
+        task.setSeq(1);
+        task.setTaskId(UUID.randomUUID().toString());
+        task.setTaskDefName("task1");
+
+        doThrow(new TerminateWorkflowException("failed"))
+                .when(externalPayloadStorageUtils)
+                .verifyAndUpload(task, ExternalPayloadStorage.PayloadType.TASK_OUTPUT);
+
+        executionDAOFacade.updateTask(task);
+    }
+}

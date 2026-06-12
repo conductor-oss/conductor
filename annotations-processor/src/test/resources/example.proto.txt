@@ -1,0 +1,12 @@
+syntax = "proto3";
+package protoPackage;
+
+
+option java_package = "abc.protogen.example";
+option java_outer_classname = "ExamplePb";
+option go_package = "goPackage";
+
+message Example {
+    string name = 1;
+    int64 count = 2;
+}

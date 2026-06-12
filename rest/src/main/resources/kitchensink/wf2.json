@@ -1,0 +1,91 @@
+{
+  "createTime": 1477681181098,
+  "updateTime": 1478837752600,
+  "name": "sub_flow_1",
+  "description": "sub workflow",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "task_5",
+      "taskReferenceName": "task_5",
+      "inputParameters": {
+        "mod": "${workflow.input.mod}",
+        "oddEven": "${workflow.input.oddEven}"
+      },
+      "type": "SIMPLE",
+      "startDelay": 0,
+      "callbackFromWorker": true
+    },
+    {
+      "name": "task_28",
+      "taskReferenceName": "task_28",
+      "type": "SIMPLE",
+      "startDelay": 0,
+      "callbackFromWorker": true
+    },
+    {
+      "name": "fork_join",
+      "taskReferenceName": "forkx",
+      "type": "FORK_JOIN",
+      "forkTasks": [
+        [
+          {
+            "name": "task_10",
+            "taskReferenceName": "task_10",
+            "type": "SIMPLE",
+            "startDelay": 0,
+            "callbackFromWorker": true
+          },
+          {
+            "name": "task_11",
+            "taskReferenceName": "task_11",
+            "type": "SIMPLE",
+            "startDelay": 0,
+            "callbackFromWorker": true
+          }
+        ],
+        [
+          {
+            "name": "task_20",
+            "taskReferenceName": "task_20",
+            "type": "SIMPLE",
+            "startDelay": 0,
+            "callbackFromWorker": true
+          },
+          {
+            "name": "task_21",
+            "taskReferenceName": "task_21",
+            "type": "SIMPLE",
+            "startDelay": 0,
+            "callbackFromWorker": true
+          }
+        ]
+      ],
+      "startDelay": 0,
+      "callbackFromWorker": true
+    },
+    {
+      "name": "join",
+      "taskReferenceName": "join",
+      "type": "JOIN",
+      "startDelay": 0,
+      "joinOn": [
+        "task_21",
+        "task_11"
+      ],
+      "callbackFromWorker": true
+    },
+    {
+      "name": "task_30",
+      "taskReferenceName": "task_30",
+      "type": "SIMPLE",
+      "startDelay": 0,
+      "callbackFromWorker": true
+    }
+  ],
+  "outputParameters": {
+    "mod": "${workflow.input.mod}",
+    "oddEven": "${workflow.input.oddEven}"
+  },
+  "schemaVersion": 2
+}

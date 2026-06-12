@@ -1,0 +1,50 @@
+syntax = "proto3";
+package conductor.grpc.events;
+
+import "model/eventhandler.proto";
+
+option java_package = "com.netflix.conductor.grpc";
+option java_outer_classname = "EventServicePb";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/grpc/events";
+
+service EventService {
+    // POST /
+    rpc AddEventHandler(AddEventHandlerRequest) returns (AddEventHandlerResponse);
+
+    // PUT /
+    rpc UpdateEventHandler(UpdateEventHandlerRequest) returns (UpdateEventHandlerResponse);
+
+    // DELETE /{name}
+    rpc RemoveEventHandler(RemoveEventHandlerRequest) returns (RemoveEventHandlerResponse);
+
+    // GET /
+    rpc GetEventHandlers(GetEventHandlersRequest) returns (stream conductor.proto.EventHandler);
+
+    // GET /{name}
+    rpc GetEventHandlersForEvent(GetEventHandlersForEventRequest) returns (stream conductor.proto.EventHandler);
+}
+
+message AddEventHandlerRequest {
+    conductor.proto.EventHandler handler = 1;
+}
+
+message AddEventHandlerResponse {}
+
+message UpdateEventHandlerRequest {
+    conductor.proto.EventHandler handler = 1;
+}
+
+message UpdateEventHandlerResponse {}
+
+message RemoveEventHandlerRequest {
+    string name = 1;
+}
+
+message RemoveEventHandlerResponse {}
+
+message GetEventHandlersRequest {}
+
+message GetEventHandlersForEventRequest {
+    string event = 1;
+    bool active_only = 2;
+}

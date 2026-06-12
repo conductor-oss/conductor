@@ -1,0 +1,210 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://conductoross.org/schemas/TaskDef.json",
+  "title": "TaskDef",
+  "description": "Task definition schema",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Unique name identifying the task",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the task"
+    },
+    "retryCount": {
+      "type": "integer",
+      "description": "Number of times to retry the task on failure",
+      "minimum": 0,
+      "default": 3
+    },
+    "timeoutSeconds": {
+      "type": "integer",
+      "description": "Time in seconds after which the task is marked as TIMED_OUT if not completed",
+      "minimum": 0
+    },
+    "inputKeys": {
+      "type": "array",
+      "description": "List of keys expected in the input",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "outputKeys": {
+      "type": "array",
+      "description": "List of keys expected in the output",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "timeoutPolicy": {
+      "type": "string",
+      "description": "Policy to apply when task times out",
+      "enum": ["RETRY", "TIME_OUT_WF", "ALERT_ONLY"],
+      "default": "TIME_OUT_WF"
+    },
+    "retryLogic": {
+      "type": "string",
+      "description": "Mechanism for retry logic",
+      "enum": ["FIXED", "EXPONENTIAL_BACKOFF", "LINEAR_BACKOFF"],
+      "default": "FIXED"
+    },
+    "retryDelaySeconds": {
+      "type": "integer",
+      "description": "Time in seconds to wait before retrying the task",
+      "minimum": 0,
+      "default": 60
+    },
+    "responseTimeoutSeconds": {
+      "type": "integer",
+      "description": "Time in seconds after which the task is re-queued if no response is received",
+      "minimum": 1,
+      "default": 3600
+    },
+    "concurrentExecLimit": {
+      "type": "integer",
+      "description": "Maximum number of concurrent task executions",
+      "minimum": 0
+    },
+    "inputTemplate": {
+      "type": "object",
+      "description": "Template for task input parameters",
+      "additionalProperties": true,
+      "default": {}
+    },
+    "rateLimitPerFrequency": {
+      "type": "integer",
+      "description": "Maximum number of task executions per rateLimitFrequencyInSeconds",
+      "minimum": 0
+    },
+    "rateLimitFrequencyInSeconds": {
+      "type": "integer",
+      "description": "Frequency window in seconds for rate limiting",
+      "minimum": 1
+    },
+    "isolationGroupId": {
+      "type": "string",
+      "description": "Isolation group identifier for task execution"
+    },
+    "executionNameSpace": {
+      "type": "string",
+      "description": "Namespace for task execution"
+    },
+    "ownerEmail": {
+      "type": "string",
+      "description": "Email address of the task definition owner",
+      "format": "email"
+    },
+    "pollTimeoutSeconds": {
+      "type": "integer",
+      "description": "Time in seconds after which the task poll times out",
+      "minimum": 0
+    },
+    "backoffScaleFactor": {
+      "type": "integer",
+      "description": "Backoff multiplier for LINEAR_BACKOFF retry logic",
+      "minimum": 1,
+      "default": 1
+    },
+    "baseType": {
+      "type": "string",
+      "description": "Base type of the task (for task type inheritance)"
+    },
+    "totalTimeoutSeconds": {
+      "type": "integer",
+      "description": "Total timeout including all retries",
+      "minimum": 0
+    },
+    "inputSchema": {
+      "$ref": "#/definitions/SchemaDef"
+    },
+    "outputSchema": {
+      "$ref": "#/definitions/SchemaDef"
+    },
+    "enforceSchema": {
+      "type": "boolean",
+      "description": "Whether to enforce schema validation",
+      "default": false
+    },
+    "ownerApp": {
+      "type": "string",
+      "description": "Owner application name"
+    },
+    "createTime": {
+      "type": "integer",
+      "description": "Creation timestamp in milliseconds",
+      "format": "int64"
+    },
+    "updateTime": {
+      "type": "integer",
+      "description": "Last update timestamp in milliseconds",
+      "format": "int64"
+    },
+    "createdBy": {
+      "type": "string",
+      "description": "User who created this task definition"
+    },
+    "updatedBy": {
+      "type": "string",
+      "description": "User who last updated this task definition"
+    }
+  },
+  "definitions": {
+    "SchemaDef": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Schema name"
+        },
+        "version": {
+          "type": "integer",
+          "description": "Schema version",
+          "default": 1
+        },
+        "type": {
+          "type": "string",
+          "description": "Schema type",
+          "enum": ["JSON", "AVRO", "PROTOBUF"]
+        },
+        "data": {
+          "type": "object",
+          "description": "Schema definition data",
+          "additionalProperties": true
+        },
+        "externalRef": {
+          "type": "string",
+          "description": "External schema reference (e.g., schema registry reference)"
+        },
+        "ownerApp": {
+          "type": "string",
+          "description": "Owner application"
+        },
+        "createTime": {
+          "type": "integer",
+          "description": "Creation timestamp",
+          "format": "int64"
+        },
+        "updateTime": {
+          "type": "integer",
+          "description": "Update timestamp",
+          "format": "int64"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Creator"
+        },
+        "updatedBy": {
+          "type": "string",
+          "description": "Last updater"
+        }
+      }
+    }
+  }
+}

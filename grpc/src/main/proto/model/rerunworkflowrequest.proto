@@ -1,0 +1,16 @@
+syntax = "proto3";
+package conductor.proto;
+
+import "google/protobuf/struct.proto";
+
+option java_package = "com.netflix.conductor.proto";
+option java_outer_classname = "RerunWorkflowRequestPb";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
+
+message RerunWorkflowRequest {
+    string re_run_from_workflow_id = 1;
+    map<string, google.protobuf.Value> workflow_input = 2;
+    string re_run_from_task_id = 3;
+    map<string, google.protobuf.Value> task_input = 4;
+    string correlation_id = 5;
+}

@@ -1,0 +1,89 @@
+syntax = "proto3";
+package conductor.grpc.metadata;
+
+import "model/taskdef.proto";
+import "model/workflowdef.proto";
+
+option java_package = "com.netflix.conductor.grpc";
+option java_outer_classname = "MetadataServicePb";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/grpc/metadata";
+
+service MetadataService {
+    // POST /workflow
+    rpc CreateWorkflow(CreateWorkflowRequest) returns (CreateWorkflowResponse);
+
+    // POST /workflow/validate
+    rpc ValidateWorkflow(ValidateWorkflowRequest) returns (ValidateWorkflowResponse);
+
+    // PUT /workflow
+    rpc UpdateWorkflows(UpdateWorkflowsRequest) returns (UpdateWorkflowsResponse);
+
+    // GET /workflow/{name}
+    rpc GetWorkflow(GetWorkflowRequest) returns (GetWorkflowResponse);
+
+    // POST /taskdefs
+    rpc CreateTasks(CreateTasksRequest) returns (CreateTasksResponse);
+
+    // PUT /taskdefs
+    rpc UpdateTask(UpdateTaskRequest) returns (UpdateTaskResponse);
+
+    // GET /taskdefs/{tasktype}
+    rpc GetTask(GetTaskRequest) returns (GetTaskResponse);
+
+    // DELETE /taskdefs/{tasktype}
+    rpc DeleteTask(DeleteTaskRequest) returns (DeleteTaskResponse);
+}
+
+message CreateWorkflowRequest {
+    conductor.proto.WorkflowDef workflow = 1;
+}
+
+message CreateWorkflowResponse {}
+
+message ValidateWorkflowRequest {
+    conductor.proto.WorkflowDef workflow = 1;
+}
+
+message ValidateWorkflowResponse {}
+
+message UpdateWorkflowsRequest {
+    repeated conductor.proto.WorkflowDef defs = 1;
+}
+
+message UpdateWorkflowsResponse {}
+
+message GetWorkflowRequest {
+    string name = 1;
+    int32 version = 2;
+}
+
+message GetWorkflowResponse {
+    conductor.proto.WorkflowDef workflow = 1;
+}
+
+message CreateTasksRequest {
+    repeated conductor.proto.TaskDef defs = 1;
+}
+
+message CreateTasksResponse {}
+
+message UpdateTaskRequest {
+    conductor.proto.TaskDef task = 1;
+}
+
+message UpdateTaskResponse {}
+
+
+message GetTaskRequest {
+    string task_type = 1;
+}
+
+message GetTaskResponse {
+    conductor.proto.TaskDef task = 1;
+}
+
+message DeleteTaskRequest {
+    string task_type = 1;
+}
+
+message DeleteTaskResponse {}

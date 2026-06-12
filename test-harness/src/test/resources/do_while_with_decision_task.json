@@ -1,0 +1,62 @@
+{
+  "name": "DO_While_with_Decision_task",
+  "description": "Program for testing loop behaviour",
+  "version": 1,
+  "schemaVersion": 2,
+  "ownerEmail": "xyz@company.eu",
+  "tasks": [
+    {
+      "name": "LoopTask",
+      "taskReferenceName": "LoopTask",
+      "type": "DO_WHILE",
+      "inputParameters": {
+        "list": "${workflow.input.list}"
+      },
+      "loopCondition": "$.LoopTask['iteration'] < $.list.length",
+      "loopOver": [
+        {
+          "name": "GetNumberAtIndex",
+          "taskReferenceName": "GetNumberAtIndex",
+          "type": "INLINE",
+          "inputParameters": {
+            "evaluatorType": "javascript",
+            "list": "${workflow.input.list}",
+            "iterator": "${LoopTask.output.iteration}",
+            "expression": "function getElement() { return $.list.get($.iterator - 1); } getElement();"
+          }
+        },
+        {
+          "name": "SwitchTask",
+          "taskReferenceName": "SwitchTask",
+          "type": "SWITCH",
+          "evaluatorType": "javascript",
+          "inputParameters": {
+            "param": "${GetNumberAtIndex.output.result}"
+          },
+          "expression": "$.param > 0",
+          "decisionCases": {
+            "true": [
+              {
+                "name": "WaitTask",
+                "taskReferenceName": "WaitTask",
+                "type": "WAIT",
+                "inputParameters": {
+                }
+              },
+              {
+                "name": "ComputeNumber",
+                "taskReferenceName": "ComputeNumber",
+                "type": "INLINE",
+                "inputParameters": {
+                  "evaluatorType": "javascript",
+                  "number": "${GetNumberAtIndex.output.result.number}",
+                  "expression": "function compute() { return $.number+10; } compute();"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

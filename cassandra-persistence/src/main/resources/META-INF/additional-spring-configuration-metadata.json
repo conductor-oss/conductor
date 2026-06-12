@@ -1,0 +1,36 @@
+{
+  "properties": [
+    {
+      "name": "conductor.cassandra.write-consistency-level",
+      "defaultValue": "LOCAL_QUORUM"
+    },
+    {
+      "name": "conductor.cassandra.read-consistency-level",
+      "defaultValue": "LOCAL_QUORUM"
+    }
+  ],
+  "hints": [
+    {
+      "name": "conductor.cassandra.write-consistency-level",
+      "providers": [
+        {
+          "name": "handle-as",
+          "parameters": {
+            "target": "java.lang.Enum"
+          }
+        }
+      ]
+    },
+    {
+      "name": "conductor.cassandra.read-consistency-level",
+      "providers": [
+        {
+          "name": "handle-as",
+          "parameters": {
+            "target": "java.lang.Enum"
+          }
+        }
+      ]
+    }
+  ]
+}

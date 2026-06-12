@@ -1,0 +1,14 @@
+syntax = "proto3";
+package conductor.proto;
+
+
+option java_package = "com.netflix.conductor.proto";
+option java_outer_classname = "PollDataPb";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
+
+message PollData {
+    string queue_name = 1;
+    string domain = 2;
+    string worker_id = 3;
+    int64 last_poll_time = 4;
+}

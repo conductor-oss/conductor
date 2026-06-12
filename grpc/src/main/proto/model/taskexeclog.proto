@@ -1,0 +1,13 @@
+syntax = "proto3";
+package conductor.proto;
+
+
+option java_package = "com.netflix.conductor.proto";
+option java_outer_classname = "TaskExecLogPb";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
+
+message TaskExecLog {
+    string log = 1;
+    string task_id = 2;
+    int64 created_time = 3;
+}

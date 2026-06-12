@@ -1,0 +1,34 @@
+{
+  "name": "image_to_video_pipeline",
+  "description": "A two-step creative pipeline: generates a still image with DALL-E, then creates a video continuation using OpenAI Sora with a prompt inspired by the scene.",
+  "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "generate_image",
+      "taskReferenceName": "source_image",
+      "type": "GENERATE_IMAGE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "dall-e-3",
+        "prompt": "A serene mountain lake at dawn with mist rising from the water, photorealistic, wide landscape",
+        "width": 1792,
+        "height": 1024,
+        "n": 1
+      }
+    },
+    {
+      "name": "generate_video",
+      "taskReferenceName": "animated_video",
+      "type": "GENERATE_VIDEO",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "sora-2",
+        "prompt": "A serene mountain lake at dawn, gentle ripples spread across the water as mist slowly drifts, birds flying in the distance, cinematic slow motion",
+        "duration": 8,
+        "size": "1280x720",
+        "style": "cinematic"
+      }
+    }
+  ]
+}

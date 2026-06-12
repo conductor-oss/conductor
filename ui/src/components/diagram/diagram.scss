@@ -1,0 +1,221 @@
+$dark-color: #333;
+$light-color: #c8c8c8; /* gray11*/
+$white: #fff;
+$edge-label-color: blue;
+$outline-width: 0.6px;
+$node-text-size: 12px;
+
+.graphWrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  user-select: none;
+}
+
+.graphToolbar {
+  flex: 0;
+}
+
+.graphSvg {
+  width: 100%;
+  min-height: 600px;
+  flex-grow: 1;
+}
+
+@mixin nodeColor($colorfg, $colorbg: #fff) {
+  &.bar {
+    rect {
+      stroke: $colorfg !important;
+      fill: $colorfg;
+    }
+  }
+  text {
+    fill: $colorfg;
+  }
+  rect,
+  polygon,
+  circle {
+    fill: $colorbg;
+    stroke: $colorfg;
+  }
+}
+
+.node {
+  &:hover {
+    rect,
+    polygon {
+      filter: url("#brightness");
+    }
+  }
+
+  text {
+    fill: $dark-color;
+    font-size: 13px;
+    pointer-events: none;
+  }
+
+  rect,
+  circle,
+  polygon {
+    stroke: $dark-color;
+    fill: $white;
+    stroke-width: $outline-width;
+  }
+
+  rect {
+    rx: 5px;
+    ry: 5px;
+  }
+
+  &.type-SUB_WORKFLOW {
+    rect {
+      stroke-width: 5px;
+    }
+  }
+  &.type-TERMINAL {
+    circle {
+      stroke: $dark-color;
+      fill: #eee;
+      stroke-width: 0.6px;
+    }
+    text {
+      color: $dark-color;
+      font-weight: bold;
+    }
+    &.dimmed circle {
+      stroke: $light-color;
+    }
+  }
+
+  &.dimmed {
+    @include nodeColor($light-color);
+  }
+  &.status_COMPLETED {
+    @include nodeColor(#163e1d, #aee1b8);
+  }
+  &.status_COMPLETED_WITH_ERRORS {
+    @include nodeColor(#8b5b02, #feeac5);
+  }
+  &.status_IN_PROGRESS {
+    @include nodeColor(#c2920d, #fff5da);
+  }
+  &.status_SCHEDULED {
+    @include nodeColor(#11497a, #cbe2f7);
+  }
+  &.status_CANCELED {
+    @include nodeColor(#26194b, #ded5f8);
+  }
+  &.status_FAILED,
+  &.status_FAILED_WITH_TERMINAL_ERROR,
+  &.status_TIMED_OUT,
+  &.status_DF_PARTIAL {
+    @include nodeColor(#7f050b, #f9c6c9);
+  }
+  &.status_SKIPPED {
+    @include nodeColor(gray);
+  }
+  &.selected {
+    filter: url("#dropShadow");
+  }
+}
+
+.node.bar {
+  &.type-FORK_JOIN_DYNAMIC {
+    rect {
+      stroke: $dark-color;
+      stroke-width: 5;
+      stroke-dasharray: 10;
+    }
+    &.dimmed {
+      rect {
+        stroke: $light-color;
+      }
+    }
+  }
+  /*
+  &.type-EXCLUSIVE_JOIN {
+    rect {
+      stroke: $dark-color;
+      fill: #fff;
+      stroke-width: $outline-width;
+    }
+    rect.underline {
+      stroke-width: 0;
+      fill: $dark-color;
+    }
+    text {
+      fill: $dark-color;
+    }
+    &.dimmed {
+      rect {
+        stroke: $light-color;
+        fill: #fff;        
+      }
+      text {
+        fill: $light-color;
+      }
+    }
+  }
+*/
+  rect {
+    rx: 0px;
+    ry: 0px;
+    stroke-width: 0;
+    fill: $dark-color;
+  }
+  text {
+    fill: $white;
+  }
+
+  &.dimmed {
+    rect {
+      fill: $light-color;
+    }
+  }
+}
+
+.edgePath {
+  path {
+    marker-end: url(#endarrow);
+    stroke: $dark-color;
+    stroke-width: 1px;
+  }
+
+  &.reverse {
+    path {
+      marker-end: none;
+      marker-start: url(#startarrow);
+    }
+  }
+
+  &.dimmed {
+    path {
+      stroke: $light-color;
+      stroke-dasharray: 5;
+      marker-end: url(#endarrow-dimmed);
+    }
+    marker {
+      fill: $light-color;
+    }
+  }
+
+  &.dimmed.reverse {
+    path {
+      marker-end: none;
+      marker-start: url(#startarrow-dimmed);
+    }
+  }
+
+  &.executed {
+    path {
+      stroke-width: 2px;
+    }
+  }
+}
+.edgeLabel {
+  fill: $edge-label-color;
+  font-size: 12px;
+  &.dimmed text {
+    fill: $light-color;
+  }
+}

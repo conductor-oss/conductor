@@ -1,0 +1,95 @@
+{
+  "name": "json_jq_transform_result_wf",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "json_jq_1",
+      "taskReferenceName": "json_jq_1",
+      "description": "json_jq_1",
+      "inputParameters": {
+        "data": [],
+        "queryExpression": "if(.data | length >0) then \"EXISTS\" else \"CREATE\" end"
+      },
+      "type": "JSON_JQ_TRANSFORM",
+      "startDelay": 0,
+      "optional": false,
+      "asyncComplete": false
+    },
+    {
+      "name": "decide_1",
+      "taskReferenceName": "decide_1",
+      "inputParameters": {
+        "outcome": "${json_jq_1.output.result}"
+      },
+      "type": "DECISION",
+      "caseValueParam": "outcome",
+      "decisionCases": {
+        "CREATE": [
+          {
+            "name": "json_jq_2",
+            "taskReferenceName": "json_jq_2",
+            "description": "json_jq_2",
+            "inputParameters": {
+              "inputData": {
+                "request": {
+                  "transitions": [
+                    {
+                      "name": "redeliver"
+                    },
+                    {
+                      "name": "redeliver_from_validation_error"
+                    },
+                    {
+                      "name": "redelivery"
+                    }
+                  ]
+                }
+              },
+              "queryExpression": ".inputData.request.transitions | map(.name)"
+            },
+            "type": "JSON_JQ_TRANSFORM",
+            "startDelay": 0,
+            "optional": false,
+            "asyncComplete": false
+          },
+          {
+            "name": "decide_2",
+            "taskReferenceName": "decide_2",
+            "inputParameters": {
+              "requestedAction": "${workflow.input.requestedAction}",
+              "availableActions": "${json_jq_2.output.result}"
+            },
+            "type": "DECISION",
+            "caseExpression": "if ($.availableActions.indexOf($.requestedAction) >= 0) { \"true\" } else { \"false\" }",
+            "decisionCases": {
+              "false": [
+                {
+                  "name": "get_population_data",
+                  "taskReferenceName": "get_population_data",
+                  "inputParameters": {
+                    "http_request": {
+                      "uri": "https://datausa.io/api/data?drilldowns=Nation&measures=Population",
+                      "method": "GET"
+                    }
+                  },
+                  "type": "HTTP",
+                  "startDelay": 0,
+                  "optional": false,
+                  "asyncComplete": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}

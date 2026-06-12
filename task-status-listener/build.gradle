@@ -1,0 +1,24 @@
+plugins {
+    id 'groovy'
+}
+dependencies {
+
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+    implementation project(':conductor-redis-persistence')
+    implementation project(':conductor-annotations')
+
+    implementation group: 'javax.inject', name: 'javax.inject', version: '1'
+    implementation "org.apache.commons:commons-lang3:"
+    implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.14'
+
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+    compileOnly 'org.springframework.boot:spring-boot-starter-web'
+
+    implementation "org.springframework.boot:spring-boot-starter-log4j2"
+    testImplementation project(':conductor-test-util').sourceSets.test.output
+
+    //In memory
+    implementation "org.rarefiedredis.redis:redis-java:${revRarefiedRedis}"
+
+}

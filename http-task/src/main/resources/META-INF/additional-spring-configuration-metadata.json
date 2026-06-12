@@ -1,0 +1,14 @@
+{
+  "properties": [
+    {
+      "name": "conductor.tasks.http.readTimeout",
+      "type": "java.lang.Integer",
+      "description": "The read timeout of the underlying HttpClient used by the HTTP task."
+    },
+    {
+      "name": "conductor.tasks.http.connectTimeout",
+      "type": "java.lang.Integer",
+      "description": "The connection timeout of the underlying HttpClient used by the HTTP task."
+    }
+  ]
+}

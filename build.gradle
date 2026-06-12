@@ -1,0 +1,232 @@
+import org.springframework.boot.gradle.plugin.SpringBootPlugin
+
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:3.3.11'
+        classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.+'
+    }
+}
+
+plugins {
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
+    id 'application'
+    id 'maven-publish'
+    id 'signing'
+    id 'java-library'
+    id "com.diffplug.spotless" version "6.25.0"
+    id 'org.springframework.boot' version '3.3.5'
+}
+
+// Establish version and status
+ext.githubProjectName = rootProject.name // Change if github project name is not the same as the root project's name
+
+ext["tomcat.version"] = "10.1.54"
+
+subprojects {
+    tasks.withType(Javadoc).all { enabled = false }
+}
+
+apply from: "$rootDir/dependencies.gradle"
+apply from: "$rootDir/springboot-bom-overrides.gradle"
+apply from: "$rootDir/deploy.gradle"
+
+allprojects {
+    apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'java-library'
+    apply plugin: 'project-report'
+    apply plugin: 'jacoco'
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+
+    group = 'org.conductoross'
+
+    configurations {
+        all {
+            exclude group: 'ch.qos.logback', module: 'logback-classic'
+            exclude group: 'ch.qos.logback', module: 'logback-core'
+            exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
+            exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+
+            resolutionStrategy.eachDependency { details ->
+                // Compat: align all com.fasterxml.jackson.* to the same version — mixed versions cause ClassNotFoundException
+                if (details.requested.group.startsWith('com.fasterxml.jackson.')) {
+                    details.useVersion "2.17.0"
+                }
+                // Compat: commons-lang3 3.18.0+ required by Testcontainers/commons-compress
+                if (details.requested.group == 'org.apache.commons' && details.requested.name == 'commons-lang3') {
+                    details.useVersion "3.18.0"
+                }
+                // Security: CVE-2025-12183 — lz4-java minimum patched version
+                if (details.requested.group == 'org.lz4' && details.requested.name == 'lz4-java') {
+                    details.useVersion '1.8.1'
+                }
+            }
+            // Security: at.yawk.lz4:lz4-java declares Gradle capability org.lz4:lz4-java in its
+            // module metadata. When lz4-java is upgraded to 1.8.1 (CVE-2025-12183), both modules
+            // claim the same capability and Gradle can't resolve the conflict automatically.
+            // Tell Gradle to always prefer the canonical org.lz4 artifact.
+            resolutionStrategy.capabilitiesResolution.withCapability('org.lz4:lz4-java') { resolution ->
+                def preferred = resolution.candidates.find { it.id.group == 'org.lz4' }
+                if (preferred) {
+                    resolution.select(preferred)
+                }
+            }
+        }
+    }
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencyManagement {
+        imports {
+            // dependency versions for the BOM can be found at https://docs.spring.io/spring-boot/docs/3.3.11/reference/htmlsingle/#appendix.dependency-versions
+            mavenBom(SpringBootPlugin.BOM_COORDINATES)
+        }
+    }
+
+    dependencies {
+        implementation('org.apache.logging.log4j:log4j-core')
+        implementation('org.apache.logging.log4j:log4j-api')
+        implementation('org.apache.logging.log4j:log4j-slf4j-impl')
+        implementation('org.apache.logging.log4j:log4j-jul')
+        implementation('org.apache.logging.log4j:log4j-web')
+        implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
+        implementation "com.networknt:json-schema-validator:${revJSonSchemaValidator}"
+        compileOnly 'org.projectlombok:lombok:1.18.42'
+
+        annotationProcessor 'org.projectlombok:lombok:1.18.42'
+        annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+        testImplementation('org.springframework.boot:spring-boot-starter-test')
+        testImplementation('org.springframework.boot:spring-boot-starter-log4j2')
+        testImplementation 'junit:junit'
+        testImplementation "org.junit.vintage:junit-vintage-engine"
+        testAnnotationProcessor 'org.projectlombok:lombok:1.18.42'
+
+        // PINNED (#964): jettison must stay at exactly 1.5.4 — `strictly` prevents both
+        // downgrade and upgrade. No known compatible higher version has been validated.
+        implementation('org.codehaus.jettison:jettison') {
+            version {
+                strictly '1.5.4'
+            }
+        }
+        implementation('org.apache.tomcat.embed:tomcat-embed-core')
+
+        // Security: minimum version floors for CVE-patched transitive dependencies.
+        constraints {
+            implementation('org.apache.tika:tika-core:3.2.2') {
+                because 'CVE-2025-66516: tika-parser-pdf-module vulnerability'
+            }
+            implementation('commons-beanutils:commons-beanutils:1.11.0') {
+                because 'CVE-2025-48734: PropertyUtilsBean enum suppression'
+            }
+            implementation('com.microsoft.sqlserver:mssql-jdbc:12.8.2.jre11') {
+                because 'CVE-2025-59250: improper input validation'
+            }
+        }
+    }
+    // processes additional configuration metadata json file as described here
+    // https://docs.spring.io/spring-boot/docs/2.3.1.RELEASE/reference/html/appendix-configuration-metadata.html#configuration-metadata-additional-metadata
+    compileJava.inputs.files(processResources)
+
+    test {
+        useJUnitPlatform()
+        // Prefer provider auto-detection and ignore user-level forced client strategy pins.
+        systemProperty 'dockerconfig.source', 'autoIgnoringUserProperties'
+        testLogging {
+            events = ["SKIPPED", "FAILED"]
+            exceptionFormat = "full"
+            displayGranularity = 1
+            showStandardStreams = false
+        }
+    }
+    jacocoTestReport {
+        reports {
+            xml.required = true
+            html.required = true
+        }
+    }
+    test.finalizedBy jacocoTestReport
+
+    bootJar {
+        enabled = false
+    }
+}
+
+// all client and their related modules are published with Java 17 compatibility
+["annotations", "common", "grpc", "grpc-client"].each {
+    project(":conductor-$it") {
+        compileJava {
+            options.release = 21
+        }
+    }
+}
+
+// Aggregated coverage report across all subprojects.
+// Run AFTER tests: ./gradlew build jacocoAggregatedReport
+// This task does NOT trigger test execution — it only aggregates existing .exec files.
+// Aggregated coverage report across all subprojects.
+// Run AFTER tests: ./gradlew build jacocoAggregatedReport
+// This task does NOT trigger test execution — it only aggregates existing .exec files.
+task jacocoAggregatedReport(type: JacocoReport) {
+    description = 'Generates an aggregated code coverage report from existing test execution data'
+    group = 'verification'
+
+    // Need compiled classes for the report, but not test execution
+    dependsOn subprojects.collect { it.tasks.named('classes') }
+
+    def javaSubprojects = subprojects.findAll { it.plugins.hasPlugin('java') }
+    additionalSourceDirs.from(javaSubprojects.collect { it.sourceSets.main.allJava })
+    sourceDirectories.from(javaSubprojects.collect { it.sourceSets.main.allJava })
+    classDirectories.from(javaSubprojects.collect { it.sourceSets.main.output.classesDirs })
+    executionData.setFrom(fileTree(dir: rootDir, includes: ['**/build/jacoco/*.exec']))
+
+    reports {
+        xml.required = true
+        html.required = true
+        html.outputLocation = layout.buildDirectory.dir('reports/jacoco/aggregated')
+    }
+}
+
+task server {
+    dependsOn ':conductor-server:bootRun'
+}
+
+configure(allprojects - project(':conductor-grpc')) {
+    apply plugin: 'com.diffplug.spotless'
+
+    spotless {
+        java {
+            googleJavaFormat().aosp()
+            removeUnusedImports()
+            importOrder('java', 'javax', 'org', 'com.netflix', '', '\\#com.netflix', '\\#')
+            licenseHeaderFile("$rootDir/licenseheader.txt")
+        }
+    }
+}
+
+['cassandra-persistence', 'core', 'redis-concurrency-limit', 'test-harness'].each {
+    configure(project(":conductor-$it")) {
+        spotless {
+            groovy {
+                importOrder('java', 'javax', 'org', 'com.netflix', '', '\\#com.netflix', '\\#')
+                licenseHeaderFile("$rootDir/licenseheader.txt")
+            }
+        }
+    }
+}

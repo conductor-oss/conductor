@@ -1,0 +1,177 @@
+syntax = "proto3";
+package conductor.grpc.workflows;
+
+import "grpc/search.proto";
+import "model/workflow.proto";
+import "model/workflowsummary.proto";
+import "model/skiptaskrequest.proto";
+import "model/startworkflowrequest.proto";
+import "model/rerunworkflowrequest.proto";
+
+option java_package = "com.netflix.conductor.grpc";
+option java_outer_classname = "WorkflowServicePb";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/grpc/workflows";
+
+service WorkflowService {
+    // POST /
+    rpc StartWorkflow(conductor.proto.StartWorkflowRequest) returns (StartWorkflowResponse);
+
+    // GET /{name}/correlated/{correlationId}
+    rpc GetWorkflows(GetWorkflowsRequest) returns (GetWorkflowsResponse);
+
+    // GET /{workflowId}
+    rpc GetWorkflowStatus(GetWorkflowStatusRequest) returns (conductor.proto.Workflow);
+
+    // DELETE /{workflodId}/remove
+    rpc RemoveWorkflow(RemoveWorkflowRequest) returns (RemoveWorkflowResponse);
+
+    // GET /running/{name}
+    rpc GetRunningWorkflows(GetRunningWorkflowsRequest) returns (GetRunningWorkflowsResponse);
+
+    // PUT /decide/{workflowId}
+    rpc DecideWorkflow(DecideWorkflowRequest) returns (DecideWorkflowResponse);
+
+    // PUT /{workflowId}/pause
+    rpc PauseWorkflow(PauseWorkflowRequest) returns (PauseWorkflowResponse);
+
+    // PUT /{workflowId}/pause
+    rpc ResumeWorkflow(ResumeWorkflowRequest) returns (ResumeWorkflowResponse);
+
+    // PUT /{workflowId}/skiptask/{taskReferenceName}
+    rpc SkipTaskFromWorkflow(SkipTaskRequest) returns (SkipTaskResponse);
+
+    // POST /{workflowId}/rerun
+    rpc RerunWorkflow(conductor.proto.RerunWorkflowRequest) returns (RerunWorkflowResponse);
+
+    // POST /{workflowId}/restart
+    rpc RestartWorkflow(RestartWorkflowRequest) returns (RestartWorkflowResponse);
+
+    // POST /{workflowId}retry
+    rpc RetryWorkflow(RetryWorkflowRequest) returns (RetryWorkflowResponse);
+
+    // POST /{workflowId}/resetcallbacks
+    rpc ResetWorkflowCallbacks(ResetWorkflowCallbacksRequest) returns (ResetWorkflowCallbacksResponse);
+
+    // DELETE /{workflowId}
+    rpc TerminateWorkflow(TerminateWorkflowRequest) returns (TerminateWorkflowResponse);
+
+    // GET /search
+    rpc Search(conductor.grpc.search.Request) returns (WorkflowSummarySearchResult);
+    rpc SearchByTasks(conductor.grpc.search.Request) returns (WorkflowSummarySearchResult);
+
+    // GET /searchV2
+    rpc SearchV2(conductor.grpc.search.Request) returns (WorkflowSearchResult);
+    rpc SearchByTasksV2(conductor.grpc.search.Request) returns (WorkflowSearchResult);
+}
+
+message StartWorkflowResponse {
+    string workflow_id = 1;
+}
+
+message GetWorkflowsRequest {
+    string name = 1;
+    repeated string correlation_id = 2;
+    bool include_closed = 3;
+    bool include_tasks = 4;
+}
+
+message GetWorkflowsResponse {
+    message Workflows {
+        repeated conductor.proto.Workflow workflows = 1;
+    }
+    map<string, Workflows> workflows_by_id = 1;
+}
+
+message GetWorkflowStatusRequest {
+    string workflow_id = 1;
+    bool include_tasks = 2;
+}
+
+message GetWorkflowStatusResponse {
+    conductor.proto.Workflow workflow = 1;
+}
+
+message RemoveWorkflowRequest {
+    string workflod_id = 1;
+    bool archive_workflow = 2;
+}
+
+message RemoveWorkflowResponse {}
+
+message GetRunningWorkflowsRequest {
+    string name = 1;
+    int32 version = 2;
+    int64 start_time = 3;
+    int64 end_time = 4;
+}
+
+message GetRunningWorkflowsResponse {
+    repeated string workflow_ids = 1;
+}
+
+message DecideWorkflowRequest {
+    string workflow_id = 1;
+}
+
+message DecideWorkflowResponse {}
+
+message PauseWorkflowRequest {
+    string workflow_id = 1;
+}
+
+message PauseWorkflowResponse {}
+
+message ResumeWorkflowRequest {
+    string workflow_id = 1;
+}
+
+message ResumeWorkflowResponse {}
+
+message SkipTaskRequest {
+    string workflow_id = 1;
+    string task_reference_name = 2;
+    conductor.proto.SkipTaskRequest request = 3;
+}
+
+message SkipTaskResponse {}
+
+message RerunWorkflowResponse {
+    string workflow_id = 1;
+}
+
+message RestartWorkflowRequest {
+    string workflow_id = 1;
+    bool use_latest_definitions = 2;
+}
+
+message RestartWorkflowResponse {}
+
+message RetryWorkflowRequest {
+    string workflow_id = 1;
+    bool resume_subworkflow_tasks = 2;
+}
+
+message RetryWorkflowResponse {}
+
+message ResetWorkflowCallbacksRequest {
+    string workflow_id = 1;
+}
+
+message ResetWorkflowCallbacksResponse {}
+
+message TerminateWorkflowRequest {
+    string workflow_id = 1;
+    string reason = 2;
+}
+
+message TerminateWorkflowResponse {}
+
+message WorkflowSummarySearchResult {
+    int64 total_hits = 1;
+    repeated conductor.proto.WorkflowSummary results = 2;
+}
+
+message WorkflowSearchResult {
+    int64 total_hits = 1;
+    repeated conductor.proto.Workflow results = 2;
+}

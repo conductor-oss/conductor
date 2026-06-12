@@ -1,0 +1,48 @@
+{
+  "index_patterns": [ "*event*" ],
+  "template": {
+    "settings": {
+      "refresh_interval": "1s"
+    },
+    "mappings": {
+      "properties": {
+        "action": {
+          "type": "keyword",
+          "index": true
+        },
+        "created": {
+          "type": "long"
+        },
+        "event": {
+          "type": "keyword",
+          "index": true
+        },
+        "id": {
+          "type": "keyword",
+          "index": true
+        },
+        "messageId": {
+          "type": "keyword",
+          "index": true
+        },
+        "name": {
+          "type": "keyword",
+          "index": true
+        },
+        "output": {
+          "properties": {
+            "workflowId": {
+              "type": "keyword",
+              "index": true
+            }
+          }
+        },
+        "status": {
+          "type": "keyword",
+          "index": true
+        }
+      }
+    },
+    "aliases" : { }
+  }
+}

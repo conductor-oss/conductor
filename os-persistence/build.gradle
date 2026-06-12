@@ -1,0 +1,6 @@
+// Deprecation stub for generic 'opensearch' indexing type
+// This module only provides a helpful error message directing users to opensearch2 or opensearch3
+
+dependencies {
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+}

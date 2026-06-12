@@ -1,0 +1,128 @@
+/*
+ * Copyright 2022 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+package com.netflix.conductor.dao;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
+
+/** Data access layer for the workflow metadata - task definitions and workflow definitions */
+public interface MetadataDAO {
+
+    /**
+     * @param taskDef task definition to be created
+     */
+    TaskDef createTaskDef(TaskDef taskDef);
+
+    /**
+     * @param taskDef task definition to be updated.
+     * @return name of the task definition
+     */
+    TaskDef updateTaskDef(TaskDef taskDef);
+
+    /**
+     * @param name Name of the task
+     * @return Task Definition
+     */
+    TaskDef getTaskDef(String name);
+
+    /**
+     * @return All the task definitions
+     */
+    List<TaskDef> getAllTaskDefs();
+
+    /**
+     * @param name Name of the task
+     */
+    void removeTaskDef(String name);
+
+    /**
+     * @param def workflow definition
+     */
+    void createWorkflowDef(WorkflowDef def);
+
+    /**
+     * @param def workflow definition
+     */
+    void updateWorkflowDef(WorkflowDef def);
+
+    /**
+     * @param name Name of the workflow
+     * @return Workflow Definition
+     */
+    Optional<WorkflowDef> getLatestWorkflowDef(String name);
+
+    /**
+     * @param name Name of the workflow
+     * @param version version
+     * @return workflow definition
+     */
+    Optional<WorkflowDef> getWorkflowDef(String name, int version);
+
+    /**
+     * @param name Name of the workflow definition to be removed
+     * @param version Version of the workflow definition to be removed
+     */
+    void removeWorkflowDef(String name, Integer version);
+
+    /**
+     * @return List of all the workflow definitions
+     */
+    List<WorkflowDef> getAllWorkflowDefs();
+
+    /**
+     * @return List the latest versions of the workflow definitions
+     */
+    List<WorkflowDef> getAllWorkflowDefsLatestVersions();
+
+    /**
+     * Returns distinct workflow definition names without loading full definition bodies.
+     * Persistence modules should override this with an optimized query (e.g. SELECT DISTINCT name).
+     *
+     * @return sorted list of unique workflow names
+     */
+    default List<String> getWorkflowNames() {
+        return getAllWorkflowDefs().stream()
+                .map(WorkflowDef::getName)
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns lightweight version summaries for a single workflow, without loading full definition
+     * bodies. Persistence modules should override with an optimized query that avoids reading
+     * json_data.
+     *
+     * @param name workflow name
+     * @return list of version summaries sorted by version ascending
+     */
+    default List<WorkflowDefSummary> getWorkflowVersions(String name) {
+        return getAllWorkflowDefs().stream()
+                .filter(def -> def.getName().equals(name))
+                .sorted((a, b) -> Integer.compare(a.getVersion(), b.getVersion()))
+                .map(
+                        def -> {
+                            WorkflowDefSummary summary = new WorkflowDefSummary();
+                            summary.setName(def.getName());
+                            summary.setVersion(def.getVersion());
+                            summary.setCreateTime(def.getCreateTime());
+                            return summary;
+                        })
+                .collect(Collectors.toList());
+    }
+}

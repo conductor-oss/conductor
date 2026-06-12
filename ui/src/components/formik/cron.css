@@ -1,0 +1,56 @@
+.nav-tabs {
+  border-bottom: 1px solid #dee2e6;
+}
+.nav {
+  display: flex;
+  -ms-flex-wrap: wrap;
+  flex-wrap: wrap;
+  padding-left: 0;
+  margin-bottom: 0;
+  list-style: none;
+}
+
+.nav-tabs .nav-item.show .nav-link,
+.nav-tabs .nav-link.active {
+  color: #495057;
+  background-color: #fff;
+  border-color: #dee2e6 #dee2e6 #fff;
+}
+.nav-tabs .nav-link {
+  border: 1px solid transparent;
+  border-top-left-radius: 0.25rem;
+  border-top-right-radius: 0.25rem;
+}
+.nav-link {
+  display: block;
+  padding: 0.5rem 1rem;
+}
+
+.cron_builder {
+  background: none !important;
+  border: none;
+  padding: 0px;
+  position: relative;
+}
+.cron_builder input {
+  line-height: 36px;
+}
+.cron_builder select {
+  height: 39px;
+}
+
+.cron-builder-bg {
+  position: absolute;
+  top: 40px;
+  left: 640px;
+  width: 200px;
+}
+
+.cron-builder-bg:last-child {
+  top: 100px;
+}
+
+.cron_builder .row {
+  display: flex;
+  flex-direction: row;
+}

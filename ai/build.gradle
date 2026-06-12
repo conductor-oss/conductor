@@ -1,0 +1,57 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    maven { url 'https://repo.spring.io/snapshot' }
+    maven { url 'https://repo.spring.io/milestone' }
+}
+
+dependencies {
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+
+    api "org.springframework.ai:spring-ai-model:${revSpringAI}"
+    api "org.springframework.ai:spring-ai-client-chat:${revSpringAI}"
+    api "org.springframework.ai:spring-ai-mistral-ai:${revSpringAI}"
+    api "org.springframework.ai:spring-ai-bedrock-converse:${revSpringAI}"
+    api "org.springframework.ai:spring-ai-ollama:${revSpringAI}"
+
+    api "com.google.auth:google-auth-library-oauth2-http:1.33.0"
+    api "com.networknt:json-schema-validator:${revJSonSchemaValidator}"
+
+    api("io.modelcontextprotocol.sdk:mcp-core:${revMCP}")
+    api "com.squareup.okhttp3:okhttp:4.12.0"
+    api "org.apache.commons:commons-lang3"
+
+    // Markdown parsing and PDF generation
+    // Exclude openhtmltopdf-pdfbox (pulled in by flexmark-pdf-converter inside flexmark-all):
+    // it was compiled against fontbox 2.x and calls TTFParser.parse(InputStream) which was
+    // removed in fontbox 3.x, causing a NoSuchMethodError at runtime in GENERATE_PDF tasks.
+    // The custom MarkdownToPdfConverter uses PDFBox 3.x directly and does not need openhtmltopdf.
+    implementation("com.vladsch.flexmark:flexmark-all:${revFlexmark}") {
+        exclude group: "com.openhtmltopdf", module: "openhtmltopdf-pdfbox"
+        exclude group: "de.rototor.pdfbox", module: "graphics2d"
+    }
+    implementation "org.apache.pdfbox:pdfbox:3.0.5"
+
+    //Vector Databases
+
+    api "org.mongodb:mongodb-driver-sync:${mongodb}"
+    api "org.mongodb:mongodb-driver-core:${mongodb}"
+    api "org.mongodb:bson:${mongodb}"
+    api "io.pinecone:pinecone-client:${pinecone}"
+    api "com.pgvector:pgvector:${pgVector}"
+    api "org.springframework.boot:spring-boot-starter-jdbc"
+
+
+    testImplementation "com.squareup.okhttp3:mockwebserver:4.12.0"
+    testImplementation "org.testcontainers:mongodb:${revTestContainer}"
+    testImplementation "org.testcontainers:postgresql:${revTestContainer}"
+    testImplementation "org.postgresql:postgresql:${revPostgres}"
+    testImplementation "org.apache.commons:commons-compress:${revCommonsCompress}"
+    testImplementation "com.h2database:h2:2.4.240"
+
+}

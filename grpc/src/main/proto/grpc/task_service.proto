@@ -1,0 +1,133 @@
+syntax = "proto3";
+package conductor.grpc.tasks;
+
+import "model/taskexeclog.proto";
+import "model/taskresult.proto";
+import "model/tasksummary.proto";
+import "model/task.proto";
+import "grpc/search.proto";
+
+option java_package = "com.netflix.conductor.grpc";
+option java_outer_classname = "TaskServicePb";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/grpc/tasks";
+
+service TaskService {
+    // GET /poll/{tasktype}
+    rpc Poll(PollRequest) returns (PollResponse);
+
+    // /poll/batch/{tasktype}
+    rpc BatchPoll(BatchPollRequest) returns (stream conductor.proto.Task);
+
+    // POST /
+    rpc UpdateTask(UpdateTaskRequest) returns (UpdateTaskResponse);
+
+    // POST /{taskId}/log
+    rpc AddLog(AddLogRequest) returns (AddLogResponse);
+
+    // GET {taskId}/log
+    rpc GetTaskLogs(GetTaskLogsRequest) returns (GetTaskLogsResponse);
+
+    // GET /{taskId}
+    rpc GetTask(GetTaskRequest) returns (GetTaskResponse);
+
+    // GET /queue/sizes
+    rpc GetQueueSizesForTasks(QueueSizesRequest) returns (QueueSizesResponse);
+
+    // GET /queue/all
+    rpc GetQueueInfo(QueueInfoRequest) returns (QueueInfoResponse);
+
+    // GET /queue/all/verbose
+    rpc GetQueueAllInfo(QueueAllInfoRequest) returns (QueueAllInfoResponse);
+
+    // GET /search
+    rpc Search(conductor.grpc.search.Request) returns (TaskSummarySearchResult);
+
+    // GET /searchV2
+    rpc SearchV2(conductor.grpc.search.Request) returns (TaskSearchResult);
+}
+
+message PollRequest {
+    string task_type = 1;
+    string worker_id = 2;
+    string domain = 3;
+}
+
+message PollResponse {
+    conductor.proto.Task task = 1;
+}
+
+message BatchPollRequest {
+    string task_type = 1;
+    string worker_id = 2;
+    string domain = 3;
+    int32 count = 4;
+    int32 timeout = 5;
+}
+
+message UpdateTaskRequest {
+    conductor.proto.TaskResult result = 1;
+}
+
+message UpdateTaskResponse {
+    string task_id = 1;
+}
+
+message AddLogRequest {
+    string task_id = 1;
+    string log = 2;
+}
+
+message AddLogResponse {}
+
+message GetTaskLogsRequest {
+    string task_id = 1;
+}
+
+message GetTaskLogsResponse {
+    repeated conductor.proto.TaskExecLog logs = 1;
+}
+
+message GetTaskRequest {
+    string task_id = 1;
+}
+
+message GetTaskResponse {
+    conductor.proto.Task task = 1;
+}
+
+message QueueSizesRequest {
+    repeated string task_types = 1;
+}
+
+message QueueSizesResponse {
+    map<string, int32> queue_for_task = 1;
+}
+
+message QueueInfoRequest {}
+
+message QueueInfoResponse {
+    map<string, int64> queues = 1;
+}
+
+message QueueAllInfoRequest {}
+
+message QueueAllInfoResponse {
+    message ShardInfo {
+        int64 size = 1;
+        int64 uacked = 2;
+    }
+    message QueueInfo {
+        map<string, ShardInfo> shards = 1;
+    }
+    map<string, QueueInfo> queues = 1;
+}
+
+message TaskSummarySearchResult {
+    int64 total_hits = 1;
+    repeated conductor.proto.TaskSummary results = 2;
+}
+
+message TaskSearchResult {
+    int64 total_hits = 1;
+    repeated conductor.proto.Task results = 2;
+}

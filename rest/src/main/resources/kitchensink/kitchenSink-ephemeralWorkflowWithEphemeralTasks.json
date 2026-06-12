@@ -1,0 +1,258 @@
+{
+  "name": "kitchenSink-ephemeralWorkflowWithEphemeralTasks",
+  "workflowDef": {
+    "name": "ephemeralKitchenSinkEphemeralTasks",
+    "description": "Kitchensink ephemeral workflow with ephemeral tasks",
+    "version": 1,
+    "tasks": [
+      {
+        "name": "task_10001",
+        "taskReferenceName": "task_10001",
+        "inputParameters": {
+          "mod": "${workflow.input.mod}",
+          "oddEven": "${workflow.input.oddEven}"
+        },
+        "type": "SIMPLE",
+        "taskDefinition": {
+          "ownerApp": null,
+          "createTime": null,
+          "updateTime": null,
+          "createdBy": null,
+          "updatedBy": null,
+          "name": "task_10001",
+          "description": "task_10001",
+          "retryCount": 1,
+          "timeoutSeconds": 0,
+          "inputKeys": [],
+          "outputKeys": [],
+          "timeoutPolicy": "TIME_OUT_WF",
+          "retryLogic": "FIXED",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 3600,
+          "concurrentExecLimit": null,
+          "inputTemplate": {}
+        }
+      },
+      {
+        "name": "event_task",
+        "taskReferenceName": "event_0",
+        "inputParameters": {
+          "mod": "${workflow.input.mod}",
+          "oddEven": "${workflow.input.oddEven}"
+        },
+        "type": "EVENT",
+        "sink": "conductor"
+      },
+      {
+        "name": "dyntask",
+        "taskReferenceName": "task_2",
+        "inputParameters": {
+          "taskToExecute": "${workflow.input.task2Name}"
+        },
+        "type": "DYNAMIC",
+        "dynamicTaskNameParam": "taskToExecute"
+      },
+      {
+        "name": "oddEvenDecision",
+        "taskReferenceName": "oddEvenDecision",
+        "inputParameters": {
+          "oddEven": "${task_2.output.oddEven}"
+        },
+        "type": "DECISION",
+        "caseValueParam": "oddEven",
+        "decisionCases": {
+          "0": [
+            {
+              "name": "task_10004",
+              "taskReferenceName": "task_10004",
+              "inputParameters": {
+                "mod": "${task_2.output.mod}",
+                "oddEven": "${task_2.output.oddEven}"
+              },
+              "type": "SIMPLE",
+              "taskDefinition": {
+                "ownerApp": null,
+                "createTime": null,
+                "updateTime": null,
+                "createdBy": null,
+                "updatedBy": null,
+                "name": "task_10004",
+                "description": "task_10004",
+                "retryCount": 1,
+                "timeoutSeconds": 0,
+                "inputKeys": [],
+                "outputKeys": [],
+                "timeoutPolicy": "TIME_OUT_WF",
+                "retryLogic": "FIXED",
+                "retryDelaySeconds": 60,
+                "responseTimeoutSeconds": 3600,
+                "concurrentExecLimit": null,
+                "inputTemplate": {}
+              }
+            },
+            {
+              "name": "dynamic_fanout",
+              "taskReferenceName": "fanout1",
+              "inputParameters": {
+                "dynamicTasks": "${task_10004.output.dynamicTasks}",
+                "input": "${task_10004.output.inputs}"
+              },
+              "type": "FORK_JOIN_DYNAMIC",
+              "dynamicForkTasksParam": "dynamicTasks",
+              "dynamicForkTasksInputParamName": "input"
+            },
+            {
+              "name": "dynamic_join",
+              "taskReferenceName": "join1",
+              "type": "JOIN"
+            }
+          ],
+          "1": [
+            {
+              "name": "fork_join",
+              "taskReferenceName": "forkx",
+              "type": "FORK_JOIN",
+              "forkTasks": [
+                [
+                  {
+                    "name": "task_100010",
+                    "taskReferenceName": "task_100010",
+                    "type": "SIMPLE",
+                    "taskDefinition": {
+                      "ownerApp": null,
+                      "createTime": null,
+                      "updateTime": null,
+                      "createdBy": null,
+                      "updatedBy": null,
+                      "name": "task_100010",
+                      "description": "task_100010",
+                      "retryCount": 1,
+                      "timeoutSeconds": 0,
+                      "inputKeys": [],
+                      "outputKeys": [],
+                      "timeoutPolicy": "TIME_OUT_WF",
+                      "retryLogic": "FIXED",
+                      "retryDelaySeconds": 60,
+                      "responseTimeoutSeconds": 3600,
+                      "concurrentExecLimit": null,
+                      "inputTemplate": {}
+                    }
+                  },
+                  {
+                    "name": "sub_workflow_x",
+                    "taskReferenceName": "wf3",
+                    "inputParameters": {
+                      "mod": "${task_10001.output.mod}",
+                      "oddEven": "${task_10001.output.oddEven}"
+                    },
+                    "type": "SUB_WORKFLOW",
+                    "subWorkflowParam": {
+                      "name": "sub_flow_1",
+                      "version": 1
+                    }
+                  }
+                ],
+                [
+                  {
+                    "name": "task_100011",
+                    "taskReferenceName": "task_100011",
+                    "type": "SIMPLE",
+                    "taskDefinition": {
+                      "ownerApp": null,
+                      "createTime": null,
+                      "updateTime": null,
+                      "createdBy": null,
+                      "updatedBy": null,
+                      "name": "task_100011",
+                      "description": "task_100011",
+                      "retryCount": 1,
+                      "timeoutSeconds": 0,
+                      "inputKeys": [],
+                      "outputKeys": [],
+                      "timeoutPolicy": "TIME_OUT_WF",
+                      "retryLogic": "FIXED",
+                      "retryDelaySeconds": 60,
+                      "responseTimeoutSeconds": 3600,
+                      "concurrentExecLimit": null,
+                      "inputTemplate": {}
+                    }
+                  },
+                  {
+                    "name": "sub_workflow_x",
+                    "taskReferenceName": "wf4",
+                    "inputParameters": {
+                      "mod": "${task_10001.output.mod}",
+                      "oddEven": "${task_10001.output.oddEven}"
+                    },
+                    "type": "SUB_WORKFLOW",
+                    "subWorkflowParam": {
+                      "name": "sub_flow_1",
+                      "version": 1
+                    }
+                  }
+                ]
+              ]
+            },
+            {
+              "name": "join",
+              "taskReferenceName": "join2",
+              "type": "JOIN",
+              "joinOn": [
+                "wf3",
+                "wf4"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "search_elasticsearch",
+        "taskReferenceName": "get_es_1",
+        "inputParameters": {
+          "http_request": {
+            "uri": "http://localhost:9200/conductor/_search?size=10",
+            "method": "GET"
+          }
+        },
+        "type": "HTTP"
+      },
+      {
+        "name": "task_100030",
+        "taskReferenceName": "task_100030",
+        "inputParameters": {
+          "statuses": "${get_es_1.output..status}",
+          "workflowIds": "${get_es_1.output..workflowId}"
+        },
+        "type": "SIMPLE",
+        "taskDefinition": {
+          "ownerApp": null,
+          "createTime": null,
+          "updateTime": null,
+          "createdBy": null,
+          "updatedBy": null,
+          "name": "task_100030",
+          "description": "task_100030",
+          "retryCount": 1,
+          "timeoutSeconds": 0,
+          "inputKeys": [],
+          "outputKeys": [],
+          "timeoutPolicy": "TIME_OUT_WF",
+          "retryLogic": "FIXED",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 3600,
+          "concurrentExecLimit": null,
+          "inputTemplate": {}
+        }
+      }
+    ],
+    "outputParameters": {
+      "statues": "${get_es_1.output..status}",
+      "workflowIds": "${get_es_1.output..workflowId}"
+    },
+    "schemaVersion": 2,
+    "ownerEmail": "example@email.com"
+  },
+  "input": {
+    "task2Name": "task_10005"
+  }
+}

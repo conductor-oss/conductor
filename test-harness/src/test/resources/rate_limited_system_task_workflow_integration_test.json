@@ -1,0 +1,29 @@
+{
+  "name": "test_rate_limit_system_task_workflow",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "test_task_with_rateLimits",
+      "taskReferenceName": "test_task_with_rateLimits",
+      "inputParameters": {},
+      "type": "USER_TASK",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": []
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}

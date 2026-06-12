@@ -1,0 +1,89 @@
+/*
+ *  Copyright 2023 Conductor authors
+ *  <p>
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ *  the License. You may obtain a copy of the License at
+ *  <p>
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  <p>
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
+ */
+
+rootProject.name = 'conductor'
+
+include 'ai'
+include 'annotations'
+include 'annotations-processor'
+
+include 'server'
+include 'server-lite'
+include 'common'
+include 'core'
+
+include 'cassandra-persistence'
+include 'redis-configuration'
+include 'redis-api'
+include 'redis-persistence'
+
+include 'es6-persistence'
+
+include 'redis-lock'
+
+include 'awss3-storage'
+include 'awssqs-event-queue'
+
+include 'redis-concurrency-limit'
+
+include 'json-jq-task'
+include 'http-task'
+
+include 'rest'
+include 'grpc'
+include 'grpc-server'
+include 'grpc-client'
+
+// community modules
+include 'workflow-event-listener'
+include 'task-status-listener'
+include 'test-util'
+include 'kafka'
+include 'common-persistence'
+include 'mysql-persistence'
+include 'postgres-persistence'
+include 'sqlite-persistence'
+include 'es7-persistence'
+include 'es8-persistence'
+include 'os-persistence'
+include 'os-persistence-v2'
+include 'os-persistence-v3'
+include 'azureblob-storage'
+include 'local-file-storage'
+include 'gcs-storage'
+include 'postgres-external-storage'
+include 'amqp'
+include 'nats'
+include 'nats-streaming'
+include 'kafka-event-queue'
+
+include 'test-harness'
+
+include 'scheduler-core'
+include 'scheduler-postgres-persistence'
+include 'scheduler-mysql-persistence'
+include 'scheduler-cassandra-persistence'
+include 'scheduler-redis-persistence'
+include 'scheduler-sqlite-persistence'
+
+include 'e2e'
+
+rootProject.children.each {it.name="conductor-${it.name}"}
+
+// Map scheduler submodules to their nested directories
+project(':conductor-scheduler-core').projectDir = file('scheduler/core')
+project(':conductor-scheduler-postgres-persistence').projectDir = file('scheduler/postgres-persistence')
+project(':conductor-scheduler-mysql-persistence').projectDir = file('scheduler/mysql-persistence')
+project(':conductor-scheduler-cassandra-persistence').projectDir = file('scheduler/cassandra-persistence')
+project(':conductor-scheduler-redis-persistence').projectDir = file('scheduler/redis-persistence')
+project(':conductor-scheduler-sqlite-persistence').projectDir = file('scheduler/sqlite-persistence')

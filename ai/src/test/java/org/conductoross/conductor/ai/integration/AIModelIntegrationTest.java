@@ -1,0 +1,1550 @@
+/*
+ * Copyright 2025 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+package org.conductoross.conductor.ai.integration;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
+import org.conductoross.conductor.ai.models.AudioGenRequest;
+import org.conductoross.conductor.ai.models.ChatCompletion;
+import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
+import org.conductoross.conductor.ai.models.LLMResponse;
+import org.conductoross.conductor.ai.models.ToolSpec;
+import org.conductoross.conductor.ai.providers.anthropic.Anthropic;
+import org.conductoross.conductor.ai.providers.anthropic.AnthropicConfiguration;
+import org.conductoross.conductor.ai.providers.azureopenai.AzureOpenAI;
+import org.conductoross.conductor.ai.providers.azureopenai.AzureOpenAIConfiguration;
+import org.conductoross.conductor.ai.providers.bedrock.Bedrock;
+import org.conductoross.conductor.ai.providers.bedrock.BedrockConfiguration;
+import org.conductoross.conductor.ai.providers.cohere.CohereAI;
+import org.conductoross.conductor.ai.providers.cohere.CohereAIConfiguration;
+import org.conductoross.conductor.ai.providers.gemini.GeminiVertex;
+import org.conductoross.conductor.ai.providers.gemini.GeminiVertexConfiguration;
+import org.conductoross.conductor.ai.providers.grok.Grok;
+import org.conductoross.conductor.ai.providers.grok.GrokAIConfiguration;
+import org.conductoross.conductor.ai.providers.mistral.MistralAI;
+import org.conductoross.conductor.ai.providers.mistral.MistralAIConfiguration;
+import org.conductoross.conductor.ai.providers.ollama.Ollama;
+import org.conductoross.conductor.ai.providers.ollama.OllamaConfiguration;
+import org.conductoross.conductor.ai.providers.openai.OpenAI;
+import org.conductoross.conductor.ai.providers.openai.OpenAIConfiguration;
+import org.conductoross.conductor.ai.providers.perplexity.PerplexityAI;
+import org.conductoross.conductor.ai.providers.perplexity.PerplexityAIConfiguration;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.condition.EnabledIf;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.image.ImageModel;
+import org.springframework.ai.image.ImageOptionsBuilder;
+import org.springframework.ai.image.ImagePrompt;
+import org.springframework.ai.image.ImageResponse;
+
+import okhttp3.OkHttpClient;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+/**
+ * Integration tests for all AI model providers.
+ *
+ * <p>Before running these tests, set the required environment variables:
+ *
+ * <pre>
+ * source ai/src/test/resources/ai-test-env.sh
+ * </pre>
+ *
+ * <p>Tests will be skipped automatically if the required API keys are not set.
+ */
+public class AIModelIntegrationTest {
+
+    private static final String TEST_PROMPT = "What is 2 + 2? Reply with just the number.";
+    private static final String EMBEDDING_TEXT =
+            "Hello, world! This is a test sentence for embeddings.";
+    private static final String AUDIO_TEXT = "Hello, this is a test of text to speech.";
+
+    /**
+     * Builds an OkHttp client whose timeouts match the production {@code conductorAiHttpClient}
+     * Spring bean ({@code AIHttpClientProperties}). The default {@code new OkHttpClient()} ships
+     * with a 10s read timeout that's too short for slow provider operations — notably {@code
+     * gpt-image-1} image generation at 1024×1024, which regularly takes 30–60s and was failing this
+     * suite as a result.
+     */
+    private static OkHttpClient testHttpClient() {
+        return new OkHttpClient.Builder()
+                .connectTimeout(Duration.ofSeconds(60))
+                .readTimeout(Duration.ofSeconds(600))
+                .writeTimeout(Duration.ofSeconds(60))
+                .build();
+    }
+
+    // ========================================================================
+    // Environment variable helpers
+    // ========================================================================
+
+    static boolean isOpenAIConfigured() {
+        String key = System.getenv("OPENAI_API_KEY");
+        return StringUtils.isNotBlank(key) && !key.equals("your-openai-api-key");
+    }
+
+    static boolean isAnthropicConfigured() {
+        String key = System.getenv("ANTHROPIC_API_KEY");
+        return StringUtils.isNotBlank(key) && !key.equals("your-anthropic-api-key");
+    }
+
+    static boolean isGeminiConfigured() {
+        // API key path (Google AI Studio)
+        String apiKey = System.getenv("GEMINI_API_KEY");
+        if (StringUtils.isNotBlank(apiKey) && !apiKey.equals("your-gemini-api-key")) {
+            return true;
+        }
+        // Vertex AI path (GCP project + credentials)
+        String projectId = System.getenv("GOOGLE_PROJECT_ID");
+        String creds = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
+        String vertexCreds = System.getenv("VERTEX_AI_CREDENTIALS");
+        return StringUtils.isNotBlank(projectId)
+                && !projectId.equals("your-gcp-project-id")
+                && (StringUtils.isNotBlank(creds) || StringUtils.isNotBlank(vertexCreds));
+    }
+
+    static boolean isMistralConfigured() {
+        String key = System.getenv("MISTRAL_API_KEY");
+        return StringUtils.isNotBlank(key) && !key.equals("your-mistral-api-key");
+    }
+
+    static boolean isOllamaConfigured() {
+        String url = System.getenv("OLLAMA_BASE_URL");
+        return StringUtils.isNotBlank(url);
+    }
+
+    static boolean isGrokConfigured() {
+        String key = System.getenv("GROK_API_KEY");
+        return StringUtils.isNotBlank(key) && !key.equals("your-grok-api-key");
+    }
+
+    static boolean isCohereConfigured() {
+        String key = System.getenv("COHERE_API_KEY");
+        return StringUtils.isNotBlank(key) && !key.equals("your-cohere-api-key");
+    }
+
+    static boolean isAzureOpenAIConfigured() {
+        String key = System.getenv("AZURE_OPENAI_API_KEY");
+        String endpoint = System.getenv("AZURE_OPENAI_ENDPOINT");
+        return StringUtils.isNotBlank(key)
+                && !key.equals("your-azure-openai-api-key")
+                && StringUtils.isNotBlank(endpoint);
+    }
+
+    static boolean isBedrockConfigured() {
+        String accessKey = System.getenv("AWS_ACCESS_KEY_ID");
+        String secretKey = System.getenv("AWS_SECRET_ACCESS_KEY");
+        return StringUtils.isNotBlank(accessKey)
+                && !accessKey.equals("your-aws-access-key")
+                && StringUtils.isNotBlank(secretKey);
+    }
+
+    static boolean isPerplexityConfigured() {
+        String key = System.getenv("PERPLEXITY_API_KEY");
+        return StringUtils.isNotBlank(key) && !key.equals("your-perplexity-api-key");
+    }
+
+    // ========================================================================
+    // OpenAI Tests
+    // ========================================================================
+
+    @Nested
+    @DisplayName("OpenAI Integration Tests")
+    @EnabledIf(
+            "org.conductoross.conductor.ai.integration.AIModelIntegrationTest#isOpenAIConfigured")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    class OpenAITests {
+
+        private OpenAI openAI;
+
+        @BeforeAll
+        void setup() {
+            OpenAIConfiguration config = new OpenAIConfiguration();
+            config.setApiKey(System.getenv("OPENAI_API_KEY"));
+            config.setBaseURL(System.getenv("OPENAI_BASE_URL"));
+            openAI = new OpenAI(config, testHttpClient());
+        }
+
+        @Test
+        @DisplayName("Chat completion with GPT-4o-mini")
+        void testChatCompletion() {
+            ChatModel chatModel = openAI.getChatModel();
+            assertNotNull(chatModel);
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gpt-4o-mini");
+            input.setMaxTokens(50);
+            input.setTemperature(0.0);
+
+            var chatOptions = openAI.getChatOptions(input);
+            Prompt prompt = new Prompt(TEST_PROMPT, chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertTrue(text.contains("4"), "Expected response to contain '4', got: " + text);
+        }
+
+        @Test
+        @DisplayName("Image generation with GPT Image")
+        void testImageGeneration() {
+            ImageModel imageModel = openAI.getImageModel();
+            assertNotNull(imageModel);
+
+            // Use generic ImageOptions to set model and parameters
+            var imageOptions =
+                    ImageOptionsBuilder.builder()
+                            .model("gpt-image-1")
+                            .height(1024)
+                            .width(1024)
+                            .build();
+
+            ImagePrompt prompt =
+                    new ImagePrompt("A simple blue circle on white background", imageOptions);
+            ImageResponse response = imageModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResults());
+            assertFalse(response.getResults().isEmpty());
+
+            var output = response.getResult().getOutput();
+            assertTrue(
+                    output.getUrl() != null || output.getB64Json() != null,
+                    "Expected image URL or base64 data");
+        }
+
+        @Test
+        @DisplayName("Audio generation with TTS")
+        void testAudioGeneration() {
+            AudioGenRequest request =
+                    AudioGenRequest.builder()
+                            .text(AUDIO_TEXT)
+                            .voice("alloy")
+                            .speed(1.0)
+                            .responseFormat("mp3")
+                            .build();
+            request.setModel("tts-1");
+
+            LLMResponse response = openAI.generateAudio(request);
+
+            assertNotNull(response);
+            assertNotNull(response.getMedia());
+            assertFalse(response.getMedia().isEmpty());
+
+            var media = response.getMedia().get(0);
+            assertNotNull(media.getData());
+            assertTrue(media.getData().length > 0, "Expected audio data");
+        }
+
+        @Test
+        @DisplayName("Embeddings generation")
+        void testEmbeddings() {
+            EmbeddingGenRequest request = new EmbeddingGenRequest();
+            request.setText(EMBEDDING_TEXT);
+            request.setModel("text-embedding-3-small");
+
+            List<Float> embeddings = openAI.generateEmbeddings(request);
+
+            assertNotNull(embeddings);
+            assertFalse(embeddings.isEmpty());
+            assertEquals(1536, embeddings.size(), "Expected 1536 dimensions");
+        }
+
+        @Test
+        @DisplayName("Chat completion with Codex model")
+        void testChatCompletion_codex() {
+            ChatModel chatModel = openAI.getChatModel();
+            assertNotNull(chatModel);
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gpt-5.3-codex");
+            input.setMaxTokens(200);
+
+            var chatOptions = openAI.getChatOptions(input);
+            Prompt prompt =
+                    new Prompt(
+                            "Write a Python function that returns the factorial of n", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertFalse(text.isEmpty(), "Expected code output from Codex model");
+            assertTrue(
+                    text.contains("def") || text.contains("factorial"),
+                    "Expected Python code with 'def' or 'factorial', got: " + text);
+        }
+
+        @Test
+        @DisplayName("Chat completion with web_search tool")
+        void testChatCompletion_webSearch() {
+            ChatModel chatModel = openAI.getChatModel();
+            assertNotNull(chatModel);
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gpt-4o-mini");
+            input.setMaxTokens(200);
+            input.setTemperature(0.0);
+            input.setWebSearch(true);
+
+            var chatOptions = openAI.getChatOptions(input);
+            Prompt prompt =
+                    new Prompt("What is the current weather in San Francisco?", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            System.out.println(text);
+            assertFalse(text.isEmpty(), "Expected a response with web search results");
+        }
+
+        @Test
+        @DisplayName("Function tool calling - model returns tool_use, not result")
+        void testFunctionToolCalling() {
+            ChatModel chatModel = openAI.getChatModel();
+
+            ToolSpec weatherTool = new ToolSpec();
+            weatherTool.setName("get_weather");
+            weatherTool.setDescription("Get the current weather for a location");
+            weatherTool.setInputSchema(
+                    Map.of(
+                            "type", "object",
+                            "properties",
+                                    Map.of(
+                                            "location",
+                                            Map.of("type", "string", "description", "City name")),
+                            "required", List.of("location")));
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gpt-4o-mini");
+            input.setMaxTokens(200);
+            input.setTemperature(0.0);
+            input.setTools(List.of(weatherTool));
+
+            var chatOptions = openAI.getChatOptions(input);
+            Prompt prompt = new Prompt("What is the weather in Tokyo?", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+
+            var output = response.getResult().getOutput();
+            // Model should return a tool call, not execute it
+            assertNotNull(output.getToolCalls(), "Expected tool calls in response");
+            assertFalse(output.getToolCalls().isEmpty(), "Expected at least one tool call");
+
+            var toolCall = output.getToolCalls().getFirst();
+            assertEquals("get_weather", toolCall.name(), "Expected get_weather tool call");
+            assertNotNull(toolCall.arguments(), "Expected arguments in tool call");
+            assertTrue(
+                    toolCall.arguments().toLowerCase().contains("tokyo"),
+                    "Expected 'tokyo' in arguments: " + toolCall.arguments());
+
+            // Finish reason should indicate tool calls
+            String finishReason = response.getResult().getMetadata().getFinishReason();
+            assertEquals(
+                    "TOOL_CALLS",
+                    finishReason,
+                    "Expected TOOL_CALLS finish reason, got: " + finishReason);
+        }
+
+        @Test
+        @DisplayName("Built-in code_interpreter - server-side execution, returns text")
+        void testCodeInterpreter() {
+            ChatModel chatModel = openAI.getChatModel();
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gpt-4o-mini");
+            input.setMaxTokens(500);
+            input.setTemperature(0.0);
+            input.setCodeInterpreter(true);
+
+            var chatOptions = openAI.getChatOptions(input);
+            Prompt prompt =
+                    new Prompt(
+                            "Calculate the first 10 prime numbers using code. Return ONLY the list.",
+                            chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertFalse(text.isEmpty(), "Expected text result from code_interpreter");
+            System.out.println(text);
+            // Server-side tool: should return computed text, NOT a tool_call
+            assertTrue(
+                    text.contains("2") && text.contains("29"),
+                    "Expected prime numbers including 2 and 29, got: " + text);
+        }
+
+        @Test
+        @DisplayName("Multi-turn conversation with previousResponseId")
+        void testPreviousResponseId() {
+            ChatModel chatModel = openAI.getChatModel();
+
+            // Turn 1: establish context
+            ChatCompletion turn1Input = new ChatCompletion();
+            turn1Input.setModel("gpt-4o-mini");
+            turn1Input.setMaxTokens(200);
+            turn1Input.setTemperature(0.0);
+
+            var turn1Options = openAI.getChatOptions(turn1Input);
+            Prompt turn1Prompt = new Prompt("My name is Conductor. Remember that.", turn1Options);
+
+            ChatResponse turn1Response = chatModel.call(turn1Prompt);
+            assertNotNull(turn1Response);
+            assertNotNull(turn1Response.getResult());
+
+            // Extract response_id from metadata
+            String responseId = (String) turn1Response.getMetadata().get("response_id");
+            assertNotNull(responseId, "Expected response_id in metadata for chaining");
+            assertFalse(responseId.isBlank(), "response_id must not be blank");
+
+            // Turn 2: reference previous response — only send follow-up, no history
+            ChatCompletion turn2Input = new ChatCompletion();
+            turn2Input.setModel("gpt-4o-mini");
+            turn2Input.setMaxTokens(200);
+            turn2Input.setTemperature(0.0);
+            turn2Input.setPreviousResponseId(responseId);
+
+            var turn2Options = openAI.getChatOptions(turn2Input);
+            Prompt turn2Prompt = new Prompt("What is my name?", turn2Options);
+
+            ChatResponse turn2Response = chatModel.call(turn2Prompt);
+            assertNotNull(turn2Response);
+            assertNotNull(turn2Response.getResult());
+
+            String text = turn2Response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertTrue(
+                    text.toLowerCase().contains("conductor"),
+                    "Expected model to recall 'Conductor' from previous turn, got: " + text);
+
+            // Second response should also have its own response_id
+            String turn2ResponseId = (String) turn2Response.getMetadata().get("response_id");
+            assertNotNull(turn2ResponseId, "Expected response_id in turn 2 metadata");
+        }
+
+        @Test
+        @DisplayName("Reasoning round-trip against gpt-5.3-codex (live)")
+        void testReasoningSummary_codex() {
+            // gpt-5.3-codex is the Codex-tuned variant of gpt-5.3 reasoning models.
+            // Verifies the nested-reasoning request shape that works for gpt-5-mini
+            // also reaches the Codex endpoint without 400s, and that the response
+            // carries the reasoning_tokens metadata key. Empirically Codex sometimes
+            // returns reasoning_tokens=0 for short coding prompts even with effort
+            // requested — accepted as the model's prerogative — so the hard invariant
+            // is just that the field surfaces (i.e. the metadata plumbing works).
+            ChatModel chatModel = openAI.getChatModel();
+            assertNotNull(chatModel);
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gpt-5.3-codex");
+            input.setMaxTokens(4000);
+            input.setReasoningEffort("high");
+            input.setReasoningSummary("auto");
+
+            var chatOptions = openAI.getChatOptions(input);
+            Prompt prompt =
+                    new Prompt(
+                            "Implement a Python function that returns all permutations of a list"
+                                    + " using only recursion and tuple swaps — no Python stdlib helpers."
+                                    + " Walk through your algorithm choice before writing the code.",
+                            chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+
+            // The metadata key must be present — that's the part our adapter is
+            // responsible for. The value itself is whatever the model decided.
+            Object reasoningTokens = response.getMetadata().get("reasoning_tokens");
+            assertNotNull(
+                    reasoningTokens,
+                    "Expected reasoning_tokens metadata key on a gpt-5.3-codex response");
+
+            Object reasoning = response.getMetadata().get("reasoning");
+            // Best-effort visibility for the live behavior — we don't fail if the
+            // model returns no summary, but log enough to diagnose if the round
+            // trip breaks in the future.
+            System.out.println(
+                    "gpt-5.3-codex reasoning_tokens="
+                            + reasoningTokens
+                            + ", summary_present="
+                            + (reasoning != null)
+                            + (reasoning != null ? "\n--\n" + reasoning + "\n--" : ""));
+
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertFalse(text.isEmpty(), "Expected code output from Codex reasoning model");
+        }
+
+        @Test
+        @DisplayName(
+                "Reasoning request shape is plumbed correctly against live OpenAI (smoke check)")
+        void testReasoningSummary() {
+            // Smoke check that the request reaches OpenAI with the nested
+            // reasoning block intact and that the reasoning pathway engages.
+            // Deterministic coverage of the response-side parsing
+            // (reasoning summary → metadata["reasoning"], reasoning_tokens →
+            // metadata["reasoning_tokens"])
+            // lives in OpenAIResponsesChatModelTest, which stubs the HTTP layer
+            // and pins the contract without depending on what OpenAI happens
+            // to emit on any given call. This test only asserts the hard
+            // request-side invariant: a reasoning model should bill some
+            // reasoning tokens — anything less means we silently lost the
+            // ``reasoning`` block on the wire.
+            ChatModel chatModel = openAI.getChatModel();
+            assertNotNull(chatModel);
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gpt-5-mini");
+            input.setMaxTokens(2000);
+            input.setReasoningEffort("medium");
+            input.setReasoningSummary("auto");
+
+            var chatOptions = openAI.getChatOptions(input);
+            Prompt prompt =
+                    new Prompt(
+                            "If a train leaves at 3pm and travels 60mph for 2.5 hours, what time"
+                                    + " does it arrive and how far has it gone? Explain.",
+                            chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+
+            Object reasoningTokens = response.getMetadata().get("reasoning_tokens");
+            assertNotNull(
+                    reasoningTokens,
+                    "Expected reasoning_tokens metadata on a reasoning model response");
+            assertTrue(
+                    ((Number) reasoningTokens).intValue() > 0,
+                    "Expected reasoning_tokens > 0 on a reasoning model, got: " + reasoningTokens);
+        }
+
+        @Test
+        @DisplayName("Model provider name")
+        void testModelProviderName() {
+            assertEquals("openai", openAI.getModelProvider());
+        }
+    }
+
+    // ========================================================================
+    // Anthropic Tests
+    // ========================================================================
+
+    @Nested
+    @DisplayName("Anthropic (Claude) Integration Tests")
+    @EnabledIf(
+            "org.conductoross.conductor.ai.integration.AIModelIntegrationTest#isAnthropicConfigured")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    class AnthropicTests {
+
+        private Anthropic anthropic;
+
+        @BeforeAll
+        void setup() {
+            AnthropicConfiguration config = new AnthropicConfiguration();
+            config.setApiKey(System.getenv("ANTHROPIC_API_KEY"));
+            config.setBaseURL(System.getenv("ANTHROPIC_BASE_URL"));
+            anthropic = new Anthropic(config, testHttpClient());
+        }
+
+        @Test
+        @DisplayName("Chat completion with Claude Haiku (fast model)")
+        void testChatCompletionHaiku() {
+            ChatModel chatModel = anthropic.getChatModel();
+            assertNotNull(chatModel);
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("claude-haiku-4-5");
+            input.setMaxTokens(50);
+            input.setTemperature(0.0);
+
+            var chatOptions = anthropic.getChatOptions(input);
+            Prompt prompt = new Prompt(TEST_PROMPT, chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertTrue(text.contains("4"), "Expected response to contain '4', got: " + text);
+        }
+
+        @Test
+        @DisplayName("Chat with temperature=0 (deterministic)")
+        void testDeterministicTemperature() {
+            ChatModel chatModel = anthropic.getChatModel();
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("claude-haiku-4-5");
+            input.setMaxTokens(20);
+            input.setTemperature(0.0); // Deterministic
+
+            var chatOptions = anthropic.getChatOptions(input);
+            Prompt prompt = new Prompt("Say 'hello world' exactly", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+            String text1 = response.getResult().getOutput().getText().toLowerCase();
+
+            // Make same call again - should be deterministic
+            response = chatModel.call(prompt);
+            String text2 = response.getResult().getOutput().getText().toLowerCase();
+
+            assertTrue(text1.contains("hello") && text1.contains("world"));
+            assertTrue(text2.contains("hello") && text2.contains("world"));
+        }
+
+        @Test
+        @DisplayName("Thinking mode - Claude extended thinking")
+        void testThinkingMode() {
+            ChatModel chatModel = anthropic.getChatModel();
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("claude-sonnet-4-6"); // Sonnet 4.6 supports legacy thinking
+            input.setMaxTokens(16000); // Thinking requires larger token limit
+            input.setThinkingTokenLimit(8000); // Enable thinking mode
+            // Note: Temperature is forced to 1.0 when thinking is enabled
+
+            var chatOptions = anthropic.getChatOptions(input);
+            Prompt prompt =
+                    new Prompt("What is 15 * 23? Think through this step by step.", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertTrue(text.contains("345"), "Expected 345 in response, got: " + text);
+        }
+
+        @Test
+        @DisplayName(
+                "Opus 4.7 + thinkingTokenLimit must be rewritten to adaptive thinking (regression)")
+        void testOpus47ThinkingBudget_routesThroughAdaptive() {
+            // Regression for the production HTTP 400:
+            //   "thinking.type.enabled" is not supported for this model.
+            //   Use "thinking.type.adaptive" and "output_config.effort" ...
+            //
+            // The adapter must translate ``thinkingTokenLimit`` into
+            // ``thinking.type=adaptive`` + ``output_config.effort`` whenever the
+            // model id targets Opus 4.7 (Opus 4.6 / Sonnet 4.6 still accept the
+            // legacy ``enabled`` + ``budget_tokens`` shape and are exercised by
+            // ``testThinkingMode`` above). If that translation regresses, this
+            // call returns HTTP 400 with the exact message quoted above.
+            ChatModel chatModel = anthropic.getChatModel();
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("claude-opus-4-7");
+            input.setMaxTokens(16000);
+            input.setThinkingTokenLimit(10000);
+
+            var chatOptions = anthropic.getChatOptions(input);
+            Prompt prompt = new Prompt("What is 2 + 2? Think step by step.", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertFalse(text.isEmpty());
+            assertTrue(
+                    text.contains("4"), "Expected the model to reach the answer '4'; got: " + text);
+        }
+
+        @Test
+        @DisplayName("Opus 4.7 + reasoningEffort only (no thinkingTokenLimit) is accepted")
+        void testOpus47ReasoningEffortOnly() {
+            // Opus 4.7 also accepts ``output_config.effort`` without an
+            // accompanying ``thinking`` block. The adapter must forward
+            // ``reasoningEffort`` straight through without attaching any
+            // thinking configuration.
+            ChatModel chatModel = anthropic.getChatModel();
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("claude-opus-4-7");
+            input.setMaxTokens(1024);
+            input.setReasoningEffort("low");
+
+            var chatOptions = anthropic.getChatOptions(input);
+            Prompt prompt = new Prompt("Say hi.", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertFalse(text.isEmpty());
+        }
+
+        @Test
+        @DisplayName("Function tool calling - model returns tool_use, not result")
+        void testFunctionToolCalling() {
+            ChatModel chatModel = anthropic.getChatModel();
+
+            ToolSpec weatherTool = new ToolSpec();
+            weatherTool.setName("get_weather");
+            weatherTool.setDescription("Get the current weather for a location");
+            weatherTool.setInputSchema(
+                    Map.of(
+                            "type", "object",
+                            "properties",
+                                    Map.of(
+                                            "location",
+                                            Map.of("type", "string", "description", "City name")),
+                            "required", List.of("location")));
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("claude-haiku-4-5");
+            input.setMaxTokens(200);
+            input.setTemperature(0.0);
+            input.setTools(List.of(weatherTool));
+
+            var chatOptions = anthropic.getChatOptions(input);
+            Prompt prompt = new Prompt("What is the weather in Tokyo?", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+
+            var output = response.getResult().getOutput();
+            assertNotNull(output.getToolCalls(), "Expected tool calls in response");
+            assertFalse(output.getToolCalls().isEmpty(), "Expected at least one tool call");
+
+            var toolCall = output.getToolCalls().getFirst();
+            assertEquals("get_weather", toolCall.name(), "Expected get_weather tool call");
+            assertNotNull(toolCall.arguments(), "Expected arguments in tool call");
+            assertTrue(
+                    toolCall.arguments().toLowerCase().contains("tokyo"),
+                    "Expected 'tokyo' in arguments: " + toolCall.arguments());
+
+            // Finish reason should indicate tool calls
+            String finishReason = response.getResult().getMetadata().getFinishReason();
+            assertEquals(
+                    "TOOL_CALLS",
+                    finishReason,
+                    "Expected TOOL_CALLS finish reason, got: " + finishReason);
+        }
+
+        @Test
+        @DisplayName("Model provider name")
+        void testModelProviderName() {
+            assertEquals("anthropic", anthropic.getModelProvider());
+        }
+    }
+
+    // ========================================================================
+    // Gemini / Vertex AI Tests
+    // ========================================================================
+
+    @Nested
+    @DisplayName("Gemini (Vertex AI) Integration Tests")
+    @EnabledIf(
+            "org.conductoross.conductor.ai.integration.AIModelIntegrationTest#isGeminiConfigured")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    class GeminiTests {
+
+        private GeminiVertex gemini;
+
+        @BeforeAll
+        void setup() throws Exception {
+            GeminiVertexConfiguration config = new GeminiVertexConfiguration();
+
+            // Prefer API key path (Google AI Studio) if available
+            String apiKey = System.getenv("GEMINI_API_KEY");
+            if (StringUtils.isNotBlank(apiKey)) {
+                config.setApiKey(apiKey);
+            } else {
+                // Vertex AI path (GCP project + credentials)
+                config.setProjectId(System.getenv("GOOGLE_PROJECT_ID"));
+                config.setLocation(System.getenv("GOOGLE_CLOUD_LOCATION"));
+
+                // Try to load credentials from VERTEX_AI_CREDENTIALS env var (JSON string)
+                String vertexCreds = System.getenv("VERTEX_AI_CREDENTIALS");
+                if (StringUtils.isNotBlank(vertexCreds)) {
+                    var credentials =
+                            com.google.auth.oauth2.GoogleCredentials.fromStream(
+                                    new java.io.ByteArrayInputStream(
+                                            vertexCreds.getBytes(
+                                                    java.nio.charset.StandardCharsets.UTF_8)));
+                    config.setGoogleCredentials(credentials);
+                }
+            }
+
+            gemini = new GeminiVertex(config, new okhttp3.OkHttpClient());
+        }
+
+        @Test
+        @DisplayName("Chat completion with Gemini Flash")
+        void testChatCompletionFlash() {
+            ChatModel chatModel = gemini.getChatModel();
+            assertNotNull(chatModel);
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gemini-2.5-flash");
+            input.setMaxTokens(500);
+            input.setTemperature(0.0);
+
+            var chatOptions = gemini.getChatOptions(input);
+            Prompt prompt = new Prompt(TEST_PROMPT, chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertTrue(text.contains("4"), "Expected response to contain '4', got: " + text);
+        }
+
+        @Test
+        @DisplayName("Embeddings generation")
+        void testEmbeddings() {
+            EmbeddingGenRequest request = new EmbeddingGenRequest();
+            request.setText(EMBEDDING_TEXT);
+            request.setModel("gemini-embedding-001");
+
+            List<Float> embeddings = gemini.generateEmbeddings(request);
+
+            assertNotNull(embeddings);
+            assertFalse(embeddings.isEmpty());
+            assertEquals(3072, embeddings.size(), "Expected 3072 dimensions");
+        }
+
+        @Test
+        @DisplayName("Function tool calling - model returns tool_use, not result")
+        void testFunctionToolCalling() {
+            ChatModel chatModel = gemini.getChatModel();
+
+            ToolSpec weatherTool = new ToolSpec();
+            weatherTool.setName("get_weather");
+            weatherTool.setDescription("Get the current weather for a location");
+            weatherTool.setInputSchema(
+                    Map.of(
+                            "type",
+                            "object",
+                            "properties",
+                            Map.of(
+                                    "location",
+                                    Map.of("type", "string", "description", "City name")),
+                            "required",
+                            List.of("location")));
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gemini-2.5-flash");
+            input.setMaxTokens(200);
+            input.setTemperature(0.0);
+            input.setTools(List.of(weatherTool));
+
+            var chatOptions = gemini.getChatOptions(input);
+            Prompt prompt = new Prompt("What is the weather in Tokyo?", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+
+            var output = response.getResult().getOutput();
+            assertNotNull(output.getToolCalls(), "Expected tool calls in response");
+            assertFalse(output.getToolCalls().isEmpty(), "Expected at least one tool call");
+
+            var toolCall = output.getToolCalls().getFirst();
+            assertEquals("get_weather", toolCall.name(), "Expected get_weather tool call");
+            assertNotNull(toolCall.arguments(), "Expected arguments in tool call");
+            assertTrue(
+                    toolCall.arguments().toLowerCase().contains("tokyo"),
+                    "Expected 'tokyo' in arguments: " + toolCall.arguments());
+        }
+
+        @Test
+        @DisplayName("Web search via Google Search Retrieval")
+        void testWebSearch() {
+            ChatModel chatModel = gemini.getChatModel();
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gemini-2.5-flash");
+            input.setMaxTokens(200);
+            input.setTemperature(0.0);
+            input.setWebSearch(true);
+
+            var chatOptions = gemini.getChatOptions(input);
+            Prompt prompt =
+                    new Prompt("What is the current weather in San Francisco?", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertFalse(text.isEmpty(), "Expected a response with web search results");
+        }
+
+        @Test
+        @DisplayName("Model provider name")
+        void testModelProviderName() {
+            assertEquals("vertex_ai", gemini.getModelProvider());
+        }
+    }
+
+    // ========================================================================
+    // Mistral AI Tests
+    // ========================================================================
+
+    @Nested
+    @DisplayName("Mistral AI Integration Tests")
+    @EnabledIf(
+            "org.conductoross.conductor.ai.integration.AIModelIntegrationTest#isMistralConfigured")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    class MistralTests {
+
+        private MistralAI mistral;
+
+        @BeforeAll
+        void setup() {
+            MistralAIConfiguration config = new MistralAIConfiguration();
+            config.setApiKey(System.getenv("MISTRAL_API_KEY"));
+            config.setBaseURL(System.getenv("MISTRAL_BASE_URL"));
+            mistral = new MistralAI(config);
+        }
+
+        @Test
+        @DisplayName("Chat completion with Mistral")
+        void testChatCompletion() {
+            ChatModel chatModel = mistral.getChatModel();
+            assertNotNull(chatModel);
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("mistral-small-latest");
+            input.setMaxTokens(100);
+            input.setTemperature(0.0);
+
+            var chatOptions = mistral.getChatOptions(input);
+            Prompt prompt = new Prompt(TEST_PROMPT, chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertTrue(text.contains("4"), "Expected response to contain '4', got: " + text);
+        }
+
+        @Test
+        @DisplayName("JSON output format")
+        void testJsonOutputFormat() {
+            ChatModel chatModel = mistral.getChatModel();
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("mistral-small-latest");
+            input.setMaxTokens(100);
+            input.setTemperature(0.0);
+            input.setJsonOutput(true); // Request JSON output
+
+            var chatOptions = mistral.getChatOptions(input);
+            Prompt prompt =
+                    new Prompt(
+                            "Return a JSON object with 'name': 'test' and 'value': 42. Only return JSON, no explanation.",
+                            chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            // Should be valid JSON-like structure
+            assertTrue(
+                    text.contains("\"name\"") || text.contains("name"),
+                    "Expected JSON with 'name' field, got: " + text);
+            assertTrue(
+                    text.contains("42") || text.contains("\"42\""),
+                    "Expected JSON with value 42, got: " + text);
+        }
+
+        @Test
+        @DisplayName("Chat with topP parameter")
+        void testTopPParameter() {
+            ChatModel chatModel = mistral.getChatModel();
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("mistral-small-latest");
+            input.setMaxTokens(50);
+            input.setTemperature(0.5);
+            input.setTopP(0.9); // Nucleus sampling
+
+            var chatOptions = mistral.getChatOptions(input);
+            Prompt prompt =
+                    new Prompt("What is the capital of France? Reply in one word.", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            String text = response.getResult().getOutput().getText().toLowerCase();
+            assertTrue(text.contains("paris"), "Expected Paris, got: " + text);
+        }
+
+        @Test
+        @DisplayName("Embeddings generation")
+        void testEmbeddings() {
+            EmbeddingGenRequest request = new EmbeddingGenRequest();
+            request.setText(EMBEDDING_TEXT);
+            request.setModel("mistral-embed");
+
+            List<Float> embeddings = mistral.generateEmbeddings(request);
+
+            assertNotNull(embeddings);
+            assertFalse(embeddings.isEmpty());
+            assertEquals(1024, embeddings.size(), "Expected 1024 dimensions");
+        }
+
+        @Test
+        @DisplayName("Function tool calling - model returns tool_use, not result")
+        void testFunctionToolCalling() {
+            ChatModel chatModel = mistral.getChatModel();
+
+            ToolSpec weatherTool = new ToolSpec();
+            weatherTool.setName("get_weather");
+            weatherTool.setDescription("Get the current weather for a location");
+            weatherTool.setInputSchema(
+                    Map.of(
+                            "type",
+                            "object",
+                            "properties",
+                            Map.of(
+                                    "location",
+                                    Map.of("type", "string", "description", "City name")),
+                            "required",
+                            List.of("location")));
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("mistral-small-latest");
+            input.setMaxTokens(200);
+            input.setTemperature(0.0);
+            input.setTools(List.of(weatherTool));
+
+            var chatOptions = mistral.getChatOptions(input);
+            Prompt prompt = new Prompt("What is the weather in Tokyo?", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+
+            var output = response.getResult().getOutput();
+            assertNotNull(output.getToolCalls(), "Expected tool calls in response");
+            assertFalse(output.getToolCalls().isEmpty(), "Expected at least one tool call");
+
+            var toolCall = output.getToolCalls().getFirst();
+            assertEquals("get_weather", toolCall.name(), "Expected get_weather tool call");
+            assertNotNull(toolCall.arguments(), "Expected arguments in tool call");
+            assertTrue(
+                    toolCall.arguments().toLowerCase().contains("tokyo"),
+                    "Expected 'tokyo' in arguments: " + toolCall.arguments());
+        }
+
+        @Test
+        @DisplayName("Model provider name")
+        void testModelProviderName() {
+            assertEquals("mistral", mistral.getModelProvider());
+        }
+    }
+
+    // ========================================================================
+    // Ollama Tests
+    // ========================================================================
+
+    @Nested
+    @DisplayName("Ollama Integration Tests")
+    @EnabledIf(
+            "org.conductoross.conductor.ai.integration.AIModelIntegrationTest#isOllamaConfigured")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    class OllamaTests {
+
+        private Ollama ollama;
+
+        @BeforeAll
+        void setup() {
+            OllamaConfiguration config = new OllamaConfiguration();
+            config.setBaseURL(System.getenv("OLLAMA_BASE_URL"));
+            config.setAuthHeaderName(System.getenv("OLLAMA_AUTH_HEADER_NAME"));
+            config.setAuthHeader(System.getenv("OLLAMA_AUTH_HEADER"));
+            ollama = new Ollama(config);
+        }
+
+        @Test
+        @DisplayName("Chat completion with Llama")
+        void testChatCompletion() {
+            ChatModel chatModel = ollama.getChatModel();
+            assertNotNull(chatModel);
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("llama3.2");
+            input.setTemperature(0.0);
+
+            var chatOptions = ollama.getChatOptions(input);
+            Prompt prompt = new Prompt(TEST_PROMPT, chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertTrue(text.contains("4"), "Expected response to contain '4', got: " + text);
+        }
+
+        @Test
+        @DisplayName("JSON output format")
+        void testJsonOutputFormat() {
+            ChatModel chatModel = ollama.getChatModel();
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("llama3.2");
+            input.setTemperature(0.0);
+            input.setJsonOutput(true); // Request JSON output
+
+            var chatOptions = ollama.getChatOptions(input);
+            Prompt prompt =
+                    new Prompt(
+                            "Return a JSON object with 'answer': 42. Only return JSON, no explanation.",
+                            chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertTrue(text.contains("42"), "Expected JSON with 42, got: " + text);
+        }
+
+        @Test
+        @DisplayName("Chat with numPredict (maxTokens) limit")
+        void testNumPredictLimit() {
+            ChatModel chatModel = ollama.getChatModel();
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("llama3.2");
+            input.setTemperature(0.0);
+            input.setMaxTokens(10); // Very short numPredict
+
+            var chatOptions = ollama.getChatOptions(input);
+            Prompt prompt = new Prompt("Tell me a very long story about dragons.", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            // Response should be truncated due to low token limit
+            assertTrue(
+                    text.split("\\s+").length <= 30,
+                    "Expected short response due to numPredict limit, got: "
+                            + text.length()
+                            + " chars");
+        }
+
+        @Test
+        @DisplayName("Embeddings generation")
+        void testEmbeddings() {
+            EmbeddingGenRequest request = new EmbeddingGenRequest();
+            request.setText(EMBEDDING_TEXT);
+            request.setModel("nomic-embed-text");
+
+            List<Float> embeddings = ollama.generateEmbeddings(request);
+
+            assertNotNull(embeddings);
+            assertFalse(embeddings.isEmpty());
+        }
+
+        @Test
+        @DisplayName("Model provider name")
+        void testModelProviderName() {
+            assertEquals("ollama", ollama.getModelProvider());
+        }
+    }
+
+    // ========================================================================
+    // Grok (xAI) Tests
+    // ========================================================================
+
+    @Nested
+    @DisplayName("Grok (xAI) Integration Tests")
+    @EnabledIf("org.conductoross.conductor.ai.integration.AIModelIntegrationTest#isGrokConfigured")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    class GrokTests {
+
+        private Grok grok;
+
+        @BeforeAll
+        void setup() {
+            GrokAIConfiguration config = new GrokAIConfiguration();
+            config.setApiKey(System.getenv("GROK_API_KEY"));
+            config.setBaseURL(System.getenv("GROK_BASE_URL"));
+            grok = new Grok(config, testHttpClient());
+        }
+
+        @Test
+        @DisplayName("Chat completion with Grok")
+        void testChatCompletion() {
+            ChatModel chatModel = grok.getChatModel();
+            assertNotNull(chatModel);
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("grok-3-mini");
+            input.setMaxTokens(50);
+            input.setTemperature(0.0);
+
+            var chatOptions = grok.getChatOptions(input);
+            Prompt prompt = new Prompt(TEST_PROMPT, chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertTrue(text.contains("4"), "Expected response to contain '4', got: " + text);
+        }
+
+        @Test
+        @DisplayName("Function tool calling - model returns tool_use, not result")
+        void testFunctionToolCalling() {
+            ChatModel chatModel = grok.getChatModel();
+
+            ToolSpec weatherTool = new ToolSpec();
+            weatherTool.setName("get_weather");
+            weatherTool.setDescription("Get the current weather for a location");
+            weatherTool.setInputSchema(
+                    Map.of(
+                            "type",
+                            "object",
+                            "properties",
+                            Map.of(
+                                    "location",
+                                    Map.of("type", "string", "description", "City name")),
+                            "required",
+                            List.of("location")));
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("grok-3-mini");
+            input.setMaxTokens(200);
+            input.setTemperature(0.0);
+            input.setTools(List.of(weatherTool));
+
+            var chatOptions = grok.getChatOptions(input);
+            Prompt prompt = new Prompt("What is the weather in Tokyo?", chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+
+            var output = response.getResult().getOutput();
+            assertNotNull(output.getToolCalls(), "Expected tool calls in response");
+            assertFalse(output.getToolCalls().isEmpty(), "Expected at least one tool call");
+
+            var toolCall = output.getToolCalls().getFirst();
+            assertEquals("get_weather", toolCall.name(), "Expected get_weather tool call");
+            assertNotNull(toolCall.arguments(), "Expected arguments in tool call");
+            assertTrue(
+                    toolCall.arguments().toLowerCase().contains("tokyo"),
+                    "Expected 'tokyo' in arguments: " + toolCall.arguments());
+        }
+
+        @Test
+        @DisplayName("Model provider name")
+        void testModelProviderName() {
+            assertEquals("Grok", grok.getModelProvider());
+        }
+    }
+
+    // ========================================================================
+    // Cohere Tests
+    // ========================================================================
+
+    @Nested
+    @DisplayName("Cohere Integration Tests")
+    @EnabledIf(
+            "org.conductoross.conductor.ai.integration.AIModelIntegrationTest#isCohereConfigured")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    // Cohere v2 API is not OpenAI-compatible - uses different param names (texts vs
+    // input, extra_body rejected)
+    // Requires native Cohere SDK integration
+    class CohereTests {
+
+        private CohereAI cohere;
+
+        @BeforeAll
+        void setup() {
+            CohereAIConfiguration config = new CohereAIConfiguration();
+            config.setApiKey(System.getenv("COHERE_API_KEY"));
+            config.setBaseURL(System.getenv("COHERE_BASE_URL"));
+            cohere = new CohereAI(config);
+        }
+
+        @Test
+        @DisplayName("Chat completion with Cohere")
+        void testChatCompletion() {
+            ChatModel chatModel = cohere.getChatModel();
+            assertNotNull(chatModel);
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("command-a-03-2025");
+            input.setMaxTokens(50);
+            input.setTemperature(0.0);
+
+            var chatOptions = cohere.getChatOptions(input);
+            Prompt prompt = new Prompt(TEST_PROMPT, chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertTrue(text.contains("4"), "Expected response to contain '4', got: " + text);
+        }
+
+        @Test
+        @DisplayName("Embeddings generation")
+        void testEmbeddings() {
+            EmbeddingGenRequest request = new EmbeddingGenRequest();
+            request.setText(EMBEDDING_TEXT);
+            request.setModel("embed-english-v3.0");
+
+            List<Float> embeddings = cohere.generateEmbeddings(request);
+
+            assertNotNull(embeddings);
+            assertFalse(embeddings.isEmpty());
+        }
+
+        @Test
+        @DisplayName("Model provider name")
+        void testModelProviderName() {
+            assertEquals("cohere", cohere.getModelProvider());
+        }
+    }
+
+    // ========================================================================
+    // Azure OpenAI Tests
+    // ========================================================================
+
+    @Nested
+    @DisplayName("Azure OpenAI Integration Tests")
+    @EnabledIf(
+            "org.conductoross.conductor.ai.integration.AIModelIntegrationTest#isAzureOpenAIConfigured")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    class AzureOpenAITests {
+
+        private AzureOpenAI azureOpenAI;
+
+        @BeforeAll
+        void setup() {
+            AzureOpenAIConfiguration config = new AzureOpenAIConfiguration();
+            config.setApiKey(System.getenv("AZURE_OPENAI_API_KEY"));
+            config.setBaseURL(System.getenv("AZURE_OPENAI_ENDPOINT"));
+            azureOpenAI = new AzureOpenAI(config, testHttpClient());
+        }
+
+        @Test
+        @DisplayName("Chat completion with Azure OpenAI")
+        void testChatCompletion() {
+            ChatModel chatModel = azureOpenAI.getChatModel();
+            assertNotNull(chatModel);
+
+            ChatCompletion input = new ChatCompletion();
+            // Use deployment name from env var, or fall back to "gpt-4o-mini"
+            String deploymentName = System.getenv("AZURE_OPENAI_DEPLOYMENT_NAME");
+            input.setModel(deploymentName != null ? deploymentName : "gpt-4o-mini");
+            input.setMaxTokens(50);
+            input.setTemperature(0.0);
+
+            var chatOptions = azureOpenAI.getChatOptions(input);
+            Prompt prompt = new Prompt(TEST_PROMPT, chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertTrue(text.contains("4"), "Expected response to contain '4', got: " + text);
+        }
+
+        @Test
+        @DisplayName("Embeddings generation with Azure OpenAI")
+        void testEmbeddings() {
+            EmbeddingGenRequest request = new EmbeddingGenRequest();
+            request.setText(EMBEDDING_TEXT);
+            // Use deployment name from env var, or fall back to "text-embedding-3-small"
+            String embeddingDeploymentName =
+                    System.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME");
+            request.setModel(
+                    embeddingDeploymentName != null
+                            ? embeddingDeploymentName
+                            : "text-embedding-3-small");
+            request.setDimensions(1536);
+
+            List<Float> embeddings = azureOpenAI.generateEmbeddings(request);
+
+            assertNotNull(embeddings);
+            assertFalse(embeddings.isEmpty());
+            assertEquals(1536, embeddings.size(), "Expected 1536 dimensions");
+        }
+
+        @Test
+        @DisplayName("Model provider name")
+        void testModelProviderName() {
+            assertEquals("azure_openai", azureOpenAI.getModelProvider());
+        }
+    }
+
+    // ========================================================================
+    // AWS Bedrock Tests
+    // ========================================================================
+
+    @Nested
+    @DisplayName("AWS Bedrock Integration Tests")
+    @EnabledIf(
+            "org.conductoross.conductor.ai.integration.AIModelIntegrationTest#isBedrockConfigured")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    class BedrockTests {
+
+        private Bedrock bedrock;
+
+        @BeforeAll
+        void setup() {
+            BedrockConfiguration config = new BedrockConfiguration();
+
+            // Check for bearer token first (preferred for API key auth)
+            String bearerToken = System.getenv("AWS_BEARER_TOKEN_BEDROCK");
+            if (StringUtils.isNotBlank(bearerToken)) {
+                config.setBearerToken(bearerToken);
+            } else {
+                // Fall back to access key/secret key
+                config.setAccessKey(System.getenv("AWS_ACCESS_KEY_ID"));
+                config.setSecretKey(System.getenv("AWS_SECRET_ACCESS_KEY"));
+            }
+
+            String region = System.getenv("AWS_REGION");
+            if (StringUtils.isNotBlank(region)) {
+                config.setRegion(region);
+            }
+            bedrock = new Bedrock(config);
+        }
+
+        @Test
+        @DisplayName("Chat completion with Bedrock Claude")
+        void testChatCompletion() {
+            ChatModel chatModel = bedrock.getChatModel();
+            assertNotNull(chatModel);
+
+            ChatCompletion input = new ChatCompletion();
+            // Use US cross-region inference profile (required for API key auth)
+            input.setModel("us.anthropic.claude-sonnet-4-6");
+            input.setMaxTokens(50);
+            input.setTemperature(0.0);
+
+            var chatOptions = bedrock.getChatOptions(input);
+            Prompt prompt = new Prompt(TEST_PROMPT, chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertTrue(text.contains("4"), "Expected response to contain '4', got: " + text);
+        }
+
+        @Test
+        @DisplayName("Model provider name")
+        void testModelProviderName() {
+            assertEquals("bedrock", bedrock.getModelProvider());
+        }
+    }
+
+    // ========================================================================
+    // Perplexity Tests
+    // ========================================================================
+
+    @Nested
+    @DisplayName("Perplexity AI Integration Tests")
+    @EnabledIf(
+            "org.conductoross.conductor.ai.integration.AIModelIntegrationTest#isPerplexityConfigured")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    class PerplexityTests {
+
+        private PerplexityAI perplexity;
+
+        @BeforeAll
+        void setup() {
+            PerplexityAIConfiguration config = new PerplexityAIConfiguration();
+            config.setApiKey(System.getenv("PERPLEXITY_API_KEY"));
+            config.setBaseURL(System.getenv("PERPLEXITY_BASE_URL"));
+            perplexity = new PerplexityAI(config, testHttpClient());
+        }
+
+        @Test
+        @DisplayName("Chat completion with Perplexity")
+        void testChatCompletion() {
+            ChatModel chatModel = perplexity.getChatModel();
+            assertNotNull(chatModel);
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("sonar");
+            input.setMaxTokens(50);
+            input.setTemperature(0.0);
+
+            var chatOptions = perplexity.getChatOptions(input);
+            Prompt prompt = new Prompt(TEST_PROMPT, chatOptions);
+
+            ChatResponse response = chatModel.call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertTrue(text.contains("4"), "Expected response to contain '4', got: " + text);
+        }
+
+        @Test
+        @DisplayName("Model provider name")
+        void testModelProviderName() {
+            assertEquals("perplexity", perplexity.getModelProvider());
+        }
+    }
+}

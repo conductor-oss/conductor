@@ -1,0 +1,1277 @@
+{
+  "ownerApp": "cpeworkflowtests",
+  "createTime": 1505587453961,
+  "updateTime": 1505588471071,
+  "status": "RUNNING",
+  "endTime": 0,
+  "workflowId": "46e2d0d7-0809-40f2-9f22-bed9d41f6613",
+  "tasks": [
+    {
+      "taskType": "perf_task_1",
+      "status": "COMPLETED",
+      "inputData": {
+        "mod": "0",
+        "oddEven": "0"
+      },
+      "referenceTaskName": "perf_task_1",
+      "retryCount": 0,
+      "seq": 1,
+      "correlationId": "1505587453950",
+      "pollCount": 1,
+      "taskDefName": "perf_task_1",
+      "scheduledTime": 1505587453972,
+      "startTime": 1505587455481,
+      "endTime": 1505587455539,
+      "updateTime": 1505587455539,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": true,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 3600,
+      "workflowInstanceId": "46e2d0d7-0809-40f2-9f22-bed9d41f6613",
+      "taskId": "3a54e268-0054-4eab-aea2-e54d1b89896c",
+      "callbackAfterSeconds": 0,
+      "outputData": {
+        "mod": "5",
+        "oddEven": "1",
+        "inputs": {
+          "subflow_0": {
+            "mod": 4,
+            "oddEven": 0
+          },
+          "subflow_4": {
+            "mod": 4,
+            "oddEven": 0
+          },
+          "subflow_2": {
+            "mod": 4,
+            "oddEven": 0
+          }
+        },
+        "dynamicTasks": [
+          {
+            "name": null,
+            "taskReferenceName": "subflow_0",
+            "description": null,
+            "inputParameters": null,
+            "type": "SUB_WORKFLOW",
+            "dynamicTaskNameParam": null,
+            "caseValueParam": null,
+            "caseExpression": null,
+            "decisionCases": {
+            },
+            "dynamicForkJoinTasksParam": null,
+            "dynamicForkTasksParam": null,
+            "dynamicForkTasksInputParamName": null,
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "sink": null,
+            "optional": null,
+            "subWorkflowParam": {
+              "name": "sub_flow_1",
+              "version": null
+            }
+          },
+          {
+            "name": null,
+            "taskReferenceName": "subflow_2",
+            "description": null,
+            "inputParameters": null,
+            "type": "SUB_WORKFLOW",
+            "dynamicTaskNameParam": null,
+            "caseValueParam": null,
+            "caseExpression": null,
+            "decisionCases": {
+            },
+            "dynamicForkJoinTasksParam": null,
+            "dynamicForkTasksParam": null,
+            "dynamicForkTasksInputParamName": null,
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "sink": null,
+            "optional": null,
+            "subWorkflowParam": {
+              "name": "sub_flow_1",
+              "version": null
+            }
+          },
+          {
+            "name": null,
+            "taskReferenceName": "subflow_4",
+            "description": null,
+            "inputParameters": null,
+            "type": "SUB_WORKFLOW",
+            "dynamicTaskNameParam": null,
+            "caseValueParam": null,
+            "caseExpression": null,
+            "decisionCases": {
+            },
+            "dynamicForkJoinTasksParam": null,
+            "dynamicForkTasksParam": null,
+            "dynamicForkTasksInputParamName": null,
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "sink": null,
+            "optional": null,
+            "subWorkflowParam": {
+              "name": "sub_flow_1",
+              "version": null
+            }
+          }
+        ],
+        "attempt": 1
+      },
+      "workflowTask": {
+        "name": "perf_task_1",
+        "taskReferenceName": "perf_task_1",
+        "inputParameters": {
+          "mod": "${workflow.input.mod}",
+          "oddEven": "${workflow.input.oddEven}"
+        },
+        "type": "SIMPLE",
+        "startDelay": 0
+      },
+      "queueWaitTime": 1509,
+      "taskStatus": "COMPLETED"
+    },
+    {
+      "taskType": "perf_task_10",
+      "status": "COMPLETED",
+      "inputData": {
+        "taskToExecute": "perf_task_10"
+      },
+      "referenceTaskName": "perf_task_2",
+      "retryCount": 0,
+      "seq": 2,
+      "correlationId": "1505587453950",
+      "pollCount": 1,
+      "taskDefName": "perf_task_10",
+      "scheduledTime": 1505587455517,
+      "startTime": 1505587457017,
+      "endTime": 1505587457075,
+      "updateTime": 1505587457075,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": true,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 3600,
+      "workflowInstanceId": "46e2d0d7-0809-40f2-9f22-bed9d41f6613",
+      "taskId": "3731c3ee-f918-42b7-8bb3-fb016fc0ecae",
+      "callbackAfterSeconds": 0,
+      "outputData": {
+        "mod": "1",
+        "oddEven": "1",
+        "inputs": {
+          "subflow_0": {
+            "mod": 4,
+            "oddEven": 0
+          },
+          "subflow_4": {
+            "mod": 4,
+            "oddEven": 0
+          },
+          "subflow_2": {
+            "mod": 4,
+            "oddEven": 0
+          }
+        },
+        "dynamicTasks": [
+          {
+            "name": null,
+            "taskReferenceName": "subflow_0",
+            "description": null,
+            "inputParameters": null,
+            "type": "SUB_WORKFLOW",
+            "dynamicTaskNameParam": null,
+            "caseValueParam": null,
+            "caseExpression": null,
+            "decisionCases": {
+            },
+            "dynamicForkJoinTasksParam": null,
+            "dynamicForkTasksParam": null,
+            "dynamicForkTasksInputParamName": null,
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "sink": null,
+            "optional": null,
+            "subWorkflowParam": {
+              "name": "sub_flow_1",
+              "version": null
+            }
+          },
+          {
+            "name": null,
+            "taskReferenceName": "subflow_2",
+            "description": null,
+            "inputParameters": null,
+            "type": "SUB_WORKFLOW",
+            "dynamicTaskNameParam": null,
+            "caseValueParam": null,
+            "caseExpression": null,
+            "decisionCases": {
+            },
+            "dynamicForkJoinTasksParam": null,
+            "dynamicForkTasksParam": null,
+            "dynamicForkTasksInputParamName": null,
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "sink": null,
+            "optional": null,
+            "subWorkflowParam": {
+              "name": "sub_flow_1",
+              "version": null
+            }
+          },
+          {
+            "name": null,
+            "taskReferenceName": "subflow_4",
+            "description": null,
+            "inputParameters": null,
+            "type": "SUB_WORKFLOW",
+            "dynamicTaskNameParam": null,
+            "caseValueParam": null,
+            "caseExpression": null,
+            "decisionCases": {
+            },
+            "dynamicForkJoinTasksParam": null,
+            "dynamicForkTasksParam": null,
+            "dynamicForkTasksInputParamName": null,
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "sink": null,
+            "optional": null,
+            "subWorkflowParam": {
+              "name": "sub_flow_1",
+              "version": null
+            }
+          }
+        ],
+        "attempt": 1
+      },
+      "workflowTask": {
+        "name": "perf_task_10",
+        "taskReferenceName": "perf_task_2",
+        "inputParameters": {
+          "taskToExecute": "${workflow.input.task2Name}"
+        },
+        "type": "DYNAMIC",
+        "dynamicTaskNameParam": "taskToExecute",
+        "startDelay": 0
+      },
+      "queueWaitTime": 1500,
+      "taskStatus": "COMPLETED"
+    },
+    {
+      "taskType": "perf_task_3",
+      "status": "COMPLETED",
+      "inputData": {
+        "mod": "1",
+        "oddEven": "1"
+      },
+      "referenceTaskName": "perf_task_3",
+      "retryCount": 0,
+      "seq": 3,
+      "correlationId": "1505587453950",
+      "pollCount": 1,
+      "taskDefName": "perf_task_3",
+      "scheduledTime": 1505587457064,
+      "startTime": 1505587459498,
+      "endTime": 1505587459560,
+      "updateTime": 1505587459560,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": true,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 3600,
+      "workflowInstanceId": "46e2d0d7-0809-40f2-9f22-bed9d41f6613",
+      "taskId": "738370d6-596f-4ae5-95bf-ca635c7f10dd",
+      "callbackAfterSeconds": 0,
+      "outputData": {
+        "mod": "6",
+        "oddEven": "0",
+        "inputs": {
+          "subflow_0": {
+            "mod": 4,
+            "oddEven": 0
+          },
+          "subflow_4": {
+            "mod": 4,
+            "oddEven": 0
+          },
+          "subflow_2": {
+            "mod": 4,
+            "oddEven": 0
+          }
+        },
+        "dynamicTasks": [
+          {
+            "name": null,
+            "taskReferenceName": "subflow_0",
+            "description": null,
+            "inputParameters": null,
+            "type": "SUB_WORKFLOW",
+            "dynamicTaskNameParam": null,
+            "caseValueParam": null,
+            "caseExpression": null,
+            "decisionCases": {
+            },
+            "dynamicForkJoinTasksParam": null,
+            "dynamicForkTasksParam": null,
+            "dynamicForkTasksInputParamName": null,
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "sink": null,
+            "optional": null,
+            "subWorkflowParam": {
+              "name": "sub_flow_1",
+              "version": null
+            }
+          },
+          {
+            "name": null,
+            "taskReferenceName": "subflow_2",
+            "description": null,
+            "inputParameters": null,
+            "type": "SUB_WORKFLOW",
+            "dynamicTaskNameParam": null,
+            "caseValueParam": null,
+            "caseExpression": null,
+            "decisionCases": {
+            },
+            "dynamicForkJoinTasksParam": null,
+            "dynamicForkTasksParam": null,
+            "dynamicForkTasksInputParamName": null,
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "sink": null,
+            "optional": null,
+            "subWorkflowParam": {
+              "name": "sub_flow_1",
+              "version": null
+            }
+          },
+          {
+            "name": null,
+            "taskReferenceName": "subflow_4",
+            "description": null,
+            "inputParameters": null,
+            "type": "SUB_WORKFLOW",
+            "dynamicTaskNameParam": null,
+            "caseValueParam": null,
+            "caseExpression": null,
+            "decisionCases": {
+            },
+            "dynamicForkJoinTasksParam": null,
+            "dynamicForkTasksParam": null,
+            "dynamicForkTasksInputParamName": null,
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "sink": null,
+            "optional": null,
+            "subWorkflowParam": {
+              "name": "sub_flow_1",
+              "version": null
+            }
+          }
+        ],
+        "attempt": 1
+      },
+      "workflowTask": {
+        "name": "perf_task_3",
+        "taskReferenceName": "perf_task_3",
+        "inputParameters": {
+          "mod": "${perf_task_2.output.mod}",
+          "oddEven": "${perf_task_2.output.oddEven}"
+        },
+        "type": "SIMPLE",
+        "startDelay": 0
+      },
+      "queueWaitTime": 2434,
+      "taskStatus": "COMPLETED"
+    },
+    {
+      "taskType": "HTTP",
+      "status": "COMPLETED",
+      "inputData": {
+        "http_request": {
+          "uri": "/wfe_perf/workflow/_search?q=status:RUNNING&size=0&beta",
+          "method": "GET",
+          "vipAddress": "es_cpe_wfe.us-east-1.cloud.netflix.com"
+        }
+      },
+      "referenceTaskName": "get_es_1",
+      "retryCount": 0,
+      "seq": 4,
+      "correlationId": "1505587453950",
+      "pollCount": 1,
+      "taskDefName": "get_from_es",
+      "scheduledTime": 1505587459547,
+      "startTime": 1505587459996,
+      "endTime": 1505587460250,
+      "updateTime": 1505587460250,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": true,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "46e2d0d7-0809-40f2-9f22-bed9d41f6613",
+      "taskId": "64b49d62-1dfb-4290-94d4-971b4d033f33",
+      "callbackAfterSeconds": 0,
+      "workerId": "i-04c53d07aba5b5e9c",
+      "outputData": {
+        "response": {
+          "headers": {
+            "Content-Length": [
+              "121"
+            ],
+            "Content-Type": [
+              "application/json; charset=UTF-8"
+            ]
+          },
+          "reasonPhrase": "OK",
+          "body": {
+            "took": 1,
+            "timed_out": false,
+            "_shards": {
+              "total": 6,
+              "successful": 6,
+              "failed": 0
+            },
+            "hits": {
+              "total": 1,
+              "max_score": 0.0,
+              "hits": []
+            }
+          },
+          "statusCode": 200
+        }
+      },
+      "workflowTask": {
+        "name": "get_from_es",
+        "taskReferenceName": "get_es_1",
+        "type": "HTTP",
+        "startDelay": 0
+      },
+      "queueWaitTime": 449,
+      "taskStatus": "COMPLETED"
+    },
+    {
+      "taskType": "DECISION",
+      "status": "COMPLETED",
+      "inputData": {
+        "hasChildren": "true",
+        "case": "0"
+      },
+      "referenceTaskName": "oddEvenDecision",
+      "retryCount": 0,
+      "seq": 5,
+      "correlationId": "1505587453950",
+      "pollCount": 0,
+      "taskDefName": "DECISION",
+      "scheduledTime": 1505587460216,
+      "startTime": 1505587460241,
+      "endTime": 1505587460274,
+      "updateTime": 1505587460274,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": true,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "46e2d0d7-0809-40f2-9f22-bed9d41f6613",
+      "taskId": "5a596a36-09eb-4a11-a952-01ab5a7c362f",
+      "callbackAfterSeconds": 0,
+      "outputData": {
+        "caseOutput": [
+          "0"
+        ]
+      },
+      "workflowTask": {
+        "name": "oddEvenDecision",
+        "taskReferenceName": "oddEvenDecision",
+        "inputParameters": {
+          "oddEven": "${perf_task_3.output.oddEven}"
+        },
+        "type": "DECISION",
+        "caseValueParam": "oddEven",
+        "decisionCases": {
+          "0": [
+            {
+              "name": "perf_task_4",
+              "taskReferenceName": "perf_task_4",
+              "inputParameters": {
+                "mod": "${perf_task_3.output.mod}",
+                "oddEven": "${perf_task_3.output.oddEven}"
+              },
+              "type": "SIMPLE",
+              "startDelay": 0
+            },
+            {
+              "name": "dynamic_fanout",
+              "taskReferenceName": "fanout1",
+              "inputParameters": {
+                "dynamicTasks": "${perf_task_4.output.dynamicTasks}",
+                "input": "${perf_task_4.output.inputs}"
+              },
+              "type": "FORK_JOIN_DYNAMIC",
+              "dynamicForkTasksParam": "dynamicTasks",
+              "dynamicForkTasksInputParamName": "input",
+              "startDelay": 0
+            },
+            {
+              "name": "dynamic_join",
+              "taskReferenceName": "join1",
+              "type": "JOIN",
+              "startDelay": 0
+            },
+            {
+              "name": "perf_task_5",
+              "taskReferenceName": "perf_task_5",
+              "inputParameters": {
+                "mod": "${perf_task_4.output.mod}",
+                "oddEven": "${perf_task_4.output.oddEven}"
+              },
+              "type": "SIMPLE",
+              "startDelay": 0
+            },
+            {
+              "name": "perf_task_6",
+              "taskReferenceName": "perf_task_6",
+              "inputParameters": {
+                "mod": "${perf_task_5.output.mod}",
+                "oddEven": "${perf_task_5.output.oddEven}"
+              },
+              "type": "SIMPLE",
+              "startDelay": 0
+            }
+          ],
+          "1": [
+            {
+              "name": "perf_task_7",
+              "taskReferenceName": "perf_task_7",
+              "inputParameters": {
+                "mod": "${perf_task_3.output.mod}",
+                "oddEven": "${perf_task_3.output.oddEven}"
+              },
+              "type": "SIMPLE",
+              "startDelay": 0
+            },
+            {
+              "name": "perf_task_8",
+              "taskReferenceName": "perf_task_8",
+              "inputParameters": {
+                "mod": "${perf_task_7.output.mod}",
+                "oddEven": "${perf_task_7.output.oddEven}"
+              },
+              "type": "SIMPLE",
+              "startDelay": 0
+            },
+            {
+              "name": "perf_task_9",
+              "taskReferenceName": "perf_task_9",
+              "inputParameters": {
+                "mod": "${perf_task_8.output.mod}",
+                "oddEven": "${perf_task_8.output.oddEven}"
+              },
+              "type": "SIMPLE",
+              "startDelay": 0
+            },
+            {
+              "name": "modDecision",
+              "taskReferenceName": "modDecision",
+              "inputParameters": {
+                "mod": "${perf_task_8.output.mod}"
+              },
+              "type": "DECISION",
+              "caseValueParam": "mod",
+              "decisionCases": {
+                "0": [
+                  {
+                    "name": "perf_task_12",
+                    "taskReferenceName": "perf_task_12",
+                    "inputParameters": {
+                      "mod": "${perf_task_9.output.mod}",
+                      "oddEven": "${perf_task_9.output.oddEven}"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0
+                  },
+                  {
+                    "name": "perf_task_13",
+                    "taskReferenceName": "perf_task_13",
+                    "inputParameters": {
+                      "mod": "${perf_task_12.output.mod}",
+                      "oddEven": "${perf_task_12.output.oddEven}"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0
+                  },
+                  {
+                    "name": "sub_workflow_x",
+                    "taskReferenceName": "wf1",
+                    "inputParameters": {
+                      "mod": "${perf_task_12.output.mod}",
+                      "oddEven": "${perf_task_12.output.oddEven}"
+                    },
+                    "type": "SUB_WORKFLOW",
+                    "startDelay": 0,
+                    "subWorkflowParam": {
+                      "name": "sub_flow_1",
+                      "version": 1
+                    }
+                  }
+                ],
+                "1": [
+                  {
+                    "name": "perf_task_15",
+                    "taskReferenceName": "perf_task_15",
+                    "inputParameters": {
+                      "mod": "${perf_task_9.output.mod}",
+                      "oddEven": "${perf_task_9.output.oddEven}"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0
+                  },
+                  {
+                    "name": "perf_task_16",
+                    "taskReferenceName": "perf_task_16",
+                    "inputParameters": {
+                      "mod": "${perf_task_15.output.mod}",
+                      "oddEven": "${perf_task_15.output.oddEven}"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0
+                  },
+                  {
+                    "name": "sub_workflow_x",
+                    "taskReferenceName": "wf2",
+                    "inputParameters": {
+                      "mod": "${perf_task_12.output.mod}",
+                      "oddEven": "${perf_task_12.output.oddEven}"
+                    },
+                    "type": "SUB_WORKFLOW",
+                    "startDelay": 0,
+                    "subWorkflowParam": {
+                      "name": "sub_flow_1",
+                      "version": 1
+                    }
+                  }
+                ],
+                "4": [
+                  {
+                    "name": "perf_task_18",
+                    "taskReferenceName": "perf_task_18",
+                    "inputParameters": {
+                      "mod": "${perf_task_9.output.mod}",
+                      "oddEven": "${perf_task_9.output.oddEven}"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0
+                  },
+                  {
+                    "name": "perf_task_19",
+                    "taskReferenceName": "perf_task_19",
+                    "inputParameters": {
+                      "mod": "${perf_task_18.output.mod}",
+                      "oddEven": "${perf_task_18.output.oddEven}"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0
+                  }
+                ],
+                "5": [
+                  {
+                    "name": "perf_task_21",
+                    "taskReferenceName": "perf_task_21",
+                    "inputParameters": {
+                      "mod": "${perf_task_9.output.mod}",
+                      "oddEven": "${perf_task_9.output.oddEven}"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0
+                  },
+                  {
+                    "name": "sub_workflow_x",
+                    "taskReferenceName": "wf3",
+                    "inputParameters": {
+                      "mod": "${perf_task_12.output.mod}",
+                      "oddEven": "${perf_task_12.output.oddEven}"
+                    },
+                    "type": "SUB_WORKFLOW",
+                    "startDelay": 0,
+                    "subWorkflowParam": {
+                      "name": "sub_flow_1",
+                      "version": 1
+                    }
+                  },
+                  {
+                    "name": "perf_task_22",
+                    "taskReferenceName": "perf_task_22",
+                    "inputParameters": {
+                      "mod": "${perf_task_21.output.mod}",
+                      "oddEven": "${perf_task_21.output.oddEven}"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0
+                  }
+                ]
+              },
+              "defaultCase": [
+                {
+                  "name": "perf_task_24",
+                  "taskReferenceName": "perf_task_24",
+                  "inputParameters": {
+                    "mod": "${perf_task_9.output.mod}",
+                    "oddEven": "${perf_task_9.output.oddEven}"
+                  },
+                  "type": "SIMPLE",
+                  "startDelay": 0
+                },
+                {
+                  "name": "sub_workflow_x",
+                  "taskReferenceName": "wf4",
+                  "inputParameters": {
+                    "mod": "${perf_task_12.output.mod}",
+                    "oddEven": "${perf_task_12.output.oddEven}"
+                  },
+                  "type": "SUB_WORKFLOW",
+                  "startDelay": 0,
+                  "subWorkflowParam": {
+                    "name": "sub_flow_1",
+                    "version": 1
+                  }
+                },
+                {
+                  "name": "perf_task_25",
+                  "taskReferenceName": "perf_task_25",
+                  "inputParameters": {
+                    "mod": "${perf_task_24.output.mod}",
+                    "oddEven": "${perf_task_24.output.oddEven}"
+                  },
+                  "type": "SIMPLE",
+                  "startDelay": 0
+                }
+              ],
+              "startDelay": 0
+            }
+          ]
+        },
+        "startDelay": 0
+      },
+      "queueWaitTime": 25,
+      "taskStatus": "COMPLETED"
+    },
+    {
+      "taskType": "perf_task_4",
+      "status": "COMPLETED",
+      "inputData": {
+        "mod": "6",
+        "oddEven": "0"
+      },
+      "referenceTaskName": "perf_task_4",
+      "retryCount": 0,
+      "seq": 6,
+      "correlationId": "1505587453950",
+      "pollCount": 1,
+      "taskDefName": "perf_task_4",
+      "scheduledTime": 1505587460234,
+      "startTime": 1505587463699,
+      "endTime": 1505587463718,
+      "updateTime": 1505587463718,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 3600,
+      "workflowInstanceId": "46e2d0d7-0809-40f2-9f22-bed9d41f6613",
+      "taskId": "1bf3da08-9d16-4f8a-98c3-4a6efee0e03a",
+      "callbackAfterSeconds": 0,
+      "outputData": {
+        "mod": "9",
+        "oddEven": "1",
+        "inputs": {
+          "subflow_0": {
+            "mod": 4,
+            "oddEven": 0
+          },
+          "subflow_4": {
+            "mod": 4,
+            "oddEven": 0
+          },
+          "subflow_2": {
+            "mod": 4,
+            "oddEven": 0
+          }
+        },
+        "dynamicTasks": [
+          {
+            "name": null,
+            "taskReferenceName": "subflow_0",
+            "description": null,
+            "inputParameters": null,
+            "type": "SUB_WORKFLOW",
+            "dynamicTaskNameParam": null,
+            "caseValueParam": null,
+            "caseExpression": null,
+            "decisionCases": {
+            },
+            "dynamicForkJoinTasksParam": null,
+            "dynamicForkTasksParam": null,
+            "dynamicForkTasksInputParamName": null,
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "sink": null,
+            "optional": null,
+            "subWorkflowParam": {
+              "name": "sub_flow_1",
+              "version": null
+            }
+          },
+          {
+            "name": null,
+            "taskReferenceName": "subflow_2",
+            "description": null,
+            "inputParameters": null,
+            "type": "SUB_WORKFLOW",
+            "dynamicTaskNameParam": null,
+            "caseValueParam": null,
+            "caseExpression": null,
+            "decisionCases": {
+            },
+            "dynamicForkJoinTasksParam": null,
+            "dynamicForkTasksParam": null,
+            "dynamicForkTasksInputParamName": null,
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "sink": null,
+            "optional": null,
+            "subWorkflowParam": {
+              "name": "sub_flow_1",
+              "version": null
+            }
+          },
+          {
+            "name": null,
+            "taskReferenceName": "subflow_4",
+            "description": null,
+            "inputParameters": null,
+            "type": "SUB_WORKFLOW",
+            "dynamicTaskNameParam": null,
+            "caseValueParam": null,
+            "caseExpression": null,
+            "decisionCases": {
+            },
+            "dynamicForkJoinTasksParam": null,
+            "dynamicForkTasksParam": null,
+            "dynamicForkTasksInputParamName": null,
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "sink": null,
+            "optional": null,
+            "subWorkflowParam": {
+              "name": "sub_flow_1",
+              "version": null
+            }
+          }
+        ],
+        "attempt": 1
+      },
+      "workflowTask": {
+        "name": "perf_task_4",
+        "taskReferenceName": "perf_task_4",
+        "inputParameters": {
+          "mod": "${perf_task_3.output.mod}",
+          "oddEven": "${perf_task_3.output.oddEven}"
+        },
+        "type": "SIMPLE",
+        "startDelay": 0
+      },
+      "queueWaitTime": 3465,
+      "taskStatus": "COMPLETED"
+    }
+  ],
+  "input": {
+    "mod": "0",
+    "oddEven": "0",
+    "task2Name": "perf_task_10"
+  },
+  "workflowType": "performance_test_1",
+  "version": 1,
+  "correlationId": "1505587453950",
+  "schemaVersion": 2,
+  "taskToDomain": {
+    "*": "beta"
+  },
+  "startTime": 1505587453961,
+  "workflowDefinition": {
+    "createTime": 1477681181098,
+    "updateTime": 1502738273998,
+    "name": "performance_test_1",
+    "description": "performance_test_1",
+    "version": 1,
+    "tasks": [
+      {
+        "name": "perf_task_1",
+        "taskReferenceName": "perf_task_1",
+        "inputParameters": {
+          "mod": "${workflow.input.mod}",
+          "oddEven": "${workflow.input.oddEven}"
+        },
+        "type": "SIMPLE",
+        "startDelay": 0
+      },
+      {
+        "name": "dyntask",
+        "taskReferenceName": "perf_task_2",
+        "inputParameters": {
+          "taskToExecute": "${workflow.input.task2Name}"
+        },
+        "type": "DYNAMIC",
+        "dynamicTaskNameParam": "taskToExecute",
+        "startDelay": 0
+      },
+      {
+        "name": "perf_task_3",
+        "taskReferenceName": "perf_task_3",
+        "inputParameters": {
+          "mod": "${perf_task_2.output.mod}",
+          "oddEven": "${perf_task_2.output.oddEven}"
+        },
+        "type": "SIMPLE",
+        "startDelay": 0
+      },
+      {
+        "name": "get_from_es",
+        "taskReferenceName": "get_es_1",
+        "type": "HTTP",
+        "startDelay": 0
+      },
+      {
+        "name": "oddEvenDecision",
+        "taskReferenceName": "oddEvenDecision",
+        "inputParameters": {
+          "oddEven": "${perf_task_3.output.oddEven}"
+        },
+        "type": "DECISION",
+        "caseValueParam": "oddEven",
+        "decisionCases": {
+          "0": [
+            {
+              "name": "perf_task_4",
+              "taskReferenceName": "perf_task_4",
+              "inputParameters": {
+                "mod": "${perf_task_3.output.mod}",
+                "oddEven": "${perf_task_3.output.oddEven}"
+              },
+              "type": "SIMPLE",
+              "startDelay": 0
+            },
+            {
+              "name": "dynamic_fanout",
+              "taskReferenceName": "fanout1",
+              "inputParameters": {
+                "dynamicTasks": "${perf_task_4.output.dynamicTasks}",
+                "input": "${perf_task_4.output.inputs}"
+              },
+              "type": "FORK_JOIN_DYNAMIC",
+              "dynamicForkTasksParam": "dynamicTasks",
+              "dynamicForkTasksInputParamName": "input",
+              "startDelay": 0
+            },
+            {
+              "name": "dynamic_join",
+              "taskReferenceName": "join1",
+              "type": "JOIN",
+              "startDelay": 0
+            },
+            {
+              "name": "perf_task_5",
+              "taskReferenceName": "perf_task_5",
+              "inputParameters": {
+                "mod": "${perf_task_4.output.mod}",
+                "oddEven": "${perf_task_4.output.oddEven}"
+              },
+              "type": "SIMPLE",
+              "startDelay": 0
+            },
+            {
+              "name": "perf_task_6",
+              "taskReferenceName": "perf_task_6",
+              "inputParameters": {
+                "mod": "${perf_task_5.output.mod}",
+                "oddEven": "${perf_task_5.output.oddEven}"
+              },
+              "type": "SIMPLE",
+              "startDelay": 0
+            }
+          ],
+          "1": [
+            {
+              "name": "perf_task_7",
+              "taskReferenceName": "perf_task_7",
+              "inputParameters": {
+                "mod": "${perf_task_3.output.mod}",
+                "oddEven": "${perf_task_3.output.oddEven}"
+              },
+              "type": "SIMPLE",
+              "startDelay": 0
+            },
+            {
+              "name": "perf_task_8",
+              "taskReferenceName": "perf_task_8",
+              "inputParameters": {
+                "mod": "${perf_task_7.output.mod}",
+                "oddEven": "${perf_task_7.output.oddEven}"
+              },
+              "type": "SIMPLE",
+              "startDelay": 0
+            },
+            {
+              "name": "perf_task_9",
+              "taskReferenceName": "perf_task_9",
+              "inputParameters": {
+                "mod": "${perf_task_8.output.mod}",
+                "oddEven": "${perf_task_8.output.oddEven}"
+              },
+              "type": "SIMPLE",
+              "startDelay": 0
+            },
+            {
+              "name": "modDecision",
+              "taskReferenceName": "modDecision",
+              "inputParameters": {
+                "mod": "${perf_task_8.output.mod}"
+              },
+              "type": "DECISION",
+              "caseValueParam": "mod",
+              "decisionCases": {
+                "0": [
+                  {
+                    "name": "perf_task_12",
+                    "taskReferenceName": "perf_task_12",
+                    "inputParameters": {
+                      "mod": "${perf_task_9.output.mod}",
+                      "oddEven": "${perf_task_9.output.oddEven}"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0
+                  },
+                  {
+                    "name": "perf_task_13",
+                    "taskReferenceName": "perf_task_13",
+                    "inputParameters": {
+                      "mod": "${perf_task_12.output.mod}",
+                      "oddEven": "${perf_task_12.output.oddEven}"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0
+                  },
+                  {
+                    "name": "sub_workflow_x",
+                    "taskReferenceName": "wf1",
+                    "inputParameters": {
+                      "mod": "${perf_task_12.output.mod}",
+                      "oddEven": "${perf_task_12.output.oddEven}"
+                    },
+                    "type": "SUB_WORKFLOW",
+                    "startDelay": 0,
+                    "subWorkflowParam": {
+                      "name": "sub_flow_1",
+                      "version": 1
+                    }
+                  }
+                ],
+                "1": [
+                  {
+                    "name": "perf_task_15",
+                    "taskReferenceName": "perf_task_15",
+                    "inputParameters": {
+                      "mod": "${perf_task_9.output.mod}",
+                      "oddEven": "${perf_task_9.output.oddEven}"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0
+                  },
+                  {
+                    "name": "perf_task_16",
+                    "taskReferenceName": "perf_task_16",
+                    "inputParameters": {
+                      "mod": "${perf_task_15.output.mod}",
+                      "oddEven": "${perf_task_15.output.oddEven}"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0
+                  },
+                  {
+                    "name": "sub_workflow_x",
+                    "taskReferenceName": "wf2",
+                    "inputParameters": {
+                      "mod": "${perf_task_12.output.mod}",
+                      "oddEven": "${perf_task_12.output.oddEven}"
+                    },
+                    "type": "SUB_WORKFLOW",
+                    "startDelay": 0,
+                    "subWorkflowParam": {
+                      "name": "sub_flow_1",
+                      "version": 1
+                    }
+                  }
+                ],
+                "4": [
+                  {
+                    "name": "perf_task_18",
+                    "taskReferenceName": "perf_task_18",
+                    "inputParameters": {
+                      "mod": "${perf_task_9.output.mod}",
+                      "oddEven": "${perf_task_9.output.oddEven}"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0
+                  },
+                  {
+                    "name": "perf_task_19",
+                    "taskReferenceName": "perf_task_19",
+                    "inputParameters": {
+                      "mod": "${perf_task_18.output.mod}",
+                      "oddEven": "${perf_task_18.output.oddEven}"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0
+                  }
+                ],
+                "5": [
+                  {
+                    "name": "perf_task_21",
+                    "taskReferenceName": "perf_task_21",
+                    "inputParameters": {
+                      "mod": "${perf_task_9.output.mod}",
+                      "oddEven": "${perf_task_9.output.oddEven}"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0
+                  },
+                  {
+                    "name": "sub_workflow_x",
+                    "taskReferenceName": "wf3",
+                    "inputParameters": {
+                      "mod": "${perf_task_12.output.mod}",
+                      "oddEven": "${perf_task_12.output.oddEven}"
+                    },
+                    "type": "SUB_WORKFLOW",
+                    "startDelay": 0,
+                    "subWorkflowParam": {
+                      "name": "sub_flow_1",
+                      "version": 1
+                    }
+                  },
+                  {
+                    "name": "perf_task_22",
+                    "taskReferenceName": "perf_task_22",
+                    "inputParameters": {
+                      "mod": "${perf_task_21.output.mod}",
+                      "oddEven": "${perf_task_21.output.oddEven}"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0
+                  }
+                ]
+              },
+              "defaultCase": [
+                {
+                  "name": "perf_task_24",
+                  "taskReferenceName": "perf_task_24",
+                  "inputParameters": {
+                    "mod": "${perf_task_9.output.mod}",
+                    "oddEven": "${perf_task_9.output.oddEven}"
+                  },
+                  "type": "SIMPLE",
+                  "startDelay": 0
+                },
+                {
+                  "name": "sub_workflow_x",
+                  "taskReferenceName": "wf4",
+                  "inputParameters": {
+                    "mod": "${perf_task_12.output.mod}",
+                    "oddEven": "${perf_task_12.output.oddEven}"
+                  },
+                  "type": "SUB_WORKFLOW",
+                  "startDelay": 0,
+                  "subWorkflowParam": {
+                    "name": "sub_flow_1",
+                    "version": 1
+                  }
+                },
+                {
+                  "name": "perf_task_25",
+                  "taskReferenceName": "perf_task_25",
+                  "inputParameters": {
+                    "mod": "${perf_task_24.output.mod}",
+                    "oddEven": "${perf_task_24.output.oddEven}"
+                  },
+                  "type": "SIMPLE",
+                  "startDelay": 0
+                }
+              ],
+              "startDelay": 0
+            }
+          ]
+        },
+        "startDelay": 0
+      },
+      {
+        "name": "perf_task_28",
+        "taskReferenceName": "perf_task_28",
+        "inputParameters": {
+          "mod": "${perf_task_3.output.mod}",
+          "oddEven": "${perf_task_3.output.oddEven}"
+        },
+        "type": "SIMPLE",
+        "startDelay": 0
+      },
+      {
+        "name": "perf_task_29",
+        "taskReferenceName": "perf_task_29",
+        "inputParameters": {
+          "mod": "${perf_task_28.output.mod}",
+          "oddEven": "${perf_task_28.output.oddEven}"
+        },
+        "type": "SIMPLE",
+        "startDelay": 0
+      },
+      {
+        "name": "perf_task_30",
+        "taskReferenceName": "perf_task_30",
+        "inputParameters": {
+          "mod": "${perf_task_29.output.mod}",
+          "oddEven": "${perf_task_29.output.oddEven}"
+        },
+        "type": "SIMPLE",
+        "startDelay": 0
+      }
+    ],
+    "schemaVersion": 2
+  }
+}

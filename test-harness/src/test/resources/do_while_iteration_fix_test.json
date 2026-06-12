@@ -1,0 +1,43 @@
+{
+  "name": "Do_While_Workflow_Iteration_Fix",
+  "description": "Do_While_Workflow_Iteration_Fix",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "loopTask",
+      "taskReferenceName": "loopTask",
+      "inputParameters": {
+        "value": "${workflow.input.loop}"
+      },
+      "type": "DO_WHILE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopCondition": "if ($.loopTask['iteration'] < $.value) { true; } else { false;} ",
+      "loopOver": [
+        {
+          "name": "form_uri",
+          "taskReferenceName": "form_uri",
+          "inputParameters": {
+            "index" : "${loopTask['iteration']}",
+            "scriptExpression": "return $.index - 1;"
+          },
+          "type": "LAMBDA"
+        }
+      ]
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}

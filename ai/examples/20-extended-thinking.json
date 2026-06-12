@@ -1,0 +1,29 @@
+{
+  "name": "extended_thinking_workflow",
+  "description": "Chat completion with extended thinking — gives the LLM a token budget for step-by-step reasoning",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["problem"],
+  "tasks": [
+    {
+      "name": "think_deeply",
+      "taskReferenceName": "think",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "anthropic",
+        "model": "claude-sonnet-4-20250514",
+        "messages": [
+          {
+            "role": "user",
+            "message": "${workflow.input.problem}"
+          }
+        ],
+        "thinkingTokenLimit": 10000,
+        "maxTokens": 16000
+      }
+    }
+  ],
+  "outputParameters": {
+    "answer": "${think.output.result}"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "name": "sequential_json_jq_transform_wf",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "default_variables",
+      "taskReferenceName": "default_variables",
+      "description": "default_variables",
+      "inputParameters": {
+        "input": "${workflow.input}",
+        "queryExpression": "{ requestTransform: .input.requestTransform // \".body\"  , responseTransform: .input.responseTransform // \".response.body\", method: .input.method // \"GET\", document: .input.document // \"rgt_results\", successExpression: .input.successExpression // \"true\"   }"
+      },
+      "type": "JSON_JQ_TRANSFORM",
+      "startDelay": 0,
+      "optional": false,
+      "asyncComplete": false
+    },
+    {
+      "name": "request_transform",
+      "taskReferenceName": "request_transform",
+      "description": "request_transform",
+      "inputParameters": {
+        "body": "${workflow.input.body}",
+        "queryExpression": "${default_variables.output.result.requestTransform}"
+      },
+      "type": "JSON_JQ_TRANSFORM",
+      "startDelay": 0,
+      "optional": false,
+      "asyncComplete": false
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}

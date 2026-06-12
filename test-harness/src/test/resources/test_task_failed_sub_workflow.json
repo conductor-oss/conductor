@@ -1,0 +1,65 @@
+{
+  "name": "test_task_failed_sub_wf",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "lambda",
+      "taskReferenceName": "lambda0",
+      "inputParameters": {
+        "input": "${workflow.input}",
+        "scriptExpression": "if ($.input.a==1){return {testvalue: true}} else{return {testvalue: false}}"
+      },
+      "type": "LAMBDA",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": []
+    },
+    {
+      "name": "terminate",
+      "taskReferenceName": "terminate0",
+      "inputParameters": {
+        "terminationStatus": "FAILED",
+        "workflowOutput": "${lambda0.output}"
+      },
+      "type": "TERMINATE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": []
+    },
+    {
+      "name": "integration_task_2",
+      "taskReferenceName": "t2",
+      "inputParameters": {},
+      "type": "SIMPLE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": []
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}

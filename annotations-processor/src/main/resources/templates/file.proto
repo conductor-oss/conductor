@@ -1,0 +1,14 @@
+syntax = "proto3";
+package {{protoPackageName}};
+
+{{#includes}}
+import "{{this}}";
+{{/includes}}
+
+option java_package = "{{javaPackageName}}";
+option java_outer_classname = "{{javaClassName}}";
+option go_package = "{{goPackageName}}";
+
+{{#message}}
+{{>message}}
+{{/message}}

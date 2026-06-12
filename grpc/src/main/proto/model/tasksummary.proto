@@ -1,0 +1,31 @@
+syntax = "proto3";
+package conductor.proto;
+
+import "model/task.proto";
+
+option java_package = "com.netflix.conductor.proto";
+option java_outer_classname = "TaskSummaryPb";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
+
+message TaskSummary {
+    string workflow_id = 1;
+    string workflow_type = 2;
+    string correlation_id = 3;
+    string scheduled_time = 4;
+    string start_time = 5;
+    string update_time = 6;
+    string end_time = 7;
+    Task.Status status = 8;
+    string reason_for_incompletion = 9;
+    int64 execution_time = 10;
+    int64 queue_wait_time = 11;
+    string task_def_name = 12;
+    string task_type = 13;
+    string input = 14;
+    string output = 15;
+    string task_id = 16;
+    string external_input_payload_storage_path = 17;
+    string external_output_payload_storage_path = 18;
+    int32 workflow_priority = 19;
+    string domain = 20;
+}
