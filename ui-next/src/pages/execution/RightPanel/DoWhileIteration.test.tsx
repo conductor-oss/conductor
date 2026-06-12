@@ -18,10 +18,107 @@
 import { describe, expect, it } from "vitest";
 
 import { TaskStatus } from "types/TaskStatus";
+import { featureFlags, FEATURES } from "utils/flags";
 import {
   deriveFallbackIterationStatus,
   getOrderedIterationKeys,
+  isIterationSummarized,
 } from "./doWhileIterationHelpers";
+
+// ---------------------------------------------------------------------------
+// WORKFLOW_SUMMARIZE feature flag
+//
+// The summarize toggle is an Orkes-only feature. IterationSection calls
+//   featureFlags.isEnabled(FEATURES.WORKFLOW_SUMMARIZE, true)
+// with defaultValue=true, meaning the toggle is ON in any environment that
+// does not explicitly configure the flag. The OSS context.js opts out by
+// setting WORKFLOW_SUMMARIZE: false. Tests run without context.js, so they
+// exercise the defaultValue path.
+// ---------------------------------------------------------------------------
+
+describe("WORKFLOW_SUMMARIZE feature flag", () => {
+  it("is registered in the FEATURES map with the correct string key", () => {
+    expect(FEATURES.WORKFLOW_SUMMARIZE).toBe("WORKFLOW_SUMMARIZE");
+  });
+
+  it("returns false when the flag is unconfigured and no default is supplied (base default)", () => {
+    // In test env window.conductor and env vars are not set, so result is
+    // undefined and isEnabled returns its own defaultValue param (false).
+    expect(featureFlags.isEnabled(FEATURES.WORKFLOW_SUMMARIZE)).toBe(false);
+  });
+
+  it("returns true when the flag is unconfigured but caller supplies defaultValue=true", () => {
+    // This is the call site in IterationSection: the toggle shows in Orkes
+    // environments unless context.js explicitly sets the flag to false.
+    expect(featureFlags.isEnabled(FEATURES.WORKFLOW_SUMMARIZE, true)).toBe(
+      true,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// isIterationSummarized
+// ---------------------------------------------------------------------------
+
+describe("isIterationSummarized", () => {
+  // Key absent cases — the iteration was pruned from outputData
+
+  it("returns true when key is absent and task is not processing (pruned by keepLastN)", () => {
+    expect(isIterationSummarized(5, { "1": {} }, false)).toBe(true);
+  });
+
+  it("returns false when key is absent but task is still processing (iteration not yet written)", () => {
+    expect(isIterationSummarized(2, { "1": {} }, true)).toBe(false);
+  });
+
+  // Key present cases — value determines whether the entry was summarized
+
+  it("returns true when value carries the _summarized sentinel", () => {
+    expect(
+      isIterationSummarized(1, { "1": { _summarized: true } }, false),
+    ).toBe(true);
+  });
+
+  it("returns false when value has _summarized: false", () => {
+    expect(
+      isIterationSummarized(1, { "1": { _summarized: false } }, false),
+    ).toBe(false);
+  });
+
+  it("returns false when value has no _summarized field (real data)", () => {
+    expect(isIterationSummarized(1, { "1": { result: "ok" } }, false)).toBe(
+      false,
+    );
+  });
+
+  it("returns false when value is null", () => {
+    expect(isIterationSummarized(1, { "1": null }, false)).toBe(false);
+  });
+
+  it("returns false when value is a non-object primitive", () => {
+    expect(isIterationSummarized(1, { "1": "done" as unknown }, false)).toBe(
+      false,
+    );
+  });
+
+  it("returns true when _summarized is present alongside other fields", () => {
+    expect(
+      isIterationSummarized(
+        3,
+        { "3": { _summarized: true, status: "COMPLETED" } },
+        false,
+      ),
+    ).toBe(true);
+  });
+
+  it("returns false for an empty outputData object when task is processing", () => {
+    expect(isIterationSummarized(1, {}, true)).toBe(false);
+  });
+
+  it("returns true for an empty outputData object when task is not processing", () => {
+    expect(isIterationSummarized(1, {}, false)).toBe(true);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // getOrderedIterationKeys

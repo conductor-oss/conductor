@@ -473,5 +473,4 @@ public class WorkflowServiceImpl implements WorkflowService {
             String path, String operation, String type) {
         return executionService.getExternalStorageLocation(path, operation, type);
     }
-
 }

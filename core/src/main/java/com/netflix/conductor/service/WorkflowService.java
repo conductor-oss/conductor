@@ -420,5 +420,4 @@ public interface WorkflowService {
      */
     ExternalStorageLocation getExternalStorageLocation(
             String path, String operation, String payloadType);
-
 }
