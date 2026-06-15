@@ -21,6 +21,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+import org.conductoross.conductor.core.listener.MetadataChangeListener;
+import org.conductoross.conductor.core.listener.MetadataChangeListenerStub;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -91,6 +93,15 @@ public class ConductorCoreConfiguration {
     @Bean
     public TaskStatusListener taskStatusListener() {
         return new TaskStatusListenerStub();
+    }
+
+    @ConditionalOnProperty(
+            name = "conductor.metadata-change-listener.type",
+            havingValue = "stub",
+            matchIfMissing = true)
+    @Bean
+    public MetadataChangeListener metadataChangeListener() {
+        return new MetadataChangeListenerStub();
     }
 
     @Bean
