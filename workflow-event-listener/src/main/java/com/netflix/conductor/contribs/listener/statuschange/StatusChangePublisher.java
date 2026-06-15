@@ -114,6 +114,7 @@ public class StatusChangePublisher implements WorkflowStatusListener {
                 (subscribedWorkflowStatuses != null && !subscribedWorkflowStatuses.isEmpty())
                         ? subscribedWorkflowStatuses
                         : Arrays.asList("COMPLETED", "TERMINATED");
+        Monitors.registerWebhookQueueDepthGauge(blockingQueue, NOTIFICATION_TYPE);
         ConsumerThread consumerThread = new ConsumerThread();
         consumerThread.start();
     }
@@ -206,17 +207,14 @@ public class StatusChangePublisher implements WorkflowStatusListener {
                 workflow.getWorkflowId(),
                 workflow.getWorkflowName(),
                 workflow.getStatus());
-        try {
-            blockingQueue.put(workflow);
-            Monitors.recordWebhookQueueDepth(NOTIFICATION_TYPE, blockingQueue.size());
-        } catch (Exception e) {
-            LOGGER.error(
-                    "Failed to enqueue workflow: Id {} Name {}",
-                    workflow.getWorkflowId(),
-                    workflow.getWorkflowName());
-            LOGGER.error(e.getMessage());
-            Monitors.recordWebhookEnqueueFailure(NOTIFICATION_TYPE, workflow.getWorkflowName());
+        if (blockingQueue.offer(workflow)) {
+            return;
         }
+        LOGGER.warn(
+                "Webhook notification queue full, dropping WORKFLOW notification for {} ({})",
+                workflow.getWorkflowId(),
+                workflow.getWorkflowName());
+        Monitors.recordWebhookEnqueueFailure(NOTIFICATION_TYPE, workflow.getWorkflowName());
     }
 
     private void publishStatusChangeNotification(StatusChangeNotification statusChangeNotification)

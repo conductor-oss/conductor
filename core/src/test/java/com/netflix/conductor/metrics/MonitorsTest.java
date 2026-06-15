@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.metrics;
 
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
@@ -107,5 +109,23 @@ public class MonitorsTest {
         assertNotSame(
                 Monitors.getCounter("test_tag_distinct", "env", "prod"),
                 Monitors.getCounter("test_tag_distinct", "env", "staging"));
+    }
+
+    @Test
+    public void registerWebhookQueueDepthGauge_readsLiveQueueSize() {
+        SimpleMeterRegistry probe = new SimpleMeterRegistry();
+        Monitors.addMeterRegistry(probe);
+
+        BlockingQueue<String> queue = new LinkedBlockingDeque<>(2);
+        Monitors.registerWebhookQueueDepthGauge(queue, "WORKFLOW");
+
+        assertEquals(0.0, probe.find("webhook_queue_depth").gauge().value(), 0.001);
+
+        queue.offer("a");
+        queue.offer("b");
+        assertEquals(2.0, probe.find("webhook_queue_depth").gauge().value(), 0.001);
+
+        queue.poll();
+        assertEquals(1.0, probe.find("webhook_queue_depth").gauge().value(), 0.001);
     }
 }

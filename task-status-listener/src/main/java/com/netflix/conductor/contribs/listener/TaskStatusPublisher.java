@@ -113,6 +113,7 @@ public class TaskStatusPublisher implements TaskStatusListener {
         this.executionDAOFacade = executionDAOFacade;
         this.subscribedTaskStatusList = subscribedTaskStatuses;
         validateSubscribedTaskStatuses(subscribedTaskStatuses);
+        Monitors.registerWebhookQueueDepthGauge(blockingQueue, NOTIFICATION_TYPE);
         ConsumerThread consumerThread = new ConsumerThread();
         consumerThread.start();
     }
@@ -128,18 +129,14 @@ public class TaskStatusPublisher implements TaskStatusListener {
     }
 
     private void enqueueTask(TaskModel task) {
-        try {
-            blockingQueue.put(task);
-            Monitors.recordWebhookQueueDepth(NOTIFICATION_TYPE, blockingQueue.size());
-        } catch (Exception e) {
-            LOGGER.debug(
-                    "Failed to enqueue task: Id {} Type {} of workflow {} ",
-                    task.getTaskId(),
-                    task.getTaskType(),
-                    task.getWorkflowInstanceId());
-            LOGGER.debug(e.toString());
-            Monitors.recordWebhookEnqueueFailure(NOTIFICATION_TYPE, task.getTaskDefName());
+        if (blockingQueue.offer(task)) {
+            return;
         }
+        LOGGER.warn(
+                "Webhook notification queue full, dropping TASK notification for task {} ({})",
+                task.getTaskId(),
+                task.getTaskDefName());
+        Monitors.recordWebhookEnqueueFailure(NOTIFICATION_TYPE, task.getTaskDefName());
     }
 
     @Override
