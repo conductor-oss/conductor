@@ -21,6 +21,15 @@ public interface WebhookTaskService {
     void remove(String hash, String taskId);
 
     /**
+     * Compute the correlation hash from the task + workflow version (same formula {@link #put}
+     * uses) and remove the taskId from the corresponding set. Use this when cancelling a
+     * WAIT_FOR_WEBHOOK task whose hash isn't already known — notably when the parent workflow is
+     * terminated before a matching event arrives, in which case {@code WebhookWorker.handleEvent}
+     * never fires and the set entry would otherwise leak indefinitely.
+     */
+    void remove(TaskModel taskModel, int workflowVersion);
+
+    /**
      * @param hash
      * @return List of matching task ids
      */

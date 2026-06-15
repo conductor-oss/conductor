@@ -63,4 +63,10 @@ public class InMemoryWebhookTaskService implements WebhookTaskService {
                     return taskIds.isEmpty() ? null : taskIds;
                 });
     }
+
+    @Override
+    public void remove(TaskModel task, int workflowVersion) {
+        String hash = WebhookTaskHashing.computeHashIfPresent(task, workflowVersion);
+        if (hash != null) remove(hash, task.getTaskId());
+    }
 }

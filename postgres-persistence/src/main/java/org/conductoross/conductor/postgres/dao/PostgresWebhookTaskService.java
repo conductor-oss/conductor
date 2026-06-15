@@ -67,4 +67,10 @@ public class PostgresWebhookTaskService extends PostgresBaseDAO implements Webho
         queryWithTransaction(
                 DELETE, q -> q.addParameter(hash).addParameter(taskId).executeUpdate());
     }
+
+    @Override
+    public void remove(TaskModel task, int workflowVersion) {
+        String hash = WebhookTaskHashing.computeHashIfPresent(task, workflowVersion);
+        if (hash != null) remove(hash, task.getTaskId());
+    }
 }

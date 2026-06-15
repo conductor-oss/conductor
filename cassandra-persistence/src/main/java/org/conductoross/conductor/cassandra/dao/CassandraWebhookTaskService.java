@@ -99,4 +99,10 @@ public class CassandraWebhookTaskService extends CassandraBaseDAO implements Web
     public void remove(String hash, String taskId) {
         session.execute(deleteStmt.bind(hash, taskId));
     }
+
+    @Override
+    public void remove(TaskModel task, int workflowVersion) {
+        String hash = WebhookTaskHashing.computeHashIfPresent(task, workflowVersion);
+        if (hash != null) remove(hash, task.getTaskId());
+    }
 }

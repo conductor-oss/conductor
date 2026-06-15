@@ -75,4 +75,26 @@ public final class WebhookTaskHashing {
         }
         return matches;
     }
+
+    /**
+     * Like {@link #computeHash(TaskModel, int)} but returns {@code null} when the task has no
+     * {@code matches} input instead of throwing. Use on cancel paths where the task may have been
+     * cancelled before reaching IN_PROGRESS (and therefore before {@code put} was ever called).
+     */
+    @SuppressWarnings("unchecked")
+    public static String computeHashIfPresent(TaskModel task, int workflowVersion) {
+        Map<String, Object> inputData = task.getInputData();
+        if (inputData == null || !inputData.containsKey("matches")) {
+            return null;
+        }
+        Map<String, Object> matches = (Map<String, Object>) inputData.get("matches");
+        if (matches == null) {
+            return null;
+        }
+        return computeHash(
+                task.getWorkflowType(),
+                workflowVersion,
+                TaskUtils.removeIterationFromTaskRefName(task.getReferenceTaskName()),
+                matches);
+    }
 }

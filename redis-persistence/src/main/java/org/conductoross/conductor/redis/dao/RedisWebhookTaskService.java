@@ -63,4 +63,10 @@ public class RedisWebhookTaskService extends BaseDynoDAO implements WebhookTaskS
     public void remove(String hash, String taskId) {
         jedisProxy.srem(nsKey(WEBHOOK_HASH, hash), taskId);
     }
+
+    @Override
+    public void remove(TaskModel task, int workflowVersion) {
+        String hash = WebhookTaskHashing.computeHashIfPresent(task, workflowVersion);
+        if (hash != null) remove(hash, task.getTaskId());
+    }
 }

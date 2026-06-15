@@ -38,6 +38,7 @@ import com.netflix.conductor.postgres.config.PostgresConfiguration;
 
 import static org.conductoross.conductor.service.webhook.WebhookTaskHashing.computeHash;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -143,6 +144,36 @@ public class PostgresWebhookTaskServiceTest {
     @Test
     public void get_unknownHash_returnsEmpty() {
         assertTrue(service.get("never-seen").isEmpty());
+    }
+
+    @Test
+    public void removeByTask_computesSameHashAsPut() {
+        // remove(TaskModel, int) must compute the same hash as put() or the DELETE hits the wrong
+        // row.
+        TaskModel task =
+                newTask("task-cancel", "wf-cancel", "cancel_ref", Map.of("event", "close"));
+        service.put(task, 3);
+
+        String hash = computeHash("wf-cancel", 3, "cancel_ref", Map.of("event", "close"));
+        assertTrue(service.get(hash).contains("task-cancel"));
+
+        service.remove(task, 3);
+
+        assertFalse(service.get(hash).contains("task-cancel"));
+        assertEquals(0, service.get(hash).size());
+    }
+
+    @Test
+    public void removeByTask_nullInputData_isNoOp() {
+        // Tasks cancelled before reaching IN_PROGRESS may have null inputData; remove must not
+        // throw.
+        TaskModel task = new TaskModel();
+        task.setTaskId("task-pre-inprogress");
+        task.setWorkflowType("wf-pre");
+        task.setReferenceTaskName("pre_ref");
+        // intentionally no setInputData — put() was never called for this task
+
+        service.remove(task, 1); // must not throw; no matching row is a no-op
     }
 
     private static TaskModel newTask(

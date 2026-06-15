@@ -43,4 +43,29 @@ public class Webhook extends WorkflowSystemTask {
         taskModel.setStatus(TaskModel.Status.IN_PROGRESS);
         LOGGER.debug("Task {} is put in the queue", taskModel.getTaskId());
     }
+
+    /**
+     * Mirror of {@link #start}'s put — remove the correlation entry when the task is cancelled
+     * (workflow terminate, parent-cancel, etc.) so the hash set doesn't accumulate orphan task ids.
+     *
+     * <p>Without this the only cleanup path is {@code WebhookWorker.handleEvent} firing on an
+     * incoming event match. Workflows terminated before a match would otherwise leave their taskId
+     * in the correlation set indefinitely. See orkes-io/orkes-conductor#3663.
+     */
+    @Override
+    public void cancel(
+            WorkflowModel workflow, TaskModel taskModel, WorkflowExecutor workflowExecutor) {
+        try {
+            webhookTaskService.remove(taskModel, workflow.getWorkflowVersion());
+            LOGGER.debug(
+                    "Task {} removed from webhook correlation set on cancel",
+                    taskModel.getTaskId());
+        } catch (Exception e) {
+            LOGGER.warn(
+                    "Failed to remove webhook correlation for task {} (workflow {}); orphan entry may remain",
+                    taskModel.getTaskId(),
+                    workflow.getWorkflowId(),
+                    e);
+        }
+    }
 }
