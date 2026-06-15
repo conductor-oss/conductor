@@ -20,7 +20,7 @@
 
 #### Orchestrating distributed systems means wrestling with failures, retries, and state recovery. Conductor handles all of that so you don't have to.
 
-Conductor is an open-source, durable workflow engine built at [Netflix](https://netflixtechblog.com/netflix-conductor-a-microservices-orchestrator-2e8d4771bf40) for orchestrating microservices, AI agents, and durable workflows at internet scale. Trusted in production at Netflix, Tesla, LinkedIn, and J.P. Morgan. Actively maintained by [Orkes](https://orkes.io) and a growing [community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA).
+Conductor is an open-source **workflow orchestration server** — a Java/Spring Boot execution engine that runs durable workflows defined as JSON task graphs, exposed via REST API. Workers written in any language (Java, Python, Go, JavaScript, C#, Ruby) poll the server for tasks, execute business logic independently, and report results back. Built at [Netflix](https://netflixtechblog.com/netflix-conductor-a-microservices-orchestrator-2e8d4771bf40) to coordinate microservices at scale; trusted in production at Tesla, LinkedIn, and J.P. Morgan. Actively maintained by [Orkes](https://orkes.io) and a growing [community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA).
 
 [![conductor_oss_getting_started](https://github.com/user-attachments/assets/6153aa58-8ad1-4ec5-93d1-38ba1b83e3f4)](https://youtu.be/4azDdDlx27M)
 
