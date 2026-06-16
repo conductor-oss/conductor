@@ -17,10 +17,6 @@ import { IterationStatusIcon } from "./IterationStatusIcon";
 import { SummarizeToggle } from "./SummarizeToggle";
 import { useFullWorkflowQuery } from "./useFullWorkflowQuery";
 
-interface AugmentedDoWhileTask extends ExecutionTask {
-  _summarized?: boolean;
-}
-
 export interface DoWhileIterationProps {
   selectedTask: ExecutionTask;
   handleSelectDoWhileIteration: (data: DoWhileSelection) => void;
@@ -81,9 +77,18 @@ export const DoWhileIteration = ({
   // full version so Input/Output tabs reflect the newly loaded data.
   useEffect(() => {
     if (isSummarized || !fullDoWhileTask || !handleSelectTask) return;
-    const isCurrentlySummarized =
-      (selectedTask as AugmentedDoWhileTask)._summarized === true;
-    if (isCurrentlySummarized) {
+    // The DO_WHILE task itself is never marked _summarized (unlike
+    // IterationPlaceholder objects used by InlineTaskIterations). The server
+    // may summarize by keeping only the last N real entries (no sentinel
+    // marker), so compare numeric key counts: if selectedTask has fewer
+    // iteration entries than the full data, replace it.
+    const countNumericKeys = (data: unknown) =>
+      Object.keys((data as Record<string, unknown>) ?? {}).filter(
+        (k) => !isNaN(Number(k)),
+      ).length;
+    const selectedCount = countNumericKeys(selectedTask?.outputData);
+    const fullCount = countNumericKeys(fullDoWhileTask.outputData);
+    if (selectedCount < fullCount) {
       handleSelectTask(fullDoWhileTask);
     }
     // handleSelectTask is intentionally omitted — it's a stable actor dispatch
