@@ -79,8 +79,8 @@ dependencies {
     testImplementation "org.mozilla:rhino:1.8.0"
     // Javet — Apache 2.0 JNI bindings to V8 (BSD-3-Clause). Native lib for this host's
     // arch only; add other -macos-x86_64 / -linux-x86_64 / -linux-arm64 variants for prod.
-    testImplementation "com.caoccao.javet:javet:4.1.2"
-    testImplementation "com.caoccao.javet:javet-v8-macos-arm64:4.1.2"
+    testImplementation "com.caoccao.javet:javet:5.0.8"
+    testImplementation "com.caoccao.javet:javet-v8-macos-arm64:5.0.8"
 }
 
 // Standalone benchmark runner for comparing JS engines on representative Inline-task scripts.
