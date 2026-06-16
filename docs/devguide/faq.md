@@ -153,6 +153,21 @@ Yes. Workers can be written in any language as long as they can poll and update 
 - **Ruby** — [conductor-oss/ruby-sdk](https://github.com/conductor-oss/ruby-sdk)
 - **Rust** — [conductor-oss/rust-sdk](https://github.com/conductor-oss/rust-sdk)
 
+## The same task is scheduled twice, both showing "attempt 0". What causes this?
+
+This is almost always caused by running multiple Conductor server instances without distributed locking enabled. When locking is off, two server instances can each pick up the same workflow and independently schedule the same task — producing two identical entries, both at attempt 0, with neither aware of the other.
+
+**To fix it**, enable distributed locking so only one server processes a given workflow at a time:
+
+```properties
+conductor.app.workflowExecutionLockEnabled=true
+conductor.workflow-execution-lock.type=redis   # or zookeeper
+```
+
+See [Locking](running/deploy.md#locking) for the full configuration, including Redis and Zookeeper options.
+
+If you are running a single server instance, the cause is more likely the sweeper and an event or callback both triggering a `decide` on the same workflow simultaneously. The locking setting above resolves this case as well.
+
 ## My workflow is running and the task is SCHEDULED but it is not being processed.
 
 Make sure that the worker is actively polling for this task. Navigate to the `Task Queues` tab on the Conductor UI and select your task name in the search box. Ensure that `Last Poll Time` for this task is current.

@@ -33,11 +33,18 @@ public class GrokAIConfiguration implements ModelConfiguration<Grok> {
     private String baseURL;
     private Duration timeout = Duration.ofSeconds(600);
 
-    @Autowired private OkHttpClient conductorAiHttpClient;
+    private OkHttpClient httpClient;
 
-    public GrokAIConfiguration(String apiKey, String baseURL) {
+    public GrokAIConfiguration(String apiKey, String baseURL, OkHttpClient httpClient) {
         this.apiKey = apiKey;
         this.baseURL = baseURL;
+        this.httpClient = httpClient;
+    }
+
+    @Autowired
+    @Override
+    public void setHttpClient(OkHttpClient httpClient) {
+        this.httpClient = httpClient;
     }
 
     public String getBaseURL() {
@@ -46,6 +53,6 @@ public class GrokAIConfiguration implements ModelConfiguration<Grok> {
 
     @Override
     public Grok get() {
-        return new Grok(this, conductorAiHttpClient);
+        return new Grok(this, httpClient);
     }
 }
