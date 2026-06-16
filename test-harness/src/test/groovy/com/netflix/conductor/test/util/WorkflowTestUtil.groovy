@@ -242,7 +242,16 @@ class WorkflowTestUtil {
      * @return A Tuple of taskResult and acknowledgement of the poll
      */
     Tuple pollAndFailTask(String taskName, String workerId, String failureReason, Map<String, Object> outputParams = null, int waitAtEndSeconds = 0) {
-        def polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
+        Task polledIntegrationTask = null
+        for (int attempt = 0; attempt < 4 && polledIntegrationTask == null; attempt++) {
+            if (attempt > 0) {
+                Thread.sleep(200)
+            }
+            polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
+        }
+        if (polledIntegrationTask == null) {
+            return new Tuple(null, null)
+        }
         def taskResult = new TaskResult(polledIntegrationTask)
         taskResult.status = TaskResult.Status.FAILED
         taskResult.reasonForIncompletion = failureReason
@@ -280,7 +289,13 @@ class WorkflowTestUtil {
      * @return A Tuple of polledTask and acknowledgement of the poll
      */
     Tuple pollAndCompleteTask(String taskName, String workerId, Map<String, Object> outputParams = null, int waitAtEndSeconds = 0) {
-        def polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
+        Task polledIntegrationTask = null
+        for (int attempt = 0; attempt < 4 && polledIntegrationTask == null; attempt++) {
+            if (attempt > 0) {
+                Thread.sleep(200)
+            }
+            polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
+        }
         if (polledIntegrationTask == null) {
             return new Tuple(null, null)
         }
