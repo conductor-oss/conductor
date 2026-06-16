@@ -52,6 +52,7 @@ import io.orkes.conductor.dao.scheduler.SchedulerDAO;
 import io.orkes.conductor.health.RedisMonitor;
 import io.orkes.conductor.scheduler.config.SchedulerConditions;
 import io.orkes.conductor.scheduler.config.SchedulerProperties;
+import io.orkes.conductor.scheduler.listener.ScheduleChangeListener;
 import io.orkes.conductor.scheduler.model.CronSchedule;
 import io.orkes.conductor.scheduler.model.NextScheduleResult;
 import io.orkes.conductor.scheduler.model.WorkflowSchedule;
@@ -85,6 +86,7 @@ public class SchedulerService extends LifecycleAwareComponent {
     protected final SchedulerProperties properties;
     private final SchedulerTimeProvider schedulerTimeProvider;
     private final ObjectMapper objectMapper;
+    private final ScheduleChangeListener scheduleChangeListener;
 
     protected AtomicInteger scheduleWfPollerBackoff = new AtomicInteger(0);
     protected AtomicBoolean pauseScheduler = new AtomicBoolean(false);
@@ -111,7 +113,8 @@ public class SchedulerService extends LifecycleAwareComponent {
             SchedulerProperties properties,
             SchedulerTimeProvider schedulerTimeProvider,
             Lock lock,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            ScheduleChangeListener scheduleChangeListener) {
         this.schedulerArchivalDAO = schedulerArchivalDAO;
         this.schedulerDAO = schedulerDAO;
         this.workflowService = workflowService;
@@ -122,6 +125,7 @@ public class SchedulerService extends LifecycleAwareComponent {
         this.schedulerTimeProvider = schedulerTimeProvider;
         this.conductorLock = lock;
         this.objectMapper = objectMapper;
+        this.scheduleChangeListener = scheduleChangeListener;
         this.sesArchival =
                 schedulerServiceExecutor.getExecutorServiceArchivalQueuePoll(
                         properties.getArchivalThreadCount());
@@ -1081,7 +1085,24 @@ public class SchedulerService extends LifecycleAwareComponent {
                     updateModel.getName());
             removeScheduleQueueMessages(updateModel);
         }
+        publishSaveEvent(existingSchedule, updateModel);
         return updateModel;
+    }
+
+    /**
+     * Publishes the appropriate listener event for a create-or-update operation. Uses the prior vs.
+     * new paused state to distinguish PAUSED / RESUMED transitions from a generic UPDATE.
+     */
+    private void publishSaveEvent(WorkflowScheduleModel existing, WorkflowScheduleModel updated) {
+        if (existing == null) {
+            scheduleChangeListener.onScheduleRegistered(updated);
+        } else if (existing.isPaused() && !updated.isPaused()) {
+            scheduleChangeListener.onScheduleResumed(updated);
+        } else if (!existing.isPaused() && updated.isPaused()) {
+            scheduleChangeListener.onSchedulePaused(updated);
+        } else {
+            scheduleChangeListener.onScheduleUpdated(updated);
+        }
     }
 
     public WorkflowSchedule getSchedule(String name) {
@@ -1103,6 +1124,7 @@ public class SchedulerService extends LifecycleAwareComponent {
         }
         removeScheduleQueueMessages(wsm);
         schedulerDAO.deleteWorkflowSchedule(wsm.getName());
+        scheduleChangeListener.onScheduleDeleted(wsm.getName());
     }
 
     public void pauseSchedule(String name) {
@@ -1121,6 +1143,7 @@ public class SchedulerService extends LifecycleAwareComponent {
         wsm.setPausedReason(pausedReason);
         removeScheduleQueueMessages(wsm);
         schedulerDAO.updateSchedule(wsm);
+        scheduleChangeListener.onSchedulePaused(wsm);
     }
 
     public void resumeSchedule(String name) {
