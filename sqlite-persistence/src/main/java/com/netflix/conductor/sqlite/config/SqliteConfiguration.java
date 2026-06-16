@@ -19,6 +19,7 @@ import java.util.Optional;
 
 import javax.sql.DataSource;
 
+import org.conductoross.conductor.sqlite.dao.SqliteFileMetadataDAO;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -195,6 +196,15 @@ public class SqliteConfiguration {
         retryTemplate.setRetryPolicy(retryPolicy);
         retryTemplate.setBackOffPolicy(backOffPolicy);
         return retryTemplate;
+    }
+
+    @Bean
+    @DependsOn({"flywayForPrimaryDb"})
+    @ConditionalOnProperty(name = "conductor.file-storage.enabled", havingValue = "true")
+    public SqliteFileMetadataDAO sqliteFileMetadataDAO(
+            @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        return new SqliteFileMetadataDAO(retryTemplate, objectMapper, dataSource);
     }
 
     public static class CustomRetryPolicy extends SimpleRetryPolicy {
