@@ -19,7 +19,7 @@ dependencies {
     api "org.springframework.ai:spring-ai-bedrock-converse:${revSpringAI}"
     api "org.springframework.ai:spring-ai-ollama:${revSpringAI}"
 
-    api "com.google.auth:google-auth-library-oauth2-http:1.33.0"
+    api "com.google.auth:google-auth-library-oauth2-http:1.48.0"
     api "com.networknt:json-schema-validator:${revJSonSchemaValidator}"
 
     api("io.modelcontextprotocol.sdk:mcp-core:${revMCP}")
