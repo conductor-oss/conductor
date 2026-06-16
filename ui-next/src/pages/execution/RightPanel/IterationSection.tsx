@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef } from "react";
 import { AuthHeaders, TaskType } from "types/common";
 import { DoWhileSelection, ExecutionTask } from "types/Execution";
 import { featureFlags, FEATURES } from "utils/flags";
@@ -60,6 +61,45 @@ export function IterationSection({
     ? { isSummarized, onToggleSummarize: handleToggleChange }
     : { isSummarized: true, onToggleSummarize: undefined };
 
+  // Remembers the last inline iteration the user explicitly picked so we can
+  // restore it when they navigate away (e.g. to the DO_WHILE task) and back.
+  const lastInlineSelection = useRef<{
+    innerTaskRef: string;
+    iteration: number;
+  } | null>(null);
+
+  const handleSelectTaskWithMemory = useCallback(
+    (task: ExecutionTask) => {
+      handleSelectTask(task);
+      const innerRef = task.workflowTask?.taskReferenceName;
+      if (task.iteration != null && innerRef) {
+        lastInlineSelection.current = {
+          innerTaskRef: innerRef,
+          iteration: task.iteration,
+        };
+      }
+    },
+    [handleSelectTask],
+  );
+
+  // When selectedTask changes back to an inner task, restore the saved
+  // iteration if it differs from what was clicked.
+  useEffect(() => {
+    const saved = lastInlineSelection.current;
+    if (!saved) return;
+    if (selectedTask?.taskType === TaskType.DO_WHILE) return;
+    if (selectedTask?.workflowTask?.taskReferenceName !== saved.innerTaskRef)
+      return;
+    if (selectedTask?.iteration === saved.iteration) return;
+
+    const match = retryIterationOptions?.find(
+      (opt) => opt.iteration === saved.iteration && !("_placeholder" in opt),
+    );
+    if (match) handleSelectTask(match as ExecutionTask);
+    // handleSelectTask is a stable dispatch — intentionally omitted from deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTask?.taskId]);
+
   return (
     <>
       {summarizeEnabled && (
@@ -74,7 +114,7 @@ export function IterationSection({
           retryIterationOptions={retryIterationOptions}
           selectedTask={selectedTask}
           isIteration={isIteration}
-          handleSelectTask={handleSelectTask}
+          handleSelectTask={handleSelectTaskWithMemory}
           executionId={executionId}
           authHeaders={authHeaders}
           parentDoWhileRef={parentDoWhileRef}
