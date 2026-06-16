@@ -108,6 +108,14 @@ export function CollapsibleIterationList<T>({
     [onSelect, handleClose],
   );
 
+  const selectedIndex = items.findIndex(
+    (item, i) => isItemSelected?.(item, i) ?? false,
+  );
+  const triggerContent =
+    selectedIndex >= 0
+      ? renderItem(items[selectedIndex], selectedIndex)
+      : headerLabel;
+
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 3, width: "100%" }}>
       {/* Trigger — styled to match MUI Select (small) */}
@@ -132,9 +140,15 @@ export function CollapsibleIterationList<T>({
         }}
       >
         <Box
-          sx={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center" }}
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            display: "flex",
+            alignItems: "center",
+            overflow: "hidden",
+          }}
         >
-          {headerLabel}
+          {triggerContent}
         </Box>
         <CaretUpDown size={14} color={colors.gray04} />
       </Box>

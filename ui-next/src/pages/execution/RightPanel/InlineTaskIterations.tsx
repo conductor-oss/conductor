@@ -98,9 +98,11 @@ export const InlineTaskIterations = ({
     if (fullTask && !("_placeholder" in fullTask)) {
       handleSelectTask(fullTask as ExecutionTask);
     }
-    // handleSelectTask is intentionally omitted — it's a stable actor dispatch
+    // handleSelectTask is intentionally omitted — it's a stable actor dispatch.
+    // selectedTask.taskId is included so the effect re-fires when the selected
+    // task changes to a different summarized task (e.g. via iteration restore).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSummarized, fullWorkflow, resolvedOptions]);
+  }, [isSummarized, fullWorkflow, resolvedOptions, selectedTask.taskId]);
 
   const effectiveIteration = selectedTask.iteration;
   const hasKnownIteration =
