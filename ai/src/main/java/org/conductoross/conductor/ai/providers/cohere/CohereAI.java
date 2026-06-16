@@ -15,6 +15,7 @@ package org.conductoross.conductor.ai.providers.cohere;
 import java.util.List;
 
 import org.conductoross.conductor.ai.AIModel;
+import org.conductoross.conductor.ai.http.AIHttpClients;
 import org.conductoross.conductor.ai.models.ChatCompletion;
 import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.providers.cohere.api.CohereApi;
@@ -41,7 +42,7 @@ public class CohereAI implements AIModel {
     private final CohereChatModel chatModel;
 
     public CohereAI(CohereAIConfiguration config) {
-        this(config, new OkHttpClient());
+        this(config, AIHttpClients.defaultClient());
     }
 
     public CohereAI(CohereAIConfiguration config, OkHttpClient httpClient) {

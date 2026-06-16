@@ -15,12 +15,12 @@
 [![GitHub stars](https://img.shields.io/github/stars/conductor-oss/conductor?style=social)](https://github.com/conductor-oss/conductor/stargazers)
 [![Github release](https://img.shields.io/github/v/release/conductor-oss/conductor.svg)](https://github.com/conductor-oss/conductor/releases)
 [![License](https://img.shields.io/github/license/conductor-oss/conductor.svg)](http://www.apache.org/licenses/LICENSE-2.0)
-[![Conductor Slack](https://img.shields.io/badge/Slack-Join%20the%20Community-blueviolet?logo=slack)](https://join.slack.com/t/orkes-conductor/shared_invite/zt-2vdbx239s-Eacdyqya9giNLHfrCavfaA)
+[![Conductor Slack](https://img.shields.io/badge/Slack-Join%20the%20Community-blueviolet?logo=slack)](https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA)
 [![Conductor OSS](https://img.shields.io/badge/Conductor%20OSS-Visit%20Site-blue)](https://conductor-oss.org)
 
 #### Orchestrating distributed systems means wrestling with failures, retries, and state recovery. Conductor handles all of that so you don't have to.
 
-Conductor is an open-source, durable workflow engine built at [Netflix](https://netflixtechblog.com/netflix-conductor-a-microservices-orchestrator-2e8d4771bf40) for orchestrating microservices, AI agents, and durable workflows at internet scale. Trusted in production at Netflix, Tesla, LinkedIn, and J.P. Morgan. Actively maintained by [Orkes](https://orkes.io) and a growing [community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-2vdbx239s-Eacdyqya9giNLHfrCavfaA).
+Conductor is an open-source, durable workflow engine built at [Netflix](https://netflixtechblog.com/netflix-conductor-a-microservices-orchestrator-2e8d4771bf40) for orchestrating microservices, AI agents, and durable workflows at internet scale. Trusted in production at Netflix, Tesla, LinkedIn, and J.P. Morgan. Actively maintained by [Orkes](https://orkes.io) and a growing [community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA).
 
 [![conductor_oss_getting_started](https://github.com/user-attachments/assets/6153aa58-8ad1-4ec5-93d1-38ba1b83e3f4)](https://youtu.be/4azDdDlx27M)
 
@@ -35,7 +35,14 @@ npm install -g @conductor-oss/conductor-cli
 conductor server start
 ```
 
-Open [http://localhost:8080](http://localhost:8080) — your server is running with the built-in UI.
+Open [http://localhost:8080](http://localhost:8080) — your server is running with the built-in ui-next UI.
+
+> **Upgrading from a previous version?** The CLI caches the server JAR at `~/.conductor-cli/`. If you have an older version cached, force a fresh download:
+> ```shell
+> conductor server start latest
+> # or delete the cache manually
+> rm ~/.conductor-cli/conductor-server-latest.jar && conductor server start
+> ```
 
 **Run your first workflow:**
 
@@ -53,10 +60,11 @@ conductor workflow start -w hello_workflow --sync
 
 See the [Quickstart guide](https://docs.conductor-oss.org/quickstart/) for the full walkthrough, including writing workers and replaying workflows.
 
-**Docker Image for Conductor:**
+**Docker Image for Conductor** (includes the ui-next UI):
 
 ```shell
-docker run -p 8080:8080 conductoross/conductor:latest # replace latest with the published version to pin to a specific version
+# UI at http://localhost:5000  |  API at http://localhost:8080
+docker run -p 5000:5000 -p 8080:8080 conductoross/conductor:next
 ```
 
 All CLI commands have equivalent cURL/API calls. See the [Quickstart](https://docs.conductor-oss.org/quickstart/) for details.
@@ -199,7 +207,7 @@ powershell -c "irm https://conductor-oss.github.io/conductor-skills/install.ps1 
 # Documentation & Community
 
 - **[Documentation](https://conductor-oss.org)** — Architecture, guides, API reference, and cookbook recipes.
-- **[Slack](https://join.slack.com/t/orkes-conductor/shared_invite/zt-2vdbx239s-Eacdyqya9giNLHfrCavfaA)** — Community discussions and support.
+- **[Slack](https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA)** — Community discussions and support.
 - **[Community Forum](https://community.orkes.io/)** — Ask questions and share patterns.
 
 ---
@@ -225,20 +233,38 @@ powershell -c "irm https://conductor-oss.github.io/conductor-skills/install.ps1 
 <details>
 <summary><strong>Requirements and instructions</strong></summary>
 
-**Requirements:** Docker Desktop, Java (JDK) 21+, Node 18 (for UI)
+**Requirements:** Docker Desktop, Java (JDK) 21+, Node.js 18+ and pnpm (for UI)
 
 ```shell
 git clone https://github.com/conductor-oss/conductor
 cd conductor
 ./gradlew build
 
-# (optional) Build UI
-# ./build_ui.sh
+# (optional) Build UI (ui-next) and embed it in the server
+# ./build_ui_next.sh
 
 # Start local server
 cd server
 ../gradlew bootRun
 ```
+
+**Run the UI in dev mode (hot-reload at http://localhost:1234):**
+
+Requires a running Conductor server on `http://localhost:8080`. Enable `corepack` once if you haven't already:
+
+```shell
+corepack enable
+```
+
+Then start the dev server:
+
+```shell
+cd ui-next
+pnpm install
+pnpm dev
+```
+
+Open [http://localhost:1234](http://localhost:1234) — the UI reloads automatically on file changes.
 
 See the [full build guide](docs/devguide/running/source.md) for details.
 </details>

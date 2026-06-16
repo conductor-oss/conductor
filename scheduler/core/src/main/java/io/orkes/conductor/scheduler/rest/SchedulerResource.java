@@ -12,9 +12,12 @@
  */
 package io.orkes.conductor.scheduler.rest;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.netflix.conductor.common.run.SearchResult;
 
+import io.orkes.conductor.scheduler.config.SchedulerConditions;
 import io.orkes.conductor.scheduler.model.WorkflowSchedule;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
 import io.orkes.conductor.scheduler.service.SchedulerService;
@@ -44,7 +48,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
  * {@code /api/scheduler}.
  */
 @RestController
-@ConditionalOnBean(SchedulerService.class)
+@Conditional(SchedulerConditions.class)
 @RequestMapping("/api/scheduler")
 @Tag(name = "Scheduler", description = "Workflow scheduling API")
 public class SchedulerResource {
@@ -85,7 +89,14 @@ public class SchedulerResource {
             @RequestParam(value = "freeText", required = false, defaultValue = "*") String freeText,
             @RequestParam(value = "start", required = false, defaultValue = "0") int start,
             @RequestParam(value = "size", required = false, defaultValue = "100") int size,
-            @RequestParam(value = "sort", required = false) List<String> sortOptions) {
+            @RequestParam(value = "sort", required = false) String sort) {
+        List<String> sortOptions =
+                sort == null || sort.isBlank()
+                        ? List.of()
+                        : Arrays.stream(sort.split(","))
+                                .map(String::trim)
+                                .filter(s -> !s.isEmpty())
+                                .toList();
         return schedulerService.searchSchedules(
                 workflowName, scheduleName, paused, freeText, start, size, sortOptions);
     }
@@ -97,7 +108,7 @@ public class SchedulerResource {
     }
 
     @DeleteMapping("/schedules/{name}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Delete a schedule")
     public void deleteSchedule(@PathVariable("name") String name) {
         schedulerService.deleteSchedule(name);
@@ -139,6 +150,30 @@ public class SchedulerResource {
     }
 
     // -------------------------------------------------------------------------
+    // Admin
+    // -------------------------------------------------------------------------
+
+    @GetMapping(value = "/admin/requeue", produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Requeue all execution records")
+    public Map<String, Object> requeueAllExecutionRecords() {
+        return schedulerService.requeueAllExecutionRecords();
+    }
+
+    @GetMapping(value = "/admin/pause", produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Pause all scheduling on this server instance (for debugging only)")
+    public Map<String, Object> pauseAllSchedules() {
+        schedulerService.pauseScheduler(true);
+        return Collections.singletonMap("status", "done");
+    }
+
+    @GetMapping(value = "/admin/resume", produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Resume all scheduling on this server instance")
+    public Map<String, Object> resumeAllSchedules() {
+        schedulerService.pauseScheduler(false);
+        return Collections.singletonMap("status", "done");
+    }
+
+    // -------------------------------------------------------------------------
     // Execution search
     // -------------------------------------------------------------------------
 
@@ -149,7 +184,14 @@ public class SchedulerResource {
             @RequestParam(value = "freeText", required = false, defaultValue = "*") String freeText,
             @RequestParam(value = "start", required = false, defaultValue = "0") int start,
             @RequestParam(value = "size", required = false, defaultValue = "100") int size,
-            @RequestParam(value = "sort", required = false) List<String> sortOptions) {
+            @RequestParam(value = "sort", required = false) String sort) {
+        List<String> sortOptions =
+                sort == null || sort.isBlank()
+                        ? List.of()
+                        : Arrays.stream(sort.split(","))
+                                .map(String::trim)
+                                .filter(s -> !s.isEmpty())
+                                .toList();
         return schedulerService.searchScheduledExecutions(
                 query, freeText, start, size, sortOptions);
     }
