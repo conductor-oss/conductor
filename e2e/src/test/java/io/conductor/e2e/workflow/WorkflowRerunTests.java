@@ -1591,7 +1591,10 @@ public class WorkflowRerunTests {
             Workflow newSubWf2 = workflowClient.getWorkflow(newSubWfId2, true);
             completeTask(newSubWf2.getTasks().get(0), TaskResult.Status.COMPLETED);
 
-            await().atMost(10, TimeUnit.SECONDS)
+            // Wait must cover a multi-hop propagation: inner SIMPLE COMPLETED -> sub_wf_fork2
+            // sub-workflow completion (driven by sweeper) -> JOIN evaluation -> parent schedules
+            // simpleTaskAfter. Under parallel e2e load this can exceed 10s.
+            await().atMost(30, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Workflow wf = workflowClient.getWorkflow(workflowId, true);

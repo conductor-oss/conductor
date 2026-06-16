@@ -43,6 +43,7 @@ import com.netflix.conductor.service.WorkflowService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.orkes.conductor.health.RedisMonitor;
 import io.orkes.conductor.scheduler.config.SchedulerProperties;
+import io.orkes.conductor.scheduler.listener.ScheduleChangeListenerStub;
 import io.orkes.conductor.scheduler.model.CronSchedule;
 import io.orkes.conductor.scheduler.model.NextScheduleResult;
 import io.orkes.conductor.scheduler.model.WorkflowSchedule;
@@ -110,7 +111,8 @@ class SchedulerServiceTest {
                 properties,
                 timeProvider,
                 lock,
-                objectMapper);
+                objectMapper,
+                new ScheduleChangeListenerStub());
     }
 
     private SchedulerService createServiceWithRedisHealthy(SchedulerTimeProvider timeProvider) {
@@ -520,7 +522,8 @@ class SchedulerServiceTest {
                         properties,
                         mockTimeProvider,
                         lock,
-                        objectMapper);
+                        objectMapper,
+                        new ScheduleChangeListenerStub());
 
         var testSchedule = new WorkflowScheduleModel();
         testSchedule.setPaused(true);

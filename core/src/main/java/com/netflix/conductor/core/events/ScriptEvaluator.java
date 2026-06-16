@@ -17,6 +17,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import org.graalvm.polyglot.*;
+import org.graalvm.polyglot.io.IOAccess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,8 +55,19 @@ public class ScriptEvaluator {
     private static final Engine ENGINE = buildEngine();
 
     private static Engine buildEngine() {
+        // allowExperimentalOptions is required because js.load / js.print /
+        // js.console are flagged experimental in current Graal even though
+        // they are the documented switches for disabling those features.
+        // The "experimental" tag means the option name/semantics may change
+        // between Graal versions — not that the option is unsafe.
         Engine engine =
-                Engine.newBuilder("js").option("engine.WarnInterpreterOnly", "false").build();
+                Engine.newBuilder("js")
+                        .allowExperimentalOptions(true)
+                        .option("engine.WarnInterpreterOnly", "false")
+                        .option("js.load", "false")
+                        .option("js.print", "false")
+                        .option("js.console", "false")
+                        .build();
         // Log once so operators can confirm whether the optimizing runtime is engaged.
         // "GraalVM" => JIT-compiling Truffle runtime; "Default" => interpreter-only fallback.
         LOGGER.info(
@@ -168,7 +180,16 @@ public class ScriptEvaluator {
                         .denyAccess(Thread.class)
                         .denyAccess(ThreadGroup.class)
                         .build();
-        return Context.newBuilder("js").engine(ENGINE).allowHostAccess(hostAccess).build();
+        return Context.newBuilder("js")
+                .engine(ENGINE)
+                .allowHostAccess(hostAccess)
+                .allowHostClassLoading(false)
+                .allowNativeAccess(false)
+                .allowCreateThread(false)
+                .allowCreateProcess(false)
+                .allowIO(IOAccess.NONE)
+                .allowEnvironmentAccess(EnvironmentAccess.NONE)
+                .build();
     }
 
     /**
