@@ -35,7 +35,14 @@ npm install -g @conductor-oss/conductor-cli
 conductor server start
 ```
 
-Open [http://localhost:8080](http://localhost:8080) — your server is running with the built-in UI.
+Open [http://localhost:8080](http://localhost:8080) — your server is running with the built-in ui-next UI.
+
+> **Upgrading from a previous version?** The CLI caches the server JAR at `~/.conductor-cli/`. If you have an older version cached, force a fresh download:
+> ```shell
+> conductor server start latest
+> # or delete the cache manually
+> rm ~/.conductor-cli/conductor-server-latest.jar && conductor server start
+> ```
 
 **Run your first workflow:**
 
@@ -53,10 +60,11 @@ conductor workflow start -w hello_workflow --sync
 
 See the [Quickstart guide](https://docs.conductor-oss.org/quickstart/) for the full walkthrough, including writing workers and replaying workflows.
 
-**Docker Image for Conductor:**
+**Docker Image for Conductor** (includes the ui-next UI):
 
 ```shell
-docker run -p 8080:8080 conductoross/conductor:latest # replace latest with the published version to pin to a specific version
+# UI at http://localhost:5000  |  API at http://localhost:8080
+docker run -p 5000:5000 -p 8080:8080 conductoross/conductor:next
 ```
 
 All CLI commands have equivalent cURL/API calls. See the [Quickstart](https://docs.conductor-oss.org/quickstart/) for details.
@@ -225,20 +233,38 @@ powershell -c "irm https://conductor-oss.github.io/conductor-skills/install.ps1 
 <details>
 <summary><strong>Requirements and instructions</strong></summary>
 
-**Requirements:** Docker Desktop, Java (JDK) 21+, Node 18 (for UI)
+**Requirements:** Docker Desktop, Java (JDK) 21+, Node.js 18+ and pnpm (for UI)
 
 ```shell
 git clone https://github.com/conductor-oss/conductor
 cd conductor
 ./gradlew build
 
-# (optional) Build UI
-# ./build_ui.sh
+# (optional) Build UI (ui-next) and embed it in the server
+# ./build_ui_next.sh
 
 # Start local server
 cd server
 ../gradlew bootRun
 ```
+
+**Run the UI in dev mode (hot-reload at http://localhost:1234):**
+
+Requires a running Conductor server on `http://localhost:8080`. Enable `corepack` once if you haven't already:
+
+```shell
+corepack enable
+```
+
+Then start the dev server:
+
+```shell
+cd ui-next
+pnpm install
+pnpm dev
+```
+
+Open [http://localhost:1234](http://localhost:1234) — the UI reloads automatically on file changes.
 
 See the [full build guide](docs/devguide/running/source.md) for details.
 </details>
