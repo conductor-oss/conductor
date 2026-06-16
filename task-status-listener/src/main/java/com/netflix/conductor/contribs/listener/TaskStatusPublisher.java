@@ -77,9 +77,7 @@ public class TaskStatusPublisher implements TaskStatusListener {
                     publishTaskNotification(taskNotification);
                     LOGGER.debug("Task {} publish is successful.", taskNotification.getTaskId());
                     Monitors.recordWebhookPublishSuccess(
-                            NOTIFICATION_TYPE,
-                            task.getTaskDefName(),
-                            task.getStatus().name());
+                            NOTIFICATION_TYPE, task.getTaskDefName(), task.getStatus().name());
                     Thread.sleep(5);
                 } catch (Exception e) {
                     if (taskNotification != null) {
