@@ -90,6 +90,7 @@ export enum TaskType {
   CHUNK_TEXT = "CHUNK_TEXT",
   LIST_FILES = "LIST_FILES",
   PARSE_DOCUMENT = "PARSE_DOCUMENT",
+  GDRIVE_READ = "GDRIVE_READ",
 }
 
 export interface TaskDef {

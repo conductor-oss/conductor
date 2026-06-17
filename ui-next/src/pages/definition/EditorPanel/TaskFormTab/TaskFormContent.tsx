@@ -10,6 +10,7 @@ import {
   DynamicForkOperatorForm,
   DynamicOperatorForm,
   EventTaskForm,
+  GDriveReadTaskForm,
   GetSignedJwtForm,
   GetWorkflowTaskForm,
   HTTPPollTaskForm,
@@ -98,6 +99,8 @@ const getTaskForm = (type: string) => {
       return GetSignedJwtForm;
     case TaskType.UPDATE_TASK:
       return UpdateTaskForm;
+    case TaskType.GDRIVE_READ:
+      return GDriveReadTaskForm;
     case TaskType.INTEGRATION:
       return MCPTaskForm;
 

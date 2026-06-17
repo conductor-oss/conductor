@@ -568,6 +568,16 @@ export interface ParseDocumentTaskDef extends CommonTaskDef {
   };
 }
 
+export interface GDriveReadTaskDef extends CommonTaskDef {
+  type: TaskType.GDRIVE_READ;
+  inputParameters: {
+    folderId: string;
+    oauthTokenJson: string;
+    maxFiles?: number;
+    mimeTypes?: string[];
+  };
+}
+
 export type LLMTaskTypes =
   | LLMGenerateEmbeddings
   | LLMGetEmbeddings
@@ -623,4 +633,5 @@ export type FormTaskType =
   | TaskType.INTEGRATION
   | TaskType.CHUNK_TEXT
   | TaskType.LIST_FILES
-  | TaskType.PARSE_DOCUMENT;
+  | TaskType.PARSE_DOCUMENT
+  | TaskType.GDRIVE_READ;

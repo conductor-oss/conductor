@@ -67,6 +67,12 @@ export const SYSTEM_TASKS: BaseTaskMenuItem[] = [
     category: "System",
   },
   {
+    name: "Google Drive Read",
+    description: "Read file metadata from a Google Drive folder.",
+    type: TaskType.GDRIVE_READ,
+    category: "System",
+  },
+  {
     name: "Get Signed JWT Task",
     description: "Get signed JWT task.",
     type: TaskType.GET_SIGNED_JWT,

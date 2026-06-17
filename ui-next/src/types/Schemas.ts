@@ -1540,6 +1540,50 @@ export const listFilesTaskSchema = {
   },
 };
 
+export const gDriveReadTaskSchema = {
+  $id: "/properties/tasks/gDriveReadTaskSchema",
+  type: "object",
+  description: "Google Drive read task",
+  default: {
+    name: "gdrive_read_task_ref",
+    taskReferenceName: "gdrive_read_task_ref",
+    type: TaskType.GDRIVE_READ,
+    inputParameters: {
+      folderId: "${workflow.input.driveFolderId}",
+      oauthTokenJson: "${workflow.input.oauthTokenJson}",
+      maxFiles: 100,
+    },
+  },
+  required: ["name", "taskReferenceName", "type", "inputParameters"],
+  properties: {
+    name: { $ref: nameSchema.$id },
+    taskReferenceName: { $ref: taskReferenceName.$id },
+    type: { const: TaskType.GDRIVE_READ },
+    inputParameters: {
+      type: "object",
+      required: ["folderId", "oauthTokenJson"],
+      properties: {
+        folderId: {
+          type: "string",
+        },
+        oauthTokenJson: {
+          type: "string",
+        },
+        maxFiles: {
+          type: "number",
+        },
+        mimeTypes: {
+          type: "array",
+          items: {
+            type: "string",
+          },
+        },
+      },
+      additionalProperties: true,
+    },
+  },
+};
+
 export const parseDocumentTaskSchema = {
   $id: "/properties/tasks/parseDocumentTaskSchema",
   type: "object",
@@ -1676,6 +1720,7 @@ export const schemasByType = {
   [TaskType.CHUNK_TEXT]: chunkTextTaskSchema,
   [TaskType.LIST_FILES]: listFilesTaskSchema,
   [TaskType.PARSE_DOCUMENT]: parseDocumentTaskSchema,
+  [TaskType.GDRIVE_READ]: gDriveReadTaskSchema,
 };
 
 // Object.values(TaskType)

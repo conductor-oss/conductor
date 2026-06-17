@@ -45,6 +45,7 @@ import ErrorPage from "pages/error/ErrorPage";
 import { EventMonitor } from "pages/eventMonitor/EventMonitor";
 import { EventMonitorDetail } from "pages/eventMonitor/EventMonitorDetail/EventMonitorDetail";
 import { SchedulerExecutions, WorkflowSearch } from "pages/executions";
+import { Integrations } from "pages/integrations";
 import { pluginRegistry } from "plugins/registry";
 import { RouteObject } from "react-router-dom";
 import { featureFlags, FEATURES } from "utils";
@@ -52,6 +53,7 @@ import {
   API_REFERENCE_URL,
   EVENT_HANDLERS_URL,
   EVENT_MONITOR_URL,
+  INTEGRATIONS_MANAGEMENT_URL,
   NEW_TASK_DEF_URL,
   RUN_WORKFLOW_URL,
   SCHEDULER_DEFINITION_URL,
@@ -161,6 +163,12 @@ const getCoreAuthenticatedRoutes = () => [
   {
     path: EVENT_MONITOR_URL.NAME,
     element: <EventMonitorDetail />,
+  },
+
+  // Integrations
+  {
+    path: INTEGRATIONS_MANAGEMENT_URL.BASE,
+    element: <Integrations />,
   },
 
   // API Reference

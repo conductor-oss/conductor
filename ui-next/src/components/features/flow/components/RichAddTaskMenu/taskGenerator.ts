@@ -54,6 +54,7 @@ import {
   ChunkTextTaskDef,
   ListFilesTaskDef,
   ParseDocumentTaskDef,
+  GDriveReadTaskDef,
 } from "types";
 import { HTTP_TEST_ENDPOINT } from "utils/constants/common";
 import { BaseTaskMenuItem } from "./state/types";
@@ -726,6 +727,20 @@ export const generateListFilesTask: GenerateTaskFn<ListFilesTaskDef> = ({
   ...overrides,
 });
 
+export const generateGDriveReadTask: GenerateTaskFn<GDriveReadTaskDef> = ({
+  overrides = {},
+  nameGenerator = generateNameAndTaskReference,
+} = DEFAULT_ARGS): GDriveReadTaskDef => ({
+  ...nameGenerator("gdrive_read"),
+  type: TaskType.GDRIVE_READ,
+  inputParameters: {
+    folderId: "${workflow.input.driveFolderId}",
+    oauthTokenJson: "${workflow.input.oauthTokenJson}",
+    maxFiles: 100,
+  },
+  ...overrides,
+});
+
 export const taskGeneratorMap = {
   [TaskType.WAIT]: generateWaitTask,
   [TaskType.HTTP]: generateHTTPTask,
@@ -776,6 +791,7 @@ export const taskGeneratorMap = {
   [TaskType.CHUNK_TEXT]: generateChunkTextTask,
   [TaskType.LIST_FILES]: generateListFilesTask,
   [TaskType.PARSE_DOCUMENT]: generateParseDocumentTask,
+  [TaskType.GDRIVE_READ]: generateGDriveReadTask,
 } satisfies Record<FormTaskType, GenerateTaskFn<any>>;
 
 export const uniqueTaskIdGenerator = (sr: BaseTaskMenuItem) => {

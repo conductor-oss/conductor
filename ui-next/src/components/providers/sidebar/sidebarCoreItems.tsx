@@ -10,6 +10,7 @@
  */
 
 import CodeIcon from "@mui/icons-material/Code";
+import IntegrationInstructionsIcon from "@mui/icons-material/IntegrationInstructions";
 import PlayIcon from "@mui/icons-material/PlayArrowOutlined";
 import PlaylistPlayIcon from "@mui/icons-material/PlaylistPlay";
 import SupportIcon from "@mui/icons-material/Support";
@@ -20,6 +21,7 @@ import { FEATURES, featureFlags } from "utils";
 import {
   EVENT_HANDLERS_URL,
   NEW_TASK_DEF_URL,
+  INTEGRATIONS_MANAGEMENT_URL,
   RUN_WORKFLOW_URL,
   SCHEDULER_DEFINITION_URL,
   SCHEDULER_EXECUTION_URL,
@@ -44,8 +46,9 @@ const CORE_SIDEBAR_POSITIONS = {
     executionsSubMenu: 100,
     runWorkflow: 200,
     definitionsSubMenu: 300,
-    helpMenu: 400,
-    swaggerItem: 500,
+    integrationsItem: 400,
+    helpMenu: 500,
+    swaggerItem: 600,
   },
   // Executions submenu children
   EXECUTIONS: {
@@ -197,6 +200,17 @@ export function getCoreSidebarItems(open: boolean): MenuItemType[] {
           position: D.schedulerDefItem,
         },
       ],
+    },
+    // Integrations
+    {
+      id: "integrationsItem",
+      title: "Integrations",
+      icon: <IntegrationInstructionsIcon />,
+      linkTo: INTEGRATIONS_MANAGEMENT_URL.BASE,
+      shortcuts: [],
+      hotkeys: "",
+      hidden: false,
+      position: R.integrationsItem,
     },
     // Help menu
     {

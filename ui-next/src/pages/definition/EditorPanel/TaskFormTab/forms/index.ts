@@ -5,6 +5,7 @@ export * from "./DoWhileTaskForm";
 export * from "./DynamicForkOperatorForm";
 export * from "./EventTaskForm";
 export * from "./GetDocumentTaskForm";
+export * from "./GDriveReadTaskForm";
 export * from "./GetWorkflowTaskForm";
 export * from "./HTTPTaskForm";
 // HumanTaskForm moved to enterprise/plugins/human-tasks/components/HumanTaskForm
