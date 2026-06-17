@@ -33,11 +33,18 @@ public class PerplexityAIConfiguration implements ModelConfiguration<PerplexityA
     private String baseURL;
     private Duration timeout = Duration.ofSeconds(600);
 
-    @Autowired private OkHttpClient conductorAiHttpClient;
+    private OkHttpClient httpClient;
 
-    public PerplexityAIConfiguration(String apiKey, String baseURL) {
+    public PerplexityAIConfiguration(String apiKey, String baseURL, OkHttpClient httpClient) {
         this.apiKey = apiKey;
         this.baseURL = baseURL;
+        this.httpClient = httpClient;
+    }
+
+    @Autowired
+    @Override
+    public void setHttpClient(OkHttpClient httpClient) {
+        this.httpClient = httpClient;
     }
 
     public String getBaseURL() {
@@ -46,6 +53,6 @@ public class PerplexityAIConfiguration implements ModelConfiguration<PerplexityA
 
     @Override
     public PerplexityAI get() {
-        return new PerplexityAI(this, conductorAiHttpClient);
+        return new PerplexityAI(this, httpClient);
     }
 }
