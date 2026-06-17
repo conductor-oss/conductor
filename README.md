@@ -8,7 +8,7 @@
 
 
 <h1 align="center" style="border-bottom: none">
-    Conductor - Internet scale Agentic Workflow Engine
+    Conductor - Internet scale Agentic Workflow
 </h1>
 
 
