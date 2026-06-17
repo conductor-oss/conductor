@@ -26,6 +26,7 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class ExecutorUtilsTest {
@@ -243,6 +244,34 @@ public class ExecutorUtilsTest {
         workflow.setWorkflowDefinition(workflowDef);
         workflow.setTasks(tasks);
         return workflow;
+    }
+
+    @Test
+    public void hasInProgressHumanTaskTrueForInProgressHuman() {
+        WorkflowModel workflow =
+                newWorkflow(
+                        Arrays.asList(
+                                newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.COMPLETED),
+                                newTask(TaskType.TASK_TYPE_HUMAN, TaskModel.Status.IN_PROGRESS)),
+                        0);
+        assertTrue(ExecutorUtils.hasInProgressHumanTask(workflow));
+    }
+
+    @Test
+    public void hasInProgressHumanTaskFalseWhenNoInProgressHuman() {
+        WorkflowModel noHuman =
+                newWorkflow(
+                        Arrays.asList(
+                                newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.IN_PROGRESS)),
+                        0);
+        assertFalse(ExecutorUtils.hasInProgressHumanTask(noHuman));
+
+        WorkflowModel terminalHuman =
+                newWorkflow(
+                        Arrays.asList(
+                                newTask(TaskType.TASK_TYPE_HUMAN, TaskModel.Status.COMPLETED)),
+                        0);
+        assertFalse(ExecutorUtils.hasInProgressHumanTask(terminalHuman));
     }
 
     private TaskModel newTask(String taskType, TaskModel.Status status) {
