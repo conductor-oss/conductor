@@ -18,6 +18,7 @@ window.conductor = {
 
   // Enterprise Features - DISABLED for OSS
   WORKFLOW_INTROSPECTION: false,
+  WORKFLOW_SUMMARIZE: false,
   HUMAN_TASK: false,
   INTEGRATIONS: false,
   SECRETS: false,
