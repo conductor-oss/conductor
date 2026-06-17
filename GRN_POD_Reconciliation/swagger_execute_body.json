@@ -1,0 +1,16 @@
+{
+  "name": "grn_pod_reconciliation",
+  "version": 1,
+  "input": {
+    "driveFolderId": "YOUR_GOOGLE_DRIVE_FOLDER_ID",
+    "localInputDir": "data/input",
+    "mimeTypes": [
+      "application/pdf",
+      "image/jpeg",
+      "image/png",
+      "image/tiff",
+      "image/webp"
+    ],
+    "maxFiles": 10
+  }
+}
