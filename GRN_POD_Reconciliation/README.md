@@ -50,7 +50,7 @@ http://localhost:8089/
 
 Then create or refresh the local OAuth token:
 
-```powershell
+```bash
 python authorize_gdrive.py
 ```
 
@@ -63,30 +63,44 @@ Local paths:
 
 ## Install
 
+From the repository root, enter this package directory:
+
+```bash
+cd GRN_POD_Reconciliation
+```
+
+macOS/Linux:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r requirements.txt
+```
+
+Windows PowerShell:
+
 ```powershell
-cd D:\Profintech\Work\finteract-conductor\GRN_POD_Reconciliation
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 ## Start Conductor With Docker
 
 You need a running Conductor server before registering metadata, starting workers, or calling the workflow API.
 
-### Option 1: Official All-In-One Image
+Use the all-in-one Docker image for local execution on Windows, macOS, or Linux:
 
-Use this option when you only need a local Conductor server quickly:
-
-```powershell
-docker run --name conductor-grn-pod -p 5000:5000 -p 8080:8080 conductoross/conductor:next
+```bash
+docker run -d --name conductor-grn-pod -p 8080:8080 conductoross/conductor:next
 ```
+
+The workflow documentation always uses Conductor API port `8080`.
 
 Local URLs:
 
 | Purpose | URL |
 |---|---|
-| Conductor UI | `http://localhost:5000` |
 | REST API base URL | `http://localhost:8080/api` |
 | Swagger UI | `http://localhost:8080/swagger-ui/index.html` |
 | Health check | `http://localhost:8080/health` |
@@ -99,48 +113,18 @@ CONDUCTOR_API_BASE_URL=http://localhost:8080/api
 
 Stop and remove the container when done:
 
-```powershell
+```bash
 docker stop conductor-grn-pod
 docker rm conductor-grn-pod
 ```
 
-### Option 2: Docker Compose From This Repository
-
-Use this option when you want to run the Conductor server image built from this checkout:
-
-```powershell
-cd D:\Profintech\Work\finteract-conductor
-docker compose -f docker/docker-compose.yaml up --build
-```
-
-The compose file in this repository maps container port `8080` to host port `8000`.
-
-Local URLs:
-
-| Purpose | URL |
-|---|---|
-| Conductor UI / server | `http://localhost:8000` |
-| REST API base URL | `http://localhost:8000/api` |
-| Swagger UI | `http://localhost:8000/swagger-ui/index.html` |
-| Health check | `http://localhost:8000/health` |
-
-Set this in `.env`:
-
-```text
-CONDUCTOR_API_BASE_URL=http://localhost:8000/api
-```
-
-Stop the stack when done:
-
-```powershell
-docker compose -f docker/docker-compose.yaml down
-```
+If a previous container with the same name exists, remove it first with `docker rm conductor-grn-pod`.
 
 ## Register Metadata
 
 The script uses the Conductor Python SDK rather than direct HTTP calls.
 
-```powershell
+```bash
 python register_metadata.py
 ```
 
@@ -155,7 +139,7 @@ Register task definitions first, then register the workflow definition. The work
 
 Start the worker process before or immediately after starting a workflow execution:
 
-```powershell
+```bash
 python worker.py
 ```
 
@@ -163,7 +147,7 @@ On Windows, the adapter runs Conductor task runners in threads instead of SDK su
 
 ## Start Workflow
 
-```powershell
+```bash
 python start_workflow.py
 ```
 
@@ -171,7 +155,7 @@ python start_workflow.py
 
 Start `worker.py` first, then run:
 
-```powershell
+```bash
 python execute_workflow_sync.py
 ```
 
@@ -194,9 +178,9 @@ The workflow name is `grn_pod_reconciliation` and the version is `1`.
 
 Create a Postman environment with this variable:
 
-| Variable | Docker all-in-one value | Repository compose value |
-|---|---|---|
-| `baseUrl` | `http://localhost:8080/api` | `http://localhost:8000/api` |
+| Variable | Value |
+|---|---|
+| `baseUrl` | `http://localhost:8080/api` |
 
 For every request below, add this header:
 
@@ -220,7 +204,7 @@ Postman can call Conductor APIs, but it does not run the worker. Keep the `pytho
 
 The recommended path is still:
 
-```powershell
+```bash
 python register_metadata.py
 ```
 
@@ -454,7 +438,7 @@ After the item-count check, line items are reconciled by normalized item descrip
 
 To validate the integration logic step by step without Conductor:
 
-```powershell
+```bash
 python run_steps_without_conductor.py
 ```
 
@@ -462,7 +446,7 @@ Each stage writes its input, output, or failure details under `output/step_debug
 
 Useful debug modes:
 
-```powershell
+```bash
 python run_steps_without_conductor.py --fetch-only
 python run_steps_without_conductor.py --local-only
 python run_steps_without_conductor.py --start-at classify
