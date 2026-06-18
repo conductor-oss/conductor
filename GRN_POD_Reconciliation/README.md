@@ -85,40 +85,38 @@ python -m venv .venv
 python -m pip install -r requirements.txt
 ```
 
-## Start Conductor With Docker
+### Docker Compose From This Repository
 
-You need a running Conductor server before registering metadata, starting workers, or calling the workflow API.
+Use this option when you want to run the Conductor server image built from this checkout:
 
-Use the all-in-one Docker image for local execution on Windows, macOS, or Linux:
-
-```bash
-docker run -d --name conductor-grn-pod -p 8080:8080 conductoross/conductor:next
+```powershell
+cd D:\Profintech\Work\finteract-conductor
+docker compose -f docker/docker-compose.yaml up --build
 ```
 
-The workflow documentation always uses Conductor API port `8080`.
+The compose file in this repository maps container port `8080` to host port `8000`.
 
 Local URLs:
 
 | Purpose | URL |
 |---|---|
-| REST API base URL | `http://localhost:8080/api` |
-| Swagger UI | `http://localhost:8080/swagger-ui/index.html` |
-| Health check | `http://localhost:8080/health` |
+| Conductor UI / server | `http://localhost:8000` |
+| REST API base URL | `http://localhost:8000/api` |
+| Swagger UI | `http://localhost:8000/swagger-ui/index.html` |
+| Health check | `http://localhost:8000/health` |
 
 Set this in `.env`:
 
 ```text
-CONDUCTOR_API_BASE_URL=http://localhost:8080/api
+CONDUCTOR_API_BASE_URL=http://localhost:8000/api
 ```
 
-Stop and remove the container when done:
+Stop the stack when done:
 
-```bash
-docker stop conductor-grn-pod
-docker rm conductor-grn-pod
+```powershell
+docker compose -f docker/docker-compose.yaml down
 ```
 
-If a previous container with the same name exists, remove it first with `docker rm conductor-grn-pod`.
 
 ## Register Metadata
 

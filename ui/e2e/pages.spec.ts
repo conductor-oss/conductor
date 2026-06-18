@@ -161,4 +161,14 @@ test.describe("Page load smoke tests", () => {
     await expect(page.getByText("Workflow Workbench")).toBeVisible();
     await expect(page.getByText("Workflow Name")).toBeVisible();
   });
+
+  test("Integrations route loads", async ({ page }) => {
+    await mockCommonApis(page);
+    await page.goto("/integrations");
+    await expect(
+      page.getByRole("heading", { name: "Integrations" })
+    ).toBeVisible();
+    await expect(page.getByText("Google Drive Read")).toBeVisible();
+    await expect(page.getByText("GDRIVE_READ")).toBeVisible();
+  });
 });

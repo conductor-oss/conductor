@@ -54,4 +54,16 @@ class GDriveIntegrationServiceTest {
                 GDriveIntegrationException.class,
                 () -> GDriveIntegrationService.normalizeFolderId("folder/../bad"));
     }
+
+    @Test
+    void exchangeAuthorizationCodeRejectsMissingClientCredentials() {
+        GDriveOAuthTokenRequest request = new GDriveOAuthTokenRequest();
+        request.setAuthorizationCode("code");
+        request.setRedirectUri("http://localhost:8127/integrations");
+        request.setOauthClientJson("{\"installed\":{}}");
+
+        assertThrows(
+                GDriveIntegrationException.class,
+                () -> new GDriveIntegrationService().exchangeAuthorizationCode(request));
+    }
 }

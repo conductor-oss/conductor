@@ -31,6 +31,7 @@ import AppBarModules from "./plugins/AppBarModules";
 import CustomAppBarButtons from "./plugins/CustomAppBarButtons";
 
 import Workbench from "./pages/workbench/Workbench";
+import GDriveIntegrations from "./pages/integrations/GDriveIntegrations";
 import { getBasename } from "./utils/helpers";
 
 // Feature flag for errors inspector
@@ -95,6 +96,9 @@ export default function App() {
           <Button component={NavLink} path="/workbench">
             Workbench
           </Button>
+          <Button component={NavLink} path="/integrations">
+            Integrations
+          </Button>
           <CustomAppBarButtons />
 
           <div className={classes.toolbarRight}>
@@ -153,6 +157,9 @@ export default function App() {
             </Route>
             <Route exact path="/workbench">
               <Workbench />
+            </Route>
+            <Route exact path="/integrations">
+              <GDriveIntegrations />
             </Route>
             <Route exact path="/kitchen">
               <KitchenSink />

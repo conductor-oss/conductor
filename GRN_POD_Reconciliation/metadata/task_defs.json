@@ -1,0 +1,76 @@
+[
+  {
+    "name": "grn_pod_fetch_gdrive",
+    "description": "Fetch PDF/image documents from a configured Google Drive folder and store them locally.",
+    "retryCount": 2,
+    "timeoutSeconds": 900,
+    "responseTimeoutSeconds": 600,
+    "retryLogic": "FIXED",
+    "retryDelaySeconds": 30,
+    "inputKeys": [
+      "driveFolderId",
+      "localInputDir",
+      "mimeTypes",
+      "maxFiles"
+    ],
+    "outputKeys": [
+      "documents",
+      "localInputDir"
+    ]
+  },
+  {
+    "name": "grn_pod_classify_document",
+    "description": "Use Gemini to classify each fetched document as GRN, POD, or UNKNOWN.",
+    "retryCount": 2,
+    "timeoutSeconds": 900,
+    "responseTimeoutSeconds": 600,
+    "retryLogic": "FIXED",
+    "retryDelaySeconds": 30,
+    "inputKeys": [
+      "documents"
+    ],
+    "outputKeys": [
+      "classifiedDocuments",
+      "classificationOutputPath"
+    ]
+  },
+  {
+    "name": "grn_pod_ocr_extract_document",
+    "description": "Use Gemini OCR/vision to extract document and line-item data into structured tables.",
+    "retryCount": 2,
+    "timeoutSeconds": 1800,
+    "responseTimeoutSeconds": 1500,
+    "retryLogic": "FIXED",
+    "retryDelaySeconds": 30,
+    "inputKeys": [
+      "classifiedDocuments"
+    ],
+    "outputKeys": [
+      "records",
+      "extractedJsonPath",
+      "extractedCsvPath"
+    ]
+  },
+  {
+    "name": "grn_pod_reconcile_result",
+    "description": "Reconcile extracted GRN and POD tabular data and write the final result.",
+    "retryCount": 1,
+    "timeoutSeconds": 600,
+    "responseTimeoutSeconds": 300,
+    "retryLogic": "FIXED",
+    "retryDelaySeconds": 30,
+    "inputKeys": [
+      "records"
+    ],
+    "outputKeys": [
+      "summary",
+      "records",
+      "grnRecords",
+      "podRecords",
+      "documentMatches",
+      "reconciliationRows",
+      "reconciliationJsonPath",
+      "reconciliationCsvPath"
+    ]
+  }
+]

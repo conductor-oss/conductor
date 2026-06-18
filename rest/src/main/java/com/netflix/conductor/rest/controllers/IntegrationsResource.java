@@ -16,6 +16,8 @@ import org.conductoross.conductor.common.integrations.gdrive.GDriveIntegrationEx
 import org.conductoross.conductor.common.integrations.gdrive.GDriveIntegrationService;
 import org.conductoross.conductor.common.integrations.gdrive.GDriveLoadRequest;
 import org.conductoross.conductor.common.integrations.gdrive.GDriveLoadResponse;
+import org.conductoross.conductor.common.integrations.gdrive.GDriveOAuthTokenRequest;
+import org.conductoross.conductor.common.integrations.gdrive.GDriveOAuthTokenResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -40,6 +42,17 @@ public class IntegrationsResource {
     public GDriveLoadResponse loadGoogleDriveFolder(@RequestBody GDriveLoadRequest request) {
         try {
             return gDriveIntegrationService.loadFolder(request);
+        } catch (GDriveIntegrationException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        }
+    }
+
+    @PostMapping("/gdrive/oauth/token")
+    @Operation(summary = "Exchange a Google OAuth authorization code for token JSON")
+    public GDriveOAuthTokenResponse exchangeGoogleDriveAuthorizationCode(
+            @RequestBody GDriveOAuthTokenRequest request) {
+        try {
+            return gDriveIntegrationService.exchangeAuthorizationCode(request);
         } catch (GDriveIntegrationException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }

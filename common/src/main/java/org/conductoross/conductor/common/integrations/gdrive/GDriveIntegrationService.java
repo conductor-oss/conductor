@@ -33,6 +33,7 @@ import com.netflix.conductor.common.config.ObjectMapperProvider;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @Component
 public class GDriveIntegrationService {
@@ -82,6 +83,63 @@ public class GDriveIntegrationService {
             String refreshedAccessToken = refreshAccessToken(tokenJson);
             return new GDriveLoadResponse(
                     folderId, listFiles(folderId, refreshedAccessToken, request));
+        }
+    }
+
+    public GDriveOAuthTokenResponse exchangeAuthorizationCode(GDriveOAuthTokenRequest request) {
+        if (request == null) {
+            throw new GDriveIntegrationException("Request body is required");
+        }
+        if (isBlank(request.getAuthorizationCode())) {
+            throw new GDriveIntegrationException("Google OAuth authorization code is required");
+        }
+        if (isBlank(request.getRedirectUri())) {
+            throw new GDriveIntegrationException("Google OAuth redirect URI is required");
+        }
+
+        JsonNode clientJson = readTokenJson(request.getOauthClientJson());
+        String clientId = clientText(clientJson, "client_id");
+        String clientSecret = clientText(clientJson, "client_secret");
+        String tokenUri = clientText(clientJson, "token_uri");
+        if (isBlank(tokenUri)) {
+            tokenUri = TOKEN_URL;
+        }
+
+        if (isBlank(clientId) || isBlank(clientSecret)) {
+            throw new GDriveIntegrationException(
+                    "OAuth client JSON must contain client_id and client_secret");
+        }
+
+        String form =
+                "client_id="
+                        + encode(clientId)
+                        + "&client_secret="
+                        + encode(clientSecret)
+                        + "&code="
+                        + encode(request.getAuthorizationCode())
+                        + "&redirect_uri="
+                        + encode(request.getRedirectUri())
+                        + "&grant_type=authorization_code";
+
+        HttpRequest tokenRequest =
+                HttpRequest.newBuilder(URI.create(tokenUri))
+                        .timeout(Duration.ofSeconds(30))
+                        .header("Content-Type", "application/x-www-form-urlencoded")
+                        .POST(HttpRequest.BodyPublishers.ofString(form))
+                        .build();
+
+        JsonNode tokenResponse = sendJsonRequest(tokenRequest);
+        ObjectNode tokenJson = tokenResponse.deepCopy();
+        tokenJson.put("client_id", clientId);
+        tokenJson.put("client_secret", clientSecret);
+        tokenJson.put("token_uri", tokenUri);
+        tokenJson.put("redirect_uri", request.getRedirectUri());
+
+        try {
+            return new GDriveOAuthTokenResponse(
+                    objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(tokenJson));
+        } catch (IOException e) {
+            throw new GDriveIntegrationException("Unable to serialize OAuth token JSON", e);
         }
     }
 
@@ -207,16 +265,16 @@ public class GDriveIntegrationService {
                     "OAuth token JSON must contain token/access_token or refresh_token, client_id, and client_secret");
         }
 
-        String tokenUri = firstText(tokenJson, "token_uri");
+        String tokenUri = clientText(tokenJson, "token_uri");
         if (isBlank(tokenUri)) {
             tokenUri = TOKEN_URL;
         }
 
         String form =
                 "client_id="
-                        + encode(firstText(tokenJson, "client_id"))
+                        + encode(clientText(tokenJson, "client_id"))
                         + "&client_secret="
-                        + encode(firstText(tokenJson, "client_secret"))
+                        + encode(clientText(tokenJson, "client_secret"))
                         + "&refresh_token="
                         + encode(firstText(tokenJson, "refresh_token"))
                         + "&grant_type=refresh_token";
@@ -239,8 +297,8 @@ public class GDriveIntegrationService {
 
     private boolean canRefresh(JsonNode tokenJson) {
         return !isBlank(firstText(tokenJson, "refresh_token"))
-                && !isBlank(firstText(tokenJson, "client_id"))
-                && !isBlank(firstText(tokenJson, "client_secret"));
+                && !isBlank(clientText(tokenJson, "client_id"))
+                && !isBlank(clientText(tokenJson, "client_secret"));
     }
 
     private GDriveFile treeToFile(JsonNode item) {
@@ -282,6 +340,18 @@ public class GDriveIntegrationService {
             }
         }
         return "";
+    }
+
+    private static String clientText(JsonNode node, String fieldName) {
+        String value = firstText(node, fieldName);
+        if (!isBlank(value)) {
+            return value;
+        }
+        value = firstText(node.path("installed"), fieldName);
+        if (!isBlank(value)) {
+            return value;
+        }
+        return firstText(node.path("web"), fieldName);
     }
 
     private static String encode(String value) {

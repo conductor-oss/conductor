@@ -1,0 +1,288 @@
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.3.11)
+
+2026-06-16T11:31:57.582+05:30  INFO 27364 --- [           main] o.c.c.Conductor                          : Starting Conductor v3.30.2-rc1 using Java 21.0.11 with PID 27364 (D:\Profintech\Work\finteract-conductor\server-lite\build\libs\conductor-server-lite-3.30.2-rc1-standalone.jar started by hares in D:\Profintech\Work\finteract-conductor)
+2026-06-16T11:31:57.608+05:30  INFO 27364 --- [           main] o.c.c.Conductor                          : No active profile set, falling back to 1 default profile: "default"
+2026-06-16T11:32:03.294+05:30  INFO 27364 --- [           main] o.s.b.w.e.t.TomcatWebServer              : Tomcat initialized with port 7001 (http)
+2026-06-16T11:32:03.317+05:30  INFO 27364 --- [           main] o.a.c.c.StandardService                  : Starting service [Tomcat]
+2026-06-16T11:32:03.318+05:30  INFO 27364 --- [           main] o.a.c.c.StandardEngine                   : Starting Servlet engine: [Apache Tomcat/10.1.54]
+2026-06-16T11:32:03.371+05:30  INFO 27364 --- [           main] o.a.c.c.C.[.[.[/]                        : Initializing Spring embedded WebApplicationContext
+2026-06-16T11:32:03.373+05:30  INFO 27364 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 5599 ms
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+2026-06-16T11:32:03.902+05:30  INFO 27364 --- [           main] c.z.h.HikariDataSource                   : HikariPool-1 - Starting...
+2026-06-16T11:32:04.120+05:30  INFO 27364 --- [           main] c.z.h.p.HikariPool                       : HikariPool-1 - Added connection org.sqlite.jdbc4.JDBC4Connection@dcdb883
+2026-06-16T11:32:04.124+05:30  INFO 27364 --- [           main] c.z.h.HikariDataSource                   : HikariPool-1 - Start completed.
+2026-06-16T11:32:04.318+05:30  INFO 27364 --- [           main] o.f.c.FlywayExecutor                     : Database: jdbc:sqlite:conductoross.db (SQLite 3.45)
+2026-06-16T11:32:04.355+05:30  INFO 27364 --- [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-06-16T11:32:04.359+05:30  INFO 27364 --- [           main] o.f.c.i.c.DbValidate                     : Successfully validated 3 migrations (execution time 00:00.018s)
+2026-06-16T11:32:04.366+05:30  INFO 27364 --- [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-06-16T11:32:04.421+05:30  INFO 27364 --- [           main] o.f.c.i.c.DbMigrate                      : Current version of schema "main": << Empty Schema >>
+2026-06-16T11:32:04.446+05:30  INFO 27364 --- [           main] o.f.c.i.c.DbMigrate                      : Migrating schema "main" to version "1 - initial schema"
+2026-06-16T11:32:04.472+05:30  INFO 27364 --- [           main] o.f.c.i.c.DbMigrate                      : Migrating schema "main" to version "2 - parent workflow id"
+2026-06-16T11:32:04.478+05:30  INFO 27364 --- [           main] o.f.c.i.c.DbMigrate                      : Migrating schema "main" to version "3 - file metadata"
+2026-06-16T11:32:04.490+05:30  INFO 27364 --- [           main] o.f.c.i.c.DbMigrate                      : Successfully applied 3 migrations to schema "main", now at version v3 (execution time 00:00.021s)
+2026-06-16T11:32:04.534+05:30  INFO 27364 --- [           main] c.n.c.c.c.ConductorCoreConfiguration     : Initialized dummy payload storage!
+2026-06-16T11:32:04.538+05:30  INFO 27364 --- [           main] c.n.c.c.s.DummyPayloadStorage            : DummyPayloadStorage initialized in directory: C:\Users\hares\AppData\Local\Temp\payloads8756599126089045182
+2026-06-16T11:32:04.552+05:30  INFO 27364 --- [           main] o.c.c.a.s.JDBCProvider                   : Initialized JDBCProvider with 0 instances
+2026-06-16T11:32:04.553+05:30  INFO 27364 --- [           main] o.c.c.a.s.JDBCWorker                     : JDBCWorker initialized
+2026-06-16T11:32:04.581+05:30  INFO 27364 --- [           main] o.c.c.a.d.DocumentAccessPolicy           : Document access policy effective allowed directories: [C:\Users\hares/worker-payload/]
+2026-06-16T11:32:04.850+05:30  INFO 27364 --- [           main] o.c.c.a.t.w.DocumentGenWorkers           : Document Workers initialized
+2026-06-16T11:32:04.952+05:30  INFO 27364 --- [           main] o.c.c.a.AIModelProvider                  : Created directory C:\Users\hares/worker-payload/ ? false for storing worker payload data
+2026-06-16T11:32:04.958+05:30  INFO 27364 --- [           main] o.c.c.a.AIModelProvider                  : Created directory C:\Users\hares/worker-payload/ ? false for storing worker payload data
+2026-06-16T11:32:04.960+05:30  INFO 27364 --- [           main] o.c.c.a.AIModelProvider                  : Created directory C:\Users\hares/worker-payload/ ? false for storing worker payload data
+2026-06-16T11:32:04.971+05:30 ERROR 27364 --- [           main] o.c.c.a.AIModelProvider                  : cannot init CohereAIConfiguration(apiKey=null, baseURL=https://api.cohere.ai, timeout=PT10M, httpClient=okhttp3.OkHttpClient@69ae7632) model, reason: API key must not be empty
+2026-06-16T11:32:04.974+05:30  INFO 27364 --- [           main] o.c.c.a.AIModelProvider                  : Created directory C:\Users\hares/worker-payload/ ? false for storing worker payload data
+2026-06-16T11:32:04.977+05:30  INFO 27364 --- [           main] o.c.c.a.AIModelProvider                  : Created directory C:\Users\hares/worker-payload/ ? false for storing worker payload data
+2026-06-16T11:32:04.978+05:30  INFO 27364 --- [           main] o.c.c.a.AIModelProvider                  : Created directory C:\Users\hares/worker-payload/ ? false for storing worker payload data
+2026-06-16T11:32:04.997+05:30 ERROR 27364 --- [           main] o.c.c.a.AIModelProvider                  : cannot init MistralAIConfiguration(apiKey=null, baseURL=https://api.mistral.ai, timeout=PT10M, httpClient=okhttp3.OkHttpClient@69ae7632) model, reason: apiKey cannot be null or empty
+2026-06-16T11:32:04.998+05:30  INFO 27364 --- [           main] o.c.c.a.AIModelProvider                  : Created directory C:\Users\hares/worker-payload/ ? false for storing worker payload data
+2026-06-16T11:32:05.003+05:30  INFO 27364 --- [           main] o.c.c.a.AIModelProvider                  : Created directory C:\Users\hares/worker-payload/ ? false for storing worker payload data
+2026-06-16T11:32:05.004+05:30  INFO 27364 --- [           main] o.c.c.a.AIModelProvider                  : Created directory C:\Users\hares/worker-payload/ ? false for storing worker payload data
+2026-06-16T11:32:05.007+05:30  INFO 27364 --- [           main] o.c.c.a.AIModelProvider                  : Created directory C:\Users\hares/worker-payload/ ? false for storing worker payload data
+2026-06-16T11:32:05.012+05:30  INFO 27364 --- [           main] o.c.c.a.t.w.LLMWorkers                   : AI Workers initialized class org.conductoross.conductor.ai.LLMs
+2026-06-16T11:32:05.024+05:30  WARN 27364 --- [           main] o.c.c.a.v.VectorDBInstanceConfig         : No vector DB instances configured
+2026-06-16T11:32:05.024+05:30  INFO 27364 --- [           main] o.c.c.a.v.VectorDBProvider               : Initialized VectorDBProvider with 0 instances
+2026-06-16T11:32:05.025+05:30  INFO 27364 --- [           main] o.c.c.a.v.VectorDBs                      : vectorDBProvider: org.conductoross.conductor.ai.vectordb.VectorDBProvider@493250cf
+2026-06-16T11:32:05.027+05:30  INFO 27364 --- [           main] o.c.c.a.t.w.VectorDBWorkers              : VectorDBWorkers initialized with LLMs: org.conductoross.conductor.ai.LLMs@3e0b1f03 and vectorDBs: org.conductoross.conductor.ai.vectordb.VectorDBs@24888d8b
+2026-06-16T11:32:05.043+05:30  INFO 27364 --- [           main] c.n.c.t.h.HttpTask                       : HTTP initialized...
+2026-06-16T11:32:05.218+05:30  INFO 27364 --- [           main] c.n.c.c.t.k.KafkaPublishTask             : KafkaTask initialized.
+2026-06-16T11:32:05.383+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Found @WorkerTask method: execute in bean JDBCWorker with taskType=JDBC
+2026-06-16T11:32:05.387+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Adding task mapper org.conductoross.conductor.core.execution.mapper.AnnotatedSystemTaskMapper@22cce199 for task JDBC
+2026-06-16T11:32:05.387+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Found @WorkerTask method: generatePdf in bean DocumentGenWorkers with taskType=GENERATE_PDF
+2026-06-16T11:32:05.388+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Adding task mapper org.conductoross.conductor.core.execution.mapper.AnnotatedSystemTaskMapper@19ee0a2f for task GENERATE_PDF
+2026-06-16T11:32:05.388+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Found @WorkerTask method: textCompletion in bean LLMWorkers with taskType=LLM_TEXT_COMPLETE
+2026-06-16T11:32:05.389+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Adding task mapper org.conductoross.conductor.core.execution.mapper.AnnotatedSystemTaskMapper@15a591d9 for task LLM_TEXT_COMPLETE
+2026-06-16T11:32:05.389+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Found @WorkerTask method: generateEmbeddings in bean LLMWorkers with taskType=LLM_GENERATE_EMBEDDINGS
+2026-06-16T11:32:05.389+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Adding task mapper org.conductoross.conductor.core.execution.mapper.AnnotatedSystemTaskMapper@71e9640 for task LLM_GENERATE_EMBEDDINGS
+2026-06-16T11:32:05.390+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Found @WorkerTask method: chatCompletion in bean LLMWorkers with taskType=LLM_CHAT_COMPLETE
+2026-06-16T11:32:05.390+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Adding task mapper org.conductoross.conductor.core.execution.mapper.AnnotatedSystemTaskMapper@25762f04 for task LLM_CHAT_COMPLETE
+2026-06-16T11:32:05.391+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Found @WorkerTask method: generateImage in bean LLMWorkers with taskType=GENERATE_IMAGE
+2026-06-16T11:32:05.391+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Adding task mapper org.conductoross.conductor.core.execution.mapper.AnnotatedSystemTaskMapper@5a6d4dee for task GENERATE_IMAGE
+2026-06-16T11:32:05.391+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Found @WorkerTask method: generateAudio in bean LLMWorkers with taskType=GENERATE_AUDIO
+2026-06-16T11:32:05.392+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Adding task mapper org.conductoross.conductor.core.execution.mapper.AnnotatedSystemTaskMapper@705dc1a6 for task GENERATE_AUDIO
+2026-06-16T11:32:05.392+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Found @WorkerTask method: generateVideo in bean LLMWorkers with taskType=GENERATE_VIDEO
+2026-06-16T11:32:05.393+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Adding task mapper org.conductoross.conductor.core.execution.mapper.AnnotatedSystemTaskMapper@7af7c9aa for task GENERATE_VIDEO
+2026-06-16T11:32:05.393+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Found @WorkerTask method: listTools in bean MCPWorkers with taskType=LIST_MCP_TOOLS
+2026-06-16T11:32:05.394+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Adding task mapper org.conductoross.conductor.core.execution.mapper.AnnotatedSystemTaskMapper@74ed3be4 for task LIST_MCP_TOOLS
+2026-06-16T11:32:05.394+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Found @WorkerTask method: callTool in bean MCPWorkers with taskType=CALL_MCP_TOOL
+2026-06-16T11:32:05.395+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Adding task mapper org.conductoross.conductor.core.execution.mapper.AnnotatedSystemTaskMapper@41e43885 for task CALL_MCP_TOOL
+2026-06-16T11:32:05.395+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Found @WorkerTask method: searchUsingEmbeddings in bean VectorDBWorkers with taskType=LLM_SEARCH_EMBEDDINGS
+2026-06-16T11:32:05.396+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Adding task mapper org.conductoross.conductor.core.execution.mapper.AnnotatedSystemTaskMapper@3f3a529f for task LLM_SEARCH_EMBEDDINGS
+2026-06-16T11:32:05.396+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Found @WorkerTask method: indexText in bean VectorDBWorkers with taskType=LLM_INDEX_TEXT
+2026-06-16T11:32:05.397+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Adding task mapper org.conductoross.conductor.core.execution.mapper.AnnotatedSystemTaskMapper@5aa5b3af for task LLM_INDEX_TEXT
+2026-06-16T11:32:05.397+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Found @WorkerTask method: searchIndex in bean VectorDBWorkers with taskType=LLM_SEARCH_INDEX
+2026-06-16T11:32:05.397+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Adding task mapper org.conductoross.conductor.core.execution.mapper.AnnotatedSystemTaskMapper@598ff2b3 for task LLM_SEARCH_INDEX
+2026-06-16T11:32:05.398+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Found @WorkerTask method: searchUsingEmbeddingsDeprecated in bean VectorDBWorkers with taskType=LLM_GET_EMBEDDINGS
+2026-06-16T11:32:05.398+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Adding task mapper org.conductoross.conductor.core.execution.mapper.AnnotatedSystemTaskMapper@67cd193d for task LLM_GET_EMBEDDINGS
+2026-06-16T11:32:05.399+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Found @WorkerTask method: storeEmbeddings in bean VectorDBWorkers with taskType=LLM_STORE_EMBEDDINGS
+2026-06-16T11:32:05.399+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Adding task mapper org.conductoross.conductor.core.execution.mapper.AnnotatedSystemTaskMapper@126e2710 for task LLM_STORE_EMBEDDINGS
+2026-06-16T11:32:05.400+05:30  INFO 27364 --- [           main] .c.c.c.e.t.a.WorkerTaskAnnotationScanner : Completed @WorkerTask scanning in 17ms. Scanned 5 beans, found 15 annotated methods
+2026-06-16T11:32:05.446+05:30  INFO 27364 --- [           main] c.n.c.c.e.DeciderService                 : taskMappers: [DECISION, LLM_SEARCH_INDEX, GENERATE_IMAGE, NOOP, LLM_STORE_EMBEDDINGS, JOIN, KAFKA_PUBLISH, LLM_CHAT_COMPLETE, LLM_GENERATE_EMBEDDINGS, LLM_INDEX_TEXT, FORK_JOIN, EVENT, JSON_JQ_TRANSFORM, HUMAN, JDBC, INLINE, WAIT, START_WORKFLOW, SUB_WORKFLOW, CALL_MCP_TOOL, LIST_MCP_TOOLS, GENERATE_PDF, HTTP, GENERATE_AUDIO, LAMBDA, DYNAMIC, TERMINATE, LLM_TEXT_COMPLETE, FORK_JOIN_DYNAMIC, GENERATE_VIDEO, SIMPLE, DO_WHILE, SWITCH, EXCLUSIVE_JOIN, LLM_GET_EMBEDDINGS, SET_VARIABLE, USER_DEFINED]
+2026-06-16T11:32:05.447+05:30  INFO 27364 --- [           main] c.n.c.c.e.DeciderService                 : annotatedTaskMappers: [LLM_SEARCH_EMBEDDINGS, CALL_MCP_TOOL, LLM_SEARCH_INDEX, GENERATE_IMAGE, LIST_MCP_TOOLS, GENERATE_PDF, LLM_STORE_EMBEDDINGS, LLM_CHAT_COMPLETE, LLM_GENERATE_EMBEDDINGS, GENERATE_AUDIO, LLM_INDEX_TEXT, LLM_TEXT_COMPLETE, GENERATE_VIDEO, JDBC, LLM_GET_EMBEDDINGS]
+2026-06-16T11:32:05.448+05:30  INFO 27364 --- [           main] c.n.c.c.e.DeciderService                 : Skipping annotated mapper for 'CALL_MCP_TOOL' - existing mapper already registered
+2026-06-16T11:32:05.449+05:30  INFO 27364 --- [           main] c.n.c.c.e.DeciderService                 : Skipping annotated mapper for 'LLM_SEARCH_INDEX' - existing mapper already registered
+2026-06-16T11:32:05.449+05:30  INFO 27364 --- [           main] c.n.c.c.e.DeciderService                 : Skipping annotated mapper for 'GENERATE_IMAGE' - existing mapper already registered
+2026-06-16T11:32:05.449+05:30  INFO 27364 --- [           main] c.n.c.c.e.DeciderService                 : Skipping annotated mapper for 'LIST_MCP_TOOLS' - existing mapper already registered
+2026-06-16T11:32:05.450+05:30  INFO 27364 --- [           main] c.n.c.c.e.DeciderService                 : Skipping annotated mapper for 'GENERATE_PDF' - existing mapper already registered
+2026-06-16T11:32:05.450+05:30  INFO 27364 --- [           main] c.n.c.c.e.DeciderService                 : Skipping annotated mapper for 'LLM_STORE_EMBEDDINGS' - existing mapper already registered
+2026-06-16T11:32:05.451+05:30  INFO 27364 --- [           main] c.n.c.c.e.DeciderService                 : Skipping annotated mapper for 'LLM_CHAT_COMPLETE' - existing mapper already registered
+2026-06-16T11:32:05.452+05:30  INFO 27364 --- [           main] c.n.c.c.e.DeciderService                 : Skipping annotated mapper for 'LLM_GENERATE_EMBEDDINGS' - existing mapper already registered
+2026-06-16T11:32:05.452+05:30  INFO 27364 --- [           main] c.n.c.c.e.DeciderService                 : Skipping annotated mapper for 'GENERATE_AUDIO' - existing mapper already registered
+2026-06-16T11:32:05.453+05:30  INFO 27364 --- [           main] c.n.c.c.e.DeciderService                 : Skipping annotated mapper for 'LLM_INDEX_TEXT' - existing mapper already registered
+2026-06-16T11:32:05.453+05:30  INFO 27364 --- [           main] c.n.c.c.e.DeciderService                 : Skipping annotated mapper for 'LLM_TEXT_COMPLETE' - existing mapper already registered
+2026-06-16T11:32:05.454+05:30  INFO 27364 --- [           main] c.n.c.c.e.DeciderService                 : Skipping annotated mapper for 'GENERATE_VIDEO' - existing mapper already registered
+2026-06-16T11:32:05.455+05:30  INFO 27364 --- [           main] c.n.c.c.e.DeciderService                 : Skipping annotated mapper for 'JDBC' - existing mapper already registered
+2026-06-16T11:32:05.455+05:30  INFO 27364 --- [           main] c.n.c.c.e.DeciderService                 : Skipping annotated mapper for 'LLM_GET_EMBEDDINGS' - existing mapper already registered
+2026-06-16T11:32:05.516+05:30  INFO 27364 --- [           main] c.n.c.c.e.DefaultEventProcessor          : Event Processing is ENABLED
+2026-06-16T11:32:05.570+05:30  INFO 27364 --- [           main] c.n.c.c.e.q.DefaultEventQueueProcessor   : DefaultEventQueueProcessor initialized with 0 queues
+2026-06-16T11:32:06.034+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.SystemTaskWorker             : SystemTaskWorker initialized with 24 threads
+2026-06-16T11:32:06.039+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.IsolatedTaskQueueProducer    : Isolated System Task Worker DISABLED
+2026-06-16T11:32:06.042+05:30  INFO 27364 --- [           main] c.n.c.m.MetricsCollector                 : =========
+2026-06-16T11:32:06.043+05:30  INFO 27364 --- [           main] c.n.c.m.MetricsCollector                 : Conductor configured with 1 metrics registries
+2026-06-16T11:32:06.044+05:30  INFO 27364 --- [           main] c.n.c.m.MetricsCollector                 : Metrics registry: io.micrometer.prometheusmetrics.PrometheusMeterRegistry@71eafb64
+2026-06-16T11:32:06.059+05:30  INFO 27364 --- [           main] c.n.c.m.MetricsCollector                 : check https://docs.micrometer.io/micrometer/reference/ for configuration options
+2026-06-16T11:32:06.061+05:30  INFO 27364 --- [           main] c.n.c.m.MetricsCollector                 : =========
+2026-06-16T11:32:06.065+05:30  INFO 27364 --- [           main] c.n.c.m.WorkflowMonitor                  : WorkflowMonitor initialized.
+2026-06-16T11:32:06.068+05:30  INFO 27364 --- [           main] c.n.c.s.VersionService                   : Conductor version: 3.30.2-rc1
+2026-06-16T11:32:06.075+05:30  INFO 27364 --- [           main] o.c.c.SpaInterceptor                     : Serving UI on /
+2026-06-16T11:32:06.077+05:30  INFO 27364 --- [           main] o.c.c.RestConfiguration                  : spaInterceptor: Optional[org.conductoross.conductor.SpaInterceptor@443b9ebb]
+2026-06-16T11:32:06.084+05:30  INFO 27364 --- [           main] o.c.c.c.e.WorkflowSweeper                : Initializing sweeper with 24 threads
+2026-06-16T11:32:06.448+05:30  INFO 27364 --- [           main] o.s.b.a.w.s.WelcomePageHandlerMapping    : Adding welcome page: class path resource [static/index.html]
+2026-06-16T11:32:07.376+05:30  INFO 27364 --- [           main] o.c.c.RestConfiguration                  : Serving static resources
+2026-06-16T11:32:08.675+05:30  INFO 27364 --- [           main] o.s.b.a.e.w.EndpointLinksResolver        : Exposing 3 endpoints beneath base path '/actuator'
+2026-06-16T11:32:09.254+05:30  INFO 27364 --- [           main] o.s.b.w.e.t.TomcatWebServer              : Tomcat started on port 7001 (http) with context path '/'
+2026-06-16T11:32:09.258+05:30  INFO 27364 --- [           main] c.n.c.c.LifecycleAwareComponent          : DefaultEventQueueManager started.
+2026-06-16T11:32:09.259+05:30  INFO 27364 --- [           main] c.n.c.c.LifecycleAwareComponent          : SystemTaskWorker started.
+2026-06-16T11:32:09.259+05:30  INFO 27364 --- [           main] c.n.c.c.LifecycleAwareComponent          : WorkflowSweeper started.
+2026-06-16T11:32:09.306+05:30  INFO 27364 --- [           main] o.c.c.Conductor                          : Started Conductor in 12.981 seconds (process running for 15.691)
+2026-06-16T11:32:09.329+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.SystemTaskWorker             : Started listening for task: GENERATE_AUDIO in queue: GENERATE_AUDIO at pollInterval of 50 ms
+2026-06-16T11:32:09.331+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.SystemTaskWorker             : Started listening for task: CALL_MCP_TOOL in queue: CALL_MCP_TOOL at pollInterval of 50 ms
+2026-06-16T11:32:09.332+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.SystemTaskWorker             : Started listening for task: LLM_SEARCH_INDEX in queue: LLM_SEARCH_INDEX at pollInterval of 50 ms
+2026-06-16T11:32:09.333+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.SystemTaskWorker             : Started listening for task: SUB_WORKFLOW in queue: SUB_WORKFLOW at pollInterval of 50 ms
+2026-06-16T11:32:09.335+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.SystemTaskWorker             : Started listening for task: JOIN in queue: JOIN at pollInterval of 50 ms
+2026-06-16T11:32:09.336+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.SystemTaskWorker             : Started listening for task: WAIT in queue: WAIT at pollInterval of 50 ms
+2026-06-16T11:32:09.337+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.SystemTaskWorker             : Started listening for task: GENERATE_IMAGE in queue: GENERATE_IMAGE at pollInterval of 50 ms
+2026-06-16T11:32:09.339+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.SystemTaskWorker             : Started listening for task: LIST_MCP_TOOLS in queue: LIST_MCP_TOOLS at pollInterval of 50 ms
+2026-06-16T11:32:09.340+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.SystemTaskWorker             : Started listening for task: LLM_SEARCH_EMBEDDINGS in queue: LLM_SEARCH_EMBEDDINGS at pollInterval of 50 ms
+2026-06-16T11:32:09.342+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.SystemTaskWorker             : Started listening for task: LLM_STORE_EMBEDDINGS in queue: LLM_STORE_EMBEDDINGS at pollInterval of 50 ms
+2026-06-16T11:32:09.343+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.SystemTaskWorker             : Started listening for task: KAFKA_PUBLISH in queue: KAFKA_PUBLISH at pollInterval of 50 ms
+2026-06-16T11:32:09.344+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.SystemTaskWorker             : Started listening for task: START_WORKFLOW in queue: START_WORKFLOW at pollInterval of 50 ms
+2026-06-16T11:32:09.345+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.SystemTaskWorker             : Started listening for task: LLM_GENERATE_EMBEDDINGS in queue: LLM_GENERATE_EMBEDDINGS at pollInterval of 50 ms
+2026-06-16T11:32:09.346+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.SystemTaskWorker             : Started listening for task: GENERATE_VIDEO in queue: GENERATE_VIDEO at pollInterval of 50 ms
+2026-06-16T11:32:09.347+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.SystemTaskWorker             : Started listening for task: JDBC in queue: JDBC at pollInterval of 50 ms
+2026-06-16T11:32:09.348+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.SystemTaskWorker             : Started listening for task: LLM_INDEX_TEXT in queue: LLM_INDEX_TEXT at pollInterval of 50 ms
+2026-06-16T11:32:09.349+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.SystemTaskWorker             : Started listening for task: GENERATE_PDF in queue: GENERATE_PDF at pollInterval of 50 ms
+2026-06-16T11:32:09.351+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.SystemTaskWorker             : Started listening for task: LLM_GET_EMBEDDINGS in queue: LLM_GET_EMBEDDINGS at pollInterval of 50 ms
+2026-06-16T11:32:09.352+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.SystemTaskWorker             : Started listening for task: LLM_CHAT_COMPLETE in queue: LLM_CHAT_COMPLETE at pollInterval of 50 ms
+2026-06-16T11:32:09.353+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.SystemTaskWorker             : Started listening for task: HTTP in queue: HTTP at pollInterval of 50 ms
+2026-06-16T11:32:09.353+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.SystemTaskWorker             : Started listening for task: LLM_TEXT_COMPLETE in queue: LLM_TEXT_COMPLETE at pollInterval of 50 ms
+2026-06-16T11:32:09.354+05:30  INFO 27364 --- [           main] c.n.c.c.e.t.SystemTaskWorkerCoordinator  : SystemTaskWorkerCoordinator initialized with 21 async tasks
+2026-06-16T11:32:27.648+05:30  INFO 27364 --- [nio-7001-exec-5] o.a.c.c.C.[.[.[/]                        : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-06-16T11:32:27.649+05:30  INFO 27364 --- [nio-7001-exec-5] o.s.w.s.DispatcherServlet                : Initializing Servlet 'dispatcherServlet'
+2026-06-16T11:32:27.651+05:30  INFO 27364 --- [nio-7001-exec-5] o.s.w.s.DispatcherServlet                : Completed initialization in 2 ms
+2026-06-16T11:32:27.704+05:30 ERROR 27364 --- [nio-7001-exec-5] c.n.c.r.c.ApplicationExceptionMapper     : Error HttpRequestMethodNotSupportedException url: '/api/workflow'
+
+org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'GET' is not supported
+	at org.springframework.web.servlet.mvc.method.RequestMappingInfoHandlerMapping.handleNoMatch(RequestMappingInfoHandlerMapping.java:267) ~[spring-webmvc-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.servlet.handler.AbstractHandlerMethodMapping.lookupHandlerMethod(AbstractHandlerMethodMapping.java:441) ~[spring-webmvc-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.servlet.handler.AbstractHandlerMethodMapping.getHandlerInternal(AbstractHandlerMethodMapping.java:382) ~[spring-webmvc-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.servlet.mvc.method.RequestMappingInfoHandlerMapping.getHandlerInternal(RequestMappingInfoHandlerMapping.java:127) ~[spring-webmvc-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.servlet.mvc.method.RequestMappingInfoHandlerMapping.getHandlerInternal(RequestMappingInfoHandlerMapping.java:68) ~[spring-webmvc-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.servlet.handler.AbstractHandlerMapping.getHandler(AbstractHandlerMapping.java:507) ~[spring-webmvc-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.servlet.DispatcherServlet.getHandler(DispatcherServlet.java:1284) ~[spring-webmvc-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1065) ~[spring-webmvc-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:979) ~[spring-webmvc-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014) ~[spring-webmvc-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.servlet.FrameworkServlet.doGet(FrameworkServlet.java:903) ~[spring-webmvc-6.1.19.jar!/:6.1.19]
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:564) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885) ~[spring-webmvc-6.1.19.jar!/:6.1.19]
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51) ~[tomcat-embed-websocket-10.1.54.jar!/:?]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100) ~[spring-web-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.19.jar!/:6.1.19]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93) ~[spring-web-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.19.jar!/:6.1.19]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.springframework.web.filter.ServerHttpObservationFilter.doFilterInternal(ServerHttpObservationFilter.java:113) ~[spring-web-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.19.jar!/:6.1.19]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201) ~[spring-web-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.19.jar!/:6.1.19]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:165) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:88) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:492) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:113) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:83) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:72) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:342) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:399) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:903) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1797) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:973) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:491) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at java.base/java.lang.Thread.run(Thread.java:1583) [?:?]
+
+2026-06-16T17:07:35.032+05:30 ERROR 27364 --- [nio-7001-exec-4] c.n.c.r.c.ApplicationExceptionMapper     : Error NotFoundException url: '/api/workflow/grn_pod_reconciliation'
+
+com.netflix.conductor.core.exception.NotFoundException: No such workflow found by name: grn_pod_reconciliation, version: 1
+	at com.netflix.conductor.service.MetadataServiceImpl.lambda$getWorkflowDef$0(MetadataServiceImpl.java:164) ~[conductor-core-3.30.2-rc1.jar!/:?]
+	at java.base/java.util.Optional.orElseThrow(Optional.java:403) ~[?:?]
+	at com.netflix.conductor.service.MetadataServiceImpl.getWorkflowDef(MetadataServiceImpl.java:162) ~[conductor-core-3.30.2-rc1.jar!/:?]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[?:?]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[?:?]
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:355) ~[spring-aop-6.1.19.jar!/:6.1.19]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:196) ~[spring-aop-6.1.19.jar!/:6.1.19]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163) ~[spring-aop-6.1.19.jar!/:6.1.19]
+	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:769) ~[spring-aop-6.1.19.jar!/:6.1.19]
+	at org.springframework.validation.beanvalidation.MethodValidationInterceptor.invoke(MethodValidationInterceptor.java:174) ~[spring-context-6.1.19.jar!/:6.1.19]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.1.19.jar!/:6.1.19]
+	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:769) ~[spring-aop-6.1.19.jar!/:6.1.19]
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:721) ~[spring-aop-6.1.19.jar!/:6.1.19]
+	at com.netflix.conductor.service.MetadataServiceImpl$$SpringCGLIB$$0.getWorkflowDef(<generated>) ~[conductor-core-3.30.2-rc1.jar!/:?]
+	at com.netflix.conductor.service.WorkflowServiceImpl.startWorkflow(WorkflowServiceImpl.java:119) ~[conductor-core-3.30.2-rc1.jar!/:?]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[?:?]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[?:?]
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:355) ~[spring-aop-6.1.19.jar!/:6.1.19]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:196) ~[spring-aop-6.1.19.jar!/:6.1.19]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163) ~[spring-aop-6.1.19.jar!/:6.1.19]
+	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:769) ~[spring-aop-6.1.19.jar!/:6.1.19]
+	at org.springframework.validation.beanvalidation.MethodValidationInterceptor.invoke(MethodValidationInterceptor.java:174) ~[spring-context-6.1.19.jar!/:6.1.19]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.1.19.jar!/:6.1.19]
+	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:769) ~[spring-aop-6.1.19.jar!/:6.1.19]
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:721) ~[spring-aop-6.1.19.jar!/:6.1.19]
+	at com.netflix.conductor.service.WorkflowServiceImpl$$SpringCGLIB$$0.startWorkflow(<generated>) ~[conductor-core-3.30.2-rc1.jar!/:?]
+	at com.netflix.conductor.rest.controllers.WorkflowResource.startWorkflow(WorkflowResource.java:95) ~[conductor-rest-3.30.2-rc1.jar!/:?]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[?:?]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[?:?]
+	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:255) ~[spring-web-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:188) ~[spring-web-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118) ~[spring-webmvc-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:926) ~[spring-webmvc-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:831) ~[spring-webmvc-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87) ~[spring-webmvc-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1089) ~[spring-webmvc-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:979) ~[spring-webmvc-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014) ~[spring-webmvc-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:914) ~[spring-webmvc-6.1.19.jar!/:6.1.19]
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885) ~[spring-webmvc-6.1.19.jar!/:6.1.19]
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51) ~[tomcat-embed-websocket-10.1.54.jar!/:?]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100) ~[spring-web-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.19.jar!/:6.1.19]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93) ~[spring-web-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.19.jar!/:6.1.19]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.springframework.web.filter.ServerHttpObservationFilter.doFilterInternal(ServerHttpObservationFilter.java:113) ~[spring-web-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.19.jar!/:6.1.19]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201) ~[spring-web-6.1.19.jar!/:6.1.19]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.19.jar!/:6.1.19]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:165) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:88) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:492) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:113) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:83) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:72) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:342) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:399) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:903) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1797) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:973) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:491) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63) ~[tomcat-embed-core-10.1.54.jar!/:?]
+	at java.base/java.lang.Thread.run(Thread.java:1583) [?:?]
+
