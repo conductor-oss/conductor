@@ -14,8 +14,6 @@ apply plugin: 'groovy'
 
 dependencies {
     implementation project(':conductor-common')
-    implementation project(':conductor-metrics')
-    implementation ("org.conductoross:conductor-client:4.2.0-rc3")
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-validation'
@@ -49,12 +47,15 @@ dependencies {
     implementation "com.google.guava:guava:${revGuava}"
 
     //GraalVM dependencies for executing JavaScript and Python
-    // PINNED (#964): all five artifacts must use the same version (revGraalVM in dependencies.gradle)
+    // PINNED (#964): all GraalVM artifacts must use the same version (revGraalVM in dependencies.gradle)
     implementation("org.graalvm.polyglot:polyglot:${revGraalVM}")
     implementation("org.graalvm.js:js:${revGraalVM}")
     implementation("org.graalvm.js:js-scriptengine:${revGraalVM}")
     implementation("org.graalvm.polyglot:python:${revGraalVM}")
     implementation "org.graalvm.sdk:graal-sdk:${revGraalVM}"
+    // Optimizing Truffle runtime (UPL 1.0). Without it GraalJS runs in the Truffle
+    // interpreter, which is 10-100x slower than the JIT-compiled path.
+    implementation("org.graalvm.truffle:truffle-runtime:${revGraalVM}")
 
     // JAXB is not bundled with Java 11, dependencies added explicitly
     // These are needed by Apache BVAL
@@ -72,4 +73,22 @@ dependencies {
     testImplementation "org.spockframework:spock-core:${revSpock}"
     testImplementation "org.spockframework:spock-spring:${revSpock}"
     testImplementation "org.junit.vintage:junit-vintage-engine"
+
+    // Benchmark-only deps (test scope so they don't ship with production):
+    // Rhino — MPL 2.0, JVM-bytecode-compiled JS engine
+    testImplementation "org.mozilla:rhino:1.8.0"
+    // Javet — Apache 2.0 JNI bindings to V8 (BSD-3-Clause). Native lib for this host's
+    // arch only; add other -macos-x86_64 / -linux-x86_64 / -linux-arm64 variants for prod.
+    testImplementation "com.caoccao.javet:javet:4.1.2"
+    testImplementation "com.caoccao.javet:javet-v8-macos-arm64:4.1.2"
+}
+
+// Standalone benchmark runner for comparing JS engines on representative Inline-task scripts.
+// Run with: ./gradlew :conductor-core:benchmarkScripts
+task benchmarkScripts(type: JavaExec) {
+    group = "verification"
+    description = "Run JS engine benchmark (GraalJS interpreter vs Rhino vs Javet/V8)"
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "com.netflix.conductor.benchmark.ScriptEngineBenchmark"
+    jvmArgs = ["-Xmx2g"]
 }

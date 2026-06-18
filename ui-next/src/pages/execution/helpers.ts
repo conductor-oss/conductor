@@ -47,6 +47,9 @@ export function findTaskFromExecutionStatusMapById(
 
   for (const key of keys) {
     const item = mapObject[key];
+    if (item?.taskId === id) {
+      return item;
+    }
     const found = item?.loopOver?.find((loopItem) => loopItem?.taskId === id);
     if (found) {
       return found;

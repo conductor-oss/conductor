@@ -1,12 +1,10 @@
 import { Box } from "@mui/material";
 import Agent from "components/features/agent/Agent";
 import { AgentDisplayMode } from "components/features/agent/agent-types";
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import { ActorRef } from "xstate";
 import { WorkflowDefinitionEvents } from "../state/types";
 import { AssistantPanelHeader } from "./AssistantPanelHeader";
-
-export const SHRINKED_HEIGHT = 430;
 
 interface AssistantPanelProps {
   isAgentExpanded: boolean;
@@ -18,7 +16,6 @@ interface AssistantPanelProps {
   onHeaderClick: (e: React.MouseEvent) => void;
   onToggleExpanded: () => void;
   onMaximize: () => void;
-  onHeightChange: (height: number) => void;
   isResizing: boolean;
 }
 
@@ -32,34 +29,10 @@ export const AssistantPanel = ({
   onHeaderClick,
   onToggleExpanded,
   onMaximize,
-  onHeightChange,
   isResizing,
 }: AssistantPanelProps) => {
-  const agentPanelRef = useRef<HTMLDivElement>(null);
-
-  // Handle clicks outside the assistant panel to resize it to SHRINKED_HEIGHT (currently 430px)
-  useEffect(() => {
-    if (!isAgentExpanded) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        agentPanelRef.current &&
-        !agentPanelRef.current.contains(event.target as Node) &&
-        !isResizing
-      ) {
-        onHeightChange(SHRINKED_HEIGHT);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isAgentExpanded, isResizing, onHeightChange]);
-
   return (
     <Box
-      ref={agentPanelRef}
       sx={{
         position: "absolute",
         display: "flex",
@@ -73,11 +46,7 @@ export const AssistantPanel = ({
             : errorInspectorActor
               ? `calc(100% - ${tabsHeight}px - 50px)`
               : `calc(100% - ${tabsHeight}px)`
-          : "50px", // Fixed height when collapsed for smooth animation
-        top:
-          isAgentExpanded && agentPanelHeight === null
-            ? `${tabsHeight}px`
-            : "auto",
+          : "50px",
         background: "#ffffff",
         borderTopLeftRadius: 16,
         borderTopRightRadius: 16,

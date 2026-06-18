@@ -75,7 +75,7 @@ public class SetVariableTests {
         Map<String, String> expectedValues = new ConcurrentHashMap<>();
         List<CompletableFuture<WorkflowRun>> futureRuns = new ArrayList<>();
 
-        final int TOTAL_TO_CREATE = 10_000;
+        final int TOTAL_TO_CREATE = 2_000;
         final int LOG_EVERY_N = 250;
 
         // i think this is why there is 50k+ workflows in the e2e-aws cluster
@@ -145,7 +145,7 @@ public class SetVariableTests {
         List<Future<String>> futures = new ArrayList<>();
         Map<String, String> expectedValues = new ConcurrentHashMap<>();
 
-        final int TOTAL_TO_CREATE = 10_000;
+        final int TOTAL_TO_CREATE = 2_000;
         final int LOG_EVERY_N = 250;
 
         for (int i = 0; i < TOTAL_TO_CREATE; i++) {

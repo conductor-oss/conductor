@@ -18,6 +18,7 @@ import {
   ChangeTabEvent,
   PerformOperationEvent,
   SaveAndRunRequestEvent,
+  SaveRequestEvent,
   DONT_SHOW_IMPORT_SUCCESSFUL_DIALOG_TUTORIAL_AGAIN,
 } from "./types";
 import { WorkflowWithNoErrorsEvent } from "../errorInspector/state";
@@ -145,7 +146,11 @@ export const selectedTaskIsInSwitchBranch = ({
   return false;
 };
 
-export const isDescriptionEmpty = (context: DefinitionMachineContext) =>
+export const isDescriptionEmpty = (
+  context: DefinitionMachineContext,
+  event: SaveRequestEvent,
+) =>
+  !event?.skipDescriptionCheck &&
   (context.workflowChanges?.description ?? "").trim() === "";
 
 export const isSaveAndRunRequest = (

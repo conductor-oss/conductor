@@ -68,13 +68,11 @@ public class SubWorkflowVersionTests {
         String workflowId = workflowClient.startWorkflow(startWorkflowRequest);
 
         // User1 should be able to complete task/workflow
-        String subWorkflowId =
-                workflowClient.getWorkflow(workflowId, true).getTasks().get(0).getSubWorkflowId();
+        String subWorkflowId = awaitSubWorkflowId(workflowClient, workflowId);
         TaskResult taskResult = new TaskResult();
         taskResult.setWorkflowInstanceId(subWorkflowId);
         taskResult.setStatus(TaskResult.Status.COMPLETED);
-        taskResult.setTaskId(
-                workflowClient.getWorkflow(subWorkflowId, true).getTasks().get(0).getTaskId());
+        taskResult.setTaskId(awaitFirstTaskId(workflowClient, subWorkflowId));
         taskClient.updateTask(taskResult);
 
         // Wait for workflow to get completed
@@ -127,13 +125,11 @@ public class SubWorkflowVersionTests {
         String workflowId = workflowClient.startWorkflow(startWorkflowRequest);
 
         // User1 should be able to complete task/workflow
-        String subWorkflowId =
-                workflowClient.getWorkflow(workflowId, true).getTasks().get(0).getSubWorkflowId();
+        String subWorkflowId = awaitSubWorkflowId(workflowClient, workflowId);
         TaskResult taskResult = new TaskResult();
         taskResult.setWorkflowInstanceId(subWorkflowId);
         taskResult.setStatus(TaskResult.Status.COMPLETED);
-        taskResult.setTaskId(
-                workflowClient.getWorkflow(subWorkflowId, true).getTasks().get(0).getTaskId());
+        taskResult.setTaskId(awaitFirstTaskId(workflowClient, subWorkflowId));
         taskClient.updateTask(taskResult);
 
         // Wait for workflow to get completed
@@ -261,6 +257,34 @@ public class SubWorkflowVersionTests {
                         });
 
         metadataAdminClient.unregisterWorkflowDef(workflowName1, 1);
+    }
+
+    private String awaitSubWorkflowId(WorkflowClient workflowClient, String workflowId) {
+        final String[] subWorkflowId = new String[1];
+        await().atMost(42, TimeUnit.SECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
+                            assertTrue(!workflow.getTasks().isEmpty());
+                            subWorkflowId[0] = workflow.getTasks().get(0).getSubWorkflowId();
+                            assertTrue(subWorkflowId[0] != null && !subWorkflowId[0].isBlank());
+                        });
+        return subWorkflowId[0];
+    }
+
+    private String awaitFirstTaskId(WorkflowClient workflowClient, String workflowId) {
+        final String[] taskId = new String[1];
+        await().atMost(42, TimeUnit.SECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
+                            assertTrue(!workflow.getTasks().isEmpty());
+                            taskId[0] = workflow.getTasks().get(0).getTaskId();
+                            assertTrue(taskId[0] != null && !taskId[0].isBlank());
+                        });
+        return taskId[0];
     }
 
     private void registerWorkflowDef(String workflowName, MetadataClient metadataClient1) {

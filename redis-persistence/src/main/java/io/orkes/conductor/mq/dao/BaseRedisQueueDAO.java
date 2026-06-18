@@ -39,6 +39,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import io.orkes.conductor.mq.ConductorQueue;
 import io.orkes.conductor.mq.QueueMessage;
 import lombok.extern.slf4j.Slf4j;
+import redis.clients.jedis.params.ZAddParams;
 
 @Slf4j
 public abstract class BaseRedisQueueDAO implements QueueDAO {
@@ -101,6 +102,12 @@ public abstract class BaseRedisQueueDAO implements QueueDAO {
         // replacement
         String queueKey = queueNamespace + ".QUEUE." + queueName + "." + queueShard;
         return queues.get(queueName, key -> getConductorQueue(queueKey, queueMonitorExecutor));
+    }
+
+    @Override
+    public List<String> peekFirstIds(String queueName, int count) {
+        String queueKey = queueNamespace + ".QUEUE." + queueName + "." + queueShard;
+        return jedisCommands.zrangeByScore(queueKey, 0, Double.POSITIVE_INFINITY, 0, count);
     }
 
     @Override
@@ -219,6 +226,19 @@ public abstract class BaseRedisQueueDAO implements QueueDAO {
     @Override
     public final boolean setUnackTimeout(String queueName, String messageId, long unackTimeout) {
         return get(queueName).setUnacktimeout(messageId, unackTimeout);
+    }
+
+    @Override
+    public final boolean setUnackTimeoutIfShorter(
+            String queueName, String messageId, long unackTimeout) {
+        // ZADD XX LT: update score only if the new value is less (sooner delivery time).
+        // This is atomic in Redis and avoids pushing the evaluation further out than whatever
+        // shorter timeout another in-flight task already established.
+        double score = System.currentTimeMillis() + unackTimeout;
+        String queueKey = queueNamespace + ".QUEUE." + queueName + "." + queueShard;
+        ZAddParams params = ZAddParams.zAddParams().xx().lt().ch();
+        Long modified = jedisCommands.zadd(queueKey, score, messageId, params);
+        return modified != null && modified > 0;
     }
 
     @Override

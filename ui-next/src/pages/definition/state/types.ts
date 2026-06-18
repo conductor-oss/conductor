@@ -103,6 +103,10 @@ export type UpdateAttributesEvent = {
   workflowVersions?: number[];
   currentVersion?: string;
   workflowTemplateId?: string;
+  /** When true, keep the existing workflowChanges rather than clearing to {}. Used
+   * internally after a successful save to avoid a blank-workflow window during
+   * the async version-refetch that follows. */
+  preserveWorkflowChanges?: boolean;
 };
 
 export type ChangeVersionEvent = {
@@ -161,6 +165,9 @@ export type DownloadFileEvent = {
 
 export type SaveRequestEvent = {
   type: DefinitionMachineEventTypes.SAVE_EVT;
+  /** When true, skip the isDescriptionEmpty guard. Used by agent-triggered saves
+   * so a workflow without a description is never silently swallowed. */
+  skipDescriptionCheck?: boolean;
 };
 
 export type SaveAndCreateNewRequestEvent = {

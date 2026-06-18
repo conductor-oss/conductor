@@ -109,6 +109,16 @@ public class RedisProperties {
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration metadataCacheRefreshInterval = Duration.ofSeconds(60);
 
+    /**
+     * Enable in-memory caching of workflow definitions. When enabled, reads are served from cache
+     * with zero Redis I/O; the cache is refreshed synchronously on writes and periodically in the
+     * background. Disabled by default because in multi-instance deployments only the writing
+     * instance refreshes immediately — other instances see stale data until the next background
+     * refresh. Enable this if you have a large number of workflow definitions and can accept
+     * eventual consistency across instances.
+     */
+    private boolean workflowDefCacheEnabled = false;
+
     // Maximum number of idle connections to be maintained
     private int maxIdleConnections = 8;
 
@@ -329,6 +339,14 @@ public class RedisProperties {
 
     public void setMetadataCacheRefreshInterval(Duration metadataCacheRefreshInterval) {
         this.metadataCacheRefreshInterval = metadataCacheRefreshInterval;
+    }
+
+    public boolean isWorkflowDefCacheEnabled() {
+        return workflowDefCacheEnabled;
+    }
+
+    public void setWorkflowDefCacheEnabled(boolean workflowDefCacheEnabled) {
+        this.workflowDefCacheEnabled = workflowDefCacheEnabled;
     }
 
     public boolean isSsl() {

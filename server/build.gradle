@@ -32,6 +32,8 @@ dependencies {
     implementation project(':conductor-azureblob-storage')
     implementation project(':conductor-postgres-external-storage')
     implementation project(':conductor-awss3-storage')
+    implementation project(':conductor-local-file-storage')
+    implementation project(':conductor-gcs-storage')
 
 
     //Persistence
@@ -42,18 +44,14 @@ dependencies {
     implementation project(':conductor-mysql-persistence')
     implementation project(':conductor-sqlite-persistence')
 
-    //Scheduler persistence
-    implementation project(':conductor-scheduler-postgres-persistence')
-
     // Indexing backend selection (build-time) to avoid Lucene conflicts between ES and OS
     def indexingBackend = project.findProperty('indexingBackend') ?: 'elasticsearch'
-    if (indexingBackend == 'opensearch' || indexingBackend == 'os') {
+
+    if (indexingBackend == 'opensearch3' || indexingBackend == 'os3') {
+        implementation project(':conductor-os-persistence-v3')
+    } else if (indexingBackend == 'opensearch' || indexingBackend == 'os') {
         implementation project(':conductor-os-persistence')
         implementation project(':conductor-os-persistence-v2')
-        // os-persistence-v3 excluded: requires API migration to opensearch-java 3.x
-        // The DAO layer needs reimplementation for the new client API (breaking changes)
-        // See: os-persistence-v3/build.gradle comments for details
-        // implementation project(':conductor-os-persistence-v3')
     } else if (indexingBackend == 'elasticsearch8' || indexingBackend == 'es8') {
         implementation project(':conductor-es8-persistence')
     } else if (indexingBackend == 'elasticsearch7' || indexingBackend == 'es7' || indexingBackend == 'elasticsearch') {
@@ -69,8 +67,18 @@ dependencies {
     implementation project(':conductor-json-jq-task')
     implementation project(':conductor-kafka')
 
+    //Scheduler
+    implementation project(':conductor-scheduler-core')
+    implementation project(':conductor-scheduler-postgres-persistence')
+    implementation project(':conductor-scheduler-mysql-persistence')
+    implementation project(':conductor-scheduler-cassandra-persistence')
+    implementation project(':conductor-scheduler-redis-persistence')
+    implementation project(':conductor-scheduler-sqlite-persistence')
+
     //Metrics
-    implementation project(':conductor-metrics')
+    implementation "io.micrometer:micrometer-registry-cloudwatch2:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-azure-monitor:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-prometheus:${revMicrometer}"
 
     //Event Listener
     implementation project(':conductor-workflow-event-listener')
