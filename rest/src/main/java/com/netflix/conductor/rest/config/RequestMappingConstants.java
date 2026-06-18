@@ -25,4 +25,5 @@ public interface RequestMappingConstants {
     String WORKFLOW = API_PREFIX + "workflow";
     String VERSION = API_PREFIX + "version";
     String FILES = API_PREFIX + "files";
+    String INTEGRATIONS = API_PREFIX + "integrations";
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet";
 import { makeStyles } from "@material-ui/styles";
 import {
@@ -24,10 +24,13 @@ import { fetchWithContext, useFetchContext } from "../../plugins/fetch";
 
 const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.readonly";
 const SESSION_KEY = "conductor.gdrive.oauth";
+const READ_G_DRIVE_TASK_NAME = "read_g_drive";
 
 const useStyles = makeStyles({
   root: {
-    minHeight: "100%",
+    height: "100%",
+    overflowY: "auto",
+    overflowX: "hidden",
     padding: 24,
     boxSizing: "border-box",
   },
@@ -104,6 +107,7 @@ function getOAuthClient(jsonText) {
   const client = json.installed || json.web || json;
   return {
     clientId: client.client_id || json.client_id,
+    clientSecret: client.client_secret || json.client_secret,
     redirectUri:
       window.location.origin +
       window.location.pathname.replace(/\/+$/, "") +
@@ -111,11 +115,24 @@ function getOAuthClient(jsonText) {
   };
 }
 
-function buildOAuthUrl({ folderId, oauthJson }) {
-  const { clientId, redirectUri } = getOAuthClient(oauthJson);
+function buildOAuthClientJson(clientId, clientSecret) {
+  return JSON.stringify({
+    installed: {
+      client_id: clientId,
+      client_secret: clientSecret,
+      auth_uri: "https://accounts.google.com/o/oauth2/auth",
+      token_uri: "https://oauth2.googleapis.com/token",
+    },
+  });
+}
+
+function buildOAuthUrl({ folderId, clientId }) {
   if (!clientId) {
     return "";
   }
+
+  const redirectUri =
+    window.location.origin + window.location.pathname.replace(/\/+$/, "");
 
   const params = new URLSearchParams({
     client_id: clientId,
@@ -138,8 +155,8 @@ function workflowInput(name) {
 function taskSnippet(maxFiles) {
   return JSON.stringify(
     {
-      name: "GDRIVE_READ",
-      taskReferenceName: "gdrive_read_ref",
+      name: READ_G_DRIVE_TASK_NAME,
+      taskReferenceName: `${READ_G_DRIVE_TASK_NAME}_ref`,
       type: "GDRIVE_READ",
       inputParameters: {
         folderId: workflowInput("driveFolderId"),
@@ -162,11 +179,66 @@ function formatError(error) {
   return error.message || "Request failed";
 }
 
+function buildReadGDriveTaskDefinition() {
+  return {
+    name: READ_G_DRIVE_TASK_NAME,
+    description: "Read file metadata from a Google Drive folder using OAuth.",
+    retryCount: 3,
+    timeoutSeconds: 3600,
+    inputKeys: ["driveFolderId", "oauthTokenJson", "maxFiles", "mimeTypes"],
+    outputKeys: ["folderId", "files", "count"],
+    timeoutPolicy: "TIME_OUT_WF",
+    retryLogic: "FIXED",
+    retryDelaySeconds: 60,
+    responseTimeoutSeconds: 600,
+    rateLimitPerFrequency: 0,
+    rateLimitFrequencyInSeconds: 1,
+    ownerEmail: "integrations@conductor.local",
+    inputTemplate: {
+      driveFolderId: "",
+      oauthTokenJson: "",
+      maxFiles: 100,
+      mimeTypes: [],
+    },
+  };
+}
+
+function downloadTokenJson(oauthTokenJson) {
+  const blob = new Blob([oauthTokenJson], { type: "application/json" });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "token.json";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => window.URL.revokeObjectURL(url), 0);
+}
+
+async function ensureReadGDriveTask(fetchContext) {
+  try {
+    await fetchWithContext(
+      `metadata/taskdefs/${READ_G_DRIVE_TASK_NAME}`,
+      fetchContext
+    );
+    return "available";
+  } catch {
+    await fetchWithContext("metadata/taskdefs", fetchContext, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify([buildReadGDriveTaskDefinition()]),
+    });
+    return "created";
+  }
+}
+
 export default function GDriveIntegrations() {
   const classes = useStyles();
   const fetchContext = useFetchContext();
   const [folderId, setFolderId] = useState("");
-  const [oauthJson, setOauthJson] = useState("");
+  const [clientId, setClientId] = useState("");
+  const [clientSecret, setClientSecret] = useState("");
+  const [oauthTokenJson, setOauthTokenJson] = useState("");
   const [jsonFileName, setJsonFileName] = useState("");
   const [maxFiles, setMaxFiles] = useState(100);
   const [files, setFiles] = useState([]);
@@ -174,27 +246,29 @@ export default function GDriveIntegrations() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const oauthUrl = useMemo(
-    () => buildOAuthUrl({ folderId, oauthJson }),
-    [folderId, oauthJson]
-  );
+  const processedOAuthCode = useRef(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
-    if (!code) {
+    if (!code || processedOAuthCode.current) {
       return;
     }
+    processedOAuthCode.current = true;
 
     const stored = safeParseJson(sessionStorage.getItem(SESSION_KEY)) || {};
-    const storedJson = stored.oauthJson || "";
+    const storedClientId = stored.clientId || "";
+    const storedClientSecret = stored.clientSecret || "";
+    const storedClientJson =
+      stored.oauthClientJson ||
+      buildOAuthClientJson(storedClientId, storedClientSecret);
     const storedFolderId = stored.folderId || params.get("state") || "";
     const redirectUri =
       window.location.origin + window.location.pathname.replace(/\/+$/, "");
 
     setFolderId(storedFolderId);
-    setOauthJson(storedJson);
+    setClientId(storedClientId);
+    setClientSecret(storedClientSecret);
     setLoading(true);
     setError("");
     setMessage("Completing Google OAuth...");
@@ -204,34 +278,75 @@ export default function GDriveIntegrations() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         authorizationCode: code,
-        oauthClientJson: storedJson,
+        oauthClientJson: storedClientJson,
         redirectUri,
       }),
     })
-      .then((response) => {
-        setOauthJson(response.oauthTokenJson);
-        setMessage("OAuth token JSON is ready.");
+      .then(async (response) => {
+        const oauthTokenJson = response.oauthTokenJson || "";
+        if (!oauthTokenJson) {
+          throw new Error("OAuth token response did not include token JSON.");
+        }
+        setOauthTokenJson(oauthTokenJson);
+        downloadTokenJson(oauthTokenJson);
         sessionStorage.removeItem(SESSION_KEY);
         window.history.replaceState({}, "", window.location.pathname);
+
+        try {
+          const taskStatus = await ensureReadGDriveTask(fetchContext);
+          const taskMessage =
+            taskStatus === "created"
+              ? `${READ_G_DRIVE_TASK_NAME} task created.`
+              : `${READ_G_DRIVE_TASK_NAME} task is available.`;
+          setMessage(`OAuth token downloaded as token.json. ${taskMessage}`);
+        } catch (taskError) {
+          setMessage("OAuth token downloaded as token.json.");
+          setError(
+            `${READ_G_DRIVE_TASK_NAME} task was not created: ${formatError(
+              taskError
+            )}`
+          );
+        }
       })
       .catch((err) => setError(formatError(err)))
       .finally(() => setLoading(false));
   }, [fetchContext]);
 
-  function handleOAuthStart(event) {
-    if (!oauthUrl) {
-      event.preventDefault();
-      setError("Upload or paste OAuth client JSON before starting OAuth.");
+  function handleGenerateOAuth() {
+    setError("");
+    setMessage("");
+
+    if (!folderId.trim()) {
+      setError("Folder ID is required before generating OAuth.");
+      return;
+    }
+    const nextOAuthUrl = buildOAuthUrl({
+      folderId: folderId.trim(),
+      clientId: clientId.trim(),
+    });
+
+    if (!nextOAuthUrl) {
+      setError("OAuth client ID is required before generating OAuth.");
+      return;
+    }
+    if (!clientSecret.trim()) {
+      setError("OAuth client secret is required before generating OAuth.");
       return;
     }
 
     sessionStorage.setItem(
       SESSION_KEY,
       JSON.stringify({
-        folderId,
-        oauthJson,
+        folderId: folderId.trim(),
+        clientId: clientId.trim(),
+        clientSecret: clientSecret.trim(),
+        oauthClientJson: buildOAuthClientJson(
+          clientId.trim(),
+          clientSecret.trim()
+        ),
       })
     );
+    window.location.assign(nextOAuthUrl);
   }
 
   function handleFileChange(event) {
@@ -242,8 +357,17 @@ export default function GDriveIntegrations() {
     file
       .text()
       .then((content) => {
-        JSON.parse(content);
-        setOauthJson(content);
+        const parsed = JSON.parse(content);
+        const client = getOAuthClient(content);
+        if (client.clientId) {
+          setClientId(client.clientId);
+        }
+        if (client.clientSecret) {
+          setClientSecret(client.clientSecret);
+        }
+        if (parsed.access_token || parsed.token || parsed.refresh_token) {
+          setOauthTokenJson(content);
+        }
         setJsonFileName(file.name);
         setMessage(`${file.name} loaded.`);
         setError("");
@@ -261,8 +385,8 @@ export default function GDriveIntegrations() {
       setError("Folder ID is required.");
       return;
     }
-    if (!safeParseJson(oauthJson)) {
-      setError("OAuth token JSON is required.");
+    if (!safeParseJson(oauthTokenJson)) {
+      setError("OAuth token JSON is required. Use Generate OAuth first.");
       return;
     }
 
@@ -272,7 +396,7 @@ export default function GDriveIntegrations() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         folderId: folderId.trim(),
-        oauthTokenJson: oauthJson,
+        oauthTokenJson,
         maxFiles,
       }),
     })
@@ -299,7 +423,10 @@ export default function GDriveIntegrations() {
                 <CloudQueueIcon className={classes.selectorIcon} />
                 <Box>
                   <Text level={2}>Google Drive Read</Text>
-                  <Text className={classes.muted}>Task: GDRIVE_READ</Text>
+                  <Text className={classes.muted}>
+                    Task: {READ_G_DRIVE_TASK_NAME}
+                  </Text>
+                  <Text className={classes.muted}>Type: GDRIVE_READ</Text>
                 </Box>
               </div>
             </Paper>
@@ -317,6 +444,21 @@ export default function GDriveIntegrations() {
                   fullWidth
                   variant="outlined"
                   onChange={setFolderId}
+                />
+                <Input
+                  label="OAuth Client ID"
+                  value={clientId}
+                  fullWidth
+                  variant="outlined"
+                  onChange={setClientId}
+                />
+                <Input
+                  label="OAuth Client Secret"
+                  value={clientSecret}
+                  fullWidth
+                  variant="outlined"
+                  type="password"
+                  onChange={setClientSecret}
                 />
                 <Box className={classes.actionRow}>
                   <input
@@ -341,8 +483,8 @@ export default function GDriveIntegrations() {
                 </Box>
                 <TextField
                   label="OAuth Token JSON"
-                  value={oauthJson}
-                  onChange={(event) => setOauthJson(event.target.value)}
+                  value={oauthTokenJson}
+                  onChange={(event) => setOauthTokenJson(event.target.value)}
                   fullWidth
                   multiline
                   minRows={9}
@@ -360,20 +502,18 @@ export default function GDriveIntegrations() {
                   <Button
                     color="primary"
                     variant="contained"
-                    onClick={handleLoadDrive}
+                    onClick={handleGenerateOAuth}
                     disabled={loading}
                   >
-                    Load Drive
+                    Generate OAuth
                   </Button>
                   <Button
                     color="primary"
                     variant="outlined"
-                    component="a"
-                    href={oauthUrl || "#"}
-                    onClick={handleOAuthStart}
-                    disabled={!oauthUrl || loading}
+                    onClick={handleLoadDrive}
+                    disabled={loading}
                   >
-                    Start Google OAuth
+                    Load Drive
                   </Button>
                 </Box>
                 {message && <Text>{message}</Text>}

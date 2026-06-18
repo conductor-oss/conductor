@@ -27,8 +27,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 import io.swagger.v3.oas.annotations.Operation;
 
+import static com.netflix.conductor.rest.config.RequestMappingConstants.INTEGRATIONS;
+
 @RestController
-@RequestMapping("/integrations")
+@RequestMapping(value = INTEGRATIONS)
 public class IntegrationsResource {
 
     private final GDriveIntegrationService gDriveIntegrationService;

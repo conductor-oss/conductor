@@ -169,6 +169,70 @@ test.describe("Page load smoke tests", () => {
       page.getByRole("heading", { name: "Integrations" })
     ).toBeVisible();
     await expect(page.getByText("Google Drive Read")).toBeVisible();
+    await expect(page.getByText("read_g_drive")).toBeVisible();
     await expect(page.getByText("GDRIVE_READ")).toBeVisible();
+    await expect(page.getByLabel("OAuth Client ID")).toBeVisible();
+    await expect(page.getByLabel("OAuth Client Secret")).toBeVisible();
+    await expect(page.getByText("Generate OAuth")).toBeVisible();
+  });
+
+  test("Integrations OAuth callback downloads token and creates Drive task", async ({
+    page,
+  }) => {
+    await mockCommonApis(page);
+
+    let createdTaskDefs: Array<{ name?: string }> | undefined;
+    await page.route("**/api/integrations/gdrive/oauth/token", (route) =>
+      route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          oauthTokenJson: JSON.stringify({
+            token: "access-token",
+            refresh_token: "refresh-token",
+            client_id: "client-id",
+            client_secret: "client-secret",
+            token_uri: "https://oauth2.googleapis.com/token",
+          }),
+        }),
+      })
+    );
+    await page.route("**/api/metadata/taskdefs/read_g_drive", (route) =>
+      route.fulfill({ status: 404, body: "Not found" })
+    );
+    await page.route("**/api/metadata/taskdefs", async (route) => {
+      if (route.request().method() === "POST") {
+        createdTaskDefs = route.request().postDataJSON();
+        await route.fulfill({ status: 204, body: "" });
+      } else {
+        await route.fulfill({ path: f("metadataTasks.json") });
+      }
+    });
+
+    await page.addInitScript(() => {
+      window.sessionStorage.setItem(
+        "conductor.gdrive.oauth",
+        JSON.stringify({
+          folderId: "folder-123",
+          clientId: "client-id",
+          clientSecret: "client-secret",
+          oauthClientJson: JSON.stringify({
+            installed: {
+              client_id: "client-id",
+              client_secret: "client-secret",
+            },
+          }),
+        })
+      );
+    });
+
+    const downloadPromise = page.waitForEvent("download");
+    await page.goto("/integrations?code=auth-code&state=folder-123");
+    const download = await downloadPromise;
+
+    expect(download.suggestedFilename()).toBe("token.json");
+    await expect(
+      page.getByText("OAuth token downloaded as token.json.")
+    ).toBeVisible();
+    expect(createdTaskDefs?.[0]?.name).toBe("read_g_drive");
   });
 });

@@ -51,6 +51,7 @@ const useStyles = makeStyles((theme) => ({
   body: {
     width: "100vw",
     height: "100vh",
+    boxSizing: "border-box",
     paddingTop: theme.overrides.MuiAppBar.root.height,
   },
   toolbarRight: {
