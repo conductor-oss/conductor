@@ -17,6 +17,7 @@ import { TagDto } from "types/Tag";
 import { useActionWithPath, useTags } from "utils/query";
 import { getErrorMessage } from "utils/utils";
 import ReplaceTagsInput from "components/features/tags/ReplaceTagsInput";
+import { isValidTag } from "components/features/tags/tagUtils";
 
 export type TagDialogProps = {
   open: boolean;
@@ -57,6 +58,7 @@ export default function AddTagDialog({
   const [newTags, setNewTags] = useState<string[]>(
     tags.map((tag: TagDto) => tag && `${tag.key}:${tag.value}`),
   );
+  const [pendingInput, setPendingInput] = useState("");
   // Only fetch all tags when the dialog is open (avoids slow /metadata/tags on every page that mounts this dialog).
   const { data: existingTags } = useTags<TagDto[]>({ enabled: open });
 
@@ -79,6 +81,9 @@ export default function AddTagDialog({
   const hasNoChanges =
     _differenceWith(tags, parsedTags(newTags), isTagEqual).length === 0 &&
     newTags.length === tags.length;
+  const hasInvalidTags = newTags.some((tag) => !isValidTag(tag));
+  const isSaveDisabled =
+    hasNoChanges || pendingInput.trim().length > 0 || hasInvalidTags;
 
   function replaceTags(newTags: any) {
     for (const tag of newTags) {
@@ -138,6 +143,9 @@ export default function AddTagDialog({
             onChange={(tags) => {
               setNewTags(_uniq(tags));
             }}
+            onInputChange={(value) => {
+              setPendingInput(value);
+            }}
           />
         </Box>
       </DialogContent>
@@ -156,7 +164,7 @@ export default function AddTagDialog({
           variant="contained"
           color="primary"
           progress={loading}
-          disabled={hasNoChanges}
+          disabled={isSaveDisabled}
           onClick={() => replaceTags(newTags)}
           startIcon={<SaveIcon />}
         >
