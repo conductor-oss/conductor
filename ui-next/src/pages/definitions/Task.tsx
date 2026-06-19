@@ -238,13 +238,14 @@ export default function TaskDefinitions() {
                 disabled={isTrialExpired}
                 onClick={() => {
                   setAddTagDialogData({
+                    open: true,
                     apiPath: "",
                     onClose(): void {},
                     onSuccess(): void {},
                     tags: taskRowData.tags || [],
                     itemName: taskRowData.name,
                     itemType: "task",
-                  } as TagDialogProps);
+                  });
                   setShowAddTagDialog(true);
                 }}
                 size="small"
