@@ -86,7 +86,6 @@ vi.mock("utils/constants/route", () => ({
     NAME_VERSION: "/workflowDef/:name/:version",
     NEW: "/workflowDef/new",
   },
-  WORKFLOW_EXPLORER_URL: "/workflow-explorer",
   WORKERS_URL: {
     BASE: "/workers",
   },

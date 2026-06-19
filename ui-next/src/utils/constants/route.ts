@@ -133,8 +133,6 @@ export const AUTHENTICATION_URL = "/authentication";
 
 export const ERROR_URL = "/error";
 
-export const WORKFLOW_EXPLORER_URL = "/workflowExplorer";
-
 export const OIDC_CALLBACK_ROUTE = "/login/oidc/callback";
 
 export const WORKFLOW_EXECUTION_URL = {
