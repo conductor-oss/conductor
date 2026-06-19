@@ -173,6 +173,8 @@ test.describe("Page load smoke tests", () => {
     await expect(page.getByText("GDRIVE_READ")).toBeVisible();
     await expect(page.getByLabel("OAuth Client ID")).toBeVisible();
     await expect(page.getByLabel("OAuth Client Secret")).toBeVisible();
+    await expect(page.getByText("Upload Client JSON")).toBeVisible();
+    await expect(page.getByText("Upload OAuth Token JSON")).toBeVisible();
     await expect(page.getByText("Generate OAuth")).toBeVisible();
   });
 
@@ -234,5 +236,6 @@ test.describe("Page load smoke tests", () => {
       page.getByText("OAuth token downloaded as token.json.")
     ).toBeVisible();
     expect(createdTaskDefs?.[0]?.name).toBe("read_g_drive");
+    expect(createdTaskDefs?.[0]?.inputKeys).toContain("folderId");
   });
 });

@@ -159,7 +159,7 @@ function taskSnippet(maxFiles) {
       taskReferenceName: `${READ_G_DRIVE_TASK_NAME}_ref`,
       type: "GDRIVE_READ",
       inputParameters: {
-        folderId: workflowInput("driveFolderId"),
+        folderId: workflowInput("folderId"),
         oauthTokenJson: workflowInput("oauthTokenJson"),
         maxFiles,
       },
@@ -185,7 +185,7 @@ function buildReadGDriveTaskDefinition() {
     description: "Read file metadata from a Google Drive folder using OAuth.",
     retryCount: 3,
     timeoutSeconds: 3600,
-    inputKeys: ["driveFolderId", "oauthTokenJson", "maxFiles", "mimeTypes"],
+    inputKeys: ["folderId", "oauthTokenJson", "maxFiles", "mimeTypes"],
     outputKeys: ["folderId", "files", "count"],
     timeoutPolicy: "TIME_OUT_WF",
     retryLogic: "FIXED",
@@ -195,7 +195,7 @@ function buildReadGDriveTaskDefinition() {
     rateLimitFrequencyInSeconds: 1,
     ownerEmail: "integrations@conductor.local",
     inputTemplate: {
-      driveFolderId: "",
+      folderId: "",
       oauthTokenJson: "",
       maxFiles: 100,
       mimeTypes: [],
@@ -239,7 +239,8 @@ export default function GDriveIntegrations() {
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
   const [oauthTokenJson, setOauthTokenJson] = useState("");
-  const [jsonFileName, setJsonFileName] = useState("");
+  const [clientJsonFileName, setClientJsonFileName] = useState("");
+  const [tokenJsonFileName, setTokenJsonFileName] = useState("");
   const [maxFiles, setMaxFiles] = useState(100);
   const [files, setFiles] = useState([]);
   const [count, setCount] = useState(0);
@@ -349,7 +350,33 @@ export default function GDriveIntegrations() {
     window.location.assign(nextOAuthUrl);
   }
 
-  function handleFileChange(event) {
+  function handleOAuthClientFileChange(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) {
+      return;
+    }
+    file
+      .text()
+      .then((content) => {
+        JSON.parse(content);
+        const client = getOAuthClient(content);
+        if (!client.clientId || !client.clientSecret) {
+          throw new Error(
+            "OAuth client JSON must include client_id and client_secret."
+          );
+        }
+        setClientId(client.clientId);
+        setClientSecret(client.clientSecret);
+        setClientJsonFileName(file.name);
+        setMessage(`${file.name} loaded as OAuth client JSON.`);
+        setError("");
+      })
+      .catch((err) =>
+        setError(err.message || "OAuth client JSON file is invalid.")
+      );
+  }
+
+  function handleOAuthTokenFileChange(event) {
     const file = event.target.files && event.target.files[0];
     if (!file) {
       return;
@@ -358,6 +385,11 @@ export default function GDriveIntegrations() {
       .text()
       .then((content) => {
         const parsed = JSON.parse(content);
+        if (!(parsed.access_token || parsed.token || parsed.refresh_token)) {
+          throw new Error(
+            "OAuth token JSON must include access_token, token, or refresh_token."
+          );
+        }
         const client = getOAuthClient(content);
         if (client.clientId) {
           setClientId(client.clientId);
@@ -365,14 +397,14 @@ export default function GDriveIntegrations() {
         if (client.clientSecret) {
           setClientSecret(client.clientSecret);
         }
-        if (parsed.access_token || parsed.token || parsed.refresh_token) {
-          setOauthTokenJson(content);
-        }
-        setJsonFileName(file.name);
-        setMessage(`${file.name} loaded.`);
+        setOauthTokenJson(content);
+        setTokenJsonFileName(file.name);
+        setMessage(`${file.name} loaded as OAuth token JSON.`);
         setError("");
       })
-      .catch(() => setError("JSON file is invalid."));
+      .catch((err) =>
+        setError(err.message || "OAuth token JSON file is invalid.")
+      );
   }
 
   function handleLoadDrive() {
@@ -386,7 +418,9 @@ export default function GDriveIntegrations() {
       return;
     }
     if (!safeParseJson(oauthTokenJson)) {
-      setError("OAuth token JSON is required. Use Generate OAuth first.");
+      setError(
+        "OAuth token JSON is required. Generate OAuth or upload token.json first."
+      );
       return;
     }
 
@@ -462,23 +496,44 @@ export default function GDriveIntegrations() {
                 />
                 <Box className={classes.actionRow}>
                   <input
-                    id="gdrive-oauth-json-file"
+                    id="gdrive-oauth-client-json-file"
                     className={classes.fileInput}
                     type="file"
                     accept=".json,application/json"
-                    onChange={handleFileChange}
+                    onChange={handleOAuthClientFileChange}
                   />
-                  <label htmlFor="gdrive-oauth-json-file">
+                  <label htmlFor="gdrive-oauth-client-json-file">
                     <Button
                       component="span"
                       variant="outlined"
                       startIcon={<FolderOpenIcon />}
                     >
-                      Select JSON File
+                      Upload Client JSON
                     </Button>
                   </label>
-                  {jsonFileName && (
-                    <Text className={classes.muted}>{jsonFileName}</Text>
+                  {clientJsonFileName && (
+                    <Text className={classes.muted}>{clientJsonFileName}</Text>
+                  )}
+                </Box>
+                <Box className={classes.actionRow}>
+                  <input
+                    id="gdrive-oauth-token-json-file"
+                    className={classes.fileInput}
+                    type="file"
+                    accept=".json,application/json"
+                    onChange={handleOAuthTokenFileChange}
+                  />
+                  <label htmlFor="gdrive-oauth-token-json-file">
+                    <Button
+                      component="span"
+                      variant="outlined"
+                      startIcon={<FolderOpenIcon />}
+                    >
+                      Upload OAuth Token JSON
+                    </Button>
+                  </label>
+                  {tokenJsonFileName && (
+                    <Text className={classes.muted}>{tokenJsonFileName}</Text>
                   )}
                 </Box>
                 <TextField

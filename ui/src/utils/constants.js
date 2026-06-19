@@ -30,6 +30,7 @@ export const TASK_TYPES = [
   "EXCLUSIVE_JOIN",
   "FORK_JOIN",
   "FORK_JOIN_DYNAMIC",
+  "GDRIVE_READ",
   "HTTP",
   "INLINE",
   "JOIN",
