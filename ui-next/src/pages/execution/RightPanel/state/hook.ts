@@ -10,6 +10,7 @@ import {
   SetSelectedTaskEvent,
 } from "./types";
 import { TaskStatus } from "types/TaskStatus";
+import { fillIterationPlaceholders } from "../iterationHelpers";
 
 export const useRightPanelActor = (
   rightPanelActor: ActorRef<RightPanelEvents>,
@@ -37,9 +38,28 @@ export const useRightPanelActor = (
     }
   }, [executionStatusMap, selectedTask]);
 
-  const retryIterationOptions =
-    selectedTaskInStatusMap?.loopOver &&
-    [...(selectedTaskInStatusMap?.loopOver ?? [])].reverse();
+  const parentDoWhileRef = useMemo(() => {
+    const parentLoop = selectedTaskInStatusMap?.parentLoop as any;
+    return parentLoop?.referenceTaskName as string | undefined;
+  }, [selectedTaskInStatusMap]);
+
+  const retryIterationOptions = useMemo(() => {
+    const loopOver = selectedTaskInStatusMap?.loopOver;
+    if (!loopOver?.length) return loopOver;
+
+    const parentLoop = selectedTaskInStatusMap?.parentLoop as any;
+    const totalIterations = parentLoop?.iteration as number | undefined;
+    if (!totalIterations) {
+      return [...loopOver].reverse();
+    }
+
+    return fillIterationPlaceholders(
+      loopOver,
+      totalIterations,
+      parentDoWhileRef,
+      selectedTaskInStatusMap?.workflowTask,
+    );
+  }, [selectedTaskInStatusMap, parentDoWhileRef]);
   const maybeSiblings = selectedTaskInStatusMap?.related?.siblings || [];
 
   const isSelectedTaskInProgressStatus = useSelector(
@@ -60,11 +80,23 @@ export const useRightPanelActor = (
       state.context?.selectedTask?.retryCount > 0,
   );
 
+  const executionId = useSelector(
+    rightPanelActor,
+    (state: State<RightPanelContext>) => state.context.executionId,
+  );
+  const authHeaders = useSelector(
+    rightPanelActor,
+    (state: State<RightPanelContext>) => state.context.authHeaders,
+  );
+
   return [
     {
       selectedTask,
       retryIterationOptions,
+      parentDoWhileRef,
       maybeSiblings,
+      executionId,
+      authHeaders,
       isIteration: useSelector(
         rightPanelActor,
         (state: State<RightPanelContext>) =>
