@@ -66,6 +66,7 @@ export default function TaskDefinitions() {
 
   const { setMessage } = useContext(MessageContext);
   const { isTrialExpired } = useAuth();
+  const tagsEnabled = featureFlags.isEnabled(FEATURES.TAG_VISIBILITY);
 
   const columns = useMemo(
     () => [
@@ -195,18 +196,22 @@ export default function TaskDefinitions() {
         grow: 0.5,
         tooltip: "Task rate limit frequency in seconds",
       },
-      {
-        id: "tags",
-        name: "tags",
-        label: "Tags",
-        searchable: true,
-        tooltip: "Task tags",
-        searchableFunc: (tags: TagDto[]) => createSearchableTags(tags),
-        renderer: (tags: TagDto[], row: TaskDto) => (
-          <TagList tags={tags} name={row?.name} />
-        ),
-        grow: 2,
-      },
+      ...(tagsEnabled
+        ? [
+            {
+              id: "tags",
+              name: "tags",
+              label: "Tags",
+              searchable: true,
+              tooltip: "Task tags",
+              searchableFunc: (tags: TagDto[]) => createSearchableTags(tags),
+              renderer: (tags: TagDto[], row: TaskDto) => (
+                <TagList tags={tags} name={row?.name} />
+              ),
+              grow: 2,
+            },
+          ]
+        : []),
       {
         id: "actions",
         name: "name",
@@ -232,27 +237,29 @@ export default function TaskDefinitions() {
               </IconButton>
             </Tooltip>
 
-            <Tooltip title={"Add/Edit tags"}>
-              <IconButton
-                id={`add-tag-${name}-btn`}
-                disabled={isTrialExpired}
-                onClick={() => {
-                  setAddTagDialogData({
-                    open: true,
-                    apiPath: "",
-                    onClose(): void {},
-                    onSuccess(): void {},
-                    tags: taskRowData.tags || [],
-                    itemName: taskRowData.name,
-                    itemType: "task",
-                  });
-                  setShowAddTagDialog(true);
-                }}
-                size="small"
-              >
-                <TagIcon />
-              </IconButton>
-            </Tooltip>
+            {tagsEnabled && (
+              <Tooltip title={"Add/Edit tags"}>
+                <IconButton
+                  id={`add-tag-${name}-btn`}
+                  disabled={isTrialExpired}
+                  onClick={() => {
+                    setAddTagDialogData({
+                      open: true,
+                      apiPath: "",
+                      onClose(): void {},
+                      onSuccess(): void {},
+                      tags: taskRowData.tags || [],
+                      itemName: taskRowData.name,
+                      itemType: "task",
+                    });
+                    setShowAddTagDialog(true);
+                  }}
+                  size="small"
+                >
+                  <TagIcon />
+                </IconButton>
+              </Tooltip>
+            )}
 
             <Tooltip title={"Delete task definition"}>
               <IconButton
@@ -274,7 +281,7 @@ export default function TaskDefinitions() {
         ),
       },
     ],
-    [isTrialExpired],
+    [isTrialExpired, tagsEnabled],
   );
 
   const taskVisibility = featureFlags.getValue(
@@ -407,20 +414,22 @@ export default function TaskDefinitions() {
         />
       )}
 
-      <AddTagDialog
-        open={showAddTagDialog && !!addTagDialogData}
-        tags={addTagDialogData?.tags || []}
-        itemName={addTagDialogData?.itemName}
-        itemType={addTagDialogData?.itemType}
-        onClose={() => {
-          setShowAddTagDialog(false);
-          setAddTagDialogData(null);
-        }}
-        onSuccess={() => {
-          setShowAddTagDialog(false);
-          refetchData();
-        }}
-      />
+      {tagsEnabled && (
+        <AddTagDialog
+          open={showAddTagDialog && !!addTagDialogData}
+          tags={addTagDialogData?.tags || []}
+          itemName={addTagDialogData?.itemName}
+          itemType={addTagDialogData?.itemType}
+          onClose={() => {
+            setShowAddTagDialog(false);
+            setAddTagDialogData(null);
+          }}
+          onSuccess={() => {
+            setShowAddTagDialog(false);
+            refetchData();
+          }}
+        />
+      )}
 
       {confirmDeleteName && (
         <ConfirmChoiceDialog
@@ -483,7 +492,7 @@ export default function TaskDefinitions() {
                   "name",
                   "executable",
                   "description",
-                  "tags",
+                  ...(tagsEnabled ? ["tags"] : []),
                   "ownerEmail",
                   "timeoutPolicy",
                   "retryCount",
