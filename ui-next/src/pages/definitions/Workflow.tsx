@@ -374,7 +374,7 @@ export default function WorkflowDefinitions() {
     }
   }, [data]);
 
-  const handleClickBrowseTemplates = () => {
+  const handleClickGetStarted = () => {
     pushHistory(isPlayground ? "/" : WORKFLOW_DEFINITION_URL.NEW);
   };
 
@@ -528,9 +528,9 @@ export default function WorkflowDefinitions() {
                     title="Workflow Definition"
                     description={INTRO_CONTENT}
                     buttonText={
-                      isPlayground ? "Browse Templates" : "Define a Workflow"
+                      isPlayground ? "Get Started" : "Define a Workflow"
                     }
-                    buttonHandler={handleClickBrowseTemplates}
+                    buttonHandler={handleClickGetStarted}
                   />
                 ) : (
                   <NoDataComponent
