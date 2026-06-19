@@ -2,6 +2,7 @@
 token.json
 client_secret*.json
 service_account*.json
+requestbody*.json
 data/
 output/
 __pycache__/
