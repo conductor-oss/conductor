@@ -72,7 +72,7 @@ class A2ARealAgentIntegrationTest {
         String url = System.getenv("A2A_AGENT_URL");
         String prompt = System.getenv().getOrDefault("A2A_AGENT_PROMPT", "hello");
 
-        CallAgentTask callAgentTask = new CallAgentTask(service(), mock(Environment.class));
+        AgentTask callAgentTask = new AgentTask(service(), mock(Environment.class));
         TaskModel task = new TaskModel();
         task.setTaskId("it-task-1");
         Map<String, Object> input = new java.util.HashMap<>();

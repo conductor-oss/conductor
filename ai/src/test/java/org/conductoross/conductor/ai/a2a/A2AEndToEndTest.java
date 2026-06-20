@@ -38,13 +38,13 @@ import static org.mockito.Mockito.spy;
 /**
  * End-to-end tests against a real, embedded A2A agent ({@link EmbeddedA2AAgent}) over loopback HTTP
  * — exercising discovery, send, polling, streaming, and cancellation through the actual wire
- * protocol and the real {@link A2AService}/{@link CallAgentTask} logic (no mocks on the A2A path).
+ * protocol and the real {@link A2AService}/{@link AgentTask} logic (no mocks on the A2A path).
  */
 class A2AEndToEndTest {
 
     private EmbeddedA2AAgent agent;
     private A2AService service;
-    private CallAgentTask callAgentTask;
+    private AgentTask callAgentTask;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -59,7 +59,7 @@ class A2AEndToEndTest {
         service = spy(new A2AService(client));
         doNothing().when(service).validateAgentUrl(anyString());
         Environment environment = mock(Environment.class);
-        callAgentTask = new CallAgentTask(service, environment);
+        callAgentTask = new AgentTask(service, environment);
     }
 
     @AfterEach

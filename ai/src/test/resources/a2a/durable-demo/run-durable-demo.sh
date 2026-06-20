@@ -3,7 +3,7 @@
 # Durable A2A — the money shot.
 #
 # Places an order through a Conductor workflow that calls a remote A2A "restaurant" agent
-# (CALL_AGENT). While the order is being prepared, we KILL the Conductor server, then RESTART it.
+# (AGENT). While the order is being prepared, we KILL the Conductor server, then RESTART it.
 # Because the workflow/task state is durably persisted (SQLite here), the order RESUMES and
 # COMPLETES after the restart. An in-memory A2A host (the reference samples) would have lost it.
 #
@@ -75,13 +75,13 @@ curl -sS -X POST "localhost:$PORT/api/metadata/workflow" \
 ok "Registered"
 
 # ── 4. place an order ─────────────────────────────────────────────────────────────────────
-say "Placing an order (the concierge calls the restaurant agent via CALL_AGENT)"
+say "Placing an order (the concierge calls the restaurant agent via AGENT)"
 WFID="$(curl -sS -X POST "localhost:$PORT/api/workflow/durable_purchase" \
      -H 'Content-Type: application/json' \
      -d '{"orderText":"1 large pepperoni pizza","agentUrl":"http://localhost:9999"}')"
 ok "Order started — workflowId=$WFID"
 
-# ── 5. wait until the order is being prepared (CALL_AGENT IN_PROGRESS) ───────────────────────
+# ── 5. wait until the order is being prepared (AGENT IN_PROGRESS) ───────────────────────
 say "Waiting for the order to be in preparation (workflow RUNNING, task IN_PROGRESS)"
 for _ in $(seq 1 30); do
   [ "$(wf_status "$WFID")" = "RUNNING" ] && break; sleep 1

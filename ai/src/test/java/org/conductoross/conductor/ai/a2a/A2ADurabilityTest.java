@@ -41,7 +41,7 @@ import static org.mockito.Mockito.when;
 /**
  * Durability test-harness — validates the proof obligations from {@code
  * design/a2a/09-durable-a2a.md} by injecting failures against a real embedded A2A agent and the
- * real {@link CallAgentTask} / {@link A2AService} logic.
+ * real {@link AgentTask} / {@link A2AService} logic.
  *
  * <table>
  *   <tr><td>T1</td><td>{@link #t1_crashRecovery_resumesOnAFreshInstance()}</td><td>P1 crash-safe resume</td></tr>
@@ -83,8 +83,8 @@ class A2ADurabilityTest {
         return service;
     }
 
-    private CallAgentTask newTask(A2AService service) {
-        return new CallAgentTask(service, environment);
+    private AgentTask newTask(A2AService service) {
+        return new AgentTask(service, environment);
     }
 
     private TaskModel taskModel(
@@ -118,7 +118,7 @@ class A2ADurabilityTest {
 
         // "Restart": a brand-new service + task instance resumes purely from the persisted
         // TaskModel state (its output carries the remote taskId).
-        CallAgentTask afterRestart = newTask(newService());
+        AgentTask afterRestart = newTask(newService());
         int guard = 0;
         while (model.getStatus() == TaskModel.Status.IN_PROGRESS && guard++ < 20) {
             afterRestart.execute(null, model, null);
@@ -150,7 +150,7 @@ class A2ADurabilityTest {
         restored.setStatus(TaskModel.Status.IN_PROGRESS);
 
         // A fresh service + task instance (a "restarted" worker) resumes from the restored state.
-        CallAgentTask afterRestart = newTask(newService());
+        AgentTask afterRestart = newTask(newService());
         int guard = 0;
         while (restored.getStatus() == TaskModel.Status.IN_PROGRESS && guard++ < 20) {
             afterRestart.execute(null, restored, null);
@@ -216,7 +216,7 @@ class A2ADurabilityTest {
         agent.sendMode(SendMode.TASK_WORKING).failGetTask(true);
 
         TaskModel model = taskModel("t4", "wf-1", "agent", 0, Map.of("maxPollFailures", 3));
-        CallAgentTask task = newTask(newService());
+        AgentTask task = newTask(newService());
         task.start(null, model, null);
         assertEquals(TaskModel.Status.IN_PROGRESS, model.getStatus());
 
@@ -237,7 +237,7 @@ class A2ADurabilityTest {
         agent.sendMode(SendMode.TASK_WORKING).completeAfterPolls(1000); // never completes in time
 
         TaskModel model = taskModel("t4b", "wf-1", "agent", 0, Map.of("maxDurationSeconds", 1));
-        CallAgentTask task = newTask(newService());
+        AgentTask task = newTask(newService());
         task.start(null, model, null);
         // Force the deadline to be in the past (simulate elapsed time deterministically).
         model.addOutput(A2AResults.KEY_STARTED_AT, System.currentTimeMillis() - 5000);
@@ -254,7 +254,7 @@ class A2ADurabilityTest {
 
     @Test
     void t5_pushBackstop_completesWithoutWebhook() {
-        when(environment.getProperty(CallAgentTask.CALLBACK_URL_PROPERTY))
+        when(environment.getProperty(AgentTask.CALLBACK_URL_PROPERTY))
                 .thenReturn("https://conductor.example.com");
         // Remote returns "working" on send, "completed" on the first poll. No webhook ever fires.
         agent.sendMode(SendMode.TASK_WORKING).completeAfterPolls(0).text("via-backstop");
@@ -266,7 +266,7 @@ class A2ADurabilityTest {
                         "agent",
                         0,
                         Map.of("pushNotification", true, "pushBackstopPollSeconds", 7));
-        CallAgentTask task = newTask(newService());
+        AgentTask task = newTask(newService());
 
         task.start(null, model, null);
         assertEquals(TaskModel.Status.IN_PROGRESS, model.getStatus());

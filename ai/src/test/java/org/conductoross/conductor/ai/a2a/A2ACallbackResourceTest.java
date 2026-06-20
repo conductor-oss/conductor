@@ -77,7 +77,7 @@ class A2ACallbackResourceTest {
     private Task waitingTask(String token) {
         Task task = new Task();
         task.setTaskId("conductor-task-1");
-        task.setTaskType(CallAgentTask.TASK_TYPE);
+        task.setTaskType(AgentTask.TASK_TYPE);
         task.setStatus(Task.Status.IN_PROGRESS);
         task.setWorkflowInstanceId("wf-1");
         task.setReferenceTaskName("agentRef");

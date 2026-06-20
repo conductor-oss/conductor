@@ -59,7 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The durability money-shot, through the <b>real engine</b>: a {@code CALL_AGENT} task is driven by
+ * The durability money-shot, through the <b>real engine</b>: a {@code AGENT} task is driven by
  * the genuine decider + {@link AsyncSystemTaskExecutor} + Redis-backed persistence (not a mocked
  * engine), against a slow A2A agent, and proves crash/restart resume.
  *
@@ -72,7 +72,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * The embedded agent stands in for the external agent, which does <i>not</i> crash when Conductor
  * does — it keeps serving and eventually flips to {@code completed}.
  *
- * <p>System-task workers are disabled in test mode, so we drain the {@code CALL_AGENT} queue and
+ * <p>System-task workers are disabled in test mode, so we drain the {@code AGENT} queue and
  * execute via {@link AsyncSystemTaskExecutor} — the same path {@code SystemTaskWorkerCoordinator}
  * takes in production.
  */
@@ -150,7 +150,7 @@ class A2ADurableEngineEndToEndTest {
                 .pollInterval(250, TimeUnit.MILLISECONDS)
                 .until(
                         () -> {
-                            drainCallAgentTasks();
+                            drainAgentTasks();
                             Task t = callAgentTask(workflowId);
                             return t != null
                                     && t.getStatus() == Task.Status.IN_PROGRESS
@@ -178,7 +178,7 @@ class A2ADurableEngineEndToEndTest {
                 "the SAME remote task was resumed — no new message/send, no duplicate work");
         assertTrue(
                 String.valueOf(done.getOutputData().get("text")).contains("durable"),
-                "the agent's artifact text should reach CALL_AGENT output: "
+                "the agent's artifact text should reach AGENT output: "
                         + done.getOutputData().get("text"));
         // Exactly one message/send — the crash/resume did not re-send (idempotent at-least-once).
         assertEquals(
@@ -194,7 +194,7 @@ class A2ADurableEngineEndToEndTest {
                 .pollInterval(250, TimeUnit.MILLISECONDS)
                 .until(
                         () -> {
-                            drainCallAgentTasks();
+                            drainAgentTasks();
                             Workflow wf = executionService.getExecutionStatus(workflowId, true);
                             latest.set(wf);
                             return wf != null
@@ -204,18 +204,18 @@ class A2ADurableEngineEndToEndTest {
         return latest.get();
     }
 
-    private void drainCallAgentTasks() {
+    private void drainAgentTasks() {
         WorkflowSystemTask callAgent =
                 asyncSystemTasks.stream()
-                        .filter(t -> "CALL_AGENT".equals(t.getTaskType()))
+                        .filter(t -> "AGENT".equals(t.getTaskType()))
                         .findFirst()
                         .orElseThrow(
                                 () ->
                                         new IllegalStateException(
-                                                "CALL_AGENT WorkflowSystemTask was not registered —"
+                                                "AGENT WorkflowSystemTask was not registered —"
                                                         + " conductor.integrations.ai.enabled must be"
                                                         + " true and the ai module on the classpath."));
-        for (String taskId : queueDAO.pop("CALL_AGENT", 5, 100)) {
+        for (String taskId : queueDAO.pop("AGENT", 5, 100)) {
             asyncSystemTaskExecutor.execute(callAgent, taskId);
         }
     }
@@ -229,7 +229,7 @@ class A2ADurableEngineEndToEndTest {
             return null;
         }
         return workflow.getTasks().stream()
-                .filter(t -> "CALL_AGENT".equals(t.getTaskType()))
+                .filter(t -> "AGENT".equals(t.getTaskType()))
                 .findFirst()
                 .orElse(null);
     }
@@ -244,7 +244,7 @@ class A2ADurableEngineEndToEndTest {
 
     private void registerCallAgentWorkflow(String name, String agentUrl) {
         TaskDef td = new TaskDef();
-        td.setName("CALL_AGENT");
+        td.setName("AGENT");
         td.setRetryCount(0);
         td.setTimeoutSeconds(120);
         try {
@@ -254,9 +254,9 @@ class A2ADurableEngineEndToEndTest {
         }
 
         WorkflowTask task = new WorkflowTask();
-        task.setName("CALL_AGENT");
+        task.setName("AGENT");
         task.setTaskReferenceName("callAgent");
-        task.setType("CALL_AGENT");
+        task.setType("AGENT");
         Map<String, Object> taskInput = new java.util.HashMap<>();
         taskInput.put("agentUrl", agentUrl);
         taskInput.put("text", "process this durably");

@@ -18,11 +18,14 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
-/** Input for the {@code CANCEL_AGENT_TASK} task: request cancellation of a remote agent task. */
+/** Input for the {@code CANCEL_AGENT} task: request cancellation of a remote agent task. */
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = false)
 public class A2ACancelRequest extends LLMWorkerInput {
+
+    /** Agent runtime/protocol; only {@code "a2a"} is supported today. Defaults to {@code "a2a"}. */
+    private String agentType = "a2a";
 
     /** The remote agent's JSON-RPC endpoint URL. */
     private String agentUrl;

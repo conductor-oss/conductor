@@ -42,8 +42,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Receives A2A push notifications from remote agents and completes the corresponding {@code
- * CALL_AGENT} task that is waiting in push mode.
+ * Receives A2A push notifications from remote agents and completes the corresponding {@code AGENT}
+ * task that is waiting in push mode.
  *
  * <p>Token is read from the {@code Authorization: Bearer <token>} header (preferred), then the
  * {@code X-Conductor-A2A-Token} custom header, then — for backward compatibility — the {@code
@@ -78,7 +78,7 @@ public class A2ACallbackResource {
             String token = resolveToken(authHeader, customHeader, queryToken);
 
             Task task = loadTask(taskId);
-            if (task == null || !CallAgentTask.TASK_TYPE.equals(task.getTaskType())) {
+            if (task == null || !AgentTask.TASK_TYPE.equals(task.getTaskType())) {
                 return ResponseEntity.notFound().build();
             }
             scope.add(A2ALogging.WORKFLOW_ID, task.getWorkflowInstanceId())

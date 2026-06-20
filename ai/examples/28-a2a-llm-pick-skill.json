@@ -2,7 +2,7 @@
   "name": "a2a_llm_pick_skill",
   "version": 1,
   "schemaVersion": 2,
-  "description": "Agentic A2A: discover a remote agent's Agent Card (GET_AGENT_CARD), let an LLM choose the best prompt from the advertised skills (LLM_CHAT_COMPLETE), then call the agent (CALL_AGENT). Discovery + reasoning + invocation, all durable.",
+  "description": "Agentic A2A: discover a remote agent's Agent Card (GET_AGENT_CARD), let an LLM choose the best prompt from the advertised skills (LLM_CHAT_COMPLETE), then call the agent (AGENT). Discovery + reasoning + invocation, all durable.",
   "ownerEmail": "a2a@example.com",
   "tasks": [
     {
@@ -25,7 +25,7 @@
     {
       "name": "call_agent",
       "taskReferenceName": "call",
-      "type": "CALL_AGENT",
+      "type": "AGENT",
       "inputParameters": {
         "agentUrl": "${workflow.input.agentUrl}",
         "text": "${choose.output.result}"

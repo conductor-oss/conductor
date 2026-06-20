@@ -69,6 +69,19 @@ public class A2AService {
     private static final MediaType JSON = MediaType.get("application/json");
     private static final int MAX_ERROR_BODY = 500;
 
+    /**
+     * The only agent runtime implemented in OSS today. Native runtimes (langgraph, openai, …) are
+     * planned.
+     */
+    public static final String AGENT_TYPE_A2A = "a2a";
+
+    /** Whether {@code agentType} selects the A2A runtime — null/blank defaults to A2A. */
+    public static boolean isA2aAgentType(String agentType) {
+        return agentType == null
+                || agentType.isBlank()
+                || AGENT_TYPE_A2A.equalsIgnoreCase(agentType);
+    }
+
     /** JSON-RPC / A2A error codes that are not worth retrying. */
     private static final Set<Integer> TERMINAL_RPC_CODES =
             Set.of(

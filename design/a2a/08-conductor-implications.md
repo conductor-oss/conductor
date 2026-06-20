@@ -66,7 +66,7 @@ human-in-the-loop task A2A's lifecycle was designed for.
 
 ### Direction B — Conductor as an A2A **client** ("call a remote agent from a workflow")
 
-A new system task — call it **`CALL_AGENT`** (proposed name) — directly analogous to the
+A new system task — call it **`AGENT`** (proposed name) — directly analogous to the
 existing `CALL_MCP_TOOL`:
 
 1. Task input: a remote Agent Card URL (or pre-resolved card) + the `Message`/payload to send.
@@ -83,14 +83,14 @@ in a Conductor workflow — multi-agent orchestration with Conductor as the dura
 ## 8.4 Lifecycle mapping (the crux)
 
 A2A's `TaskState` and Conductor's status enums (both verified) line up cleanly. For **Direction
-B** (a `CALL_AGENT` task wrapping a remote A2A task), map the remote A2A state onto the
+B** (a `AGENT` task wrapping a remote A2A task), map the remote A2A state onto the
 Conductor *task* status:
 
 | A2A `TaskState` | Conductor `Task.Status` | Handling |
 |---|---|---|
 | `submitted`, `working` | `IN_PROGRESS` | async task; poll `tasks/get` or await webhook |
-| `input-required` | **`COMPLETED`** (with `state="input-required"` in output) | The Conductor task completes so the workflow can branch via `SWITCH` on `output.state`. The `taskId` and `contextId` are surfaced in output so a subsequent `CALL_AGENT` step can continue the conversation. Setting `IN_PROGRESS` here would cause the engine to spin-poll `tasks/get` indefinitely — the remote agent is waiting for a new message, so no poll will ever self-resolve. |
-| `auth-required` | **`COMPLETED`** (with `state="auth-required"` in output) | Same rationale as `input-required`. The workflow routes to credential-gathering logic, then issues a new `CALL_AGENT` with the same `taskId`/`contextId`. |
+| `input-required` | **`COMPLETED`** (with `state="input-required"` in output) | The Conductor task completes so the workflow can branch via `SWITCH` on `output.state`. The `taskId` and `contextId` are surfaced in output so a subsequent `AGENT` step can continue the conversation. Setting `IN_PROGRESS` here would cause the engine to spin-poll `tasks/get` indefinitely — the remote agent is waiting for a new message, so no poll will ever self-resolve. |
+| `auth-required` | **`COMPLETED`** (with `state="auth-required"` in output) | Same rationale as `input-required`. The workflow routes to credential-gathering logic, then issues a new `AGENT` with the same `taskId`/`contextId`. |
 | `completed` | `COMPLETED` | store `Artifact`s as task output |
 | `failed` | `FAILED` | propagate error |
 | `rejected` | `FAILED` | agent declined |
@@ -120,7 +120,7 @@ For **Direction A** (a workflow execution exposed as an A2A task), map the Condu
   competency — persistent state, retries, timeouts, human-in-the-loop (`HUMAN` task), resumable
   executions. A2A's `Task` lifecycle is almost a subset of what Conductor already guarantees.
 - **The MCP precedent exists.** `CALL_MCP_TOOL` shows the pattern for a system task that speaks
-  an external agent protocol; `CALL_AGENT` would mirror it for A2A.
+  an external agent protocol; `AGENT` would mirror it for A2A.
 - **Eventing exists.** Conductor already emits workflow lifecycle events and supports webhooks
   / `EVENT` tasks — the substrate for A2A push notifications.
 - **Multi-agent orchestration is the differentiator.** A2A standardizes *talking* to agents;

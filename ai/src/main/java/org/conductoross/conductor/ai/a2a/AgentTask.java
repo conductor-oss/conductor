@@ -61,14 +61,14 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>When the remote task reaches {@code input-required}/{@code auth-required}, this task COMPLETES
  * and surfaces the agent's question plus the {@code taskId}/{@code contextId}, so the workflow can
- * resume by issuing another {@code CALL_AGENT} with the same ids.
+ * resume by issuing another {@code AGENT} with the same ids.
  */
 @Slf4j
-@Component(CallAgentTask.TASK_TYPE)
+@Component(AgentTask.TASK_TYPE)
 @Conditional(AIIntegrationEnabledCondition.class)
-public class CallAgentTask extends WorkflowSystemTask {
+public class AgentTask extends WorkflowSystemTask {
 
-    public static final String TASK_TYPE = "CALL_AGENT";
+    public static final String TASK_TYPE = "AGENT";
 
     /** Externally-reachable base URL the agent uses for push callbacks. */
     public static final String CALLBACK_URL_PROPERTY = "conductor.a2a.callback.url";
@@ -86,7 +86,7 @@ public class CallAgentTask extends WorkflowSystemTask {
     private final A2AService a2aService;
     private final Environment environment;
 
-    public CallAgentTask(A2AService a2aService, Environment environment) {
+    public AgentTask(A2AService a2aService, Environment environment) {
         super(TASK_TYPE);
         this.a2aService = a2aService;
         this.environment = environment;
@@ -101,8 +101,17 @@ public class CallAgentTask extends WorkflowSystemTask {
                         A2ALogging.TASK_ID, task.getTaskId(),
                         A2ALogging.REF, task.getReferenceTaskName())) {
             A2ACallRequest request = parseRequest(task);
+            if (!A2AService.isA2aAgentType(request.getAgentType())) {
+                fail(
+                        task,
+                        "Unsupported agentType '"
+                                + request.getAgentType()
+                                + "' (only 'a2a' is supported)",
+                        true);
+                return;
+            }
             if (isBlank(request.getAgentUrl())) {
-                fail(task, "CALL_AGENT requires 'agentUrl'", true);
+                fail(task, "AGENT requires 'agentUrl'", true);
                 return;
             }
             // Record the start time once, so execute() can enforce the absolute deadline across
@@ -166,7 +175,7 @@ public class CallAgentTask extends WorkflowSystemTask {
             if (deadlineExceeded(task, request)) {
                 fail(
                         task,
-                        "CALL_AGENT exceeded max duration of "
+                        "AGENT exceeded max duration of "
                                 + maxDurationSeconds(request)
                                 + "s without the remote agent reaching a terminal state",
                         true);
@@ -313,7 +322,7 @@ public class CallAgentTask extends WorkflowSystemTask {
                 String text = firstNonBlank(request.getText(), request.getPrompt());
                 if (isBlank(text)) {
                     throw new NonRetryableException(
-                            "CALL_AGENT requires one of: message, parts, text, or prompt");
+                            "AGENT requires one of: message, parts, text, or prompt");
                 }
                 Part part = new Part();
                 part.setKind("text");

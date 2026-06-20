@@ -8,7 +8,7 @@
     {
       "name": "ask_agent",
       "taskReferenceName": "ask",
-      "type": "CALL_AGENT",
+      "type": "AGENT",
       "inputParameters": {
         "agentUrl": "${workflow.input.agentUrl}",
         "text": "${workflow.input.prompt}"
@@ -26,7 +26,7 @@
           {
             "name": "answer_agent",
             "taskReferenceName": "answer",
-            "type": "CALL_AGENT",
+            "type": "AGENT",
             "inputParameters": {
               "agentUrl": "${workflow.input.agentUrl}",
               "text": "${workflow.input.answer}",

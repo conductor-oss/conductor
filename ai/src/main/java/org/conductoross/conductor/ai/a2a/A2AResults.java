@@ -25,8 +25,8 @@ import org.conductoross.conductor.ai.a2a.model.TaskState;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Builds the task output that {@code CALL_AGENT} (polling/streaming) and the push-notification
- * callback both surface, so the shape is identical regardless of how the result arrived.
+ * Builds the task output that {@code AGENT} (polling/streaming) and the push-notification callback
+ * both surface, so the shape is identical regardless of how the result arrived.
  */
 public final class A2AResults {
 

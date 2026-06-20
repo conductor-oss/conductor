@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.conductoross.conductor.ai.tasks.mapper.CallAgentTaskMapper;
+import org.conductoross.conductor.ai.tasks.mapper.AgentTaskMapper;
 import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -29,13 +29,13 @@ import com.netflix.conductor.model.WorkflowModel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class CallAgentTaskMapperTest {
+class AgentTaskMapperTest {
 
     @Test
     void producesScheduledTaskWithInput() {
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setName("call_agent_task");
-        workflowTask.setType(CallAgentTaskMapper.TASK_TYPE);
+        workflowTask.setType(AgentTaskMapper.TASK_TYPE);
 
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowDefinition(new WorkflowDef());
@@ -54,10 +54,10 @@ class CallAgentTaskMapperTest {
                         .withTaskId(new IDGenerator().generate())
                         .build();
 
-        List<TaskModel> mapped = new CallAgentTaskMapper().getMappedTasks(context);
+        List<TaskModel> mapped = new AgentTaskMapper().getMappedTasks(context);
 
         assertEquals(1, mapped.size());
-        assertEquals(CallAgentTaskMapper.TASK_TYPE, mapped.get(0).getTaskType());
+        assertEquals(AgentTaskMapper.TASK_TYPE, mapped.get(0).getTaskType());
         assertEquals(TaskModel.Status.SCHEDULED, mapped.get(0).getStatus());
         assertEquals("http://agent", mapped.get(0).getInputData().get("agentUrl"));
     }

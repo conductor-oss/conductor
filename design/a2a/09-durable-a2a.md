@@ -44,7 +44,7 @@ retries, and full execution visibility. That is the entire story in one line:
 > The in-memory host does not. That difference is "durable A2A."**
 
 This positioning holds in **both** directions of [08-conductor-implications.md](08-conductor-implications.md):
-- **Direction B (client — what we built):** a `CALL_AGENT` step is a durable unit of work that
+- **Direction B (client — what we built):** a `AGENT` step is a durable unit of work that
   drives a remote agent to completion across failures. This doc is about Direction B.
 - **Direction A (server — future):** when a Conductor workflow is *exposed* as an A2A agent, the
   agent's task **is** a durable workflow execution. Durability is native, not bolted on. Noted
@@ -79,7 +79,7 @@ action (charge a card, send an email, book a flight). The durable-execution haza
 between **performing the side effect** and **durably recording that we performed it**:
 
 ```
-CallAgentTask.start():
+AgentTask.start():
   1. build message (messageId)
   2. a2aService.sendMessage(...)        ← agent may now START IRREVERSIBLE WORK
   3. task.addOutput(taskId); IN_PROGRESS
@@ -90,7 +90,7 @@ CallAgentTask.start():
 If the server crashes **between 2 and 4**, the agent has acted but Conductor has no record. The
 task is still `SCHEDULED` in the store; the durable queue redelivers it (unack timeout); a worker
 runs `start()` **again**. Today step 1 generates a **fresh random `messageId`** (`UUID.randomUUID()`
-in `CallAgentTask.buildMessage`), so the re-send looks like a brand-new message → the agent does
+in `AgentTask.buildMessage`), so the re-send looks like a brand-new message → the agent does
 the work **twice**.
 
 You cannot eliminate this window from the client side alone — it is the same impossibility as
@@ -165,7 +165,7 @@ The matrix the claim must survive. "Today" = current code; "Target" = with §9.6
 Ordered by importance to the claim.
 
 **C1 — Deterministic `messageId` (closes P3). ✅ SHIPPED.**
-`CallAgentTask.buildMessage`, when the caller hasn't supplied one, derives
+`AgentTask.buildMessage`, when the caller hasn't supplied one, derives
 `messageId = "a2a-" + workflowInstanceId + ":" + referenceTaskName + ":" + iteration` instead of
 `UUID.randomUUID()`. (Readable concatenation rather than a hash — the value is an opaque string;
 debuggability wins and uniqueness/stability are what matter.) Stable across retries/restarts,
@@ -180,7 +180,7 @@ unique per iteration. The single highest-value change.
   ("A2A agent did not reach a terminal state within the deadline"). Do **not** rely on
   `responseTimeoutSeconds` — each poll's `updateTask` resets it, so it never fires for a
   polling task (verified).
-- Have `CallAgentTaskMapper` default `timeoutSeconds`/`timeoutPolicy` to a finite, overridable
+- Have `AgentTaskMapper` default `timeoutSeconds`/`timeoutPolicy` to a finite, overridable
   value rather than 0 (unbounded), as a backstop independent of our own deadline logic.
 
 **C3 — Durable push: backstop poll (closes the push hole in P2).**
@@ -224,7 +224,7 @@ Each maps to a property and an automated test that **injects the failure**. All 
 
 | Test | Proves | Where | Status |
 |---|---|---|---|
-| **T1 crash-recovery** | P1 | `A2ADurabilityTest.t1_crashRecovery_resumesOnAFreshInstance` (fresh `A2AService`+`CallAgentTask` resume the persisted `TaskModel`) **and** `t1b_crashRecovery_survivesPersistenceRoundTrip` (the durable task state is serialized to JSON — as the execution DAO stores it — and a **cold** `TaskModel` reconstructed from that JSON alone resumes to completion) | ✅ |
+| **T1 crash-recovery** | P1 | `A2ADurabilityTest.t1_crashRecovery_resumesOnAFreshInstance` (fresh `A2AService`+`AgentTask` resume the persisted `TaskModel`) **and** `t1b_crashRecovery_survivesPersistenceRoundTrip` (the durable task state is serialized to JSON — as the execution DAO stores it — and a **cold** `TaskModel` reconstructed from that JSON alone resumes to completion) | ✅ |
 | **T2 idempotency key** | P3 | `t2_messageId_isStableAcrossRetries` — two attempts with the same `(workflowId, ref, iteration)` but different `taskId` send an **identical `messageId`** (+ `t2_callerCanOverrideMessageId`) | ✅ |
 | **T3 distinct per iteration** | P3 | `t3_messageId_distinctPerIteration` — different iteration → different `messageId` | ✅ |
 | **T4 liveness / dead agent** | P2 | `t4_deadAgent_failsWithinFailureCap` (failure cap) + `t4_deadline_failsTerminally` (absolute deadline) → terminal `FAILED`, not infinite polling | ✅ |
@@ -236,12 +236,12 @@ Why these prove crash-recovery without an OS-level kill: the engine's `AsyncSyst
 **reloads the `TaskModel` from the persistence store on every execution cycle** (`loadTaskQuietly`
 → `getTaskModel(taskId)`) — it holds no in-memory state between cycles. So "a restarted worker
 re-drives the task" is operationally identical to "T1b reconstructs a cold `TaskModel` from the
-persisted JSON and a fresh `CallAgentTask` resumes it." T1b exercises exactly that data boundary in
+persisted JSON and a fresh `AgentTask` resumes it." T1b exercises exactly that data boundary in
 CI.
 
 **Full-process proof (demonstrated).** The OS-level version now exists as a runnable demo —
 `ai/src/test/resources/a2a/durable-demo/run-durable-demo.sh`: it starts a real persistent
-(SQLite) Conductor + a remote A2A agent, places an order via a `CALL_AGENT` workflow, **`kill -9`s
+(SQLite) Conductor + a remote A2A agent, places an order via a `AGENT` workflow, **`kill -9`s
 the server mid-order**, restarts it on the same store, and the order resumes and completes. Verified
 output: `workflow status: COMPLETED — receipt: Order ORD-… confirmed`. This is the genuine
 crash-survival proof (real process kill, real persistence, real resume). It uses the

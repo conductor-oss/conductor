@@ -99,10 +99,10 @@ class A2ASdkInteropTest {
     @Test
     void callAgentTask_drivesRealAgentToCompletion() {
         TaskModel task = callAgentTask(taskAgent.url(), "hello world", false);
-        new CallAgentTask(service(), mock(Environment.class)).start(null, task, null);
+        new AgentTask(service(), mock(Environment.class)).start(null, task, null);
 
         int guard = 0;
-        CallAgentTask client = new CallAgentTask(service(), mock(Environment.class));
+        AgentTask client = new AgentTask(service(), mock(Environment.class));
         while (task.getStatus() == TaskModel.Status.IN_PROGRESS && guard++ < 60) {
             client.execute(null, task, null);
         }
@@ -117,7 +117,7 @@ class A2ASdkInteropTest {
     @Test
     void streamingCall_aggregatesRealSseToCompletion() {
         TaskModel task = callAgentTask(taskAgent.url(), "stream me", true);
-        new CallAgentTask(service(), mock(Environment.class)).start(null, task, null);
+        new AgentTask(service(), mock(Environment.class)).start(null, task, null);
 
         // Streaming aggregates to a terminal state in start(); no poll loop needed.
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus(), task.getReasonForIncompletion());
@@ -131,7 +131,7 @@ class A2ASdkInteropTest {
         // A second real agent, this one configured to reply with a direct Message (not a Task).
         try (AgentProcess messageAgent = AgentProcess.launch(python, "message")) {
             TaskModel task = callAgentTask(messageAgent.url(), "ping", false);
-            new CallAgentTask(service(), mock(Environment.class)).start(null, task, null);
+            new AgentTask(service(), mock(Environment.class)).start(null, task, null);
 
             assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
             assertTrue(

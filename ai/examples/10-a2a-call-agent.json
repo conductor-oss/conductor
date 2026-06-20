@@ -6,8 +6,9 @@
     {
       "name": "call_currency_agent",
       "taskReferenceName": "agent",
-      "type": "CALL_AGENT",
+      "type": "AGENT",
       "inputParameters": {
+        "agentType": "a2a",
         "agentUrl": "http://localhost:9999",
         "text": "convert 100 USD to EUR",
         "pollIntervalSeconds": 5,

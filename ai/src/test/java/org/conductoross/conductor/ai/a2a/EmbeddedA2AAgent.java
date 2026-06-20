@@ -29,7 +29,7 @@ import com.sun.net.httpserver.HttpServer;
 
 /**
  * A real, embedded HTTP server that speaks the A2A protocol (JSON-RPC 2.0 + SSE + agent-card
- * discovery) over loopback, for hermetic end-to-end tests of the A2A client and {@code CALL_AGENT}.
+ * discovery) over loopback, for hermetic end-to-end tests of the A2A client and {@code AGENT}.
  *
  * <p>Not a mock: it parses real JSON-RPC requests and emits real responses. Behavior is configured
  * per test via {@link SendMode} and {@link #completeAfterPolls(int)}.

@@ -88,7 +88,7 @@ The server will be available at `http://localhost:3001/mcp`.
 ### A2A (Agent2Agent) examples
 
 Conductor as an A2A **client** (calling remote agents) and **server** (exposing a workflow as an
-agent). The client tasks (`CALL_AGENT`, `GET_AGENT_CARD`, `CANCEL_AGENT_TASK`) need a reachable A2A
+agent). The client tasks (`AGENT`, `GET_AGENT_CARD`, `CANCEL_AGENT`) need a reachable A2A
 agent — see `ai/src/test/resources/a2a/` for a runnable test agent. The server examples are exposed
 by registering them with `metadata.a2a.enabled=true` and `conductor.a2a.server.enabled=true`.
 

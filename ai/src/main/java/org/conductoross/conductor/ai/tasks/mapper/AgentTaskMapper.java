@@ -18,18 +18,18 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 /**
- * Task mapper for the {@code CALL_AGENT} task type.
+ * Task mapper for the {@code AGENT} task type.
  *
- * <p>Produces the SCHEDULED task (with retry defaults) that the {@code CALL_AGENT} {@link
- * org.conductoross.conductor.ai.a2a.CallAgentTask} system task then executes asynchronously.
+ * <p>Produces the SCHEDULED task (with retry defaults) that the {@code AGENT} {@link
+ * org.conductoross.conductor.ai.a2a.AgentTask} system task then executes asynchronously.
  */
 @Component
 @Conditional(AIIntegrationEnabledCondition.class)
-public class CallAgentTaskMapper extends AIModelTaskMapper<A2ACallRequest> {
+public class AgentTaskMapper extends AIModelTaskMapper<A2ACallRequest> {
 
-    public static final String TASK_TYPE = "CALL_AGENT";
+    public static final String TASK_TYPE = "AGENT";
 
-    public CallAgentTaskMapper() {
+    public AgentTaskMapper() {
         super(TASK_TYPE);
     }
 }

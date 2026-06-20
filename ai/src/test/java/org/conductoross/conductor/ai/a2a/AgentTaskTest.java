@@ -40,17 +40,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class CallAgentTaskTest {
+class AgentTaskTest {
 
     private A2AService service;
-    private CallAgentTask task;
+    private AgentTask task;
 
     @BeforeEach
     void setUp() {
         service = mock(A2AService.class);
         // No callback URL configured -> push disabled, polling used.
         Environment environment = mock(Environment.class);
-        task = new CallAgentTask(service, environment);
+        task = new AgentTask(service, environment);
     }
 
     private TaskModel taskModel(Map<String, Object> input) {

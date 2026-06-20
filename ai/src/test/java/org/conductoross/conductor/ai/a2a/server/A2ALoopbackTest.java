@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.conductoross.conductor.ai.a2a.A2AService;
-import org.conductoross.conductor.ai.a2a.CallAgentTask;
+import org.conductoross.conductor.ai.a2a.AgentTask;
 import org.conductoross.conductor.ai.a2a.model.AgentCard;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -55,7 +55,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * The capstone: <b>Conductor calling Conductor over A2A.</b> The real {@link CallAgentTask} client
+ * The capstone: <b>Conductor calling Conductor over A2A.</b> The real {@link AgentTask} client
  * drives the real {@link A2AServerResource} over real HTTP (random port) through the full A2A
  * round-trip — discovery, message/send → start workflow, tasks/get → poll to completion — with a
  * stateful fake engine standing in for the persistence layer. Also proves the client's
@@ -152,7 +152,7 @@ class A2ALoopbackTest {
     @Test
     void fullRoundTrip_clientTaskDrivesServerWorkflowToCompletion() {
         A2AService service = clientService();
-        CallAgentTask client = new CallAgentTask(service, mock(Environment.class));
+        AgentTask client = new AgentTask(service, mock(Environment.class));
 
         TaskModel model = new TaskModel();
         model.setTaskId("client-task-1");

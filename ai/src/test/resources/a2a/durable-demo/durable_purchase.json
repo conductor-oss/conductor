@@ -2,12 +2,12 @@
   "name": "durable_purchase",
   "version": 1,
   "schemaVersion": 2,
-  "description": "Durable purchasing concierge — places an order via a remote A2A seller agent (CALL_AGENT)",
+  "description": "Durable purchasing concierge — places an order via a remote A2A seller agent (AGENT)",
   "tasks": [
     {
       "name": "place_order",
       "taskReferenceName": "order",
-      "type": "CALL_AGENT",
+      "type": "AGENT",
       "inputParameters": {
         "agentUrl": "${workflow.input.agentUrl}",
         "text": "${workflow.input.orderText}",

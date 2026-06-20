@@ -2,7 +2,7 @@
 
 This demo points Conductor at a **genuine third-party A2A agent** — the official
 [`a2a-sdk`](https://github.com/a2aproject/a2a-python) reference "echo" agent — and runs a workflow
-that **discovers** it (`GET_AGENT_CARD`) and **calls** it (`CALL_AGENT`) over the real A2A JSON-RPC
+that **discovers** it (`GET_AGENT_CARD`) and **calls** it (`AGENT`) over the real A2A JSON-RPC
 wire protocol. It proves the integration works against the protocol's reference implementation, not
 just our own fixtures.
 
@@ -11,7 +11,7 @@ just our own fixtures.
 │ Conductor (this branch) │ ───────────────────────────▶ │ echo agent (official      │
 │  a2a_interop_echo wf     │   GET /.well-known/card      │ a2a-sdk — NOT Conductor)  │
 │  GET_AGENT_CARD          │   POST message/send          │  :9998                    │
-│  CALL_AGENT              │   POST tasks/get             │                           │
+│  AGENT                  │   POST tasks/get             │                           │
 └─────────────────────────┘ ◀─────────────────────────── └───────────────────────────┘
 ```
 

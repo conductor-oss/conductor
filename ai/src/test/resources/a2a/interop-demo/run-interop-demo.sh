@@ -4,7 +4,7 @@
 #
 # Starts the official a2a-sdk reference "echo" agent (a genuine third-party A2A server), then runs a
 # Conductor workflow that (1) discovers the agent's Agent Card (GET_AGENT_CARD) and (2) calls it
-# (CALL_AGENT) — proving end-to-end interop over the real A2A wire protocol.
+# (AGENT) — proving end-to-end interop over the real A2A wire protocol.
 #
 # Requires: Java 21+, curl, and either `uv` (to auto-create a Python venv) OR set A2A_VENV to a
 # Python that already has `a2a-sdk` + `uvicorn`. No Docker, no Redis, no API keys.
@@ -76,7 +76,7 @@ for _ in $(seq 1 60); do
 done
 
 # ── 3. register + run the interop workflow ───────────────────────────────────────────────────
-say "Registering the a2a_interop_echo workflow (GET_AGENT_CARD → CALL_AGENT)"
+say "Registering the a2a_interop_echo workflow (GET_AGENT_CARD → AGENT)"
 curl -sS -X POST "localhost:$PORT/api/metadata/workflow" \
      -H 'Content-Type: application/json' -d @"$HERE/a2a_interop_echo.json" >/dev/null
 ok "Registered"
@@ -102,7 +102,7 @@ for t in wf.get("tasks", []):
     if t.get("taskType") == "GET_AGENT_CARD":
         card = out.get("agentCard") or out
         print("  discovered agent:", (card.get("name") if isinstance(card, dict) else card))
-    if t.get("taskType") == "CALL_AGENT":
+    if t.get("taskType") == "AGENT":
         print("  agent state     :", out.get("state"))
         print("  agent reply     :", out.get("text"))
 '

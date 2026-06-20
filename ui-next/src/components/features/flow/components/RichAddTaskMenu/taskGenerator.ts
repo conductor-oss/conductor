@@ -54,9 +54,9 @@ import {
   ChunkTextTaskDef,
   ListFilesTaskDef,
   ParseDocumentTaskDef,
-  CallAgentTaskDef,
+  AgentTaskDef,
   GetAgentCardTaskDef,
-  CancelAgentTaskTaskDef,
+  CancelAgentTaskDef,
 } from "types";
 import { HTTP_TEST_ENDPOINT } from "utils/constants/common";
 import { BaseTaskMenuItem } from "./state/types";
@@ -729,13 +729,14 @@ export const generateListFilesTask: GenerateTaskFn<ListFilesTaskDef> = ({
   ...overrides,
 });
 
-export const generateCallAgentTask: GenerateTaskFn<CallAgentTaskDef> = ({
+export const generateAgentTask: GenerateTaskFn<AgentTaskDef> = ({
   overrides = {},
   nameGenerator = generateNameAndTaskReference,
-} = DEFAULT_ARGS): CallAgentTaskDef => ({
-  ...nameGenerator("call_agent"),
-  type: TaskType.CALL_AGENT,
+} = DEFAULT_ARGS): AgentTaskDef => ({
+  ...nameGenerator("agent"),
+  type: TaskType.AGENT,
   inputParameters: {
+    agentType: "a2a",
     agentUrl: "",
     text: "",
     pollIntervalSeconds: 5,
@@ -750,20 +751,20 @@ export const generateGetAgentCardTask: GenerateTaskFn<GetAgentCardTaskDef> = ({
   ...nameGenerator("get_agent_card"),
   type: TaskType.GET_AGENT_CARD,
   inputParameters: {
+    agentType: "a2a",
     agentUrl: "",
   },
   ...overrides,
 });
 
-export const generateCancelAgentTaskTask: GenerateTaskFn<
-  CancelAgentTaskTaskDef
-> = ({
+export const generateCancelAgentTask: GenerateTaskFn<CancelAgentTaskDef> = ({
   overrides = {},
   nameGenerator = generateNameAndTaskReference,
-} = DEFAULT_ARGS): CancelAgentTaskTaskDef => ({
-  ...nameGenerator("cancel_agent_task"),
-  type: TaskType.CANCEL_AGENT_TASK,
+} = DEFAULT_ARGS): CancelAgentTaskDef => ({
+  ...nameGenerator("cancel_agent"),
+  type: TaskType.CANCEL_AGENT,
   inputParameters: {
+    agentType: "a2a",
     agentUrl: "",
     taskId: "",
   },
@@ -820,9 +821,9 @@ export const taskGeneratorMap = {
   [TaskType.CHUNK_TEXT]: generateChunkTextTask,
   [TaskType.LIST_FILES]: generateListFilesTask,
   [TaskType.PARSE_DOCUMENT]: generateParseDocumentTask,
-  [TaskType.CALL_AGENT]: generateCallAgentTask,
+  [TaskType.AGENT]: generateAgentTask,
   [TaskType.GET_AGENT_CARD]: generateGetAgentCardTask,
-  [TaskType.CANCEL_AGENT_TASK]: generateCancelAgentTaskTask,
+  [TaskType.CANCEL_AGENT]: generateCancelAgentTask,
 } satisfies Record<FormTaskType, GenerateTaskFn<any>>;
 
 export const uniqueTaskIdGenerator = (sr: BaseTaskMenuItem) => {

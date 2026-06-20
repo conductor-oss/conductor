@@ -568,9 +568,10 @@ export interface ParseDocumentTaskDef extends CommonTaskDef {
   };
 }
 
-export interface CallAgentTaskDef extends CommonTaskDef {
-  type: TaskType.CALL_AGENT;
+export interface AgentTaskDef extends CommonTaskDef {
+  type: TaskType.AGENT;
   inputParameters: {
+    agentType?: string;
     agentUrl: string;
     text?: string;
     prompt?: string;
@@ -587,14 +588,16 @@ export interface CallAgentTaskDef extends CommonTaskDef {
 export interface GetAgentCardTaskDef extends CommonTaskDef {
   type: TaskType.GET_AGENT_CARD;
   inputParameters: {
+    agentType?: string;
     agentUrl: string;
     headers?: Record<string, string>;
   };
 }
 
-export interface CancelAgentTaskTaskDef extends CommonTaskDef {
-  type: TaskType.CANCEL_AGENT_TASK;
+export interface CancelAgentTaskDef extends CommonTaskDef {
+  type: TaskType.CANCEL_AGENT;
   inputParameters: {
+    agentType?: string;
     agentUrl: string;
     taskId: string;
     headers?: Record<string, string>;
@@ -657,6 +660,6 @@ export type FormTaskType =
   | TaskType.CHUNK_TEXT
   | TaskType.LIST_FILES
   | TaskType.PARSE_DOCUMENT
-  | TaskType.CALL_AGENT
+  | TaskType.AGENT
   | TaskType.GET_AGENT_CARD
-  | TaskType.CANCEL_AGENT_TASK;
+  | TaskType.CANCEL_AGENT;

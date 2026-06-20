@@ -24,6 +24,9 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(callSuper = false)
 public class A2AAgentCardRequest extends LLMWorkerInput {
 
+    /** Agent runtime/protocol; only {@code "a2a"} is supported today. Defaults to {@code "a2a"}. */
+    private String agentType = "a2a";
+
     /** The remote agent's base URL, or a direct URL to its agent-card JSON. */
     private String agentUrl;
 

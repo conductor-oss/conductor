@@ -6,7 +6,7 @@ description: "A2A (Agent2Agent) integration with Conductor — call remote agent
 
 [A2A (Agent2Agent)](https://a2a-protocol.org/) is an open protocol for agents to talk to one another over HTTP/JSON-RPC. Conductor integrates A2A in **both directions**:
 
-- **Client** — call a remote A2A agent from a workflow as a durable system task (`CALL_AGENT`, `GET_AGENT_CARD`, `CANCEL_AGENT_TASK`).
+- **Client** — call a remote A2A agent from a workflow as a durable system task (`AGENT`, `GET_AGENT_CARD`, `CANCEL_AGENT`).
 - **Server** — expose any Conductor workflow as an A2A agent that other A2A clients (Google ADK, CrewAI, LangGraph, another Conductor) can discover and invoke.
 
 The integration is **durable**: a remote agent call survives a server crash, restart, or redeploy, and resumes from where it left off — the call's state lives in the workflow execution, not in a thread.
@@ -27,7 +27,9 @@ Conductor maps this lifecycle onto its own durable task model, so a remote agent
 conductor.integrations.ai.enabled=true
 ```
 
-### CALL_AGENT — send a message to an agent
+Each task takes an **`agentType`** input that selects the agent runtime. It defaults to `"a2a"` (Agent2Agent — the only runtime in OSS today); native runtimes such as LangGraph and OpenAI are planned, and the field is the extension point for them. An unrecognized `agentType` fails the task with a clear error.
+
+### AGENT — send a message to an agent
 
 Sends an A2A `message/send` and works the resulting agent task to a terminal state. Non-blocking: a fast reply completes immediately; long-running work moves to `IN_PROGRESS` and is polled at a cadence (no worker thread is held).
 
@@ -35,8 +37,9 @@ Sends an A2A `message/send` and works the resulting agent task to a terminal sta
 {
   "name": "call_currency_agent",
   "taskReferenceName": "agent",
-  "type": "CALL_AGENT",
+  "type": "AGENT",
   "inputParameters": {
+    "agentType": "a2a",
     "agentUrl": "https://currency-agent.example.com",
     "text": "convert 100 USD to EUR",
     "pollIntervalSeconds": 5,
@@ -51,6 +54,7 @@ Sends an A2A `message/send` and works the resulting agent task to a terminal sta
 
 | Field | Description |
 |---|---|
+| `agentType` | Agent runtime to use — defaults to `"a2a"`. Reserved for native runtimes (e.g. `langgraph`, `openai`) coming later; any other value is rejected today. |
 | `agentUrl` | Base URL of the remote agent (required). |
 | `text` / `prompt` | Convenience for a single text part. |
 | `parts` / `message` | A full A2A message (multi-part / data parts) instead of `text`. |
@@ -99,7 +103,7 @@ conductor.a2a.callback.url=https://conductor.example.com
 {
   "name": "call_research_agent",
   "taskReferenceName": "agent",
-  "type": "CALL_AGENT",
+  "type": "AGENT",
   "inputParameters": {
     "agentUrl": "https://research-agent.example.com",
     "text": "research durable agent protocols",
@@ -128,7 +132,7 @@ per-task webhook, with a single-use bearer token (a `{uuid}:{expiryEpochMillis}`
 }
 ```
 
-The `CALL_AGENT` task then **waits** (holds no worker thread) until the webhook arrives; the backstop
+The `AGENT` task then **waits** (holds no worker thread) until the webhook arrives; the backstop
 poll runs only as a safety net.
 
 **4. The agent calls back** when the task reaches a terminal/interrupted state — Conductor verifies
@@ -140,7 +144,7 @@ curl -X POST https://conductor.example.com/api/a2a/callback/<conductorTaskId> \
   -H 'Authorization: Bearer 3f9c…:1750300000000' \
   -H 'Content-Type: application/json' \
   -d '{ "taskId": "<remoteAgentTaskId>", "status": { "state": "completed" } }'
-# → 200 OK; the CALL_AGENT task is now COMPLETED with the agent's output.
+# → 200 OK; the AGENT task is now COMPLETED with the agent's output.
 ```
 
 Agents that don't support the `authentication` field fall back to a `?token=` query parameter on the
@@ -160,13 +164,13 @@ in access logs).
 
 Resolves the agent card from `/.well-known/agent-card.json` (falling back to the legacy `/.well-known/agent.json`) and returns the parsed skills/capabilities — feed it to an LLM so it can pick a skill at runtime.
 
-### CANCEL_AGENT_TASK — cancel a running agent task
+### CANCEL_AGENT — cancel a running agent task
 
 ```json
 {
   "name": "cancel_agent_task",
   "taskReferenceName": "cancel",
-  "type": "CANCEL_AGENT_TASK",
+  "type": "CANCEL_AGENT",
   "inputParameters": {
     "agentUrl": "https://currency-agent.example.com",
     "taskId": "${agent.output.taskId}"
@@ -176,7 +180,7 @@ Resolves the agent card from `/.well-known/agent-card.json` (falling back to the
 
 ### Multi-turn (input-required)
 
-When a remote task reaches `input-required` (or `auth-required`), `CALL_AGENT` **completes** and surfaces the agent's question plus the `taskId`/`contextId` in its output. The workflow branches on that state and issues another `CALL_AGENT` with the **same `taskId` and `contextId`** carrying the answer — resuming the same remote task rather than starting a new conversation:
+When a remote task reaches `input-required` (or `auth-required`), `AGENT` **completes** and surfaces the agent's question plus the `taskId`/`contextId` in its output. The workflow branches on that state and issues another `AGENT` with the **same `taskId` and `contextId`** carrying the answer — resuming the same remote task rather than starting a new conversation:
 
 ```json
 {
@@ -189,7 +193,7 @@ When a remote task reaches `input-required` (or `auth-required`), `CALL_AGENT` *
   "decisionCases": {
     "input-required": [
       {
-        "name": "answer_agent", "taskReferenceName": "answer", "type": "CALL_AGENT",
+        "name": "answer_agent", "taskReferenceName": "answer", "type": "AGENT",
         "inputParameters": {
           "agentUrl": "${workflow.input.agentUrl}",
           "text": "${workflow.input.answer}",
@@ -207,11 +211,11 @@ Full example: `ai/examples/29-a2a-client-multi-turn.json`.
 
 ### Orchestrating multiple agents
 
-Because each `CALL_AGENT` is an ordinary durable task, you compose agents with the usual Conductor operators — e.g. **`FORK_JOIN`** to call several agents in parallel, **`JOIN`** to gather results. Every branch is independently crash-safe: if Conductor restarts mid-flight, each in-flight agent call resumes from persisted state (`ai/examples/27-a2a-multi-agent.json`). To let an LLM pick which skill to use, chain `GET_AGENT_CARD → LLM_CHAT_COMPLETE → CALL_AGENT` (`ai/examples/28-a2a-llm-pick-skill.json`).
+Because each `AGENT` is an ordinary durable task, you compose agents with the usual Conductor operators — e.g. **`FORK_JOIN`** to call several agents in parallel, **`JOIN`** to gather results. Every branch is independently crash-safe: if Conductor restarts mid-flight, each in-flight agent call resumes from persisted state (`ai/examples/27-a2a-multi-agent.json`). To let an LLM pick which skill to use, chain `GET_AGENT_CARD → LLM_CHAT_COMPLETE → AGENT` (`ai/examples/28-a2a-llm-pick-skill.json`).
 
 ### Error handling & retries
 
-`CALL_AGENT` maps remote outcomes onto Conductor task statuses, so the engine's normal retry/timeout machinery applies. Retryable failures become `FAILED` (the engine retries per the task def's `retryCount`); permanent failures become `FAILED_WITH_TERMINAL_ERROR` (no retry):
+`AGENT` maps remote outcomes onto Conductor task statuses, so the engine's normal retry/timeout machinery applies. Retryable failures become `FAILED` (the engine retries per the task def's `retryCount`); permanent failures become `FAILED_WITH_TERMINAL_ERROR` (no retry):
 
 | Condition | Task status | Retried? |
 |---|---|---|
@@ -399,7 +403,7 @@ The answer (`Tuesday at 3pm`) arrives at the workflow as `${ask.output._a2a_text
 
 The "durable A2A" claim rests on a few concrete mechanisms:
 
-- **Deterministic message id.** `CALL_AGENT` derives the A2A `messageId` from `workflowInstanceId + referenceTaskName + iteration` — stable across task retries and server restarts, distinct per `DO_WHILE` iteration. Agents that dedupe on `messageId` get effectively-once delivery despite at-least-once retries.
+- **Deterministic message id.** `AGENT` derives the A2A `messageId` from `workflowInstanceId + referenceTaskName + iteration` — stable across task retries and server restarts, distinct per `DO_WHILE` iteration. Agents that dedupe on `messageId` get effectively-once delivery despite at-least-once retries.
 - **State in the execution, not the thread.** Poll mode holds no thread; the remote `taskId`, deadline, and poll-failure count live in the persisted task output, so a restart resumes the poll loop.
 - **Liveness guards.** An absolute deadline (`maxDurationSeconds`) and a consecutive-poll-failure bound (`maxPollFailures`) ensure a dead or stuck agent can't hang a task forever.
 - **Push backstop.** Push mode still backstop-polls, so a lost webhook degrades to polling rather than hanging.
@@ -431,7 +435,7 @@ A2A code paths emit metrics through the shared Conductor metrics registry and se
 
 | Property | Default | Purpose |
 |---|---|---|
-| `conductor.integrations.ai.enabled` | `false` | Enables the client tasks (`CALL_AGENT`, …). |
+| `conductor.integrations.ai.enabled` | `false` | Enables the client tasks (`AGENT`, …). |
 | `conductor.a2a.callback.url` | — | Externally-reachable base URL for push callbacks. |
 | `conductor.a2a.client.allow-private-network` | `false` | Allow agent URLs on private/loopback networks (metadata still blocked). |
 | `conductor.a2a.server.enabled` | `false` | Enables the A2A server endpoints. |
@@ -464,7 +468,7 @@ workflow inputs so the same definition works against any A2A agent:
     {
       "name": "call_agent",
       "taskReferenceName": "call",
-      "type": "CALL_AGENT",
+      "type": "AGENT",
       "inputParameters": {
         "agentUrl": "${workflow.input.agentUrl}",
         "text": "${workflow.input.prompt}",

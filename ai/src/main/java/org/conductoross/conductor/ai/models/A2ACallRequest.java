@@ -20,7 +20,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 /**
- * Input for the {@code CALL_AGENT} task: send a message to a remote A2A agent and await the result.
+ * Input for the {@code AGENT} task: send a message to a remote A2A agent and await the result.
  *
  * <p>The message body is taken from the first of {@link #message}, {@link #parts}, {@link #text},
  * or the inherited {@code prompt}. To continue an existing conversation/task (e.g. resume after the
@@ -30,6 +30,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = false)
 public class A2ACallRequest extends LLMWorkerInput {
+
+    /**
+     * Agent runtime/protocol. Only {@code "a2a"} (Agent2Agent) is supported today; native runtimes
+     * (e.g. {@code langgraph}, {@code openai}) are planned. Defaults to {@code "a2a"}.
+     */
+    private String agentType = "a2a";
 
     /** The remote agent's JSON-RPC endpoint URL (the {@code url} from its Agent Card). */
     private String agentUrl;

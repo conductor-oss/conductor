@@ -2,7 +2,7 @@
   "name": "a2a_multi_agent_orchestration",
   "version": 1,
   "schemaVersion": 2,
-  "description": "Durable multi-agent orchestration: call several remote A2A agents in parallel with FORK_JOIN, then JOIN their results. Each branch is an independent, crash-safe CALL_AGENT — if Conductor restarts mid-flight, every in-flight agent call resumes.",
+  "description": "Durable multi-agent orchestration: call several remote A2A agents in parallel with FORK_JOIN, then JOIN their results. Each branch is an independent, crash-safe AGENT — if Conductor restarts mid-flight, every in-flight agent call resumes.",
   "ownerEmail": "a2a@example.com",
   "tasks": [
     {
@@ -14,7 +14,7 @@
           {
             "name": "call_flights_agent",
             "taskReferenceName": "flights",
-            "type": "CALL_AGENT",
+            "type": "AGENT",
             "inputParameters": {
               "agentUrl": "${workflow.input.flightsAgentUrl}",
               "text": "Find flights for: ${workflow.input.request}"
@@ -25,7 +25,7 @@
           {
             "name": "call_hotels_agent",
             "taskReferenceName": "hotels",
-            "type": "CALL_AGENT",
+            "type": "AGENT",
             "inputParameters": {
               "agentUrl": "${workflow.input.hotelsAgentUrl}",
               "text": "Find hotels for: ${workflow.input.request}"

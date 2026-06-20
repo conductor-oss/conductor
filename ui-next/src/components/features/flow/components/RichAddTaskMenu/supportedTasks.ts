@@ -242,10 +242,10 @@ export const AI_TASKS: BaseTaskMenuItem[] = [
     category: RichAddMenuTabs.AI_AGENTS_TAB,
   },
   {
-    name: "Call Agent (A2A)",
+    name: "Agent (A2A)",
     description:
-      "Call a remote A2A agent with durable retry — poll, streaming, or push modes.",
-    type: TaskType.CALL_AGENT,
+      "Call a remote agent (agentType: a2a) with durable retry — poll, streaming, or push modes.",
+    type: TaskType.AGENT,
     category: RichAddMenuTabs.AI_AGENTS_TAB,
   },
   {
@@ -255,9 +255,9 @@ export const AI_TASKS: BaseTaskMenuItem[] = [
     category: RichAddMenuTabs.AI_AGENTS_TAB,
   },
   {
-    name: "Cancel Agent Task (A2A)",
+    name: "Cancel Agent (A2A)",
     description: "Cancel a running task on a remote A2A agent.",
-    type: TaskType.CANCEL_AGENT_TASK,
+    type: TaskType.CANCEL_AGENT,
     category: RichAddMenuTabs.AI_AGENTS_TAB,
   },
 ];

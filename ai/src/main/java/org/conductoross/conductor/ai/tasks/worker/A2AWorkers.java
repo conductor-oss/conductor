@@ -32,8 +32,8 @@ import lombok.extern.slf4j.Slf4j;
  * Synchronous worker tasks for interacting with remote A2A agents — discovery and cancellation.
  *
  * <p>These are quick request/response calls, so (like {@code MCPWorkers}) they run as annotated
- * system tasks. The long-running {@code CALL_AGENT} operation instead uses {@link
- * org.conductoross.conductor.ai.a2a.CallAgentTask} for non-blocking polling.
+ * system tasks. The long-running {@code AGENT} operation instead uses {@link
+ * org.conductoross.conductor.ai.a2a.AgentTask} for non-blocking polling.
  */
 @Slf4j
 @Component
@@ -56,6 +56,7 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker {
      */
     @WorkerTask("GET_AGENT_CARD")
     public @OutputParam("agentCard") AgentCard getAgentCard(A2AAgentCardRequest request) {
+        requireA2a(request.getAgentType());
         if (isBlank(request.getAgentUrl())) {
             throw new NonRetryableException("GET_AGENT_CARD requires 'agentUrl'");
         }
@@ -69,17 +70,25 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker {
      * @param request the agent URL, the remote task id, and optional headers
      * @return the updated remote {@link A2ATask}
      */
-    @WorkerTask("CANCEL_AGENT_TASK")
+    @WorkerTask("CANCEL_AGENT")
     public @OutputParam("task") A2ATask cancelAgentTask(A2ACancelRequest request) {
+        requireA2a(request.getAgentType());
         if (isBlank(request.getAgentUrl())) {
-            throw new NonRetryableException("CANCEL_AGENT_TASK requires 'agentUrl'");
+            throw new NonRetryableException("CANCEL_AGENT requires 'agentUrl'");
         }
         if (isBlank(request.getTaskId())) {
-            throw new NonRetryableException("CANCEL_AGENT_TASK requires 'taskId'");
+            throw new NonRetryableException("CANCEL_AGENT requires 'taskId'");
         }
         log.debug("Canceling A2A task {} on {}", request.getTaskId(), request.getAgentUrl());
         return a2aService.cancelTask(
                 request.getAgentUrl(), request.getTaskId(), request.getHeaders());
+    }
+
+    private static void requireA2a(String agentType) {
+        if (!A2AService.isA2aAgentType(agentType)) {
+            throw new NonRetryableException(
+                    "Unsupported agentType '" + agentType + "' (only 'a2a' is supported)");
+        }
     }
 
     private static boolean isBlank(String value) {
