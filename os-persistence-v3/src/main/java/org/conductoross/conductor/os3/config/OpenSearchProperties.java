@@ -73,14 +73,22 @@ public class OpenSearchProperties {
     /** The color of the OpenSearch cluster to wait for to confirm healthy status */
     private String clusterHealthColor = "green";
 
-    /** The size of the batch to be used for bulk indexing in async mode */
-    private int indexBatchSize = 1;
+    /**
+     * The size of the batch to be used for bulk indexing in async mode. Larger values reduce the
+     * number of HTTP round-trips to OpenSearch at the cost of slightly higher per-batch latency.
+     * For high-throughput workloads with large documents (100KB+), values of 50-200 are
+     * recommended.
+     */
+    private int indexBatchSize = 100;
 
     /** The size of the queue used for holding async indexing tasks */
-    private int asyncWorkerQueueSize = 100;
+    private int asyncWorkerQueueSize = 500;
 
-    /** The maximum number of threads allowed in the async pool */
-    private int asyncMaxPoolSize = 12;
+    /**
+     * The maximum number of threads allowed in the async pool. Should be sized relative to the
+     * expected indexing throughput and the number of OpenSearch data nodes.
+     */
+    private int asyncMaxPoolSize = 24;
 
     /**
      * The time in seconds after which the async buffers will be flushed (if no activity) to prevent
@@ -92,8 +100,28 @@ public class OpenSearchProperties {
     /** The number of shards that the index will be created with */
     private int indexShardCount = 5;
 
-    /** The number of replicas that the index will be configured to have */
-    private int indexReplicasCount = 0;
+    /**
+     * The number of replicas that the index will be configured to have. At least 1 replica is
+     * recommended for production to provide fault tolerance against data node failure.
+     */
+    private int indexReplicasCount = 1;
+
+    /**
+     * The refresh interval for the workflow and task indices. Controls how frequently new documents
+     * become visible to searches. Longer intervals reduce segment creation and merge overhead,
+     * improving write throughput at the cost of search freshness. For high-throughput ingestion
+     * (200+ docs/sec), values of 5s-30s are recommended. Use "1s" for near-real-time search
+     * visibility.
+     */
+    private String indexRefreshInterval = "5s";
+
+    /**
+     * The translog flush threshold size. When the translog exceeds this size, a flush (Lucene
+     * commit) is triggered. Larger values allow more documents to accumulate before flushing,
+     * improving write throughput for bulk workloads. Default is 1gb, suitable for high-throughput
+     * ingestion with large documents (100KB-1MB+).
+     */
+    private String translogFlushThresholdSize = "1gb";
 
     /** The number of task log results that will be returned in the response */
     private int taskLogResultLimit = 10;
@@ -214,6 +242,21 @@ public class OpenSearchProperties {
                 environment.getProperty(LEGACY_PREFIX + "indexReplicasCount");
         if (legacyIndexReplicasCount != null && !hasNewProperty("indexReplicasCount")) {
             this.indexReplicasCount = Integer.parseInt(legacyIndexReplicasCount);
+            usingLegacyProperties = true;
+        }
+
+        String legacyIndexRefreshInterval =
+                environment.getProperty(LEGACY_PREFIX + "indexRefreshInterval");
+        if (legacyIndexRefreshInterval != null && !hasNewProperty("indexRefreshInterval")) {
+            this.indexRefreshInterval = legacyIndexRefreshInterval;
+            usingLegacyProperties = true;
+        }
+
+        String legacyTranslogFlushThresholdSize =
+                environment.getProperty(LEGACY_PREFIX + "translogFlushThresholdSize");
+        if (legacyTranslogFlushThresholdSize != null
+                && !hasNewProperty("translogFlushThresholdSize")) {
+            this.translogFlushThresholdSize = legacyTranslogFlushThresholdSize;
             usingLegacyProperties = true;
         }
 
@@ -389,6 +432,22 @@ public class OpenSearchProperties {
 
     public void setIndexReplicasCount(int indexReplicasCount) {
         this.indexReplicasCount = indexReplicasCount;
+    }
+
+    public String getIndexRefreshInterval() {
+        return indexRefreshInterval;
+    }
+
+    public void setIndexRefreshInterval(String indexRefreshInterval) {
+        this.indexRefreshInterval = indexRefreshInterval;
+    }
+
+    public String getTranslogFlushThresholdSize() {
+        return translogFlushThresholdSize;
+    }
+
+    public void setTranslogFlushThresholdSize(String translogFlushThresholdSize) {
+        this.translogFlushThresholdSize = translogFlushThresholdSize;
     }
 
     public int getTaskLogResultLimit() {
