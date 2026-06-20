@@ -1,5 +1,5 @@
 {
-  "name": "a2a_cancel_agent_task",
+  "name": "a2a_cancel_agent",
   "version": 1,
   "schemaVersion": 2,
   "description": "Starts work on a remote agent (AGENT) then cancels it (CANCEL_AGENT → A2A tasks/cancel), passing the remote task id from the first task's output. Illustrative — cancel is typically wired into fork/timeout or compensation flows.",

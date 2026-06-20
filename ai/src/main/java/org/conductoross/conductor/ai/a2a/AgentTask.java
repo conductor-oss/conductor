@@ -61,7 +61,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>When the remote task reaches {@code input-required}/{@code auth-required}, this task COMPLETES
  * and surfaces the agent's question plus the {@code taskId}/{@code contextId}, so the workflow can
- * resume by issuing another {@code AGENT} with the same ids.
+ * resume by issuing another {@code AGENT} call with the same ids.
  */
 @Slf4j
 @Component(AgentTask.TASK_TYPE)

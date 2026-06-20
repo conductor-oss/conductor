@@ -180,7 +180,7 @@ Resolves the agent card from `/.well-known/agent-card.json` (falling back to the
 
 ### Multi-turn (input-required)
 
-When a remote task reaches `input-required` (or `auth-required`), `AGENT` **completes** and surfaces the agent's question plus the `taskId`/`contextId` in its output. The workflow branches on that state and issues another `AGENT` with the **same `taskId` and `contextId`** carrying the answer — resuming the same remote task rather than starting a new conversation:
+When a remote task reaches `input-required` (or `auth-required`), `AGENT` **completes** and surfaces the agent's question plus the `taskId`/`contextId` in its output. The workflow branches on that state and issues another `AGENT` task with the **same `taskId` and `contextId`** carrying the answer — resuming the same remote task rather than starting a new conversation:
 
 ```json
 {

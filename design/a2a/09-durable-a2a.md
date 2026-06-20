@@ -44,7 +44,7 @@ retries, and full execution visibility. That is the entire story in one line:
 > The in-memory host does not. That difference is "durable A2A."**
 
 This positioning holds in **both** directions of [08-conductor-implications.md](08-conductor-implications.md):
-- **Direction B (client — what we built):** a `AGENT` step is a durable unit of work that
+- **Direction B (client — what we built):** an `AGENT` step is a durable unit of work that
   drives a remote agent to completion across failures. This doc is about Direction B.
 - **Direction A (server — future):** when a Conductor workflow is *exposed* as an A2A agent, the
   agent's task **is** a durable workflow execution. Durability is native, not bolted on. Noted

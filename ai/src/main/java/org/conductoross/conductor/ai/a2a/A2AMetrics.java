@@ -26,7 +26,7 @@ import com.netflix.conductor.metrics.Monitors;
  *   <caption>Metrics</caption>
  *   <tr><th>Name</th><th>Tags</th><th>Meaning</th></tr>
  *   <tr><td>{@code a2a_client_calls}</td><td>{@code result}</td>
- *       <td>A AGENT task reached a terminal status (result = the Conductor status).</td></tr>
+ *       <td>An AGENT task reached a terminal status (result = the Conductor status).</td></tr>
  *   <tr><td>{@code a2a_client_poll_failures}</td><td>—</td>
  *       <td>A single transient {@code tasks/get} poll failed (before exhausting retries).</td></tr>
  *   <tr><td>{@code a2a_rpc_errors}</td><td>{@code method}, {@code terminal}</td>
@@ -45,7 +45,7 @@ public final class A2AMetrics {
 
     // ---- client (Conductor calling a remote agent) ------------------------------------------
 
-    /** A AGENT task settled into a terminal Conductor status (e.g. completed/failed). */
+    /** An AGENT task settled into a terminal Conductor status (e.g. completed/failed). */
     public static void clientCall(String result) {
         Monitors.getCounter("a2a_client_calls", "result", result).increment();
     }

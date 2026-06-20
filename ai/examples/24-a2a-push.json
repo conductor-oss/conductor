@@ -1,8 +1,8 @@
 {
-  "name": "a2a_call_agent_push",
+  "name": "a2a_agent_push",
   "version": 1,
   "schemaVersion": 2,
-  "description": "AGENT in push mode — the agent calls Conductor's webhook when the task reaches a terminal state, so no worker thread polls. Requires conductor.a2a.callback.url to be set (otherwise it falls back to polling). A slow backstop poll still runs so a lost webhook can't hang the task.",
+  "description": "Calls a remote agent in push mode — the agent calls Conductor's webhook when the task reaches a terminal state, so no worker thread polls. Requires conductor.a2a.callback.url to be set (otherwise it falls back to polling). A slow backstop poll still runs so a lost webhook can't hang the task.",
   "ownerEmail": "a2a@example.com",
   "tasks": [
     {

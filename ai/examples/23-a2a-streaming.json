@@ -1,8 +1,8 @@
 {
-  "name": "a2a_call_agent_streaming",
+  "name": "a2a_agent_streaming",
   "version": 1,
   "schemaVersion": 2,
-  "description": "AGENT in streaming mode — consumes the agent's message/stream (SSE) and aggregates events to completion. Requires the agent card to advertise capabilities.streaming=true.",
+  "description": "Calls a remote agent in streaming mode — consumes the agent's message/stream (SSE) and aggregates events to completion. Requires the agent card to advertise capabilities.streaming=true.",
   "ownerEmail": "a2a@example.com",
   "tasks": [
     {
