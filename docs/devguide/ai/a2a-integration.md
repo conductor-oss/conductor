@@ -176,7 +176,63 @@ Resolves the agent card from `/.well-known/agent-card.json` (falling back to the
 
 ### Multi-turn (input-required)
 
-When a remote task reaches `input-required` (or `auth-required`), `CALL_AGENT` **completes** and surfaces the agent's question plus the `taskId`/`contextId`. The workflow resumes the conversation by issuing another `CALL_AGENT` with the same `taskId` and `contextId` carrying the answer.
+When a remote task reaches `input-required` (or `auth-required`), `CALL_AGENT` **completes** and surfaces the agent's question plus the `taskId`/`contextId` in its output. The workflow branches on that state and issues another `CALL_AGENT` with the **same `taskId` and `contextId`** carrying the answer — resuming the same remote task rather than starting a new conversation:
+
+```json
+{
+  "name": "branch_on_state",
+  "taskReferenceName": "branch",
+  "type": "SWITCH",
+  "evaluatorType": "value-param",
+  "expression": "state",
+  "inputParameters": { "state": "${ask.output.state}" },
+  "decisionCases": {
+    "input-required": [
+      {
+        "name": "answer_agent", "taskReferenceName": "answer", "type": "CALL_AGENT",
+        "inputParameters": {
+          "agentUrl": "${workflow.input.agentUrl}",
+          "text": "${workflow.input.answer}",
+          "contextId": "${ask.output.contextId}",
+          "taskId": "${ask.output.taskId}"
+        }
+      }
+    ]
+  },
+  "defaultCase": []
+}
+```
+
+Full example: `ai/examples/29-a2a-client-multi-turn.json`.
+
+### Orchestrating multiple agents
+
+Because each `CALL_AGENT` is an ordinary durable task, you compose agents with the usual Conductor operators — e.g. **`FORK_JOIN`** to call several agents in parallel, **`JOIN`** to gather results. Every branch is independently crash-safe: if Conductor restarts mid-flight, each in-flight agent call resumes from persisted state (`ai/examples/27-a2a-multi-agent.json`). To let an LLM pick which skill to use, chain `GET_AGENT_CARD → LLM_CHAT_COMPLETE → CALL_AGENT` (`ai/examples/28-a2a-llm-pick-skill.json`).
+
+### Error handling & retries
+
+`CALL_AGENT` maps remote outcomes onto Conductor task statuses, so the engine's normal retry/timeout machinery applies. Retryable failures become `FAILED` (the engine retries per the task def's `retryCount`); permanent failures become `FAILED_WITH_TERMINAL_ERROR` (no retry):
+
+| Condition | Task status | Retried? |
+|---|---|---|
+| HTTP 408/429/5xx, connect/read timeout, dropped/empty stream | `FAILED` | yes |
+| JSON-RPC transient error (e.g. `-32603` internal) | `FAILED` | yes |
+| Remote agent task ends `failed` / `rejected` | `FAILED` | yes |
+| HTTP 4xx (except 408/429) | `FAILED_WITH_TERMINAL_ERROR` | no |
+| JSON-RPC terminal codes (`-32700/-32600/-32601/-32602/-3200{1..5,7}`) | `FAILED_WITH_TERMINAL_ERROR` | no |
+| Missing `agentUrl` / empty message / **SSRF-blocked** URL | `FAILED_WITH_TERMINAL_ERROR` | no |
+| Exceeds `maxDurationSeconds`, or `maxPollFailures` consecutive poll failures | `FAILED_WITH_TERMINAL_ERROR` | no |
+
+Retries reuse the deterministic `messageId`, so agents that dedupe on it get effectively-once delivery. The failure reason is on `task.reasonForIncompletion`.
+
+**Troubleshooting**
+
+| Symptom | Cause / fix |
+|---|---|
+| `… SSRF blocked` | `agentUrl` resolves to a private/loopback/metadata address. Use a public URL, or set `conductor.a2a.client.allow-private-network=true` for trusted/dev (cloud-metadata stays blocked). |
+| `streaming: true` behaves like poll | The agent card has `capabilities.streaming=false`; the client only streams when the agent advertises it. |
+| Fails after N poll failures | The agent is unreachable — raise `maxPollFailures` or check connectivity. |
+| Hangs, then fails at the deadline | The agent never reached a terminal state within `maxDurationSeconds`. |
 
 
 ## Expose a workflow as an A2A agent (server)
@@ -459,3 +515,6 @@ Runnable workflow definitions live in [`ai/examples/`](https://github.com/conduc
 | `24-a2a-push.json` | Push-notification mode |
 | `25-a2a-server-multi-turn.json` | Multi-turn server agent (HUMAN task → resume) |
 | `26-a2a-cancel.json` | Start then cancel a remote agent task |
+| `27-a2a-multi-agent.json` | Call multiple agents in parallel (FORK_JOIN → JOIN) |
+| `28-a2a-llm-pick-skill.json` | Discover → LLM picks the prompt → call |
+| `29-a2a-client-multi-turn.json` | Client multi-turn (branch on input-required, re-call) |

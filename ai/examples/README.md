@@ -101,6 +101,9 @@ by registering them with `metadata.a2a.enabled=true` and `conductor.a2a.server.e
 | `24-a2a-push.json` | Call an agent in push-notification mode | A2A agent, `conductor.a2a.callback.url` |
 | `25-a2a-server-multi-turn.json` | Multi-turn server agent (HUMAN task → input-required → resume) | `conductor.a2a.server.enabled=true` |
 | `26-a2a-cancel.json` | Start then cancel a remote agent task | A2A agent |
+| `27-a2a-multi-agent.json` | Call multiple agents in parallel (FORK_JOIN → JOIN) | A2A agents |
+| `28-a2a-llm-pick-skill.json` | Discover an agent, let an LLM pick the prompt, then call it | A2A agent, OpenAI/Anthropic |
+| `29-a2a-client-multi-turn.json` | Client multi-turn: branch on input-required, re-call with the same context | A2A agent |
 
 ---
 
