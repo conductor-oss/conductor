@@ -358,12 +358,7 @@ The "durable A2A" claim rests on a few concrete mechanisms:
     ```
 
     Cloud metadata stays blocked even with this on. For production, prefer a network-layer egress firewall.
-- **Server auth.** Like OSS Conductor REST, the A2A server is open by default. Set a shared secret to require it on the card + JSON-RPC endpoints (constant-time compared):
-
-    ```properties
-    conductor.a2a.server.api-key=<secret>   # sent as Authorization: Bearer <secret> or X-A2A-Server-Key
-    ```
-
+- **Server auth.** Like OSS Conductor REST, the A2A server is **open by default**. Front it with a gateway/firewall (or mTLS) to control access. Inbound authentication (API keys, OAuth/OIDC, mTLS, per-skill scopes, signed Agent Cards) is provided by the **enterprise** build.
 - **Push tokens.** Push callbacks carry a single-use bearer token with an embedded 24h expiry, validated constant-time by the callback endpoint (`POST /api/a2a/callback/{taskId}`).
 
 
@@ -387,8 +382,7 @@ A2A code paths emit metrics through the shared Conductor metrics registry and se
 | `conductor.a2a.server.basePath` | `/a2a` | Base path for exposed agents. |
 | `conductor.a2a.server.exposed-workflows` | — | Comma-separated workflow names to expose. |
 | `conductor.a2a.server.public-url` | request-derived | Base URL advertised in the agent card. |
-| `conductor.a2a.server.provider-organization` | — | `provider.organization` in the card. |
-| `conductor.a2a.server.api-key` | — | Optional shared secret for server endpoints. |
+| `conductor.a2a.server.provider-organization` | `Conductor` | `provider.organization` on the card. |
 
 ## Examples
 

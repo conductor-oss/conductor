@@ -84,10 +84,11 @@ host loop to lose state. Two concrete properties:
 
 ## 10.5 Security
 
-OSS Conductor REST is open by default; the A2A server matches that. Optional shared secret
-`conductor.a2a.server.api-key` — when set, the card + JSON-RPC + listing endpoints require it as
-`Authorization: Bearer <key>` (or `X-A2A-Server-Key`), constant-time compared. For production,
-layer gateway/mTLS/OIDC in front (A2A puts identity in HTTP headers — see [05-security.md](05-security.md)).
+OSS Conductor REST is open by default; the A2A server matches that — **open by default**, front it
+with a gateway/firewall/mTLS to control access. Inbound **authentication** (API keys, OAuth/OIDC,
+mTLS, per-skill scopes, signed Agent Cards) is an **enterprise** concern, not shipped in OSS (A2A
+puts identity in HTTP headers — see [05-security.md](05-security.md)). The client→remote direction
+still supports per-call auth `headers` (e.g. Bearer tokens) in OSS.
 
 ## 10.6 Configuration
 
@@ -96,7 +97,6 @@ conductor.a2a.server.enabled=true
 conductor.a2a.server.basePath=/a2a
 conductor.a2a.server.exposed-workflows=order_pizza,book_flight
 conductor.a2a.server.public-url=https://conductor.example.com   # optional; else request-derived
-conductor.a2a.server.api-key=...                                # optional shared secret
 conductor.a2a.server.provider-organization=Acme
 ```
 Or per-workflow opt-in in the definition: `"metadata": { "a2a.enabled": true, "a2a.tags": [...] }`
@@ -107,7 +107,7 @@ Or per-workflow opt-in in the definition: `"metadata": { "a2a.enabled": true, "a
   (`@RestController`), `A2AServerException`; `config/A2AServerEnabledCondition`.
 - Tests: `A2AWorkflowAgentTest` (exposure, card, send-with-idempotency-key, **multi-turn resume**,
   status mapping incl. blocked→input-required, wrong-agent isolation, cancel), `A2AServerResourceTest`
-  (JSON-RPC dispatch, error codes, api-key gating, card serving), and `A2ALoopbackTest` (Conductor
+  (JSON-RPC dispatch, error codes, card serving), and `A2ALoopbackTest` (Conductor
   calling Conductor over A2A end-to-end against a stateful fake engine).
 
 ## 10.8 Out of scope (v1, follow-ups)

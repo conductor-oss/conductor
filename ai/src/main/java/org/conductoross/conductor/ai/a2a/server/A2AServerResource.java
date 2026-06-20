@@ -12,8 +12,6 @@
  */
 package org.conductoross.conductor.ai.a2a.server;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,7 +29,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -56,8 +53,9 @@ import jakarta.servlet.http.HttpServletRequest;
  *
  * <p>Lives in the {@code ai} module (component-scanned by the server), gated by {@code
  * conductor.a2a.server.enabled=true}. Paths use the configured {@code basePath} via {@code
- * ${conductor.a2a.server.basePath:/a2a}} so the routes match the property. Optional shared-secret
- * auth via {@code conductor.a2a.server.api-key}.
+ * ${conductor.a2a.server.basePath:/a2a}} so the routes match the property. Open by default, like
+ * OSS Conductor REST — front it with a gateway/firewall, or use the enterprise build for inbound
+ * authentication (OAuth/mTLS/API keys).
  */
 @RestController
 @Conditional(A2AServerEnabledCondition.class)
@@ -81,13 +79,7 @@ public class A2AServerResource {
             },
             produces = "application/json")
     public ResponseEntity<?> agentCard(
-            @PathVariable("workflow") String workflow,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
-            @RequestHeader(value = "X-A2A-Server-Key", required = false) String keyHeader,
-            HttpServletRequest httpRequest) {
-        if (!authorized(authHeader, keyHeader)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+            @PathVariable("workflow") String workflow, HttpServletRequest httpRequest) {
         try {
             AgentCard card = agent.agentCard(workflow, requestBaseUrl(httpRequest));
             return ResponseEntity.ok(card);
@@ -101,12 +93,7 @@ public class A2AServerResource {
             produces = "application/json")
     public ResponseEntity<JsonNode> jsonRpc(
             @PathVariable("workflow") String workflow,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
-            @RequestHeader(value = "X-A2A-Server-Key", required = false) String keyHeader,
             @RequestBody(required = false) JsonNode request) {
-        if (!authorized(authHeader, keyHeader)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
         JsonNode id = request == null ? null : request.get("id");
         try (A2ALogging.Scope scope = A2ALogging.of(A2ALogging.AGENT, workflow)) {
             if (request == null || !request.hasNonNull("method")) {
@@ -158,13 +145,7 @@ public class A2AServerResource {
     }
 
     @GetMapping(value = "${conductor.a2a.server.basePath:/a2a}", produces = "application/json")
-    public ResponseEntity<?> listAgents(
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
-            @RequestHeader(value = "X-A2A-Server-Key", required = false) String keyHeader,
-            HttpServletRequest httpRequest) {
-        if (!authorized(authHeader, keyHeader)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+    public ResponseEntity<?> listAgents(HttpServletRequest httpRequest) {
         String base = requestBaseUrl(httpRequest);
         List<?> agents =
                 agent.exposedWorkflows().stream()
@@ -197,23 +178,6 @@ public class A2AServerResource {
             throw A2AServerException.invalidParams("requires params.id (the task/workflow id)");
         }
         return params.get("id").asText();
-    }
-
-    private boolean authorized(String authHeader, String keyHeader) {
-        String configured = properties.getApiKey();
-        if (configured == null || configured.isBlank()) {
-            return true; // open by default, matching OSS Conductor REST
-        }
-        String presented = null;
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            presented = authHeader.substring(7).trim();
-        } else if (keyHeader != null && !keyHeader.isBlank()) {
-            presented = keyHeader.trim();
-        }
-        return presented != null
-                && MessageDigest.isEqual(
-                        configured.getBytes(StandardCharsets.UTF_8),
-                        presented.getBytes(StandardCharsets.UTF_8));
     }
 
     private String basePath() {

@@ -28,7 +28,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -81,7 +80,7 @@ class A2AServerResourceTest {
                 rpc(
                         "message/send",
                         "{\"message\":{\"role\":\"user\",\"kind\":\"message\",\"messageId\":\"m1\",\"parts\":[{\"kind\":\"text\",\"text\":\"hi\"}]}}");
-        ResponseEntity<JsonNode> response = resource.jsonRpc("order_pizza", null, null, request);
+        ResponseEntity<JsonNode> response = resource.jsonRpc("order_pizza", request);
 
         JsonNode body = response.getBody();
         assertEquals(1, body.get("id").asInt());
@@ -94,7 +93,7 @@ class A2AServerResourceTest {
         when(agent.getTask("order_pizza", "wf-1")).thenReturn(task("wf-1", TaskState.COMPLETED));
 
         ResponseEntity<JsonNode> response =
-                resource.jsonRpc("order_pizza", null, null, rpc("tasks/get", "{\"id\":\"wf-1\"}"));
+                resource.jsonRpc("order_pizza", rpc("tasks/get", "{\"id\":\"wf-1\"}"));
 
         assertEquals(
                 TaskState.COMPLETED,
@@ -105,15 +104,14 @@ class A2AServerResourceTest {
     void tasksCancel_dispatches() {
         when(agent.cancelTask("order_pizza", "wf-1")).thenReturn(task("wf-1", TaskState.CANCELED));
 
-        resource.jsonRpc("order_pizza", null, null, rpc("tasks/cancel", "{\"id\":\"wf-1\"}"));
+        resource.jsonRpc("order_pizza", rpc("tasks/cancel", "{\"id\":\"wf-1\"}"));
 
         verify(agent).cancelTask("order_pizza", "wf-1");
     }
 
     @Test
     void unknownMethod_returnsMethodNotFound() {
-        ResponseEntity<JsonNode> response =
-                resource.jsonRpc("order_pizza", null, null, rpc("foo/bar", "{}"));
+        ResponseEntity<JsonNode> response = resource.jsonRpc("order_pizza", rpc("foo/bar", "{}"));
         assertEquals(-32601, response.getBody().get("error").get("code").asInt());
     }
 
@@ -125,7 +123,7 @@ class A2AServerResourceTest {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        ResponseEntity<JsonNode> response = resource.jsonRpc("order_pizza", null, null, request);
+        ResponseEntity<JsonNode> response = resource.jsonRpc("order_pizza", request);
         assertEquals(-32600, response.getBody().get("error").get("code").asInt());
     }
 
@@ -135,36 +133,9 @@ class A2AServerResourceTest {
                 .thenThrow(A2AServerException.notFound("not found"));
 
         ResponseEntity<JsonNode> response =
-                resource.jsonRpc(
-                        "order_pizza", null, null, rpc("tasks/get", "{\"id\":\"missing\"}"));
+                resource.jsonRpc("order_pizza", rpc("tasks/get", "{\"id\":\"missing\"}"));
 
         assertEquals(-32001, response.getBody().get("error").get("code").asInt());
-    }
-
-    @Test
-    void apiKey_required_rejectsMissingCredential() {
-        properties.setApiKey("s3cret");
-
-        ResponseEntity<JsonNode> response =
-                resource.jsonRpc("order_pizza", null, null, rpc("tasks/get", "{\"id\":\"wf-1\"}"));
-
-        assertEquals(401, response.getStatusCode().value());
-    }
-
-    @Test
-    void apiKey_required_acceptsBearer() {
-        properties.setApiKey("s3cret");
-        when(agent.getTask("order_pizza", "wf-1")).thenReturn(task("wf-1", TaskState.WORKING));
-
-        ResponseEntity<JsonNode> response =
-                resource.jsonRpc(
-                        "order_pizza",
-                        "Bearer s3cret",
-                        null,
-                        rpc("tasks/get", "{\"id\":\"wf-1\"}"));
-
-        assertEquals(200, response.getStatusCode().value());
-        assertTrue(response.getBody().has("result"));
     }
 
     @Test
@@ -179,7 +150,7 @@ class A2AServerResourceTest {
                         new StringBuffer(
                                 "http://host:8080/a2a/order_pizza/.well-known/agent-card.json"));
 
-        ResponseEntity<?> response = resource.agentCard("order_pizza", null, null, httpRequest);
+        ResponseEntity<?> response = resource.agentCard("order_pizza", httpRequest);
 
         assertEquals(200, response.getStatusCode().value());
         assertEquals("order_pizza", ((AgentCard) response.getBody()).getName());

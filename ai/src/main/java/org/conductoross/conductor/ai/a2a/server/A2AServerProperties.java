@@ -50,9 +50,6 @@ public class A2AServerProperties {
     /** Provider organization advertised on the Agent Card. */
     private String providerOrganization = "Conductor";
 
-    /** Optional shared secret. When set, card + JSON-RPC endpoints require it as a Bearer token. */
-    private String apiKey;
-
     /** Default accepted input media types for derived skills. */
     private List<String> defaultInputModes =
             new ArrayList<>(List.of("application/json", "text/plain"));
