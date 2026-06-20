@@ -18,8 +18,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.conductoross.conductor.ai.a2a.A2AService;
+import org.conductoross.conductor.ai.a2a.A2AService.SendResult;
 import org.conductoross.conductor.ai.a2a.AgentTask;
+import org.conductoross.conductor.ai.a2a.model.A2AMessage;
 import org.conductoross.conductor.ai.a2a.model.AgentCard;
+import org.conductoross.conductor.ai.a2a.model.Part;
+import org.conductoross.conductor.ai.a2a.model.TaskState;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,11 +48,14 @@ import com.netflix.conductor.service.WorkflowService;
 import okhttp3.OkHttpClient;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -74,6 +82,17 @@ class A2ALoopbackTest {
     @LocalServerPort private int port;
     @Autowired private WorkflowService workflowService; // the fake bean below
 
+    // Shared across the (singleton) fake bean; reset per test so each test starts from "poll 0".
+    static final AtomicInteger POLLS = new AtomicInteger();
+
+    @BeforeEach
+    void reset() {
+        POLLS.set(0);
+        // The fake bean is a singleton mock shared across tests; clear counts so each test's
+        // verify(...) only sees its own invocations (stubbing is preserved).
+        clearInvocations(workflowService);
+    }
+
     @SpringBootApplication(exclude = DataSourceAutoConfiguration.class)
     static class LoopbackApp {
 
@@ -81,7 +100,6 @@ class A2ALoopbackTest {
         WorkflowService workflowService() {
             WorkflowService service = mock(WorkflowService.class);
             when(service.startWorkflow(any(StartWorkflowRequest.class))).thenReturn("wf-loop-1");
-            AtomicInteger polls = new AtomicInteger();
             when(service.getExecutionStatus(eq("wf-loop-1"), anyBoolean()))
                     .thenAnswer(
                             inv -> {
@@ -90,7 +108,7 @@ class A2ALoopbackTest {
                                 wf.setCorrelationId("ctx-loop");
                                 wf.setWorkflowDefinition(def());
                                 // First poll RUNNING, then COMPLETED — simulates progress.
-                                if (polls.getAndIncrement() == 0) {
+                                if (POLLS.getAndIncrement() == 0) {
                                     wf.setStatus(WorkflowStatus.RUNNING);
                                 } else {
                                     wf.setStatus(WorkflowStatus.COMPLETED);
@@ -147,6 +165,28 @@ class A2ALoopbackTest {
         assertEquals(1, card.getSkills().size());
         assertEquals("order_pizza", card.getSkills().get(0).getId());
         assertEquals(agentUrl(), card.getUrl());
+    }
+
+    @Test
+    void streaming_clientAggregatesServerSseToCompletion() {
+        A2AService service = clientService();
+
+        A2AMessage message = new A2AMessage();
+        Part part = new Part();
+        part.setKind("text");
+        part.setText("one large pepperoni");
+        message.setParts(List.of(part));
+        message.setRole("user");
+        message.setMessageId("stream-m-1");
+        message.setKind("message");
+
+        // Real client message/stream against the real server's SSE endpoint, over HTTP.
+        SendResult result = service.streamMessage(agentUrl(), message, null, null);
+
+        assertTrue(result.isTask());
+        assertEquals(TaskState.COMPLETED, result.getTask().getStatus().getState());
+        assertNotNull(result.getTask().getArtifacts());
+        assertFalse(result.getTask().getArtifacts().isEmpty());
     }
 
     @Test

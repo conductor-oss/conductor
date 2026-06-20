@@ -57,4 +57,10 @@ public class A2AServerProperties {
     /** Default produced output media types for derived skills. */
     private List<String> defaultOutputModes =
             new ArrayList<>(List.of("application/json", "text/plain"));
+
+    /** How often the {@code message/stream} loop polls the workflow for state changes. */
+    private long streamPollIntervalMillis = 500;
+
+    /** Hard cap on how long a single {@code message/stream} connection stays open. */
+    private long streamMaxDurationSeconds = 300;
 }

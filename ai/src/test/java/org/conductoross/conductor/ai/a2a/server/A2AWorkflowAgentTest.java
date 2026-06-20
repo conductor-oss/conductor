@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.a2a.server;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,7 @@ import org.conductoross.conductor.ai.a2a.model.A2ATask;
 import org.conductoross.conductor.ai.a2a.model.AgentCard;
 import org.conductoross.conductor.ai.a2a.model.Part;
 import org.conductoross.conductor.ai.a2a.model.TaskState;
+import org.conductoross.conductor.ai.a2a.model.TaskStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -222,6 +224,52 @@ class A2AWorkflowAgentTest {
         verify(taskService, never())
                 .updateTask(anyString(), anyString(), any(), anyString(), any());
         verify(workflowService, never()).startWorkflow(any(StartWorkflowRequest.class));
+    }
+
+    // ---- message/stream ----------------------------------------------------------------------
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void streamMessage_emitsTaskThenArtifactThenFinalStatus() throws Exception {
+        properties.setExposedWorkflows(List.of("order_pizza"));
+        properties.setStreamPollIntervalMillis(1); // keep the test fast
+        when(metadataService.getWorkflowDef("order_pizza", null)).thenReturn(def("order_pizza"));
+        when(workflowService.startWorkflow(any(StartWorkflowRequest.class))).thenReturn("wf-1");
+        // sendMessage() loads without tasks -> RUNNING (working).
+        when(workflowService.getExecutionStatus("wf-1", false))
+                .thenReturn(workflow("order_pizza", WorkflowStatus.RUNNING));
+        // poll loop loads with tasks: still working, then completed with output.
+        Workflow completed = workflow("order_pizza", WorkflowStatus.COMPLETED);
+        completed.setOutput(Map.of("orderId", "ORD-1"));
+        when(workflowService.getExecutionStatus("wf-1", true))
+                .thenReturn(workflow("order_pizza", WorkflowStatus.RUNNING))
+                .thenReturn(completed);
+
+        List<Object> events = new ArrayList<>();
+        agent.streamMessage("order_pizza", userMessage(), 7, events::add);
+
+        // First event is the initial Task (working) and carries our JSON-RPC id.
+        Map<String, Object> firstEnvelope = (Map<String, Object>) events.get(0);
+        assertEquals(7, firstEnvelope.get("id"));
+        Object firstResult = firstEnvelope.get("result");
+        assertTrue(firstResult instanceof A2ATask);
+        assertEquals(TaskState.WORKING, ((A2ATask) firstResult).getStatus().getState());
+
+        // An artifact-update carries the workflow output.
+        boolean sawArtifact =
+                events.stream()
+                        .map(e -> ((Map<String, Object>) e).get("result"))
+                        .filter(Map.class::isInstance)
+                        .anyMatch(r -> "artifact-update".equals(((Map<?, ?>) r).get("kind")));
+        assertTrue(sawArtifact, "expected an artifact-update event; got " + events);
+
+        // Last event is a final status-update with state completed.
+        Map<String, Object> lastResult =
+                (Map<String, Object>)
+                        ((Map<String, Object>) events.get(events.size() - 1)).get("result");
+        assertEquals("status-update", lastResult.get("kind"));
+        assertEquals(Boolean.TRUE, lastResult.get("final"));
+        assertEquals(TaskState.COMPLETED, ((TaskStatus) lastResult.get("status")).getState());
     }
 
     // ---- tasks/get ---------------------------------------------------------------------------
