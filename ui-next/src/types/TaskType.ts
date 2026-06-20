@@ -568,6 +568,39 @@ export interface ParseDocumentTaskDef extends CommonTaskDef {
   };
 }
 
+export interface CallAgentTaskDef extends CommonTaskDef {
+  type: TaskType.CALL_AGENT;
+  inputParameters: {
+    agentUrl: string;
+    text?: string;
+    prompt?: string;
+    contextId?: string;
+    taskId?: string;
+    pollIntervalSeconds?: number;
+    maxDurationSeconds?: number;
+    streaming?: boolean;
+    pushNotification?: boolean;
+    headers?: Record<string, string>;
+  };
+}
+
+export interface GetAgentCardTaskDef extends CommonTaskDef {
+  type: TaskType.GET_AGENT_CARD;
+  inputParameters: {
+    agentUrl: string;
+    headers?: Record<string, string>;
+  };
+}
+
+export interface CancelAgentTaskTaskDef extends CommonTaskDef {
+  type: TaskType.CANCEL_AGENT_TASK;
+  inputParameters: {
+    agentUrl: string;
+    taskId: string;
+    headers?: Record<string, string>;
+  };
+}
+
 export type LLMTaskTypes =
   | LLMGenerateEmbeddings
   | LLMGetEmbeddings
@@ -623,4 +656,7 @@ export type FormTaskType =
   | TaskType.INTEGRATION
   | TaskType.CHUNK_TEXT
   | TaskType.LIST_FILES
-  | TaskType.PARSE_DOCUMENT;
+  | TaskType.PARSE_DOCUMENT
+  | TaskType.CALL_AGENT
+  | TaskType.GET_AGENT_CARD
+  | TaskType.CANCEL_AGENT_TASK;

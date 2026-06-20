@@ -54,6 +54,9 @@ import {
   ChunkTextTaskDef,
   ListFilesTaskDef,
   ParseDocumentTaskDef,
+  CallAgentTaskDef,
+  GetAgentCardTaskDef,
+  CancelAgentTaskTaskDef,
 } from "types";
 import { HTTP_TEST_ENDPOINT } from "utils/constants/common";
 import { BaseTaskMenuItem } from "./state/types";
@@ -726,6 +729,47 @@ export const generateListFilesTask: GenerateTaskFn<ListFilesTaskDef> = ({
   ...overrides,
 });
 
+export const generateCallAgentTask: GenerateTaskFn<CallAgentTaskDef> = ({
+  overrides = {},
+  nameGenerator = generateNameAndTaskReference,
+} = DEFAULT_ARGS): CallAgentTaskDef => ({
+  ...nameGenerator("call_agent"),
+  type: TaskType.CALL_AGENT,
+  inputParameters: {
+    agentUrl: "",
+    text: "",
+    pollIntervalSeconds: 5,
+  },
+  ...overrides,
+});
+
+export const generateGetAgentCardTask: GenerateTaskFn<GetAgentCardTaskDef> = ({
+  overrides = {},
+  nameGenerator = generateNameAndTaskReference,
+} = DEFAULT_ARGS): GetAgentCardTaskDef => ({
+  ...nameGenerator("get_agent_card"),
+  type: TaskType.GET_AGENT_CARD,
+  inputParameters: {
+    agentUrl: "",
+  },
+  ...overrides,
+});
+
+export const generateCancelAgentTaskTask: GenerateTaskFn<
+  CancelAgentTaskTaskDef
+> = ({
+  overrides = {},
+  nameGenerator = generateNameAndTaskReference,
+} = DEFAULT_ARGS): CancelAgentTaskTaskDef => ({
+  ...nameGenerator("cancel_agent_task"),
+  type: TaskType.CANCEL_AGENT_TASK,
+  inputParameters: {
+    agentUrl: "",
+    taskId: "",
+  },
+  ...overrides,
+});
+
 export const taskGeneratorMap = {
   [TaskType.WAIT]: generateWaitTask,
   [TaskType.HTTP]: generateHTTPTask,
@@ -776,6 +820,9 @@ export const taskGeneratorMap = {
   [TaskType.CHUNK_TEXT]: generateChunkTextTask,
   [TaskType.LIST_FILES]: generateListFilesTask,
   [TaskType.PARSE_DOCUMENT]: generateParseDocumentTask,
+  [TaskType.CALL_AGENT]: generateCallAgentTask,
+  [TaskType.GET_AGENT_CARD]: generateGetAgentCardTask,
+  [TaskType.CANCEL_AGENT_TASK]: generateCancelAgentTaskTask,
 } satisfies Record<FormTaskType, GenerateTaskFn<any>>;
 
 export const uniqueTaskIdGenerator = (sr: BaseTaskMenuItem) => {

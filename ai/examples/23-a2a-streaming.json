@@ -1,0 +1,19 @@
+{
+  "name": "a2a_call_agent_streaming",
+  "version": 1,
+  "schemaVersion": 2,
+  "description": "CALL_AGENT in streaming mode — consumes the agent's message/stream (SSE) and aggregates events to completion. Requires the agent card to advertise capabilities.streaming=true.",
+  "ownerEmail": "a2a@example.com",
+  "tasks": [
+    {
+      "name": "stream_from_agent",
+      "taskReferenceName": "agent",
+      "type": "CALL_AGENT",
+      "inputParameters": {
+        "agentUrl": "http://localhost:9999",
+        "text": "summarize the attached document",
+        "streaming": true
+      }
+    }
+  ]
+}

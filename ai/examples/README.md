@@ -85,6 +85,23 @@ The server will be available at `http://localhost:3001/mcp`.
 | `21-web-search-research-agent.json` | Research agent: web search → synthesize → PDF | OpenAI, Anthropic |
 | `22-multi-turn-chain.json` | Multi-turn conversation chaining with previousResponseId | OpenAI |
 
+### A2A (Agent2Agent) examples
+
+Conductor as an A2A **client** (calling remote agents) and **server** (exposing a workflow as an
+agent). The client tasks (`CALL_AGENT`, `GET_AGENT_CARD`, `CANCEL_AGENT_TASK`) need a reachable A2A
+agent — see `ai/src/test/resources/a2a/` for a runnable test agent. The server examples are exposed
+by registering them with `metadata.a2a.enabled=true` and `conductor.a2a.server.enabled=true`.
+
+| File | Description | Requirements |
+|------|-------------|--------------|
+| `10-a2a-call-agent.json` | Call a remote agent (poll mode) | A2A agent |
+| `11-a2a-get-agent-card.json` | Discover an agent's skills/capabilities | A2A agent |
+| `12-a2a-server-workflow.json` | Expose a workflow as an A2A agent (server) | `conductor.a2a.server.enabled=true` |
+| `23-a2a-streaming.json` | Call an agent in streaming (SSE) mode | A2A agent (`capabilities.streaming=true`) |
+| `24-a2a-push.json` | Call an agent in push-notification mode | A2A agent, `conductor.a2a.callback.url` |
+| `25-a2a-server-multi-turn.json` | Multi-turn server agent (HUMAN task → input-required → resume) | `conductor.a2a.server.enabled=true` |
+| `26-a2a-cancel.json` | Start then cancel a remote agent task | A2A agent |
+
 ---
 
 ## Quick Start

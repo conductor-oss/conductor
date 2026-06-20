@@ -85,4 +85,10 @@ export const taskDescriptions: TaskDescriptions = {
     "A system task to index the provided text into a vector space that can be efficiently searched, retrieved, and processed later.",
   [TaskType.LLM_CHAT_COMPLETE]:
     "A system task to complete the chat query. It can be used to instruct the model's behavior accurately to prevent any deviation from the objective.",
+  [TaskType.CALL_AGENT]:
+    "Calls a remote A2A (Agent2Agent) agent and works the resulting task to completion. Supports poll, streaming (SSE), and push modes with durable retry and resumption.",
+  [TaskType.GET_AGENT_CARD]:
+    "Fetches a remote A2A agent's Agent Card to discover its skills and capabilities at runtime.",
+  [TaskType.CANCEL_AGENT_TASK]:
+    "Cancels a running task on a remote A2A agent (A2A tasks/cancel).",
 };

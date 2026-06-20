@@ -1676,6 +1676,9 @@ export const schemasByType = {
   [TaskType.CHUNK_TEXT]: chunkTextTaskSchema,
   [TaskType.LIST_FILES]: listFilesTaskSchema,
   [TaskType.PARSE_DOCUMENT]: parseDocumentTaskSchema,
+  [TaskType.CALL_AGENT]: genericSchema,
+  [TaskType.GET_AGENT_CARD]: genericSchema,
+  [TaskType.CANCEL_AGENT_TASK]: genericSchema,
 };
 
 // Object.values(TaskType)

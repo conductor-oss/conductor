@@ -94,4 +94,7 @@ export const iconForTaskTypeMap = {
   [TaskType.CHUNK_TEXT]: RowsIcon,
   [TaskType.LIST_FILES]: FilesIcon,
   [TaskType.PARSE_DOCUMENT]: FileMagnifyingGlass,
+  [TaskType.CALL_AGENT]: MCPIcon,
+  [TaskType.GET_AGENT_CARD]: MCPIcon,
+  [TaskType.CANCEL_AGENT_TASK]: X,
 } satisfies Record<FormTaskType, React.FC>;

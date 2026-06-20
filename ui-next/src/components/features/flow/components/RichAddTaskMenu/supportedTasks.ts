@@ -241,6 +241,25 @@ export const AI_TASKS: BaseTaskMenuItem[] = [
     type: TaskType.LLM_SEARCH_INDEX,
     category: RichAddMenuTabs.AI_AGENTS_TAB,
   },
+  {
+    name: "Call Agent (A2A)",
+    description:
+      "Call a remote A2A agent with durable retry — poll, streaming, or push modes.",
+    type: TaskType.CALL_AGENT,
+    category: RichAddMenuTabs.AI_AGENTS_TAB,
+  },
+  {
+    name: "Get Agent Card (A2A)",
+    description: "Discover a remote A2A agent's skills and capabilities.",
+    type: TaskType.GET_AGENT_CARD,
+    category: RichAddMenuTabs.AI_AGENTS_TAB,
+  },
+  {
+    name: "Cancel Agent Task (A2A)",
+    description: "Cancel a running task on a remote A2A agent.",
+    type: TaskType.CANCEL_AGENT_TASK,
+    category: RichAddMenuTabs.AI_AGENTS_TAB,
+  },
 ];
 
 /**
