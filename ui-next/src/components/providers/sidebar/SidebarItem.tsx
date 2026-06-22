@@ -68,9 +68,10 @@ export const SidebarItem = ({
         const paramsMatch = [...linkParams.entries()].every(
           ([key, val]) => locationParams.get(key) === val,
         );
-        return location.pathname === linkPath && paramsMatch;
+        if (location.pathname === linkPath && paramsMatch) return true;
+      } else if (location.pathname === linkPath) {
+        return true;
       }
-      if (location.pathname === linkPath) return true;
     }
     if (item.activeRoutes) {
       return item.activeRoutes.some((route) =>
@@ -96,9 +97,10 @@ export const SidebarItem = ({
           const paramsMatch = [...linkParams.entries()].every(
             ([key, val]) => locationParams.get(key) === val,
           );
-          return location.pathname === linkPath && paramsMatch;
+          if (location.pathname === linkPath && paramsMatch) return true;
+        } else if (location.pathname === linkPath) {
+          return true;
         }
-        if (location.pathname === linkPath) return true;
       }
       if (child.activeRoutes) {
         return child.activeRoutes.some((route) =>
