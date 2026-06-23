@@ -12,7 +12,6 @@
  */
 package org.conductoross.conductor.ai.mcp;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -46,6 +45,11 @@ public class MCPService {
     private static final Logger log = LoggerFactory.getLogger(MCPService.class);
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
     private final JsonTextParser jsonTextParser = new JsonTextParser(objectMapper);
+    private final OkHttpClient httpClient;
+
+    public MCPService(OkHttpClient conductorAiHttpClient) {
+        this.httpClient = conductorAiHttpClient;
+    }
 
     /**
      * Lists all tools available from an MCP server.
@@ -96,13 +100,6 @@ public class MCPService {
             request.put("jsonrpc", "2.0");
             request.put("method", "tools/list");
             request.put("id", 1);
-
-            // Make HTTP POST request with OkHttp
-            OkHttpClient httpClient =
-                    new OkHttpClient.Builder()
-                            .connectTimeout(Duration.ofSeconds(30))
-                            .readTimeout(Duration.ofSeconds(30))
-                            .build();
 
             Request.Builder requestBuilder =
                     new Request.Builder()
@@ -221,13 +218,6 @@ public class MCPService {
             params.put("name", toolName);
             params.set("arguments", objectMapper.valueToTree(arguments));
             request.set("params", params);
-
-            // Make HTTP POST request with OkHttp
-            OkHttpClient httpClient =
-                    new OkHttpClient.Builder()
-                            .connectTimeout(Duration.ofSeconds(30))
-                            .readTimeout(Duration.ofSeconds(30))
-                            .build();
 
             Request.Builder requestBuilder =
                     new Request.Builder()

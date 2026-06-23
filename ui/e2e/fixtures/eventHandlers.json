@@ -1,0 +1,35 @@
+[
+  {
+    "name": "test_event_handler",
+    "event": "conductor:workflow:COMPLETED",
+    "condition": "true",
+    "actions": [
+      {
+        "action": "start_workflow",
+        "start_workflow": {
+          "name": "test_workflow",
+          "version": 1
+        }
+      }
+    ],
+    "active": true,
+    "evaluatorType": "javascript"
+  },
+  {
+    "name": "another_event_handler",
+    "event": "conductor:task:FAILED",
+    "condition": "true",
+    "actions": [
+      {
+        "action": "complete_task",
+        "complete_task": {
+          "workflowId": "${workflowId}",
+          "taskRefName": "task_ref",
+          "output": {}
+        }
+      }
+    ],
+    "active": false,
+    "evaluatorType": "javascript"
+  }
+]

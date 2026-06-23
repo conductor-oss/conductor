@@ -22,6 +22,7 @@ import org.conductoross.conductor.ai.providers.anthropic.api.AnthropicMessagesAp
 import org.conductoross.conductor.ai.providers.anthropic.api.AnthropicMessagesApi.Message;
 import org.conductoross.conductor.ai.providers.anthropic.api.AnthropicMessagesApi.MessagesRequest;
 import org.conductoross.conductor.ai.providers.anthropic.api.AnthropicMessagesApi.MessagesResponse;
+import org.conductoross.conductor.ai.providers.anthropic.api.AnthropicMessagesApi.OutputConfig;
 import org.conductoross.conductor.ai.providers.anthropic.api.AnthropicMessagesApi.ResponseContentBlock;
 import org.conductoross.conductor.ai.providers.anthropic.api.AnthropicMessagesApi.ResponseUsage;
 import org.conductoross.conductor.ai.providers.anthropic.api.AnthropicMessagesApi.Thinking;
@@ -51,6 +52,8 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class AnthropicChatModel implements ChatModel {
+
+    private static final int DEFAULT_MAX_TOKENS = 8192;
 
     private final AnthropicMessagesApi messagesApi;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -93,24 +96,46 @@ public class AnthropicChatModel implements ChatModel {
             messages.addAll(convertMessage(msg));
         }
 
-        // Extract options
+        // Extract options — Spring AI's ChatClient may merge AnthropicChatOptions with
+        // ToolCallingChatOptions (the model's default), producing a non-Anthropic type.
+        // We handle both cases and always guarantee max_tokens (required by Anthropic API).
         AnthropicChatOptions opts = options instanceof AnthropicChatOptions aco ? aco : null;
 
         MessagesRequest.Builder builder =
                 MessagesRequest.builder().messages(messages).system(system);
 
         if (opts != null) {
+            Integer maxTokens = opts.getMaxTokens();
             builder.model(opts.getModel())
-                    .maxTokens(opts.getMaxTokens())
+                    .maxTokens(maxTokens != null && maxTokens > 0 ? maxTokens : DEFAULT_MAX_TOKENS)
                     .temperature(opts.getTemperature())
                     .topP(opts.getTopP())
                     .topK(opts.getTopK())
                     .stopSequences(opts.getStopSequences())
                     .tools(opts.getTools());
 
-            // Thinking mode
-            if (opts.getThinkingBudgetTokens() != null && opts.getThinkingBudgetTokens() > 0) {
-                builder.thinking(Thinking.enabled(opts.getThinkingBudgetTokens()));
+            // Thinking + effort. Claude Opus 4.7 rejects the legacy
+            // ``thinking.type.enabled`` shape with HTTP 400 and requires
+            // ``thinking.type.adaptive`` + ``output_config.effort`` instead. For 4.6 / 4.5 the
+            // legacy shape is still accepted (deprecated on 4.6, primary on 4.5).
+            boolean adaptiveOnly = requiresAdaptiveThinking(opts.getModel());
+            Integer budget = opts.getThinkingBudgetTokens();
+            boolean wantsThinking = budget != null && budget > 0;
+            String effort = opts.getReasoningEffort();
+
+            if (adaptiveOnly) {
+                if (wantsThinking) {
+                    builder.thinking(Thinking.adaptive());
+                    if (effort == null || effort.isBlank()) {
+                        effort = budgetToEffort(budget);
+                    }
+                }
+            } else if (wantsThinking) {
+                builder.thinking(Thinking.enabled(budget));
+            }
+
+            if (effort != null && !effort.isBlank()) {
+                builder.outputConfig(new OutputConfig(effort));
             }
 
             // Check if code_execution tool is present — requires beta header
@@ -123,12 +148,15 @@ public class AnthropicChatModel implements ChatModel {
                 }
             }
         } else if (options != null) {
+            Integer maxTokens = options.getMaxTokens();
             builder.model(options.getModel())
-                    .maxTokens(options.getMaxTokens())
+                    .maxTokens(maxTokens != null && maxTokens > 0 ? maxTokens : DEFAULT_MAX_TOKENS)
                     .temperature(options.getTemperature())
                     .topP(options.getTopP())
                     .topK(options.getTopK())
                     .stopSequences(options.getStopSequences());
+        } else {
+            builder.maxTokens(DEFAULT_MAX_TOKENS);
         }
 
         return builder.build();
@@ -278,6 +306,28 @@ public class AnthropicChatModel implements ChatModel {
         }
 
         return new ChatResponse(generations, metaBuilder.build());
+    }
+
+    /**
+     * Returns true for models that reject ``thinking.type.enabled`` and require adaptive thinking
+     * with ``output_config.effort``. Currently Claude Opus 4.7 (any variant — including
+     * ``claude-opus-4-7-20250101`` or future ``-1m``-style suffixes).
+     */
+    static boolean requiresAdaptiveThinking(String model) {
+        return model != null && model.toLowerCase().contains("opus-4-7");
+    }
+
+    /**
+     * Map a legacy ``thinkingTokenLimit`` budget onto an adaptive ``effort`` tier. Used only when a
+     * caller specified a budget for a model that no longer accepts ``budget_tokens`` (Opus 4.7) and
+     * didn't independently set ``reasoningEffort``. Thresholds roughly track Anthropic's published
+     * guidance: bigger budgets → more thorough thinking.
+     */
+    static String budgetToEffort(int budget) {
+        if (budget < 4_000) return "low";
+        if (budget < 16_000) return "medium";
+        if (budget < 32_000) return "high";
+        return "xhigh";
     }
 
     private String mapStopReason(String stopReason) {

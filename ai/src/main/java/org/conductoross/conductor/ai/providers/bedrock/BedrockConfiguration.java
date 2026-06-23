@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import okhttp3.OkHttpClient;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
@@ -55,6 +56,11 @@ public class BedrockConfiguration implements ModelConfiguration<Bedrock> {
     @Override
     public Bedrock get() {
         return new Bedrock(this);
+    }
+
+    @Override
+    public void setHttpClient(OkHttpClient httpClient) {
+        // Not required
     }
 
     public AwsCredentialsProvider getAwsCredentialsProvider() {

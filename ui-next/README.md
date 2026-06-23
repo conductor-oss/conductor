@@ -6,8 +6,11 @@ The open-source React UI for [Conductor](https://github.com/conductor-oss/conduc
 
 ### Prerequisites
 
-- Node.js 22+
-- [pnpm](https://pnpm.io/) 10.32.0 (`corepack use pnpm@10.32.0`)
+- Node.js 18+
+- [pnpm](https://pnpm.io/) 10.x — we use pnpm 10 (not v11) since pnpm v11 requires Node.js v22+. The exact version is pinned via `packageManager` in `package.json`. Run once to activate it:
+  ```bash
+  corepack enable
+  ```
 - A running Conductor server (default: `http://localhost:8080`)
 
 ### Setup

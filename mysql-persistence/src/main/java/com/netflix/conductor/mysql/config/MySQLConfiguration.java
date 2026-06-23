@@ -17,9 +17,9 @@ import java.util.Optional;
 
 import javax.sql.DataSource;
 
-import org.conductoross.conductor.mysql.dao.MySQLFileMetadataDAO;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -42,9 +42,10 @@ import static com.mysql.cj.exceptions.MysqlErrorNumbers.ER_LOCK_DEADLOCK;
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(MySQLProperties.class)
 @ConditionalOnProperty(name = "conductor.db.type", havingValue = "mysql")
-// Import the DataSourceAutoConfiguration when mysql database is selected.
-// By default the datasource configuration is excluded in the main module.
-@Import(DataSourceAutoConfiguration.class)
+// Import DataSourceAutoConfiguration and FlywayAutoConfiguration when mysql database is selected.
+// By default these are excluded in the main module. FlywayAutoConfiguration is required so that
+// the 'flyway' and 'flywayInitializer' beans exist before the MySQL DAOs are initialized.
+@Import({DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
 public class MySQLConfiguration {
 
     @Bean
@@ -62,8 +63,9 @@ public class MySQLConfiguration {
     public MySQLExecutionDAO mySqlExecutionDAO(
             @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper,
-            DataSource dataSource) {
-        return new MySQLExecutionDAO(retryTemplate, objectMapper, dataSource);
+            DataSource dataSource,
+            MySQLQueueDAO queueDAO) {
+        return new MySQLExecutionDAO(retryTemplate, objectMapper, dataSource, queueDAO);
     }
 
     @Bean
@@ -73,16 +75,6 @@ public class MySQLConfiguration {
             ObjectMapper objectMapper,
             DataSource dataSource) {
         return new MySQLQueueDAO(retryTemplate, objectMapper, dataSource);
-    }
-
-    @Bean
-    @DependsOn({"flyway", "flywayInitializer"})
-    @ConditionalOnProperty(name = "conductor.file-storage.enabled", havingValue = "true")
-    public MySQLFileMetadataDAO mySqlFileMetadataDAO(
-            @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
-            ObjectMapper objectMapper,
-            DataSource dataSource) {
-        return new MySQLFileMetadataDAO(retryTemplate, objectMapper, dataSource);
     }
 
     @Bean

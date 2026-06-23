@@ -6,11 +6,9 @@ on:
       - main
     paths-ignore:
       - "conductor-clients/**"
-      - "ui-next/**"
   pull_request:
     paths-ignore:
       - "conductor-clients/**"
-      - "ui-next/**"
   workflow_dispatch:
     inputs:
       redis_es8:
@@ -316,12 +314,18 @@ jobs:
 
   build-ui:
     runs-on: ubuntu-latest
-    container: cypress/browsers:node-22.11.0-chrome-130.0.6723.116-1-ff-132.0.1-edge-130.0.2849.68-1
     defaults:
       run:
         working-directory: ui
     steps:
       - uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "yarn"
+          cache-dependency-path: ui/yarn.lock
 
       - name: Install Dependencies
         run: yarn install
@@ -329,31 +333,28 @@ jobs:
       - name: Build UI
         run: yarn run build
 
-      - name: Run E2E Tests
-        uses: cypress-io/github-action@v7
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
         with:
-          working-directory: ui
-          install: false
-          start: yarn run serve-build
-          wait-on: "http://localhost:5000"
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ hashFiles('ui/yarn.lock') }}
 
-      - name: Run Component Tests
-        uses: cypress-io/github-action@v7
-        with:
-          working-directory: ui
-          install: false
-          component: true
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
 
-      - name: Archive test screenshots
+      - name: Install Playwright browser deps (cached)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Run Playwright E2E Tests
+        run: yarn test:e2e
+
+      - name: Upload Playwright report
         uses: actions/upload-artifact@v6
         if: failure()
         with:
-          name: cypress-screenshots
-          path: ui/cypress/screenshots
-
-      - name: Archive test videos
-        uses: actions/upload-artifact@v6
-        if: always()
-        with:
-          name: cypress-videos
-          path: ui/cypress/videos
+          name: playwright-report
+          path: ui/playwright-report
+          retention-days: 7

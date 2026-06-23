@@ -214,7 +214,7 @@ public class DeciderService {
                 }
             }
 
-            if (!pendingTask.getStatus().isSuccessful()) {
+            if (pendingTask.getStatus().isTerminal() && !pendingTask.getStatus().isSuccessful()) {
                 WorkflowTask workflowTask = pendingTask.getWorkflowTask();
                 if (workflowTask == null) {
                     workflowTask =
@@ -673,6 +673,7 @@ public class DeciderService {
         long totalDelayMs = (long) startDelay * 1000 + jitterMs;
 
         TaskModel rescheduled = task.copy();
+        resetRetriedTaskRuntimeState(rescheduled);
         rescheduled.setStartDelayInSeconds(startDelay);
         rescheduled.setCallbackAfterSeconds(startDelay);
         rescheduled.setCallbackAfterMs(totalDelayMs);
@@ -708,6 +709,19 @@ public class DeciderService {
         }
         // for the schema version 1, we do not have to recompute the inputs
         return Optional.of(rescheduled);
+    }
+
+    private void resetRetriedTaskRuntimeState(TaskModel task) {
+        task.setUpdateTime(0);
+        task.setScheduledTime(0);
+        task.setStartTime(0);
+        task.setEndTime(0);
+        task.setWorkerId(null);
+        task.setCallbackAfterMs(0);
+        task.setOutputData(new HashMap<>());
+        task.setExternalOutputPayloadStoragePath(null);
+        task.setOutputMessage(null);
+        task.getInputData().remove("subWorkflowId");
     }
 
     @VisibleForTesting

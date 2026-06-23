@@ -25,9 +25,11 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.exception.NonTransientException;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -39,16 +41,21 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {TestObjectMapperConfiguration.class})
 @RunWith(SpringRunner.class)
 public class TestSubWorkflow {
 
+    private static final String PARENT_WORKFLOW_ID = "parent-workflow";
+    private static final String PARENT_TASK_ID = "task_1";
+    private static final String CHILD_SUB_WORKFLOW_ID = "child-sub-workflow";
+
     private WorkflowExecutor workflowExecutor;
+    private IDGenerator idGenerator;
     private SubWorkflow subWorkflow;
 
     @Autowired private ObjectMapper objectMapper;
@@ -56,274 +63,202 @@ public class TestSubWorkflow {
     @Before
     public void setup() {
         workflowExecutor = mock(WorkflowExecutor.class);
-        subWorkflow = new SubWorkflow(objectMapper);
+        idGenerator = mock(IDGenerator.class);
+        subWorkflow = new SubWorkflow(objectMapper, idGenerator);
     }
 
     @Test
     public void testStartSubWorkflow() {
-        WorkflowDef workflowDef = new WorkflowDef();
-        WorkflowModel workflowInstance = new WorkflowModel();
-        workflowInstance.setWorkflowDefinition(workflowDef);
-
-        TaskModel task = new TaskModel();
-        task.setOutputData(new HashMap<>());
-
-        Map<String, Object> inputData = new HashMap<>();
-        inputData.put("subWorkflowName", "UnitWorkFlow");
-        inputData.put("subWorkflowVersion", 3);
+        WorkflowModel workflowInstance = newParentWorkflow();
+        TaskModel task = newTask();
+        Map<String, Object> inputData = inputData("UnitWorkFlow", 3);
         task.setInputData(inputData);
 
-        String workflowId = "workflow_1";
-        WorkflowModel workflow = new WorkflowModel();
-        workflow.setWorkflowId(workflowId);
+        WorkflowModel subWorkflowInstance = new WorkflowModel();
+        subWorkflowInstance.setWorkflowId(CHILD_SUB_WORKFLOW_ID);
+        subWorkflowInstance.setStatus(WorkflowModel.Status.RUNNING);
 
-        when(workflowExecutor.startWorkflow(any(StartWorkflowInput.class))).thenReturn(workflowId);
-        when(workflowExecutor.getWorkflow(anyString(), eq(false))).thenReturn(workflow);
+        StartWorkflowInput startWorkflowInput =
+                expectedStartWorkflowInput(
+                        workflowInstance, task, "UnitWorkFlow", 3, inputData, null, null);
+        mockSubWorkflowLaunch(task, startWorkflowInput, subWorkflowInstance);
 
-        // Each start() call must begin in SCHEDULED state; once started, the double-start guard
-        // (status != SCHEDULED) prevents re-creation on a subsequent call with the same task.
-        task.setStatus(TaskModel.Status.SCHEDULED);
-        workflow.setStatus(WorkflowModel.Status.RUNNING);
         subWorkflow.start(workflowInstance, task, workflowExecutor);
-        assertEquals("workflow_1", task.getSubWorkflowId());
+
+        assertEquals(CHILD_SUB_WORKFLOW_ID, task.getSubWorkflowId());
         assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
+        assertNull(task.getReasonForIncompletion());
+        assertFalse(task.getOutputData().containsKey("subWorkflowLaunchError"));
+    }
 
-        task.setSubWorkflowId(null); // reset to simulate a fresh retry attempt
-        task.setStatus(TaskModel.Status.SCHEDULED);
-        workflow.setStatus(WorkflowModel.Status.TERMINATED);
-        subWorkflow.start(workflowInstance, task, workflowExecutor);
-        assertEquals("workflow_1", task.getSubWorkflowId());
-        assertEquals(TaskModel.Status.CANCELED, task.getStatus());
+    @Test
+    public void testStartSubWorkflowWithNullVersionUsesLatest() {
+        WorkflowModel workflowInstance = newParentWorkflow();
+        TaskModel task = newTask();
+        Map<String, Object> inputData = inputData("UnitWorkFlow", null);
+        task.setInputData(inputData);
 
-        task.setSubWorkflowId(null); // reset to simulate a fresh retry attempt
-        task.setStatus(TaskModel.Status.SCHEDULED);
-        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+        WorkflowModel subWorkflowInstance = new WorkflowModel();
+        subWorkflowInstance.setWorkflowId(CHILD_SUB_WORKFLOW_ID);
+        subWorkflowInstance.setStatus(WorkflowModel.Status.RUNNING);
+
+        StartWorkflowInput startWorkflowInput =
+                expectedStartWorkflowInput(
+                        workflowInstance, task, "UnitWorkFlow", null, inputData, null, null);
+        mockSubWorkflowLaunch(task, startWorkflowInput, subWorkflowInstance);
+
         subWorkflow.start(workflowInstance, task, workflowExecutor);
-        assertEquals("workflow_1", task.getSubWorkflowId());
-        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+
+        verify(workflowExecutor).startWorkflowIdempotent(startWorkflowInput);
+        assertEquals(CHILD_SUB_WORKFLOW_ID, task.getSubWorkflowId());
     }
 
     @Test
     public void testStartSubWorkflowQueueFailure() {
-        WorkflowDef workflowDef = new WorkflowDef();
-        WorkflowModel workflowInstance = new WorkflowModel();
-        workflowInstance.setWorkflowDefinition(workflowDef);
-
-        TaskModel task = new TaskModel();
-        task.setOutputData(new HashMap<>());
-        task.setStatus(TaskModel.Status.SCHEDULED);
-
-        Map<String, Object> inputData = new HashMap<>();
-        inputData.put("subWorkflowName", "UnitWorkFlow");
-        inputData.put("subWorkflowVersion", 3);
+        WorkflowModel workflowInstance = newParentWorkflow();
+        TaskModel task = newTask();
+        Map<String, Object> inputData = inputData("UnitWorkFlow", 3);
         task.setInputData(inputData);
 
-        StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
-        startWorkflowInput.setName("UnitWorkFlow");
-        startWorkflowInput.setVersion(3);
-        startWorkflowInput.setWorkflowInput(inputData);
-        startWorkflowInput.setTaskToDomain(workflowInstance.getTaskToDomain());
+        StartWorkflowInput startWorkflowInput =
+                expectedStartWorkflowInput(
+                        workflowInstance, task, "UnitWorkFlow", 3, inputData, null, null);
 
-        when(workflowExecutor.startWorkflow(any(StartWorkflowInput.class)))
+        when(idGenerator.generateSubWorkflowId(
+                        PARENT_WORKFLOW_ID, PARENT_TASK_ID, task.getRetryCount()))
+                .thenReturn(CHILD_SUB_WORKFLOW_ID);
+        when(workflowExecutor.startWorkflowIdempotent(startWorkflowInput))
                 .thenThrow(new TransientException("QueueDAO failure"));
-        // getWorkflow is not called when startWorkflow throws — no mock needed
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
-        assertNull("subWorkflowId should be null", task.getSubWorkflowId());
+
+        assertNull(task.getSubWorkflowId());
         assertEquals(TaskModel.Status.SCHEDULED, task.getStatus());
-        assertTrue("Output data should be empty", task.getOutputData().isEmpty());
+        assertEquals(
+                "Transient error starting sub workflow UnitWorkFlow: QueueDAO failure",
+                task.getReasonForIncompletion());
+        assertEquals("QueueDAO failure", task.getOutputData().get("subWorkflowLaunchError"));
     }
 
     @Test
     public void testStartSubWorkflowStartError() {
-        WorkflowDef workflowDef = new WorkflowDef();
-        WorkflowModel workflowInstance = new WorkflowModel();
-        workflowInstance.setWorkflowDefinition(workflowDef);
-
-        TaskModel task = new TaskModel();
-        task.setOutputData(new HashMap<>());
-        task.setStatus(TaskModel.Status.SCHEDULED);
-
-        Map<String, Object> inputData = new HashMap<>();
-        inputData.put("subWorkflowName", "UnitWorkFlow");
-        inputData.put("subWorkflowVersion", 3);
+        WorkflowModel workflowInstance = newParentWorkflow();
+        TaskModel task = newTask();
+        Map<String, Object> inputData = inputData("UnitWorkFlow", 3);
         task.setInputData(inputData);
 
-        StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
-        startWorkflowInput.setName("UnitWorkFlow");
-        startWorkflowInput.setVersion(3);
-        startWorkflowInput.setWorkflowInput(inputData);
-        startWorkflowInput.setTaskToDomain(workflowInstance.getTaskToDomain());
+        StartWorkflowInput startWorkflowInput =
+                expectedStartWorkflowInput(
+                        workflowInstance, task, "UnitWorkFlow", 3, inputData, null, null);
 
-        String failureReason = "non transient failure";
-        when(workflowExecutor.startWorkflow(any(StartWorkflowInput.class)))
-                .thenThrow(new NonTransientException(failureReason));
-        // getWorkflow is not called when startWorkflow throws — no mock needed
+        when(idGenerator.generateSubWorkflowId(
+                        PARENT_WORKFLOW_ID, PARENT_TASK_ID, task.getRetryCount()))
+                .thenReturn(CHILD_SUB_WORKFLOW_ID);
+        when(workflowExecutor.startWorkflowIdempotent(startWorkflowInput))
+                .thenThrow(new NonTransientException("non transient failure"));
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
-        assertNull("subWorkflowId should be null", task.getSubWorkflowId());
+
+        assertNull(task.getSubWorkflowId());
         assertEquals(TaskModel.Status.FAILED, task.getStatus());
-        assertEquals(failureReason, task.getReasonForIncompletion());
-        assertTrue("Output data should be empty", task.getOutputData().isEmpty());
+        assertEquals("non transient failure", task.getReasonForIncompletion());
+        assertTrue(task.getOutputData().isEmpty());
     }
 
     @Test
-    public void testStartSubWorkflowWithEmptyWorkflowInput() {
-        WorkflowDef workflowDef = new WorkflowDef();
-        WorkflowModel workflowInstance = new WorkflowModel();
-        workflowInstance.setWorkflowDefinition(workflowDef);
-
-        TaskModel task = new TaskModel();
-        task.setOutputData(new HashMap<>());
-        task.setStatus(TaskModel.Status.SCHEDULED);
-
-        Map<String, Object> inputData = new HashMap<>();
-        inputData.put("subWorkflowName", "UnitWorkFlow");
-        inputData.put("subWorkflowVersion", 3);
-
-        Map<String, Object> workflowInput = new HashMap<>();
-        inputData.put("workflowInput", workflowInput);
+    public void testStartSubWorkflowWithEmptyWorkflowInputUsesTaskInput() {
+        WorkflowModel workflowInstance = newParentWorkflow();
+        TaskModel task = newTask();
+        Map<String, Object> inputData = inputData("UnitWorkFlow", 3);
+        inputData.put("workflowInput", new HashMap<>());
         task.setInputData(inputData);
 
-        WorkflowModel createdSubWorkflow = new WorkflowModel();
-        createdSubWorkflow.setStatus(WorkflowModel.Status.RUNNING);
+        WorkflowModel subWorkflowInstance = new WorkflowModel();
+        subWorkflowInstance.setWorkflowId(CHILD_SUB_WORKFLOW_ID);
+        subWorkflowInstance.setStatus(WorkflowModel.Status.RUNNING);
 
-        when(workflowExecutor.startWorkflow(any(StartWorkflowInput.class)))
-                .thenReturn("workflow_1");
-        when(workflowExecutor.getWorkflow(anyString(), eq(false))).thenReturn(createdSubWorkflow);
+        StartWorkflowInput startWorkflowInput =
+                expectedStartWorkflowInput(
+                        workflowInstance, task, "UnitWorkFlow", 3, inputData, null, null);
+        mockSubWorkflowLaunch(task, startWorkflowInput, subWorkflowInstance);
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
-        assertEquals("workflow_1", task.getSubWorkflowId());
+
+        assertEquals(CHILD_SUB_WORKFLOW_ID, task.getSubWorkflowId());
     }
 
     @Test
     public void testStartSubWorkflowWithWorkflowInput() {
-        WorkflowDef workflowDef = new WorkflowDef();
-        WorkflowModel workflowInstance = new WorkflowModel();
-        workflowInstance.setWorkflowDefinition(workflowDef);
-
-        TaskModel task = new TaskModel();
-        task.setOutputData(new HashMap<>());
-        task.setStatus(TaskModel.Status.SCHEDULED);
-
-        Map<String, Object> inputData = new HashMap<>();
-        inputData.put("subWorkflowName", "UnitWorkFlow");
-        inputData.put("subWorkflowVersion", 3);
-
+        WorkflowModel workflowInstance = newParentWorkflow();
+        TaskModel task = newTask();
+        Map<String, Object> inputData = inputData("UnitWorkFlow", 3);
         Map<String, Object> workflowInput = new HashMap<>();
         workflowInput.put("test", "value");
         inputData.put("workflowInput", workflowInput);
         task.setInputData(inputData);
 
-        WorkflowModel createdSubWorkflow = new WorkflowModel();
-        createdSubWorkflow.setStatus(WorkflowModel.Status.RUNNING);
+        WorkflowModel subWorkflowInstance = new WorkflowModel();
+        subWorkflowInstance.setWorkflowId(CHILD_SUB_WORKFLOW_ID);
+        subWorkflowInstance.setStatus(WorkflowModel.Status.RUNNING);
 
-        when(workflowExecutor.startWorkflow(any(StartWorkflowInput.class)))
-                .thenReturn("workflow_1");
-        when(workflowExecutor.getWorkflow(anyString(), eq(false))).thenReturn(createdSubWorkflow);
+        StartWorkflowInput startWorkflowInput =
+                expectedStartWorkflowInput(
+                        workflowInstance, task, "UnitWorkFlow", 3, workflowInput, null, null);
+        mockSubWorkflowLaunch(task, startWorkflowInput, subWorkflowInstance);
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
-        assertEquals("workflow_1", task.getSubWorkflowId());
+
+        assertEquals(CHILD_SUB_WORKFLOW_ID, task.getSubWorkflowId());
     }
 
     @Test
     public void testStartSubWorkflowTaskToDomain() {
-        WorkflowDef workflowDef = new WorkflowDef();
-        WorkflowModel workflowInstance = new WorkflowModel();
-        workflowInstance.setWorkflowDefinition(workflowDef);
-        Map<String, String> taskToDomain =
-                new HashMap<>() {
-                    {
-                        put("*", "unittest");
-                    }
-                };
+        WorkflowModel workflowInstance = newParentWorkflow();
+        TaskModel task = newTask();
+        Map<String, String> taskToDomain = new HashMap<>();
+        taskToDomain.put("*", "unittest");
 
-        TaskModel task = new TaskModel();
-        task.setOutputData(new HashMap<>());
-        task.setStatus(TaskModel.Status.SCHEDULED);
-
-        Map<String, Object> inputData = new HashMap<>();
-        inputData.put("subWorkflowName", "UnitWorkFlow");
-        inputData.put("subWorkflowVersion", 2);
+        Map<String, Object> inputData = inputData("UnitWorkFlow", 2);
         inputData.put("subWorkflowTaskToDomain", taskToDomain);
         task.setInputData(inputData);
 
-        StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
-        startWorkflowInput.setName("UnitWorkFlow");
-        startWorkflowInput.setVersion(2);
-        startWorkflowInput.setWorkflowInput(inputData);
-        startWorkflowInput.setTaskToDomain(taskToDomain);
+        WorkflowModel subWorkflowInstance = new WorkflowModel();
+        subWorkflowInstance.setWorkflowId(CHILD_SUB_WORKFLOW_ID);
+        subWorkflowInstance.setStatus(WorkflowModel.Status.RUNNING);
 
-        WorkflowModel createdSubWorkflow = new WorkflowModel();
-        createdSubWorkflow.setStatus(WorkflowModel.Status.RUNNING);
-
-        when(workflowExecutor.startWorkflow(any(StartWorkflowInput.class)))
-                .thenReturn("workflow_1");
-        when(workflowExecutor.getWorkflow(anyString(), eq(false))).thenReturn(createdSubWorkflow);
+        StartWorkflowInput startWorkflowInput =
+                expectedStartWorkflowInput(
+                        workflowInstance, task, "UnitWorkFlow", 2, inputData, taskToDomain, null);
+        mockSubWorkflowLaunch(task, startWorkflowInput, subWorkflowInstance);
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
-        assertEquals("workflow_1", task.getSubWorkflowId());
+
+        assertEquals(CHILD_SUB_WORKFLOW_ID, task.getSubWorkflowId());
     }
 
     @Test
     public void testExecuteSubWorkflowWithoutId() {
-        WorkflowDef workflowDef = new WorkflowDef();
-        WorkflowModel workflowInstance = new WorkflowModel();
-        workflowInstance.setWorkflowDefinition(workflowDef);
+        WorkflowModel workflowInstance = newParentWorkflow();
 
-        TaskModel task = new TaskModel();
+        TaskModel task = newTask();
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
         task.setOutputData(new HashMap<>());
-
-        Map<String, Object> inputData = new HashMap<>();
-        inputData.put("subWorkflowName", "UnitWorkFlow");
-        inputData.put("subWorkflowVersion", 2);
-        task.setInputData(inputData);
-
-        StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
-        startWorkflowInput.setName("UnitWorkFlow");
-        startWorkflowInput.setVersion(2);
-        startWorkflowInput.setWorkflowInput(inputData);
-        startWorkflowInput.setTaskToDomain(workflowInstance.getTaskToDomain());
-
-        when(workflowExecutor.startWorkflow(any(StartWorkflowInput.class)))
-                .thenReturn("workflow_1");
+        task.setInputData(inputData("UnitWorkFlow", 2));
 
         assertFalse(subWorkflow.execute(workflowInstance, task, workflowExecutor));
     }
 
     @Test
     public void testExecuteWorkflowStatus() {
-        WorkflowDef workflowDef = new WorkflowDef();
-        WorkflowModel workflowInstance = new WorkflowModel();
+        WorkflowModel workflowInstance = newParentWorkflow();
         WorkflowModel subWorkflowInstance = new WorkflowModel();
-        workflowInstance.setWorkflowDefinition(workflowDef);
-        Map<String, String> taskToDomain =
-                new HashMap<>() {
-                    {
-                        put("*", "unittest");
-                    }
-                };
-
-        TaskModel task = new TaskModel();
-        Map<String, Object> outputData = new HashMap<>();
-        task.setOutputData(outputData);
+        TaskModel task = newTask();
+        task.setStatus(null);
         task.setSubWorkflowId("sub-workflow-id");
+        task.setOutputData(new HashMap<>());
+        task.setInputData(inputData("UnitWorkFlow", 2));
 
-        Map<String, Object> inputData = new HashMap<>();
-        inputData.put("subWorkflowName", "UnitWorkFlow");
-        inputData.put("subWorkflowVersion", 2);
-        inputData.put("subWorkflowTaskToDomain", taskToDomain);
-        task.setInputData(inputData);
-
-        StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
-        startWorkflowInput.setName("UnitWorkFlow");
-        startWorkflowInput.setVersion(2);
-        startWorkflowInput.setWorkflowInput(inputData);
-        startWorkflowInput.setTaskToDomain(taskToDomain);
-
-        when(workflowExecutor.startWorkflow(any(StartWorkflowInput.class)))
-                .thenReturn("workflow_1");
-        when(workflowExecutor.getWorkflow(eq("sub-workflow-id"), eq(false)))
+        when(workflowExecutor.getWorkflow("sub-workflow-id", false))
                 .thenReturn(subWorkflowInstance);
 
         subWorkflowInstance.setStatus(WorkflowModel.Status.RUNNING);
@@ -362,29 +297,13 @@ public class TestSubWorkflow {
 
     @Test
     public void testCancelWithWorkflowId() {
-        WorkflowDef workflowDef = new WorkflowDef();
-        WorkflowModel workflowInstance = new WorkflowModel();
+        WorkflowModel workflowInstance = newParentWorkflow();
         WorkflowModel subWorkflowInstance = new WorkflowModel();
-        workflowInstance.setWorkflowDefinition(workflowDef);
-
-        TaskModel task = new TaskModel();
+        TaskModel task = newTask();
         task.setSubWorkflowId("sub-workflow-id");
+        task.setInputData(inputData("UnitWorkFlow", 2));
 
-        Map<String, Object> inputData = new HashMap<>();
-        inputData.put("subWorkflowName", "UnitWorkFlow");
-        inputData.put("subWorkflowVersion", 2);
-        task.setInputData(inputData);
-
-        StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
-        startWorkflowInput.setName("UnitWorkFlow");
-        startWorkflowInput.setVersion(2);
-        startWorkflowInput.setWorkflowInput(inputData);
-        startWorkflowInput.setTaskToDomain(workflowInstance.getTaskToDomain());
-
-        when(workflowExecutor.startWorkflow(any(StartWorkflowInput.class)))
-                .thenReturn("workflow_1");
-        when(workflowExecutor.getWorkflow(eq("sub-workflow-id"), eq(true)))
-                .thenReturn(subWorkflowInstance);
+        when(workflowExecutor.getWorkflow("sub-workflow-id", true)).thenReturn(subWorkflowInstance);
 
         workflowInstance.setStatus(WorkflowModel.Status.TIMED_OUT);
         subWorkflow.cancel(workflowInstance, task, workflowExecutor);
@@ -394,47 +313,45 @@ public class TestSubWorkflow {
 
     @Test
     public void testCancelWithoutWorkflowId() {
-        WorkflowDef workflowDef = new WorkflowDef();
-        WorkflowModel workflowInstance = new WorkflowModel();
+        WorkflowModel workflowInstance = newParentWorkflow();
+        TaskModel task = newTask();
+        task.setInputData(inputData("UnitWorkFlow", 2));
+
+        when(idGenerator.generateSubWorkflowId(
+                        PARENT_WORKFLOW_ID, PARENT_TASK_ID, task.getRetryCount()))
+                .thenReturn(CHILD_SUB_WORKFLOW_ID);
+        when(workflowExecutor.getWorkflow(CHILD_SUB_WORKFLOW_ID, true))
+                .thenThrow(new NotFoundException("missing"));
+
+        subWorkflow.cancel(workflowInstance, task, workflowExecutor);
+
+        verify(workflowExecutor).getWorkflow(CHILD_SUB_WORKFLOW_ID, true);
+    }
+
+    @Test
+    public void testCancelWithoutWorkflowIdTerminatesDeterministicChildIfCreated() {
+        WorkflowModel workflowInstance = newParentWorkflow();
         WorkflowModel subWorkflowInstance = new WorkflowModel();
-        workflowInstance.setWorkflowDefinition(workflowDef);
+        subWorkflowInstance.setStatus(WorkflowModel.Status.RUNNING);
+        TaskModel task = newTask();
+        task.setInputData(inputData("UnitWorkFlow", 2));
 
-        TaskModel task = new TaskModel();
-        Map<String, Object> outputData = new HashMap<>();
-        task.setOutputData(outputData);
-
-        Map<String, Object> inputData = new HashMap<>();
-        inputData.put("subWorkflowName", "UnitWorkFlow");
-        inputData.put("subWorkflowVersion", 2);
-        task.setInputData(inputData);
-
-        StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
-        startWorkflowInput.setName("UnitWorkFlow");
-        startWorkflowInput.setVersion(2);
-        startWorkflowInput.setWorkflowInput(inputData);
-        startWorkflowInput.setTaskToDomain(workflowInstance.getTaskToDomain());
-
-        when(workflowExecutor.startWorkflow(any(StartWorkflowInput.class)))
-                .thenReturn("workflow_1");
-        when(workflowExecutor.getWorkflow(eq("sub-workflow-id"), eq(false)))
+        when(idGenerator.generateSubWorkflowId(
+                        PARENT_WORKFLOW_ID, PARENT_TASK_ID, task.getRetryCount()))
+                .thenReturn(CHILD_SUB_WORKFLOW_ID);
+        when(workflowExecutor.getWorkflow(CHILD_SUB_WORKFLOW_ID, true))
                 .thenReturn(subWorkflowInstance);
 
         subWorkflow.cancel(workflowInstance, task, workflowExecutor);
 
-        assertEquals(WorkflowModel.Status.RUNNING, subWorkflowInstance.getStatus());
+        assertEquals(WorkflowModel.Status.TERMINATED, subWorkflowInstance.getStatus());
     }
 
     @Test
     public void testStartThrowsWhenSubWorkflowNameNullAndNoDefinitionSupplied() {
-        // If neither subWorkflowName nor subWorkflowDefinition is provided the task is
-        // misconfigured; start() must throw NonTransientException rather than NPE.
-        WorkflowModel workflowInstance = new WorkflowModel();
-        workflowInstance.setWorkflowDefinition(new WorkflowDef());
-
-        TaskModel task = new TaskModel();
-        task.setOutputData(new HashMap<>());
-        task.setStatus(TaskModel.Status.SCHEDULED);
-        task.setInputData(new HashMap<>()); // no subWorkflowName, no subWorkflowDefinition
+        WorkflowModel workflowInstance = newParentWorkflow();
+        TaskModel task = newTask();
+        task.setInputData(new HashMap<>());
 
         try {
             subWorkflow.start(workflowInstance, task, workflowExecutor);
@@ -446,133 +363,193 @@ public class TestSubWorkflow {
 
     @Test
     public void testStartIsIdempotentWhenTaskAlreadyStarted() {
-        // If start() is called again on a task that already moved past SCHEDULED (e.g. sweeper
-        // retry before the first invocation persisted), the status-based guard must prevent
-        // creating a duplicate sub-workflow.
-        WorkflowModel workflowInstance = new WorkflowModel();
-        workflowInstance.setWorkflowDefinition(new WorkflowDef());
-
-        TaskModel task = new TaskModel();
-        task.setOutputData(new HashMap<>());
+        WorkflowModel workflowInstance = newParentWorkflow();
+        TaskModel task = newTask();
         task.setSubWorkflowId("already-started-id");
-        task.setStatus(TaskModel.Status.IN_PROGRESS); // task moved past SCHEDULED on first start
-
-        Map<String, Object> inputData = new HashMap<>();
-        inputData.put("subWorkflowName", "UnitWorkFlow");
-        inputData.put("subWorkflowVersion", 1);
-        task.setInputData(inputData);
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        task.setInputData(inputData("UnitWorkFlow", 1));
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
 
-        // startWorkflow must NOT have been called a second time
+        verify(workflowExecutor, never()).startWorkflowIdempotent(any());
         assertEquals("already-started-id", task.getSubWorkflowId());
         assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
     }
 
     @Test
     public void testStartCreatesNewSubWorkflowOnRetryEvenWhenOutputDataHasOldSubWorkflowId() {
-        // Regression test: retried tasks inherit outputData from their failed predecessor,
-        // so outputData may already contain "subWorkflowId" from the previous attempt.
-        // The old guard (checking getSubWorkflowId()) would have incorrectly blocked this retry.
-        // The new guard (checking status == SCHEDULED) must allow the retry through.
-        WorkflowModel workflowInstance = new WorkflowModel();
-        workflowInstance.setWorkflowDefinition(new WorkflowDef());
-
+        WorkflowModel workflowInstance = newParentWorkflow();
         Map<String, Object> outputData = new HashMap<>();
-        outputData.put("subWorkflowId", "old-sub-workflow-id"); // inherited from failed predecessor
+        outputData.put("subWorkflowId", "old-sub-workflow-id");
 
-        TaskModel task = new TaskModel();
+        TaskModel task = newTask();
         task.setOutputData(outputData);
-        task.setStatus(TaskModel.Status.SCHEDULED); // retry: scheduler resets to SCHEDULED
+        task.setInputData(inputData("UnitWorkFlow", 1));
 
-        Map<String, Object> inputData = new HashMap<>();
-        inputData.put("subWorkflowName", "UnitWorkFlow");
-        inputData.put("subWorkflowVersion", 1);
-        task.setInputData(inputData);
+        WorkflowModel subWorkflowInstance = new WorkflowModel();
+        subWorkflowInstance.setWorkflowId(CHILD_SUB_WORKFLOW_ID);
+        subWorkflowInstance.setStatus(WorkflowModel.Status.RUNNING);
 
-        WorkflowModel createdSubWorkflow = new WorkflowModel();
-        createdSubWorkflow.setStatus(WorkflowModel.Status.RUNNING);
-
-        when(workflowExecutor.startWorkflow(any(StartWorkflowInput.class)))
-                .thenReturn("new-sub-workflow-id");
-        when(workflowExecutor.getWorkflow(eq("new-sub-workflow-id"), eq(false)))
-                .thenReturn(createdSubWorkflow);
+        StartWorkflowInput startWorkflowInput =
+                expectedStartWorkflowInput(
+                        workflowInstance, task, "UnitWorkFlow", 1, task.getInputData(), null, null);
+        mockSubWorkflowLaunch(task, startWorkflowInput, subWorkflowInstance);
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
 
-        // A new sub-workflow must have been created, not blocked by the old outputData
-        assertEquals("new-sub-workflow-id", task.getSubWorkflowId());
+        assertEquals(CHILD_SUB_WORKFLOW_ID, task.getSubWorkflowId());
         assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
     }
 
     @Test
     public void testCancelIsNoOpWhenSubWorkflowNotFoundInStore() {
-        // If the sub-workflow was deleted from the store (e.g. TTL expired) cancel() must
-        // log a warning and return without throwing NullPointerException.
-        WorkflowModel workflowInstance = new WorkflowModel();
-        workflowInstance.setWorkflowDefinition(new WorkflowDef());
+        WorkflowModel workflowInstance = newParentWorkflow();
         workflowInstance.setStatus(WorkflowModel.Status.TERMINATED);
 
-        TaskModel task = new TaskModel();
+        TaskModel task = newTask();
         task.setSubWorkflowId("deleted-sub-workflow-id");
 
-        when(workflowExecutor.getWorkflow(eq("deleted-sub-workflow-id"), eq(true)))
-                .thenReturn(null); // simulates a deleted or expired sub-workflow
+        when(workflowExecutor.getWorkflow("deleted-sub-workflow-id", true)).thenReturn(null);
 
-        // Must not throw
         subWorkflow.cancel(workflowInstance, task, workflowExecutor);
     }
 
     @Test
     public void testExecuteReturnsFalseWhenSubWorkflowNotFoundInStore() {
-        // If the sub-workflow was deleted from the store (e.g. TTL expired) execute() must
-        // log a warning and return false without throwing NullPointerException.
-        WorkflowModel workflowInstance = new WorkflowModel();
-        workflowInstance.setWorkflowDefinition(new WorkflowDef());
-
-        TaskModel task = new TaskModel();
+        WorkflowModel workflowInstance = newParentWorkflow();
+        TaskModel task = newTask();
         task.setSubWorkflowId("deleted-sub-workflow-id");
 
-        when(workflowExecutor.getWorkflow(eq("deleted-sub-workflow-id"), eq(false)))
-                .thenReturn(null); // simulates a deleted or expired sub-workflow
+        when(workflowExecutor.getWorkflow("deleted-sub-workflow-id", false)).thenReturn(null);
 
-        boolean result = subWorkflow.execute(workflowInstance, task, workflowExecutor);
-        assertFalse("execute() must return false when sub-workflow is not found", result);
+        assertFalse(subWorkflow.execute(workflowInstance, task, workflowExecutor));
     }
 
     @Test
     public void testIsAsync() {
-        assertFalse(subWorkflow.isAsync());
+        assertTrue(subWorkflow.isAsync());
     }
 
     @Test
     public void testStartSubWorkflowWithSubWorkflowDefinition() {
-        WorkflowDef workflowDef = new WorkflowDef();
-        WorkflowModel workflowInstance = new WorkflowModel();
-        workflowInstance.setWorkflowDefinition(workflowDef);
+        WorkflowModel workflowInstance = newParentWorkflow();
+        TaskModel task = newTask();
 
         WorkflowDef subWorkflowDef = new WorkflowDef();
         subWorkflowDef.setName("subWorkflow_1");
 
-        TaskModel task = new TaskModel();
-        task.setOutputData(new HashMap<>());
-        task.setStatus(TaskModel.Status.SCHEDULED);
-
-        Map<String, Object> inputData = new HashMap<>();
-        inputData.put("subWorkflowName", "UnitWorkFlow");
-        inputData.put("subWorkflowVersion", 2);
+        Map<String, Object> inputData = inputData("UnitWorkFlow", 2);
         inputData.put("subWorkflowDefinition", subWorkflowDef);
         task.setInputData(inputData);
 
-        WorkflowModel createdSubWorkflow = new WorkflowModel();
-        createdSubWorkflow.setStatus(WorkflowModel.Status.RUNNING);
+        WorkflowModel subWorkflowInstance = new WorkflowModel();
+        subWorkflowInstance.setWorkflowId(CHILD_SUB_WORKFLOW_ID);
+        subWorkflowInstance.setStatus(WorkflowModel.Status.RUNNING);
 
-        when(workflowExecutor.startWorkflow(any(StartWorkflowInput.class)))
-                .thenReturn("workflow_1");
-        when(workflowExecutor.getWorkflow(anyString(), eq(false))).thenReturn(createdSubWorkflow);
+        StartWorkflowInput startWorkflowInput =
+                expectedStartWorkflowInput(
+                        workflowInstance,
+                        task,
+                        "subWorkflow_1",
+                        2,
+                        inputData,
+                        null,
+                        subWorkflowDef);
+        mockSubWorkflowLaunch(task, startWorkflowInput, subWorkflowInstance);
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
-        assertEquals("workflow_1", task.getSubWorkflowId());
-        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
+
+        assertEquals(CHILD_SUB_WORKFLOW_ID, task.getSubWorkflowId());
+    }
+
+    private WorkflowModel newParentWorkflow() {
+        WorkflowModel workflowInstance = new WorkflowModel();
+        workflowInstance.setWorkflowId(PARENT_WORKFLOW_ID);
+        workflowInstance.setWorkflowDefinition(new WorkflowDef());
+        return workflowInstance;
+    }
+
+    private TaskModel newTask() {
+        TaskModel task = new TaskModel();
+        task.setTaskId(PARENT_TASK_ID);
+        task.setWorkflowInstanceId(PARENT_WORKFLOW_ID);
+        task.setStatus(TaskModel.Status.SCHEDULED);
+        task.setOutputData(new HashMap<>());
+        return task;
+    }
+
+    private Map<String, Object> inputData(String subWorkflowName, Integer subWorkflowVersion) {
+        Map<String, Object> inputData = new HashMap<>();
+        inputData.put("subWorkflowName", subWorkflowName);
+        inputData.put("subWorkflowVersion", subWorkflowVersion);
+        return inputData;
+    }
+
+    private void mockSubWorkflowLaunch(
+            TaskModel task,
+            StartWorkflowInput startWorkflowInput,
+            WorkflowModel subWorkflowInstance) {
+        when(idGenerator.generateSubWorkflowId(
+                        PARENT_WORKFLOW_ID, PARENT_TASK_ID, task.getRetryCount()))
+                .thenReturn(CHILD_SUB_WORKFLOW_ID);
+        when(workflowExecutor.startWorkflowIdempotent(startWorkflowInput))
+                .thenReturn(subWorkflowInstance);
+    }
+
+    private StartWorkflowInput expectedStartWorkflowInput(
+            WorkflowModel workflowInstance,
+            TaskModel task,
+            String subWorkflowName,
+            Integer subWorkflowVersion,
+            Map<String, Object> workflowInput,
+            Map<String, String> taskToDomain,
+            WorkflowDef workflowDef) {
+        return expectedStartWorkflowInput(
+                workflowInstance,
+                task,
+                subWorkflowName,
+                subWorkflowVersion,
+                workflowInput,
+                taskToDomain,
+                workflowDef,
+                CHILD_SUB_WORKFLOW_ID);
+    }
+
+    private StartWorkflowInput expectedStartWorkflowInput(
+            WorkflowModel workflowInstance,
+            TaskModel task,
+            String subWorkflowName,
+            Integer subWorkflowVersion,
+            Map<String, Object> workflowInput,
+            Map<String, String> taskToDomain,
+            WorkflowDef workflowDef,
+            String workflowId) {
+        StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
+        startWorkflowInput.setWorkflowDefinition(workflowDef);
+        startWorkflowInput.setName(subWorkflowName);
+        startWorkflowInput.setVersion(subWorkflowVersion);
+        startWorkflowInput.setWorkflowInput(expectedWorkflowInput(workflowInput, workflowDef));
+        startWorkflowInput.setCorrelationId(workflowInstance.getCorrelationId());
+        startWorkflowInput.setParentWorkflowId(workflowInstance.getWorkflowId());
+        startWorkflowInput.setParentWorkflowTaskId(task.getTaskId());
+        startWorkflowInput.setTaskToDomain(
+                taskToDomain == null ? workflowInstance.getTaskToDomain() : taskToDomain);
+        startWorkflowInput.setWorkflowId(workflowId);
+        return startWorkflowInput;
+    }
+
+    private Map<String, Object> expectedWorkflowInput(
+            Map<String, Object> workflowInput, WorkflowDef workflowDef) {
+        if (workflowDef == null) {
+            return workflowInput;
+        }
+        Map<String, Object> expectedInput = new HashMap<>(workflowInput);
+        Map<String, Object> systemMetadata =
+                expectedInput.get("_systemMetadata") instanceof Map
+                        ? new HashMap<>((Map<String, Object>) expectedInput.get("_systemMetadata"))
+                        : new HashMap<>();
+        systemMetadata.put("dynamic", true);
+        expectedInput.put("_systemMetadata", systemMetadata);
+        return expectedInput;
     }
 }

@@ -433,7 +433,8 @@ const QuickAddMenu = ({
       .filter((item) => item.quickAdd)
       .map((item) => item.type as TaskType)
       .filter(
-        (type) => !(showIntegrationsPanelShortcut && type === TaskType.MCP),
+        (type) =>
+          !(showIntegrationsPanelShortcut && type === TaskType.INTEGRATION),
       );
 
     const aiTaskTypesSet = new Set(AI_QUICK_ADD_TYPES as string[]);

@@ -60,6 +60,7 @@ export type LLMFormFieldsEvents =
 export interface LLMFormFieldsMachineContext {
   fields: UiIntegrationsFieldType[];
   selectedPromptName?: Record<string, unknown>;
+  selectedPrompt?: PromptDef | null;
   authHeaders?: AuthHeaders;
   llmProviderOptions: [];
   promptNameOptions: PromptDef[];

@@ -141,8 +141,9 @@ public class SqliteConfiguration {
     @DependsOn({"flywayForPrimaryDb"})
     public SqliteExecutionDAO sqliteExecutionDAO(
             @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
-            ObjectMapper objectMapper) {
-        return new SqliteExecutionDAO(retryTemplate, objectMapper, dataSource);
+            ObjectMapper objectMapper,
+            SqliteQueueDAO queueDAO) {
+        return new SqliteExecutionDAO(retryTemplate, objectMapper, dataSource, queueDAO);
     }
 
     @Bean
@@ -182,15 +183,6 @@ public class SqliteConfiguration {
     }
 
     @Bean
-    @DependsOn({"flywayForPrimaryDb"})
-    @ConditionalOnProperty(name = "conductor.file-storage.enabled", havingValue = "true")
-    public SqliteFileMetadataDAO sqliteFileMetadataDAO(
-            @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
-            ObjectMapper objectMapper) {
-        return new SqliteFileMetadataDAO(retryTemplate, objectMapper, dataSource);
-    }
-
-    @Bean
     public RetryTemplate sqliteRetryTemplate(SqliteProperties properties) {
         CustomRetryPolicy retryPolicy = new CustomRetryPolicy();
         retryPolicy.setMaxAttempts(10); // Increased for SQLite locking scenarios
@@ -204,6 +196,15 @@ public class SqliteConfiguration {
         retryTemplate.setRetryPolicy(retryPolicy);
         retryTemplate.setBackOffPolicy(backOffPolicy);
         return retryTemplate;
+    }
+
+    @Bean
+    @DependsOn({"flywayForPrimaryDb"})
+    @ConditionalOnProperty(name = "conductor.file-storage.enabled", havingValue = "true")
+    public SqliteFileMetadataDAO sqliteFileMetadataDAO(
+            @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        return new SqliteFileMetadataDAO(retryTemplate, objectMapper, dataSource);
     }
 
     public static class CustomRetryPolicy extends SimpleRetryPolicy {
