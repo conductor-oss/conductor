@@ -44,7 +44,6 @@ dependencies {
     implementation project(':conductor-http-task')
     implementation project(':conductor-json-jq-task')
     implementation project(':conductor-kafka')
-    implementation project(':conductor-webhooks-oss')
 
     //Metrics
     implementation "io.micrometer:micrometer-registry-cloudwatch2:${revMicrometer}"

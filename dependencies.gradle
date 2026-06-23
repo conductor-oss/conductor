@@ -81,8 +81,6 @@ ext {
     revElasticSearch7 = '7.17.11'
     revElasticSearch8 = '8.19.11'
     revCodec = '1.15'
-    revStripe = '29.4.0'
-    revSendgrid = '4.10.2'
     revAzureStorageBlobSdk = '12.25.1'
     revNatsStreaming = '2.6.5'
     revNats = '2.16.14'
