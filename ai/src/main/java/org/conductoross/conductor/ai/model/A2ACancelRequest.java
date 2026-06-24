@@ -10,31 +10,29 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.models;
+package org.conductoross.conductor.ai.model;
 
 import java.util.Map;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
-/** Request model for listing tools from an MCP server. */
+/** Input for the {@code CANCEL_AGENT} task: request cancellation of a remote agent task. */
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 @EqualsAndHashCode(callSuper = false)
-public class MCPListToolsRequest extends LLMWorkerInput {
+public class A2ACancelRequest extends LLMWorkerInput {
 
-    /**
-     * MCP server URL.
-     *
-     * <p>Examples: - HTTP/SSE: "http://localhost:3000/sse" - HTTPS: "https://api.example.com/mcp"
-     */
-    private String mcpServer;
+    /** Agent runtime/protocol; only {@code "a2a"} is supported today. Defaults to {@code "a2a"}. */
+    private String agentType = "a2a";
 
-    /** HTTP headers for remote MCP servers (optional). Only applicable for HTTP/HTTPS transport. */
+    /** The remote agent's JSON-RPC endpoint URL. */
+    private String agentUrl;
+
+    /** The id of the remote task to cancel. */
+    private String taskId;
+
+    /** HTTP headers for the request (optional). */
     private Map<String, String> headers;
 }

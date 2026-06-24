@@ -19,7 +19,7 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.a2a.model.A2ATask;
 import org.conductoross.conductor.ai.a2a.model.TaskState;
-import org.conductoross.conductor.ai.models.A2ACallRequest;
+import org.conductoross.conductor.ai.model.A2ACallRequest;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

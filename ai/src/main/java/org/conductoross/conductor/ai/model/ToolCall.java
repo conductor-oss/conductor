@@ -10,30 +10,26 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.models;
+package org.conductoross.conductor.ai.model;
 
-import java.util.List;
 import java.util.Map;
 
+import com.netflix.conductor.common.metadata.tasks.TaskType;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 @Data
-@EqualsAndHashCode(callSuper = true)
-public class VectorDBInput extends LLMWorkerInput {
-
-    // Location where to index/query the data to/from
-    private String vectorDB;
-    private String index;
-    private String namespace;
-
-    private List<Float> embeddings;
-    private String query;
-
-    private Map<String, Object> metadata;
-    private Integer dimensions;
-
-    // Name of the embedding model and its provider integration
-    private String embeddingModel;
-    private String embeddingModelProvider;
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class ToolCall {
+    private String taskReferenceName;
+    private String name;
+    private Map<String, String> integrationNames;
+    private String type = TaskType.TASK_TYPE_SIMPLE;
+    private Map<String, Object> inputParameters;
+    private Map<String, Object> output;
 }

@@ -10,16 +10,19 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.models;
+package org.conductoross.conductor.ai.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.NoArgsConstructor;
 
 @Data
-@ToString
-@EqualsAndHashCode(callSuper = true)
-public class TextCompletion extends LLMWorkerInput {
-    private boolean jsonOutput;
-    private String promptName;
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class Media {
+    private String location;
+    private byte[] data;
+    private String mimeType;
 }

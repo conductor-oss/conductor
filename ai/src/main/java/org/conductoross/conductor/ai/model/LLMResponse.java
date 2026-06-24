@@ -10,44 +10,36 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.models;
+package org.conductoross.conductor.ai.model;
 
-import java.util.ArrayList;
 import java.util.List;
 
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
+@Builder
 @NoArgsConstructor
-public class ChatMessage {
-
-    public enum Role {
-        user,
-        assistant,
-        system,
-        // When chat completes requests execution of tools
-        tool_call,
-
-        // Actual tool execution and its output
-        tool
-    }
-
-    private Role role;
-    private String message;
-    private List<String> media = new ArrayList<>();
-    private String mimeType;
+@AllArgsConstructor
+public class LLMResponse {
+    private Object result;
+    private List<Media> media;
+    private String finishReason;
+    private int tokenUsed;
+    private int promptTokens;
+    private int completionTokens;
     private List<ToolCall> toolCalls;
+    private WorkflowDef workflow;
+    private String jobId;
+    private String responseId;
+    private String reasoning;
+    private Integer reasoningTokens;
 
-    public ChatMessage(Role role, String message) {
-        this.role = role;
-        this.message = message;
-    }
-
-    public ChatMessage(Role role, ToolCall toolCall) {
-        this.role = role;
-        this.toolCalls = List.of(toolCall);
+    public boolean hasToolCalls() {
+        return toolCalls != null && !toolCalls.isEmpty();
     }
 }

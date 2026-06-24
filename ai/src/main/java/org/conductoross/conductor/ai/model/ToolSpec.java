@@ -10,27 +10,19 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.models;
+package org.conductoross.conductor.ai.model;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import lombok.Data;
 
 @Data
-public class IndexedDoc {
-    private String docId;
-    private String parentDocId;
-    private String text;
-    private double score;
-    private Map<String, Object> metadata = new HashMap<>();
-
-    public IndexedDoc(String docId, String parentDocId, String text, double score) {
-        this.docId = docId;
-        this.parentDocId = parentDocId;
-        this.text = text;
-        this.score = score;
-    }
-
-    public IndexedDoc() {}
+public class ToolSpec {
+    private String name;
+    private String type;
+    private Map<String, Object> configParams;
+    private Map<String, String> integrationNames;
+    private String description;
+    private Map<String, Object> inputSchema;
+    private Map<String, Object> outputSchema;
 }

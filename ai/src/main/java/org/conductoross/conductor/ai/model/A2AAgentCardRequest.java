@@ -10,42 +10,26 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.models;
+package org.conductoross.conductor.ai.model;
 
-import java.util.HashMap;
 import java.util.Map;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
-/**
- * Request model for calling a tool on an MCP server.
- *
- * <p>All fields except mcpServer, toolName, and headers are treated as tool arguments and passed to
- * the MCP tool.
- */
+/** Input for the {@code GET_AGENT_CARD} task: discover a remote agent's capabilities and skills. */
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 @EqualsAndHashCode(callSuper = false)
-public class MCPToolCallRequest extends LLMWorkerInput {
+public class A2AAgentCardRequest extends LLMWorkerInput {
 
-    /**
-     * MCP server URL.
-     *
-     * <p>Examples: - HTTP/SSE: "http://localhost:3000/sse" - HTTPS: "https://api.example.com/mcp"
-     */
-    private String mcpServer;
+    /** Agent runtime/protocol; only {@code "a2a"} is supported today. Defaults to {@code "a2a"}. */
+    private String agentType = "a2a";
 
-    /** Name of the tool to call on the MCP server. */
-    private String method;
+    /** The remote agent's base URL, or a direct URL to its agent-card JSON. */
+    private String agentUrl;
 
-    /** HTTP headers for remote MCP servers (optional). Only applicable for HTTP/HTTPS transport. */
+    /** HTTP headers for the request (optional). */
     private Map<String, String> headers;
-
-    private Map<String, Object> arguments = new HashMap<>();
 }

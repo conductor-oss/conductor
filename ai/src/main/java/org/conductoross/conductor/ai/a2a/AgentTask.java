@@ -26,7 +26,7 @@ import org.conductoross.conductor.ai.a2a.model.A2ATask;
 import org.conductoross.conductor.ai.a2a.model.Part;
 import org.conductoross.conductor.ai.a2a.model.PushNotificationConfig;
 import org.conductoross.conductor.ai.a2a.model.TaskState;
-import org.conductoross.conductor.ai.models.A2ACallRequest;
+import org.conductoross.conductor.ai.model.A2ACallRequest;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.core.env.Environment;

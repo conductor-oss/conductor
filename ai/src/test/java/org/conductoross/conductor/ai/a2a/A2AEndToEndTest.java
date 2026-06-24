@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.conductoross.conductor.ai.a2a.EmbeddedA2AAgent.SendMode;
 import org.conductoross.conductor.ai.a2a.model.AgentCard;
-import org.conductoross.conductor.ai.models.A2AAgentCardRequest;
+import org.conductoross.conductor.ai.model.A2AAgentCardRequest;
 import org.conductoross.conductor.ai.tasks.worker.A2AWorkers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

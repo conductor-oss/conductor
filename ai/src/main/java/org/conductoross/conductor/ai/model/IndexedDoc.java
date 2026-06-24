@@ -10,21 +10,27 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.models;
+package org.conductoross.conductor.ai.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import java.util.HashMap;
+import java.util.Map;
+
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
-@EqualsAndHashCode(callSuper = true)
 @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class EmbeddingGenRequest extends LLMWorkerInput {
+public class IndexedDoc {
+    private String docId;
+    private String parentDocId;
     private String text;
-    private Integer dimensions;
-    private String model;
+    private double score;
+    private Map<String, Object> metadata = new HashMap<>();
+
+    public IndexedDoc(String docId, String parentDocId, String text, double score) {
+        this.docId = docId;
+        this.parentDocId = parentDocId;
+        this.text = text;
+        this.score = score;
+    }
+
+    public IndexedDoc() {}
 }

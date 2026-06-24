@@ -10,36 +10,23 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.models;
-
-import java.util.List;
-
-import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+package org.conductoross.conductor.ai.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LLMResponse {
-    private Object result;
-    private List<Media> media;
-    private String finishReason;
-    private int tokenUsed;
-    private int promptTokens;
-    private int completionTokens;
-    private List<ToolCall> toolCalls;
-    private WorkflowDef workflow;
-    private String jobId;
-    private String responseId;
-    private String reasoning;
-    private Integer reasoningTokens;
-
-    public boolean hasToolCalls() {
-        return toolCalls != null && !toolCalls.isEmpty();
-    }
+public class AudioGenRequest extends LLMWorkerInput {
+    private String text;
+    private String voice;
+    @Builder.Default private double speed = 1.0;
+    @Builder.Default private String responseFormat = "mp3";
+    @Builder.Default private int n = 1;
 }

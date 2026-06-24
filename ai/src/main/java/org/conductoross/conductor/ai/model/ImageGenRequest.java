@@ -10,19 +10,31 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.models;
+package org.conductoross.conductor.ai.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 @Builder
-public class Media {
-    private String location;
-    private byte[] data;
-    private String mimeType;
+@NoArgsConstructor
+@AllArgsConstructor
+public class ImageGenRequest extends LLMWorkerInput {
+    public enum OutputFormat {
+        jpg,
+        png,
+        webp
+    }
+
+    private float weight;
+    @Builder.Default private int n = 1;
+    private int width = 1024;
+    private int height = 1024;
+    private String size;
+    private String style;
+    @Builder.Default private OutputFormat outputFormat = OutputFormat.png;
 }

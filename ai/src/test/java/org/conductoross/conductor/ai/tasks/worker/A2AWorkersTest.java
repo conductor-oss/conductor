@@ -17,8 +17,8 @@ import org.conductoross.conductor.ai.a2a.model.A2ATask;
 import org.conductoross.conductor.ai.a2a.model.AgentCard;
 import org.conductoross.conductor.ai.a2a.model.TaskState;
 import org.conductoross.conductor.ai.a2a.model.TaskStatus;
-import org.conductoross.conductor.ai.models.A2AAgentCardRequest;
-import org.conductoross.conductor.ai.models.A2ACancelRequest;
+import org.conductoross.conductor.ai.model.A2AAgentCardRequest;
+import org.conductoross.conductor.ai.model.A2ACancelRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
