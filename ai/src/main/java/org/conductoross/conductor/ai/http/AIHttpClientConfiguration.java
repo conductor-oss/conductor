@@ -21,11 +21,11 @@ import okhttp3.OkHttpClient;
 /**
  * Spring configuration for the shared AI {@link OkHttpClient}.
  *
- * <p>Exposes a single application-wide client, {@link #conductorAiHttpClient}, used by all
- * LLM/AI provider calls. Its timeouts, connection pooling and retries are bound from {@link
- * AIHttpClientProperties} (prefix {@code conductor.ai.http.*}). The client is built once via
- * {@link AIHttpClients} and torn down on shutdown (see {@link #shutdown()}) so its dispatcher
- * thread pool and connection pool are released cleanly.
+ * <p>Exposes a single application-wide client, {@link #conductorAiHttpClient}, used by all LLM/AI
+ * provider calls. Its timeouts, connection pooling and retries are bound from {@link
+ * AIHttpClientProperties} (prefix {@code conductor.ai.http.*}). The client is built once via {@link
+ * AIHttpClients} and torn down on shutdown (see {@link #shutdown()}) so its dispatcher thread pool
+ * and connection pool are released cleanly.
  */
 @Configuration
 public class AIHttpClientConfiguration {

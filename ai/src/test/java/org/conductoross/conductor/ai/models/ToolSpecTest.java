@@ -12,11 +12,13 @@
  */
 package org.conductoross.conductor.ai.models;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.common.config.ObjectMapperProvider;
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
+import com.netflix.conductor.common.config.ObjectMapperProvider;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.*;
 

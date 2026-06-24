@@ -23,9 +23,9 @@ import lombok.Data;
  * Tunable settings for the shared AI {@link okhttp3.OkHttpClient} (see {@link
  * AIHttpClientConfiguration}), bound from the {@code conductor.ai.http.*} prefix.
  *
- * <p>The defaults below are chosen for LLM/AI traffic rather than ordinary REST calls and apply
- * out of the box; operators only need to set a property to override one. Durations use Spring's
- * format (e.g. {@code 600s}, {@code 5m}).
+ * <p>The defaults below are chosen for LLM/AI traffic rather than ordinary REST calls and apply out
+ * of the box; operators only need to set a property to override one. Durations use Spring's format
+ * (e.g. {@code 600s}, {@code 5m}).
  */
 @Data
 @Component
@@ -39,9 +39,9 @@ public class AIHttpClientProperties {
      * Maximum time to wait between bytes once a request is in flight, i.e. effectively the
      * time-to-first-byte budget for a response.
      *
-     * <p>Defaults to 600s because LLM/reasoning calls over large contexts routinely take far
-     * longer than OkHttp's 10s default read timeout to begin streaming a response; under-setting
-     * this truncates long generations with a read timeout mid-call.
+     * <p>Defaults to 600s because LLM/reasoning calls over large contexts routinely take far longer
+     * than OkHttp's 10s default read timeout to begin streaming a response; under-setting this
+     * truncates long generations with a read timeout mid-call.
      */
     private Duration readTimeout = Duration.ofSeconds(600);
 
@@ -54,8 +54,6 @@ public class AIHttpClientProperties {
     /** How long an idle connection is kept alive in the pool before eviction. */
     private Duration keepAlive = Duration.ofMinutes(5);
 
-    /**
-     * Number of automatic retries for transient failures (0 disables the retry interceptor).
-     */
+    /** Number of automatic retries for transient failures (0 disables the retry interceptor). */
     private int maxRetries = 3;
 }
