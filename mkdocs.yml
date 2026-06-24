@@ -94,7 +94,6 @@ nav:
       - documentation/configuration/workflowdef/systemtasks/noop-task.md
       - documentation/configuration/workflowdef/systemtasks/jdbc-task.md
       - documentation/configuration/workflowdef/systemtasks/wait-task.md
-      - documentation/configuration/workflowdef/systemtasks/wait-for-webhook-task.md
     - Operators:
       - documentation/configuration/workflowdef/operators/index.md
       - documentation/configuration/workflowdef/operators/fork-task.md
