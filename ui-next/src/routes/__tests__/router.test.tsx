@@ -86,7 +86,6 @@ vi.mock("utils/constants/route", () => ({
     NAME_VERSION: "/workflowDef/:name/:version",
     NEW: "/workflowDef/new",
   },
-  WORKFLOW_EXPLORER_URL: "/workflow-explorer",
   WORKERS_URL: {
     BASE: "/workers",
   },
@@ -469,6 +468,19 @@ describe("router (OSS)", () => {
       expect(allPaths).toContain("*");
       expect(allPaths).toContain("/executions");
       expect(allPaths).toContain("/runWorkflow");
+    });
+
+    it("should include all scheduler routes as core OSS routes", () => {
+      const routes = getRoutes();
+      const allPaths = collectPaths(routes);
+
+      // Scheduler definitions (list, edit by name, create new)
+      expect(allPaths).toContain("/scheduleDef");
+      expect(allPaths).toContain("/scheduleDef/:name");
+      expect(allPaths).toContain("/scheduleDef/new");
+
+      // Scheduler executions search
+      expect(allPaths).toContain("/schedulerExecs");
     });
 
     it("should not change route count for SHOW_GET_STARTED_PAGE without plugins", () => {

@@ -37,9 +37,9 @@ const CardLabel = ({
         transition: displayDescription ? "all 0.3s ease-in-out" : "none",
       }}
     >
-      {type !== TaskType.MCP
+      {type !== TaskType.INTEGRATION
         ? shortenedTypeTag[type] || type
-        : integrationIconName?.toUpperCase() || "MCP"}
+        : integrationIconName?.toUpperCase() || "INTEGRATION"}
     </div>
   </div>
 );

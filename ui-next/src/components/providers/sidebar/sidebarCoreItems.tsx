@@ -2,9 +2,9 @@
  * Core (OSS) sidebar menu items for Conductor UI.
  *
  * These items are merged with plugin-registered items in UiSidebar.
- * - Executions submenu (Workflow, Queue Monitor)
+ * - Executions submenu (Workflow, Scheduler, Queue Monitor)
  * - Run Workflow button
- * - Definitions submenu (Workflow, Task, Event Handler)
+ * - Definitions submenu (Workflow, Task, Event Handler, Scheduler)
  * - Help menu
  * - API Docs
  */
@@ -21,6 +21,8 @@ import {
   EVENT_HANDLERS_URL,
   NEW_TASK_DEF_URL,
   RUN_WORKFLOW_URL,
+  SCHEDULER_DEFINITION_URL,
+  SCHEDULER_EXECUTION_URL,
   TASK_DEF_URL,
   TASK_QUEUE_URL,
   WORKFLOW_DEFINITION_URL,
@@ -29,6 +31,7 @@ import {
 
 const isPlayground = featureFlags.isEnabled(FEATURES.PLAYGROUND);
 const hideFeedbackForm = !featureFlags.isEnabled(FEATURES.SHOW_FEEDBACK_FORM);
+const hideScheduler = !featureFlags.isEnabled(FEATURES.SCHEDULER);
 
 /**
  * Core sidebar position constants. Root and submenus both use 100, 200, 300, ...
@@ -47,6 +50,7 @@ const CORE_SIDEBAR_POSITIONS = {
   // Executions submenu children
   EXECUTIONS: {
     workflowExeItem: 100,
+    schedulerExeItem: 185,
     queueMonitorItem: 200,
   },
   // Definitions submenu children
@@ -54,6 +58,7 @@ const CORE_SIDEBAR_POSITIONS = {
     workflowDefItem: 100,
     taskDefItem: 200,
     eventHandlerDefItem: 300,
+    schedulerDefItem: 350,
   },
   // Help submenu children
   HELP: {
@@ -96,6 +101,16 @@ export function getCoreSidebarItems(open: boolean): MenuItemType[] {
           hotkeys: "",
           hidden: false,
           position: E.workflowExeItem,
+        },
+        {
+          id: "schedulerExeItem",
+          title: "Scheduler",
+          icon: null,
+          linkTo: SCHEDULER_EXECUTION_URL,
+          shortcuts: [],
+          hotkeys: "",
+          hidden: hideScheduler,
+          position: E.schedulerExeItem,
         },
         {
           id: "queueMonitorItem",
@@ -166,6 +181,20 @@ export function getCoreSidebarItems(open: boolean): MenuItemType[] {
           hotkeys: "",
           hidden: false,
           position: D.eventHandlerDefItem,
+        },
+        {
+          id: "schedulerDefItem",
+          title: "Scheduler",
+          icon: null,
+          linkTo: SCHEDULER_DEFINITION_URL.BASE,
+          activeRoutes: [
+            SCHEDULER_DEFINITION_URL.NEW,
+            SCHEDULER_DEFINITION_URL.NAME,
+          ],
+          shortcuts: [],
+          hotkeys: "",
+          hidden: hideScheduler,
+          position: D.schedulerDefItem,
         },
       ],
     },

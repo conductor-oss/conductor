@@ -1,0 +1,23 @@
+{
+  "results": [
+    {
+      "scheduleName": "daily_cleanup_schedule",
+      "executionId": "exec-abc123",
+      "scheduledTime": 1700050000000,
+      "executionTime": 1700050001000,
+      "state": "EXECUTED",
+      "workflowId": "wf-123456",
+      "reason": null
+    },
+    {
+      "scheduleName": "hourly_data_sync",
+      "executionId": "exec-def456",
+      "scheduledTime": 1700053600000,
+      "executionTime": 1700053601000,
+      "state": "EXECUTED",
+      "workflowId": "wf-789012",
+      "reason": null
+    }
+  ],
+  "totalHits": 2
+}

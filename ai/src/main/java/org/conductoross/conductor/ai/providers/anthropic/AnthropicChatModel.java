@@ -22,6 +22,7 @@ import org.conductoross.conductor.ai.providers.anthropic.api.AnthropicMessagesAp
 import org.conductoross.conductor.ai.providers.anthropic.api.AnthropicMessagesApi.Message;
 import org.conductoross.conductor.ai.providers.anthropic.api.AnthropicMessagesApi.MessagesRequest;
 import org.conductoross.conductor.ai.providers.anthropic.api.AnthropicMessagesApi.MessagesResponse;
+import org.conductoross.conductor.ai.providers.anthropic.api.AnthropicMessagesApi.OutputConfig;
 import org.conductoross.conductor.ai.providers.anthropic.api.AnthropicMessagesApi.ResponseContentBlock;
 import org.conductoross.conductor.ai.providers.anthropic.api.AnthropicMessagesApi.ResponseUsage;
 import org.conductoross.conductor.ai.providers.anthropic.api.AnthropicMessagesApi.Thinking;
@@ -51,6 +52,8 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class AnthropicChatModel implements ChatModel {
+
+    private static final int DEFAULT_MAX_TOKENS = 8192;
 
     private final AnthropicMessagesApi messagesApi;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -93,24 +96,47 @@ public class AnthropicChatModel implements ChatModel {
             messages.addAll(convertMessage(msg));
         }
 
-        // Extract options
+        // Extract options — Spring AI's ChatClient may merge AnthropicChatOptions with
+        // ToolCallingChatOptions (the model's default), producing a non-Anthropic type.
+        // We handle both cases and always guarantee max_tokens (required by Anthropic API).
         AnthropicChatOptions opts = options instanceof AnthropicChatOptions aco ? aco : null;
 
         MessagesRequest.Builder builder =
                 MessagesRequest.builder().messages(messages).system(system);
 
         if (opts != null) {
+            Integer maxTokens = opts.getMaxTokens();
             builder.model(opts.getModel())
-                    .maxTokens(opts.getMaxTokens())
+                    .maxTokens(maxTokens != null && maxTokens > 0 ? maxTokens : DEFAULT_MAX_TOKENS)
                     .temperature(opts.getTemperature())
                     .topP(opts.getTopP())
                     .topK(opts.getTopK())
                     .stopSequences(opts.getStopSequences())
                     .tools(opts.getTools());
 
-            // Thinking mode
-            if (opts.getThinkingBudgetTokens() != null && opts.getThinkingBudgetTokens() > 0) {
-                builder.thinking(Thinking.enabled(opts.getThinkingBudgetTokens()));
+            // Thinking + effort. Opus 4.7+, Fable 5, and Mythos reject the legacy
+            // ``thinking.type.enabled`` shape with HTTP 400 and require
+            // ``thinking.type.adaptive`` + ``output_config.effort`` instead. Opus 4.6 / Sonnet 4.6
+            // accept both (enabled deprecated); 4.5-and-earlier and Haiku accept only enabled.
+            // See requiresAdaptiveThinking for the full matrix.
+            boolean adaptiveOnly = requiresAdaptiveThinking(opts.getModel());
+            Integer budget = opts.getThinkingBudgetTokens();
+            boolean wantsThinking = budget != null && budget > 0;
+            String effort = opts.getReasoningEffort();
+
+            if (adaptiveOnly) {
+                if (wantsThinking) {
+                    builder.thinking(Thinking.adaptive());
+                    if (effort == null || effort.isBlank()) {
+                        effort = budgetToEffort(budget);
+                    }
+                }
+            } else if (wantsThinking) {
+                builder.thinking(Thinking.enabled(budget));
+            }
+
+            if (effort != null && !effort.isBlank()) {
+                builder.outputConfig(new OutputConfig(effort));
             }
 
             // Check if code_execution tool is present — requires beta header
@@ -123,12 +149,15 @@ public class AnthropicChatModel implements ChatModel {
                 }
             }
         } else if (options != null) {
+            Integer maxTokens = options.getMaxTokens();
             builder.model(options.getModel())
-                    .maxTokens(options.getMaxTokens())
+                    .maxTokens(maxTokens != null && maxTokens > 0 ? maxTokens : DEFAULT_MAX_TOKENS)
                     .temperature(options.getTemperature())
                     .topP(options.getTopP())
                     .topK(options.getTopK())
                     .stopSequences(options.getStopSequences());
+        } else {
+            builder.maxTokens(DEFAULT_MAX_TOKENS);
         }
 
         return builder.build();
@@ -278,6 +307,38 @@ public class AnthropicChatModel implements ChatModel {
         }
 
         return new ChatResponse(generations, metaBuilder.build());
+    }
+
+    /**
+     * Model lines that use adaptive thinking ({@code thinking.type:"adaptive"} + {@code
+     * output_config.effort}) rather than the legacy {@code thinking.type:"enabled"} + {@code
+     * budget_tokens} shape. Matched as a substring on the line name -- no version digits -- so new
+     * releases on these lines work without a code change. Per the adaptive-thinking docs (checked
+     * 2026-06): the Opus line is adaptive from 4.6 onward (4.7+ reject enabled outright), and Fable
+     * / Mythos are adaptive-only. Sonnet and Haiku still use enabled, so they are absent.
+     * (Trade-off: legacy Opus 4.5-and-earlier -- 4.1/4.0 already retiring -- also match here and
+     * would 400 on a thinking request; acceptable as those are deprecated.)
+     */
+    private static final List<String> ADAPTIVE_LINES = List.of("opus", "fable", "mythos");
+
+    /** True if {@code model} uses adaptive thinking rather than the legacy enabled shape. */
+    static boolean requiresAdaptiveThinking(String model) {
+        if (model == null) return false;
+        String m = model.toLowerCase();
+        return ADAPTIVE_LINES.stream().anyMatch(m::contains);
+    }
+
+    /**
+     * Map a legacy ``thinkingTokenLimit`` budget onto an adaptive ``effort`` tier. Used only when a
+     * caller specified a budget for a model that no longer accepts ``budget_tokens`` (Opus 4.7) and
+     * didn't independently set ``reasoningEffort``. Thresholds roughly track Anthropic's published
+     * guidance: bigger budgets → more thorough thinking.
+     */
+    static String budgetToEffort(int budget) {
+        if (budget < 4_000) return "low";
+        if (budget < 16_000) return "medium";
+        if (budget < 32_000) return "high";
+        return "xhigh";
     }
 
     private String mapStopReason(String stopReason) {

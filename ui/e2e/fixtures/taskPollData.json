@@ -1,0 +1,14 @@
+[
+  {
+    "queueName": "example_task_1",
+    "domain": "DEFAULT",
+    "workerId": "worker-host-1",
+    "lastPollTime": 1700050000000
+  },
+  {
+    "queueName": "example_task_1",
+    "domain": "prod",
+    "workerId": "worker-host-2",
+    "lastPollTime": 1700049900000
+  }
+]
