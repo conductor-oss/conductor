@@ -173,6 +173,50 @@ public class SqliteConfiguration {
         return new SqliteIndexDAO(retryTemplate, objectMapper, dataSource, properties);
     }
 
+    @Bean(name = "webhookDAO")
+    @DependsOn({"flywayForPrimaryDb"})
+    public org.conductoross.conductor.sqlite.dao.SqliteWebhookDAO sqliteWebhookDAO(
+            @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper,
+            com.netflix.conductor.dao.MetadataDAO metadataDAO) {
+        return new org.conductoross.conductor.sqlite.dao.SqliteWebhookDAO(
+                retryTemplate, objectMapper, dataSource, metadataDAO);
+    }
+
+    @Bean(name = "webhookTaskService")
+    @DependsOn({"flywayForPrimaryDb"})
+    public org.conductoross.conductor.sqlite.dao.SqliteWebhookTaskService sqliteWebhookTaskService(
+            @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        return new org.conductoross.conductor.sqlite.dao.SqliteWebhookTaskService(
+                retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn({"flywayForPrimaryDb"})
+    @ConditionalOnProperty(
+            name = "conductor.webhooks.cleanup.enabled",
+            havingValue = "true",
+            matchIfMissing = true)
+    public org.conductoross.conductor.sqlite.dao.SqliteWebhookCleanupJob sqliteWebhookCleanupJob(
+            org.springframework.core.env.Environment env) {
+        org.conductoross.conductor.sqlite.dao.SqliteWebhookCleanupJob job =
+                new org.conductoross.conductor.sqlite.dao.SqliteWebhookCleanupJob(dataSource);
+        String retention = env.getProperty("conductor.webhooks.cleanup.retention-duration");
+        if (retention != null) {
+            job.setRetentionDuration(java.time.Duration.parse(retention));
+        }
+        Integer batch = env.getProperty("conductor.webhooks.cleanup.batch-size", Integer.class);
+        if (batch != null) {
+            job.setBatchSize(batch);
+        }
+        String maxRuntime = env.getProperty("conductor.webhooks.cleanup.max-runtime");
+        if (maxRuntime != null) {
+            job.setMaxRuntime(java.time.Duration.parse(maxRuntime));
+        }
+        return job;
+    }
+
     @Bean
     @DependsOn({"flywayForPrimaryDb"})
     @ConditionalOnProperty(name = "conductor.workflow-execution-lock.type", havingValue = "sqlite")
