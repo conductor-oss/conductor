@@ -13,7 +13,7 @@ convention to invent, and each Agent Card describes exactly one capability.
 
 ```
 GET  {basePath}/{workflow}/.well-known/agent-card.json   (+ /agent.json, v0.2.x)  → discovery
-POST {basePath}/{workflow}                               → JSON-RPC: message/send | tasks/get | tasks/cancel
+POST {basePath}/{workflow}                               → JSON-RPC: message/send | message/stream | tasks/get | tasks/cancel
 GET  {basePath}                                          → convenience listing of exposed agents
 ```
 
@@ -54,8 +54,8 @@ executions (the task's workflow name must match the path agent).
 
 **`WorkflowDef` → Agent Card:** one skill (`id`/`name` = workflow name, description from the def,
 tags from metadata, input/output modes from properties); `url` = `{publicUrl|request-derived}{basePath}/{name}`;
-`version` = def version; `protocolVersion` `0.3.0`; `capabilities.streaming/pushNotifications=false`
-(server-side streaming/push are follow-ups).
+`version` = def version; `protocolVersion` `0.3.0`; `capabilities.streaming=true` (`message/stream`
+via SSE), `capabilities.pushNotifications=false` (push-config endpoints are a follow-up).
 
 ## 10.4 Durability — why this is the differentiator
 
@@ -111,7 +111,8 @@ Or per-workflow opt-in in the definition: `"metadata": { "a2a.enabled": true, "a
   calling Conductor over A2A end-to-end against a stateful fake engine).
 
 ## 10.8 Out of scope (v1, follow-ups)
-- Server-side streaming (`message/stream`/SSE) and push-notification config endpoints.
+- Push-notification config endpoints (`tasks/pushNotificationConfig/*`). Server-side streaming
+  (`message/stream` SSE) now ships — it is listed in the methods table in §10.1/§10.3.
 - Per-workflow OAuth scopes; Agent Card JWS signing.
 - Full client↔server loopback e2e through the **real** engine (decider/sweeper/persistence) in
   `test-harness` — the mocked-engine loopback (`A2ALoopbackTest`) ships now.

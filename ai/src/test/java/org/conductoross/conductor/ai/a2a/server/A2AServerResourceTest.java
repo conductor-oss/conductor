@@ -71,6 +71,14 @@ class A2AServerResourceTest {
         }
     }
 
+    /**
+     * jsonRpc returns Object (SSE emitter or ResponseEntity); the non-stream paths are the latter.
+     */
+    @SuppressWarnings("unchecked")
+    private ResponseEntity<JsonNode> call(String workflow, JsonNode request) {
+        return (ResponseEntity<JsonNode>) resource.jsonRpc(workflow, request);
+    }
+
     @Test
     void messageSend_dispatchesAndReturnsResult() {
         when(agent.sendMessage(eq("order_pizza"), any(A2AMessage.class)))
@@ -80,7 +88,7 @@ class A2AServerResourceTest {
                 rpc(
                         "message/send",
                         "{\"message\":{\"role\":\"user\",\"kind\":\"message\",\"messageId\":\"m1\",\"parts\":[{\"kind\":\"text\",\"text\":\"hi\"}]}}");
-        ResponseEntity<JsonNode> response = resource.jsonRpc("order_pizza", request);
+        ResponseEntity<JsonNode> response = call("order_pizza", request);
 
         JsonNode body = response.getBody();
         assertEquals(1, body.get("id").asInt());
@@ -93,7 +101,7 @@ class A2AServerResourceTest {
         when(agent.getTask("order_pizza", "wf-1")).thenReturn(task("wf-1", TaskState.COMPLETED));
 
         ResponseEntity<JsonNode> response =
-                resource.jsonRpc("order_pizza", rpc("tasks/get", "{\"id\":\"wf-1\"}"));
+                call("order_pizza", rpc("tasks/get", "{\"id\":\"wf-1\"}"));
 
         assertEquals(
                 TaskState.COMPLETED,
@@ -104,14 +112,14 @@ class A2AServerResourceTest {
     void tasksCancel_dispatches() {
         when(agent.cancelTask("order_pizza", "wf-1")).thenReturn(task("wf-1", TaskState.CANCELED));
 
-        resource.jsonRpc("order_pizza", rpc("tasks/cancel", "{\"id\":\"wf-1\"}"));
+        call("order_pizza", rpc("tasks/cancel", "{\"id\":\"wf-1\"}"));
 
         verify(agent).cancelTask("order_pizza", "wf-1");
     }
 
     @Test
     void unknownMethod_returnsMethodNotFound() {
-        ResponseEntity<JsonNode> response = resource.jsonRpc("order_pizza", rpc("foo/bar", "{}"));
+        ResponseEntity<JsonNode> response = call("order_pizza", rpc("foo/bar", "{}"));
         assertEquals(-32601, response.getBody().get("error").get("code").asInt());
     }
 
@@ -123,7 +131,7 @@ class A2AServerResourceTest {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        ResponseEntity<JsonNode> response = resource.jsonRpc("order_pizza", request);
+        ResponseEntity<JsonNode> response = call("order_pizza", request);
         assertEquals(-32600, response.getBody().get("error").get("code").asInt());
     }
 
@@ -133,7 +141,7 @@ class A2AServerResourceTest {
                 .thenThrow(A2AServerException.notFound("not found"));
 
         ResponseEntity<JsonNode> response =
-                resource.jsonRpc("order_pizza", rpc("tasks/get", "{\"id\":\"missing\"}"));
+                call("order_pizza", rpc("tasks/get", "{\"id\":\"missing\"}"));
 
         assertEquals(-32001, response.getBody().get("error").get("code").asInt());
     }

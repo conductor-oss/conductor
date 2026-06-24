@@ -269,8 +269,10 @@ conductor.a2a.server.exposed-workflows=order_pizza,book_appointment
 | Method & path | Purpose |
 |---|---|
 | `GET /a2a/{workflow}/.well-known/agent-card.json` | Agent Card (also `/agent.json`). |
-| `POST /a2a/{workflow}` | JSON-RPC: `message/send`, `tasks/get`, `tasks/cancel`. |
+| `POST /a2a/{workflow}` | JSON-RPC: `message/send`, `message/stream` (SSE), `tasks/get`, `tasks/cancel`. |
 | `GET /a2a` | Convenience listing of exposed agents (non-spec). |
+
+Exposed agents advertise `capabilities.streaming=true`.
 
 ### Discover and call
 
@@ -297,6 +299,32 @@ curl -X POST http://localhost:8080/a2a/order_pizza \
 ```
 
 The inbound A2A message is injected into the workflow input as `_a2a_text`, `_a2a_message_id`, `_a2a_context_id` (plus any data parts), and `contextId` becomes the workflow `correlationId`.
+
+### Streaming (message/stream)
+
+Use `message/stream` instead of `message/send` for a Server-Sent Events stream: the initial `Task`,
+then `status-update` events as the workflow's A2A state changes and `artifact-update` events as
+output is produced, ending with a `final` status-update at a terminal / input-required state.
+
+```bash
+curl -N -X POST http://localhost:8080/a2a/order_pizza \
+  -H 'Content-Type: application/json' \
+  -d '{ "jsonrpc":"2.0", "id":1, "method":"message/stream",
+        "params": { "message": { "role":"user", "messageId":"m-1",
+          "parts":[ {"kind":"text","text":"one large pepperoni"} ] } } }'
+```
+
+```text
+data: {"jsonrpc":"2.0","id":1,"result":{"kind":"task","id":"wf-7f3a","status":{"state":"working"}}}
+
+data: {"jsonrpc":"2.0","id":1,"result":{"kind":"artifact-update","taskId":"wf-7f3a","artifact":{"artifactId":"workflow-output","parts":[{"kind":"data","data":{"orderId":"ORD-42"}}]}}}
+
+data: {"jsonrpc":"2.0","id":1,"result":{"kind":"status-update","taskId":"wf-7f3a","status":{"state":"completed"},"final":true}}
+```
+
+The stream is a live view of the durable execution — if the connection drops, resume tracking with
+`tasks/get`. Tuning: `conductor.a2a.server.stream-poll-interval-millis` (default 500) and
+`conductor.a2a.server.stream-max-duration-seconds` (default 300).
 
 ### Durable, idempotent start
 

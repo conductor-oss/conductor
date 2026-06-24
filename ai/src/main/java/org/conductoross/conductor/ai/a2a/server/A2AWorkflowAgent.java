@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.a2a.server;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -124,7 +125,9 @@ public class A2AWorkflowAgent {
         card.setPreferredTransport("JSONRPC");
         card.setDefaultInputModes(properties.getDefaultInputModes());
         card.setDefaultOutputModes(properties.getDefaultOutputModes());
-        card.setCapabilities(new AgentCapabilities()); // streaming/push: false (server-side v1)
+        AgentCapabilities capabilities = new AgentCapabilities();
+        capabilities.setStreaming(true); // message/stream (SSE) is supported; push config is not
+        card.setCapabilities(capabilities);
 
         AgentProvider provider = new AgentProvider();
         provider.setOrganization(properties.getProviderOrganization());
@@ -219,6 +222,115 @@ public class A2AWorkflowAgent {
             workflow = loadWorkflow(workflowId, workflowName, false);
         }
         return toA2ATask(workflow);
+    }
+
+    /**
+     * Drive a {@code message/stream} for a workflow-backed agent: start (or resume) the execution,
+     * emit the initial {@code Task}, then poll and emit {@code status-update} events on each state
+     * change and {@code artifact-update} events when output appears, ending with a {@code final}
+     * status-update when the workflow reaches a terminal or input-required state. Each event is a
+     * JSON-RPC envelope written to {@code sink} (one SSE frame). The remote agent execution's
+     * durability is unaffected — the stream is just a live view; a dropped connection can be picked
+     * back up with {@code tasks/get}.
+     */
+    public void streamMessage(
+            String workflowName, A2AMessage message, Object rpcId, A2AStreamSink sink)
+            throws IOException {
+        A2ATask task = sendMessage(workflowName, message); // starts or resumes the execution
+        String workflowId = task.getId();
+        sink.event(envelope(rpcId, task)); // initial Task event (kind:"task")
+
+        if (isStreamFinal(stateOf(task))) {
+            sink.event(envelope(rpcId, statusUpdate(task, true)));
+            return;
+        }
+
+        String last = stateOf(task);
+        long deadline =
+                System.currentTimeMillis() + properties.getStreamMaxDurationSeconds() * 1000L;
+        while (System.currentTimeMillis() < deadline) {
+            sleep(properties.getStreamPollIntervalMillis());
+            A2ATask current = getTask(workflowName, workflowId);
+            String state = stateOf(current);
+            if (isStreamFinal(state)) {
+                if (current.getArtifacts() != null) {
+                    for (Artifact artifact : current.getArtifacts()) {
+                        sink.event(envelope(rpcId, artifactUpdate(current, artifact)));
+                    }
+                }
+                sink.event(envelope(rpcId, statusUpdate(current, true)));
+                return;
+            }
+            if (!java.util.Objects.equals(state, last)) {
+                sink.event(envelope(rpcId, statusUpdate(current, false)));
+                last = state;
+            }
+        }
+        // Hit the max stream duration without a terminal state — close the stream as final and tell
+        // the client to keep tracking via tasks/get (the durable execution keeps running
+        // regardless).
+        A2ATask current = getTask(workflowName, workflowId);
+        TaskStatus status = new TaskStatus();
+        status.setState(stateOf(current));
+        status.setMessage(
+                agentTextMessage(
+                        "Stream window elapsed; the workflow is still running — continue with"
+                                + " tasks/get.",
+                        loadWorkflow(workflowId, workflowName, false)));
+        sink.event(
+                envelope(
+                        rpcId,
+                        statusUpdateEvent(current.getId(), current.getContextId(), status, true)));
+    }
+
+    /** A2A stream ends when the task reaches a terminal OR input/auth-required state. */
+    private boolean isStreamFinal(String state) {
+        return TaskState.isTerminal(state) || TaskState.isInterrupted(state);
+    }
+
+    private String stateOf(A2ATask task) {
+        return task.getStatus() != null ? task.getStatus().getState() : null;
+    }
+
+    private Map<String, Object> envelope(Object rpcId, Object result) {
+        Map<String, Object> envelope = new HashMap<>();
+        envelope.put("jsonrpc", "2.0");
+        envelope.put("id", rpcId);
+        envelope.put("result", result);
+        return envelope;
+    }
+
+    private Map<String, Object> statusUpdate(A2ATask task, boolean isFinal) {
+        return statusUpdateEvent(task.getId(), task.getContextId(), task.getStatus(), isFinal);
+    }
+
+    private Map<String, Object> statusUpdateEvent(
+            String taskId, String contextId, TaskStatus status, boolean isFinal) {
+        Map<String, Object> event = new HashMap<>();
+        event.put("kind", "status-update");
+        event.put("taskId", taskId);
+        event.put("contextId", contextId);
+        event.put("status", status);
+        event.put("final", isFinal);
+        return event;
+    }
+
+    private Map<String, Object> artifactUpdate(A2ATask task, Artifact artifact) {
+        Map<String, Object> event = new HashMap<>();
+        event.put("kind", "artifact-update");
+        event.put("taskId", task.getId());
+        event.put("contextId", task.getContextId());
+        event.put("artifact", artifact);
+        return event;
+    }
+
+    private void sleep(long millis) throws IOException {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("A2A stream interrupted", e);
+        }
     }
 
     // ---- mapping -----------------------------------------------------------------------------
