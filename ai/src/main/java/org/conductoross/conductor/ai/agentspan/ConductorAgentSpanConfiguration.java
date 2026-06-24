@@ -25,76 +25,43 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.FilterType;
-import org.springframework.context.annotation.Primary;
 import org.springframework.core.Ordered;
 
-import com.netflix.conductor.core.config.ConductorProperties;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.agentspan.runtime.config.AgentSpanAutoConfiguration;
 import dev.agentspan.runtime.spi.CredentialStoreProvider;
 import dev.agentspan.runtime.spi.SecretOutputMasker;
-import dev.agentspan.runtime.tasks.Join;
-
-import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_JOIN;
 
 /**
- * Embeds the {@code conductor-agentspan} library into OSS Conductor when {@code
- * conductor.integrations.ai.enabled=true}.
+ * Supplies the host SPI beans the embedded {@code conductor-agentspan} library requires, when
+ * {@code conductor.integrations.ai.enabled=true}.
  *
- * <p>It component-scans the {@code dev.agentspan.runtime} namespace to register AgentSpan's agent
- * domain, compilers, services, REST controllers and system-task overrides. The library's own {@link
- * AgentSpanAutoConfiguration} stays dormant here (it only activates for the standalone server or
- * when {@code agentspan.embedded=true}), so we drive activation explicitly and leave {@code
- * agentspan.embedded} unset — which keeps AgentSpan's {@code HTTP}/{@code HUMAN}/{@code MCP}
- * overrides and the {@code AgentChatCompleteTaskMapper} active (the standalone "override" model).
- *
- * <p>Two exclusions from the scan:
+ * <p>AgentSpan itself is activated in <b>embedded mode</b> by {@link
+ * AgentSpanEmbeddedEnvironmentPostProcessor} (which sets {@code agentspan.embedded=true}), so the
+ * library's own auto-configuration component-scans and registers the agent runtime, services, REST
+ * controllers and the agent-aware {@code LLM_CHAT_COMPLETE} mapper. Crucially, in embedded mode the
+ * library does <b>not</b> override Conductor's {@code HTTP}/{@code HUMAN}/{@code JOIN} system-task
+ * beans; those native tasks are extended in place via the {@code __agentspan_ctx__} task input.
+ * This class therefore only contributes the host-provided SPI implementations:
  *
  * <ul>
- *   <li>{@link AgentSpanAutoConfiguration} — processed via the imports file, not our scan; excluded
- *       to avoid a redundant nested scan.
- *   <li>AgentSpan's {@link Join} ({@code @Component("JOIN")}) — excluded so it does not collide
- *       with Conductor core's scanned {@code @Component("JOIN")}; we instead re-declare it below as
- *       a primary {@code @Bean("JOIN")}, which cleanly overrides the core bean (the same mechanism
- *       AgentSpan's HTTP/HUMAN overrides use).
+ *   <li>{@link CredentialStoreProvider} — environment-seeded, read-only ({@link
+ *       EnvBackedCredentialStore}).
+ *   <li>{@link SecretOutputMasker} — no-op (OSS parity).
+ *   <li>{@code credentialMasterKey} — HMAC signing key for worker execution tokens.
+ *   <li>Skill metadata/package SPI adapters onto Conductor's per-backend DAOs.
+ *   <li>A request-principal filter populating AgentSpan's {@code RequestContextHolder}.
  * </ul>
- *
- * <p>This class also supplies the host SPI beans the library requires: a credential store, a
- * skill-metadata DAO adapter, a skill-package store adapter, a secret-output masker, the worker
- * token signing key, and a request-principal filter.
  */
 @Configuration(proxyBeanMethods = false)
 @Conditional(AIIntegrationEnabledCondition.class)
-@ComponentScan(
-        basePackages = "dev.agentspan.runtime",
-        excludeFilters = {
-            @ComponentScan.Filter(
-                    type = FilterType.ASSIGNABLE_TYPE,
-                    classes = {AgentSpanAutoConfiguration.class, Join.class})
-        })
 public class ConductorAgentSpanConfiguration {
 
     private static final Logger log =
             LoggerFactory.getLogger(ConductorAgentSpanConfiguration.class);
 
     private static final int MASTER_KEY_BYTES = 32;
-
-    /**
-     * Re-declares AgentSpan's JOIN task as a primary bean named {@code "JOIN"}, overriding
-     * Conductor core's component-scanned {@code Join}. A manually-declared {@code @Bean} silently
-     * overrides a scanned component of the same name, avoiding the {@code
-     * ConflictingBeanDefinitionException} two scanned components would cause.
-     */
-    @Bean(TASK_TYPE_JOIN)
-    @Primary
-    public Join agentSpanJoin(ConductorProperties properties) {
-        return new Join(properties);
-    }
 
     /** OSS parity: no per-execution disclosure tracking, so nothing to redact. */
     @Bean

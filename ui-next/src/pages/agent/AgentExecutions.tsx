@@ -1,5 +1,4 @@
 import { DataTable, NavLink, Paper } from "components";
-import { ColumnCustomType } from "components/ui/DataTable/types";
 import SectionHeader from "components/layout/SectionHeader";
 import Header from "components/ui/Header";
 import NoDataComponent from "components/ui/NoDataComponent";
