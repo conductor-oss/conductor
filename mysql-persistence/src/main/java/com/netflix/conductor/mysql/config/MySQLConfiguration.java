@@ -17,6 +17,7 @@ import java.util.Optional;
 
 import javax.sql.DataSource;
 
+import org.conductoross.conductor.mysql.dao.MySQLGDriveConnectionDAO;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
@@ -26,6 +27,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.backoff.NoBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
@@ -75,6 +77,16 @@ public class MySQLConfiguration {
             ObjectMapper objectMapper,
             DataSource dataSource) {
         return new MySQLQueueDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @Primary
+    @DependsOn({"flyway", "flywayInitializer"})
+    public MySQLGDriveConnectionDAO mySqlGDriveConnectionDAO(
+            @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper,
+            DataSource dataSource) {
+        return new MySQLGDriveConnectionDAO(retryTemplate, objectMapper, dataSource);
     }
 
     @Bean

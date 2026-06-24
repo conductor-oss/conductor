@@ -1549,8 +1549,9 @@ export const gDriveReadTaskSchema = {
     taskReferenceName: "gdrive_read_task_ref",
     type: TaskType.GDRIVE_READ,
     inputParameters: {
-      folderId: "${workflow.input.driveFolderId}",
-      oauthTokenJson: "${workflow.input.oauthTokenJson}",
+      connectionId: "",
+      folderIds: [],
+      fileIds: [],
       maxFiles: 100,
     },
   },
@@ -1561,12 +1562,38 @@ export const gDriveReadTaskSchema = {
     type: { const: TaskType.GDRIVE_READ },
     inputParameters: {
       type: "object",
-      required: ["folderId", "oauthTokenJson"],
+      required: ["connectionId"],
       properties: {
-        folderId: {
+        connectionId: {
           type: "string",
         },
-        oauthTokenJson: {
+        folderIds: {
+          anyOf: [
+            {
+              type: "array",
+              items: {
+                type: "string",
+              },
+            },
+            {
+              type: "string",
+            },
+          ],
+        },
+        fileIds: {
+          anyOf: [
+            {
+              type: "array",
+              items: {
+                type: "string",
+              },
+            },
+            {
+              type: "string",
+            },
+          ],
+        },
+        folderId: {
           type: "string",
         },
         maxFiles: {
@@ -1658,6 +1685,7 @@ export const tasksItemsSchema = {
       { $ref: chunkTextTaskSchema.$id },
       { $ref: listFilesTaskSchema.$id },
       { $ref: parseDocumentTaskSchema.$id },
+      { $ref: gDriveReadTaskSchema.$id },
     ],
   },
 };
@@ -1874,6 +1902,7 @@ export const workflowDefinitionSchemaWithDeps = [
   chunkTextTaskSchema,
   listFilesTaskSchema,
   parseDocumentTaskSchema,
+  gDriveReadTaskSchema,
   // workflow must be at the end, because it wraps another schemas
   workflowSchema,
 ];

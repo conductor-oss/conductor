@@ -14,12 +14,26 @@ package org.conductoross.conductor.common.integrations.gdrive;
 
 public class GDriveOAuthTokenResponse {
 
+    private String connectionId;
     private String oauthTokenJson;
 
     public GDriveOAuthTokenResponse() {}
 
     public GDriveOAuthTokenResponse(String oauthTokenJson) {
         this.oauthTokenJson = oauthTokenJson;
+    }
+
+    public GDriveOAuthTokenResponse(String connectionId, String oauthTokenJson) {
+        this.connectionId = connectionId;
+        this.oauthTokenJson = oauthTokenJson;
+    }
+
+    public String getConnectionId() {
+        return connectionId;
+    }
+
+    public void setConnectionId(String connectionId) {
+        this.connectionId = connectionId;
     }
 
     public String getOauthTokenJson() {

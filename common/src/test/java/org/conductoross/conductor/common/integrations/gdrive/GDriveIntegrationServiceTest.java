@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GDriveIntegrationServiceTest {
 
@@ -56,6 +57,34 @@ class GDriveIntegrationServiceTest {
     }
 
     @Test
+    void normalizeFileIdAcceptsRawFileId() {
+        assertEquals("file_123-ABC", GDriveIntegrationService.normalizeFileId("file_123-ABC"));
+    }
+
+    @Test
+    void normalizeFileIdExtractsFileUrlId() {
+        assertEquals(
+                "file_123-ABC",
+                GDriveIntegrationService.normalizeFileId(
+                        "https://drive.google.com/file/d/file_123-ABC/view?usp=sharing"));
+    }
+
+    @Test
+    void normalizeFileIdExtractsOpenUrlId() {
+        assertEquals(
+                "file_123-ABC",
+                GDriveIntegrationService.normalizeFileId(
+                        "https://drive.google.com/open?id=file_123-ABC"));
+    }
+
+    @Test
+    void normalizeFileIdRejectsUnsafeCharacters() {
+        assertThrows(
+                GDriveIntegrationException.class,
+                () -> GDriveIntegrationService.normalizeFileId("file/../bad"));
+    }
+
+    @Test
     void exchangeAuthorizationCodeRejectsMissingClientCredentials() {
         GDriveOAuthTokenRequest request = new GDriveOAuthTokenRequest();
         request.setAuthorizationCode("code");
@@ -65,5 +94,19 @@ class GDriveIntegrationServiceTest {
         assertThrows(
                 GDriveIntegrationException.class,
                 () -> new GDriveIntegrationService().exchangeAuthorizationCode(request));
+    }
+
+    @Test
+    void normalizeOAuthTokenJsonMergesClientCredentials() {
+        String tokenJson = "{\"refresh_token\":\"refresh-token\"}";
+        String clientJson =
+                "{\"installed\":{\"client_id\":\"client-id\",\"client_secret\":\"client-secret\"}}";
+
+        String normalized =
+                new GDriveIntegrationService().normalizeOAuthTokenJson(tokenJson, clientJson);
+
+        assertTrue(normalized.contains("\"refresh_token\" : \"refresh-token\""));
+        assertTrue(normalized.contains("\"client_id\" : \"client-id\""));
+        assertTrue(normalized.contains("\"client_secret\" : \"client-secret\""));
     }
 }

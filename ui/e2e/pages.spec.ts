@@ -176,25 +176,20 @@ test.describe("Page load smoke tests", () => {
     await expect(page.getByText("Upload Client JSON")).toBeVisible();
     await expect(page.getByText("Upload OAuth Token JSON")).toBeVisible();
     await expect(page.getByText("Generate OAuth")).toBeVisible();
+    await expect(page.getByText("Create Connection")).toBeVisible();
   });
 
-  test("Integrations OAuth callback downloads token and creates Drive task", async ({
+  test("Integrations OAuth callback saves connection and creates Drive task", async ({
     page,
   }) => {
     await mockCommonApis(page);
 
-    let createdTaskDefs: Array<{ name?: string }> | undefined;
+    let createdTaskDefs: Array<{ inputKeys?: string[]; name?: string }> | undefined;
     await page.route("**/api/integrations/gdrive/oauth/token", (route) =>
       route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({
-          oauthTokenJson: JSON.stringify({
-            token: "access-token",
-            refresh_token: "refresh-token",
-            client_id: "client-id",
-            client_secret: "client-secret",
-            token_uri: "https://oauth2.googleapis.com/token",
-          }),
+          connectionId: "gdrive-prod",
         }),
       })
     );
@@ -214,7 +209,7 @@ test.describe("Page load smoke tests", () => {
       window.sessionStorage.setItem(
         "conductor.gdrive.oauth",
         JSON.stringify({
-          folderId: "folder-123",
+          connectionId: "gdrive-prod",
           clientId: "client-id",
           clientSecret: "client-secret",
           oauthClientJson: JSON.stringify({
@@ -227,15 +222,14 @@ test.describe("Page load smoke tests", () => {
       );
     });
 
-    const downloadPromise = page.waitForEvent("download");
-    await page.goto("/integrations?code=auth-code&state=folder-123");
-    const download = await downloadPromise;
+    await page.goto("/integrations?code=auth-code&state=gdrive-prod");
 
-    expect(download.suggestedFilename()).toBe("token.json");
     await expect(
-      page.getByText("OAuth token downloaded as token.json.")
+      page.getByText("Google Drive connection gdrive-prod saved.")
     ).toBeVisible();
     expect(createdTaskDefs?.[0]?.name).toBe("read_g_drive");
-    expect(createdTaskDefs?.[0]?.inputKeys).toContain("folderId");
+    expect(createdTaskDefs?.[0]?.inputKeys).toContain("connectionId");
+    expect(createdTaskDefs?.[0]?.inputKeys).toContain("folderIds");
+    expect(createdTaskDefs?.[0]?.inputKeys).toContain("fileIds");
   });
 });

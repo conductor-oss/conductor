@@ -20,6 +20,7 @@ import java.util.Optional;
 import javax.sql.DataSource;
 
 import org.conductoross.conductor.postgres.dao.PostgresFileMetadataDAO;
+import org.conductoross.conductor.postgres.dao.PostgresGDriveConnectionDAO;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -27,6 +28,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.*;
+import org.springframework.context.annotation.Primary;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.backoff.NoBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
@@ -144,6 +146,15 @@ public class PostgresConfiguration {
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper) {
         return new PostgresFileMetadataDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @Primary
+    @DependsOn({"flywayForPrimaryDb"})
+    public PostgresGDriveConnectionDAO postgresGDriveConnectionDAO(
+            @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        return new PostgresGDriveConnectionDAO(retryTemplate, objectMapper, dataSource);
     }
 
     @Bean

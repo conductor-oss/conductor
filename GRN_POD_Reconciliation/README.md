@@ -90,7 +90,7 @@ python -m pip install -r requirements.txt
 Use this option when you want to run the Conductor server image built from this checkout:
 
 ```powershell
-cd D:\Profintech\Work\finteract-conductor
+cd finteract-conductor
 docker compose -f docker/docker-compose.yaml up --build
 ```
 

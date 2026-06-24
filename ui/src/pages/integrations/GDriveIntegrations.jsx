@@ -26,6 +26,15 @@ const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.readonly";
 const SESSION_KEY = "conductor.gdrive.oauth";
 const READ_G_DRIVE_TASK_NAME = "read_g_drive";
 
+function createConnectionId() {
+  if (window.crypto && window.crypto.randomUUID) {
+    return `gdrive-${window.crypto.randomUUID()}`;
+  }
+  return `gdrive-${Date.now().toString(36)}-${Math.random()
+    .toString(36)
+    .slice(2, 10)}`;
+}
+
 const useStyles = makeStyles({
   root: {
     height: "100%",
@@ -126,7 +135,7 @@ function buildOAuthClientJson(clientId, clientSecret) {
   });
 }
 
-function buildOAuthUrl({ folderId, clientId }) {
+function buildOAuthUrl({ connectionId, clientId }) {
   if (!clientId) {
     return "";
   }
@@ -142,7 +151,7 @@ function buildOAuthUrl({ folderId, clientId }) {
     access_type: "offline",
     prompt: "consent",
     include_granted_scopes: "true",
-    state: folderId || "",
+    state: connectionId || "",
   });
 
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
@@ -152,15 +161,16 @@ function workflowInput(name) {
   return `${String.fromCharCode(36)}{workflow.input.${name}}`;
 }
 
-function taskSnippet(maxFiles) {
+function taskSnippet(maxFiles, connectionId) {
   return JSON.stringify(
     {
       name: READ_G_DRIVE_TASK_NAME,
       taskReferenceName: `${READ_G_DRIVE_TASK_NAME}_ref`,
       type: "GDRIVE_READ",
       inputParameters: {
-        folderId: workflowInput("folderId"),
-        oauthTokenJson: workflowInput("oauthTokenJson"),
+        connectionId: connectionId || "<create-connection-first>",
+        folderIds: workflowInput("driveFolderIds"),
+        fileIds: workflowInput("driveFileIds"),
         maxFiles,
       },
     },
@@ -174,19 +184,39 @@ function formatError(error) {
     return "";
   }
   if (typeof error === "string") {
-    return error;
+    return normalizeErrorMessage(error);
   }
-  return error.message || "Request failed";
+  return normalizeErrorMessage(error.message || "Request failed");
+}
+
+function normalizeErrorMessage(message) {
+  const value = String(message || "").trim();
+  if (!value) {
+    return "Request failed";
+  }
+
+  if (/<html[\s>]/i.test(value) || /<body[\s>]/i.test(value)) {
+    const heading = value.match(/<h1[^>]*>(.*?)<\/h1>/i);
+    const title = value.match(/<title[^>]*>(.*?)<\/title>/i);
+    const label = (heading && heading[1]) || (title && title[1]);
+    if (label) {
+      return `Request failed: ${label.replace(/\s+/g, " ").trim()}.`;
+    }
+    return "Request failed. The server returned an HTML error page.";
+  }
+
+  return value;
 }
 
 function buildReadGDriveTaskDefinition() {
   return {
     name: READ_G_DRIVE_TASK_NAME,
-    description: "Read file metadata from a Google Drive folder using OAuth.",
+    description:
+      "Read file metadata from Google Drive using a stored account connection.",
     retryCount: 3,
     timeoutSeconds: 3600,
-    inputKeys: ["folderId", "oauthTokenJson", "maxFiles", "mimeTypes"],
-    outputKeys: ["folderId", "files", "count"],
+    inputKeys: ["connectionId", "folderIds", "fileIds", "maxFiles", "mimeTypes"],
+    outputKeys: ["folderIds", "fileIds", "files", "count"],
     timeoutPolicy: "TIME_OUT_WF",
     retryLogic: "FIXED",
     retryDelaySeconds: 60,
@@ -195,24 +225,13 @@ function buildReadGDriveTaskDefinition() {
     rateLimitFrequencyInSeconds: 1,
     ownerEmail: "integrations@conductor.local",
     inputTemplate: {
-      folderId: "",
-      oauthTokenJson: "",
+      connectionId: "",
+      folderIds: [],
+      fileIds: [],
       maxFiles: 100,
       mimeTypes: [],
     },
   };
-}
-
-function downloadTokenJson(oauthTokenJson) {
-  const blob = new Blob([oauthTokenJson], { type: "application/json" });
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "token.json";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.setTimeout(() => window.URL.revokeObjectURL(url), 0);
 }
 
 async function ensureReadGDriveTask(fetchContext) {
@@ -235,7 +254,7 @@ async function ensureReadGDriveTask(fetchContext) {
 export default function GDriveIntegrations() {
   const classes = useStyles();
   const fetchContext = useFetchContext();
-  const [folderId, setFolderId] = useState("");
+  const [connectionId, setConnectionId] = useState(createConnectionId);
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
   const [oauthTokenJson, setOauthTokenJson] = useState("");
@@ -263,11 +282,11 @@ export default function GDriveIntegrations() {
     const storedClientJson =
       stored.oauthClientJson ||
       buildOAuthClientJson(storedClientId, storedClientSecret);
-    const storedFolderId = stored.folderId || params.get("state") || "";
+    const storedConnectionId = stored.connectionId || params.get("state") || "";
     const redirectUri =
       window.location.origin + window.location.pathname.replace(/\/+$/, "");
 
-    setFolderId(storedFolderId);
+    setConnectionId(storedConnectionId);
     setClientId(storedClientId);
     setClientSecret(storedClientSecret);
     setLoading(true);
@@ -278,18 +297,17 @@ export default function GDriveIntegrations() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        connectionId: storedConnectionId,
         authorizationCode: code,
         oauthClientJson: storedClientJson,
         redirectUri,
       }),
     })
       .then(async (response) => {
-        const oauthTokenJson = response.oauthTokenJson || "";
-        if (!oauthTokenJson) {
-          throw new Error("OAuth token response did not include token JSON.");
+        const savedConnectionId = response.connectionId || storedConnectionId;
+        if (!savedConnectionId) {
+          throw new Error("OAuth response did not include a connection ID.");
         }
-        setOauthTokenJson(oauthTokenJson);
-        downloadTokenJson(oauthTokenJson);
         sessionStorage.removeItem(SESSION_KEY);
         window.history.replaceState({}, "", window.location.pathname);
 
@@ -299,9 +317,11 @@ export default function GDriveIntegrations() {
             taskStatus === "created"
               ? `${READ_G_DRIVE_TASK_NAME} task created.`
               : `${READ_G_DRIVE_TASK_NAME} task is available.`;
-          setMessage(`OAuth token downloaded as token.json. ${taskMessage}`);
+          setMessage(
+            `Google Drive connection ${savedConnectionId} saved. ${taskMessage}`
+          );
         } catch (taskError) {
-          setMessage("OAuth token downloaded as token.json.");
+          setMessage(`Google Drive connection ${savedConnectionId} saved.`);
           setError(
             `${READ_G_DRIVE_TASK_NAME} task was not created: ${formatError(
               taskError
@@ -317,12 +337,10 @@ export default function GDriveIntegrations() {
     setError("");
     setMessage("");
 
-    if (!folderId.trim()) {
-      setError("Folder ID is required before generating OAuth.");
-      return;
-    }
+    const nextConnectionId = connectionId.trim() || createConnectionId();
+    setConnectionId(nextConnectionId);
     const nextOAuthUrl = buildOAuthUrl({
-      folderId: folderId.trim(),
+      connectionId: nextConnectionId,
       clientId: clientId.trim(),
     });
 
@@ -338,7 +356,7 @@ export default function GDriveIntegrations() {
     sessionStorage.setItem(
       SESSION_KEY,
       JSON.stringify({
-        folderId: folderId.trim(),
+        connectionId: nextConnectionId,
         clientId: clientId.trim(),
         clientSecret: clientSecret.trim(),
         oauthClientJson: buildOAuthClientJson(
@@ -407,20 +425,47 @@ export default function GDriveIntegrations() {
       );
   }
 
+  function handleSaveConnection() {
+    setError("");
+    setMessage("");
+
+    const nextConnectionId = connectionId.trim() || createConnectionId();
+    setConnectionId(nextConnectionId);
+    if (!safeParseJson(oauthTokenJson)) {
+      setError("OAuth token JSON is required before saving the connection.");
+      return;
+    }
+
+    setLoading(true);
+    fetchWithContext("integrations/gdrive/connections", fetchContext, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        connectionId: nextConnectionId,
+        oauthTokenJson,
+        oauthClientJson:
+          clientId.trim() && clientSecret.trim()
+            ? buildOAuthClientJson(clientId.trim(), clientSecret.trim())
+            : undefined,
+      }),
+    })
+      .then((response) => {
+        const savedConnectionId = response.connectionId || nextConnectionId;
+        setConnectionId(savedConnectionId);
+        setMessage(`Google Drive connection ${savedConnectionId} created.`);
+      })
+      .catch((err) => setError(formatError(err)))
+      .finally(() => setLoading(false));
+  }
+
   function handleLoadDrive() {
     setError("");
     setMessage("");
     setFiles([]);
     setCount(0);
 
-    if (!folderId.trim()) {
-      setError("Folder ID is required.");
-      return;
-    }
-    if (!safeParseJson(oauthTokenJson)) {
-      setError(
-        "OAuth token JSON is required. Generate OAuth or upload token.json first."
-      );
+    if (!connectionId.trim()) {
+      setError("Connection ID is required.");
       return;
     }
 
@@ -429,15 +474,14 @@ export default function GDriveIntegrations() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        folderId: folderId.trim(),
-        oauthTokenJson,
+        connectionId: connectionId.trim(),
         maxFiles,
       }),
     })
       .then((response) => {
         setFiles(response.files || []);
         setCount(response.count || 0);
-        setMessage("Google Drive folder loaded.");
+        setMessage("Google Drive data loaded.");
       })
       .catch((err) => setError(formatError(err)))
       .finally(() => setLoading(false));
@@ -470,15 +514,8 @@ export default function GDriveIntegrations() {
               <div className={classes.formStack}>
                 <Box className={classes.actionRow}>
                   <Text level={2}>Google Drive</Text>
-                  <Chip size="small" label="Modular task" />
+                  <Chip size="small" label="Account connection" />
                 </Box>
-                <Input
-                  label="Folder ID"
-                  value={folderId}
-                  fullWidth
-                  variant="outlined"
-                  onChange={setFolderId}
-                />
                 <Input
                   label="OAuth Client ID"
                   value={clientId}
@@ -537,7 +574,7 @@ export default function GDriveIntegrations() {
                   )}
                 </Box>
                 <TextField
-                  label="OAuth Token JSON"
+                  label="OAuth Token JSON for import"
                   value={oauthTokenJson}
                   onChange={(event) => setOauthTokenJson(event.target.value)}
                   fullWidth
@@ -565,6 +602,14 @@ export default function GDriveIntegrations() {
                   <Button
                     color="primary"
                     variant="outlined"
+                    onClick={handleSaveConnection}
+                    disabled={loading}
+                  >
+                    Create Connection
+                  </Button>
+                  <Button
+                    color="primary"
+                    variant="outlined"
                     onClick={handleLoadDrive}
                     disabled={loading}
                   >
@@ -579,7 +624,9 @@ export default function GDriveIntegrations() {
           <Grid item xs={12} md={4}>
             <Paper padded className={classes.card}>
               <Text level={2}>Workflow Task</Text>
-              <pre className={classes.codeBlock}>{taskSnippet(maxFiles)}</pre>
+              <pre className={classes.codeBlock}>
+                {taskSnippet(maxFiles, connectionId)}
+              </pre>
             </Paper>
           </Grid>
           <Grid item xs={12}>

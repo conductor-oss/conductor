@@ -734,8 +734,9 @@ export const generateGDriveReadTask: GenerateTaskFn<GDriveReadTaskDef> = ({
   ...nameGenerator("gdrive_read"),
   type: TaskType.GDRIVE_READ,
   inputParameters: {
-    folderId: "${workflow.input.driveFolderId}",
-    oauthTokenJson: "${workflow.input.oauthTokenJson}",
+    connectionId: "",
+    folderIds: [],
+    fileIds: [],
     maxFiles: 100,
   },
   ...overrides,

@@ -28,7 +28,7 @@ export const taskDescriptions: TaskDescriptions = {
     "A system task for executing queries across different systems, tailored for purposes like alert generation.",
   [TaskType.UPDATE_TASK]: "A system task to update the status of other tasks.",
   [TaskType.GDRIVE_READ]:
-    "A system task that reads file metadata from a Google Drive folder using OAuth token JSON supplied at workflow runtime.",
+    "A system task that reads file metadata from Google Drive using a stored account connection.",
 
   // operator
 

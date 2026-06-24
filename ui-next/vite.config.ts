@@ -100,21 +100,21 @@ export default defineConfig(({ mode }) => {
           target:
             process.env.VITE_WF_SERVER ||
             env.VITE_WF_SERVER ||
-            "http://localhost:8080",
+            "http://localhost:7001",
           changeOrigin: true,
         },
         "/swagger-ui": {
           target:
             process.env.VITE_WF_SERVER ||
             env.VITE_WF_SERVER ||
-            "http://localhost:8080",
+            "http://localhost:7001",
           changeOrigin: true,
         },
         "/api-docs": {
           target:
             process.env.VITE_WF_SERVER ||
             env.VITE_WF_SERVER ||
-            "http://localhost:8080",
+            "http://localhost:7001",
           changeOrigin: true,
         },
       },
@@ -123,15 +123,15 @@ export default defineConfig(({ mode }) => {
       port: 1234,
       proxy: {
         "/api": {
-          target: env.VITE_WF_SERVER || "http://localhost:8080",
+          target: env.VITE_WF_SERVER || "http://localhost:7001",
           changeOrigin: true,
         },
         "/swagger-ui": {
-          target: env.VITE_WF_SERVER || "http://localhost:8080",
+          target: env.VITE_WF_SERVER || "http://localhost:7001",
           changeOrigin: true,
         },
         "/api-docs": {
-          target: env.VITE_WF_SERVER || "http://localhost:8080",
+          target: env.VITE_WF_SERVER || "http://localhost:7001",
           changeOrigin: true,
         },
       },

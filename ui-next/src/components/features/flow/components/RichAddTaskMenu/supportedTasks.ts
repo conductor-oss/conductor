@@ -68,7 +68,7 @@ export const SYSTEM_TASKS: BaseTaskMenuItem[] = [
   },
   {
     name: "Google Drive Read",
-    description: "Read file metadata from a Google Drive folder.",
+    description: "Read file metadata from Google Drive.",
     type: TaskType.GDRIVE_READ,
     category: "System",
   },

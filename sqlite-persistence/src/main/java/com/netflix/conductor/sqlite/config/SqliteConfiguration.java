@@ -20,6 +20,7 @@ import java.util.Optional;
 import javax.sql.DataSource;
 
 import org.conductoross.conductor.sqlite.dao.SqliteFileMetadataDAO;
+import org.conductoross.conductor.sqlite.dao.SqliteGDriveConnectionDAO;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -31,6 +32,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
@@ -205,6 +207,15 @@ public class SqliteConfiguration {
             @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper) {
         return new SqliteFileMetadataDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @Primary
+    @DependsOn({"flywayForPrimaryDb"})
+    public SqliteGDriveConnectionDAO sqliteGDriveConnectionDAO(
+            @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        return new SqliteGDriveConnectionDAO(retryTemplate, objectMapper, dataSource);
     }
 
     public static class CustomRetryPolicy extends SimpleRetryPolicy {

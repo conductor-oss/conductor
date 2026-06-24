@@ -12,13 +12,26 @@
  */
 package com.netflix.conductor.rest.controllers;
 
+import java.util.List;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import org.conductoross.conductor.common.integrations.gdrive.GDriveConnection;
+import org.conductoross.conductor.common.integrations.gdrive.GDriveConnectionRequest;
+import org.conductoross.conductor.common.integrations.gdrive.GDriveConnectionResponse;
 import org.conductoross.conductor.common.integrations.gdrive.GDriveIntegrationException;
 import org.conductoross.conductor.common.integrations.gdrive.GDriveIntegrationService;
 import org.conductoross.conductor.common.integrations.gdrive.GDriveLoadRequest;
 import org.conductoross.conductor.common.integrations.gdrive.GDriveLoadResponse;
 import org.conductoross.conductor.common.integrations.gdrive.GDriveOAuthTokenRequest;
 import org.conductoross.conductor.common.integrations.gdrive.GDriveOAuthTokenResponse;
+import org.conductoross.conductor.core.dao.InMemoryGDriveConnectionDAO;
+import org.conductoross.conductor.dao.GDriveConnectionDAO;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,17 +46,28 @@ import static com.netflix.conductor.rest.config.RequestMappingConstants.INTEGRAT
 @RequestMapping(value = INTEGRATIONS)
 public class IntegrationsResource {
 
+    private static final Pattern SAFE_CONNECTION_ID_PATTERN = Pattern.compile("[A-Za-z0-9._-]+");
+
     private final GDriveIntegrationService gDriveIntegrationService;
+    private final GDriveConnectionDAO gDriveConnectionDAO;
 
     public IntegrationsResource(GDriveIntegrationService gDriveIntegrationService) {
+        this(gDriveIntegrationService, new InMemoryGDriveConnectionDAO());
+    }
+
+    @Autowired
+    public IntegrationsResource(
+            GDriveIntegrationService gDriveIntegrationService,
+            GDriveConnectionDAO gDriveConnectionDAO) {
         this.gDriveIntegrationService = gDriveIntegrationService;
+        this.gDriveConnectionDAO = gDriveConnectionDAO;
     }
 
     @PostMapping("/gdrive/load")
-    @Operation(summary = "Load file metadata from a Google Drive folder")
+    @Operation(summary = "Load file metadata from Google Drive")
     public GDriveLoadResponse loadGoogleDriveFolder(@RequestBody GDriveLoadRequest request) {
         try {
-            return gDriveIntegrationService.loadFolder(request);
+            return gDriveIntegrationService.loadFolder(resolveConnection(request));
         } catch (GDriveIntegrationException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }
@@ -54,9 +78,112 @@ public class IntegrationsResource {
     public GDriveOAuthTokenResponse exchangeGoogleDriveAuthorizationCode(
             @RequestBody GDriveOAuthTokenRequest request) {
         try {
-            return gDriveIntegrationService.exchangeAuthorizationCode(request);
+            GDriveOAuthTokenResponse tokenResponse =
+                    gDriveIntegrationService.exchangeAuthorizationCode(request);
+            if (isBlank(request.getConnectionId())) {
+                return tokenResponse;
+            }
+
+            GDriveConnection connection =
+                    new GDriveConnection(
+                            normalizeConnectionId(request.getConnectionId()),
+                            tokenResponse.getOauthTokenJson());
+            gDriveConnectionDAO.saveConnection(connection);
+            GDriveConnection stored =
+                    gDriveConnectionDAO.getConnection(connection.getConnectionId());
+            return new GDriveOAuthTokenResponse(stored.getConnectionId(), null);
         } catch (GDriveIntegrationException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }
+    }
+
+    @PostMapping("/gdrive/connections")
+    @Operation(summary = "Store Google Drive OAuth credentials for a connection")
+    public GDriveConnectionResponse saveGoogleDriveConnection(
+            @RequestBody GDriveConnectionRequest request) {
+        try {
+            if (request == null) {
+                throw new GDriveIntegrationException("Request body is required");
+            }
+            String connectionId = normalizeConnectionId(request.getConnectionId());
+            String oauthTokenJson =
+                    gDriveIntegrationService.normalizeOAuthTokenJson(
+                            request.getOauthTokenJson(), request.getOauthClientJson());
+            gDriveConnectionDAO.saveConnection(new GDriveConnection(connectionId, oauthTokenJson));
+            return toResponse(gDriveConnectionDAO.getConnection(connectionId));
+        } catch (GDriveIntegrationException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        }
+    }
+
+    @GetMapping("/gdrive/connections")
+    @Operation(summary = "List stored Google Drive connections")
+    public List<GDriveConnectionResponse> listGoogleDriveConnections() {
+        return gDriveConnectionDAO.getAllConnections().stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @GetMapping("/gdrive/connections/{connectionId}")
+    @Operation(summary = "Get a stored Google Drive connection")
+    public GDriveConnectionResponse getGoogleDriveConnection(
+            @PathVariable("connectionId") String connectionId) {
+        GDriveConnection connection =
+                gDriveConnectionDAO.getConnection(normalizeConnectionId(connectionId));
+        if (connection == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Google Drive connection not found");
+        }
+        return toResponse(connection);
+    }
+
+    @DeleteMapping("/gdrive/connections/{connectionId}")
+    @Operation(summary = "Delete a stored Google Drive connection")
+    public void deleteGoogleDriveConnection(@PathVariable("connectionId") String connectionId) {
+        gDriveConnectionDAO.deleteConnection(normalizeConnectionId(connectionId));
+    }
+
+    private GDriveLoadRequest resolveConnection(GDriveLoadRequest request) {
+        if (request == null || isBlank(request.getConnectionId())) {
+            return request;
+        }
+
+        String connectionId = normalizeConnectionId(request.getConnectionId());
+        GDriveConnection connection = gDriveConnectionDAO.getConnection(connectionId);
+        if (connection == null) {
+            throw new GDriveIntegrationException(
+                    "No Google Drive connection found for connectionId " + connectionId);
+        }
+
+        GDriveLoadRequest resolved = new GDriveLoadRequest();
+        resolved.setConnectionId(connectionId);
+        resolved.setFolderId(request.getFolderId());
+        resolved.setFolderIds(request.getFolderIds());
+        resolved.setFileIds(request.getFileIds());
+        resolved.setOauthTokenJson(connection.getOauthTokenJson());
+        resolved.setMaxFiles(request.getMaxFiles());
+        resolved.setMimeTypes(request.getMimeTypes());
+        return resolved;
+    }
+
+    private GDriveConnectionResponse toResponse(GDriveConnection connection) {
+        return new GDriveConnectionResponse(
+                connection.getConnectionId(), connection.getCreatedAt(), connection.getUpdatedAt());
+    }
+
+    private String normalizeConnectionId(String connectionId) {
+        if (isBlank(connectionId)) {
+            throw new GDriveIntegrationException("Google Drive connectionId is required");
+        }
+        String normalized = connectionId.trim();
+        if (!SAFE_CONNECTION_ID_PATTERN.matcher(normalized).matches()) {
+            throw new GDriveIntegrationException(
+                    "Google Drive connectionId must contain only letters, numbers, dot, underscore, or dash");
+        }
+        return normalized;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }

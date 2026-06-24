@@ -4,7 +4,7 @@ import { defineConfig, devices } from "@playwright/test";
  * Playwright E2E test configuration.
  *
  * Tests live in e2e/ and run against the Vite dev server on port 1234.
- * The dev server proxies /api to a Conductor backend (default: localhost:8080);
+ * The dev server proxies /api to a Conductor backend (default: localhost:7001);
  * individual test files use page.route() to intercept and mock those calls so
  * the suite can run without a live backend.
  *

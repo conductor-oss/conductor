@@ -20,14 +20,16 @@ const DEFAULT_MIME_TYPES = [
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 ];
 
-const folderIdPath = "inputParameters.folderId";
-const oauthTokenJsonPath = "inputParameters.oauthTokenJson";
+const connectionIdPath = "inputParameters.connectionId";
+const folderIdsPath = "inputParameters.folderIds";
+const fileIdsPath = "inputParameters.fileIds";
 const maxFilesPath = "inputParameters.maxFiles";
 const mimeTypesPath = "inputParameters.mimeTypes";
 
 export const GDriveReadTaskForm = ({ task, onChange }: TaskFormProps) => {
-  const folderId = _path(folderIdPath, task);
-  const oauthTokenJson = _path(oauthTokenJsonPath, task);
+  const connectionId = _path(connectionIdPath, task);
+  const folderIds = _path(folderIdsPath, task);
+  const fileIds = _path(fileIdsPath, task);
   const maxFiles = _path(maxFilesPath, task);
   const mimeTypes = _path(mimeTypesPath, task);
 
@@ -42,16 +44,16 @@ export const GDriveReadTaskForm = ({ task, onChange }: TaskFormProps) => {
             <ConductorAutocompleteVariables
               fullWidth
               required
-              value={folderId}
+              value={connectionId}
               onChange={(changes) =>
-                onChange(updateField(folderIdPath, changes, task))
+                onChange(updateField(connectionIdPath, changes, task))
               }
-              label="Folder ID or URL"
+              label="Connection ID"
               inputProps={{
                 tooltip: {
-                  title: "Folder ID or URL",
+                  title: "Connection ID",
                   content:
-                    "Google Drive folder ID, folder URL, or a workflow input expression.",
+                    "Stored Google Drive connection ID, or a workflow input expression.",
                 },
               }}
             />
@@ -59,17 +61,33 @@ export const GDriveReadTaskForm = ({ task, onChange }: TaskFormProps) => {
           <Grid size={12}>
             <ConductorAutocompleteVariables
               fullWidth
-              required
-              value={oauthTokenJson}
+              value={folderIds}
               onChange={(changes) =>
-                onChange(updateField(oauthTokenJsonPath, changes, task))
+                onChange(updateField(folderIdsPath, changes, task))
               }
-              label="OAuth Token JSON"
+              label="Folder IDs or URLs"
               inputProps={{
                 tooltip: {
-                  title: "OAuth Token JSON",
+                  title: "Folder IDs or URLs",
                   content:
-                    "OAuth token JSON or a workflow input expression containing access_token/token, or refresh_token with client_id and client_secret.",
+                    "Optional Google Drive folder IDs, folder URLs, comma-separated values, or a workflow input expression. Leave blank with no file IDs to read from the whole Drive.",
+                },
+              }}
+            />
+          </Grid>
+          <Grid size={12}>
+            <ConductorAutocompleteVariables
+              fullWidth
+              value={fileIds}
+              onChange={(changes) =>
+                onChange(updateField(fileIdsPath, changes, task))
+              }
+              label="File IDs or URLs"
+              inputProps={{
+                tooltip: {
+                  title: "File IDs or URLs",
+                  content:
+                    "Optional Google Drive file IDs, file URLs, comma-separated values, or a workflow input expression.",
                 },
               }}
             />
@@ -117,7 +135,7 @@ export const GDriveReadTaskForm = ({ task, onChange }: TaskFormProps) => {
                   tooltip: {
                     title: "MIME Types",
                     content:
-                      "Optional list of MIME types to keep from the Google Drive folder response.",
+                      "Optional list of MIME types to keep from the Google Drive response.",
                   },
                 }}
               />

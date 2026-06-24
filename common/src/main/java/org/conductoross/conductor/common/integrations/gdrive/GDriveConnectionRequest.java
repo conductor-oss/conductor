@@ -12,19 +12,13 @@
  */
 package org.conductoross.conductor.common.integrations.gdrive;
 
-import java.util.List;
-
-public class GDriveLoadRequest {
+public class GDriveConnectionRequest {
 
     private String connectionId;
-    private String folderId;
-    private List<String> folderIds;
-    private List<String> fileIds;
     private String oauthTokenJson;
-    private Integer maxFiles;
-    private List<String> mimeTypes;
+    private String oauthClientJson;
 
-    public GDriveLoadRequest() {}
+    public GDriveConnectionRequest() {}
 
     public String getConnectionId() {
         return connectionId;
@@ -32,30 +26,6 @@ public class GDriveLoadRequest {
 
     public void setConnectionId(String connectionId) {
         this.connectionId = connectionId;
-    }
-
-    public String getFolderId() {
-        return folderId;
-    }
-
-    public void setFolderId(String folderId) {
-        this.folderId = folderId;
-    }
-
-    public List<String> getFolderIds() {
-        return folderIds;
-    }
-
-    public void setFolderIds(List<String> folderIds) {
-        this.folderIds = folderIds;
-    }
-
-    public List<String> getFileIds() {
-        return fileIds;
-    }
-
-    public void setFileIds(List<String> fileIds) {
-        this.fileIds = fileIds;
     }
 
     public String getOauthTokenJson() {
@@ -66,19 +36,11 @@ public class GDriveLoadRequest {
         this.oauthTokenJson = oauthTokenJson;
     }
 
-    public Integer getMaxFiles() {
-        return maxFiles;
+    public String getOauthClientJson() {
+        return oauthClientJson;
     }
 
-    public void setMaxFiles(Integer maxFiles) {
-        this.maxFiles = maxFiles;
-    }
-
-    public List<String> getMimeTypes() {
-        return mimeTypes;
-    }
-
-    public void setMimeTypes(List<String> mimeTypes) {
-        this.mimeTypes = mimeTypes;
+    public void setOauthClientJson(String oauthClientJson) {
+        this.oauthClientJson = oauthClientJson;
     }
 }

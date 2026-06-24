@@ -12,14 +12,19 @@
  */
 package org.conductoross.conductor.common.integrations.gdrive;
 
-public class GDriveOAuthTokenRequest {
+public class GDriveConnectionResponse {
 
     private String connectionId;
-    private String authorizationCode;
-    private String oauthClientJson;
-    private String redirectUri;
+    private Long createdAt;
+    private Long updatedAt;
 
-    public GDriveOAuthTokenRequest() {}
+    public GDriveConnectionResponse() {}
+
+    public GDriveConnectionResponse(String connectionId, Long createdAt, Long updatedAt) {
+        this.connectionId = connectionId;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+    }
 
     public String getConnectionId() {
         return connectionId;
@@ -29,27 +34,19 @@ public class GDriveOAuthTokenRequest {
         this.connectionId = connectionId;
     }
 
-    public String getAuthorizationCode() {
-        return authorizationCode;
+    public Long getCreatedAt() {
+        return createdAt;
     }
 
-    public void setAuthorizationCode(String authorizationCode) {
-        this.authorizationCode = authorizationCode;
+    public void setCreatedAt(Long createdAt) {
+        this.createdAt = createdAt;
     }
 
-    public String getOauthClientJson() {
-        return oauthClientJson;
+    public Long getUpdatedAt() {
+        return updatedAt;
     }
 
-    public void setOauthClientJson(String oauthClientJson) {
-        this.oauthClientJson = oauthClientJson;
-    }
-
-    public String getRedirectUri() {
-        return redirectUri;
-    }
-
-    public void setRedirectUri(String redirectUri) {
-        this.redirectUri = redirectUri;
+    public void setUpdatedAt(Long updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

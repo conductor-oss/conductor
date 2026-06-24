@@ -45,10 +45,7 @@ public class GDriveReadTaskMapperTest {
 
         String taskId = new IDGenerator().generate();
         Map<String, Object> input =
-                Map.of(
-                        "folderId", "folder-123",
-                        "oauthTokenJson", "{\"refresh_token\":\"token\"}",
-                        "maxFiles", 10);
+                Map.of("connectionId", "gdrive-prod", "folderId", "folder-123", "maxFiles", 10);
 
         ParametersUtils parametersUtils = mock(ParametersUtils.class);
         doReturn(input).when(parametersUtils).getTaskInputV2(any(), any(), any(), any());

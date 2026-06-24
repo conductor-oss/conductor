@@ -15,11 +15,13 @@ package com.netflix.conductor.core.execution.tasks;
 import java.util.List;
 import java.util.Map;
 
+import org.conductoross.conductor.common.integrations.gdrive.GDriveConnection;
 import org.conductoross.conductor.common.integrations.gdrive.GDriveFile;
 import org.conductoross.conductor.common.integrations.gdrive.GDriveIntegrationException;
 import org.conductoross.conductor.common.integrations.gdrive.GDriveIntegrationService;
 import org.conductoross.conductor.common.integrations.gdrive.GDriveLoadRequest;
 import org.conductoross.conductor.common.integrations.gdrive.GDriveLoadResponse;
+import org.conductoross.conductor.core.dao.InMemoryGDriveConnectionDAO;
 import org.junit.Test;
 
 import com.netflix.conductor.core.execution.WorkflowExecutor;
@@ -27,6 +29,7 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -41,15 +44,17 @@ public class GDriveReadTest {
         GDriveLoadResponse response = new GDriveLoadResponse("folder-123", List.of(file));
         RecordingGDriveIntegrationService service =
                 new RecordingGDriveIntegrationService(response, null);
-        GDriveRead gDriveRead = new GDriveRead(service);
+        InMemoryGDriveConnectionDAO gDriveConnectionDAO =
+                daoWithConnection("gdrive-prod", "{\"refresh_token\":\"token\"}");
+        GDriveRead gDriveRead = new GDriveRead(service, gDriveConnectionDAO);
 
         TaskModel task =
                 taskWithInput(
                         Map.of(
+                                GDriveRead.INPUT_CONNECTION_ID,
+                                "gdrive-prod",
                                 GDriveRead.INPUT_FOLDER_ID,
                                 "folder-123",
-                                GDriveRead.INPUT_OAUTH_TOKEN_JSON,
-                                "{\"refresh_token\":\"token\"}",
                                 GDriveRead.INPUT_MAX_FILES,
                                 "10",
                                 GDriveRead.INPUT_MIME_TYPES,
@@ -60,13 +65,157 @@ public class GDriveReadTest {
 
         assertTrue(progressed);
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        assertEquals("gdrive-prod", service.lastRequest.getConnectionId());
         assertEquals("folder-123", service.lastRequest.getFolderId());
         assertEquals("{\"refresh_token\":\"token\"}", service.lastRequest.getOauthTokenJson());
         assertEquals(Integer.valueOf(10), service.lastRequest.getMaxFiles());
         assertEquals(List.of("application/pdf"), service.lastRequest.getMimeTypes());
+        assertEquals("gdrive-prod", task.getOutputData().get(GDriveRead.OUTPUT_CONNECTION_ID));
         assertEquals("folder-123", task.getOutputData().get(GDriveRead.OUTPUT_FOLDER_ID));
+        assertEquals(List.of("folder-123"), task.getOutputData().get(GDriveRead.OUTPUT_FOLDER_IDS));
+        assertEquals(List.of(), task.getOutputData().get(GDriveRead.OUTPUT_FILE_IDS));
         assertSame(response.getFiles(), task.getOutputData().get(GDriveRead.OUTPUT_FILES));
         assertEquals(1, task.getOutputData().get(GDriveRead.OUTPUT_COUNT));
+    }
+
+    @Test
+    public void executeAcceptsFolderAndFileListInputs() {
+        RecordingGDriveIntegrationService service =
+                new RecordingGDriveIntegrationService(
+                        new GDriveLoadResponse(
+                                List.of("folder-1", "folder-2"),
+                                List.of("file-1", "file-2"),
+                                List.of()),
+                        null);
+        GDriveRead gDriveRead =
+                new GDriveRead(
+                        service, daoWithConnection("gdrive-prod", "{\"refresh_token\":\"token\"}"));
+
+        TaskModel task =
+                taskWithInput(
+                        Map.of(
+                                GDriveRead.INPUT_CONNECTION_ID,
+                                "gdrive-prod",
+                                GDriveRead.INPUT_FOLDER_IDS,
+                                "folder-1\nfolder-2",
+                                GDriveRead.INPUT_FILE_IDS,
+                                List.of("file-1", "file-2")));
+
+        gDriveRead.execute(new WorkflowModel(), task, mock(WorkflowExecutor.class));
+
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        assertEquals(List.of("folder-1", "folder-2"), service.lastRequest.getFolderIds());
+        assertEquals(List.of("file-1", "file-2"), service.lastRequest.getFileIds());
+        assertEquals(
+                List.of("folder-1", "folder-2"),
+                task.getOutputData().get(GDriveRead.OUTPUT_FOLDER_IDS));
+        assertEquals(
+                List.of("file-1", "file-2"), task.getOutputData().get(GDriveRead.OUTPUT_FILE_IDS));
+    }
+
+    @Test
+    public void executeAllowsAccountWideLoadWithConnectionOnly() {
+        RecordingGDriveIntegrationService service =
+                new RecordingGDriveIntegrationService(
+                        new GDriveLoadResponse(List.of(), List.of(), List.of()), null);
+        GDriveRead gDriveRead =
+                new GDriveRead(
+                        service, daoWithConnection("gdrive-prod", "{\"refresh_token\":\"token\"}"));
+
+        TaskModel task = taskWithInput(Map.of(GDriveRead.INPUT_CONNECTION_ID, "gdrive-prod"));
+
+        gDriveRead.execute(new WorkflowModel(), task, mock(WorkflowExecutor.class));
+
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        assertNull(service.lastRequest.getFolderId());
+        assertEquals(List.of(), service.lastRequest.getFolderIds());
+        assertEquals(List.of(), service.lastRequest.getFileIds());
+        assertEquals(List.of(), task.getOutputData().get(GDriveRead.OUTPUT_FOLDER_IDS));
+        assertEquals(List.of(), task.getOutputData().get(GDriveRead.OUTPUT_FILE_IDS));
+    }
+
+    @Test
+    public void executeAcceptsJsonArrayStringListInputs() {
+        RecordingGDriveIntegrationService service =
+                new RecordingGDriveIntegrationService(
+                        new GDriveLoadResponse(
+                                List.of("folder-1", "folder-2"),
+                                List.of("file-1", "file-2"),
+                                List.of()),
+                        null);
+        GDriveRead gDriveRead =
+                new GDriveRead(
+                        service, daoWithConnection("gdrive-prod", "{\"refresh_token\":\"token\"}"));
+
+        TaskModel task =
+                taskWithInput(
+                        Map.of(
+                                GDriveRead.INPUT_CONNECTION_ID,
+                                "gdrive-prod",
+                                GDriveRead.INPUT_FOLDER_IDS,
+                                "[\"folder-1\", \"folder-2\"]",
+                                GDriveRead.INPUT_FILE_IDS,
+                                "[\"file-1\", \"file-2\"]"));
+
+        gDriveRead.execute(new WorkflowModel(), task, mock(WorkflowExecutor.class));
+
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        assertEquals(List.of("folder-1", "folder-2"), service.lastRequest.getFolderIds());
+        assertEquals(List.of("file-1", "file-2"), service.lastRequest.getFileIds());
+    }
+
+    @Test
+    public void executeAcceptsLegacyDriveFolderAndFileListInputs() {
+        RecordingGDriveIntegrationService service =
+                new RecordingGDriveIntegrationService(
+                        new GDriveLoadResponse(
+                                List.of("folder-legacy"), List.of("file-legacy"), List.of()),
+                        null);
+        GDriveRead gDriveRead =
+                new GDriveRead(
+                        service, daoWithConnection("gdrive-prod", "{\"refresh_token\":\"token\"}"));
+
+        TaskModel task =
+                taskWithInput(
+                        Map.of(
+                                GDriveRead.INPUT_CONNECTION_ID,
+                                "gdrive-prod",
+                                GDriveRead.INPUT_LEGACY_FOLDER_IDS,
+                                List.of("folder-legacy"),
+                                GDriveRead.INPUT_LEGACY_FILE_IDS,
+                                List.of("file-legacy")));
+
+        gDriveRead.execute(new WorkflowModel(), task, mock(WorkflowExecutor.class));
+
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        assertEquals(List.of("folder-legacy"), service.lastRequest.getFolderIds());
+        assertEquals(List.of("file-legacy"), service.lastRequest.getFileIds());
+    }
+
+    @Test
+    public void executeIgnoresUnresolvedOptionalListExpressions() {
+        RecordingGDriveIntegrationService service =
+                new RecordingGDriveIntegrationService(
+                        new GDriveLoadResponse(List.of(), List.of(), List.of()), null);
+        GDriveRead gDriveRead =
+                new GDriveRead(
+                        service, daoWithConnection("gdrive-prod", "{\"refresh_token\":\"token\"}"));
+
+        TaskModel task =
+                taskWithInput(
+                        Map.of(
+                                GDriveRead.INPUT_CONNECTION_ID,
+                                "gdrive-prod",
+                                GDriveRead.INPUT_FOLDER_IDS,
+                                "${workflow.input.folderIds}",
+                                GDriveRead.INPUT_FILE_IDS,
+                                "${workflow.input.fileIds}"));
+
+        gDriveRead.execute(new WorkflowModel(), task, mock(WorkflowExecutor.class));
+
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        assertEquals(List.of(), service.lastRequest.getFolderIds());
+        assertEquals(List.of(), service.lastRequest.getFileIds());
     }
 
     @Test
@@ -74,15 +223,17 @@ public class GDriveReadTest {
         RecordingGDriveIntegrationService service =
                 new RecordingGDriveIntegrationService(
                         new GDriveLoadResponse("legacy", List.of()), null);
-        GDriveRead gDriveRead = new GDriveRead(service);
+        GDriveRead gDriveRead =
+                new GDriveRead(
+                        service, daoWithConnection("gdrive-prod", "{\"refresh_token\":\"token\"}"));
 
         TaskModel task =
                 taskWithInput(
                         Map.of(
+                                GDriveRead.INPUT_CONNECTION_ID,
+                                "gdrive-prod",
                                 GDriveRead.INPUT_LEGACY_FOLDER_ID,
-                                "legacy",
-                                GDriveRead.INPUT_OAUTH_TOKEN_JSON,
-                                "{\"refresh_token\":\"token\"}"));
+                                "legacy"));
 
         gDriveRead.execute(new WorkflowModel(), task, mock(WorkflowExecutor.class));
 
@@ -91,26 +242,11 @@ public class GDriveReadTest {
     }
 
     @Test
-    public void executeMissingRequiredInputFailsWithTerminalError() {
-        GDriveRead gDriveRead = new GDriveRead(new RecordingGDriveIntegrationService(null, null));
-
-        TaskModel task = taskWithInput(Map.of(GDriveRead.INPUT_FOLDER_ID, "folder-123"));
-
-        gDriveRead.execute(new WorkflowModel(), task, mock(WorkflowExecutor.class));
-
-        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
-        assertEquals("oauthTokenJson input is required", task.getReasonForIncompletion());
-        assertEquals(
-                "oauthTokenJson input is required",
-                task.getOutputData().get(GDriveRead.OUTPUT_ERROR));
-    }
-
-    @Test
-    public void executeIntegrationFailureIsRetriableFailure() {
-        GDriveRead gDriveRead =
-                new GDriveRead(
-                        new RecordingGDriveIntegrationService(
-                                null, new GDriveIntegrationException("Drive request failed")));
+    public void executeAcceptsLegacyOAuthTokenJsonInput() {
+        RecordingGDriveIntegrationService service =
+                new RecordingGDriveIntegrationService(
+                        new GDriveLoadResponse("folder-123", List.of()), null);
+        GDriveRead gDriveRead = new GDriveRead(service, new InMemoryGDriveConnectionDAO());
 
         TaskModel task =
                 taskWithInput(
@@ -119,6 +255,69 @@ public class GDriveReadTest {
                                 "folder-123",
                                 GDriveRead.INPUT_OAUTH_TOKEN_JSON,
                                 "{\"refresh_token\":\"token\"}"));
+
+        gDriveRead.execute(new WorkflowModel(), task, mock(WorkflowExecutor.class));
+
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        assertEquals("{\"refresh_token\":\"token\"}", service.lastRequest.getOauthTokenJson());
+    }
+
+    @Test
+    public void executeMissingRequiredInputFailsWithTerminalError() {
+        GDriveRead gDriveRead =
+                new GDriveRead(
+                        new RecordingGDriveIntegrationService(null, null),
+                        new InMemoryGDriveConnectionDAO());
+
+        TaskModel task = taskWithInput(Map.of(GDriveRead.INPUT_FOLDER_ID, "folder-123"));
+
+        gDriveRead.execute(new WorkflowModel(), task, mock(WorkflowExecutor.class));
+
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertEquals("connectionId input is required", task.getReasonForIncompletion());
+        assertEquals(
+                "connectionId input is required",
+                task.getOutputData().get(GDriveRead.OUTPUT_ERROR));
+    }
+
+    @Test
+    public void executeUnknownConnectionFailsWithTerminalError() {
+        GDriveRead gDriveRead =
+                new GDriveRead(
+                        new RecordingGDriveIntegrationService(null, null),
+                        new InMemoryGDriveConnectionDAO());
+
+        TaskModel task =
+                taskWithInput(
+                        Map.of(
+                                GDriveRead.INPUT_CONNECTION_ID,
+                                "missing",
+                                GDriveRead.INPUT_FOLDER_ID,
+                                "folder-123"));
+
+        gDriveRead.execute(new WorkflowModel(), task, mock(WorkflowExecutor.class));
+
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertEquals(
+                "No Google Drive connection found for connectionId missing",
+                task.getReasonForIncompletion());
+    }
+
+    @Test
+    public void executeIntegrationFailureIsRetriableFailure() {
+        GDriveRead gDriveRead =
+                new GDriveRead(
+                        new RecordingGDriveIntegrationService(
+                                null, new GDriveIntegrationException("Drive request failed")),
+                        daoWithConnection("gdrive-prod", "{\"refresh_token\":\"token\"}"));
+
+        TaskModel task =
+                taskWithInput(
+                        Map.of(
+                                GDriveRead.INPUT_CONNECTION_ID,
+                                "gdrive-prod",
+                                GDriveRead.INPUT_FOLDER_ID,
+                                "folder-123"));
 
         gDriveRead.execute(new WorkflowModel(), task, mock(WorkflowExecutor.class));
 
@@ -131,6 +330,13 @@ public class GDriveReadTest {
         TaskModel taskModel = new TaskModel();
         taskModel.setInputData(input);
         return taskModel;
+    }
+
+    private InMemoryGDriveConnectionDAO daoWithConnection(
+            String connectionId, String oauthTokenJson) {
+        InMemoryGDriveConnectionDAO gDriveConnectionDAO = new InMemoryGDriveConnectionDAO();
+        gDriveConnectionDAO.saveConnection(new GDriveConnection(connectionId, oauthTokenJson));
+        return gDriveConnectionDAO;
     }
 
     private static class RecordingGDriveIntegrationService extends GDriveIntegrationService {

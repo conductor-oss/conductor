@@ -571,8 +571,10 @@ export interface ParseDocumentTaskDef extends CommonTaskDef {
 export interface GDriveReadTaskDef extends CommonTaskDef {
   type: TaskType.GDRIVE_READ;
   inputParameters: {
-    folderId: string;
-    oauthTokenJson: string;
+    connectionId: string;
+    folderId?: string;
+    folderIds?: string | string[];
+    fileIds?: string | string[];
     maxFiles?: number;
     mimeTypes?: string[];
   };
