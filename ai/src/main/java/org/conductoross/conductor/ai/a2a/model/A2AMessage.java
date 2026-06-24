@@ -34,6 +34,5 @@ public class A2AMessage {
     private String taskId;
     private String contextId;
     private String kind;
-    private List<String> referenceTaskIds;
     private Map<String, Object> metadata;
 }

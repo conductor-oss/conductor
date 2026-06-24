@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.a2a.model.A2ATask;
 import org.conductoross.conductor.ai.a2a.model.TaskState;
 import org.conductoross.conductor.ai.models.A2ACallRequest;
@@ -30,7 +31,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
@@ -46,9 +46,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * task that is waiting in push mode.
  *
  * <p>Token is read from the {@code Authorization: Bearer <token>} header (preferred), then the
- * {@code X-Conductor-A2A-Token} custom header, then — for backward compatibility — the {@code
- * token} query parameter (deprecated; logs a warning). Comparison is constant-time. Tokens embed an
- * expiry timestamp ({@code {uuid}:{epochMillis}}) and are rejected once expired.
+ * {@code X-Conductor-A2A-Token} custom header. Comparison is constant-time. Tokens embed an expiry
+ * timestamp ({@code {uuid}:{epochMillis}}) and are rejected once expired.
  */
 @RestController
 @RequestMapping("/api/a2a")
@@ -71,11 +70,10 @@ public class A2ACallbackResource {
             @PathVariable("taskId") String taskId,
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             @RequestHeader(value = "X-Conductor-A2A-Token", required = false) String customHeader,
-            @RequestParam(value = "token", required = false) String queryToken,
             @RequestBody(required = false) JsonNode payload) {
 
         try (A2ALogging.Scope scope = A2ALogging.of(A2ALogging.TASK_ID, taskId)) {
-            String token = resolveToken(authHeader, customHeader, queryToken);
+            String token = resolveToken(authHeader, customHeader);
 
             Task task = loadTask(taskId);
             if (task == null || !AgentTask.TASK_TYPE.equals(task.getTaskType())) {
@@ -102,7 +100,7 @@ public class A2ACallbackResource {
             A2ACallRequest request =
                     objectMapper.convertValue(task.getInputData(), A2ACallRequest.class);
             String agentTaskId = asString(task.getOutputData().get(A2AResults.KEY_TASK_ID));
-            if (isBlank(request.getAgentUrl()) || isBlank(agentTaskId)) {
+            if (StringUtils.isBlank(request.getAgentUrl()) || StringUtils.isBlank(agentTaskId)) {
                 return ResponseEntity.ok().build();
             }
 
@@ -142,24 +140,13 @@ public class A2ACallbackResource {
         }
     }
 
-    /**
-     * Resolves the token from headers (preferred) then query param (deprecated). Bearer header
-     * wins, then the custom header, then query param. Using the query param logs a deprecation
-     * warning because tokens in URLs appear in server access logs.
-     */
-    private String resolveToken(String authHeader, String customHeader, String queryToken) {
+    /** Resolves the token: {@code Authorization: Bearer} header wins, then the custom header. */
+    private String resolveToken(String authHeader, String customHeader) {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             return authHeader.substring(7).trim();
         }
         if (customHeader != null && !customHeader.isBlank()) {
             return customHeader.trim();
-        }
-        if (queryToken != null && !queryToken.isBlank()) {
-            log.warn(
-                    "A2A push token received via query parameter — tokens in URLs appear in access"
-                            + " logs. Configure the agent to send the token as"
-                            + " 'Authorization: Bearer <token>' instead.");
-            return queryToken;
         }
         return null;
     }
@@ -218,9 +205,5 @@ public class A2ACallbackResource {
 
     private static String asString(Object value) {
         return value == null ? null : value.toString();
-    }
-
-    private static boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
     }
 }

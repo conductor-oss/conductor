@@ -32,7 +32,6 @@ import lombok.NoArgsConstructor;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PushNotificationConfig {
 
-    private String id;
     private String url;
     private String token;
     private Object authentication;

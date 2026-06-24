@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.tasks.worker;
 
+import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.a2a.A2AService;
 import org.conductoross.conductor.ai.a2a.model.A2ATask;
 import org.conductoross.conductor.ai.a2a.model.AgentCard;
@@ -57,7 +58,7 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker {
     @WorkerTask("GET_AGENT_CARD")
     public @OutputParam("agentCard") AgentCard getAgentCard(A2AAgentCardRequest request) {
         requireA2a(request.getAgentType());
-        if (isBlank(request.getAgentUrl())) {
+        if (StringUtils.isBlank(request.getAgentUrl())) {
             throw new NonRetryableException("GET_AGENT_CARD requires 'agentUrl'");
         }
         log.debug("Fetching agent card from {}", request.getAgentUrl());
@@ -73,10 +74,10 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker {
     @WorkerTask("CANCEL_AGENT")
     public @OutputParam("task") A2ATask cancelAgentTask(A2ACancelRequest request) {
         requireA2a(request.getAgentType());
-        if (isBlank(request.getAgentUrl())) {
+        if (StringUtils.isBlank(request.getAgentUrl())) {
             throw new NonRetryableException("CANCEL_AGENT requires 'agentUrl'");
         }
-        if (isBlank(request.getTaskId())) {
+        if (StringUtils.isBlank(request.getTaskId())) {
             throw new NonRetryableException("CANCEL_AGENT requires 'taskId'");
         }
         log.debug("Canceling A2A task {} on {}", request.getTaskId(), request.getAgentUrl());
@@ -89,9 +90,5 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker {
             throw new NonRetryableException(
                     "Unsupported agentType '" + agentType + "' (only 'a2a' is supported)");
         }
-    }
-
-    private static boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
     }
 }

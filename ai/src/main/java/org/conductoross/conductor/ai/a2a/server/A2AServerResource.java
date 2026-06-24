@@ -169,13 +169,9 @@ public class A2AServerResource {
                                 (WorkflowDef def) ->
                                         java.util.Map.of(
                                                 "name", def.getName(),
-                                                "url", base + basePath() + "/" + def.getName(),
+                                                "url", agent.agentUrl(def.getName(), base),
                                                 "agentCard",
-                                                        base
-                                                                + basePath()
-                                                                + "/"
-                                                                + def.getName()
-                                                                + "/.well-known/agent-card.json"))
+                                                        agent.agentCardUrl(def.getName(), base)))
                         .collect(Collectors.toList());
         return ResponseEntity.ok(agents);
     }
@@ -231,15 +227,6 @@ public class A2AServerResource {
         return params.get("id").asText();
     }
 
-    private String basePath() {
-        String path = properties.getBasePath();
-        if (path == null || path.isBlank()) {
-            return "/a2a";
-        }
-        String p = path.startsWith("/") ? path : "/" + path;
-        return p.endsWith("/") ? p.substring(0, p.length() - 1) : p;
-    }
-
     private String requestBaseUrl(HttpServletRequest request) {
         if (properties.getPublicUrl() != null && !properties.getPublicUrl().isBlank()) {
             return properties.getPublicUrl();
@@ -254,7 +241,7 @@ public class A2AServerResource {
     private JsonNode success(JsonNode id, Object result) {
         ObjectNode response = objectMapper.createObjectNode();
         response.put("jsonrpc", "2.0");
-        response.set("id", id == null ? null : id);
+        response.set("id", id);
         response.set("result", objectMapper.valueToTree(result));
         return response;
     }
@@ -262,7 +249,7 @@ public class A2AServerResource {
     private JsonNode error(JsonNode id, int code, String message) {
         ObjectNode response = objectMapper.createObjectNode();
         response.put("jsonrpc", "2.0");
-        response.set("id", id == null ? null : id);
+        response.set("id", id);
         ObjectNode err = objectMapper.createObjectNode();
         err.put("code", code);
         err.put("message", message);

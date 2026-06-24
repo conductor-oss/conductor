@@ -98,7 +98,7 @@ class A2ACallbackResourceTest {
 
         // Send token via Bearer Authorization header (preferred path)
         ResponseEntity<Void> response =
-                resource.onPushNotification("conductor-task-1", "Bearer tok-123", null, null, null);
+                resource.onPushNotification("conductor-task-1", "Bearer tok-123", null, null);
 
         assertEquals(200, response.getStatusCode().value());
         verify(taskService)
@@ -117,19 +117,7 @@ class A2ACallbackResourceTest {
 
         // Send token via custom header (fallback path)
         ResponseEntity<Void> response =
-                resource.onPushNotification("conductor-task-1", null, "tok-123", null, null);
-
-        assertEquals(200, response.getStatusCode().value());
-    }
-
-    @Test
-    void push_queryParam_completesTask() {
-        agent.sendMode(SendMode.TASK_COMPLETED).text("pushed");
-        when(taskService.getTask("conductor-task-1")).thenReturn(waitingTask("tok-123"));
-
-        // Send token via query param (deprecated, but backward-compatible)
-        ResponseEntity<Void> response =
-                resource.onPushNotification("conductor-task-1", null, null, "tok-123", null);
+                resource.onPushNotification("conductor-task-1", null, "tok-123", null);
 
         assertEquals(200, response.getStatusCode().value());
     }
@@ -139,8 +127,7 @@ class A2ACallbackResourceTest {
         when(taskService.getTask("conductor-task-1")).thenReturn(waitingTask("tok-123"));
 
         ResponseEntity<Void> response =
-                resource.onPushNotification(
-                        "conductor-task-1", "Bearer wrong-token", null, null, null);
+                resource.onPushNotification("conductor-task-1", "Bearer wrong-token", null, null);
 
         assertEquals(403, response.getStatusCode().value());
         verify(taskService, never()).updateTask(any(), any(), any(), any(), anyMap());
@@ -155,7 +142,7 @@ class A2ACallbackResourceTest {
 
         ResponseEntity<Void> response =
                 resource.onPushNotification(
-                        "conductor-task-1", "Bearer " + expiredToken, null, null, null);
+                        "conductor-task-1", "Bearer " + expiredToken, null, null);
 
         assertEquals(403, response.getStatusCode().value());
     }
@@ -165,7 +152,7 @@ class A2ACallbackResourceTest {
         when(taskService.getTask("missing")).thenReturn(null);
 
         ResponseEntity<Void> response =
-                resource.onPushNotification("missing", "Bearer tok", null, null, null);
+                resource.onPushNotification("missing", "Bearer tok", null, null);
 
         assertEquals(404, response.getStatusCode().value());
     }
@@ -176,7 +163,7 @@ class A2ACallbackResourceTest {
         when(taskService.getTask("conductor-task-1")).thenReturn(waitingTask("tok-123"));
 
         ResponseEntity<Void> response =
-                resource.onPushNotification("conductor-task-1", "Bearer tok-123", null, null, null);
+                resource.onPushNotification("conductor-task-1", "Bearer tok-123", null, null);
 
         assertEquals(200, response.getStatusCode().value());
         verify(taskService, never()).updateTask(any(), any(), any(), any(), anyMap());

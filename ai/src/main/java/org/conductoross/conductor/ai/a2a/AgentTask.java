@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.a2a.A2AService.SendResult;
 import org.conductoross.conductor.ai.a2a.model.A2AMessage;
 import org.conductoross.conductor.ai.a2a.model.A2ATask;
@@ -53,8 +54,9 @@ import lombok.extern.slf4j.Slf4j;
  *       tasks/get} in {@link #execute} at the {@link #getEvaluationOffset} cadence — no worker
  *       thread is held.
  *   <li><b>push</b> ({@code pushNotification=true} + {@code conductor.a2a.callback.url} set): the
- *       task waits ({@link #isAsyncComplete}) until the agent's webhook hits {@code
- *       A2ACallbackResource}.
+ *       task stays {@code IN_PROGRESS} and is completed when the agent's webhook hits {@code
+ *       A2ACallbackResource}; a slow backstop poll (see {@link #getEvaluationOffset}) still
+ *       finishes it if the webhook is never delivered.
  *   <li><b>streaming</b> ({@code streaming=true}): consumes {@code message/stream} (SSE) and
  *       aggregates events to completion (holds a thread for the stream's duration).
  * </ul>
@@ -110,7 +112,7 @@ public class AgentTask extends WorkflowSystemTask {
                         true);
                 return;
             }
-            if (isBlank(request.getAgentUrl())) {
+            if (StringUtils.isBlank(request.getAgentUrl())) {
                 fail(task, "AGENT requires 'agentUrl'", true);
                 return;
             }
@@ -166,7 +168,7 @@ public class AgentTask extends WorkflowSystemTask {
                         A2ALogging.REF, task.getReferenceTaskName())) {
             scope.add(A2ALogging.REMOTE_TASK_ID, agentTaskId);
             A2ACallRequest request = parseRequest(task);
-            if (isBlank(agentTaskId) || isBlank(request.getAgentUrl())) {
+            if (StringUtils.isBlank(agentTaskId) || StringUtils.isBlank(request.getAgentUrl())) {
                 fail(task, "No remote A2A task to poll", true);
                 return true;
             }
@@ -199,7 +201,8 @@ public class AgentTask extends WorkflowSystemTask {
                 // Liveness guard 2: bound consecutive transient failures so a dead agent doesn't
                 // keep us polling indefinitely (until the deadline).
                 A2AMetrics.clientPollFailure();
-                int failures = asInt(task.getOutputData().get(A2AResults.KEY_POLL_FAILURES), 0) + 1;
+                int failures =
+                        (int) asLong(task.getOutputData().get(A2AResults.KEY_POLL_FAILURES), 0) + 1;
                 task.addOutput(A2AResults.KEY_POLL_FAILURES, failures);
                 int max = maxPollFailures(request);
                 if (failures >= max) {
@@ -231,7 +234,7 @@ public class AgentTask extends WorkflowSystemTask {
         String agentTaskId = asString(task.getOutputData().get(A2AResults.KEY_TASK_ID));
         try {
             A2ACallRequest request = parseRequest(task);
-            if (!isBlank(request.getAgentUrl()) && !isBlank(agentTaskId)) {
+            if (!StringUtils.isBlank(request.getAgentUrl()) && !StringUtils.isBlank(agentTaskId)) {
                 a2aService.cancelTask(request.getAgentUrl(), agentTaskId, request.getHeaders());
             }
         } catch (Exception e) {
@@ -270,7 +273,7 @@ public class AgentTask extends WorkflowSystemTask {
 
     /** Routes a remote task's current state onto this Conductor task's status/output. */
     private void handleTaskState(TaskModel task, A2ATask agentTask) {
-        String state = stateOf(agentTask);
+        String state = A2AResults.stateOf(agentTask);
         if (TaskState.isTerminal(state)) {
             applyTaskResult(task, agentTask);
         } else if (TaskState.isInterrupted(state)) {
@@ -287,7 +290,7 @@ public class AgentTask extends WorkflowSystemTask {
     }
 
     private void applyTaskResult(TaskModel task, A2ATask agentTask) {
-        String state = TaskState.normalize(stateOf(agentTask));
+        String state = TaskState.normalize(A2AResults.stateOf(agentTask));
         task.addOutput(A2AResults.taskOutput(agentTask, objectMapper));
         switch (state) {
             case TaskState.COMPLETED:
@@ -319,8 +322,8 @@ public class AgentTask extends WorkflowSystemTask {
                     parts.add(objectMapper.convertValue(raw, Part.class));
                 }
             } else {
-                String text = firstNonBlank(request.getText(), request.getPrompt());
-                if (isBlank(text)) {
+                String text = StringUtils.firstNonBlank(request.getText(), request.getPrompt());
+                if (StringUtils.isBlank(text)) {
                     throw new NonRetryableException(
                             "AGENT requires one of: message, parts, text, or prompt");
                 }
@@ -344,10 +347,10 @@ public class AgentTask extends WorkflowSystemTask {
         if (message.getKind() == null) {
             message.setKind("message");
         }
-        if (message.getContextId() == null && !isBlank(request.getContextId())) {
+        if (message.getContextId() == null && !StringUtils.isBlank(request.getContextId())) {
             message.setContextId(request.getContextId());
         }
-        if (message.getTaskId() == null && !isBlank(request.getTaskId())) {
+        if (message.getTaskId() == null && !StringUtils.isBlank(request.getTaskId())) {
             message.setTaskId(request.getTaskId());
         }
         if (message.getMetadata() == null && request.getMetadata() != null) {
@@ -368,7 +371,8 @@ public class AgentTask extends WorkflowSystemTask {
             long expiryMs = System.currentTimeMillis() + PUSH_TOKEN_TTL_MS;
             String token = UUID.randomUUID() + ":" + expiryMs;
             task.addOutput(A2AResults.KEY_PUSH_TOKEN, token);
-            String base = stripTrailingSlash(environment.getProperty(CALLBACK_URL_PROPERTY));
+            String base =
+                    StringUtils.removeEnd(environment.getProperty(CALLBACK_URL_PROPERTY), "/");
             PushNotificationConfig pushConfig =
                     new PushNotificationConfig(
                             base + "/api/a2a/callback/" + task.getTaskId(), token);
@@ -387,7 +391,7 @@ public class AgentTask extends WorkflowSystemTask {
         if (!request.isPushNotification()) {
             return false;
         }
-        if (isBlank(environment.getProperty(CALLBACK_URL_PROPERTY))) {
+        if (StringUtils.isBlank(environment.getProperty(CALLBACK_URL_PROPERTY))) {
             log.warn(
                     "pushNotification requested but '{}' is not configured; falling back to polling",
                     CALLBACK_URL_PROPERTY);
@@ -397,18 +401,8 @@ public class AgentTask extends WorkflowSystemTask {
     }
 
     private long pollInterval(TaskModel task) {
-        Object value = task.getInputData().get("pollIntervalSeconds");
-        long poll = DEFAULT_POLL_SECONDS;
-        if (value instanceof Number) {
-            poll = ((Number) value).longValue();
-        } else if (value instanceof String) {
-            try {
-                poll = Long.parseLong((String) value);
-            } catch (NumberFormatException ignored) {
-                // keep default
-            }
-        }
-        return Math.max(1, poll);
+        Integer value = parseRequest(task).getPollIntervalSeconds();
+        return value != null ? Math.max(1, value) : DEFAULT_POLL_SECONDS;
     }
 
     /**
@@ -447,7 +441,7 @@ public class AgentTask extends WorkflowSystemTask {
 
     private boolean pushEnabled(TaskModel task) {
         return toBool(task.getInputData().get(PUSH_INPUT))
-                && !isBlank(environment.getProperty(CALLBACK_URL_PROPERTY));
+                && !StringUtils.isBlank(environment.getProperty(CALLBACK_URL_PROPERTY));
     }
 
     private long pushBackstopSeconds(TaskModel task) {
@@ -459,32 +453,12 @@ public class AgentTask extends WorkflowSystemTask {
         return message == null || message.getParts() == null || message.getParts().isEmpty();
     }
 
+    /**
+     * Reads a numeric value this task previously wrote to its own output. Persistence round-trips
+     * JSON numbers back as a {@link Number} (Integer/Long), so only that case can occur.
+     */
     private static long asLong(Object value, long defaultValue) {
-        if (value instanceof Number) {
-            return ((Number) value).longValue();
-        }
-        if (value instanceof String) {
-            try {
-                return Long.parseLong((String) value);
-            } catch (NumberFormatException ignored) {
-                // fall through
-            }
-        }
-        return defaultValue;
-    }
-
-    private static int asInt(Object value, int defaultValue) {
-        if (value instanceof Number) {
-            return ((Number) value).intValue();
-        }
-        if (value instanceof String) {
-            try {
-                return Integer.parseInt((String) value);
-            } catch (NumberFormatException ignored) {
-                // fall through
-            }
-        }
-        return defaultValue;
+        return value instanceof Number ? ((Number) value).longValue() : defaultValue;
     }
 
     private A2ACallRequest parseRequest(TaskModel task) {
@@ -511,10 +485,6 @@ public class AgentTask extends WorkflowSystemTask {
         }
     }
 
-    private String stateOf(A2ATask agentTask) {
-        return agentTask.getStatus() != null ? agentTask.getStatus().getState() : null;
-    }
-
     private static String suffix(String text) {
         return text == null ? "" : ": " + text;
     }
@@ -528,17 +498,5 @@ public class AgentTask extends WorkflowSystemTask {
 
     private static String asString(Object value) {
         return value == null ? null : value.toString();
-    }
-
-    private static boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
-    }
-
-    private static String firstNonBlank(String a, String b) {
-        return !isBlank(a) ? a : b;
-    }
-
-    private static String stripTrailingSlash(String url) {
-        return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
     }
 }

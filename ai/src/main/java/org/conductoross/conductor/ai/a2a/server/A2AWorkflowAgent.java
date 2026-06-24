@@ -510,8 +510,14 @@ public class A2AWorkflowAgent {
         return null;
     }
 
-    private String agentUrl(String workflowName, String requestBaseUrl) {
+    /** The agent's JSON-RPC endpoint URL, e.g. {@code https://host/a2a/order_pizza}. */
+    public String agentUrl(String workflowName, String requestBaseUrl) {
         return baseUrl(requestBaseUrl) + normalizedBasePath() + "/" + workflowName;
+    }
+
+    /** The agent's well-known Agent Card URL. */
+    public String agentCardUrl(String workflowName, String requestBaseUrl) {
+        return agentUrl(workflowName, requestBaseUrl) + "/.well-known/agent-card.json";
     }
 
     private String baseUrl(String requestBaseUrl) {
