@@ -1344,15 +1344,22 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             return;
         }
 
-        workflow.getTasks().stream()
-                .filter(UNSUCCESSFUL_JOIN_TASK)
-                .filter(task -> hasActiveJoinDependency(task, activeReferenceTaskNames))
-                .peek(
-                        task -> {
-                            task.setStatus(TaskModel.Status.IN_PROGRESS);
-                            addTaskToQueue(task);
-                        })
-                .forEach(executionDAOFacade::updateTask);
+        // Iterative: when inner_join is reset to IN_PROGRESS it becomes active, allowing
+        // outer JOINs that depend on it (nested fork-join) to be reset in the next pass.
+        boolean resetOccurred;
+        do {
+            resetOccurred = false;
+            for (TaskModel task : workflow.getTasks()) {
+                if (UNSUCCESSFUL_JOIN_TASK.test(task)
+                        && hasActiveJoinDependency(task, activeReferenceTaskNames)) {
+                    task.setStatus(TaskModel.Status.IN_PROGRESS);
+                    addTaskToQueue(task);
+                    executionDAOFacade.updateTask(task);
+                    activeReferenceTaskNames.add(task.getReferenceTaskName());
+                    resetOccurred = true;
+                }
+            }
+        } while (resetOccurred);
     }
 
     private boolean hasActiveJoinDependency(
