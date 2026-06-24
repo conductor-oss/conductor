@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.conductoross.conductor.ai.AIModel;
+import org.conductoross.conductor.ai.http.AIHttpClients;
 import org.conductoross.conductor.ai.models.ChatCompletion;
 import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.models.ToolSpec;
@@ -40,7 +41,7 @@ public class Anthropic implements AIModel {
     private final AnthropicChatModel chatModel;
 
     public Anthropic(AnthropicConfiguration config) {
-        this(config, new OkHttpClient());
+        this(config, AIHttpClients.defaultClient());
     }
 
     @SuppressWarnings("unchecked")
