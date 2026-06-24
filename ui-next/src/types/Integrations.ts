@@ -33,6 +33,18 @@ export enum IntegrationType {
   PERPLEXITY = "perplexity",
   GROK = "Grok",
   SENDGRID = "sendgrid",
+  GOOGLE_CALENDER = "google-calendar",
+  GOOGLE_DRIVE = "google-drive",
+  NOTION = "notion",
+  GOOGLE_DOCS = "google-docs",
+  GOOGLE_SLIDES = "google-slides",
+  GOOGLE_SHEETS = "google-sheets",
+  WORDPRESS_COM = "wordpress-com",
+  DISCOURSE = "discourse",
+  COMMONROOM = "commonroom",
+  AWS_S3 = "aws-s3",
+  HUBSPOT = "hubspot",
+  SLACK = "slack",
 }
 export enum IntegrationCategory {
   API = "API",

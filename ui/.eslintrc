@@ -1,5 +1,5 @@
 {
-  "extends": ["react-app", "plugin:cypress/recommended"],
+  "extends": ["react-app"],
   "rules": {
     "import/no-anonymous-default-export": 0
   }

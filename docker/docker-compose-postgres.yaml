@@ -4,6 +4,10 @@ services:
   conductor-server:
     environment:
       - CONFIG_PROP=config-postgres.properties
+      # Forwarded from the host shell when set. Empty/absent ⇒ the matching AI provider
+      # stays unconfigured and the LLM e2e tests that depend on it self-skip.
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
     image: conductor:server
     container_name: conductor-server
     build:

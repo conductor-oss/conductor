@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.core.utils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 /**
@@ -28,5 +29,13 @@ public class IDGenerator {
 
     public String generate() {
         return UUID.randomUUID().toString();
+    }
+
+    public String generateSubWorkflowId(
+            String parentWorkflowId, String parentWorkflowTaskId, int retryCount) {
+        String source =
+                String.format(
+                        "subworkflow:%s:%s:%d", parentWorkflowId, parentWorkflowTaskId, retryCount);
+        return UUID.nameUUIDFromBytes(source.getBytes(StandardCharsets.UTF_8)).toString();
     }
 }

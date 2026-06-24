@@ -9,4 +9,9 @@ export type PromptDef = {
   variables: string[];
   integrations: string[];
   version?: number;
+  tokens?: number;
+  temperature?: number;
+  topP?: number;
+  stopWords?: string[];
+  responseFormat?: "json";
 };

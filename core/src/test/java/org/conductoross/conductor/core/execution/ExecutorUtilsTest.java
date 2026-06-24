@@ -26,6 +26,7 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class ExecutorUtilsTest {
@@ -88,6 +89,52 @@ public class ExecutorUtilsTest {
                         workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
 
         assertEquals(11, result.getSeconds());
+    }
+
+    @Test
+    public void computePostponeUsesWorkflowOffsetForScheduledSubWorkflow() {
+        TaskModel scheduledSubWorkflow =
+                newTask(TaskType.TASK_TYPE_SUB_WORKFLOW, TaskModel.Status.SCHEDULED);
+
+        WorkflowModel workflow = newWorkflow(Arrays.asList(scheduledSubWorkflow), 432000);
+
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(900));
+
+        assertEquals(30, result.getSeconds());
+    }
+
+    @Test
+    public void computePostponePrefersScheduledSubWorkflowOffsetOverWorkflowTimeout() {
+        TaskModel scheduledSubWorkflow =
+                newTask(TaskType.TASK_TYPE_SUB_WORKFLOW, TaskModel.Status.SCHEDULED);
+        TaskModel scheduledSimple = newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.SCHEDULED);
+
+        WorkflowModel workflow =
+                newWorkflow(Arrays.asList(scheduledSimple, scheduledSubWorkflow), 432000);
+
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(900));
+
+        assertEquals(30, result.getSeconds());
+    }
+
+    @Test
+    public void computePostponeUsesWorkflowOffsetForInProgressSubWorkflow() {
+        TaskModel inProgressSubWorkflow =
+                newTask(TaskType.TASK_TYPE_SUB_WORKFLOW, TaskModel.Status.IN_PROGRESS);
+        inProgressSubWorkflow.setResponseTimeoutSeconds(500);
+        inProgressSubWorkflow.setStartTime(System.currentTimeMillis());
+
+        WorkflowModel workflow = newWorkflow(Arrays.asList(inProgressSubWorkflow), 432000);
+
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(900));
+
+        assertEquals(30, result.getSeconds());
     }
 
     @Test
@@ -197,6 +244,34 @@ public class ExecutorUtilsTest {
         workflow.setWorkflowDefinition(workflowDef);
         workflow.setTasks(tasks);
         return workflow;
+    }
+
+    @Test
+    public void hasInProgressHumanTaskTrueForInProgressHuman() {
+        WorkflowModel workflow =
+                newWorkflow(
+                        Arrays.asList(
+                                newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.COMPLETED),
+                                newTask(TaskType.TASK_TYPE_HUMAN, TaskModel.Status.IN_PROGRESS)),
+                        0);
+        assertTrue(ExecutorUtils.hasInProgressHumanTask(workflow));
+    }
+
+    @Test
+    public void hasInProgressHumanTaskFalseWhenNoInProgressHuman() {
+        WorkflowModel noHuman =
+                newWorkflow(
+                        Arrays.asList(
+                                newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.IN_PROGRESS)),
+                        0);
+        assertFalse(ExecutorUtils.hasInProgressHumanTask(noHuman));
+
+        WorkflowModel terminalHuman =
+                newWorkflow(
+                        Arrays.asList(
+                                newTask(TaskType.TASK_TYPE_HUMAN, TaskModel.Status.COMPLETED)),
+                        0);
+        assertFalse(ExecutorUtils.hasInProgressHumanTask(terminalHuman));
     }
 
     private TaskModel newTask(String taskType, TaskModel.Status status) {

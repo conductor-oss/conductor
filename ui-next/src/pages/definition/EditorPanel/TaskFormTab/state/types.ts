@@ -9,6 +9,8 @@ export enum FormMachineActionTypes {
   CHECK_FOR_TASK_ERRORS = "CHECK_FOR_TASK_ERRORS",
 
   UPDATE_CRUMBS = "UPDATE_CRUMBS",
+  /** Like UPDATE_CRUMBS but always replaces taskChanges/originalTask regardless of task type (used by AI agent updates). */
+  FORCE_REFRESH_TASK = "FORCE_REFRESH_TASK",
 
   UPDATE_COLLAPSE_WORKFLOW_LIST = "UPDATE_COLLAPSE_WORKFLOW_LIST",
 }
@@ -37,6 +39,12 @@ export type UpdateCrumbsEvent = {
   task?: Partial<TaskDef>;
 };
 
+export type ForceRefreshTaskEvent = {
+  type: FormMachineActionTypes.FORCE_REFRESH_TASK;
+  crumbs: Crumb[];
+  task: Partial<TaskDef> | undefined;
+};
+
 export type CheckForTaskErrorsEvent = {
   type: FormMachineActionTypes.CHECK_FOR_TASK_ERRORS;
 };
@@ -63,4 +71,5 @@ export type TaskFormEvents =
   | CheckForTaskErrorsEvent
   | SelectEdgeEvent
   | UpdateCrumbsEvent
+  | ForceRefreshTaskEvent
   | UpdateCollapseWorkflowListEvent;

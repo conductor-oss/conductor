@@ -33,6 +33,9 @@ export const codeMachine = createMachine<CodeMachineContext, CodeMachineEvents>(
           [CodeMachineEventTypes.JUMP_TO_FIRST_ERROR]: {
             target: ".showFirstError",
           },
+          [CodeMachineEventTypes.FORCE_WORKFLOW]: {
+            actions: ["forceWorkflowChanges"],
+          },
         },
         initial: "idle",
         states: {

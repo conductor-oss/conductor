@@ -1,6 +1,5 @@
 dependencies {
     implementation project(':conductor-core')
-    implementation project(':conductor-metrics')
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-autoconfigure'

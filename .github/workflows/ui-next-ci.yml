@@ -6,6 +6,11 @@ on:
       - main
     paths:
       - "ui-next/**"
+  push:
+    branches:
+      - main
+    paths:
+      - "ui-next/**"
 
 permissions:
   contents: read
@@ -19,28 +24,20 @@ jobs:
         working-directory: ui-next
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.32.0
+
+      # setup-node must come after pnpm/action-setup so it can locate the store.
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 22
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v5
-        with:
-          version: 10.32.0
-
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        run: echo "store=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-      - name: Cache pnpm store
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.pnpm-cache.outputs.store }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('ui-next/pnpm-lock.yaml') }}
-          restore-keys: ${{ runner.os }}-pnpm-
+          cache: pnpm
+          cache-dependency-path: ui-next/pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -59,3 +56,55 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  e2e-mocked:
+    name: E2E (Mocked)
+    runs-on: ubuntu-latest
+    needs: lint-format-test
+    defaults:
+      run:
+        working-directory: ui-next
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.32.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: ui-next/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-chromium-${{ hashFiles('ui-next/pnpm-lock.yaml') }}
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install chromium
+
+      # OS-level dependencies (apt packages) cannot be cached — always install.
+      - name: Install Playwright OS dependencies
+        run: pnpm exec playwright install-deps chromium
+
+      - name: Run mocked E2E tests
+        run: pnpm test:e2e
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report
+          path: ui-next/playwright-report/
+          retention-days: 7

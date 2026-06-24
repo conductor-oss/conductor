@@ -6,6 +6,7 @@ import { defineConfig, loadEnv, Plugin } from "vite";
 import svgr from "vite-plugin-svgr";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { vitePluginCspNonce } from "./vite-plugin-csp-nonce";
+import { isLibPeerExternal } from "./vite.lib-peer-external";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageDir = __dirname;
@@ -48,19 +49,7 @@ export default defineConfig(({ mode }) => {
           formats: ["es"] as const,
         },
         rollupOptions: {
-          external: [
-            "react",
-            "react-dom",
-            "react/jsx-runtime",
-            "react-router",
-            "react-router-dom",
-            "@mui/material",
-            "@mui/icons-material",
-            "@mui/system",
-            "@mui/x-date-pickers",
-            "@emotion/react",
-            "@emotion/styled",
-          ],
+          external: isLibPeerExternal,
           output: {
             globals: {
               react: "React",
@@ -102,6 +91,33 @@ export default defineConfig(({ mode }) => {
     },
     preview: {
       port: 1234,
+      // Mirror the dev-server proxy so `vite preview` (used by integration
+      // tests) forwards API calls to the Conductor backend.
+      // VITE_WF_SERVER can be set in the process environment at preview time
+      // to override the .env file value (e.g. for CI or Playwright webServer).
+      proxy: {
+        "/api": {
+          target:
+            process.env.VITE_WF_SERVER ||
+            env.VITE_WF_SERVER ||
+            "http://localhost:8080",
+          changeOrigin: true,
+        },
+        "/swagger-ui": {
+          target:
+            process.env.VITE_WF_SERVER ||
+            env.VITE_WF_SERVER ||
+            "http://localhost:8080",
+          changeOrigin: true,
+        },
+        "/api-docs": {
+          target:
+            process.env.VITE_WF_SERVER ||
+            env.VITE_WF_SERVER ||
+            "http://localhost:8080",
+          changeOrigin: true,
+        },
+      },
     },
     server: {
       port: 1234,
@@ -128,6 +144,17 @@ export default defineConfig(({ mode }) => {
       environment: "jsdom",
       setupFiles: "./src/setupTests.ts",
       include: ["src/**/*.test.{js,ts,jsx,tsx}"],
+      coverage: {
+        provider: "v8",
+        reporter: ["text", "html", "lcov"],
+        include: ["src/**/*.{ts,tsx}"],
+        exclude: [
+          "src/**/*.test.{ts,tsx}",
+          "src/setupTests.ts",
+          "src/main.tsx",
+          "src/index.ts",
+        ],
+      },
       server: {
         deps: {
           // Force Vitest to process Monaco's ESM through its own pipeline
