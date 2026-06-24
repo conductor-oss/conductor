@@ -197,6 +197,15 @@ public class SqliteConfiguration {
         return retryTemplate;
     }
 
+    @Bean
+    @DependsOn({"flywayForPrimaryDb"})
+    @ConditionalOnProperty(name = "conductor.file-storage.enabled", havingValue = "true")
+    public SqliteFileMetadataDAO sqliteFileMetadataDAO(
+            @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        return new SqliteFileMetadataDAO(retryTemplate, objectMapper, dataSource);
+    }
+
     public static class CustomRetryPolicy extends SimpleRetryPolicy {
 
         // PostgreSQL error codes

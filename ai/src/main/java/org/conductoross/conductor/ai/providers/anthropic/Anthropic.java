@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.conductoross.conductor.ai.AIModel;
+import org.conductoross.conductor.ai.http.AIHttpClients;
 import org.conductoross.conductor.ai.models.ChatCompletion;
 import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.models.ToolSpec;
@@ -40,7 +41,7 @@ public class Anthropic implements AIModel {
     private final AnthropicChatModel chatModel;
 
     public Anthropic(AnthropicConfiguration config) {
-        this(config, new OkHttpClient());
+        this(config, AIHttpClients.defaultClient());
     }
 
     @SuppressWarnings("unchecked")
@@ -55,6 +56,22 @@ public class Anthropic implements AIModel {
     @Override
     public String getModelProvider() {
         return NAME;
+    }
+
+    /**
+     * Anthropic Claude Sonnet 4.6+ rejects requests whose final message has the {@code assistant}
+     * role with {@code 400 "This model does not support assistant message prefill. The conversation
+     * must end with a user message."} Earlier Claude models (Sonnet 4.5 and below) silently
+     * accepted prefill, which is the only reason {@link
+     * org.conductoross.conductor.ai.tasks.mapper.ChatCompleteTaskMapper}'s loop-history
+     * auto-injection ever worked on Anthropic — the injected messages arrived as accidental
+     * prefill. We declare {@code false} here so the mapper suppresses that injection across all
+     * Anthropic models; workflows that need prior-iteration state on an Anthropic loop should
+     * template it into the user message via {@code ${...output.result}}.
+     */
+    @Override
+    public boolean supportsAssistantPrefill() {
+        return false;
     }
 
     @Override
@@ -91,6 +108,7 @@ public class Anthropic implements AIModel {
                 .topK(input.getTopK())
                 .stopSequences(input.getStopWords())
                 .thinkingBudgetTokens(thinkingBudget)
+                .reasoningEffort(input.getReasoningEffort())
                 .reasoningSummary(input.getReasoningSummary())
                 .tools(tools.isEmpty() ? null : tools)
                 .build();

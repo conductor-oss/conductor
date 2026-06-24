@@ -1,53 +1,51 @@
-import {
-  assign,
-  send,
-  spawn,
-  DoneInvokeEvent,
-  forwardTo,
-  sendTo,
-  raise,
-  ActorRef,
-  pure,
-} from "xstate";
-import { executionToWorkflowDef } from "./executionMapper";
 import { flowMachine } from "components/features/flow/state/machine";
 import {
   FlowActionTypes,
   FlowEvents,
   ResetZoomPositionEvent,
-  SelectTaskWithTaskRefEvent,
-} from "components/features/flow/state/types";
-import { TaskStatus, Execution, DoWhileSelection, ExecutionTask } from "types";
-import { gtagAbstract, flattenGtagObject } from "utils";
-import {
-  UpdateWfDefinitionEvent,
   SelectNodeEvent,
+  SelectTaskWithTaskRefEvent,
+  UpdateWfDefinitionEvent,
 } from "components/features/flow/state/types";
+import { NodeData } from "reaflow";
+import { DoWhileSelection, Execution, ExecutionTask } from "types";
+import { flattenGtagObject, gtagAbstract } from "utils";
 import {
-  UpdateExecutionEvent,
-  ExecutionMachineContext,
-  ExpandDynamicTaskEvent,
-  CollapseDynamicTaskEvent,
-  ErrorSeverity,
-  ClearErrorEvent,
-  UpdateDurationEvent,
-  ChangeExecutionTabEvent,
-  ExecutionActionTypes,
-  FetchForLogsEvent,
-  ExecutionUpdatedEvent,
-  PersistErrorEvent,
-  UpdateVariablesEvent,
-  MessageSeverity,
-  SetDoWhileIterationEvent,
-  UpdateSelectedTaskEvent,
-  ToggleAssistantPanelEvent,
-} from "./types";
+  ActorRef,
+  assign,
+  DoneInvokeEvent,
+  forwardTo,
+  pure,
+  raise,
+  send,
+  sendTo,
+  spawn,
+} from "xstate";
 import { RightPanelContextEventTypes, RightPanelEvents } from "../RightPanel";
 import {
   findTaskFromExecutionStatusMapById,
   taskWithLatestIteration,
 } from "../helpers";
-import { NodeData } from "reaflow";
+import { executionToWorkflowDef } from "./executionMapper";
+import {
+  ChangeExecutionTabEvent,
+  ClearErrorEvent,
+  CollapseDynamicTaskEvent,
+  ErrorSeverity,
+  ExecutionActionTypes,
+  ExecutionMachineContext,
+  ExecutionUpdatedEvent,
+  ExpandDynamicTaskEvent,
+  FetchForLogsEvent,
+  MessageSeverity,
+  PersistErrorEvent,
+  SetDoWhileIterationEvent,
+  ToggleAssistantPanelEvent,
+  UpdateDurationEvent,
+  UpdateExecutionEvent,
+  UpdateSelectedTaskEvent,
+  UpdateVariablesEvent,
+} from "./types";
 
 const selectTaskByTaskReferenceName = (
   { execution }: ExecutionMachineContext,
@@ -163,13 +161,18 @@ export const nodeToTaskSelectionToPanel = send<
   SelectNodeEvent
 >(
   (context, { node }) => {
+    // Always prefer the actual execution record — inner DO_WHILE tasks can
+    // have executionData.status === PENDING on the node even after the loop
+    // has fully completed, because the status-map entry tracks "next iteration
+    // to run". Using pendingTaskSelection in that case would show a stale
+    // PENDING status. Fall back to pendingTaskSelection only when no execution
+    // record exists yet (task truly hasn't been scheduled).
+    const fromExecution = selectTaskByTaskReferenceName(
+      context,
+      node?.data?.task?.taskReferenceName,
+    );
     const selectedTask =
-      node?.data?.task?.executionData?.status === TaskStatus.PENDING
-        ? pendingTaskSelection(node?.data?.task)
-        : selectTaskByTaskReferenceName(
-            context,
-            node?.data?.task?.taskReferenceName,
-          );
+      fromExecution ?? pendingTaskSelection(node?.data?.task);
     return {
       type: RightPanelContextEventTypes.SET_SELECTED_TASK,
       selectedTask,

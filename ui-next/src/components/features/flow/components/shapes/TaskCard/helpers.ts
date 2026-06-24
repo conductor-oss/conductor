@@ -14,12 +14,27 @@ export function dowhileHasAllIterationsInOutput(
   outputData: Record<string, unknown>,
 ): boolean {
   const max = outputData?.iteration as number;
-  for (let i = 1; i < max; i++) {
-    if (!Object.prototype.hasOwnProperty.call(outputData, String(i))) {
-      return false;
-    }
-  }
-  return true;
+  const iterationKeyCount = Object.keys(outputData).filter((k) =>
+    Number.isInteger(Number(k)),
+  ).length;
+  return iterationKeyCount >= max - 1;
+}
+
+/**
+ * Returns true when the backend has replaced old iteration payloads with a
+ * lightweight sentinel ({"_summarized": true}) to keep the response small.
+ * All iteration keys are still present so the dropdown can enumerate them,
+ * but the full output data is only available for the most recent iterations.
+ */
+export function dowhileHasSummarizedIterations(
+  outputData: Record<string, unknown>,
+): boolean {
+  return Object.values(outputData).some(
+    (val) =>
+      val !== null &&
+      typeof val === "object" &&
+      (val as Record<string, unknown>)["_summarized"] === true,
+  );
 }
 
 export function showIterationChip(nodeData: NodeTaskData): boolean {
