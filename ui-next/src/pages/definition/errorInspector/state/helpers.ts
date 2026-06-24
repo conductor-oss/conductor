@@ -25,7 +25,7 @@ import _nth from "lodash/nth";
 import _path from "lodash/fp/path";
 
 import fastDeepEqual from "fast-deep-equal";
-import { NodeTaskData } from "components/flow/nodes/mapper";
+import { NodeTaskData } from "components/features/flow/nodes/mapper";
 export type NodeInnerData = { task: TaskDef; crumbs: Crumb[] };
 type SingleEntry = [string, NodeInnerData];
 type EntriesIgnoreSubWorkflowChilds = {

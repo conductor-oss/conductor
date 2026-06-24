@@ -26,6 +26,8 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class ExecutorUtilsTest {
 
@@ -90,6 +92,52 @@ public class ExecutorUtilsTest {
     }
 
     @Test
+    public void computePostponeUsesWorkflowOffsetForScheduledSubWorkflow() {
+        TaskModel scheduledSubWorkflow =
+                newTask(TaskType.TASK_TYPE_SUB_WORKFLOW, TaskModel.Status.SCHEDULED);
+
+        WorkflowModel workflow = newWorkflow(Arrays.asList(scheduledSubWorkflow), 432000);
+
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(900));
+
+        assertEquals(30, result.getSeconds());
+    }
+
+    @Test
+    public void computePostponePrefersScheduledSubWorkflowOffsetOverWorkflowTimeout() {
+        TaskModel scheduledSubWorkflow =
+                newTask(TaskType.TASK_TYPE_SUB_WORKFLOW, TaskModel.Status.SCHEDULED);
+        TaskModel scheduledSimple = newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.SCHEDULED);
+
+        WorkflowModel workflow =
+                newWorkflow(Arrays.asList(scheduledSimple, scheduledSubWorkflow), 432000);
+
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(900));
+
+        assertEquals(30, result.getSeconds());
+    }
+
+    @Test
+    public void computePostponeUsesWorkflowOffsetForInProgressSubWorkflow() {
+        TaskModel inProgressSubWorkflow =
+                newTask(TaskType.TASK_TYPE_SUB_WORKFLOW, TaskModel.Status.IN_PROGRESS);
+        inProgressSubWorkflow.setResponseTimeoutSeconds(500);
+        inProgressSubWorkflow.setStartTime(System.currentTimeMillis());
+
+        WorkflowModel workflow = newWorkflow(Arrays.asList(inProgressSubWorkflow), 432000);
+
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(900));
+
+        assertEquals(30, result.getSeconds());
+    }
+
+    @Test
     public void computePostponeDefaultsToWorkflowOffsetWhenNoEligibleTasks() {
         TaskModel completed = newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.COMPLETED);
         WorkflowModel workflow = newWorkflow(Arrays.asList(completed), 0);
@@ -114,6 +162,80 @@ public class ExecutorUtilsTest {
         assertEquals(30, result.getSeconds());
     }
 
+    /** Boundary: SCHEDULED task whose poll window has already elapsed → remaining = 0. */
+    @Test
+    public void computePostponeScheduledElapsedExceedsTimeout() {
+        TaskModel task = newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.SCHEDULED);
+        TaskDef taskDef = new TaskDef();
+        taskDef.setPollTimeoutSeconds(1); // 1-second poll window
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setTaskDefinition(taskDef);
+        task.setWorkflowTask(workflowTask);
+        // Push scheduledTime far into the past so elapsed >> pollTimeout
+        task.setScheduledTime(System.currentTimeMillis() - 60_000);
+
+        WorkflowModel workflow = newWorkflow(Arrays.asList(task), 0);
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
+
+        // Elapsed >> pollTimeout: remaining = 0, clamped to 0
+        assertEquals(
+                "When poll window is already elapsed, postpone should be 0",
+                0L,
+                result.getSeconds());
+    }
+
+    /** Boundary: IN_PROGRESS task whose response window has already elapsed → remaining = 0. */
+    @Test
+    public void computePostponeInProgressElapsedExceedsResponseTimeout() {
+        TaskModel task = newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.IN_PROGRESS);
+        task.setResponseTimeoutSeconds(1); // 1-second response window
+        // Push startTime far into the past so elapsed >> responseTimeout
+        task.setStartTime(System.currentTimeMillis() - 60_000);
+
+        WorkflowModel workflow = newWorkflow(Arrays.asList(task), 0);
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
+
+        assertEquals(
+                "When response window is already elapsed, postpone should be 0",
+                0L,
+                result.getSeconds());
+    }
+
+    /**
+     * Boundary: taskDef.responseTimeout=0 but taskModel.responseTimeout is non-zero — model wins.
+     */
+    @Test
+    public void computePostponeUsesTaskModelResponseTimeoutWhenTaskDefIsZero() {
+        TaskModel task = newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.IN_PROGRESS);
+        // taskDef has responseTimeoutSeconds=0 (not set), taskModel has 120s
+        TaskDef taskDef = new TaskDef();
+        taskDef.setResponseTimeoutSeconds(0); // explicitly zero
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setTaskDefinition(taskDef);
+        task.setWorkflowTask(workflowTask);
+        task.setResponseTimeoutSeconds(120);
+        task.setStartTime(System.currentTimeMillis());
+
+        WorkflowModel workflow = newWorkflow(Arrays.asList(task), 0);
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
+
+        // Should use task model's 120s, not fall back to workflow offset (30s)
+        assertTrue(
+                "When taskDef.responseTimeout=0, taskModel.responseTimeout (120s) should be used; "
+                        + "result="
+                        + result.getSeconds(),
+                result.getSeconds() > 30);
+        assertTrue(
+                "Result should be ~120s remaining; got " + result.getSeconds(),
+                result.getSeconds() <= 121);
+    }
+
     private WorkflowModel newWorkflow(List<TaskModel> tasks, long timeoutSeconds) {
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setTimeoutSeconds(timeoutSeconds);
@@ -124,11 +246,40 @@ public class ExecutorUtilsTest {
         return workflow;
     }
 
+    @Test
+    public void hasInProgressHumanTaskTrueForInProgressHuman() {
+        WorkflowModel workflow =
+                newWorkflow(
+                        Arrays.asList(
+                                newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.COMPLETED),
+                                newTask(TaskType.TASK_TYPE_HUMAN, TaskModel.Status.IN_PROGRESS)),
+                        0);
+        assertTrue(ExecutorUtils.hasInProgressHumanTask(workflow));
+    }
+
+    @Test
+    public void hasInProgressHumanTaskFalseWhenNoInProgressHuman() {
+        WorkflowModel noHuman =
+                newWorkflow(
+                        Arrays.asList(
+                                newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.IN_PROGRESS)),
+                        0);
+        assertFalse(ExecutorUtils.hasInProgressHumanTask(noHuman));
+
+        WorkflowModel terminalHuman =
+                newWorkflow(
+                        Arrays.asList(
+                                newTask(TaskType.TASK_TYPE_HUMAN, TaskModel.Status.COMPLETED)),
+                        0);
+        assertFalse(ExecutorUtils.hasInProgressHumanTask(terminalHuman));
+    }
+
     private TaskModel newTask(String taskType, TaskModel.Status status) {
         TaskModel task = new TaskModel();
         task.setTaskType(taskType);
         task.setStatus(status);
         task.setTaskId("taskId-" + taskType + "-" + status);
+        task.setScheduledTime(System.currentTimeMillis());
         return task;
     }
 }

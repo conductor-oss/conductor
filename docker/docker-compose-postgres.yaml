@@ -4,6 +4,10 @@ services:
   conductor-server:
     environment:
       - CONFIG_PROP=config-postgres.properties
+      # Forwarded from the host shell when set. Empty/absent ⇒ the matching AI provider
+      # stays unconfigured and the LLM e2e tests that depend on it self-skip.
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
     image: conductor:server
     container_name: conductor-server
     build:
@@ -14,7 +18,7 @@ services:
     networks:
       - internal
     ports:
-      - 8080:8080
+      - 8000:8080
       - 8127:5000
     healthcheck:
       test: [ "CMD", "curl","-I" ,"-XGET", "http://localhost:8080/health" ]
@@ -33,7 +37,7 @@ services:
         max-file: "3"
 
   conductor-postgres:
-    image: postgres
+    image: postgres:16
     environment:
       - POSTGRES_USER=conductor
       - POSTGRES_PASSWORD=conductor
@@ -41,8 +45,6 @@ services:
       - pgdata-conductor:/var/lib/postgresql/data
     networks:
       - internal
-    ports:
-      - 6432:5432
     healthcheck:
       test: timeout 5 bash -c 'cat < /dev/null > /dev/tcp/localhost/5432'
       interval: 5s

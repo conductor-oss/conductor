@@ -2,10 +2,10 @@ import { Fragment, FunctionComponent } from "react";
 import { Box, Grid, IconButton } from "@mui/material";
 import { Button } from "components";
 import maybeVariable from "../maybeVariableHOC";
-import { ConductorAutocompleteVariables } from "components/v1/FlatMapForm/ConductorAutocompleteVariables";
-import { ConductorEmptyGroupField } from "components/v1/ConductorEmptyGroupField";
-import AddIcon from "components/v1/icons/AddIcon";
-import TrashIcon from "components/v1/icons/TrashIcon";
+import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
+import { ConductorEmptyGroupField } from "components/ui/inputs/ConductorEmptyGroupField";
+import AddIcon from "components/icons/AddIcon";
+import TrashIcon from "components/icons/TrashIcon";
 
 const ROLE_SUGGESTION = ["user", "assistant", "system", "human"];
 

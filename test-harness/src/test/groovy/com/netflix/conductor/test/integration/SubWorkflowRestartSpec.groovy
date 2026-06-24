@@ -102,8 +102,11 @@ class SubWorkflowRestartSpec extends AbstractSpecification {
             tasks[1].status == Task.Status.IN_PROGRESS
         }
 
-        and: "verify that the mid-level workflow is RUNNING, and first task is in SCHEDULED state"
+        and: "the mid-level subworkflow is decided so its first task is scheduled"
         midLevelWorkflowId = rootWorkflowInstance.tasks[1].subWorkflowId
+        sweep(midLevelWorkflowId)
+
+        and: "verify that the mid-level workflow is RUNNING, and first task is in SCHEDULED state"
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 1
@@ -118,9 +121,10 @@ class SubWorkflowRestartSpec extends AbstractSpecification {
         polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
         asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
         def midLevelWorkflowInstance = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
+        leafWorkflowId = midLevelWorkflowInstance.tasks[1].subWorkflowId
+        sweep(leafWorkflowId)
 
         then: "verify that the mid-level workflow is RUNNING, and first task is in SCHEDULED state"
-        leafWorkflowId = midLevelWorkflowInstance.tasks[1].subWorkflowId
         def leafWorkflowInstance = workflowExecutionService.getExecutionStatus(leafWorkflowId, true)
         with(leafWorkflowInstance) {
             status == Workflow.WorkflowStatus.RUNNING
@@ -193,6 +197,10 @@ class SubWorkflowRestartSpec extends AbstractSpecification {
         then: "poll and complete the 'integration_task_1' task"
         workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker', ['op1': 'task1.done'])
 
+        and: "execute the SUB_WORKFLOW task on the root to create the new mid-level workflow"
+        List<String> polledRootSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledRootSubWorkflowIds[0])
+
         and: "verify that the root workflow created a new SUB_WORKFLOW task"
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
@@ -203,6 +211,7 @@ class SubWorkflowRestartSpec extends AbstractSpecification {
             tasks[1].status == Task.Status.IN_PROGRESS
         }
         def newMidLevelWorkflowId = workflowExecutionService.getExecutionStatus(rootWorkflowId, true).getTasks().get(1).subWorkflowId
+        sweep(newMidLevelWorkflowId)
 
         then: "verify that a new mid level workflow is created and is in RUNNING state"
         newMidLevelWorkflowId != midLevelWorkflowId
@@ -215,7 +224,10 @@ class SubWorkflowRestartSpec extends AbstractSpecification {
 
         when: "poll and complete the integration_task_1 task in the mid-level workflow"
         workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker', ['op': 'task1.done'])
+        List<String> polledMidSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledMidSubWorkflowIds[0])
         def newLeafWorkflowId = workflowExecutionService.getExecutionStatus(newMidLevelWorkflowId, true).getTasks().get(1).subWorkflowId
+        sweep(newLeafWorkflowId)
 
         then: "verify that a new leaf workflow is created and is in RUNNING state"
         newLeafWorkflowId != leafWorkflowId
@@ -294,12 +306,14 @@ class SubWorkflowRestartSpec extends AbstractSpecification {
             tasks.size() == 2
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
         }
 
         when: "poll and complete the task in the mid level workflow"
         workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker', ['op': 'task1.done'])
+        List<String> polledMidSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledMidSubWorkflowIds[0])
         def newLeafWorkflowId = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true).getTasks().get(1).subWorkflowId
+        sweep(newLeafWorkflowId)
 
         then: "verify that a new leaf workflow is created and is in RUNNING state"
         newLeafWorkflowId != leafWorkflowId
@@ -380,7 +394,6 @@ class SubWorkflowRestartSpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
         }
 
         and: "verify that the root workflow's SUB_WORKFLOW is updated"
@@ -391,7 +404,6 @@ class SubWorkflowRestartSpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].subworkflowChanged
         }
 
         when: "poll and complete the scheduled task in the leaf workflow"

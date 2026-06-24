@@ -303,6 +303,15 @@ conductor.redis-lock.serverAddress=redis://redis-host:6379
 conductor.redis-lock.ignoreLockingExceptions=false
 ```
 
+> **Sentinel with multiple endpoints:** When using `SENTINEL` server type, you can provide
+> multiple sentinel addresses separated by semicolons for improved high availability:
+> ```properties
+> conductor.redis-lock.serverType=SENTINEL
+> conductor.redis-lock.serverAddress=redis://sentinel-0:26379;redis://sentinel-1:26379
+> conductor.redis-lock.serverMasterName=mymaster
+> ```
+> This ensures the lock client can discover the master even if one sentinel node is down.
+
 #### Zookeeper lock
 
 ```properties

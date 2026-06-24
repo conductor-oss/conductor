@@ -16,8 +16,8 @@ Use these parameters inside `inputParameters` in the Inline task configuration.
 
 | Parameter          | Type                | Description                                       | Required / Optional  |
 | ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
-| evaluatorType | String | The type of evaluator used. Supported types: `javascript`                             | Required. |
-| expression    | String | The expression to be evaluated by the evaluator. The expression must return a value. <br/><br/> The JavaScript evaluator accepts code written to the ECMAScript 5.1(ES5) standard. <br/><br/>  **Note:** To use ES6 instead, set the environment variable `CONDUCTOR_NASHORN_ES6_ENABLED` to `true`. | Required. |
+| evaluatorType | String | The type of evaluator used. Supported types: `graaljs` (recommended), `javascript`, `python`, `value-param`. | Required. |
+| expression    | String | The expression to be evaluated by the evaluator. The expression must return a value. <br/><br/> The `graaljs` evaluator uses GraalVM JavaScript and supports modern ECMAScript. The `python` evaluator runs Python via GraalVM polyglot. The `javascript` evaluator is a legacy option. The `value-param` evaluator returns a parameter value directly. | Required. |
 | inputParameters    | Map[String, Any] | Any other input parameters for the Inline task. You can include any other input values required for evaluation here, which can be referenced in `expression` as `$.value`. | Optional. |
 
 ## JSON configuration

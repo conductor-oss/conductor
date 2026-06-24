@@ -17,12 +17,17 @@ import java.util.List;
 import org.conductoross.conductor.ai.models.ChatCompletion;
 import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.models.ImageGenRequest;
+import org.conductoross.conductor.ai.providers.openai.OpenAIHttpImageModel;
+import org.conductoross.conductor.ai.providers.openai.OpenAIResponsesChatModel;
+import org.conductoross.conductor.ai.providers.openai.OpenAIResponsesChatOptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
+
+import okhttp3.OkHttpClient;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -42,7 +47,7 @@ class AzureOpenAITest {
             config.setApiKey("test-api-key");
             config.setBaseURL("https://myresource.openai.azure.com");
             config.setDeploymentName("gpt-4");
-            azureOpenAI = new AzureOpenAI(config);
+            azureOpenAI = new AzureOpenAI(config, new OkHttpClient());
         }
 
         @Test
@@ -60,12 +65,14 @@ class AzureOpenAITest {
             var options = azureOpenAI.getChatOptions(input);
 
             assertNotNull(options);
+            assertInstanceOf(OpenAIResponsesChatOptions.class, options);
+            assertEquals("gpt-4", options.getModel());
         }
 
         @Test
         void testGetImageOptions() {
             ImageGenRequest input = new ImageGenRequest();
-            input.setModel("dall-e-3");
+            input.setModel("gpt-image-1");
             input.setHeight(1024);
             input.setWidth(1024);
             input.setN(1);
@@ -73,6 +80,20 @@ class AzureOpenAITest {
             var options = azureOpenAI.getImageOptions(input);
 
             assertNotNull(options);
+        }
+
+        @Test
+        void testGetChatModel_createsResponsesModel() {
+            var chatModel = azureOpenAI.getChatModel();
+            assertNotNull(chatModel);
+            assertInstanceOf(OpenAIResponsesChatModel.class, chatModel);
+        }
+
+        @Test
+        void testGetImageModel_createsHttpModel() {
+            var imageModel = azureOpenAI.getImageModel();
+            assertNotNull(imageModel);
+            assertInstanceOf(OpenAIHttpImageModel.class, imageModel);
         }
     }
 
@@ -92,7 +113,7 @@ class AzureOpenAITest {
                     System.getenv("AZURE_OPENAI_DEPLOYMENT") != null
                             ? System.getenv("AZURE_OPENAI_DEPLOYMENT")
                             : "gpt-4o-mini");
-            azureOpenAI = new AzureOpenAI(config);
+            azureOpenAI = new AzureOpenAI(config, new OkHttpClient());
         }
 
         @Test

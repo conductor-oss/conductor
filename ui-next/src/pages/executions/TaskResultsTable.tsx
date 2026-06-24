@@ -2,16 +2,15 @@ import { LinearProgress } from "@mui/material";
 import { ReactNode, useEffect, useState } from "react";
 
 import { DataTable, NavLink, Paper, Text } from "components";
-import { ColumnCustomType, LegacyColumn } from "components/DataTable/types";
+import { ColumnCustomType, LegacyColumn } from "components/ui/DataTable/types";
 import { usePushHistory } from "utils/hooks/usePushHistory";
-import NoDataComponent from "components/NoDataComponent";
-import { SnackbarMessage } from "components/SnackbarMessage";
+import NoDataComponent from "components/ui/NoDataComponent";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
 import StatusBadge from "components/StatusBadge";
 import { colors } from "theme/tokens/variables";
 import {
   WORKFLOW_DEFINITION_URL,
   WORKFLOW_EXECUTION_URL,
-  WORKFLOW_EXPLORER_URL,
 } from "utils/constants/route";
 import { calculateTimeFromMillis, totalPages } from "utils/utils";
 import BulkActionModule from "./BulkActionModule";
@@ -240,8 +239,8 @@ export default function ResultsTable({
     setToggleCleared((t) => !t);
   }, [resultObj]);
 
-  const handleClickBrowseTemplates = () => {
-    pushHistory(WORKFLOW_EXPLORER_URL);
+  const handleClickDefineWorkflow = () => {
+    pushHistory(WORKFLOW_DEFINITION_URL.NEW);
   };
   const handleClickClearSearch = () => {
     handleReset();
@@ -348,8 +347,8 @@ export default function ResultsTable({
               titleBg={colors.warningTag}
               description="Here you’ll see any executed tasks, regardless
               of its status. Let’s define a new task!"
-              buttonText="BROWSE TEMPLATES"
-              buttonHandler={handleClickBrowseTemplates}
+              buttonText="DEFINE WORKFLOW"
+              buttonHandler={handleClickDefineWorkflow}
             />
           )
         }

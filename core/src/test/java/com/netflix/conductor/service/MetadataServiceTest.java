@@ -14,6 +14,7 @@ package com.netflix.conductor.service;
 
 import java.util.*;
 
+import org.conductoross.conductor.core.listener.MetadataChangeListenerStub;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.stubbing.Answer;
@@ -78,6 +79,10 @@ public class MetadataServiceTest {
             Map<String, TaskDef> taskDefinitions = new HashMap<>();
 
             when(metadataDAO.getAllWorkflowDefs()).thenReturn(mockWorkflowDefs());
+            when(metadataDAO.getWorkflowNames())
+                    .thenReturn(Arrays.asList("alpha_workflow", "beta_workflow"));
+            when(metadataDAO.getWorkflowVersions("test_workflow_def"))
+                    .thenReturn(mockWorkflowVersions());
 
             Answer<TaskDef> upsertTaskDef =
                     (invocation) -> {
@@ -92,7 +97,8 @@ public class MetadataServiceTest {
                             invocation ->
                                     taskDefinitions.get(invocation.getArgument(0, String.class)));
 
-            return new MetadataServiceImpl(metadataDAO, eventHandlerDAO, properties);
+            return new MetadataServiceImpl(
+                    metadataDAO, eventHandlerDAO, new MetadataChangeListenerStub(), properties);
         }
 
         private List<WorkflowDef> mockWorkflowDefs() {
@@ -101,9 +107,22 @@ public class MetadataServiceTest {
             for (int i = 5; i > 0; i--) {
                 WorkflowDef def = new WorkflowDef();
                 def.setCreateTime(new Date().getTime());
+                def.setUpdateTime(new Date().getTime());
                 def.setVersion(i);
                 def.setName("test_workflow_def");
                 retval.add(def);
+            }
+            return retval;
+        }
+
+        private List<WorkflowDefSummary> mockWorkflowVersions() {
+            List<WorkflowDefSummary> retval = new ArrayList<>();
+            for (int i = 1; i <= 5; i++) {
+                WorkflowDefSummary summary = new WorkflowDefSummary();
+                summary.setName("test_workflow_def");
+                summary.setVersion(i);
+                summary.setCreateTime(new Date().getTime());
+                retval.add(summary);
             }
             return retval;
         }
@@ -530,6 +549,15 @@ public class MetadataServiceTest {
     }
 
     @Test
+    public void testWorkflowNames() {
+        List<String> names = metadataService.getWorkflowNames();
+        assertNotNull(names);
+        assertEquals(2, names.size());
+        assertEquals("alpha_workflow", names.get(0));
+        assertEquals("beta_workflow", names.get(1));
+    }
+
+    @Test
     public void testWorkflowNamesAndVersions() {
         Map<String, ? extends Iterable<WorkflowDefSummary>> namesAndVersions =
                 metadataService.getWorkflowNamesAndVersions();
@@ -541,7 +569,23 @@ public class MetadataServiceTest {
             WorkflowDefSummary ver = versions.next();
             assertEquals(i, ver.getVersion());
             assertNotNull(ver.getCreateTime());
+            assertNotNull(ver.getUpdateTime());
             assertEquals("test_workflow_def", ver.getName());
         }
+    }
+
+    @Test
+    public void testGetWorkflowVersions() {
+        List<WorkflowDefSummary> versions =
+                metadataService.getWorkflowVersions("test_workflow_def");
+        assertNotNull(versions);
+        assertEquals(5, versions.size());
+        for (int i = 0; i < 5; i++) {
+            WorkflowDefSummary summary = versions.get(i);
+            assertEquals(i + 1, summary.getVersion());
+            assertEquals("test_workflow_def", summary.getName());
+            assertNotNull(summary.getCreateTime());
+        }
+        verify(metadataDAO, times(1)).getWorkflowVersions("test_workflow_def");
     }
 }

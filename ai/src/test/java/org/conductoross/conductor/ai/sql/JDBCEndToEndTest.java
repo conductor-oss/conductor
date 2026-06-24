@@ -80,10 +80,16 @@ class JDBCEndToEndTest {
         }
     }
 
+    private static JDBCInput inputFor(String connectionId) {
+        JDBCInput input = new JDBCInput();
+        input.setConnectionId(connectionId);
+        return input;
+    }
+
     @Test
     @Order(1)
     void testProviderReturnsDataSource() {
-        DataSource ds = provider.get("pg-test");
+        DataSource ds = provider.get(inputFor("pg-test"));
         assertNotNull(ds);
         assertInstanceOf(HikariDataSource.class, ds);
     }
@@ -91,7 +97,7 @@ class JDBCEndToEndTest {
     @Test
     @Order(2)
     void testCreateTableAndInsertData() throws SQLException {
-        DataSource ds = provider.get("pg-test");
+        DataSource ds = provider.get(inputFor("pg-test"));
         assertNotNull(ds);
 
         try (Connection conn = ds.getConnection()) {
@@ -126,7 +132,7 @@ class JDBCEndToEndTest {
     @Test
     @Order(3)
     void testSelectData() throws SQLException {
-        DataSource ds = provider.get("pg-test");
+        DataSource ds = provider.get(inputFor("pg-test"));
         assertNotNull(ds);
 
         try (Connection conn = ds.getConnection();
@@ -154,7 +160,7 @@ class JDBCEndToEndTest {
     @Test
     @Order(4)
     void testSelectWithParameters() throws SQLException {
-        DataSource ds = provider.get("pg-test");
+        DataSource ds = provider.get(inputFor("pg-test"));
         assertNotNull(ds);
 
         try (Connection conn = ds.getConnection();
@@ -173,7 +179,7 @@ class JDBCEndToEndTest {
     @Test
     @Order(5)
     void testUpdateData() throws SQLException {
-        DataSource ds = provider.get("pg-test");
+        DataSource ds = provider.get(inputFor("pg-test"));
         assertNotNull(ds);
 
         try (Connection conn = ds.getConnection()) {
@@ -201,7 +207,7 @@ class JDBCEndToEndTest {
     @Test
     @Order(6)
     void testTransactionRollback() throws SQLException {
-        DataSource ds = provider.get("pg-test");
+        DataSource ds = provider.get(inputFor("pg-test"));
         assertNotNull(ds);
 
         try (Connection conn = ds.getConnection()) {
@@ -227,7 +233,7 @@ class JDBCEndToEndTest {
     @Test
     @Order(7)
     void testConnectionPooling() throws SQLException {
-        DataSource ds = provider.get("pg-test");
+        DataSource ds = provider.get(inputFor("pg-test"));
         assertNotNull(ds);
         assertInstanceOf(HikariDataSource.class, ds);
 
@@ -250,7 +256,7 @@ class JDBCEndToEndTest {
     @Test
     @Order(8)
     void testUnknownInstanceReturnsNull() {
-        DataSource ds = provider.get("nonexistent");
+        DataSource ds = provider.get(inputFor("nonexistent"));
         assertNull(ds);
     }
 
@@ -287,7 +293,7 @@ class JDBCEndToEndTest {
         instanceConfig.setInstances(null); // Force legacy fallback
 
         JDBCProvider legacyProvider = new JDBCProvider(instanceConfig);
-        DataSource legacyDs = legacyProvider.get("pg-legacy");
+        DataSource legacyDs = legacyProvider.get(inputFor("pg-legacy"));
 
         assertNotNull(legacyDs);
 
@@ -336,8 +342,8 @@ class JDBCEndToEndTest {
 
         JDBCProvider multiProvider = new JDBCProvider(instanceConfig);
 
-        DataSource readerDs = multiProvider.get("reader");
-        DataSource writerDs = multiProvider.get("writer");
+        DataSource readerDs = multiProvider.get(inputFor("reader"));
+        DataSource writerDs = multiProvider.get(inputFor("writer"));
 
         assertNotNull(readerDs);
         assertNotNull(writerDs);

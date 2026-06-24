@@ -5,12 +5,12 @@ import BulkActionModule from "./BulkActionModule";
 import executionsStyles from "./executionsStyles";
 import StatusBadge from "components/StatusBadge";
 import { calculateTimeFromMillis, totalPages } from "utils/utils";
-import { SnackbarMessage } from "components/SnackbarMessage";
-import { ColumnCustomType, LegacyColumn } from "components/DataTable/types";
-import NoDataComponent from "components/NoDataComponent";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
+import { ColumnCustomType, LegacyColumn } from "components/ui/DataTable/types";
+import NoDataComponent from "components/ui/NoDataComponent";
 import { colors } from "theme/tokens/variables";
 import { usePushHistory } from "utils/hooks/usePushHistory";
-import { WORKFLOW_EXPLORER_URL } from "utils/constants/route";
+import { WORKFLOW_DEFINITION_URL } from "utils/constants/route";
 
 const LinearIndeterminate = () => {
   return (
@@ -230,8 +230,8 @@ export default function ResultsTable({
     setToggleCleared((t) => !t);
   }, [resultObj]);
 
-  const handleClickBrowseTemplates = () => {
-    pushHistory(WORKFLOW_EXPLORER_URL);
+  const handleClickDefineWorkflow = () => {
+    pushHistory(WORKFLOW_DEFINITION_URL.NEW);
   };
   const handleClickClearSearch = () => {
     handleReset();
@@ -334,8 +334,8 @@ export default function ResultsTable({
               titleBg={colors.warningTag}
               description="Here you’ll see any executed workflows, regardless
               of its status. Let’s define a new workflow!"
-              buttonText="BROWSE TEMPLATES"
-              buttonHandler={handleClickBrowseTemplates}
+              buttonText="DEFINE WORKFLOW"
+              buttonHandler={handleClickDefineWorkflow}
             />
           )
         }

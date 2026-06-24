@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeSet;
 
+import org.conductoross.conductor.core.listener.MetadataChangeListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -40,13 +41,16 @@ public class MetadataServiceImpl implements MetadataService {
     private static final Logger LOGGER = LoggerFactory.getLogger(MetadataServiceImpl.class);
     private final MetadataDAO metadataDAO;
     private final EventHandlerDAO eventHandlerDAO;
+    private final MetadataChangeListener metadataChangeListener;
 
     public MetadataServiceImpl(
             MetadataDAO metadataDAO,
             EventHandlerDAO eventHandlerDAO,
+            MetadataChangeListener metadataChangeListener,
             ConductorProperties properties) {
         this.metadataDAO = metadataDAO;
         this.eventHandlerDAO = eventHandlerDAO;
+        this.metadataChangeListener = metadataChangeListener;
 
         ValidationContext.initialize(metadataDAO);
         OwnerEmailMandatoryConstraint.WorkflowTaskValidValidator.setOwnerEmailMandatory(
@@ -64,6 +68,7 @@ public class MetadataServiceImpl implements MetadataService {
             taskDefinition.setUpdateTime(null);
 
             metadataDAO.createTaskDef(taskDefinition);
+            metadataChangeListener.onTaskDefRegistered(taskDefinition);
         }
     }
 
@@ -85,6 +90,7 @@ public class MetadataServiceImpl implements MetadataService {
         taskDefinition.setCreateTime(existing.getCreateTime());
         taskDefinition.setCreatedBy(existing.getCreatedBy());
         metadataDAO.updateTaskDef(taskDefinition);
+        metadataChangeListener.onTaskDefUpdated(taskDefinition);
     }
 
     /**
@@ -92,6 +98,7 @@ public class MetadataServiceImpl implements MetadataService {
      */
     public void unregisterTaskDef(String taskType) {
         metadataDAO.removeTaskDef(taskType);
+        metadataChangeListener.onTaskDefUnregistered(taskType);
     }
 
     /**
@@ -119,6 +126,7 @@ public class MetadataServiceImpl implements MetadataService {
     public void updateWorkflowDef(WorkflowDef workflowDef) {
         workflowDef.setUpdateTime(System.currentTimeMillis());
         metadataDAO.updateWorkflowDef(workflowDef);
+        metadataChangeListener.onWorkflowDefUpdated(workflowDef);
     }
 
     /**
@@ -172,6 +180,7 @@ public class MetadataServiceImpl implements MetadataService {
     public void registerWorkflowDef(WorkflowDef workflowDef) {
         workflowDef.setCreateTime(System.currentTimeMillis());
         metadataDAO.createWorkflowDef(workflowDef);
+        metadataChangeListener.onWorkflowDefRegistered(workflowDef);
     }
 
     /**
@@ -180,6 +189,7 @@ public class MetadataServiceImpl implements MetadataService {
      */
     public void unregisterWorkflowDef(String name, Integer version) {
         metadataDAO.removeWorkflowDef(name, version);
+        metadataChangeListener.onWorkflowDefUnregistered(name, version);
     }
 
     /**
@@ -188,6 +198,7 @@ public class MetadataServiceImpl implements MetadataService {
      */
     public void addEventHandler(EventHandler eventHandler) {
         eventHandlerDAO.addEventHandler(eventHandler);
+        metadataChangeListener.onEventHandlerRegistered(eventHandler);
     }
 
     /**
@@ -195,6 +206,7 @@ public class MetadataServiceImpl implements MetadataService {
      */
     public void updateEventHandler(EventHandler eventHandler) {
         eventHandlerDAO.updateEventHandler(eventHandler);
+        metadataChangeListener.onEventHandlerUpdated(eventHandler);
     }
 
     /**
@@ -202,6 +214,7 @@ public class MetadataServiceImpl implements MetadataService {
      */
     public void removeEventHandlerStatus(String name) {
         eventHandlerDAO.removeEventHandler(name);
+        metadataChangeListener.onEventHandlerUnregistered(name);
     }
 
     /**
@@ -242,11 +255,22 @@ public class MetadataServiceImpl implements MetadataService {
         return retval;
     }
 
+    @Override
+    public List<String> getWorkflowNames() {
+        return metadataDAO.getWorkflowNames();
+    }
+
+    @Override
+    public List<WorkflowDefSummary> getWorkflowVersions(String name) {
+        return metadataDAO.getWorkflowVersions(name);
+    }
+
     private WorkflowDefSummary fromWorkflowDef(WorkflowDef def) {
         WorkflowDefSummary summary = new WorkflowDefSummary();
         summary.setName(def.getName());
         summary.setVersion(def.getVersion());
         summary.setCreateTime(def.getCreateTime());
+        summary.setUpdateTime(def.getUpdateTime());
 
         return summary;
     }

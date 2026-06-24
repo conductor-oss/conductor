@@ -56,7 +56,7 @@ export type {
 // =============================================================================
 export { App } from "./components/App";
 export { getRoutes } from "./routes/routes";
-export { default as AuthGuard } from "./components/auth/AuthGuard";
+export { default as AuthGuard } from "./components/features/auth/AuthGuard";
 
 // =============================================================================
 // Core Components
@@ -64,22 +64,22 @@ export { default as AuthGuard } from "./components/auth/AuthGuard";
 export * from "./components";
 
 // Additional commonly used components
-export { default as Header } from "./components/Header";
-export { default as ClipboardCopy } from "./components/ClipboardCopy";
-export { default as ConfirmChoiceDialog } from "./components/ConfirmChoiceDialog";
-export { default as NoDataComponent } from "./components/NoDataComponent";
-export { DocLink } from "./components/DocLink";
-export { SnackbarMessage } from "./components/SnackbarMessage";
-export { TagsRenderer } from "./components/v1/TagList";
-export { default as AddIcon } from "./components/v1/icons/AddIcon";
-export { default as CopyIcon } from "./components/v1/icons/CopyIcon";
-export { default as AddTagDialog } from "./components/tags/AddTagDialog";
+export { default as Header } from "./components/ui/Header";
+export { default as ClipboardCopy } from "./components/ui/ClipboardCopy";
+export { default as ConfirmChoiceDialog } from "./components/ui/dialogs/ConfirmChoiceDialog";
+export { default as NoDataComponent } from "./components/ui/NoDataComponent";
+export { DocLink } from "./components/ui/DocLink";
+export { SnackbarMessage } from "./components/ui/SnackbarMessage";
+export { TagsRenderer } from "./components/ui/TagList";
+export { default as AddIcon } from "./components/icons/AddIcon";
+export { default as CopyIcon } from "./components/icons/CopyIcon";
+export { default as AddTagDialog } from "./components/features/tags/AddTagDialog";
 
 // Sidebar components
-export { Sidebar } from "./components/Sidebar";
-export { SidebarContext } from "./components/Sidebar/context/SidebarContext";
-export { SidebarProvider } from "./components/Sidebar/context/SidebarContextProvider";
-export { getCoreSidebarItems } from "./components/Sidebar/sidebarCoreItems";
+export { Sidebar } from "./components/providers/sidebar";
+export { SidebarContext } from "./components/providers/sidebar/context/SidebarContext";
+export { SidebarProvider } from "./components/providers/sidebar/context/SidebarContextProvider";
+export { getCoreSidebarItems } from "./components/providers/sidebar/sidebarCoreItems";
 
 // =============================================================================
 // Core Pages (for customization/extension)
@@ -102,22 +102,22 @@ export {
 // =============================================================================
 // Shared Utilities & Hooks
 // =============================================================================
-export { useAuth } from "./shared/auth";
-export { UISidebar } from "./components/Sidebar/UiSidebar";
+export { useAuth } from "./components/features/auth";
+export { UISidebar } from "./components/providers/sidebar/UiSidebar";
 
 // =============================================================================
 // Auth Infrastructure (minimal stubs for OSS mode)
 // Full auth implementation is in the enterprise package.
 // =============================================================================
 export { authProviderMachine } from "./shared/state/machine";
-export { AuthContext } from "./shared/auth/context";
-export type { AuthState } from "./shared/auth/types";
-export { defaultAuthState } from "./shared/auth/types";
+export { AuthContext } from "./components/features/auth/context";
+export type { AuthState } from "./components/features/auth/types";
+export { defaultAuthState } from "./components/features/auth/types";
 export {
   setTokenData,
   getTokenData,
   getAccessToken,
-} from "./shared/auth/tokenManagerJotai";
+} from "./components/features/auth/tokenManagerJotai";
 export {
   SupportedProviders,
   AuthMachineEventTypes,
@@ -147,7 +147,7 @@ export { featureFlags, FEATURES, logger } from "./utils";
 // Theme Provider
 // =============================================================================
 export { Provider as ThemeProvider } from "./theme/material/provider";
-export { MessageProvider } from "./components/v1/layout/MessageContext";
+export { MessageProvider } from "./components/providers/messageContext";
 
 // =============================================================================
 // Common Constants

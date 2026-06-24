@@ -24,7 +24,7 @@ RUN if [ "$PREBUILT" = "true" ]; then \
       cp docker/server/libs/conductor-server.jar server/build/libs/conductor-server-boot.jar && \
       echo "Using pre-built server JAR"; \
     else \
-      ./gradlew build -x test -x spotlessCheck -x shadowJar -x :conductor-os-persistence-v3:build \
+      ./gradlew build -x test -x spotlessCheck -x shadowJar \
         -PindexingBackend=${INDEXING_BACKEND} \
         -Dorg.gradle.jvmargs=-Xmx2g \
         --no-daemon --no-parallel; \
@@ -37,19 +37,16 @@ RUN if [ "$PREBUILT" = "true" ]; then \
 FROM node:lts AS ui-builder
 
 ARG PREBUILT=false
-ARG YARN_OPTS
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
-COPY ui /conductor/ui
-WORKDIR /conductor/ui
+COPY ui-next /conductor/ui-next
+WORKDIR /conductor/ui-next
 
 RUN if [ "$PREBUILT" = "false" ]; then \
-      corepack enable && corepack prepare yarn@stable --activate && \
-      export REACT_APP_MONACO_EDITOR_USING_CDN=false && \
-      export REACT_APP_ENABLE_ERRORS_INSPECTOR=true && \
-      yarn config set network-timeout 600000 -g && \
-      yarn ${YARN_OPTS} install && cp -r node_modules/monaco-editor public/ && yarn ${YARN_OPTS} build; \
+      corepack enable && \
+      pnpm install && \
+      NODE_OPTIONS=--max-old-space-size=4096 pnpm build; \
     else \
       echo "Using pre-built UI assets"; \
     fi
@@ -77,7 +74,7 @@ COPY --from=builder /conductor/server/build/libs/*boot*.jar /app/libs/conductor-
 # Copy compiled UI assets to nginx www directory
 WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
-COPY --from=ui-builder /conductor/ui/build .
+COPY --from=ui-builder /conductor/ui-next/dist .
 COPY docker/server/nginx/nginx.conf  /etc/nginx/conf.d/default.conf
 
 # Copy the files for the server into the app folders

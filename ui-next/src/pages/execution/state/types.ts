@@ -1,5 +1,8 @@
 import { ActorRef, DoneInvokeEvent } from "xstate";
-import { FlowEvents, SelectNodeEvent } from "components/flow/state/types";
+import {
+  FlowEvents,
+  SelectNodeEvent,
+} from "components/features/flow/state/types";
 import {
   TaskDef,
   ExecutedData,

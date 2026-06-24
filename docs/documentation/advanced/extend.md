@@ -5,7 +5,7 @@ description: "Extend Conductor with custom persistence backends, queue implement
 # Extending Conductor
 
 ## Backend
-Conductor provides a pluggable backend.  The current implementation uses Dynomite.
+Conductor provides a pluggable backend. Supported implementations include Redis, PostgreSQL, MySQL, Cassandra, and SQLite.
 
 There are 4 interfaces that need to be implemented for each backend:
 

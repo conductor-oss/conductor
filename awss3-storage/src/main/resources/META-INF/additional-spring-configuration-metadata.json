@@ -1,4 +1,17 @@
 {
+  "properties": [
+    {
+      "name": "conductor.file-storage.s3.bucket-name",
+      "type": "java.lang.String",
+      "description": "S3 bucket name where files are stored."
+    },
+    {
+      "name": "conductor.file-storage.s3.region",
+      "type": "java.lang.String",
+      "description": "AWS region for the S3 bucket.",
+      "defaultValue": "us-east-1"
+    }
+  ],
   "hints": [
     {
       "name": "conductor.external-payload-storage.type",

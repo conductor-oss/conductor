@@ -25,8 +25,10 @@ import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.TransientException;
+import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -59,15 +61,18 @@ public class RedisExecutionDAO extends BaseDynoDAO
     private static final String CORR_ID_TO_WORKFLOWS = "CORR_ID_TO_WORKFLOWS";
     private static final String EVENT_EXECUTION = "EVENT_EXECUTION";
     private final int ttlEventExecutionSeconds;
+    private final QueueDAO queueDAO;
 
     public RedisExecutionDAO(
             JedisProxy jedisProxy,
             ObjectMapper objectMapper,
             ConductorProperties conductorProperties,
-            RedisProperties properties) {
+            RedisProperties properties,
+            QueueDAO queueDAO) {
         super(jedisProxy, objectMapper, conductorProperties, properties);
 
         ttlEventExecutionSeconds = (int) properties.getEventExecutionPersistenceTTL().getSeconds();
+        this.queueDAO = queueDAO;
     }
 
     private static String dateStr(Long timeInMs) {
@@ -224,6 +229,17 @@ public class RedisExecutionDAO extends BaseDynoDAO
                         task.getTaskId(),
                         task.getTaskType(),
                         task.getStatus().name());
+                if (task.getStatus() != null && task.getStatus().isTerminal()) {
+                    String queueName = QueueUtils.getQueueName(task);
+                    List<String> nextIds = queueDAO.peekFirstIds(queueName, 1);
+                    if (nextIds != null && !nextIds.isEmpty()) {
+                        LOGGER.debug(
+                                "Concurrency slot freed for {}, releasing postponed task {}",
+                                task.getTaskDefName(),
+                                nextIds.get(0));
+                        queueDAO.resetOffsetTime(queueName, nextIds.get(0));
+                    }
+                }
             }
         }
 
@@ -289,7 +305,7 @@ public class RedisExecutionDAO extends BaseDynoDAO
         jedisProxy.zaddnx(rateLimitKey, score, taskId);
         recordRedisDaoRequests("checkTaskRateLimiting", task.getTaskType(), task.getWorkflowType());
 
-        Set<String> ids = jedisProxy.zrangeByScore(rateLimitKey, 0, score + 1, Integer.MAX_VALUE);
+        List<String> ids = jedisProxy.zrangeByScore(rateLimitKey, 0, score + 1, Integer.MAX_VALUE);
         boolean rateLimited = !ids.contains(taskId);
         if (rateLimited) {
             LOGGER.info(

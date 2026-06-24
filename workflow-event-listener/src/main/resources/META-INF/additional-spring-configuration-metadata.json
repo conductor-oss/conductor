@@ -80,6 +80,12 @@
       "name": "conductor.default-event-queue.type",
       "type": "java.lang.String",
       "description": "The default event queue type to listen on for the WAIT task."
+    },
+    {
+      "name": "conductor.workflow-status-listener.composite.types",
+      "type": "java.util.List",
+      "description": "List of workflow listener types to enable when using composite listener. Valid values: workflow_publisher, queue_publisher, kafka, archive",
+      "sourceType": "com.netflix.conductor.contribs.listener.composite.CompositeWorkflowStatusListenerProperties"
     }
   ],
   "hints": [
@@ -101,6 +107,10 @@
         {
           "value": "kafka",
           "description": "Use this publisher to publish workflow status changed to Kafka. The events published are the following Termination, Completion, Finalization, Started, Rearan, Retried, Paused, Resumed, Restarted, Finalized."
+        },
+        {
+          "value": "composite",
+          "description": "Use the composite implementation to enable multiple workflow status listeners simultaneously. Configure the listeners to enable using conductor.workflow-status-listener.composite.types property."
         }
       ]
     },

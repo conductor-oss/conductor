@@ -1,4 +1,4 @@
-import { MAX_EXPAND_TASKS } from "components/flow/nodes/constants";
+import { MAX_EXPAND_TASKS } from "components/features/flow/nodes/constants";
 import _curry from "lodash/curry";
 import _findLast from "lodash/findLast";
 import _first from "lodash/first";
@@ -50,7 +50,11 @@ type StatusMapTupleAcumulator = [
   StatusMap,
   Record<string, DynamicForkRelations>,
 ];
-export const executionTasksToStatusMap = (executionTasks: ExecutionTask[]) => {
+export const executionTasksToStatusMap = (
+  // Executions can come back without a `tasks` field (e.g. a workflow that has
+  // not started running any tasks yet); treat that as an empty list.
+  executionTasks: ExecutionTask[] = [],
+) => {
   const [statusMap] = executionTasks.reduce(
     (
       [acc, related]: StatusMapTupleAcumulator,
