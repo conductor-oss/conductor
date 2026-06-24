@@ -40,7 +40,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
@@ -117,25 +117,25 @@ jobs:
         with:
           report_paths: "**/build/test-results/test/TEST-*.xml"
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: build-artifacts
           path: "**/build/reports"
       - name: Upload coverage report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage-report
           path: build/reports/jacoco/aggregated
       - name: Store Buildscan URL
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: build-scan
           path: "buildscan.log"
   test-harness:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
@@ -192,13 +192,13 @@ jobs:
         with:
           report_paths: "test-harness/build/test-results/test/TEST-*.xml"
       - name: Upload test-harness reports
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-harness-reports
           path: "test-harness/build/reports"
       - name: Upload test-harness coverage report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-harness-coverage-report
@@ -233,7 +233,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-e2e-matrix.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
@@ -306,7 +306,7 @@ jobs:
           with open(summary, "a") as fh:
               fh.write("\n".join(lines) + "\n")
       - name: Upload E2E reports
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: e2e-reports-${{ matrix.name }}
@@ -318,10 +318,10 @@ jobs:
       run:
         working-directory: ui
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: "yarn"
@@ -334,7 +334,7 @@ jobs:
         run: yarn run build
 
       - name: Cache Playwright browsers
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
@@ -352,7 +352,7 @@ jobs:
         run: yarn test:e2e
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report

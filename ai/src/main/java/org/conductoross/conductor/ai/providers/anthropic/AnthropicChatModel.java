@@ -114,10 +114,11 @@ public class AnthropicChatModel implements ChatModel {
                     .stopSequences(opts.getStopSequences())
                     .tools(opts.getTools());
 
-            // Thinking + effort. Claude Opus 4.7 rejects the legacy
-            // ``thinking.type.enabled`` shape with HTTP 400 and requires
-            // ``thinking.type.adaptive`` + ``output_config.effort`` instead. For 4.6 / 4.5 the
-            // legacy shape is still accepted (deprecated on 4.6, primary on 4.5).
+            // Thinking + effort. Opus 4.7+, Fable 5, and Mythos reject the legacy
+            // ``thinking.type.enabled`` shape with HTTP 400 and require
+            // ``thinking.type.adaptive`` + ``output_config.effort`` instead. Opus 4.6 / Sonnet 4.6
+            // accept both (enabled deprecated); 4.5-and-earlier and Haiku accept only enabled.
+            // See requiresAdaptiveThinking for the full matrix.
             boolean adaptiveOnly = requiresAdaptiveThinking(opts.getModel());
             Integer budget = opts.getThinkingBudgetTokens();
             boolean wantsThinking = budget != null && budget > 0;
@@ -309,12 +310,22 @@ public class AnthropicChatModel implements ChatModel {
     }
 
     /**
-     * Returns true for models that reject ``thinking.type.enabled`` and require adaptive thinking
-     * with ``output_config.effort``. Currently Claude Opus 4.7 (any variant — including
-     * ``claude-opus-4-7-20250101`` or future ``-1m``-style suffixes).
+     * Model lines that use adaptive thinking ({@code thinking.type:"adaptive"} + {@code
+     * output_config.effort}) rather than the legacy {@code thinking.type:"enabled"} + {@code
+     * budget_tokens} shape. Matched as a substring on the line name -- no version digits -- so new
+     * releases on these lines work without a code change. Per the adaptive-thinking docs (checked
+     * 2026-06): the Opus line is adaptive from 4.6 onward (4.7+ reject enabled outright), and Fable
+     * / Mythos are adaptive-only. Sonnet and Haiku still use enabled, so they are absent.
+     * (Trade-off: legacy Opus 4.5-and-earlier -- 4.1/4.0 already retiring -- also match here and
+     * would 400 on a thinking request; acceptable as those are deprecated.)
      */
+    private static final List<String> ADAPTIVE_LINES = List.of("opus", "fable", "mythos");
+
+    /** True if {@code model} uses adaptive thinking rather than the legacy enabled shape. */
     static boolean requiresAdaptiveThinking(String model) {
-        return model != null && model.toLowerCase().contains("opus-4-7");
+        if (model == null) return false;
+        String m = model.toLowerCase();
+        return ADAPTIVE_LINES.stream().anyMatch(m::contains);
     }
 
     /**

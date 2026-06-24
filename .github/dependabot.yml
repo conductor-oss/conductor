@@ -3,7 +3,9 @@ updates:
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    # Keep the firehose down: cap concurrent PRs and batch routine bumps.
+    open-pull-requests-limit: 5
     reviewers:
       - "v1r3n"
       - "boney9"
@@ -35,11 +37,27 @@ updates:
       # All GraalVM polyglot artifacts must share the same version.
       # Mixing versions (e.g. polyglot:24.x with js:25.x) causes a runtime
       # "polyglot version X is not compatible with Truffle Y" failure.
+      # (Listed first so GraalVM artifacts group here regardless of update type.)
       graalvm:
         patterns:
           - "org.graalvm.*"
+      # Batch all routine minor/patch bumps into a single monthly PR instead
+      # of one PR per dependency. Major bumps fall outside this group and still
+      # open individually, since they warrant per-dependency review.
+      gradle-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    # One PR for all action bumps rather than one per action.
+    groups:
+      github-actions:
+        patterns:
+          - "*"
