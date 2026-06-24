@@ -598,11 +598,14 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
             tasks[3].taskType == 'integration_task_2'
             tasks[3].status == Task.Status.COMPLETED
             tasks[4].taskType == TASK_TYPE_JOIN
-            tasks[4].status == Task.Status.CANCELED
+            // retry() pushes the parent onto the decider queue; the background sweeper may
+            // re-open CANCELED JOINs to IN_PROGRESS before this snapshot is read (same race
+            // as HierarchicalForkJoinSubworkflowRetrySpec #1148 / RerunSpec #1206).
+            tasks[4].status in [Task.Status.CANCELED, Task.Status.IN_PROGRESS]
             tasks[5].taskType == 'integration_task_2'
             tasks[5].status == Task.Status.COMPLETED
             tasks[6].taskType == TASK_TYPE_JOIN
-            tasks[6].status == Task.Status.CANCELED
+            tasks[6].status in [Task.Status.CANCELED, Task.Status.IN_PROGRESS]
         }
 
         when: "the parent is swept"
@@ -720,11 +723,14 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
             tasks[3].taskType == 'integration_task_2'
             tasks[3].status == Task.Status.COMPLETED
             tasks[4].taskType == TASK_TYPE_JOIN
-            tasks[4].status == Task.Status.CANCELED
+            // retry() pushes the parent onto the decider queue; the background sweeper may
+            // re-open CANCELED JOINs to IN_PROGRESS before this snapshot is read (same race
+            // as HierarchicalForkJoinSubworkflowRetrySpec #1148 / RerunSpec #1206).
+            tasks[4].status in [Task.Status.CANCELED, Task.Status.IN_PROGRESS]
             tasks[5].taskType == 'integration_task_2'
             tasks[5].status == Task.Status.COMPLETED
             tasks[6].taskType == TASK_TYPE_JOIN
-            tasks[6].status == Task.Status.CANCELED
+            tasks[6].status in [Task.Status.CANCELED, Task.Status.IN_PROGRESS]
         }
 
         when: "the parent is swept"
