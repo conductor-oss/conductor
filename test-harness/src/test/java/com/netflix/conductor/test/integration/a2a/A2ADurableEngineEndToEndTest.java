@@ -59,8 +59,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The durability money-shot, through the <b>real engine</b>: a {@code AGENT} task is driven by
- * the genuine decider + {@link AsyncSystemTaskExecutor} + Redis-backed persistence (not a mocked
+ * The durability money-shot, through the <b>real engine</b>: a {@code AGENT} task is driven by the
+ * genuine decider + {@link AsyncSystemTaskExecutor} + Redis-backed persistence (not a mocked
  * engine), against a slow A2A agent, and proves crash/restart resume.
  *
  * <p>"Durable A2A" claim under test: while the remote agent is still {@code working}, all of the
@@ -72,9 +72,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * The embedded agent stands in for the external agent, which does <i>not</i> crash when Conductor
  * does — it keeps serving and eventually flips to {@code completed}.
  *
- * <p>System-task workers are disabled in test mode, so we drain the {@code AGENT} queue and
- * execute via {@link AsyncSystemTaskExecutor} — the same path {@code SystemTaskWorkerCoordinator}
- * takes in production.
+ * <p>System-task workers are disabled in test mode, so we drain the {@code AGENT} queue and execute
+ * via {@link AsyncSystemTaskExecutor} — the same path {@code SystemTaskWorkerCoordinator} takes in
+ * production.
  */
 @SpringBootTest(classes = ConductorTestApp.class)
 @TestPropertySource(
