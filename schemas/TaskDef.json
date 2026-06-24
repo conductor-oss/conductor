@@ -131,6 +131,35 @@
       "description": "Whether to enforce schema validation",
       "default": false
     },
+    "maxRetryDelaySeconds": {
+      "type": "integer",
+      "description": "Maximum delay cap between retries in seconds for EXPONENTIAL_BACKOFF and LINEAR_BACKOFF. 0 means no cap.",
+      "minimum": 0,
+      "default": 0
+    },
+    "backoffJitterMs": {
+      "type": "integer",
+      "description": "Maximum random jitter added to each retry delay in milliseconds. 0 disables jitter.",
+      "minimum": 0,
+      "default": 0
+    },
+    "taskStatusListenerEnabled": {
+      "type": "boolean",
+      "description": "Whether task status change events are emitted",
+      "default": true
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata",
+      "additionalProperties": true,
+      "default": {}
+    },
+    "version": {
+      "type": "integer",
+      "description": "Version of the task definition. Defaults to 1. Forms the primary key together with name.",
+      "minimum": 1,
+      "default": 1
+    },
     "ownerApp": {
       "type": "string",
       "description": "Owner application name"

@@ -587,6 +587,12 @@ public abstract class AbstractProtoMapper {
         if (from.getType() != null) {
             to.setType( toProto( from.getType() ) );
         }
+        for (Map.Entry<String, Object> pair : from.getData().entrySet()) {
+            to.putData( pair.getKey(), toProto( pair.getValue() ) );
+        }
+        if (from.getExternalRef() != null) {
+            to.setExternalRef( from.getExternalRef() );
+        }
         return to.build();
     }
 
@@ -595,6 +601,12 @@ public abstract class AbstractProtoMapper {
         to.setName( from.getName() );
         to.setVersion( from.getVersion() );
         to.setType( fromProto( from.getType() ) );
+        Map<String, Object> dataMap = new HashMap<String, Object>();
+        for (Map.Entry<String, Value> pair : from.getDataMap().entrySet()) {
+            dataMap.put( pair.getKey(), fromProto( pair.getValue() ) );
+        }
+        to.setData(dataMap);
+        to.setExternalRef( from.getExternalRef() );
         return to;
     }
 
@@ -987,6 +999,19 @@ public abstract class AbstractProtoMapper {
         }
         to.setTotalTimeoutSeconds( from.getTotalTimeoutSeconds() );
         to.setTaskStatusListenerEnabled( from.isTaskStatusListenerEnabled() );
+        if (from.getInputSchema() != null) {
+            to.setInputSchema( toProto( from.getInputSchema() ) );
+        }
+        if (from.getOutputSchema() != null) {
+            to.setOutputSchema( toProto( from.getOutputSchema() ) );
+        }
+        to.setEnforceSchema( from.isEnforceSchema() );
+        for (Map.Entry<String, Object> pair : from.getMetadata().entrySet()) {
+            to.putMetadata( pair.getKey(), toProto( pair.getValue() ) );
+        }
+        if (from.getVersion() != null) {
+            to.setVersion( from.getVersion() );
+        }
         return to.build();
     }
 
@@ -1020,6 +1045,19 @@ public abstract class AbstractProtoMapper {
         to.setBaseType( from.getBaseType() );
         to.setTotalTimeoutSeconds( from.getTotalTimeoutSeconds() );
         to.setTaskStatusListenerEnabled( from.getTaskStatusListenerEnabled() );
+        if (from.hasInputSchema()) {
+            to.setInputSchema( fromProto( from.getInputSchema() ) );
+        }
+        if (from.hasOutputSchema()) {
+            to.setOutputSchema( fromProto( from.getOutputSchema() ) );
+        }
+        to.setEnforceSchema( from.getEnforceSchema() );
+        Map<String, Object> metadataMap = new HashMap<String, Object>();
+        for (Map.Entry<String, Value> pair : from.getMetadataMap().entrySet()) {
+            metadataMap.put( pair.getKey(), fromProto( pair.getValue() ) );
+        }
+        to.setMetadata(metadataMap);
+        to.setVersion( from.getVersion() );
         return to;
     }
 

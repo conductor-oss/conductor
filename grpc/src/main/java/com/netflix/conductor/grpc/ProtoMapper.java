@@ -48,7 +48,7 @@ public final class ProtoMapper extends AbstractProtoMapper {
      * The {@link Value} ProtoBuf message is a variant type that can define any
      * value representable as a native JSON type. Consequently, this method expects
      * the given {@link Object} instance to be a Java object instance of JSON-native
-     * value, namely: null, {@link Boolean}, {@link Double}, {@link String},
+     * value, namely: null, {@link Boolean}, {@link Number}, {@link String},
      * {@link Map}, {@link List}.
      *
      * Any other values will cause an exception to be thrown.
@@ -65,25 +65,35 @@ public final class ProtoMapper extends AbstractProtoMapper {
             builder.setNullValue(NullValue.NULL_VALUE);
         } else if (val instanceof Boolean) {
             builder.setBoolValue((Boolean) val);
-        } else if (val instanceof Double) {
-            builder.setNumberValue((Double) val);
+        } else if (val instanceof Number) {
+            // protobuf Struct only has a double number_value, so every numeric type
+            // (Integer, Long, Float, Double, BigDecimal, BigInteger, ...) is widened to
+            // double here. Jackson deserializes JSON numbers in a generic Map<String,Object>
+            // as Integer/Long/Double, so accepting only Double would throw for the common
+            // case of integral values. Note: values beyond 2^53 of magnitude, or with more
+            // precision than a double can hold, are necessarily lossy — an inherent
+            // limitation of Struct/Value, not of this mapping.
+            builder.setNumberValue(((Number) val).doubleValue());
         } else if (val instanceof String) {
             builder.setStringValue((String) val);
         } else if (val instanceof Map) {
-            Map<String, Object> map = (Map<String, Object>) val;
+            // JSON object keys are always strings. Coerce every key via String.valueOf so a
+            // Map with non-String keys (e.g. Map<Integer,?>) or a stray null key serializes
+            // cleanly instead of throwing ClassCastException / NullPointerException at putFields.
+            Map<?, ?> map = (Map<?, ?>) val;
             Struct.Builder struct = Struct.newBuilder();
-            for (Map.Entry<String, Object> pair : map.entrySet()) {
-                struct.putFields(pair.getKey(), toProto(pair.getValue()));
+            for (Map.Entry<?, ?> pair : map.entrySet()) {
+                struct.putFields(String.valueOf(pair.getKey()), toProto(pair.getValue()));
             }
             builder.setStructValue(struct.build());
         } else if (val instanceof List) {
             ListValue.Builder list = ListValue.newBuilder();
-            for (Object obj : (List<Object>)val) {
+            for (Object obj : (List<?>) val) {
                 list.addValues(toProto(obj));
             }
             builder.setListValue(list.build());
         } else {
-            throw new ClassCastException("cannot map to Value type: "+val);
+            throw new ClassCastException("cannot map to Value type: " + val);
         }
         return builder.build();
     }
