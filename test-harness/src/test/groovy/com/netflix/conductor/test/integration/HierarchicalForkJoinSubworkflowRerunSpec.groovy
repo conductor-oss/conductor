@@ -186,7 +186,10 @@ class HierarchicalForkJoinSubworkflowRerunSpec extends AbstractSpecification {
             tasks[2].taskType == 'integration_task_2'
             tasks[2].status == Task.Status.COMPLETED
             tasks[3].taskType == TASK_TYPE_JOIN
-            tasks[3].status == Task.Status.CANCELED
+            // The reopened parent is also pushed for background evaluation, so by the time we
+            // read this snapshot the JOIN may still be CANCELED (from the failed run) or already
+            // reopened to IN_PROGRESS by the sweeper. Either is valid; only completion is not.
+            tasks[3].status in [Task.Status.CANCELED, Task.Status.IN_PROGRESS]
         }
 
         when: "the root level workflow is 'decided'"
@@ -203,7 +206,10 @@ class HierarchicalForkJoinSubworkflowRerunSpec extends AbstractSpecification {
             tasks[2].taskType == 'integration_task_2'
             tasks[2].status == Task.Status.COMPLETED
             tasks[3].taskType == TASK_TYPE_JOIN
-            tasks[3].status == Task.Status.CANCELED
+            // The reopened parent is also pushed for background evaluation, so by the time we
+            // read this snapshot the JOIN may still be CANCELED (from the failed run) or already
+            // reopened to IN_PROGRESS by the sweeper. Either is valid; only completion is not.
+            tasks[3].status in [Task.Status.CANCELED, Task.Status.IN_PROGRESS]
         }
         //endregion
     }
@@ -450,7 +456,10 @@ class HierarchicalForkJoinSubworkflowRerunSpec extends AbstractSpecification {
             tasks[2].taskType == 'integration_task_2'
             tasks[2].status == Task.Status.COMPLETED
             tasks[3].taskType == TASK_TYPE_JOIN
-            tasks[3].status == Task.Status.CANCELED
+            // The reopened parent is also pushed for background evaluation, so by the time we
+            // read this snapshot the JOIN may still be CANCELED (from the failed run) or already
+            // reopened to IN_PROGRESS by the sweeper. Either is valid; only completion is not.
+            tasks[3].status in [Task.Status.CANCELED, Task.Status.IN_PROGRESS]
         }
 
         and: "verify that the root workflow is updated"
@@ -464,7 +473,10 @@ class HierarchicalForkJoinSubworkflowRerunSpec extends AbstractSpecification {
             tasks[2].taskType == 'integration_task_2'
             tasks[2].status == Task.Status.COMPLETED
             tasks[3].taskType == TASK_TYPE_JOIN
-            tasks[3].status == Task.Status.CANCELED
+            // The reopened parent is also pushed for background evaluation, so by the time we
+            // read this snapshot the JOIN may still be CANCELED (from the failed run) or already
+            // reopened to IN_PROGRESS by the sweeper. Either is valid; only completion is not.
+            tasks[3].status in [Task.Status.CANCELED, Task.Status.IN_PROGRESS]
         }
 
         when: "the mid level and root workflows are sweeped"
