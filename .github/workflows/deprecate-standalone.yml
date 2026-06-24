@@ -10,7 +10,7 @@ jobs:
   deprecate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Login to Docker Hub
         uses: docker/login-action@v4
