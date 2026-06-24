@@ -480,18 +480,6 @@ export default function BasicSearch({
             }}
             tooltipShown={!!tooltipFlags.executionSearch}
             onTooltipClose={handleToolTipOnClose}
-            onSearch={() =>
-              doSearch({
-                resultObj,
-                queryFT,
-                buildQuery,
-                setQueryFT,
-                refetch,
-                setPage,
-                setRecentTaskSearch,
-              })
-            }
-            onShowCode={() => setShowCodeDialog("active")}
           />
 
           <QuickFiltersCard
@@ -524,6 +512,18 @@ export default function BasicSearch({
               setFiltersAnchor(anchor);
             }}
             onReset={handleReset}
+            onSearch={() =>
+              doSearch({
+                resultObj,
+                queryFT,
+                buildQuery,
+                setQueryFT,
+                refetch,
+                setPage,
+                setRecentTaskSearch,
+              })
+            }
+            onShowCode={() => setShowCodeDialog("active")}
           />
 
           <MoreFiltersPopover

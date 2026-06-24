@@ -1,7 +1,9 @@
 import TuneIcon from "@mui/icons-material/Tune";
 import { Box, Card } from "@mui/material";
 import { Button } from "components";
+import SearchIcon from "components/icons/SearchIcon";
 import ResetIcon from "components/icons/ResetIcon";
+import SplitButton from "components/ui/buttons/ConductorSplitButton";
 import { RefObject } from "react";
 import { DatePickerButton, DatePickerButtonHandle } from "./DatePickerButton";
 import { StatusComboButton } from "./StatusComboButton";
@@ -34,6 +36,9 @@ export interface QuickFiltersCardProps {
   onOpenFilters: (anchor: HTMLElement) => void;
   // Reset
   onReset: () => void;
+  // Search
+  onSearch: () => void;
+  onShowCode: () => void;
 }
 
 export function QuickFiltersCard({
@@ -57,6 +62,8 @@ export function QuickFiltersCard({
   advancedFilterCount,
   onOpenFilters,
   onReset,
+  onSearch,
+  onShowCode,
 }: QuickFiltersCardProps) {
   return (
     <Card>
@@ -134,6 +141,7 @@ export function QuickFiltersCard({
           display: "flex",
           justifyContent: "flex-end",
           alignItems: "center",
+          gap: 1,
           pt: 2,
         }}
       >
@@ -147,6 +155,14 @@ export function QuickFiltersCard({
         >
           Reset All
         </Button>
+        <SplitButton
+          id="search-workflow-btn"
+          startIcon={<SearchIcon />}
+          options={[{ label: "Show as code", onClick: onShowCode }]}
+          primaryOnClick={onSearch}
+        >
+          Search
+        </SplitButton>
       </Box>
     </Card>
   );
