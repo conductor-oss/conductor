@@ -83,6 +83,9 @@ dependencies {
     //Event Listener
     implementation project(':conductor-workflow-event-listener')
 
+    //Webhooks
+    implementation project(':conductor-webhooks-oss')
+
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-validation'

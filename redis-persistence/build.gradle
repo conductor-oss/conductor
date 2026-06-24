@@ -27,6 +27,7 @@ dependencies {
 
     testImplementation "org.awaitility:awaitility:${revAwaitility}"
     testImplementation "org.testcontainers:testcontainers:${revTestContainer}"
+    testImplementation 'org.springframework:spring-web'
     testImplementation project(':conductor-core').sourceSets.test.output
     testImplementation project(':conductor-common').sourceSets.test.output
 }
