@@ -66,9 +66,9 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <ul>
  *   <li>{@code ANTHROPIC_THINKING_MODEL} — model with extended thinking support (default: {@code
- *       claude-3-7-sonnet-20250219})
+ *       claude-sonnet-4-6})
  *   <li>{@code ANTHROPIC_MODEL} — lightweight model without thinking (default: {@code
- *       claude-3-5-haiku-20241022})
+ *       claude-haiku-4-5})
  *   <li>{@code OPENAI_MODEL} — chat model for OpenAI tests (default: {@code gpt-4o-mini})
  * </ul>
  *
@@ -153,11 +153,10 @@ class AIReasoningEndToEndTest {
         private static final String PROVIDER = "anthropic";
 
         private static final String THINKING_MODEL =
-                System.getenv()
-                        .getOrDefault("ANTHROPIC_THINKING_MODEL", "claude-3-7-sonnet-20250219");
+                System.getenv().getOrDefault("ANTHROPIC_THINKING_MODEL", "claude-sonnet-4-6");
 
         private static final String BASIC_MODEL =
-                System.getenv().getOrDefault("ANTHROPIC_MODEL", "claude-3-5-haiku-20241022");
+                System.getenv().getOrDefault("ANTHROPIC_MODEL", "claude-haiku-4-5");
 
         @Test
         void chatCompleteSurfacesReasoningOnTaskOutput() {
@@ -168,7 +167,8 @@ class AIReasoningEndToEndTest {
             input.put("llmProvider", PROVIDER);
             input.put("model", THINKING_MODEL);
             input.put("reasoningSummary", "auto");
-            input.put("thinkingTokenLimit", 1000);
+            // Anthropic's enabled-thinking path requires budget_tokens >= 1024.
+            input.put("thinkingTokenLimit", 2000);
             input.put("instructions", "Think step by step.");
             input.put("userInput", "What is 2 + 2?");
 
