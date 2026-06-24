@@ -12,12 +12,13 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -35,6 +36,8 @@ import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.service.ExecutionService;
 
+import com.google.common.util.concurrent.Uninterruptibles;
+
 /** The worker that polls and executes an async system task. */
 @Component
 @ConditionalOnProperty(
@@ -48,7 +51,8 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
     private final long pollInterval;
     private final QueueDAO queueDAO;
 
-    ExecutionConfig defaultExecutionConfig;
+    private final ExecutorService sharedExecutorService;
+    private final int systemTaskWorkerThreadCount;
     private final AsyncSystemTaskExecutor asyncSystemTaskExecutor;
     private final ConductorProperties properties;
     private final ExecutionService executionService;
@@ -63,7 +67,11 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
             ExecutionService executionService) {
         this.properties = properties;
         int threadCount = properties.getSystemTaskWorkerThreadCount();
-        this.defaultExecutionConfig = new ExecutionConfig(threadCount, "system-task-worker-%d");
+        this.systemTaskWorkerThreadCount = threadCount;
+        // All non-isolated queues share one thread pool. Each queue gets its own semaphore (see
+        // getExecutionConfig) so one slow/busy queue cannot starve other queues' polling.
+        this.sharedExecutorService =
+                ExecutionConfig.newThreadPool(threadCount, "system-task-worker-%d");
         this.asyncSystemTaskExecutor = asyncSystemTaskExecutor;
         this.queueDAO = queueDAO;
         this.pollInterval = properties.getSystemTaskWorkerPollInterval().toMillis();
@@ -78,108 +86,188 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
     }
 
     public void startPolling(WorkflowSystemTask systemTask, String queueName) {
-        Executors.newSingleThreadScheduledExecutor()
-                .scheduleWithFixedDelay(
-                        () -> this.pollAndExecute(systemTask, queueName),
-                        1000,
-                        pollInterval,
-                        TimeUnit.MILLISECONDS);
-        LOGGER.info(
-                "Started listening for task: {} in queue: {} at pollInterval of {} ms",
-                systemTask,
-                queueName,
-                pollInterval);
+        ExecutionConfig config = getExecutionConfig(queueName);
+        int permits = config.getSemaphoreUtil().availableSlots();
+        int poolSize = config.getPoolSize();
+        if (poolSize > 0) {
+            LOGGER.info(
+                    "Starting poller — queue: {}, dedicated pool: {} threads, permits: {}, pollInterval: {} ms",
+                    queueName,
+                    poolSize,
+                    permits,
+                    pollInterval);
+        } else {
+            LOGGER.info(
+                    "Starting poller — queue: {}, shared pool: {} threads, permits: {}, pollInterval: {} ms",
+                    queueName,
+                    systemTaskWorkerThreadCount,
+                    permits,
+                    pollInterval);
+        }
+        Executors.newSingleThreadExecutor()
+                .execute(() -> this.pollAndExecuteLoop(systemTask, queueName));
     }
 
-    void pollAndExecute(WorkflowSystemTask systemTask, String queueName) {
-        if (!isRunning()) {
-            LOGGER.debug(
-                    "{} stopped. Not polling for task: {}", getClass().getSimpleName(), systemTask);
-            return;
+    private void pollAndExecuteLoop(WorkflowSystemTask systemTask, String queueName) {
+        while (isRunning()) {
+            boolean executed = pollAndExecute(systemTask, queueName);
+            if (!executed) {
+                Uninterruptibles.sleepUninterruptibly(Duration.ofMillis(pollInterval));
+            }
         }
+    }
+
+    boolean pollAndExecute(WorkflowSystemTask systemTask, String queueName) {
 
         ExecutionConfig executionConfig = getExecutionConfig(queueName);
         SemaphoreUtil semaphoreUtil = executionConfig.getSemaphoreUtil();
         ExecutorService executorService = executionConfig.getExecutorService();
         String taskName = QueueUtils.getTaskType(queueName);
-        final int systemTaskMaxPollCount = properties.getSystemTaskMaxPollCount();
-        int maxSystemTasksToAcquire =
-                (systemTaskMaxPollCount < 1
-                                || systemTaskMaxPollCount
-                                        > properties.getSystemTaskWorkerThreadCount())
-                        ? properties.getSystemTaskWorkerThreadCount()
-                        : systemTaskMaxPollCount;
-        int messagesToAcquire = Math.min(semaphoreUtil.availableSlots(), maxSystemTasksToAcquire);
 
+        // Use available permits as a backpressure hint: never request more tasks than we can
+        // immediately dispatch. Cap at systemTaskMaxPollCount (the batch size knob).
+        int batchSize =
+                Math.min(semaphoreUtil.availableSlots(), properties.getSystemTaskMaxPollCount());
+        if (batchSize <= 0) {
+            Monitors.recordSystemTaskWorkerPollingLimited(queueName);
+            return false;
+        }
+
+        List<String> polledTaskIds;
         try {
-            if (messagesToAcquire <= 0 || !semaphoreUtil.acquireSlots(messagesToAcquire)) {
-                // no available slots, do not poll
-                Monitors.recordSystemTaskWorkerPollingLimited(queueName);
-                return;
-            }
-
-            LOGGER.debug("Polling queue: {} with {} slots acquired", queueName, messagesToAcquire);
-
-            List<String> polledTaskIds =
-                    queueDAO.pop(queueName, messagesToAcquire, queuePopTimeout);
-
-            Monitors.recordTaskPoll(queueName);
-            LOGGER.debug("Polling queue:{}, got {} tasks", queueName, polledTaskIds.size());
-
-            if (!polledTaskIds.isEmpty()) {
-                // Immediately release unused slots when number of messages acquired is less than
-                // acquired slots
-                if (polledTaskIds.size() < messagesToAcquire) {
-                    semaphoreUtil.completeProcessing(messagesToAcquire - polledTaskIds.size());
-                }
-
-                for (String taskId : polledTaskIds) {
-                    if (StringUtils.isNotBlank(taskId)) {
-                        LOGGER.debug(
-                                "Task: {} from queue: {} being sent to the workflow executor",
-                                taskId,
-                                queueName);
-                        Monitors.recordTaskPollCount(queueName, 1);
-
-                        executionService.ackTaskReceived(taskId);
-
-                        CompletableFuture<Void> taskCompletableFuture =
-                                CompletableFuture.runAsync(
-                                        () -> asyncSystemTaskExecutor.execute(systemTask, taskId),
-                                        executorService);
-
-                        // release permit after processing is complete
-                        taskCompletableFuture.whenComplete(
-                                (r, e) -> semaphoreUtil.completeProcessing(1));
-                    } else {
-                        semaphoreUtil.completeProcessing(1);
-                    }
-                }
-            } else {
-                // no task polled, release permit
-                semaphoreUtil.completeProcessing(messagesToAcquire);
-            }
+            polledTaskIds = queueDAO.pop(queueName, batchSize, queuePopTimeout);
         } catch (Exception e) {
-            // release the permit if exception is thrown during polling, because the thread would
-            // not be busy
-            semaphoreUtil.completeProcessing(messagesToAcquire);
+            // Poll failed — no permits were held, nothing to release.
             Monitors.recordTaskPollError(taskName, e.getClass().getSimpleName());
             LOGGER.error("Error polling system task in queue:{}", queueName, e);
+            return false;
         }
+
+        Monitors.recordTaskPoll(queueName);
+        LOGGER.debug(
+                "Polling queue:{}, batchSize:{}, got:{}",
+                queueName,
+                batchSize,
+                polledTaskIds.size());
+
+        polledTaskIds = polledTaskIds.stream().filter(StringUtils::isNotBlank).toList();
+        int taskCount = polledTaskIds.size();
+        if (taskCount == 0) {
+            return false;
+        }
+
+        // Acquire exactly as many permits as tasks received. Since this is the only thread that
+        // decrements this queue's semaphore and taskCount <= batchSize <= availableSlots at the
+        // time of the check above, tryAcquire should always succeed. If it doesn't (e.g. due to a
+        // bug or future code change violating the single-poller invariant), reset the tasks back to
+        // score=now so they are immediately re-deliverable — do NOT leave them invisible for the
+        // full 30-second unack timeout.
+        if (!semaphoreUtil.acquireSlots(taskCount)) {
+            LOGGER.warn(
+                    "Could not acquire {} permits for queue {} — resetting tasks for immediate retry",
+                    taskCount,
+                    queueName);
+            for (String taskId : polledTaskIds) {
+                try {
+                    queueDAO.resetOffsetTime(queueName, taskId);
+                } catch (Throwable e) {
+                    LOGGER.error(
+                            "Failed to reset offset for task {} in queue {} — will retry after unack timeout",
+                            taskId,
+                            queueName,
+                            e);
+                }
+            }
+            return false;
+        }
+
+        int permitsToRelease = 0;
+        for (String taskId : polledTaskIds) {
+            LOGGER.debug(
+                    "Task: {} from queue: {} being sent to the workflow executor",
+                    taskId,
+                    queueName);
+            Monitors.recordTaskPollCount(queueName, 1);
+            try {
+                executionService.ackTaskReceived(taskId);
+                CompletableFuture.runAsync(
+                                () -> asyncSystemTaskExecutor.execute(systemTask, taskId),
+                                executorService)
+                        .whenComplete((r, e) -> semaphoreUtil.completeProcessing(1));
+            } catch (Throwable e) {
+                // Dispatch failed for this task — release its permit immediately.
+                permitsToRelease++;
+                Monitors.recordTaskPollError(taskName, e.getClass().getSimpleName());
+                LOGGER.error("Error dispatching task:{} in queue:{}", taskId, queueName, e);
+            }
+        }
+        if (permitsToRelease > 0) {
+            semaphoreUtil.completeProcessing(permitsToRelease);
+        }
+        return true;
     }
 
     @VisibleForTesting
     ExecutionConfig getExecutionConfig(String taskQueue) {
-        if (!QueueUtils.isIsolatedQueue(taskQueue)) {
-            return this.defaultExecutionConfig;
+        if (QueueUtils.isIsolatedQueue(taskQueue)) {
+            return queueExecutionConfigMap.computeIfAbsent(
+                    taskQueue, __ -> createIsolatedExecutionConfig());
         }
         return queueExecutionConfigMap.computeIfAbsent(
-                taskQueue, __ -> this.createExecutionConfig());
+                taskQueue, __ -> createNonIsolatedExecutionConfig(taskQueue));
     }
 
-    private ExecutionConfig createExecutionConfig() {
+    private ExecutionConfig createNonIsolatedExecutionConfig(String taskQueue) {
+        String taskType = QueueUtils.getTaskType(taskQueue);
+        ConductorProperties.TaskWorkerConfig override = findTaskWorkerConfig(taskType);
+
+        if (override != null && override.getThreadCount() > 0) {
+            // Dedicated pool: this task type gets its own threads, isolated from everything else.
+            int threads = override.getThreadCount();
+            int permits = override.getPermitCount() > 0 ? override.getPermitCount() : threads;
+            LOGGER.info(
+                    "Task type {} using dedicated pool: threads={}, permits={}",
+                    taskType,
+                    threads,
+                    permits);
+            return new ExecutionConfig(
+                    threads, "system-task-worker-" + taskType.toLowerCase() + "-%d", permits);
+        }
+
+        // Shared pool, but own semaphore. A per-task permitCount override caps concurrency for
+        // this type without needing dedicated threads.
+        int permits =
+                (override != null && override.getPermitCount() > 0)
+                        ? override.getPermitCount()
+                        : systemTaskWorkerThreadCount;
+        if (override != null) {
+            LOGGER.info("Task type {} using shared pool with permits={}", taskType, permits);
+        }
+        return new ExecutionConfig(sharedExecutorService, permits);
+    }
+
+    private ConductorProperties.TaskWorkerConfig findTaskWorkerConfig(String taskType) {
+        Map<String, ConductorProperties.TaskWorkerConfig> configs =
+                properties.getTaskWorkerConfigs();
+        if (configs.isEmpty()) {
+            return null;
+        }
+        // Direct match first, then case-insensitive fallback (YAML preserves case; .properties may
+        // not). Lookup result is cached in queueExecutionConfigMap so this is called once per type.
+        ConductorProperties.TaskWorkerConfig config = configs.get(taskType);
+        if (config != null) {
+            return config;
+        }
+        for (Map.Entry<String, ConductorProperties.TaskWorkerConfig> entry : configs.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(taskType)) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
+    private ExecutionConfig createIsolatedExecutionConfig() {
         int threadCount = properties.getIsolatedSystemTaskWorkerThreadCount();
-        String threadNameFormat = "isolated-system-task-worker-%d";
-        return new ExecutionConfig(threadCount, threadNameFormat);
+        return new ExecutionConfig(threadCount, "isolated-system-task-worker-%d");
     }
 }
