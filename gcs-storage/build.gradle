@@ -3,5 +3,5 @@ dependencies {
     implementation project(':conductor-core')
     compileOnly 'org.springframework.boot:spring-boot-starter'
 
-    implementation 'com.google.cloud:google-cloud-storage:2.36.1'
+    implementation 'com.google.cloud:google-cloud-storage:2.69.0'
 }

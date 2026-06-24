@@ -22,14 +22,14 @@ dependencies {
     implementation "org.apache.commons:commons-lang3"
     implementation "com.google.guava:guava:${revGuava}"
 
-    implementation 'com.fasterxml.jackson.core:jackson-core:2.18.0'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.22.0'
 
-    implementation 'org.opensearch.client:opensearch-java:2.18.0'
-    implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
-    implementation "org.opensearch.client:opensearch-rest-client:2.18.0"
-    implementation "org.opensearch.client:opensearch-rest-high-level-client:2.18.0"
+    implementation 'org.opensearch.client:opensearch-java:2.19.5'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.6.1'
+    implementation "org.opensearch.client:opensearch-rest-client:2.19.5"
+    implementation "org.opensearch.client:opensearch-rest-high-level-client:2.19.5"
 
-    testImplementation "net.java.dev.jna:jna:5.7.0"
+    testImplementation "net.java.dev.jna:jna:5.19.1"
     testImplementation "org.awaitility:awaitility:${revAwaitility}"
     testImplementation "org.opensearch:opensearch-testcontainers:2.1.2"
     testImplementation "org.testcontainers:testcontainers:2.0.5"

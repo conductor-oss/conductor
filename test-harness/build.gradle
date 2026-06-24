@@ -57,8 +57,8 @@ dependencies {
         // a netty version that conflicts with the one already on the test-harness classpath.
         exclude group: 'com.azure', module: 'azure-core-http-netty'
     }
-    testImplementation 'com.azure:azure-core-http-jdk-httpclient:1.0.3'
-    testImplementation 'com.google.cloud:google-cloud-storage:2.36.1'
+    testImplementation 'com.azure:azure-core-http-jdk-httpclient:1.1.5'
+    testImplementation 'com.google.cloud:google-cloud-storage:2.69.0'
     testImplementation 'com.google.http-client:google-http-client:1.44.1'
     testImplementation project(':conductor-gcs-storage')
     testImplementation project(':conductor-local-file-storage')
@@ -131,13 +131,13 @@ configurations {
 }
 
 dependencies {
-    conductorClientRaw('org.conductoross:conductor-client:5.0.1') { transitive = false }
+    conductorClientRaw('org.conductoross:conductor-client:5.1.0') { transitive = false }
 }
 
 // Strip bundled com.netflix.conductor.common.* classes from the fat JAR.
 // These conflict with the project's own conductor-common module.
 task stripConductorClient(type: Jar) {
-    archiveBaseName = 'conductor-client-5.0.1-stripped'
+    archiveBaseName = 'conductor-client-5.1.0-stripped'
     destinationDirectory = layout.buildDirectory.dir('stripped-libs')
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from(zipTree(configurations.conductorClientRaw.singleFile)) {
@@ -201,15 +201,15 @@ dependencies {
     functionalTestImplementation 'org.junit.jupiter:junit-jupiter-params'
 
     // Lombok (used by e2e test classes)
-    functionalTestCompileOnly 'org.projectlombok:lombok:1.18.30'
-    functionalTestAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
+    functionalTestCompileOnly 'org.projectlombok:lombok:1.18.46'
+    functionalTestAnnotationProcessor 'org.projectlombok:lombok:1.18.46'
 
     // Awaitility 4.x (e2e uses 4.2.0; test-harness has 3.x)
-    functionalTestImplementation 'org.awaitility:awaitility:4.2.0'
+    functionalTestImplementation 'org.awaitility:awaitility:4.3.0'
 
     // Commons used by e2e utilities
-    functionalTestImplementation 'org.apache.commons:commons-lang3:3.14.0'
-    functionalTestImplementation 'org.apache.commons:commons-compress:1.26.1'
+    functionalTestImplementation 'org.apache.commons:commons-lang3:3.20.0'
+    functionalTestImplementation 'org.apache.commons:commons-compress:1.28.0'
 }
 
 task functionalTest(type: Test) {

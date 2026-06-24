@@ -107,16 +107,16 @@ allprojects {
         implementation('org.apache.logging.log4j:log4j-web')
         implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
         implementation "com.networknt:json-schema-validator:${revJSonSchemaValidator}"
-        compileOnly 'org.projectlombok:lombok:1.18.42'
+        compileOnly 'org.projectlombok:lombok:1.18.46'
 
-        annotationProcessor 'org.projectlombok:lombok:1.18.42'
+        annotationProcessor 'org.projectlombok:lombok:1.18.46'
         annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
         testImplementation('org.springframework.boot:spring-boot-starter-test')
         testImplementation('org.springframework.boot:spring-boot-starter-log4j2')
         testImplementation 'junit:junit'
         testImplementation "org.junit.vintage:junit-vintage-engine"
-        testAnnotationProcessor 'org.projectlombok:lombok:1.18.42'
+        testAnnotationProcessor 'org.projectlombok:lombok:1.18.46'
 
         // PINNED (#964): jettison must stay at exactly 1.5.4 — `strictly` prevents both
         // downgrade and upgrade. No known compatible higher version has been validated.
@@ -129,7 +129,7 @@ allprojects {
 
         // Security: minimum version floors for CVE-patched transitive dependencies.
         constraints {
-            implementation('org.apache.tika:tika-core:3.2.2') {
+            implementation('org.apache.tika:tika-core:3.3.1') {
                 because 'CVE-2025-66516: tika-parser-pdf-module vulnerability'
             }
             implementation('commons-beanutils:commons-beanutils:1.11.0') {

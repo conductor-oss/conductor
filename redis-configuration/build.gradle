@@ -20,7 +20,7 @@ dependencies {
     //implementation "jakarta.annotation:jakarta.annotation-api:${revJakartaAnnotation}"
 
     //Test
-    testCompileOnly 'org.projectlombok:lombok:1.18.42'
+    testCompileOnly 'org.projectlombok:lombok:1.18.46'
     testImplementation 'org.springframework.boot:spring-boot-test'
     testImplementation "org.testcontainers:testcontainers:${revTestContainer}"
     testImplementation "com.google.guava:guava:${revGuava}"

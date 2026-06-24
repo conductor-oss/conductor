@@ -76,7 +76,7 @@ dependencies {
 
     // Benchmark-only deps (test scope so they don't ship with production):
     // Rhino — MPL 2.0, JVM-bytecode-compiled JS engine
-    testImplementation "org.mozilla:rhino:1.8.0"
+    testImplementation "org.mozilla:rhino:1.9.1"
     // Javet — Apache 2.0 JNI bindings to V8 (BSD-3-Clause). Native lib for this host's
     // arch only; add other -macos-x86_64 / -linux-x86_64 / -linux-arm64 variants for prod.
     testImplementation "com.caoccao.javet:javet:4.1.2"
