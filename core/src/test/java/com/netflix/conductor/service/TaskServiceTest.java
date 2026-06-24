@@ -12,7 +12,9 @@
  */
 package com.netflix.conductor.service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.Test;
@@ -25,15 +27,19 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
+import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.model.TaskModel;
 
 import jakarta.validation.ConstraintViolationException;
 
 import static com.netflix.conductor.TestUtils.getConstraintViolationMessages;
 
 import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -242,5 +248,50 @@ public class TaskServiceTest {
         when(executionService.getSearchTasksV2("query", "*", 0, 2, "Sort"))
                 .thenReturn(searchResult);
         assertEquals(searchResult, taskService.searchV2(0, 2, "Sort", "*", "query"));
+    }
+
+    @Test
+    public void testSignalTask() {
+        Task waitTask = new Task();
+        waitTask.setTaskType(TaskType.TASK_TYPE_WAIT);
+        waitTask.setStatus(Task.Status.IN_PROGRESS);
+        waitTask.setTaskId("wait-task-1");
+        waitTask.setWorkflowInstanceId("w123");
+
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowId("w123");
+        workflow.getTasks().add(waitTask);
+
+        TaskModel updated = new TaskModel();
+        updated.setTaskId("wait-task-1");
+
+        when(executionService.getExecutionStatus("w123", true)).thenReturn(workflow);
+        when(executionService.updateTask(any(TaskResult.class))).thenReturn(updated);
+
+        Map<String, Object> output = new HashMap<>();
+        output.put("k", "v");
+        String taskId = taskService.signalTask("w123", TaskResult.Status.COMPLETED, output);
+
+        assertEquals("wait-task-1", taskId);
+    }
+
+    @Test
+    public void testSignalTaskReturnsNullWhenNoBlockingTask() {
+        Task simpleTask = new Task();
+        simpleTask.setTaskType("SIMPLE");
+        simpleTask.setStatus(Task.Status.IN_PROGRESS);
+        simpleTask.setTaskId("simple-1");
+
+        // Distinct workflow id: executionService is a singleton mock shared across test methods.
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowId("w-no-block");
+        workflow.getTasks().add(simpleTask);
+
+        when(executionService.getExecutionStatus("w-no-block", true)).thenReturn(workflow);
+
+        String taskId =
+                taskService.signalTask("w-no-block", TaskResult.Status.COMPLETED, new HashMap<>());
+
+        assertNull(taskId);
     }
 }
