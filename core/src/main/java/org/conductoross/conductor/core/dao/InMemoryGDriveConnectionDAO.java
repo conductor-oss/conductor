@@ -63,6 +63,7 @@ public class InMemoryGDriveConnectionDAO implements GDriveConnectionDAO {
         }
         GDriveConnection copy = new GDriveConnection();
         copy.setConnectionId(connection.getConnectionId());
+        copy.setAccountName(connection.getAccountName());
         copy.setOauthTokenJson(connection.getOauthTokenJson());
         copy.setCreatedAt(connection.getCreatedAt());
         copy.setUpdatedAt(connection.getUpdatedAt());

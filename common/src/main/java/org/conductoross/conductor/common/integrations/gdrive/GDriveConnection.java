@@ -15,6 +15,7 @@ package org.conductoross.conductor.common.integrations.gdrive;
 public class GDriveConnection {
 
     private String connectionId;
+    private String accountName;
     private String oauthTokenJson;
     private Long createdAt;
     private Long updatedAt;
@@ -22,7 +23,12 @@ public class GDriveConnection {
     public GDriveConnection() {}
 
     public GDriveConnection(String connectionId, String oauthTokenJson) {
+        this(connectionId, connectionId, oauthTokenJson);
+    }
+
+    public GDriveConnection(String connectionId, String accountName, String oauthTokenJson) {
         this.connectionId = connectionId;
+        this.accountName = accountName;
         this.oauthTokenJson = oauthTokenJson;
     }
 
@@ -32,6 +38,14 @@ public class GDriveConnection {
 
     public void setConnectionId(String connectionId) {
         this.connectionId = connectionId;
+    }
+
+    public String getAccountName() {
+        return accountName;
+    }
+
+    public void setAccountName(String accountName) {
+        this.accountName = accountName;
     }
 
     public String getOauthTokenJson() {

@@ -31,16 +31,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class PostgresGDriveConnectionDAO extends PostgresBaseDAO implements GDriveConnectionDAO {
 
     private static final String UPSERT_CONNECTION =
-            "INSERT INTO gdrive_connection (connection_id, oauth_token_json) VALUES (?, ?) "
-                    + "ON CONFLICT (connection_id) DO UPDATE SET "
+            "INSERT INTO gdrive_connection (connection_id, account_name, oauth_token_json) "
+                    + "VALUES (?, ?, ?) ON CONFLICT (connection_id) DO UPDATE SET "
+                    + "account_name = EXCLUDED.account_name, "
                     + "oauth_token_json = EXCLUDED.oauth_token_json, updated_at = CURRENT_TIMESTAMP";
 
     private static final String SELECT_BY_ID =
-            "SELECT connection_id, oauth_token_json, created_at, updated_at "
+            "SELECT connection_id, account_name, oauth_token_json, created_at, updated_at "
                     + "FROM gdrive_connection WHERE connection_id = ?";
 
     private static final String SELECT_ALL =
-            "SELECT connection_id, oauth_token_json, created_at, updated_at "
+            "SELECT connection_id, account_name, oauth_token_json, created_at, updated_at "
                     + "FROM gdrive_connection ORDER BY connection_id";
 
     private static final String DELETE_BY_ID =
@@ -57,6 +58,7 @@ public class PostgresGDriveConnectionDAO extends PostgresBaseDAO implements GDri
                 UPSERT_CONNECTION,
                 q ->
                         q.addParameter(connection.getConnectionId())
+                                .addParameter(connection.getAccountName())
                                 .addParameter(connection.getOauthTokenJson())
                                 .executeUpdate());
     }
@@ -97,6 +99,7 @@ public class PostgresGDriveConnectionDAO extends PostgresBaseDAO implements GDri
     private GDriveConnection toGDriveConnection(ResultSet rs) throws SQLException {
         GDriveConnection connection = new GDriveConnection();
         connection.setConnectionId(rs.getString("connection_id"));
+        connection.setAccountName(rs.getString("account_name"));
         connection.setOauthTokenJson(rs.getString("oauth_token_json"));
         connection.setCreatedAt(toEpochMillis(rs.getTimestamp("created_at")));
         connection.setUpdatedAt(toEpochMillis(rs.getTimestamp("updated_at")));

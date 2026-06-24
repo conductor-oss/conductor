@@ -15,13 +15,16 @@ package org.conductoross.conductor.common.integrations.gdrive;
 public class GDriveConnectionResponse {
 
     private String connectionId;
+    private String accountName;
     private Long createdAt;
     private Long updatedAt;
 
     public GDriveConnectionResponse() {}
 
-    public GDriveConnectionResponse(String connectionId, Long createdAt, Long updatedAt) {
+    public GDriveConnectionResponse(
+            String connectionId, String accountName, Long createdAt, Long updatedAt) {
         this.connectionId = connectionId;
+        this.accountName = accountName;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -32,6 +35,14 @@ public class GDriveConnectionResponse {
 
     public void setConnectionId(String connectionId) {
         this.connectionId = connectionId;
+    }
+
+    public String getAccountName() {
+        return accountName;
+    }
+
+    public void setAccountName(String accountName) {
+        this.accountName = accountName;
     }
 
     public Long getCreatedAt() {

@@ -3,11 +3,55 @@
 
 ## Pre-built docker images
 
-Conductor server with support for the following backend:
+Conductor server images include the API server and UI. The API listens on container port `8080`; the UI is served by Nginx on container port `5000`.
+
+The server supports the following persistence backends:
+
 1. Redis
 2. Postgres
 3. Mysql
 4. Cassandra
+
+For production deployments, pin the image tag that you deploy instead of using a moving tag, provide configuration through environment variables or mounted properties files, and use a durable persistence backend. SQLite is useful for local development only.
+
+### Run the image directly
+
+```shell
+docker run --name conductor \
+  -p 8080:8080 \
+  -p 5000:5000 \
+  conductoross/conductor:<version>
+```
+
+Open the UI at `http://localhost:5000` and the API at `http://localhost:8080`.
+
+Use `/health` for container and load-balancer checks:
+
+```shell
+curl -f http://localhost:8080/health
+```
+
+### Configure the image
+
+The image startup script reads these deployment-time settings:
+
+| Setting | Description |
+|---------|-------------|
+| `CONFIG_PROP` | Name of a file in `/app/config`, such as `config-postgres.properties`. |
+| `JAVA_OPTS` | JVM options for heap sizing, system properties, TLS truststores, and similar runtime settings. |
+| Spring environment variables | Uppercase environment variable form of Spring properties, such as `CONDUCTOR_DB_TYPE=postgres` for `conductor.db.type`. |
+
+Example with a mounted production properties file:
+
+```shell
+docker run --name conductor \
+  -p 8080:8080 \
+  -p 5000:5000 \
+  -e CONFIG_PROP=production.properties \
+  -e JAVA_OPTS="-Xms2g -Xmx2g" \
+  -v /path/to/production.properties:/app/config/production.properties:ro \
+  conductoross/conductor:<version>
+```
 
 ### Docker File for Server and UI
 
@@ -52,6 +96,15 @@ TODO: Link to the helm charts
 | [docker-compose-redis-os.yaml](docker-compose-redis-os.yaml) | Redis + OpenSearch 2.x (legacy - use os2) |
 | [docker-compose-redis-os2.yaml](docker-compose-redis-os2.yaml) | Redis + OpenSearch 2.x    |
 | [docker-compose-redis-os3.yaml](docker-compose-redis-os3.yaml) | Redis + OpenSearch 3.x    |
+
+The compose files are intended for local development and evaluation. They build the image from the checked-out source tree and publish the API on `http://localhost:8000` and the UI on `http://localhost:8127`.
+
+For production-like compose runs:
+
+- Set `loadSample=false` in the selected config file or as an environment variable.
+- Use persistent volumes for database and indexing services.
+- Keep secrets out of compose files; pass them through environment variables or secret mounts.
+- Enable distributed workflow locking when more than one Conductor server instance is running.
 
 ### Network errors during UI build with yarn
 

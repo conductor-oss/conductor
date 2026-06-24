@@ -51,6 +51,7 @@ public class RedisGDriveConnectionDAO extends BaseDynoDAO implements GDriveConne
         GDriveConnection stored = new GDriveConnection();
         long now = Instant.now().toEpochMilli();
         stored.setConnectionId(connection.getConnectionId());
+        stored.setAccountName(connection.getAccountName());
         stored.setOauthTokenJson(connection.getOauthTokenJson());
         stored.setCreatedAt(existing == null ? now : existing.getCreatedAt());
         stored.setUpdatedAt(now);

@@ -19,7 +19,7 @@ const hoverCss = {
   borderColor: "#857aff",
   boxShadow: "none",
   "&> .MuiButton-label": {
-    color: "white",
+    color: "BLACK",
   },
 };
 

@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.rest.controllers;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -87,11 +88,14 @@ public class IntegrationsResource {
             GDriveConnection connection =
                     new GDriveConnection(
                             normalizeConnectionId(request.getConnectionId()),
+                            normalizeAccountName(
+                                    request.getAccountName(), request.getConnectionId()),
                             tokenResponse.getOauthTokenJson());
             gDriveConnectionDAO.saveConnection(connection);
             GDriveConnection stored =
                     gDriveConnectionDAO.getConnection(connection.getConnectionId());
-            return new GDriveOAuthTokenResponse(stored.getConnectionId(), null);
+            return new GDriveOAuthTokenResponse(
+                    stored.getConnectionId(), tokenResponse.getOauthTokenJson());
         } catch (GDriveIntegrationException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }
@@ -109,7 +113,11 @@ public class IntegrationsResource {
             String oauthTokenJson =
                     gDriveIntegrationService.normalizeOAuthTokenJson(
                             request.getOauthTokenJson(), request.getOauthClientJson());
-            gDriveConnectionDAO.saveConnection(new GDriveConnection(connectionId, oauthTokenJson));
+            gDriveConnectionDAO.saveConnection(
+                    new GDriveConnection(
+                            connectionId,
+                            normalizeAccountName(request.getAccountName(), connectionId),
+                            oauthTokenJson));
             return toResponse(gDriveConnectionDAO.getConnection(connectionId));
         } catch (GDriveIntegrationException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
@@ -144,12 +152,26 @@ public class IntegrationsResource {
     }
 
     private GDriveLoadRequest resolveConnection(GDriveLoadRequest request) {
-        if (request == null || isBlank(request.getConnectionId())) {
+        if (request == null) {
             return request;
         }
 
-        String connectionId = normalizeConnectionId(request.getConnectionId());
-        GDriveConnection connection = gDriveConnectionDAO.getConnection(connectionId);
+        GDriveConnection connection;
+        String connectionId = request.getConnectionId();
+        if (isBlank(connectionId)) {
+            if (!isBlank(request.getOauthTokenJson())) {
+                return request;
+            }
+            connection = latestConnection();
+            if (connection == null) {
+                throw new GDriveIntegrationException(
+                        "connectionId is required or create a Google Drive connection in the UI");
+            }
+            connectionId = connection.getConnectionId();
+        } else {
+            connectionId = normalizeConnectionId(connectionId);
+            connection = gDriveConnectionDAO.getConnection(connectionId);
+        }
         if (connection == null) {
             throw new GDriveIntegrationException(
                     "No Google Drive connection found for connectionId " + connectionId);
@@ -168,7 +190,26 @@ public class IntegrationsResource {
 
     private GDriveConnectionResponse toResponse(GDriveConnection connection) {
         return new GDriveConnectionResponse(
-                connection.getConnectionId(), connection.getCreatedAt(), connection.getUpdatedAt());
+                connection.getConnectionId(),
+                normalizeAccountName(connection.getAccountName(), connection.getConnectionId()),
+                connection.getCreatedAt(),
+                connection.getUpdatedAt());
+    }
+
+    private GDriveConnection latestConnection() {
+        return gDriveConnectionDAO.getAllConnections().stream()
+                .max(
+                        Comparator.comparingLong(
+                                        (GDriveConnection connection) ->
+                                                timestamp(connection.getUpdatedAt()))
+                                .thenComparingLong(
+                                        connection -> timestamp(connection.getCreatedAt()))
+                                .thenComparing(GDriveConnection::getConnectionId))
+                .orElse(null);
+    }
+
+    private long timestamp(Long value) {
+        return value == null ? 0L : value;
     }
 
     private String normalizeConnectionId(String connectionId) {
@@ -181,6 +222,13 @@ public class IntegrationsResource {
                     "Google Drive connectionId must contain only letters, numbers, dot, underscore, or dash");
         }
         return normalized;
+    }
+
+    private String normalizeAccountName(String accountName, String connectionId) {
+        if (!isBlank(accountName)) {
+            return accountName.trim();
+        }
+        return normalizeConnectionId(connectionId);
     }
 
     private boolean isBlank(String value) {

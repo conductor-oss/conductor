@@ -38,13 +38,15 @@ cd conductor
 docker compose -f docker/docker-compose.yaml up
 ```
 
-This starts Conductor with Redis (database + queue), Elasticsearch (indexing), and the server with UI on port **8080**.
+This starts Conductor with Redis (database + queue), Elasticsearch (indexing), the API published on host port **8000**, and the UI published on host port **8127**.
 
 | URL | Description |
 |:----|:---|
-| `http://localhost:8080` | Conductor UI |
-| `http://localhost:8080/swagger-ui/index.html` | REST API docs |
-| `http://localhost:8080/api/` | API base URL |
+| `http://localhost:8127` | Conductor UI served by Nginx in the container |
+| `http://localhost:8000` | Conductor API |
+| `http://localhost:8000/swagger-ui/index.html` | REST API docs |
+| `http://localhost:8000/api/` | API base URL |
+| `http://localhost:8000/health` | Health check |
 
 Pre-built compose files for other backend combinations:
 
@@ -74,9 +76,77 @@ For Elasticsearch 8, set `conductor.indexing.type=elasticsearch8` and use
 
 ---
 
+## Deployment checklist
+
+Use this checklist before exposing a self-hosted deployment outside a developer machine:
+
+- Use Java 21+ images or hosts for the server runtime.
+- Use a durable database backend. PostgreSQL is the simplest production default; SQLite is for local development only.
+- Enable a distributed workflow execution lock with Redis or Zookeeper before running more than one server instance.
+- Keep all server instances pointed at the same database, queue, indexing, external payload storage, and lock backends.
+- Run database migrations as part of the application startup/build process for the selected persistence module, and back up the persistence database before upgrades.
+- Set `loadSample=false` in production so sample workflows are not loaded automatically.
+- Set `conductor.app.ownerEmailMandatory` according to your tenancy and workflow ownership policy.
+- Expose `/health` to your load balancer and monitoring system.
+- Expose `/actuator/prometheus` only to trusted monitoring infrastructure.
+- Store credentials in environment variables or secret mounts, not in image layers or committed property files.
+- Pin the container image tag you deploy. Avoid using `latest` for repeatable production rollouts.
+- Size JVM heap explicitly with `JAVA_OPTS`, for example `-Xms2g -Xmx2g`, and align container memory limits with that heap.
+
+---
+
 ## Production configuration
 
 All configuration is done via Spring Boot properties in `application.properties` or environment variables. Properties can also be mounted as a Docker volume.
+
+### Docker image configuration
+
+The server image starts Nginx for the UI on container port `5000` and the Conductor server on container port `8080`.
+
+The image supports these deployment-time settings:
+
+| Setting | Purpose |
+|:--|:--|
+| `CONFIG_PROP` | Name of a properties file under `/app/config`, such as `config-postgres.properties`. If omitted, the image uses built-in defaults. |
+| `JAVA_OPTS` | JVM options passed to the server process. Use this for heap sizing, system properties, and TLS truststore settings. |
+| Spring environment variables | Spring Boot maps uppercase environment variables to properties, for example `CONDUCTOR_DB_TYPE=postgres` maps to `conductor.db.type`. |
+
+Example standalone container with PostgreSQL properties supplied by environment variables:
+
+```shell
+docker run --name conductor \
+  -p 8080:8080 \
+  -p 5000:5000 \
+  -e JAVA_OPTS="-Xms2g -Xmx2g -Dpolyglot.engine.WarnInterpreterOnly=false" \
+  -e CONDUCTOR_DB_TYPE=postgres \
+  -e CONDUCTOR_QUEUE_TYPE=postgres \
+  -e CONDUCTOR_EXTERNAL_PAYLOAD_STORAGE_TYPE=postgres \
+  -e SPRING_DATASOURCE_URL=jdbc:postgresql://db-host:5432/conductor \
+  -e SPRING_DATASOURCE_USERNAME=conductor \
+  -e SPRING_DATASOURCE_PASSWORD=<password> \
+  -e CONDUCTOR_INDEXING_ENABLED=true \
+  -e CONDUCTOR_INDEXING_TYPE=postgres \
+  -e CONDUCTOR_ELASTICSEARCH_VERSION=0 \
+  -e LOADSAMPLE=false \
+  conductoross/conductor:<version>
+```
+
+If you prefer a mounted properties file:
+
+```shell
+docker run --name conductor \
+  -p 8080:8080 \
+  -p 5000:5000 \
+  -e CONFIG_PROP=production.properties \
+  -v /path/to/production.properties:/app/config/production.properties:ro \
+  conductoross/conductor:<version>
+```
+
+Use `/health` for container and load-balancer health checks:
+
+```shell
+curl -f http://localhost:8080/health
+```
 
 ### Database
 
@@ -509,6 +579,9 @@ conductor.app.systemTaskMaxPollCount=20
 # Metrics
 conductor.metrics-prometheus.enabled=true
 management.endpoints.web.exposure.include=health,info,prometheus
+
+# Production hygiene
+loadSample=false
 ```
 
 ### Redis + Elasticsearch stack (high throughput)
@@ -546,6 +619,9 @@ conductor.app.systemTaskMaxPollCount=40
 # Metrics
 conductor.metrics-prometheus.enabled=true
 management.endpoints.web.exposure.include=health,info,prometheus
+
+# Production hygiene
+loadSample=false
 ```
 
 ---
@@ -569,7 +645,7 @@ docker compose -f docker/docker-compose-postgres.yaml up
 ### Using the standalone image
 
 ```shell
-docker run -p 8080:8080 conductoross/conductor:latest
+docker run -p 8080:8080 -p 5000:5000 conductoross/conductor:<version>
 ```
 
 ### Custom configuration via volume mount
@@ -579,14 +655,15 @@ Mount your own properties file to override the defaults without rebuilding the i
 ```shell
 docker run -p 8080:8080 \
   -v /path/to/my-config.properties:/app/config/config.properties \
-  conductoross/conductor:latest
+  conductoross/conductor:<version>
 ```
 
 ### Accessing Conductor
 
 | URL | Description |
 |:----|:---|
-| `http://localhost:8080` | Conductor UI |
+| `http://localhost:5000` | Conductor UI |
+| `http://localhost:8080` | Conductor API |
 | `http://localhost:8080/swagger-ui/index.html` | REST API docs |
 
 ### Shutting down

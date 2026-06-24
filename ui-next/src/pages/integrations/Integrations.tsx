@@ -6,12 +6,14 @@ import {
   Grid,
   Paper,
   Stack,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Tabs,
   TextField,
   Typography,
 } from "@mui/material";
@@ -23,7 +25,7 @@ import Header from "components/ui/Header";
 import SectionContainer from "components/ui/layout/SectionContainer";
 import { ChangeEvent, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
-import { useActionWithPath } from "utils/query";
+import { useActionWithPath, useFetch } from "utils/query";
 import { getErrorMessage } from "utils/utils";
 
 type GDriveFile = {
@@ -45,6 +47,7 @@ type GDriveLoadResponse = {
 
 type GDriveConnectionResponse = {
   connectionId: string;
+  accountName?: string;
 };
 
 const DEFAULT_MAX_FILES = 25;
@@ -125,6 +128,7 @@ const normalizeErrorMessage = (
 
 export default function Integrations() {
   const [connectionId, setConnectionId] = useState(createConnectionId);
+  const [accountName, setAccountName] = useState("");
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
   const [oauthTokenJson, setOauthTokenJson] = useState("");
@@ -134,6 +138,13 @@ export default function Integrations() {
   const [result, setResult] = useState<GDriveLoadResponse | null>(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [activeTab, setActiveTab] = useState("create");
+
+  const {
+    data: connections = [],
+    refetch: refetchConnections,
+    isFetching: isFetchingConnections,
+  } = useFetch<GDriveConnectionResponse[]>("/integrations/gdrive/connections");
 
   const taskSnippet = useMemo(
     () =>
@@ -143,7 +154,7 @@ export default function Integrations() {
           taskReferenceName: "read_g_drive_ref",
           type: "GDRIVE_READ",
           inputParameters: {
-            connectionId: connectionId || "<create-connection-first>",
+            connectionId: workflowInput("gdriveConnectionId"),
             folderIds: workflowInput("driveFolderIds"),
             fileIds: workflowInput("driveFileIds"),
             maxFiles,
@@ -152,7 +163,7 @@ export default function Integrations() {
         null,
         2,
       ),
-    [connectionId, maxFiles],
+    [maxFiles],
   );
 
   const loadGDriveAction = useActionWithPath<GDriveLoadResponse>({
@@ -172,10 +183,42 @@ export default function Integrations() {
     },
   });
 
-  const saveGDriveConnectionAction = useActionWithPath<GDriveConnectionResponse>({
-    onSuccess: (data) => {
-      setConnectionId(data.connectionId || connectionId);
-      setMessage(`Google Drive connection ${data.connectionId || connectionId} created.`);
+  const saveGDriveConnectionAction =
+    useActionWithPath<GDriveConnectionResponse>({
+      onSuccess: (data) => {
+        setConnectionId(data.connectionId || connectionId);
+        setAccountName(
+          data.accountName || accountName || data.connectionId || connectionId,
+        );
+        setMessage(
+          `Google Drive connection ${data.connectionId || connectionId} created.`,
+        );
+        refetchConnections();
+        setError("");
+      },
+      onError: async (response: Response) => {
+        const message = await getErrorMessage(response);
+        setError(
+          normalizeErrorMessage(
+            message,
+            "Unable to save Google Drive connection.",
+            response.status,
+          ),
+        );
+      },
+    });
+
+  const deleteGDriveConnectionAction = useActionWithPath({
+    onSuccess: (_, variables) => {
+      const deletedConnectionId = variables.path.split("/").pop() || "";
+      setMessage(
+        `Google Drive connection ${decodeURIComponent(deletedConnectionId)} deleted.`,
+      );
+      if (connectionId === decodeURIComponent(deletedConnectionId)) {
+        setConnectionId(createConnectionId());
+        setAccountName("");
+      }
+      refetchConnections();
       setError("");
     },
     onError: async (response: Response) => {
@@ -183,7 +226,7 @@ export default function Integrations() {
       setError(
         normalizeErrorMessage(
           message,
-          "Unable to save Google Drive connection.",
+          "Unable to delete Google Drive connection.",
           response.status,
         ),
       );
@@ -195,7 +238,9 @@ export default function Integrations() {
     setMessage("");
 
     const nextConnectionId = connectionId.trim() || createConnectionId();
+    const nextAccountName = accountName.trim() || nextConnectionId;
     setConnectionId(nextConnectionId);
+    setAccountName(nextAccountName);
 
     if (!safeParseJson(oauthTokenJson)) {
       setError("OAuth token JSON is invalid.");
@@ -207,6 +252,7 @@ export default function Integrations() {
       method: "post",
       body: JSON.stringify({
         connectionId: nextConnectionId,
+        accountName: nextAccountName,
         oauthTokenJson,
         oauthClientJson:
           clientId.trim() && clientSecret.trim()
@@ -221,19 +267,29 @@ export default function Integrations() {
     setMessage("");
     setResult(null);
 
-    if (!connectionId.trim()) {
-      setError("Connection ID is required.");
-      return;
-    }
-
     loadGDriveAction.mutate({
       path: "/integrations/gdrive/load",
       method: "post",
       body: JSON.stringify({
-        connectionId: connectionId.trim(),
+        connectionId: connectionId.trim() || undefined,
         maxFiles,
       }),
     });
+  };
+
+  const handleDeleteConnection = (targetConnectionId: string) => {
+    deleteGDriveConnectionAction.mutate({
+      path: `/integrations/gdrive/connections/${encodeURIComponent(
+        targetConnectionId,
+      )}`,
+      method: "delete",
+    });
+  };
+
+  const handleUseConnection = (connection: GDriveConnectionResponse) => {
+    setConnectionId(connection.connectionId);
+    setAccountName(connection.accountName || connection.connectionId);
+    setActiveTab("create");
   };
 
   const handleClientJsonFile = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -246,7 +302,9 @@ export default function Integrations() {
       JSON.parse(content);
       const client = getOAuthClient(content);
       if (!client.clientId || !client.clientSecret) {
-        throw new Error("Client JSON must include client_id and client_secret.");
+        throw new Error(
+          "Client JSON must include client_id and client_secret.",
+        );
       }
       setClientId(client.clientId);
       setClientSecret(client.clientSecret);
@@ -298,108 +356,244 @@ export default function Integrations() {
       </Helmet>
       <Header
         loading={
-          loadGDriveAction.isLoading || saveGDriveConnectionAction.isLoading
+          loadGDriveAction.isLoading ||
+          saveGDriveConnectionAction.isLoading ||
+          deleteGDriveConnectionAction.isLoading
         }
       />
       <SectionContainer header={<SectionHeader title="Integrations" />}>
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, lg: 5 }}>
             <Paper variant="outlined" sx={{ p: 3 }}>
-              <Stack spacing={3}>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <Typography variant="h6">Google Drive</Typography>
-                  <Chip label="GDRIVE_READ" size="small" />
-                </Stack>
-                <TextField
-                  label="OAuth Client ID"
-                  value={clientId}
-                  onChange={(event) => setClientId(event.target.value)}
-                  fullWidth
-                  size="small"
-                />
-                <TextField
-                  label="OAuth Client Secret"
-                  value={clientSecret}
-                  onChange={(event) => setClientSecret(event.target.value)}
-                  fullWidth
-                  size="small"
-                  type="password"
-                />
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Button
-                    component="label"
-                    variant="outlined"
-                    startIcon={<CloudUploadOutlinedIcon />}
-                  >
-                    Upload Client JSON
-                    <input
-                      hidden
-                      type="file"
-                      accept=".json,application/json"
-                      onChange={handleClientJsonFile}
-                    />
-                  </Button>
-                  {clientJsonFileName && (
-                    <Typography color="text.secondary" variant="body2">
-                      {clientJsonFileName}
-                    </Typography>
-                  )}
-                </Stack>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Button
-                    component="label"
-                    variant="outlined"
-                    startIcon={<CloudUploadOutlinedIcon />}
-                  >
-                    Upload OAuth Token JSON
-                    <input
-                      hidden
-                      type="file"
-                      accept=".json,application/json"
-                      onChange={handleTokenJsonFile}
-                    />
-                  </Button>
-                  {tokenJsonFileName && (
-                    <Typography color="text.secondary" variant="body2">
-                      {tokenJsonFileName}
-                    </Typography>
-                  )}
-                </Stack>
-                <TextField
-                  label="OAuth Token JSON"
-                  value={oauthTokenJson}
-                  onChange={(event) => setOauthTokenJson(event.target.value)}
-                  fullWidth
-                  multiline
-                  minRows={10}
-                />
-                <TextField
-                  label="Max Files"
-                  value={maxFiles}
-                  onChange={(event) =>
-                    setMaxFiles(Math.max(1, Number(event.target.value) || 1))
-                  }
-                  fullWidth
-                  size="small"
-                  type="number"
-                />
-                <Button
-                  variant="outlined"
-                  onClick={handleSaveConnection}
-                  disabled={saveGDriveConnectionAction.isLoading}
+              <Stack direction="row" spacing={3} alignItems="stretch">
+                <Tabs
+                  orientation="vertical"
+                  value={activeTab}
+                  onChange={(_, value) => setActiveTab(value)}
+                  sx={{ borderRight: 1, borderColor: "divider", minWidth: 120 }}
                 >
-                  Create Connection
-                </Button>
-                <Button
-                  variant="contained"
-                  onClick={handleLoad}
-                  disabled={loadGDriveAction.isLoading}
-                  startIcon={<CloudSyncOutlinedIcon />}
-                >
-                  Load Drive
-                </Button>
-                {message && <Alert severity="success">{message}</Alert>}
-                {error && <Alert severity="error">{error}</Alert>}
+                  <Tab value="create" label="Create" />
+                  <Tab value="manage" label="Manage" />
+                </Tabs>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  {activeTab === "create" && (
+                    <Stack spacing={3}>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Typography variant="h6">Google Drive</Typography>
+                        <Chip label="GDRIVE_READ" size="small" />
+                      </Stack>
+                      <TextField
+                        label="Connection ID"
+                        value={connectionId}
+                        onChange={(event) =>
+                          setConnectionId(event.target.value)
+                        }
+                        fullWidth
+                        size="small"
+                      />
+                      <TextField
+                        label="Account Name"
+                        value={accountName}
+                        onChange={(event) => setAccountName(event.target.value)}
+                        fullWidth
+                        size="small"
+                      />
+                      <TextField
+                        label="OAuth Client ID"
+                        value={clientId}
+                        onChange={(event) => setClientId(event.target.value)}
+                        fullWidth
+                        size="small"
+                      />
+                      <TextField
+                        label="OAuth Client Secret"
+                        value={clientSecret}
+                        onChange={(event) =>
+                          setClientSecret(event.target.value)
+                        }
+                        fullWidth
+                        size="small"
+                        type="password"
+                      />
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Button
+                          component="label"
+                          variant="outlined"
+                          startIcon={<CloudUploadOutlinedIcon />}
+                        >
+                          Upload Client JSON
+                          <input
+                            hidden
+                            type="file"
+                            accept=".json,application/json"
+                            onChange={handleClientJsonFile}
+                          />
+                        </Button>
+                        {clientJsonFileName && (
+                          <Typography color="text.secondary" variant="body2">
+                            {clientJsonFileName}
+                          </Typography>
+                        )}
+                      </Stack>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Button
+                          component="label"
+                          variant="outlined"
+                          startIcon={<CloudUploadOutlinedIcon />}
+                        >
+                          Upload OAuth Token JSON
+                          <input
+                            hidden
+                            type="file"
+                            accept=".json,application/json"
+                            onChange={handleTokenJsonFile}
+                          />
+                        </Button>
+                        {tokenJsonFileName && (
+                          <Typography color="text.secondary" variant="body2">
+                            {tokenJsonFileName}
+                          </Typography>
+                        )}
+                      </Stack>
+                      <TextField
+                        label="OAuth Token JSON"
+                        value={oauthTokenJson}
+                        onChange={(event) =>
+                          setOauthTokenJson(event.target.value)
+                        }
+                        fullWidth
+                        multiline
+                        minRows={10}
+                      />
+                      <TextField
+                        label="Max Files"
+                        value={maxFiles}
+                        onChange={(event) =>
+                          setMaxFiles(
+                            Math.max(1, Number(event.target.value) || 1),
+                          )
+                        }
+                        fullWidth
+                        size="small"
+                        type="number"
+                      />
+                      <Button
+                        variant="outlined"
+                        onClick={handleSaveConnection}
+                        disabled={saveGDriveConnectionAction.isLoading}
+                      >
+                        Create Connection
+                      </Button>
+                      <Button
+                        variant="contained"
+                        onClick={handleLoad}
+                        disabled={loadGDriveAction.isLoading}
+                        startIcon={<CloudSyncOutlinedIcon />}
+                      >
+                        Load Drive
+                      </Button>
+                      <Button
+                        color="error"
+                        variant="outlined"
+                        onClick={() => handleDeleteConnection(connectionId)}
+                        disabled={
+                          deleteGDriveConnectionAction.isLoading ||
+                          !connectionId.trim()
+                        }
+                      >
+                        Delete Connection
+                      </Button>
+                    </Stack>
+                  )}
+                  {activeTab === "manage" && (
+                    <Stack spacing={2}>
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        justifyContent="space-between"
+                      >
+                        <Typography variant="h6">Connections</Typography>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => refetchConnections()}
+                          disabled={isFetchingConnections}
+                        >
+                          Refresh
+                        </Button>
+                      </Stack>
+                      <TableContainer component={Box}>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>Connection ID</TableCell>
+                              <TableCell>Account Name</TableCell>
+                              <TableCell align="right">Delete</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {connections.length === 0 && (
+                              <TableRow>
+                                <TableCell colSpan={3}>
+                                  No connections saved.
+                                </TableCell>
+                              </TableRow>
+                            )}
+                            {connections.map((connection) => (
+                              <TableRow key={connection.connectionId}>
+                                <TableCell>{connection.connectionId}</TableCell>
+                                <TableCell>
+                                  {connection.accountName ||
+                                    connection.connectionId}
+                                </TableCell>
+                                <TableCell align="right">
+                                  <Stack
+                                    direction="row"
+                                    justifyContent="flex-end"
+                                    spacing={1}
+                                  >
+                                    <Button
+                                      size="small"
+                                      onClick={() =>
+                                        handleUseConnection(connection)
+                                      }
+                                    >
+                                      Use
+                                    </Button>
+                                    <Button
+                                      color="error"
+                                      size="small"
+                                      onClick={() =>
+                                        handleDeleteConnection(
+                                          connection.connectionId,
+                                        )
+                                      }
+                                      disabled={
+                                        deleteGDriveConnectionAction.isLoading
+                                      }
+                                    >
+                                      Delete
+                                    </Button>
+                                  </Stack>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    </Stack>
+                  )}
+                  {message && (
+                    <Alert severity="success" sx={{ mt: 3 }}>
+                      {message}
+                    </Alert>
+                  )}
+                  {error && (
+                    <Alert severity="error" sx={{ mt: 3 }}>
+                      {error}
+                    </Alert>
+                  )}
+                </Box>
               </Stack>
             </Paper>
           </Grid>

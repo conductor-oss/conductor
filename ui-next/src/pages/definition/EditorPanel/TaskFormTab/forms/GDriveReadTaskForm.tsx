@@ -43,7 +43,6 @@ export const GDriveReadTaskForm = ({ task, onChange }: TaskFormProps) => {
           <Grid size={12}>
             <ConductorAutocompleteVariables
               fullWidth
-              required
               value={connectionId}
               onChange={(changes) =>
                 onChange(updateField(connectionIdPath, changes, task))
@@ -53,7 +52,7 @@ export const GDriveReadTaskForm = ({ task, onChange }: TaskFormProps) => {
                 tooltip: {
                   title: "Connection ID",
                   content:
-                    "Stored Google Drive connection ID, or a workflow input expression.",
+                    "Optional stored Google Drive connection ID, or a workflow input expression. When omitted, the task uses the latest saved connection.",
                 },
               }}
             />

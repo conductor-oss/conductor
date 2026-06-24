@@ -14,6 +14,7 @@ package com.netflix.conductor.core.execution.tasks;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -48,6 +49,8 @@ public class GDriveRead extends WorkflowSystemTask {
     private static final TypeReference<List<Object>> OBJECT_LIST_TYPE = new TypeReference<>() {};
 
     public static final String INPUT_CONNECTION_ID = "connectionId";
+    public static final String INPUT_WORKFLOW_CONNECTION_ID = "gdriveConnectionId";
+    public static final String INPUT_LEGACY_WORKFLOW_CONNECTION_ID = "gdriveconnectionId";
     public static final String INPUT_FOLDER_ID = "folderId";
     public static final String INPUT_LEGACY_FOLDER_ID = "driveFolderId";
     public static final String INPUT_FOLDER_IDS = "folderIds";
@@ -80,9 +83,9 @@ public class GDriveRead extends WorkflowSystemTask {
     public boolean execute(
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         try {
-            GDriveLoadResponse response =
-                    gDriveIntegrationService.loadFolder(toGDriveLoadRequest(task.getInputData()));
-            String connectionId = stringInput(task.getInputData(), INPUT_CONNECTION_ID);
+            GDriveLoadRequest request = toGDriveLoadRequest(workflow, task.getInputData());
+            GDriveLoadResponse response = gDriveIntegrationService.loadFolder(request);
+            String connectionId = request.getConnectionId();
             task.addOutput(
                     OUTPUT_CONNECTION_ID, isBlank(connectionId) ? null : connectionId.trim());
             task.addOutput(OUTPUT_FOLDER_ID, response.getFolderId());
@@ -108,8 +111,15 @@ public class GDriveRead extends WorkflowSystemTask {
         return true;
     }
 
-    private GDriveLoadRequest toGDriveLoadRequest(Map<String, Object> input) {
+    private GDriveLoadRequest toGDriveLoadRequest(
+            WorkflowModel workflow, Map<String, Object> input) {
         String connectionId = stringInput(input, INPUT_CONNECTION_ID);
+        if (isBlank(connectionId)) {
+            connectionId = workflowInput(workflow, INPUT_WORKFLOW_CONNECTION_ID);
+        }
+        if (isBlank(connectionId)) {
+            connectionId = workflowInput(workflow, INPUT_LEGACY_WORKFLOW_CONNECTION_ID);
+        }
         String folderId = stringInput(input, INPUT_FOLDER_ID);
         if (isBlank(folderId)) {
             folderId = stringInput(input, INPUT_LEGACY_FOLDER_ID);
@@ -122,10 +132,16 @@ public class GDriveRead extends WorkflowSystemTask {
         if (fileIds.isEmpty()) {
             fileIds = stringListInput(input.get(INPUT_LEGACY_FILE_IDS));
         }
-        String oauthTokenJson = resolveOauthTokenJson(connectionId, input);
+        String oauthTokenJson = stringInput(input, INPUT_OAUTH_TOKEN_JSON);
+        GDriveConnection connection = resolveConnection(connectionId, oauthTokenJson);
+        if (connection != null) {
+            connectionId = connection.getConnectionId();
+            oauthTokenJson = connection.getOauthTokenJson();
+        }
 
         if (isBlank(oauthTokenJson)) {
-            throw new IllegalArgumentException("connectionId input is required");
+            throw new IllegalArgumentException(
+                    "connectionId input is required or create a Google Drive connection in the UI");
         }
 
         GDriveLoadRequest request = new GDriveLoadRequest();
@@ -139,9 +155,12 @@ public class GDriveRead extends WorkflowSystemTask {
         return request;
     }
 
-    private String resolveOauthTokenJson(String connectionId, Map<String, Object> input) {
+    private GDriveConnection resolveConnection(String connectionId, String oauthTokenJson) {
         if (isBlank(connectionId)) {
-            return stringInput(input, INPUT_OAUTH_TOKEN_JSON);
+            if (!isBlank(oauthTokenJson)) {
+                return null;
+            }
+            return latestConnection();
         }
 
         String normalizedConnectionId = connectionId.trim();
@@ -150,12 +169,40 @@ public class GDriveRead extends WorkflowSystemTask {
             throw new IllegalArgumentException(
                     "No Google Drive connection found for connectionId " + normalizedConnectionId);
         }
-        return connection.getOauthTokenJson();
+        return connection;
+    }
+
+    private GDriveConnection latestConnection() {
+        return gDriveConnectionDAO.getAllConnections().stream()
+                .filter(Objects::nonNull)
+                .max(
+                        Comparator.comparingLong(
+                                        (GDriveConnection connection) ->
+                                                timestamp(connection.getUpdatedAt()))
+                                .thenComparingLong(
+                                        connection -> timestamp(connection.getCreatedAt()))
+                                .thenComparing(GDriveConnection::getConnectionId))
+                .orElse(null);
+    }
+
+    private long timestamp(Long value) {
+        return value == null ? 0L : value;
     }
 
     private String stringInput(Map<String, Object> input, String key) {
         Object value = input.get(key);
-        return value == null ? null : value.toString();
+        if (value == null) {
+            return null;
+        }
+        String text = value.toString();
+        return isUnresolvedInputExpression(text.trim()) ? null : text;
+    }
+
+    private String workflowInput(WorkflowModel workflow, String key) {
+        if (workflow == null || workflow.getInput() == null) {
+            return null;
+        }
+        return stringInput(workflow.getInput(), key);
     }
 
     private Integer integerInput(Object value) {

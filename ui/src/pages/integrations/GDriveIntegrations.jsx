@@ -1,4 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Helmet } from "react-helmet";
 import { makeStyles } from "@material-ui/styles";
 import {
@@ -7,12 +13,14 @@ import {
   Chip,
   Grid,
   Link,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Tabs,
   TextField,
 } from "@material-ui/core";
 import CloudQueueIcon from "@material-ui/icons/CloudQueue";
@@ -91,6 +99,41 @@ const useStyles = makeStyles({
   muted: {
     color: "#666",
   },
+  tabbedPanel: {
+    display: "flex",
+    gap: 20,
+    alignItems: "stretch",
+  },
+  verticalTabs: {
+    minWidth: 118,
+    borderRight: "1px solid #e2e2e2",
+  },
+  tabContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+  connectionList: {
+    border: "1px solid #e2e2e2",
+    borderRadius: 4,
+    overflow: "hidden",
+  },
+  connectionRow: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr) auto",
+    gap: 12,
+    alignItems: "center",
+    padding: "10px 12px",
+    borderBottom: "1px solid #eeeeee",
+  },
+  connectionHeader: {
+    fontWeight: 700,
+    backgroundColor: "#fafafa",
+  },
+  truncate: {
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
   table: {
     minWidth: 620,
   },
@@ -157,18 +200,33 @@ function buildOAuthUrl({ connectionId, clientId }) {
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
 
+function downloadJsonFile(fileName, content) {
+  if (!content) {
+    return;
+  }
+  const blob = new Blob([content], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 function workflowInput(name) {
   return `${String.fromCharCode(36)}{workflow.input.${name}}`;
 }
 
-function taskSnippet(maxFiles, connectionId) {
+function taskSnippet(maxFiles) {
   return JSON.stringify(
     {
       name: READ_G_DRIVE_TASK_NAME,
       taskReferenceName: `${READ_G_DRIVE_TASK_NAME}_ref`,
       type: "GDRIVE_READ",
       inputParameters: {
-        connectionId: connectionId || "<create-connection-first>",
+        connectionId: workflowInput("gdriveConnectionId"),
         folderIds: workflowInput("driveFolderIds"),
         fileIds: workflowInput("driveFileIds"),
         maxFiles,
@@ -215,7 +273,13 @@ function buildReadGDriveTaskDefinition() {
       "Read file metadata from Google Drive using a stored account connection.",
     retryCount: 3,
     timeoutSeconds: 3600,
-    inputKeys: ["connectionId", "folderIds", "fileIds", "maxFiles", "mimeTypes"],
+    inputKeys: [
+      "connectionId",
+      "folderIds",
+      "fileIds",
+      "maxFiles",
+      "mimeTypes",
+    ],
     outputKeys: ["folderIds", "fileIds", "files", "count"],
     timeoutPolicy: "TIME_OUT_WF",
     retryLogic: "FIXED",
@@ -225,7 +289,7 @@ function buildReadGDriveTaskDefinition() {
     rateLimitFrequencyInSeconds: 1,
     ownerEmail: "integrations@conductor.local",
     inputTemplate: {
-      connectionId: "",
+      connectionId: workflowInput("gdriveConnectionId"),
       folderIds: [],
       fileIds: [],
       maxFiles: 100,
@@ -254,7 +318,13 @@ async function ensureReadGDriveTask(fetchContext) {
 export default function GDriveIntegrations() {
   const classes = useStyles();
   const fetchContext = useFetchContext();
+  const requestContext = useMemo(
+    () => ({ ready: fetchContext.ready, stack: fetchContext.stack }),
+    [fetchContext.ready, fetchContext.stack]
+  );
+  const [activeTab, setActiveTab] = useState("create");
   const [connectionId, setConnectionId] = useState(createConnectionId);
+  const [accountName, setAccountName] = useState("");
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
   const [oauthTokenJson, setOauthTokenJson] = useState("");
@@ -266,7 +336,18 @@ export default function GDriveIntegrations() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [connections, setConnections] = useState([]);
   const processedOAuthCode = useRef(false);
+
+  const refreshConnections = useCallback(() => {
+    return fetchWithContext("integrations/gdrive/connections", requestContext)
+      .then((response) => setConnections(response || []))
+      .catch((err) => setError(formatError(err)));
+  }, [requestContext]);
+
+  useEffect(() => {
+    refreshConnections();
+  }, [refreshConnections]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -283,21 +364,24 @@ export default function GDriveIntegrations() {
       stored.oauthClientJson ||
       buildOAuthClientJson(storedClientId, storedClientSecret);
     const storedConnectionId = stored.connectionId || params.get("state") || "";
+    const storedAccountName = stored.accountName || storedConnectionId;
     const redirectUri =
       window.location.origin + window.location.pathname.replace(/\/+$/, "");
 
     setConnectionId(storedConnectionId);
+    setAccountName(storedAccountName);
     setClientId(storedClientId);
     setClientSecret(storedClientSecret);
     setLoading(true);
     setError("");
     setMessage("Completing Google OAuth...");
 
-    fetchWithContext("integrations/gdrive/oauth/token", fetchContext, {
+    fetchWithContext("integrations/gdrive/oauth/token", requestContext, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         connectionId: storedConnectionId,
+        accountName: storedAccountName,
         authorizationCode: code,
         oauthClientJson: storedClientJson,
         redirectUri,
@@ -308,37 +392,52 @@ export default function GDriveIntegrations() {
         if (!savedConnectionId) {
           throw new Error("OAuth response did not include a connection ID.");
         }
+        downloadJsonFile(
+          `${savedConnectionId}-token.json`,
+          response.oauthTokenJson
+        );
         sessionStorage.removeItem(SESSION_KEY);
         window.history.replaceState({}, "", window.location.pathname);
 
         try {
-          const taskStatus = await ensureReadGDriveTask(fetchContext);
+          const taskStatus = await ensureReadGDriveTask(requestContext);
           const taskMessage =
             taskStatus === "created"
               ? `${READ_G_DRIVE_TASK_NAME} task created.`
               : `${READ_G_DRIVE_TASK_NAME} task is available.`;
+          const downloadMessage = response.oauthTokenJson
+            ? " token.json downloaded."
+            : "";
           setMessage(
-            `Google Drive connection ${savedConnectionId} saved. ${taskMessage}`
+            `Google Drive connection ${savedConnectionId} saved.${downloadMessage} ${taskMessage}`
           );
         } catch (taskError) {
-          setMessage(`Google Drive connection ${savedConnectionId} saved.`);
+          const downloadMessage = response.oauthTokenJson
+            ? " token.json downloaded."
+            : "";
+          setMessage(
+            `Google Drive connection ${savedConnectionId} saved.${downloadMessage}`
+          );
           setError(
             `${READ_G_DRIVE_TASK_NAME} task was not created: ${formatError(
               taskError
             )}`
           );
         }
+        refreshConnections();
       })
       .catch((err) => setError(formatError(err)))
       .finally(() => setLoading(false));
-  }, [fetchContext]);
+  }, [requestContext, refreshConnections]);
 
   function handleGenerateOAuth() {
     setError("");
     setMessage("");
 
     const nextConnectionId = connectionId.trim() || createConnectionId();
+    const nextAccountName = accountName.trim() || nextConnectionId;
     setConnectionId(nextConnectionId);
+    setAccountName(nextAccountName);
     const nextOAuthUrl = buildOAuthUrl({
       connectionId: nextConnectionId,
       clientId: clientId.trim(),
@@ -357,6 +456,7 @@ export default function GDriveIntegrations() {
       SESSION_KEY,
       JSON.stringify({
         connectionId: nextConnectionId,
+        accountName: nextAccountName,
         clientId: clientId.trim(),
         clientSecret: clientSecret.trim(),
         oauthClientJson: buildOAuthClientJson(
@@ -430,18 +530,21 @@ export default function GDriveIntegrations() {
     setMessage("");
 
     const nextConnectionId = connectionId.trim() || createConnectionId();
+    const nextAccountName = accountName.trim() || nextConnectionId;
     setConnectionId(nextConnectionId);
+    setAccountName(nextAccountName);
     if (!safeParseJson(oauthTokenJson)) {
       setError("OAuth token JSON is required before saving the connection.");
       return;
     }
 
     setLoading(true);
-    fetchWithContext("integrations/gdrive/connections", fetchContext, {
+    fetchWithContext("integrations/gdrive/connections", requestContext, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         connectionId: nextConnectionId,
+        accountName: nextAccountName,
         oauthTokenJson,
         oauthClientJson:
           clientId.trim() && clientSecret.trim()
@@ -452,7 +555,9 @@ export default function GDriveIntegrations() {
       .then((response) => {
         const savedConnectionId = response.connectionId || nextConnectionId;
         setConnectionId(savedConnectionId);
+        setAccountName(response.accountName || nextAccountName);
         setMessage(`Google Drive connection ${savedConnectionId} created.`);
+        refreshConnections();
       })
       .catch((err) => setError(formatError(err)))
       .finally(() => setLoading(false));
@@ -464,17 +569,12 @@ export default function GDriveIntegrations() {
     setFiles([]);
     setCount(0);
 
-    if (!connectionId.trim()) {
-      setError("Connection ID is required.");
-      return;
-    }
-
     setLoading(true);
-    fetchWithContext("integrations/gdrive/load", fetchContext, {
+    fetchWithContext("integrations/gdrive/load", requestContext, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        connectionId: connectionId.trim(),
+        connectionId: connectionId.trim() || undefined,
         maxFiles,
       }),
     })
@@ -485,6 +585,36 @@ export default function GDriveIntegrations() {
       })
       .catch((err) => setError(formatError(err)))
       .finally(() => setLoading(false));
+  }
+
+  function handleDeleteConnection(targetConnectionId) {
+    setError("");
+    setMessage("");
+    setLoading(true);
+    fetchWithContext(
+      `integrations/gdrive/connections/${encodeURIComponent(
+        targetConnectionId
+      )}`,
+      requestContext,
+      { method: "DELETE" },
+      false
+    )
+      .then(() => {
+        setMessage(`Google Drive connection ${targetConnectionId} deleted.`);
+        if (connectionId === targetConnectionId) {
+          setConnectionId(createConnectionId());
+          setAccountName("");
+        }
+        return refreshConnections();
+      })
+      .catch((err) => setError(formatError(err)))
+      .finally(() => setLoading(false));
+  }
+
+  function handleUseConnection(connection) {
+    setConnectionId(connection.connectionId || "");
+    setAccountName(connection.accountName || connection.connectionId || "");
+    setActiveTab("create");
   }
 
   return (
@@ -511,122 +641,223 @@ export default function GDriveIntegrations() {
           </Grid>
           <Grid item xs={12} md={5}>
             <Paper padded className={classes.card}>
-              <div className={classes.formStack}>
-                <Box className={classes.actionRow}>
-                  <Text level={2}>Google Drive</Text>
-                  <Chip size="small" label="Account connection" />
-                </Box>
-                <Input
-                  label="OAuth Client ID"
-                  value={clientId}
-                  fullWidth
-                  variant="outlined"
-                  onChange={setClientId}
-                />
-                <Input
-                  label="OAuth Client Secret"
-                  value={clientSecret}
-                  fullWidth
-                  variant="outlined"
-                  type="password"
-                  onChange={setClientSecret}
-                />
-                <Box className={classes.actionRow}>
-                  <input
-                    id="gdrive-oauth-client-json-file"
-                    className={classes.fileInput}
-                    type="file"
-                    accept=".json,application/json"
-                    onChange={handleOAuthClientFileChange}
-                  />
-                  <label htmlFor="gdrive-oauth-client-json-file">
-                    <Button
-                      component="span"
-                      variant="outlined"
-                      startIcon={<FolderOpenIcon />}
-                    >
-                      Upload Client JSON
-                    </Button>
-                  </label>
-                  {clientJsonFileName && (
-                    <Text className={classes.muted}>{clientJsonFileName}</Text>
+              <div className={classes.tabbedPanel}>
+                <Tabs
+                  orientation="vertical"
+                  value={activeTab}
+                  onChange={(event, value) => setActiveTab(value)}
+                  className={classes.verticalTabs}
+                >
+                  <Tab value="create" label="Create" />
+                  <Tab value="manage" label="Manage" />
+                </Tabs>
+                <div className={classes.tabContent}>
+                  {activeTab === "create" && (
+                    <div className={classes.formStack}>
+                      <Box className={classes.actionRow}>
+                        <Text level={2}>Google Drive</Text>
+                        <Chip size="small" label="Account connection" />
+                      </Box>
+                      <Input
+                        label="Connection ID"
+                        value={connectionId}
+                        fullWidth
+                        variant="outlined"
+                        onChange={setConnectionId}
+                      />
+                      <Input
+                        label="Account Name"
+                        value={accountName}
+                        fullWidth
+                        variant="outlined"
+                        onChange={setAccountName}
+                      />
+                      <Input
+                        label="OAuth Client ID"
+                        value={clientId}
+                        fullWidth
+                        variant="outlined"
+                        onChange={setClientId}
+                      />
+                      <Input
+                        label="OAuth Client Secret"
+                        value={clientSecret}
+                        fullWidth
+                        variant="outlined"
+                        type="password"
+                        onChange={setClientSecret}
+                      />
+                      <Box className={classes.actionRow}>
+                        <input
+                          id="gdrive-oauth-client-json-file"
+                          className={classes.fileInput}
+                          type="file"
+                          accept=".json,application/json"
+                          onChange={handleOAuthClientFileChange}
+                        />
+                        <label htmlFor="gdrive-oauth-client-json-file">
+                          <Button
+                            component="span"
+                            variant="outlined"
+                            startIcon={<FolderOpenIcon />}
+                          >
+                            Upload Client JSON
+                          </Button>
+                        </label>
+                        {clientJsonFileName && (
+                          <Text className={classes.muted}>
+                            {clientJsonFileName}
+                          </Text>
+                        )}
+                      </Box>
+                      <Box className={classes.actionRow}>
+                        <input
+                          id="gdrive-oauth-token-json-file"
+                          className={classes.fileInput}
+                          type="file"
+                          accept=".json,application/json"
+                          onChange={handleOAuthTokenFileChange}
+                        />
+                        <label htmlFor="gdrive-oauth-token-json-file">
+                          <Button
+                            component="span"
+                            variant="outlined"
+                            startIcon={<FolderOpenIcon />}
+                          >
+                            Upload OAuth Token JSON
+                          </Button>
+                        </label>
+                        {tokenJsonFileName && (
+                          <Text className={classes.muted}>
+                            {tokenJsonFileName}
+                          </Text>
+                        )}
+                      </Box>
+                      <TextField
+                        label="OAuth Token JSON for import"
+                        value={oauthTokenJson}
+                        onChange={(event) =>
+                          setOauthTokenJson(event.target.value)
+                        }
+                        fullWidth
+                        multiline
+                        minRows={9}
+                        variant="outlined"
+                      />
+                      <Input
+                        label="Max Files"
+                        value={maxFiles}
+                        fullWidth
+                        variant="outlined"
+                        type="number"
+                        onChange={(value) =>
+                          setMaxFiles(Math.max(1, Number(value)))
+                        }
+                      />
+                      <Box className={classes.actionRow}>
+                        <Button
+                          color="primary"
+                          variant="contained"
+                          onClick={handleGenerateOAuth}
+                          disabled={loading}
+                        >
+                          Generate OAuth
+                        </Button>
+                        <Button
+                          color="primary"
+                          variant="outlined"
+                          onClick={handleSaveConnection}
+                          disabled={loading}
+                        >
+                          Create Connection
+                        </Button>
+                        <Button
+                          color="primary"
+                          variant="outlined"
+                          onClick={handleLoadDrive}
+                          disabled={loading}
+                        >
+                          Load Drive
+                        </Button>
+                        
+                      </Box>
+                    </div>
                   )}
-                </Box>
-                <Box className={classes.actionRow}>
-                  <input
-                    id="gdrive-oauth-token-json-file"
-                    className={classes.fileInput}
-                    type="file"
-                    accept=".json,application/json"
-                    onChange={handleOAuthTokenFileChange}
-                  />
-                  <label htmlFor="gdrive-oauth-token-json-file">
-                    <Button
-                      component="span"
-                      variant="outlined"
-                      startIcon={<FolderOpenIcon />}
-                    >
-                      Upload OAuth Token JSON
-                    </Button>
-                  </label>
-                  {tokenJsonFileName && (
-                    <Text className={classes.muted}>{tokenJsonFileName}</Text>
+                  {activeTab === "manage" && (
+                    <div className={classes.formStack}>
+                      <Box className={classes.actionRow}>
+                        <Text level={2}>Connections</Text>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          onClick={refreshConnections}
+                          disabled={loading}
+                        >
+                          Refresh
+                        </Button>
+                      </Box>
+                      <div className={classes.connectionList}>
+                        <div
+                          className={`${classes.connectionRow} ${classes.connectionHeader}`}
+                        >
+                          <div>Connection ID</div>
+                          <div>Account Name</div>
+                          <div />
+                        </div>
+                        {connections.length === 0 && (
+                          <div className={classes.connectionRow}>
+                            <div>No connections saved.</div>
+                            <div />
+                            <div />
+                          </div>
+                        )}
+                        {connections.map((connection) => (
+                          <div
+                            key={connection.connectionId}
+                            className={classes.connectionRow}
+                          >
+                            <div className={classes.truncate}>
+                              {connection.connectionId}
+                            </div>
+                            <div className={classes.truncate}>
+                              {connection.accountName ||
+                                connection.connectionId}
+                            </div>
+                            <Box className={classes.actionRow}>
+                              <Button
+                                size="small"
+                                onClick={() => handleUseConnection(connection)}
+                              >
+                                Use
+                              </Button>
+                              <Button
+                                size="small"
+                                color="primary"
+                                onClick={() =>
+                                  handleDeleteConnection(
+                                    connection.connectionId
+                                  )
+                                }
+                                disabled={loading}
+                              >
+                                Delete
+                              </Button>
+                            </Box>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   )}
-                </Box>
-                <TextField
-                  label="OAuth Token JSON for import"
-                  value={oauthTokenJson}
-                  onChange={(event) => setOauthTokenJson(event.target.value)}
-                  fullWidth
-                  multiline
-                  minRows={9}
-                  variant="outlined"
-                />
-                <Input
-                  label="Max Files"
-                  value={maxFiles}
-                  fullWidth
-                  variant="outlined"
-                  type="number"
-                  onChange={(value) => setMaxFiles(Math.max(1, Number(value)))}
-                />
-                <Box className={classes.actionRow}>
-                  <Button
-                    color="primary"
-                    variant="contained"
-                    onClick={handleGenerateOAuth}
-                    disabled={loading}
-                  >
-                    Generate OAuth
-                  </Button>
-                  <Button
-                    color="primary"
-                    variant="outlined"
-                    onClick={handleSaveConnection}
-                    disabled={loading}
-                  >
-                    Create Connection
-                  </Button>
-                  <Button
-                    color="primary"
-                    variant="outlined"
-                    onClick={handleLoadDrive}
-                    disabled={loading}
-                  >
-                    Load Drive
-                  </Button>
-                </Box>
-                {message && <Text>{message}</Text>}
-                {error && <Text color="error">{error}</Text>}
+                  {message && <Text>{message}</Text>}
+                  {error && <Text color="error">{error}</Text>}
+                </div>
               </div>
             </Paper>
           </Grid>
           <Grid item xs={12} md={4}>
             <Paper padded className={classes.card}>
               <Text level={2}>Workflow Task</Text>
-              <pre className={classes.codeBlock}>
-                {taskSnippet(maxFiles, connectionId)}
-              </pre>
+              <pre className={classes.codeBlock}>{taskSnippet(maxFiles)}</pre>
             </Paper>
           </Grid>
           <Grid item xs={12}>

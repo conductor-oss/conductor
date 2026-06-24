@@ -18,6 +18,8 @@ import org.conductoross.conductor.common.integrations.gdrive.GDriveIntegrationEx
 import org.conductoross.conductor.common.integrations.gdrive.GDriveIntegrationService;
 import org.conductoross.conductor.common.integrations.gdrive.GDriveLoadRequest;
 import org.conductoross.conductor.common.integrations.gdrive.GDriveLoadResponse;
+import org.conductoross.conductor.common.integrations.gdrive.GDriveOAuthTokenRequest;
+import org.conductoross.conductor.common.integrations.gdrive.GDriveOAuthTokenResponse;
 import org.conductoross.conductor.core.dao.InMemoryGDriveConnectionDAO;
 import org.junit.Before;
 import org.junit.Test;
@@ -65,9 +67,11 @@ public class IntegrationsResourceTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(
                                         "{\"connectionId\":\"gdrive-prod\","
+                                                + "\"accountName\":\"Finance Drive\","
                                                 + "\"oauthTokenJson\":\"{\\\"access_token\\\":\\\"token\\\"}\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.connectionId").value("gdrive-prod"))
+                .andExpect(jsonPath("$.accountName").value("Finance Drive"))
                 .andExpect(jsonPath("$.oauthTokenJson").doesNotExist());
 
         this.mockMvc
@@ -93,6 +97,84 @@ public class IntegrationsResourceTest {
                         .contains("\"access_token\" : \"token\""));
     }
 
+    @Test
+    public void testGoogleDriveLoadFallsBackToStoredConnection() throws Exception {
+        this.mockMvc
+                .perform(
+                        MockMvcRequestBuilders.post("/api/integrations/gdrive/connections")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"connectionId\":\"gdrive-prod\","
+                                                + "\"accountName\":\"Finance Drive\","
+                                                + "\"oauthTokenJson\":\"{\\\"access_token\\\":\\\"token\\\"}\"}"))
+                .andExpect(status().isOk());
+
+        this.mockMvc
+                .perform(
+                        MockMvcRequestBuilders.post("/api/integrations/gdrive/load")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"folderIds\":[\"folder-123\"]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.folderIds[0]").value("folder-123"));
+
+        assertEquals("gdrive-prod", gDriveIntegrationService.lastRequest.getConnectionId());
+    }
+
+    @Test
+    public void testGoogleDriveOAuthExchangeSavesConnectionAndReturnsTokenJson() throws Exception {
+        this.mockMvc
+                .perform(
+                        MockMvcRequestBuilders.post("/api/integrations/gdrive/oauth/token")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"connectionId\":\"gdrive-prod\","
+                                                + "\"accountName\":\"Finance Drive\","
+                                                + "\"authorizationCode\":\"code\","
+                                                + "\"redirectUri\":\"http://localhost/integrations\","
+                                                + "\"oauthClientJson\":\"{\\\"client_id\\\":\\\"client\\\",\\\"client_secret\\\":\\\"secret\\\"}\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.connectionId").value("gdrive-prod"))
+                .andExpect(jsonPath("$.oauthTokenJson").value("{\"refresh_token\":\"token\"}"));
+
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.get("/api/integrations/gdrive/connections"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].connectionId").value("gdrive-prod"))
+                .andExpect(jsonPath("$[0].accountName").value("Finance Drive"))
+                .andExpect(jsonPath("$[0].oauthTokenJson").doesNotExist());
+    }
+
+    @Test
+    public void testGoogleDriveConnectionsCanBeListedAndDeleted() throws Exception {
+        this.mockMvc
+                .perform(
+                        MockMvcRequestBuilders.post("/api/integrations/gdrive/connections")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"connectionId\":\"gdrive-prod\","
+                                                + "\"accountName\":\"Finance Drive\","
+                                                + "\"oauthTokenJson\":\"{\\\"access_token\\\":\\\"token\\\"}\"}"))
+                .andExpect(status().isOk());
+
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.get("/api/integrations/gdrive/connections"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].connectionId").value("gdrive-prod"))
+                .andExpect(jsonPath("$[0].accountName").value("Finance Drive"))
+                .andExpect(jsonPath("$[0].oauthTokenJson").doesNotExist());
+
+        this.mockMvc
+                .perform(
+                        MockMvcRequestBuilders.delete(
+                                "/api/integrations/gdrive/connections/gdrive-prod"))
+                .andExpect(status().isOk());
+
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.get("/api/integrations/gdrive/connections"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
     private static class RecordingGDriveIntegrationService extends GDriveIntegrationService {
 
         private GDriveLoadRequest lastRequest;
@@ -106,6 +188,11 @@ public class IntegrationsResourceTest {
             }
             lastRequest = request;
             return new GDriveLoadResponse(request.getFolderIds(), request.getFileIds(), List.of());
+        }
+
+        @Override
+        public GDriveOAuthTokenResponse exchangeAuthorizationCode(GDriveOAuthTokenRequest request) {
+            return new GDriveOAuthTokenResponse("{\"refresh_token\":\"token\"}");
         }
     }
 }

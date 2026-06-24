@@ -15,6 +15,7 @@ package org.conductoross.conductor.common.integrations.gdrive;
 public class GDriveConnectionRequest {
 
     private String connectionId;
+    private String accountName;
     private String oauthTokenJson;
     private String oauthClientJson;
 
@@ -26,6 +27,14 @@ public class GDriveConnectionRequest {
 
     public void setConnectionId(String connectionId) {
         this.connectionId = connectionId;
+    }
+
+    public String getAccountName() {
+        return accountName;
+    }
+
+    public void setAccountName(String accountName) {
+        this.accountName = accountName;
     }
 
     public String getOauthTokenJson() {

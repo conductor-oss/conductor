@@ -12,6 +12,8 @@ The Google Drive integration reads file metadata from Google Drive using account
 
 The integration returns metadata only. It does not download file contents. Account credentials are stored once under a `connectionId`; runtime restrictions such as `folderIds`, `fileIds`, `maxFiles`, and `mimeTypes` are request inputs. OAuth credentials are not folder-specific and should not be embedded in workflow JSON.
 
+For the advanced connection-management architecture, dynamic multi-document ingestion contract, and GRN/POD classification handoff, see [Google Drive Connection Management and Document Ingestion](connection-management-document-ingestion.md).
+
 ## Authentication
 
 The integration stores Google OAuth token JSON in the Conductor persistence backend. The row key is `connectionId`, and the stored token JSON must include one of these forms:
@@ -34,6 +36,7 @@ Request body:
 ```json
 {
   "connectionId": "finance-drive",
+  "accountName": "Finance Drive",
   "authorizationCode": "<authorization-code>",
   "oauthClientJson": "{\"installed\":{\"client_id\":\"...\",\"client_secret\":\"...\"}}",
   "redirectUri": "http://localhost:3000/integrations/gdrive/callback"
@@ -59,6 +62,7 @@ Request body:
 ```json
 {
   "connectionId": "finance-drive",
+  "accountName": "Finance Drive",
   "oauthTokenJson": "{\"refresh_token\":\"...\"}",
   "oauthClientJson": "{\"installed\":{\"client_id\":\"...\",\"client_secret\":\"...\"}}"
 }
@@ -69,6 +73,7 @@ Response body:
 ```json
 {
   "connectionId": "finance-drive",
+  "accountName": "Finance Drive",
   "createdAt": 1781844000000,
   "updatedAt": 1781844000000
 }
@@ -86,6 +91,7 @@ Response body:
 [
   {
     "connectionId": "finance-drive",
+    "accountName": "Finance Drive",
     "createdAt": 1781844000000,
     "updatedAt": 1781844000000
   }
@@ -111,6 +117,8 @@ Request body:
   "mimeTypes": ["application/pdf", "image/png"]
 }
 ```
+
+If `connectionId` is omitted and `oauthTokenJson` is not supplied, Conductor uses the most recently updated stored Google Drive connection. Supplying `connectionId` always takes precedence.
 
 `folderIds` and `fileIds` are optional. Values can be raw Google Drive IDs, Drive URLs (`/folders/{id}` or `/file/d/{id}`), or URLs with an `id` query parameter. After extraction, each ID must contain only letters, numbers, underscores, or dashes.
 
@@ -142,7 +150,7 @@ The Drive API request includes shared drive support through `supportsAllDrives=t
 
 ## GDRIVE_READ system task
 
-Use `GDRIVE_READ` when a workflow needs file metadata from Google Drive. Create the Google Drive connection from the integration UI first, then copy the generated `connectionId` into the workflow task JSON.
+Use `GDRIVE_READ` when a workflow needs file metadata from Google Drive. Create the Google Drive connection from the integration UI first. A workflow can pass `connectionId` explicitly, or omit it to use the latest saved Google Drive connection.
 
 ```json
 {
@@ -163,7 +171,7 @@ Use `GDRIVE_READ` when a workflow needs file metadata from Google Drive. Create 
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `connectionId` | String | Yes | Stored Google Drive connection ID. This identifies the account-level OAuth credentials in persistence. |
+| `connectionId` | String | No | Stored Google Drive connection ID. When omitted, the task uses the most recently updated stored connection. |
 | `folderIds` | List[String] or comma-separated String | No | Google Drive folder IDs, folder URLs, URLs with an `id` query parameter, or workflow input expression. |
 | `fileIds` | List[String] or comma-separated String | No | Google Drive file IDs, file URLs, URLs with an `id` query parameter, or workflow input expression. |
 | `folderId` | String | No | Legacy single-folder input. New workflow definitions should use `folderIds`. |
@@ -190,11 +198,32 @@ Each item in `files` can include `id`, `name`, `mimeType`, `size`, `modifiedTime
 
 ## Failure behavior
 
-The task fails with `FAILED_WITH_TERMINAL_ERROR` when required workflow inputs are missing or invalid before making a Drive request. Examples include missing `connectionId`, an unknown stored connection, an invalid Drive ID, or a non-numeric `maxFiles` string.
+The task fails with `FAILED_WITH_TERMINAL_ERROR` when required workflow inputs are missing or invalid before making a Drive request. Examples include no available stored connection, an unknown stored connection, an invalid Drive ID, or a non-numeric `maxFiles` string.
 
 The task fails with `FAILED` when Google Drive or OAuth processing fails. Examples include invalid token JSON, an expired token that cannot be refreshed, a Drive API error response, or an interrupted Drive request.
 
 REST endpoint validation and integration failures are returned as HTTP `400` responses.
+
+## Deployment notes
+
+Google Drive connections are stored in the configured Conductor persistence backend. For deployable environments, use a durable database such as PostgreSQL or MySQL and include that database in your backup and restore plan. SQLite and in-memory storage are appropriate only for local development.
+
+Treat `oauthClientJson` and `oauthTokenJson` as secrets:
+
+- Do not commit OAuth client JSON, access tokens, refresh tokens, or exported connection payloads.
+- Use the integration UI or REST API to create connections after deployment.
+- Restrict access to `/api/integrations/gdrive/**` with the same authentication and authorization controls used for other administrative Conductor APIs.
+- Rotate the Google OAuth client secret or refresh token if a connection export or database backup is exposed.
+
+Configure the Google OAuth app with redirect URIs that match each deployed UI origin. For example, if the UI is served at `https://conductor.example.com`, register:
+
+```text
+https://conductor.example.com/integrations/gdrive/callback
+```
+
+When deploying behind a reverse proxy or load balancer, make sure the browser-visible UI URL, the OAuth redirect URI, and the API base URL used by the UI all resolve to the same deployed environment. Mismatched localhost callback URLs are the most common cause of successful local setup failing after deployment.
+
+If multiple Conductor server instances are running, all instances must use the same persistence backend so stored Google Drive connections are visible to every instance.
 
 ## Implementation references
 

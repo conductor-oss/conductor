@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS gdrive_connection (
     connection_id VARCHAR(255) PRIMARY KEY,
+    account_name VARCHAR(255) NOT NULL,
     oauth_token_json TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP

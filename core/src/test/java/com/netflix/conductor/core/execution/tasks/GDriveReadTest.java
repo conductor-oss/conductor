@@ -135,6 +135,75 @@ public class GDriveReadTest {
     }
 
     @Test
+    public void executeUsesLatestStoredConnectionWhenConnectionIdIsMissing() {
+        RecordingGDriveIntegrationService service =
+                new RecordingGDriveIntegrationService(
+                        new GDriveLoadResponse("folder-123", List.of()), null);
+        GDriveRead gDriveRead =
+                new GDriveRead(
+                        service, daoWithConnection("gdrive-prod", "{\"refresh_token\":\"token\"}"));
+
+        TaskModel task = taskWithInput(Map.of(GDriveRead.INPUT_FOLDER_ID, "folder-123"));
+
+        gDriveRead.execute(new WorkflowModel(), task, mock(WorkflowExecutor.class));
+
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        assertEquals("gdrive-prod", service.lastRequest.getConnectionId());
+        assertEquals("{\"refresh_token\":\"token\"}", service.lastRequest.getOauthTokenJson());
+        assertEquals("gdrive-prod", task.getOutputData().get(GDriveRead.OUTPUT_CONNECTION_ID));
+    }
+
+    @Test
+    public void executeUsesWorkflowConnectionIdWhenTaskInputIsUnresolved() {
+        RecordingGDriveIntegrationService service =
+                new RecordingGDriveIntegrationService(
+                        new GDriveLoadResponse(List.of(), List.of(), List.of()), null);
+        GDriveRead gDriveRead =
+                new GDriveRead(
+                        service,
+                        daoWithConnection(
+                                "gdrive-856b8377-c9fe-43c3-a7b1-b282c729ec81",
+                                "{\"refresh_token\":\"token\"}"));
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setInput(
+                Map.of(
+                        GDriveRead.INPUT_LEGACY_WORKFLOW_CONNECTION_ID,
+                        "gdrive-856b8377-c9fe-43c3-a7b1-b282c729ec81"));
+        TaskModel task =
+                taskWithInput(
+                        Map.of(
+                                GDriveRead.INPUT_CONNECTION_ID,
+                                "${workflow.input.gdriveConnectionId}"));
+
+        gDriveRead.execute(workflow, task, mock(WorkflowExecutor.class));
+
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        assertEquals(
+                "gdrive-856b8377-c9fe-43c3-a7b1-b282c729ec81",
+                service.lastRequest.getConnectionId());
+    }
+
+    @Test
+    public void executeDoesNotUseUnresolvedConnectionIdAsDaoLookupKey() {
+        GDriveRead gDriveRead =
+                new GDriveRead(
+                        new RecordingGDriveIntegrationService(null, null),
+                        new InMemoryGDriveConnectionDAO());
+        TaskModel task =
+                taskWithInput(
+                        Map.of(
+                                GDriveRead.INPUT_CONNECTION_ID,
+                                "${workflow.input.gdriveConnectionId}"));
+
+        gDriveRead.execute(new WorkflowModel(), task, mock(WorkflowExecutor.class));
+
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertEquals(
+                "connectionId input is required or create a Google Drive connection in the UI",
+                task.getReasonForIncompletion());
+    }
+
+    @Test
     public void executeAcceptsJsonArrayStringListInputs() {
         RecordingGDriveIntegrationService service =
                 new RecordingGDriveIntegrationService(
@@ -274,9 +343,11 @@ public class GDriveReadTest {
         gDriveRead.execute(new WorkflowModel(), task, mock(WorkflowExecutor.class));
 
         assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
-        assertEquals("connectionId input is required", task.getReasonForIncompletion());
         assertEquals(
-                "connectionId input is required",
+                "connectionId input is required or create a Google Drive connection in the UI",
+                task.getReasonForIncompletion());
+        assertEquals(
+                "connectionId input is required or create a Google Drive connection in the UI",
                 task.getOutputData().get(GDriveRead.OUTPUT_ERROR));
     }
 

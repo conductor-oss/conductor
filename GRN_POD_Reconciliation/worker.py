@@ -27,6 +27,14 @@ ROOT = Path(__file__).resolve().parent
 DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
 FOLDER_MIME_TYPE = "application/vnd.google-apps.folder"
 SHORTCUT_MIME_TYPE = "application/vnd.google-apps.shortcut"
+GOOGLE_DOC_EXPORT_MIME_TYPES = {
+    "application/vnd.google-apps.document": ("application/pdf", ".pdf"),
+    "application/vnd.google-apps.spreadsheet": (
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ".xlsx",
+    ),
+    "application/vnd.google-apps.presentation": ("application/pdf", ".pdf"),
+}
 LIST_FIELDS = (
     "nextPageToken,"
     "files("
@@ -232,6 +240,43 @@ def download_drive_file(service: Any, file_metadata: dict[str, Any], target_dir:
     return target_path
 
 
+def download_or_export_drive_file(
+    service: Any, file_metadata: dict[str, Any], target_dir: Path
+) -> dict[str, Any]:
+    mime_type = file_metadata.get("mimeType")
+    file_id = file_metadata.get("id") or file_metadata.get("driveFileId")
+    if not file_id:
+        raise RuntimeError(f"Drive document is missing id/driveFileId: {file_metadata}")
+
+    target_dir.mkdir(parents=True, exist_ok=True)
+    if mime_type in GOOGLE_DOC_EXPORT_MIME_TYPES:
+        export_mime_type, suffix = GOOGLE_DOC_EXPORT_MIME_TYPES[mime_type]
+        target_path = unique_path(
+            target_dir / f"{safe_filename(file_metadata.get('name'), file_id)}{suffix}"
+        )
+        print(
+            f"Exporting Google Workspace file {file_metadata.get('name')} to {target_path}",
+            flush=True,
+        )
+        request = service.files().export_media(fileId=file_id, mimeType=export_mime_type)
+        download_request(request, target_path)
+        return {
+            **file_metadata,
+            "driveFileId": file_id,
+            "mimeType": export_mime_type,
+            "localPath": str(target_path),
+        }
+
+    if mime_type not in SUPPORTED_MIME_TYPES:
+        raise RuntimeError(
+            f"Unsupported Drive file mimeType for Gemini document processing: {mime_type}. "
+            f"Supported files are {sorted(SUPPORTED_MIME_TYPES)} or Google Docs/Slides exports."
+        )
+
+    target_path = download_drive_file(service, {**file_metadata, "id": file_id}, target_dir)
+    return {**file_metadata, "driveFileId": file_id, "localPath": str(target_path)}
+
+
 def collect_drive_documents(
     service: Any,
     folder_id: str,
@@ -383,12 +428,55 @@ def gemini_json(prompt: str, local_path: str, mime_type: str) -> dict[str, Any]:
     return parse_json_text(response.text or "")
 
 
-def parse_json_text(text: str) -> dict[str, Any]:
+def ensure_local_documents(input_data: dict[str, Any]) -> list[dict[str, Any]]:
+    documents = input_data.get("documents") or []
+    if not documents:
+        return []
+
+    local_input_dir = resolve_path(
+        input_data.get("localInputDir") or os.getenv("LOCAL_INPUT_DIR"),
+        "data/input",
+    )
+    service = None
+    normalized_documents = []
+    for document in documents:
+        local_path = document.get("localPath")
+        if local_path and Path(local_path).exists():
+            normalized_documents.append(document)
+            continue
+        if local_path:
+            raise RuntimeError(f"Document localPath does not exist: {local_path}")
+
+        # GDRIVE_READ returns Drive metadata only. Materialize those files locally before
+        # Gemini reads bytes from disk.
+        if document.get("id") or document.get("driveFileId"):
+            if service is None:
+                service = drive_service(allow_interactive_oauth=False)
+            normalized_documents.append(
+                download_or_export_drive_file(service, document, local_input_dir)
+            )
+            continue
+
+        raise RuntimeError(f"Document must include localPath or Drive id/driveFileId: {document}")
+    return normalized_documents
+
+
+def parse_json_text(text: str) -> Any:
     cleaned = text.strip()
     if cleaned.startswith("```"):
         cleaned = re.sub(r"^```(?:json)?", "", cleaned).strip()
         cleaned = re.sub(r"```$", "", cleaned).strip()
     return json.loads(cleaned)
+
+
+def require_json_object(value: Any, context: str) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, list) and len(value) == 1 and isinstance(value[0], dict):
+        return value[0]
+    raise RuntimeError(
+        f"{context} must return a JSON object, but returned {type(value).__name__}: {value}"
+    )
 
 
 def write_json(path: Path, payload: Any) -> None:
@@ -417,7 +505,7 @@ def filename_document_type(name: str | None) -> str:
 
 
 def normalize_classification(document: dict[str, Any], classification: dict[str, Any]) -> dict[str, Any]:
-    result = dict(classification or {})
+    result = require_json_object(classification or {}, "Classification response").copy()
     model_type = normalize_document_type(result.get("document_type")) or "UNKNOWN"
     file_type = filename_document_type(document.get("name"))
     reason = str(result.get("reason") or "")
@@ -454,7 +542,7 @@ def normalize_classification(document: dict[str, Any], classification: dict[str,
 
 
 def classify_documents(input_data: dict[str, Any]) -> dict[str, Any]:
-    documents = input_data.get("documents") or []
+    documents = ensure_local_documents(input_data)
     classified = []
     for document in documents:
         prompt = (
@@ -471,7 +559,10 @@ def classify_documents(input_data: dict[str, Any]) -> dict[str, Any]:
         )
         result = normalize_classification(
             document,
-            gemini_json(prompt, document["localPath"], document["mimeType"]),
+            require_json_object(
+                gemini_json(prompt, document["localPath"], document["mimeType"]),
+                "Classification response",
+            ),
         )
         classified.append({**document, "classification": result})
 
@@ -493,7 +584,10 @@ def ocr_documents(input_data: dict[str, Any]) -> dict[str, Any]:
             "line_items must be an array of objects with item_code, sku, description, "
             "quantity, uom, batch_number, and remarks. Use null when a value is absent."
         )
-        extracted = gemini_json(prompt, document["localPath"], document["mimeType"])
+        extracted = require_json_object(
+            gemini_json(prompt, document["localPath"], document["mimeType"]),
+            "OCR response",
+        )
         classification_type = normalize_document_type(document_type)
         extracted_type = normalize_document_type(extracted.get("document_type"))
         if classification_type and classification_type != extracted_type:

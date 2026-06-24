@@ -1549,7 +1549,7 @@ export const gDriveReadTaskSchema = {
     taskReferenceName: "gdrive_read_task_ref",
     type: TaskType.GDRIVE_READ,
     inputParameters: {
-      connectionId: "",
+      connectionId: "${workflow.input.gdriveConnectionId}",
       folderIds: [],
       fileIds: [],
       maxFiles: 100,
@@ -1562,7 +1562,6 @@ export const gDriveReadTaskSchema = {
     type: { const: TaskType.GDRIVE_READ },
     inputParameters: {
       type: "object",
-      required: ["connectionId"],
       properties: {
         connectionId: {
           type: "string",
