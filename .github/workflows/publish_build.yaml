@@ -19,7 +19,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Set up Zulu JDK 21
         uses: actions/setup-java@v5
         with:
@@ -60,7 +60,7 @@ jobs:
           fi
 
       - name: Upload JARs to GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.event.inputs.version || github.ref_name }}
           files: |
