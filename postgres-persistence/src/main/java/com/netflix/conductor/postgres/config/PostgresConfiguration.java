@@ -146,51 +146,6 @@ public class PostgresConfiguration {
         return new PostgresFileMetadataDAO(retryTemplate, objectMapper, dataSource);
     }
 
-    @Bean(name = "webhookDAO")
-    @DependsOn({"flywayForPrimaryDb"})
-    public org.conductoross.conductor.postgres.dao.PostgresWebhookDAO postgresWebhookDAO(
-            @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
-            ObjectMapper objectMapper,
-            com.netflix.conductor.dao.MetadataDAO metadataDAO) {
-        return new org.conductoross.conductor.postgres.dao.PostgresWebhookDAO(
-                retryTemplate, objectMapper, dataSource, metadataDAO);
-    }
-
-    @Bean(name = "webhookTaskService")
-    @DependsOn({"flywayForPrimaryDb"})
-    public org.conductoross.conductor.postgres.dao.PostgresWebhookTaskService
-            postgresWebhookTaskService(
-                    @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
-                    ObjectMapper objectMapper) {
-        return new org.conductoross.conductor.postgres.dao.PostgresWebhookTaskService(
-                retryTemplate, objectMapper, dataSource);
-    }
-
-    @Bean
-    @DependsOn({"flywayForPrimaryDb"})
-    @ConditionalOnProperty(
-            name = "conductor.webhooks.cleanup.enabled",
-            havingValue = "true",
-            matchIfMissing = true)
-    public org.conductoross.conductor.postgres.dao.PostgresWebhookCleanupJob
-            postgresWebhookCleanupJob(org.springframework.core.env.Environment env) {
-        org.conductoross.conductor.postgres.dao.PostgresWebhookCleanupJob job =
-                new org.conductoross.conductor.postgres.dao.PostgresWebhookCleanupJob(dataSource);
-        String retention = env.getProperty("conductor.webhooks.cleanup.retention-duration");
-        if (retention != null) {
-            job.setRetentionDuration(java.time.Duration.parse(retention));
-        }
-        Integer batch = env.getProperty("conductor.webhooks.cleanup.batch-size", Integer.class);
-        if (batch != null) {
-            job.setBatchSize(batch);
-        }
-        String maxRuntime = env.getProperty("conductor.webhooks.cleanup.max-runtime");
-        if (maxRuntime != null) {
-            job.setMaxRuntime(java.time.Duration.parse(maxRuntime));
-        }
-        return job;
-    }
-
     @Bean
     public RetryTemplate postgresRetryTemplate(PostgresProperties properties) {
         SimpleRetryPolicy retryPolicy = new CustomRetryPolicy();
