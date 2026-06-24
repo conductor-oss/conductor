@@ -37,8 +37,8 @@ dependencies {
     testImplementation "org.spockframework:spock-spring:${revSpock}"
     testImplementation "org.awaitility:awaitility:${revAwaitility}"
 
-    implementation "org.elasticsearch.client:elasticsearch-rest-client:7.17.29"
-    implementation "org.elasticsearch.client:elasticsearch-rest-high-level-client:7.17.29"
+    implementation "org.elasticsearch.client:elasticsearch-rest-client:9.4.2"
+    implementation "org.elasticsearch.client:elasticsearch-rest-high-level-client:9.4.2"
 
     implementation "org.testcontainers:elasticsearch:${revTestContainer}"
     implementation "org.testcontainers:mysql:${revTestContainer}"
