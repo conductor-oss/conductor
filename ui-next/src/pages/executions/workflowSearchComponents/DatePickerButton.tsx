@@ -1,5 +1,5 @@
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import { ButtonBase } from "@mui/material";
+import { Box, ButtonBase } from "@mui/material";
 import {
   DateControlComponent,
   DateControlComponentProps,
@@ -67,16 +67,21 @@ export const DatePickerButton = forwardRef<
           pointerEvents: "none",
         }}
       />
-      <DateControlComponent
-        ref={innerRef}
-        {...pickerProps}
-        toDisplayTime=""
-        setToDisplayTime={() => {}}
-        endTimeStart=""
-        onEndFromChange={() => {}}
-        endTime=""
-        onEndToChange={() => {}}
-      />
+      {/* Stop clicks on DateControlComponent's internal elements from
+          bubbling to the ButtonBase — otherwise both the inner onClick and
+          the ButtonBase onClick fire, causing a double-toggle that cancels. */}
+      <Box onClick={(e) => e.stopPropagation()}>
+        <DateControlComponent
+          ref={innerRef}
+          {...pickerProps}
+          toDisplayTime=""
+          setToDisplayTime={() => {}}
+          endTimeStart=""
+          onEndFromChange={() => {}}
+          endTime=""
+          onEndToChange={() => {}}
+        />
+      </Box>
     </ButtonBase>
   );
 });
