@@ -46,6 +46,17 @@ clients treating Conductor workflows *as* agents.
 
 ## 8.3 Two integration directions
 
+```mermaid
+flowchart LR
+    ExtClient["External A2A client<br/>(ADK · CrewAI · LangGraph · another Conductor)"]
+    Remote["Remote A2A agent"]
+    subgraph C["Conductor"]
+        WF["Workflow execution<br/>(durable · resumable · observable)"]
+    end
+    ExtClient -->|"Direction A (server): message/send starts the workflow"| WF
+    WF -->|"Direction B (client): AGENT task sends message/send"| Remote
+```
+
 ### Direction A — Conductor as an A2A **server** ("expose a workflow as an agent")
 
 Let external A2A clients discover and invoke a Conductor workflow as if it were an agent:
@@ -64,6 +75,27 @@ Let external A2A clients discover and invoke a Conductor workflow as if it were 
 This is attractive because a Conductor workflow is *natively* the kind of durable, long-running,
 human-in-the-loop task A2A's lifecycle was designed for.
 
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Client as External A2A client
+    participant A as Conductor A2A server
+    participant E as Conductor engine
+    Client->>A: GET …/.well-known/agent-card.json
+    A-->>Client: Agent Card (one skill = the workflow)
+    Client->>A: message/send
+    A->>E: startWorkflow (idempotencyKey = A2A messageId)
+    E-->>A: workflowId
+    A-->>Client: Task { id = workflowId, state: working }
+    loop tasks/get until terminal
+        Client->>A: tasks/get
+        A->>E: getExecutionStatus
+        E-->>A: RUNNING → COMPLETED
+        A-->>Client: Task { state, artifacts }
+    end
+    note over Client,E: blocked on HUMAN/WAIT → input-required;<br/>a follow-up message/send resumes the same execution
+```
+
 ### Direction B — Conductor as an A2A **client** ("call a remote agent from a workflow")
 
 A new system task — call it **`AGENT`** (proposed name) — directly analogous to the
@@ -79,6 +111,26 @@ existing `CALL_MCP_TOOL`:
 
 This turns any A2A-speaking agent (built on ADK, CrewAI, LangGraph, …) into a first-class step
 in a Conductor workflow — multi-agent orchestration with Conductor as the durable coordinator.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant WF as Conductor workflow
+    participant T as AGENT task
+    participant R as Remote A2A agent
+    WF->>T: schedule { agentUrl, message }
+    T->>R: message/send (idempotencyKey = deterministic messageId)
+    R-->>T: Task { state: working }
+    alt poll (default) / push backstop
+        loop until terminal or input-required
+            T->>R: tasks/get
+            R-->>T: Task { working → completed }
+        end
+    else streaming
+        R-->>T: SSE status-update / artifact-update …
+    end
+    T-->>WF: artifacts + state as task output
+```
 
 ## 8.4 Lifecycle mapping (the crux)
 

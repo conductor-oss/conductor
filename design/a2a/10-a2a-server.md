@@ -22,6 +22,29 @@ GET  {basePath}                                          → convenience listing
 `conductor.a2a.server.enabled=true` (independent of the LLM/AI integration flag — the server side
 only needs core `WorkflowService`/`MetadataService`).
 
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Client as A2A client
+    participant R as A2AServerResource
+    participant A as A2AWorkflowAgent
+    participant E as Conductor engine
+    Client->>R: POST {basePath}/{wf} message/send
+    R->>A: sendMessage
+    A->>E: startWorkflow (idempotencyKey = A2A messageId)
+    E-->>A: workflowId
+    A-->>Client: Task { id = workflowId, state: working }
+    alt message/stream (SSE)
+        R->>A: streamMessage (dedicated daemon pool)
+        A-->>Client: task → status-update → artifact-update → final
+    else tasks/get polling
+        Client->>R: tasks/get
+        R->>A: getExecutionStatus
+        A-->>Client: Task { state, artifacts }
+    end
+    note over Client,E: blocked on HUMAN/WAIT → input-required;<br/>follow-up message/send (carrying the task id) resumes the same execution
+```
+
 ## 10.2 Exposure — opt-in, never everything
 
 A workflow is exposed iff **either**:

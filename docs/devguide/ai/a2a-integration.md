@@ -18,6 +18,19 @@ A2A standardizes three things: an **Agent Card** (a `/.well-known/agent-card.jso
 
 Conductor maps this lifecycle onto its own durable task model, so a remote agent task behaves like any other Conductor task — retried, timed out, observed, and resumed by the engine.
 
+Conductor speaks A2A in **both directions**: a workflow can *call* remote agents (client), and a workflow can *be* an agent that external A2A clients call (server).
+
+```mermaid
+flowchart LR
+    ExtClient["External A2A client<br/>(Google ADK · CrewAI · LangGraph · another Conductor)"]
+    Remote["Remote A2A agent"]
+    subgraph C["Conductor"]
+        WF["Workflow execution<br/>(durable · resumable · observable)"]
+    end
+    ExtClient -->|"server: message/send starts the workflow"| WF
+    WF -->|"client: AGENT task sends message/send"| Remote
+```
+
 
 ## Call a remote agent from a workflow (client)
 
@@ -32,6 +45,26 @@ Each task takes an **`agentType`** input that selects the agent runtime. It defa
 ### AGENT — send a message to an agent
 
 Sends an A2A `message/send` and works the resulting agent task to a terminal state. Non-blocking: a fast reply completes immediately; long-running work moves to `IN_PROGRESS` and is polled at a cadence (no worker thread is held).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant WF as Conductor workflow
+    participant T as AGENT task
+    participant R as Remote A2A agent
+    WF->>T: schedule { agentUrl, message }
+    T->>R: message/send (idempotencyKey = deterministic messageId)
+    R-->>T: Task { state: working }
+    alt poll (default) / push backstop
+        loop until terminal or input-required
+            T->>R: tasks/get
+            R-->>T: Task { working → completed }
+        end
+    else streaming
+        R-->>T: SSE status-update / artifact-update …
+    end
+    T-->>WF: artifacts + state as task output
+```
 
 ```json
 {
@@ -213,6 +246,18 @@ Full example: `ai/examples/29-a2a-client-multi-turn.json`.
 
 Because each `AGENT` is an ordinary durable task, you compose agents with the usual Conductor operators — e.g. **`FORK_JOIN`** to call several agents in parallel, **`JOIN`** to gather results. Every branch is independently crash-safe: if Conductor restarts mid-flight, each in-flight agent call resumes from persisted state (`ai/examples/27-a2a-multi-agent.json`). To let an LLM pick which skill to use, chain `GET_AGENT_CARD → LLM_CHAT_COMPLETE → AGENT` (`ai/examples/28-a2a-llm-pick-skill.json`).
 
+```mermaid
+flowchart LR
+    Start([Workflow]) --> Fork{{FORK_JOIN}}
+    Fork --> A1[AGENT → agent A]
+    Fork --> A2[AGENT → agent B]
+    Fork --> A3[AGENT → agent C]
+    A1 --> Join{{JOIN}}
+    A2 --> Join
+    A3 --> Join
+    Join --> Next([aggregate results])
+```
+
 ### Error handling & retries
 
 `AGENT` maps remote outcomes onto Conductor task statuses, so the engine's normal retry/timeout machinery applies. Retryable failures become `FAILED` (the engine retries per the task def's `retryCount`); permanent failures become `FAILED_WITH_TERMINAL_ERROR` (no retry):
@@ -244,6 +289,29 @@ Retries reuse the deterministic `messageId`, so agents that dedupe on it get eff
 *Direction B — Conductor is the A2A server.* Any Conductor workflow can be published as an A2A agent
 that other A2A clients (Google ADK, CrewAI, LangGraph, another Conductor) discover and invoke. The
 workflow execution **is** the durable, resumable A2A task — that's the native fit.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Client as External A2A client
+    participant S as A2AServerResource
+    participant A as A2AWorkflowAgent
+    participant E as Conductor engine
+    Client->>S: GET …/.well-known/agent-card.json
+    S-->>Client: Agent Card (one skill = the workflow)
+    Client->>S: POST message/send
+    S->>A: sendMessage
+    A->>E: startWorkflow (idempotencyKey = A2A messageId)
+    E-->>A: workflowId
+    A-->>Client: Task { id = workflowId, state: working }
+    loop tasks/get until terminal
+        Client->>S: tasks/get
+        S->>E: getExecutionStatus
+        E-->>S: RUNNING → COMPLETED
+        S-->>Client: Task { state, artifacts }
+    end
+    note over Client,E: blocked on HUMAN/WAIT → input-required;<br/>a follow-up message/send resumes the same execution
+```
 
 Enable the server and opt the workflow in:
 
