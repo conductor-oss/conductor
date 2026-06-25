@@ -188,6 +188,7 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
     def "test restart on the sub workflow in a nested fork join workflow"() {
         when:
         workflowExecutor.restart(subworkflowId, false)
+        sweep(parentWorkflowId)
 
         then: "verify that the subworkflow is RUNNING state"
         with(workflowExecutionService.getExecutionStatus(subworkflowId, true)) {
@@ -210,11 +211,11 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
             tasks[3].taskType == 'integration_task_2'
             tasks[3].status == Task.Status.COMPLETED
             tasks[4].taskType == TASK_TYPE_JOIN
-            tasks[4].status == Task.Status.CANCELED
+            tasks[4].status == Task.Status.IN_PROGRESS
             tasks[5].taskType == 'integration_task_2'
             tasks[5].status == Task.Status.COMPLETED
             tasks[6].taskType == TASK_TYPE_JOIN
-            tasks[6].status == Task.Status.CANCELED
+            tasks[6].status == Task.Status.IN_PROGRESS
         }
 
         when: "the parent workflow is swept"
@@ -570,6 +571,7 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
     def "test retry with resume on the parent workflow in a nested fork join workflow"() {
         when:
         workflowExecutor.retry(parentWorkflowId, true)
+        sweep(parentWorkflowId)
 
         then: "verify that the sub workflow is in RUNNING state"
         with(workflowExecutionService.getExecutionStatus(subworkflowId, true)) {
@@ -598,11 +600,11 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
             tasks[3].taskType == 'integration_task_2'
             tasks[3].status == Task.Status.COMPLETED
             tasks[4].taskType == TASK_TYPE_JOIN
-            tasks[4].status == Task.Status.CANCELED
+            tasks[4].status == Task.Status.IN_PROGRESS
             tasks[5].taskType == 'integration_task_2'
             tasks[5].status == Task.Status.COMPLETED
             tasks[6].taskType == TASK_TYPE_JOIN
-            tasks[6].status == Task.Status.CANCELED
+            tasks[6].status == Task.Status.IN_PROGRESS
         }
 
         when: "the parent is swept"
@@ -692,6 +694,7 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
     def "test retry on the sub workflow in a nested fork join workflow"() {
         when:
         workflowExecutor.retry(subworkflowId, false)
+        sweep(parentWorkflowId)
 
         then: "verify that the sub workflow is in RUNNING state"
         with(workflowExecutionService.getExecutionStatus(subworkflowId, true)) {
@@ -720,11 +723,11 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
             tasks[3].taskType == 'integration_task_2'
             tasks[3].status == Task.Status.COMPLETED
             tasks[4].taskType == TASK_TYPE_JOIN
-            tasks[4].status == Task.Status.CANCELED
+            tasks[4].status == Task.Status.IN_PROGRESS
             tasks[5].taskType == 'integration_task_2'
             tasks[5].status == Task.Status.COMPLETED
             tasks[6].taskType == TASK_TYPE_JOIN
-            tasks[6].status == Task.Status.CANCELED
+            tasks[6].status == Task.Status.IN_PROGRESS
         }
 
         when: "the parent is swept"
