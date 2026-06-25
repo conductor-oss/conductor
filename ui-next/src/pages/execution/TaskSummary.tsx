@@ -210,8 +210,8 @@ export default function TaskSummary({ taskResult }: TaskSummaryProps) {
     }
   }
 
-  // Guardrail pre/post hook executions (scrubbing) captured on the LLM task output.
-  const guardrailExecutions = taskResult.outputData?.guardrailExecutions as
+  // Guardrail pre/post hook executions (scrubbing) - a first-class task field (not output data).
+  const guardrailExecutions = (taskResult as any).guardrailExecutions as
     | Array<Record<string, any>>
     | undefined;
   if (Array.isArray(guardrailExecutions) && guardrailExecutions.length > 0) {

@@ -212,7 +212,22 @@ public class Task {
     @ProtoField(id = 45)
     private String parentTaskId;
 
+    // LLM guardrail (PII scrub) hook executions for this task. First-class observability field,
+    // not part of inputData/outputData (so not referenceable via ${...}). JSON-only (no ProtoField);
+    // serialized only when present, so existing tasks are unaffected.
+    @com.fasterxml.jackson.annotation.JsonInclude(
+            com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY)
+    private java.util.List<GuardrailExecution> guardrailExecutions;
+
     public Task() {}
+
+    public java.util.List<GuardrailExecution> getGuardrailExecutions() {
+        return guardrailExecutions;
+    }
+
+    public void setGuardrailExecutions(java.util.List<GuardrailExecution> guardrailExecutions) {
+        this.guardrailExecutions = guardrailExecutions;
+    }
 
     /**
      * @return Type of the task
