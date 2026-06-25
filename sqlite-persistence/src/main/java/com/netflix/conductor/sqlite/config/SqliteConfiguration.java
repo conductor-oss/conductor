@@ -36,8 +36,10 @@ import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
+import com.netflix.conductor.core.config.WorkflowMessageQueueProperties;
 import com.netflix.conductor.core.sync.Lock;
 import com.netflix.conductor.core.sync.local.LocalOnlyLock;
+import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
 import com.netflix.conductor.sqlite.dao.*;
 import com.netflix.conductor.sqlite.dao.metadata.SqliteEventHandlerMetadataDAO;
 import com.netflix.conductor.sqlite.dao.metadata.SqliteMetadataDAO;
@@ -180,6 +182,17 @@ public class SqliteConfiguration {
             @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper) {
         return new LocalOnlyLock();
+    }
+
+    @Bean
+    @DependsOn({"flywayForPrimaryDb"})
+    @ConditionalOnProperty(name = "conductor.workflow-message-queue.enabled", havingValue = "true")
+    public WorkflowMessageQueueDAO sqliteWorkflowMessageQueueDAO(
+            @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper,
+            WorkflowMessageQueueProperties wmqProperties) {
+        return new SqliteWorkflowMessageQueueDAO(
+                retryTemplate, objectMapper, dataSource, wmqProperties);
     }
 
     @Bean
