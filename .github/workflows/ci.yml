@@ -40,7 +40,7 @@ jobs:
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
-      persistence: ${{ steps.filter.outputs.persistence }}
+      heavy-persistence: ${{ steps.filter.outputs.heavy-persistence }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -50,7 +50,7 @@ jobs:
         id: filter
         with:
           filters: |
-            persistence:
+            heavy-persistence:
               - 'cassandra-persistence/**'
               - 'es6-persistence/**'
               - 'es7-persistence/**'
@@ -59,18 +59,8 @@ jobs:
               - 'os-persistence/**'
               - 'os-persistence-v2/**'
               - 'os-persistence-v3/**'
-              - 'postgres-persistence/**'
-              - 'postgres-external-storage/**'
-              - 'redis-concurrency-limit/**'
-              - 'redis-configuration/**'
-              - 'redis-lock/**'
-              - 'redis-persistence/**'
               - 'scheduler/cassandra-persistence/**'
               - 'scheduler/mysql-persistence/**'
-              - 'scheduler/postgres-persistence/**'
-              - 'scheduler/redis-persistence/**'
-              - 'scheduler/sqlite-persistence/**'
-              - 'sqlite-persistence/**'
 
   build:
     runs-on: ubuntu-latest
@@ -171,32 +161,23 @@ jobs:
             ./gradlew test -x :conductor-test-harness:test
             exit 0
           fi
-          # On PRs: skip all container-based persistence tests unless persistence code changed
-          if [ "${{ needs.detect-changes.outputs.persistence }}" == "true" ]; then
+          # On PRs: skip heavy container tests (cassandra, es, mysql, opensearch)
+          # unless their code changed. Redis, postgres, sqlite always run.
+          if [ "${{ needs.detect-changes.outputs.heavy-persistence }}" == "true" ]; then
             ./gradlew test -x :conductor-test-harness:test
           else
             ./gradlew test \
               -x :conductor-test-harness:test \
               -x :conductor-cassandra-persistence:test \
+              -x :conductor-scheduler-cassandra-persistence:test \
               -x :conductor-es6-persistence:test \
               -x :conductor-es7-persistence:test \
               -x :conductor-es8-persistence:test \
               -x :conductor-mysql-persistence:test \
+              -x :conductor-scheduler-mysql-persistence:test \
               -x :conductor-os-persistence:test \
               -x :conductor-os-persistence-v2:test \
-              -x :conductor-os-persistence-v3:test \
-              -x :conductor-postgres-persistence:test \
-              -x :conductor-postgres-external-storage:test \
-              -x :conductor-redis-concurrency-limit:test \
-              -x :conductor-redis-configuration:test \
-              -x :conductor-redis-lock:test \
-              -x :conductor-redis-persistence:test \
-              -x :conductor-scheduler-cassandra-persistence:test \
-              -x :conductor-scheduler-mysql-persistence:test \
-              -x :conductor-scheduler-postgres-persistence:test \
-              -x :conductor-scheduler-redis-persistence:test \
-              -x :conductor-scheduler-sqlite-persistence:test \
-              -x :conductor-sqlite-persistence:test
+              -x :conductor-os-persistence-v3:test
           fi
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v6
