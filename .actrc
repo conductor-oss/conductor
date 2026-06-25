@@ -1,2 +1,0 @@
---platform ubuntu-latest=catthehacker/ubuntu:act-24.04
---container-architecture linux/amd64
