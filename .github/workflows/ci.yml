@@ -40,7 +40,10 @@ jobs:
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
-      persistence: ${{ steps.filter.outputs.persistence }}
+      es8: ${{ steps.filter.outputs.es8 }}
+      mysql: ${{ steps.filter.outputs.mysql }}
+      es7: ${{ steps.filter.outputs.es7 }}
+      os: ${{ steps.filter.outputs.os }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -50,27 +53,16 @@ jobs:
         id: filter
         with:
           filters: |
-            persistence:
-              - 'cassandra-persistence/**'
-              - 'es6-persistence/**'
-              - 'es7-persistence/**'
+            es8:
               - 'es8-persistence/**'
+            mysql:
               - 'mysql-persistence/**'
-              - 'os-persistence/**'
+              - 'scheduler/mysql-persistence/**'
+            es7:
+              - 'es7-persistence/**'
+            os:
               - 'os-persistence-v2/**'
               - 'os-persistence-v3/**'
-              - 'postgres-persistence/**'
-              - 'postgres-external-storage/**'
-              - 'redis-concurrency-limit/**'
-              - 'redis-configuration/**'
-              - 'redis-lock/**'
-              - 'redis-persistence/**'
-              - 'scheduler/cassandra-persistence/**'
-              - 'scheduler/mysql-persistence/**'
-              - 'scheduler/postgres-persistence/**'
-              - 'scheduler/redis-persistence/**'
-              - 'scheduler/sqlite-persistence/**'
-              - 'sqlite-persistence/**'
 
   build:
     runs-on: ubuntu-latest
@@ -166,33 +158,18 @@ jobs:
         run: echo 'api.version=1.44' > ~/.docker-java.properties
       - name: Run unit tests
         run: |
-          PERSISTENCE_CHANGED="${{ needs.detect-changes.outputs.persistence }}"
-          if [ "${{ github.event_name }}" != "pull_request" ] || [ "$PERSISTENCE_CHANGED" == "true" ]; then
+          # On main (post-merge): run everything
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
             ./gradlew test -x :conductor-test-harness:test
-          else
-            ./gradlew test \
-              -x :conductor-test-harness:test \
-              -x :conductor-cassandra-persistence:test \
-              -x :conductor-es6-persistence:test \
-              -x :conductor-es7-persistence:test \
-              -x :conductor-es8-persistence:test \
-              -x :conductor-mysql-persistence:test \
-              -x :conductor-os-persistence:test \
-              -x :conductor-os-persistence-v2:test \
-              -x :conductor-os-persistence-v3:test \
-              -x :conductor-postgres-persistence:test \
-              -x :conductor-postgres-external-storage:test \
-              -x :conductor-redis-concurrency-limit:test \
-              -x :conductor-redis-configuration:test \
-              -x :conductor-redis-lock:test \
-              -x :conductor-redis-persistence:test \
-              -x :conductor-scheduler-cassandra-persistence:test \
-              -x :conductor-scheduler-mysql-persistence:test \
-              -x :conductor-scheduler-postgres-persistence:test \
-              -x :conductor-scheduler-redis-persistence:test \
-              -x :conductor-scheduler-sqlite-persistence:test \
-              -x :conductor-sqlite-persistence:test
+            exit 0
           fi
+          # On PRs: skip the 5 slowest persistence modules unless their code changed
+          SKIP=""
+          [ "${{ needs.detect-changes.outputs.es8 }}"   != "true" ] && SKIP="$SKIP -x :conductor-es8-persistence:test"
+          [ "${{ needs.detect-changes.outputs.mysql }}"  != "true" ] && SKIP="$SKIP -x :conductor-mysql-persistence:test -x :conductor-scheduler-mysql-persistence:test"
+          [ "${{ needs.detect-changes.outputs.es7 }}"   != "true" ] && SKIP="$SKIP -x :conductor-es7-persistence:test"
+          [ "${{ needs.detect-changes.outputs.os }}"    != "true" ] && SKIP="$SKIP -x :conductor-os-persistence-v2:test -x :conductor-os-persistence-v3:test"
+          ./gradlew test -x :conductor-test-harness:test $SKIP
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v6
         if: always()
