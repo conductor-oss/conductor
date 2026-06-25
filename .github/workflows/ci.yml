@@ -76,12 +76,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          ./gradlew build -x :conductor-test-harness:test
+          ./gradlew build -x :conductor-test-harness:test --parallel
       - name: Build and Publish snapshot
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
           echo "Running build for commit ${{ github.sha }}"
-          ./gradlew build -x :conductor-test-harness:test
+          ./gradlew build -x :conductor-test-harness:test --parallel
       - name: Generate aggregated coverage report
         if: always()
         run: ./gradlew jacocoAggregatedReport -x test || true
