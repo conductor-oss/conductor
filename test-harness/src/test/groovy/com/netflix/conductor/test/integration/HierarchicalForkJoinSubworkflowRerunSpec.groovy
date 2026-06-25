@@ -139,9 +139,6 @@ class HierarchicalForkJoinSubworkflowRerunSpec extends AbstractSpecification {
             tasks[3].status == Task.Status.IN_PROGRESS
         }
 
-        and: "poll and complete the integration_task_2 task in the root-level workflow"
-        workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker', ['op': 'task2.done'])
-
         when: "the subworkflow task should be in SCHEDULED state and is started by issuing a system task call"
         def midLevelWorkflowInstance = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
         leafWorkflowId = midLevelWorkflowInstance.tasks[1].subWorkflowId
@@ -382,7 +379,10 @@ class HierarchicalForkJoinSubworkflowRerunSpec extends AbstractSpecification {
             workflow.tasks[2].taskType == 'integration_task_2' &&
             workflow.tasks[2].status == Task.Status.COMPLETED &&
             workflow.tasks[3].taskType == TASK_TYPE_JOIN &&
-            workflow.tasks[3].status == Task.Status.CANCELED
+            // The reopened parent is also pushed for background evaluation, so the JOIN may
+            // still be CANCELED (from the failed run) or already reopened to IN_PROGRESS by
+            // the sweeper. Either is valid; only completion is not.
+            workflow.tasks[3].status in [Task.Status.CANCELED, Task.Status.IN_PROGRESS]
         }
 
         when: "poll and complete the integration_task_2 task in the mid level workflow"
