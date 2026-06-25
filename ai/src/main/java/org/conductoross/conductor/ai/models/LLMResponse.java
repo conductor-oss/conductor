@@ -13,9 +13,11 @@
 package org.conductoross.conductor.ai.models;
 
 import java.util.List;
+import java.util.Map;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -38,6 +40,13 @@ public class LLMResponse {
     private String responseId;
     private String reasoning;
     private Integer reasoningTokens;
+
+    /**
+     * Records of any guardrail pre/post hooks that ran for this LLM task (phase, type, target,
+     * before/after text). Serialized only when present, so existing responses are unaffected.
+     */
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private List<Map<String, Object>> guardrailExecutions;
 
     public boolean hasToolCalls() {
         return toolCalls != null && !toolCalls.isEmpty();

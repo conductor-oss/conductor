@@ -210,6 +210,33 @@ export default function TaskSummary({ taskResult }: TaskSummaryProps) {
     }
   }
 
+  // Guardrail pre/post hook executions (scrubbing) captured on the LLM task output.
+  const guardrailExecutions = taskResult.outputData?.guardrailExecutions as
+    | Array<Record<string, any>>
+    | undefined;
+  if (Array.isArray(guardrailExecutions) && guardrailExecutions.length > 0) {
+    guardrailExecutions.forEach((g) => {
+      data.push({
+        label: `Guardrail (${g.phase})`,
+        value: (
+          <div style={{ fontSize: "0.85em" }}>
+            <div>
+              <b>{String(g.type)}</b>
+              {g.target ? ` — ${String(g.target)}` : ""}
+              {g.failureMode ? ` (${String(g.failureMode)})` : ""}
+            </div>
+            <div style={{ marginTop: 4 }}>
+              <i>before:</i> {String(g.input)}
+            </div>
+            <div>
+              <i>after:</i> {String(g.output)}
+            </div>
+          </div>
+        ),
+      });
+    });
+  }
+
   return (
     <Paper
       variant="outlined"
