@@ -1954,8 +1954,13 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             notifyWorkflowStatusListener(workflow, WorkflowEventType.RETRIED);
 
             // update tasks in datastore to update workflow-tasks relationship for archived
-            // workflows
-            executionDAOFacade.updateTasks(workflow.getTasks());
+            // workflows; exclude rerunFromTask, which is updated individually below — writing its
+            // stale FAILED state here would race with the sweeper and can re-terminate the parent
+            final String rerunTaskId = rerunFromTask.getTaskId();
+            executionDAOFacade.updateTasks(
+                    workflow.getTasks().stream()
+                            .filter(t -> !t.getTaskId().equals(rerunTaskId))
+                            .collect(Collectors.toList()));
             // Remove all tasks after the "rerunFromTask"
             List<TaskModel> filteredTasks = new ArrayList<>();
             for (TaskModel task : workflow.getTasks()) {
