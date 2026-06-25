@@ -1282,8 +1282,13 @@ class ForkJoinSpec extends AbstractSpecification {
 
         and: "verify that the workflow is in a RUNNING state and sub workflow task is retried"
         sweep(workflowInstanceId)
-        List<String> retriedSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, retriedSubWorkflowIds[0])
+        // The background sweeper may have already consumed the retry task from the queue.
+        // Look up the retry task directly from workflow state and start it only if still SCHEDULED.
+        def retriedTask = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.retryCount == 1 }
+        if (retriedTask?.status == Task.Status.SCHEDULED) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, retriedTask.taskId)
+        }
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 5
