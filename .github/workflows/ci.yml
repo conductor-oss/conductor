@@ -37,6 +37,41 @@ on:
         default: false
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      persistence: ${{ steps.filter.outputs.persistence }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            persistence:
+              - 'cassandra-persistence/**'
+              - 'es6-persistence/**'
+              - 'es7-persistence/**'
+              - 'es8-persistence/**'
+              - 'mysql-persistence/**'
+              - 'os-persistence/**'
+              - 'os-persistence-v2/**'
+              - 'os-persistence-v3/**'
+              - 'postgres-persistence/**'
+              - 'postgres-external-storage/**'
+              - 'redis-concurrency-limit/**'
+              - 'redis-configuration/**'
+              - 'redis-lock/**'
+              - 'redis-persistence/**'
+              - 'scheduler/cassandra-persistence/**'
+              - 'scheduler/mysql-persistence/**'
+              - 'scheduler/postgres-persistence/**'
+              - 'scheduler/redis-persistence/**'
+              - 'scheduler/sqlite-persistence/**'
+              - 'sqlite-persistence/**'
+
   build:
     runs-on: ubuntu-latest
     steps:
@@ -164,8 +199,9 @@ jobs:
           path: "**/build/reports/tests"
 
   persistence-test:
+    needs: detect-changes
     runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' || needs.detect-changes.outputs.persistence == 'true'
     steps:
       - uses: actions/checkout@v7
       - name: Free disk space
