@@ -70,44 +70,18 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: ${{ runner.os }}-gradle-
-      - name: Force Docker API Version
-        run: echo 'api.version=1.44' > ~/.docker-java.properties
-      - name: Cache Docker images
-        uses: actions/cache@v5
-        id: docker-cache
-        with:
-          path: /tmp/docker-images-build.tar
-          key: docker-build-v2
-      - name: Load cached Docker images
-        if: steps.docker-cache.outputs.cache-hit == 'true'
-        run: docker load -i /tmp/docker-images-build.tar || true
       - name: Build with Gradle
         if: github.ref != 'refs/heads/main'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          ./gradlew build -x :conductor-test-harness:test --scan
+          ./gradlew build -x :conductor-test-harness:test
       - name: Build and Publish snapshot
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
           echo "Running build for commit ${{ github.sha }}"
           ./gradlew build -x :conductor-test-harness:test
-      - name: Save Docker images for cache
-        if: steps.docker-cache.outputs.cache-hit != 'true'
-        run: |
-          set -euo pipefail
-          docker image prune -f
-          mapfile -t images < <((docker images --format '{{.Repository}}:{{.Tag}}' \
-            | grep -v '<none>' \
-            | grep -E '(^|/)(elasticsearch|redis|postgres|mysql|mongo|cassandra)(:|/)|mockserver/mockserver|opensearchproject/opensearch|testcontainers/|orkesio/') || true)
-          if [ "${#images[@]}" -eq 0 ]; then
-            echo "No Testcontainers-related images to cache; writing empty tar for cache action."
-            tar -cf /tmp/docker-images-build.tar --files-from /dev/null
-            exit 0
-          fi
-          printf '%s\n' "${images[@]}"
-          docker save -o /tmp/docker-images-build.tar "${images[@]}"
       - name: Generate aggregated coverage report
         if: always()
         run: ./gradlew jacocoAggregatedReport -x test || true
@@ -127,11 +101,6 @@ jobs:
         with:
           name: coverage-report
           path: build/reports/jacoco/aggregated
-      - name: Store Buildscan URL
-        uses: actions/upload-artifact@v7
-        with:
-          name: build-scan
-          path: "buildscan.log"
   test-harness:
     runs-on: ubuntu-latest
     steps:
