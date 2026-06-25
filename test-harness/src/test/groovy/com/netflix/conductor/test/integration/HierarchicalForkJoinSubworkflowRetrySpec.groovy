@@ -21,7 +21,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.execution.tasks.Join
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
-import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
 
 import spock.lang.Shared
@@ -40,9 +39,6 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
 
     @Shared
     def SIMPLE_WORKFLOW = "integration_test_wf"
-
-    @Autowired
-    QueueDAO queueDAO
 
     @Autowired
     SubWorkflow subWorkflowTask
@@ -84,8 +80,11 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
                 correlationId, input, null)
 
         then: "verify that the workflow is in a RUNNING state"
-        List<String> polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
+        def retrySetupSubWfTask = workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        if (retrySetupSubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, retrySetupSubWfTask.taskId)
+        }
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -221,8 +220,11 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         //region Test case
         when: "do a retry on the root workflow"
         workflowExecutor.retry(rootWorkflowId, false)
-        List<String> polledRetriedRootSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledRetriedRootSubWorkflowIds[0])
+        def retriedRootSubWfTask = workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        if (retriedRootSubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, retriedRootSubWfTask.taskId)
+        }
 
         then: "verify that the root workflow created a new SUB_WORKFLOW task"
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
@@ -246,8 +248,11 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         def newMidLevelWorkflowId = workflowExecutionService.getExecutionStatus(rootWorkflowId, true).getTasks().get(4).subWorkflowId
         def rootJoinId = workflowExecutionService.getExecutionStatus(rootWorkflowId, true).getTaskByRefName("fanouttask_join").taskId
         sweep(newMidLevelWorkflowId)
-        List<String> polledNewMidSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledNewMidSubWorkflowIds[0])
+        def newMidRetrySubWfTask = workflowExecutionService.getExecutionStatus(newMidLevelWorkflowId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        if (newMidRetrySubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, newMidRetrySubWfTask.taskId)
+        }
 
         then: "verify that a new mid level workflow is created and is in RUNNING state"
         newMidLevelWorkflowId != midLevelWorkflowId
@@ -322,8 +327,11 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         //region Test case
         when: "do a retry on the mid level workflow"
         workflowExecutor.retry(midLevelWorkflowId, false)
-        List<String> polledRetriedMidSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledRetriedMidSubWorkflowIds[0])
+        def retriedMidSubWfTask = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        if (retriedMidSubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, retriedMidSubWfTask.taskId)
+        }
 
         then: "verify that the mid workflow created a new SUB_WORKFLOW task"
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {

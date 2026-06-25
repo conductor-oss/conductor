@@ -21,7 +21,6 @@ import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.execution.tasks.Join
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
-import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
 
 import spock.lang.Shared
@@ -53,9 +52,6 @@ class ForkJoinSpec extends AbstractSpecification {
 
     @Autowired
     SubWorkflow subWorkflowTask
-
-    @Autowired
-    QueueDAO queueDAO
 
     def setup() {
         workflowTestUtil.registerWorkflows('fork_join_integration_test.json',
@@ -850,8 +846,11 @@ class ForkJoinSpec extends AbstractSpecification {
                 null)
 
         then: "The workflow is in the running state"
-        List<String> polledSubWfIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledSubWfIds[0])
+        def nestedSubWfTask = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        if (nestedSubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, nestedSubWfTask.taskId)
+        }
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 8
@@ -1080,9 +1079,9 @@ class ForkJoinSpec extends AbstractSpecification {
                 null)
 
         then: "verify that the workflow is in a running state"
-        List<String> polledSubWfIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 2, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledSubWfIds[0])
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledSubWfIds[1])
+        def scheduledSubWfTasks = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+                .tasks.findAll { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        scheduledSubWfTasks.each { asyncSystemTaskExecutor.execute(subWorkflowTask, it.taskId) }
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -1216,8 +1215,11 @@ class ForkJoinSpec extends AbstractSpecification {
         def workflowInstanceId = startWorkflow(FORK_JOIN_SUB_WORKFLOW, 1, '', workflowInput, null)
 
         then: "verify that the workflow is in a RUNNING state"
-        List<String> polledSubWfTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledSubWfTaskIds[0])
+        def forkSubWfTask = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        if (forkSubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, forkSubWfTask.taskId)
+        }
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4

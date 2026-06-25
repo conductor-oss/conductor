@@ -21,7 +21,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.execution.tasks.Join
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
-import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
 
 import spock.lang.Shared
@@ -40,9 +39,6 @@ class HierarchicalForkJoinSubworkflowRestartSpec extends AbstractSpecification {
 
     @Shared
     def SIMPLE_WORKFLOW = "integration_test_wf"
-
-    @Autowired
-    QueueDAO queueDAO
 
     @Autowired
     SubWorkflow subWorkflowTask
@@ -84,8 +80,11 @@ class HierarchicalForkJoinSubworkflowRestartSpec extends AbstractSpecification {
                 correlationId, input, null)
 
         then: "verify that the workflow is in a RUNNING state"
-        List<String> polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
+        def rootSetupSubWfTask = workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        if (rootSetupSubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, rootSetupSubWfTask.taskId)
+        }
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -123,8 +122,11 @@ class HierarchicalForkJoinSubworkflowRestartSpec extends AbstractSpecification {
         verifyPolledAndAcknowledgedTask(pollAndCompleteTask)
 
         and: "verify that the mid-level workflow is RUNNING, and first task is in SCHEDULED state"
-        polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
+        def midSetupSubWfTask = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        if (midSetupSubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, midSetupSubWfTask.taskId)
+        }
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -228,8 +230,11 @@ class HierarchicalForkJoinSubworkflowRestartSpec extends AbstractSpecification {
         //region Test case
         when: "do a restart on the root workflow"
         workflowExecutor.restart(rootWorkflowId, false)
-        List<String> polledRestartedRootSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledRestartedRootSubWorkflowIds[0])
+        def restartedRootSubWfTask = workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        if (restartedRootSubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, restartedRootSubWfTask.taskId)
+        }
 
         then: "verify that the root workflow created a new execution"
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
@@ -263,8 +268,11 @@ class HierarchicalForkJoinSubworkflowRestartSpec extends AbstractSpecification {
             midWf.tasks[2].taskType == 'integration_task_2' &&
             midWf.tasks[2].status == Task.Status.COMPLETED
         }
-        List<String> polledNewMidSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledNewMidSubWorkflowIds[0])
+        def newMidRestartSubWfTask = workflowExecutionService.getExecutionStatus(newMidLevelWorkflowId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        if (newMidRestartSubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, newMidRestartSubWfTask.taskId)
+        }
 
         then: "verify that a new mid level workflow is created and is in RUNNING state"
         newMidLevelWorkflowId != midLevelWorkflowId
@@ -338,8 +346,11 @@ class HierarchicalForkJoinSubworkflowRestartSpec extends AbstractSpecification {
         //region Test case
         when: "do a restart on the mid level workflow"
         workflowExecutor.restart(midLevelWorkflowId, false)
-        List<String> polledRestartedMidSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledRestartedMidSubWorkflowIds[0])
+        def restartedMidSubWfTask = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        if (restartedMidSubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, restartedMidSubWfTask.taskId)
+        }
 
         then: "verify that the mid workflow created a new execution"
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
