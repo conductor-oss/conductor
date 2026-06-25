@@ -1332,9 +1332,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                         .containsType(TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC)) {
             return;
         }
-
-        // A rerun/retry/restart can reactivate one fork branch while the previous JOIN is still
-        // terminal. Reopen only those JOIN tasks whose dependencies include an active branch.
         Set<String> activeReferenceTaskNames =
                 workflow.getTasks().stream()
                         .filter(NON_TERMINAL_TASK)
@@ -1343,9 +1340,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         if (activeReferenceTaskNames.isEmpty()) {
             return;
         }
-
-        // Iterative: when inner_join is reset to IN_PROGRESS it becomes active, allowing
-        // outer JOINs that depend on it (nested fork-join) to be reset in the next pass.
+        // Iteratively expand active set and reset: a reset JOIN (e.g. inner_join) becomes active,
+        // allowing outer JOINs that depend on it to be reset in the same or subsequent pass.
         boolean resetOccurred;
         do {
             resetOccurred = false;
