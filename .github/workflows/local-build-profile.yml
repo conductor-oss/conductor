@@ -1,0 +1,37 @@
+name: Local Build Profile
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Zulu JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: "zulu"
+          java-version: "21"
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
+
+      - name: Build with Gradle (profiled)
+        run: |
+          ./gradlew build -x :conductor-test-harness:test --profile 2>&1 | tee /tmp/gradle-build.log
+          echo "=== BUILD COMPLETE ==="
+
+      - name: Print profile report location
+        if: always()
+        run: |
+          find build/reports/profile -name "*.html" 2>/dev/null | head -5 || echo "No profile report found"
+          echo "=== TASK TIMINGS (from log) ==="
+          grep -E "^> Task|BUILD (SUCCESSFUL|FAILED)|actionable tasks" /tmp/gradle-build.log | tail -30 || true
