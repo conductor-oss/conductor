@@ -311,7 +311,16 @@ class WorkflowTestUtil {
     }
 
     Tuple pollAndCompleteLargePayloadTask(String taskName, String workerId, String outputPayloadPath) {
-        def polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
+        Task polledIntegrationTask = null
+        for (int attempt = 0; attempt < 4 && polledIntegrationTask == null; attempt++) {
+            if (attempt > 0) {
+                Thread.sleep(200)
+            }
+            polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
+        }
+        if (polledIntegrationTask == null) {
+            return new Tuple(null)
+        }
         def taskResult = new TaskResult(polledIntegrationTask)
         taskResult.status = TaskResult.Status.COMPLETED
         taskResult.outputData = null
@@ -321,7 +330,16 @@ class WorkflowTestUtil {
     }
 
     Tuple pollAndUpdateTask(String taskName, String workerId, String outputPayloadPath, Map<String, Object> outputParams = null, int waitAtEndSeconds = 0) {
-        def polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
+        Task polledIntegrationTask = null
+        for (int attempt = 0; attempt < 4 && polledIntegrationTask == null; attempt++) {
+            if (attempt > 0) {
+                Thread.sleep(200)
+            }
+            polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
+        }
+        if (polledIntegrationTask == null) {
+            return waitAtEndSecondsAndReturn(waitAtEndSeconds, null)
+        }
         def taskResult = new TaskResult(polledIntegrationTask)
         taskResult.status = TaskResult.Status.IN_PROGRESS
         taskResult.callbackAfterSeconds = 1
