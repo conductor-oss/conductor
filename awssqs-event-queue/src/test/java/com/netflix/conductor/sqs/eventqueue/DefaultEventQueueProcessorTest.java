@@ -116,7 +116,9 @@ public class DefaultEventQueueProcessorTest {
     public void shouldUpdateTaskByReferenceName() throws Exception {
         defaultEventQueueProcessor.updateByTaskRefName(
                 "v_0", "t0", new HashMap<>(), Status.COMPLETED);
-        for (int i = 0; i < 10 && updatedTasks.stream().noneMatch(t -> "t0".equals(t.getTaskId())); i++) {
+        for (int i = 0;
+                i < 10 && updatedTasks.stream().noneMatch(t -> "t0".equals(t.getTaskId()));
+                i++) {
             Uninterruptibles.sleepUninterruptibly(500, TimeUnit.MILLISECONDS);
         }
         assertTrue(updatedTasks.stream().anyMatch(task -> "t0".equals(task.getTaskId())));
@@ -132,7 +134,9 @@ public class DefaultEventQueueProcessorTest {
     @Test
     public void shouldUpdateTaskByTaskId() throws Exception {
         defaultEventQueueProcessor.updateByTaskId("v_2", "t2", new HashMap<>(), Status.COMPLETED);
-        for (int i = 0; i < 10 && updatedTasks.stream().noneMatch(t -> "t2".equals(t.getTaskId())); i++) {
+        for (int i = 0;
+                i < 10 && updatedTasks.stream().noneMatch(t -> "t2".equals(t.getTaskId()));
+                i++) {
             Uninterruptibles.sleepUninterruptibly(500, TimeUnit.MILLISECONDS);
         }
         assertTrue(updatedTasks.stream().anyMatch(task -> "t2".equals(task.getTaskId())));
