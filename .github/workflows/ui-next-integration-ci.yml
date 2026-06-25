@@ -1,19 +1,15 @@
 name: UI v2 Integration CI
 
-# Run whenever server or UI code changes — integration tests exercise the full
-# stack (real Conductor backend + UI), so they are relevant for both.
-# conductor-clients changes don't affect the server or UI at runtime.
+# Runs after a PR is merged to main, or when a release is published.
+# Skipped on open PRs to avoid the expensive Docker build + Playwright run on every commit.
 on:
-  pull_request:
-    branches:
-      - main
-    paths-ignore:
-      - "conductor-clients/**"
   push:
     branches:
       - main
     paths-ignore:
       - "conductor-clients/**"
+  release:
+    types: [published]
 
 permissions:
   contents: read
