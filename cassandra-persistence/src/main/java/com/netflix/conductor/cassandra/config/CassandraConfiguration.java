@@ -111,30 +111,6 @@ public class CassandraConfiguration {
         return new CassandraPollDataDAO();
     }
 
-    @Bean(name = "webhookDAO")
-    public org.conductoross.conductor.cassandra.dao.CassandraWebhookDAO cassandraWebhookDAO(
-            Session session,
-            ObjectMapper objectMapper,
-            CassandraProperties properties,
-            com.netflix.conductor.dao.MetadataDAO metadataDAO,
-            org.springframework.core.env.Environment env) {
-        long ttlSeconds = 7L * 24 * 3600;
-        String retention = env.getProperty("conductor.webhooks.cleanup.retention-duration");
-        if (retention != null) {
-            ttlSeconds = java.time.Duration.parse(retention).toSeconds();
-        }
-        return new org.conductoross.conductor.cassandra.dao.CassandraWebhookDAO(
-                session, objectMapper, properties, metadataDAO, ttlSeconds);
-    }
-
-    @Bean(name = "webhookTaskService")
-    public org.conductoross.conductor.cassandra.dao.CassandraWebhookTaskService
-            cassandraWebhookTaskService(
-                    Session session, ObjectMapper objectMapper, CassandraProperties properties) {
-        return new org.conductoross.conductor.cassandra.dao.CassandraWebhookTaskService(
-                session, objectMapper, properties);
-    }
-
     @Bean
     public Statements statements(CassandraProperties cassandraProperties) {
         return new Statements(cassandraProperties.getKeyspace());
