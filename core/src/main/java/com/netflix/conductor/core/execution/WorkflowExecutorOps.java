@@ -1332,9 +1332,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                         .containsType(TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC)) {
             return;
         }
-
-        // A rerun/retry/restart can reactivate one fork branch while the previous JOIN is still
-        // terminal. Reopen only those JOIN tasks whose dependencies include an active branch.
         Set<String> activeReferenceTaskNames =
                 workflow.getTasks().stream()
                         .filter(NON_TERMINAL_TASK)
@@ -1343,16 +1340,22 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         if (activeReferenceTaskNames.isEmpty()) {
             return;
         }
-
-        workflow.getTasks().stream()
-                .filter(UNSUCCESSFUL_JOIN_TASK)
-                .filter(task -> hasActiveJoinDependency(task, activeReferenceTaskNames))
-                .peek(
-                        task -> {
-                            task.setStatus(TaskModel.Status.IN_PROGRESS);
-                            addTaskToQueue(task);
-                        })
-                .forEach(executionDAOFacade::updateTask);
+        // Iteratively expand active set and reset: a reset JOIN (e.g. inner_join) becomes active,
+        // allowing outer JOINs that depend on it to be reset in the same or subsequent pass.
+        boolean resetOccurred;
+        do {
+            resetOccurred = false;
+            for (TaskModel task : workflow.getTasks()) {
+                if (UNSUCCESSFUL_JOIN_TASK.test(task)
+                        && hasActiveJoinDependency(task, activeReferenceTaskNames)) {
+                    task.setStatus(TaskModel.Status.IN_PROGRESS);
+                    addTaskToQueue(task);
+                    executionDAOFacade.updateTask(task);
+                    activeReferenceTaskNames.add(task.getReferenceTaskName());
+                    resetOccurred = true;
+                }
+            }
+        } while (resetOccurred);
     }
 
     private boolean hasActiveJoinDependency(
@@ -1951,8 +1954,13 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             notifyWorkflowStatusListener(workflow, WorkflowEventType.RETRIED);
 
             // update tasks in datastore to update workflow-tasks relationship for archived
-            // workflows
-            executionDAOFacade.updateTasks(workflow.getTasks());
+            // workflows; exclude rerunFromTask, which is updated individually below — writing its
+            // stale FAILED state here would race with the sweeper and can re-terminate the parent
+            final String rerunTaskId = rerunFromTask.getTaskId();
+            executionDAOFacade.updateTasks(
+                    workflow.getTasks().stream()
+                            .filter(t -> !t.getTaskId().equals(rerunTaskId))
+                            .collect(Collectors.toList()));
             // Remove all tasks after the "rerunFromTask"
             List<TaskModel> filteredTasks = new ArrayList<>();
             for (TaskModel task : workflow.getTasks()) {
