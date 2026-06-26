@@ -292,7 +292,19 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
             }
         } catch (NotFoundException nfe) {
             log.error("Error running sweep for {}, error = {}", workflowId, nfe.getMessage(), nfe);
-            queueDAO.remove(DECIDER_QUEUE, workflowId);
+            // Best-effort cleanup: the workflow is gone, so drop it from the decider queue.
+            // This must not throw — a queue-layer failure here (e.g. removing a message that
+            // was never enqueued for a just-restarted workflow) would otherwise escape sweep()
+            // and crash the sweeper thread.
+            try {
+                queueDAO.remove(DECIDER_QUEUE, workflowId);
+            } catch (Exception removeEx) {
+                log.warn(
+                        "Failed to remove {} from decider queue during NotFound recovery, error = {}",
+                        workflowId,
+                        removeEx.getMessage(),
+                        removeEx);
+            }
         } catch (Throwable e) {
             log.error("Error running sweep for {}, error = {}", workflowId, e.getMessage(), e);
         } finally {

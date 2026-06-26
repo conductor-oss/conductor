@@ -22,6 +22,7 @@ import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
@@ -35,6 +36,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -183,6 +186,34 @@ public class WorkflowSweeperTest {
         verify(executionDAO).updateTask(subWorkflowTask);
         verify(workflowExecutor, times(2)).decide(WORKFLOW_ID);
         verify(queueDAO, never()).push(anyString(), anyString(), anyLong());
+        verify(executionLockService).releaseLock(WORKFLOW_ID);
+    }
+
+    @Test
+    public void sweepDoesNotPropagateWhenDeciderQueueCleanupFailsAfterNotFound() {
+        WorkflowModel workflow =
+                newWorkflow(
+                        List.of(
+                                newTask(
+                                        "simple-task",
+                                        TaskType.TASK_TYPE_SIMPLE,
+                                        TaskModel.Status.IN_PROGRESS)));
+
+        when(executionLockService.acquireLock(WORKFLOW_ID)).thenReturn(true);
+        when(workflowExecutor.getWorkflow(WORKFLOW_ID, true)).thenReturn(workflow);
+        // decide signals the workflow is gone (e.g. it raced a restart/terminate)
+        when(workflowExecutor.decide(WORKFLOW_ID))
+                .thenThrow(new NotFoundException("No such workflow found by id: " + WORKFLOW_ID));
+        // Simulate the recovery cleanup failing for ANY reason. This guards the catch
+        // block's behavior; it does not assert a specific queue-layer cause.
+        doThrow(new RuntimeException("queue cleanup failed"))
+                .when(queueDAO)
+                .remove(anyString(), anyString());
+
+        // must not propagate — a failed best-effort cleanup cannot be allowed to crash the sweeper
+        workflowSweeper.sweep(WORKFLOW_ID);
+
+        verify(queueDAO).remove(anyString(), eq(WORKFLOW_ID));
         verify(executionLockService).releaseLock(WORKFLOW_ID);
     }
 
