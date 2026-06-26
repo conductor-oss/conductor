@@ -20,6 +20,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
+import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW
@@ -64,6 +65,9 @@ class InlineSubWorkflowFromExpressionSpec extends AbstractSpecification {
     @Autowired
     SubWorkflow subWorkflowTask
 
+    @Autowired
+    QueueDAO queueDAO
+
     def "Sub-workflow definition from a String expression runs a complex DO_WHILE with SWITCH, INLINE, and SIMPLE tasks"() {
         given: "A complex sub-workflow definition built as a runtime Map (DO_WHILE + SWITCH + INLINE + SIMPLE)"
         // This Map is exactly what the wf_builder SIMPLE task will return as its output.
@@ -94,11 +98,12 @@ class InlineSubWorkflowFromExpressionSpec extends AbstractSpecification {
         verifyPolledAndAcknowledgedTask(pollBuilder)
 
         and: "The async SUB_WORKFLOW system task is executed"
-        def exprSubWfTask = workflowExecutionService.getExecutionStatus(workflowId, true)
-                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
-        if (exprSubWfTask) {
-            asyncSystemTaskExecutor.execute(subWorkflowTask, exprSubWfTask.taskId)
+        List<String> polledSubWorkflowIds = []
+        conditions.eventually {
+            polledSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+            assert !polledSubWorkflowIds.empty
         }
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledSubWorkflowIds[0])
 
         and: "The SUB_WORKFLOW task starts (expression resolved → inline WorkflowDef created)"
         conditions.eventually {
@@ -121,7 +126,10 @@ class InlineSubWorkflowFromExpressionSpec extends AbstractSpecification {
         // Iteration 1 (product=5, 5>5=false) runs entirely via system tasks (INLINE + SWITCH + INLINE)
         // and advances automatically.  Iteration 2 (product=10, 10>5=true) schedules the SIMPLE task.
         and: "integration_task_1 is SCHEDULED for the high-value path in iteration 2 (product > threshold)"
+        // With the background sweeper off, drive the DO_WHILE forward with explicit sweeps; each
+        // poll re-decides the sub-workflow until iteration 2 schedules the SIMPLE task.
         conditions.eventually {
+            sweep(subWorkflowId)
             with(workflowExecutionService.getExecutionStatus(subWorkflowId, true)) {
                 tasks.any { t ->
                     t.taskType == 'integration_task_1' &&
@@ -142,6 +150,7 @@ class InlineSubWorkflowFromExpressionSpec extends AbstractSpecification {
         // final_result INLINE then auto-executes and produces {loopsDone: 2, allDone: true}.
         and: "The sub-workflow COMPLETES with the expected loop summary output"
         conditions.eventually {
+            sweep(subWorkflowId)
             with(workflowExecutionService.getExecutionStatus(subWorkflowId, true)) {
                 status == Workflow.WorkflowStatus.COMPLETED
                 // outputParameters mapped from final_result INLINE output
@@ -152,6 +161,7 @@ class InlineSubWorkflowFromExpressionSpec extends AbstractSpecification {
 
         and: "The parent workflow COMPLETES — SUB_WORKFLOW task succeeded"
         conditions.eventually {
+            sweep(workflowId)
             with(workflowExecutionService.getExecutionStatus(workflowId, true)) {
                 status == Workflow.WorkflowStatus.COMPLETED
                 tasks[1].taskType == 'SUB_WORKFLOW'

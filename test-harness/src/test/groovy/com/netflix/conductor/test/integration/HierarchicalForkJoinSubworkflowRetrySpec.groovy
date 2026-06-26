@@ -12,8 +12,6 @@
  */
 package com.netflix.conductor.test.integration
 
-import java.util.concurrent.TimeUnit
-
 import org.springframework.beans.factory.annotation.Autowired
 
 import com.netflix.conductor.common.metadata.tasks.Task
@@ -30,8 +28,6 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_FOR
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_JOIN
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
-
-import static org.awaitility.Awaitility.await
 
 class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
 
@@ -138,7 +134,8 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
             tasks[3].status == Task.Status.IN_PROGRESS
         }
 
-        and: "get the leaf workflow from the mid-level workflow and sweep it"
+        and: "poll and complete the integration_task_1 task in the mid-level workflow"
+        workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker', ['op': 'task2.done'])
         def midLevelWorkflowInstance = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
         leafWorkflowId = midLevelWorkflowInstance.tasks[1].subWorkflowId
         sweep(leafWorkflowId)
@@ -343,12 +340,9 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         }
 
         and: "verify the SUB_WORKFLOW task in root workflow is IN_PROGRESS state"
-        // retry() updates parents asynchronously via the decider queue; the background
-        // sweeper re-decides the JOIN from CANCELED to IN_PROGRESS (same sweeper race as #1047).
-        await().atMost(10, TimeUnit.SECONDS).until {
-            workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
-                    .tasks[3].status == Task.Status.IN_PROGRESS
-        }
+        // retry() reopened the parent's SUB_WORKFLOW task; sweep() re-decides the parent so its
+        // JOIN reopens from CANCELED to IN_PROGRESS (deterministic with the background sweeper off).
+        sweep(rootWorkflowId)
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -434,12 +428,9 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         }
 
         then: "verify that the mid-level workflow's SUB_WORKFLOW task is updated"
-        // retry() updates parents asynchronously via the decider queue; the background
-        // sweeper re-decides the JOIN from CANCELED to IN_PROGRESS (same sweeper race as #1047).
-        await().atMost(10, TimeUnit.SECONDS).until {
-            workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
-                    .tasks[3].status == Task.Status.IN_PROGRESS
-        }
+        // retry() reopened the parent's SUB_WORKFLOW task; sweep() re-decides the parent so its
+        // JOIN reopens from CANCELED to IN_PROGRESS (deterministic with the background sweeper off).
+        sweep(midLevelWorkflowId)
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -454,10 +445,7 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         }
 
         and: "verify that the root workflow's SUB_WORKFLOW task is updated"
-        await().atMost(10, TimeUnit.SECONDS).until {
-            workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
-                    .tasks[3].status == Task.Status.IN_PROGRESS
-        }
+        sweep(rootWorkflowId)
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -553,12 +541,9 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         workflowExecutor.retry(rootWorkflowId, true)
 
         then: "verify that the sub workflow task in root workflow is IN_PROGRESS state"
-        // retry() updates parents asynchronously via the decider queue; the background
-        // sweeper re-decides the JOIN from CANCELED to IN_PROGRESS (same sweeper race as #1047).
-        await().atMost(10, TimeUnit.SECONDS).until {
-            workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
-                    .tasks[3].status == Task.Status.IN_PROGRESS
-        }
+        // retry() reopened the parent's SUB_WORKFLOW task; sweep() re-decides the parent so its
+        // JOIN reopens from CANCELED to IN_PROGRESS (deterministic with the background sweeper off).
+        sweep(rootWorkflowId)
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -573,10 +558,7 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         }
 
         and: "verify that the sub workflow task in mid level workflow is IN_PROGRESS state"
-        await().atMost(10, TimeUnit.SECONDS).until {
-            workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
-                    .tasks[3].status == Task.Status.IN_PROGRESS
-        }
+        sweep(midLevelWorkflowId)
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -683,12 +665,9 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         workflowExecutor.retry(midLevelWorkflowId, true)
 
         then: "verify that the sub workflow task in root workflow is updated"
-        // retry() updates parents asynchronously via the decider queue; the background
-        // sweeper re-decides the JOIN from CANCELED to IN_PROGRESS (same sweeper race as #1047).
-        await().atMost(10, TimeUnit.SECONDS).until {
-            workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
-                    .tasks[3].status == Task.Status.IN_PROGRESS
-        }
+        // retry() reopened the parent's SUB_WORKFLOW task; sweep() re-decides the parent so its
+        // JOIN reopens from CANCELED to IN_PROGRESS (deterministic with the background sweeper off).
+        sweep(rootWorkflowId)
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -703,10 +682,7 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         }
 
         and: "verify that the sub workflow task in mid level workflow is updated"
-        await().atMost(10, TimeUnit.SECONDS).until {
-            workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
-                    .tasks[3].status == Task.Status.IN_PROGRESS
-        }
+        sweep(midLevelWorkflowId)
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -825,12 +801,9 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         }
 
         then: "verify that the mid-level workflow is updated"
-        // retry() updates parents asynchronously via the decider queue; the background
-        // sweeper re-decides the JOIN from CANCELED to IN_PROGRESS (same sweeper race as #1047).
-        await().atMost(10, TimeUnit.SECONDS).until {
-            workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
-                    .tasks[3].status == Task.Status.IN_PROGRESS
-        }
+        // retry() reopened the parent's SUB_WORKFLOW task; sweep() re-decides the parent so its
+        // JOIN reopens from CANCELED to IN_PROGRESS (deterministic with the background sweeper off).
+        sweep(midLevelWorkflowId)
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -845,10 +818,7 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         }
 
         and: "verify that the root workflow is updated"
-        await().atMost(10, TimeUnit.SECONDS).until {
-            workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
-                    .tasks[3].status == Task.Status.IN_PROGRESS
-        }
+        sweep(rootWorkflowId)
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4

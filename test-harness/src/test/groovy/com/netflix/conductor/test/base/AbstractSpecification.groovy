@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.test.base
 
-import org.conductoross.conductor.core.execution.WorkflowSweeper
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -36,7 +35,7 @@ import spock.util.concurrent.PollingConditions
 @SpringBootTest(classes = ConductorTestApp.class)
 @TestPropertySource(locations = "classpath:application-integrationtest.properties",properties = [
         "conductor.db.type=redis_standalone",
-        "conductor.app.sweeperThreadCount=1",
+        "conductor.app.sweeper.enabled=false",
         "conductor.app.sweeper.sweepBatchSize=1",
         "conductor.app.sweeper.queuePopTimeout=750",
         "conductor.queue.type=redis_standalone"
@@ -64,9 +63,6 @@ abstract class AbstractSpecification extends Specification {
     WorkflowTestUtil workflowTestUtil
 
     @Autowired
-    WorkflowSweeper workflowSweeper
-
-    @Autowired
     AsyncSystemTaskExecutor asyncSystemTaskExecutor
 
     def conditions = new PollingConditions(timeout: 10)
@@ -89,8 +85,11 @@ abstract class AbstractSpecification extends Specification {
         workflowTestUtil.clearWorkflows()
     }
 
+    // The background sweeper is disabled in the harness (conductor.app.sweeper.enabled=false) so
+    // deciding is fully deterministic. This drives a decide directly, the way the sweeper's
+    // pollAndSweep loop would, without depending on the (absent) WorkflowSweeper bean.
     void sweep(String workflowId) {
-        workflowSweeper.sweep(workflowId)
+        workflowExecutor.decide(workflowId)
     }
 
     protected String startWorkflow(String name, Integer version, String correlationId, Map<String, Object> workflowInput, String workflowInputPath) {
