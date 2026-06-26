@@ -1974,8 +1974,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                             .filter(t -> !t.getTaskId().equals(rerunTaskId))
                             .collect(Collectors.toList()));
             // Direct rerun targeting a SUB_WORKFLOW task: seq-based removal would strip parallel
-            // fork branches — instead reset the task in-place and let finalizeRerun reschedule
-            // all terminal-unsuccessful siblings before the decider runs.
+            // fork branches — instead reset the task in-place, start a fresh child
+            // synchronously so the task is IN_PROGRESS immediately, then let finalizeRerun
+            // reset all terminal-unsuccessful siblings before the decider runs.
             if (rerunFromTask.getTaskId().equals(taskId)
                     && rerunFromTask
                             .getTaskType()
@@ -1987,10 +1988,19 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 rerunFromTask.clearOutput();
                 rerunFromTask.setRetried(false);
                 rerunFromTask.setExecuted(false);
+                rerunFromTask.setPollCount(0);
                 rerunFromTask.setSubWorkflowId(null);
                 rerunFromTask.setStatus(SCHEDULED);
                 rerunFromTask.setReasonForIncompletion(null);
-                addTaskToQueue(rerunFromTask);
+                // Start the child workflow synchronously so the task is IN_PROGRESS before we
+                // return — tests that read state immediately after rerun() need this.
+                systemTaskRegistry
+                        .get(TaskType.TASK_TYPE_SUB_WORKFLOW)
+                        .start(workflow, rerunFromTask, this);
+                if (rerunFromTask.getStatus() == SCHEDULED) {
+                    // start() hit a transient error — fall back to async queue processing.
+                    addTaskToQueue(rerunFromTask);
+                }
                 executionDAOFacade.updateTask(rerunFromTask);
                 finalizeRerun(workflow, rerunFromTask);
                 return true;
@@ -2013,6 +2023,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             rerunFromTask.clearOutput();
             rerunFromTask.setRetried(false);
             rerunFromTask.setExecuted(false);
+            rerunFromTask.setPollCount(0);
             if (rerunFromTask.getTaskType().equalsIgnoreCase(TaskType.TASK_TYPE_SUB_WORKFLOW)) {
                 // if task is sub workflow set task as IN_PROGRESS and reset start time
                 rerunFromTask.setStatus(IN_PROGRESS);
@@ -2034,8 +2045,15 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 }
             }
             executionDAOFacade.updateTask(rerunFromTask);
-            decide(workflow.getWorkflowId());
-            updateAndPushParents(workflow, "reran");
+            if (rerunFromTask.getTaskId().equals(taskId)) {
+                // Direct rerun: reset container tasks (DO_WHILE, JOIN) that stayed terminal
+                // after seq-based removal, then push parents.
+                finalizeRerun(workflow, rerunFromTask);
+            } else {
+                // Recursive rerun: child workflow already reran; just decide and push parents.
+                decide(workflow.getWorkflowId());
+                updateAndPushParents(workflow, "reran");
+            }
             return true;
         }
         return false;
