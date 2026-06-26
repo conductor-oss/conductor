@@ -2038,6 +2038,14 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     systemTaskRegistry
                             .get(rerunFromTask.getTaskType())
                             .start(workflow, rerunFromTask, this);
+                } else if (TaskType.FORK_JOIN_DYNAMIC
+                        .name()
+                        .equalsIgnoreCase(rerunFromTask.getTaskType())) {
+                    // FORK_JOIN_DYNAMIC is not in the system task registry and has no queue worker.
+                    // Mark it COMPLETED with executed=false so that decide() re-fires getNextTask()
+                    // via ForkJoinDynamicTaskMapper, which re-creates the branch tasks from the
+                    // original prep task's output stored in the workflow.
+                    rerunFromTask.setStatus(COMPLETED);
                 } else {
                     // Set the task to rerun as SCHEDULED
                     rerunFromTask.setStatus(SCHEDULED);

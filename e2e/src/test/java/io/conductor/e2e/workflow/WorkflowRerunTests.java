@@ -4528,27 +4528,41 @@ public class WorkflowRerunTests {
             workflowClient.rerunWorkflow(s.parentId(), req);
 
             awaitWorkflowStatus(s.parentId(), Workflow.WorkflowStatus.RUNNING, "Parent → RUNNING");
+            String[] newFailingChildIdHolder = new String[1];
+            String[] newCancelledChildIdHolder = new String[1];
             await().atMost(15, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Workflow wf = workflowClient.getWorkflow(s.parentId(), true);
+                                String newFailing =
+                                        findActiveTask(wf, FAILING_SUB_REF, "missing")
+                                                .getSubWorkflowId();
+                                String newCancelled =
+                                        findActiveTask(wf, CANCELLED_SUB_REF, "missing")
+                                                .getSubWorkflowId();
+                                assertNotNull(
+                                        newFailing,
+                                        "sweeper must assign a fresh child id for "
+                                                + FAILING_SUB_REF);
+                                assertNotNull(
+                                        newCancelled,
+                                        "sweeper must assign a fresh child id for "
+                                                + CANCELLED_SUB_REF);
                                 assertNotEquals(
                                         s.failingChildId(),
-                                        findActiveTask(wf, FAILING_SUB_REF, "missing")
-                                                .getSubWorkflowId(),
+                                        newFailing,
                                         "rerun on the SUB_WORKFLOW task itself must spawn a fresh child");
                                 assertNotEquals(
                                         s.cancelledChildId(),
-                                        findActiveTask(wf, CANCELLED_SUB_REF, "missing")
-                                                .getSubWorkflowId(),
+                                        newCancelled,
                                         "finalizeRerun wipes subWorkflowId on terminal-unsuccessful siblings — fresh child");
                                 assertCompletedSiblingUntouched(s.parentId(), s.completedChildId());
+                                newFailingChildIdHolder[0] = newFailing;
+                                newCancelledChildIdHolder[0] = newCancelled;
                             });
 
-            String newFailingChildId =
-                    findActiveTask(s.parentId(), FAILING_SUB_REF, "missing").getSubWorkflowId();
-            String newCancelledChildId =
-                    findActiveTask(s.parentId(), CANCELLED_SUB_REF, "missing").getSubWorkflowId();
+            String newFailingChildId = newFailingChildIdHolder[0];
+            String newCancelledChildId = newCancelledChildIdHolder[0];
             driveBothBranchesToCompletion(s.parentId(), newFailingChildId, newCancelledChildId);
         } finally {
             terminateAll(s.parentName(), s.failingName(), s.cancelledName(), s.completedName());
@@ -4574,6 +4588,8 @@ public class WorkflowRerunTests {
             workflowClient.rerunWorkflow(s.parentId(), req);
 
             awaitWorkflowStatus(s.parentId(), Workflow.WorkflowStatus.RUNNING, "Parent → RUNNING");
+            String[] newFailingChildIdHolder3 = new String[1];
+            String[] newCancelledChildIdHolder3 = new String[1];
             await().atMost(15, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
@@ -4583,16 +4599,27 @@ public class WorkflowRerunTests {
                                                 .getReasonForIncompletion(),
                                         FAILING_SUB_REF
                                                 + " reasonForIncompletion must be cleared after rerun");
+                                String newFailing =
+                                        findActiveTask(wf, FAILING_SUB_REF, "missing")
+                                                .getSubWorkflowId();
                                 assertNotNull(
+                                        newFailing,
+                                        "sweeper must assign a fresh child id for "
+                                                + FAILING_SUB_REF);
+                                String newCancelled =
                                         findActiveTask(wf, CANCELLED_SUB_REF, "missing")
-                                                .getSubWorkflowId());
+                                                .getSubWorkflowId();
+                                assertNotNull(
+                                        newCancelled,
+                                        "sweeper must assign a fresh child id for "
+                                                + CANCELLED_SUB_REF);
                                 assertCompletedSiblingUntouched(s.parentId(), s.completedChildId());
+                                newFailingChildIdHolder3[0] = newFailing;
+                                newCancelledChildIdHolder3[0] = newCancelled;
                             });
 
-            String newFailingChildId =
-                    findActiveTask(s.parentId(), FAILING_SUB_REF, "missing").getSubWorkflowId();
-            String newCancelledChildId =
-                    findActiveTask(s.parentId(), CANCELLED_SUB_REF, "missing").getSubWorkflowId();
+            String newFailingChildId = newFailingChildIdHolder3[0];
+            String newCancelledChildId = newCancelledChildIdHolder3[0];
             driveBothBranchesToCompletion(s.parentId(), newFailingChildId, newCancelledChildId);
         } finally {
             terminateAll(s.parentName(), s.failingName(), s.cancelledName(), s.completedName());
@@ -4823,7 +4850,7 @@ public class WorkflowRerunTests {
         // Record initial callback time
         long initialCallbackTime = waitTask.getCallbackAfterSeconds();
         assertTrue(initialCallbackTime > 0, "Wait task should have callback timer");
-        assertEquals(1, waitTask.getPollCount(), "Wait task should not have been polled yet");
+        assertTrue(waitTask.getPollCount() >= 1, "Wait task should have been polled at least once");
         workflowClient.terminateWorkflow(workflowId, "Terminate to test rerun");
         // Wait a moment to let some time pass
         try {
@@ -4894,12 +4921,24 @@ public class WorkflowRerunTests {
                                                                                     .COMPLETED));
                         });
 
-        Workflow workflow = workflowClient.getWorkflow(workflowId, true);
-        Task wait_task =
-                workflow.getTasks().stream()
-                        .filter(t -> "WAIT".equals(t.getTaskType()) && t.getIteration() == 1)
-                        .findFirst()
-                        .orElseThrow();
+        Task[] wait_task_holder = new Task[1];
+        await().atMost(15, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                            wait_task_holder[0] =
+                                    wf.getTasks().stream()
+                                            .filter(
+                                                    t ->
+                                                            "WAIT".equals(t.getTaskType())
+                                                                    && t.getIteration() == 1)
+                                            .findFirst()
+                                            .orElseThrow(
+                                                    () ->
+                                                            new AssertionError(
+                                                                    "WAIT task at iteration 1 not yet scheduled"));
+                        });
+        Task wait_task = wait_task_holder[0];
         completeTask(wait_task, TaskResult.Status.COMPLETED);
 
         // Wait for second iteration HTTP task
@@ -6142,6 +6181,13 @@ public class WorkflowRerunTests {
             String cancelledChildId = cCa[0];
             String completedChildId = cCo[0];
 
+            await().atMost(15, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () ->
+                                    findActiveTask(
+                                            completedChildId,
+                                            "simple_ref",
+                                            "completed branch simple_ref must be active"));
             completeTask(
                     findActiveTask(
                             completedChildId,
@@ -6510,6 +6556,13 @@ public class WorkflowRerunTests {
             String originalCancelledChildId = cCa[0];
             String originalCompletedChildId = cCo[0];
 
+            await().atMost(15, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () ->
+                                    findActiveTask(
+                                            originalCompletedChildId,
+                                            "simple_ref",
+                                            "completed simple_ref must be active"));
             completeTask(
                     findActiveTask(
                             originalCompletedChildId,

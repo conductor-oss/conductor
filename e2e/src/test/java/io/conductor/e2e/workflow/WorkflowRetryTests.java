@@ -1062,6 +1062,8 @@ public class WorkflowRetryTests {
         workflowClient.retryWorkflow(List.of(c.parentId));
         awaitWorkflowStatus(c.parentId, Workflow.WorkflowStatus.RUNNING);
 
+        String[] newFailingChildHolder = new String[1];
+        String[] newCancelledChildHolder = new String[1];
         await().atMost(20, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
@@ -1076,6 +1078,12 @@ public class WorkflowRetryTests {
                                     activeSubWorkflowId(c.parentId, "sub_workflow_ref__1");
                             String activeCancelledChild =
                                     activeSubWorkflowId(c.parentId, "sub_workflow_ref_1__1");
+                            assertNotNull(
+                                    activeFailingChild,
+                                    "sweeper must assign a fresh child id for the FAILED branch");
+                            assertNotNull(
+                                    activeCancelledChild,
+                                    "sweeper must assign a fresh child id for the CANCELED branch");
                             assertNotEquals(
                                     c.childFailing,
                                     activeFailingChild,
@@ -1094,10 +1102,12 @@ public class WorkflowRetryTests {
                                             .getStatus()
                                             .isTerminal(),
                                     "original cancelled child must stay terminal");
+                            newFailingChildHolder[0] = activeFailingChild;
+                            newCancelledChildHolder[0] = activeCancelledChild;
                         });
 
-        String newFailingChild = activeSubWorkflowId(c.parentId, "sub_workflow_ref__1");
-        String newCancelledChild = activeSubWorkflowId(c.parentId, "sub_workflow_ref_1__1");
+        String newFailingChild = newFailingChildHolder[0];
+        String newCancelledChild = newCancelledChildHolder[0];
         completeActiveSimpleRef(newFailingChild, TaskResult.Status.COMPLETED);
         completeActiveSimpleRef(newCancelledChild, TaskResult.Status.COMPLETED);
         awaitWorkflowStatus(c.parentId, Workflow.WorkflowStatus.COMPLETED);
@@ -1459,6 +1469,8 @@ public class WorkflowRetryTests {
         workflowClient.retryWorkflow(List.of(c.parentId));
         awaitWorkflowStatus(c.parentId, Workflow.WorkflowStatus.RUNNING);
 
+        String[] newDynFailingChildHolder = new String[1];
+        String[] newDynCancelledChildHolder = new String[1];
         await().atMost(20, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
@@ -1471,6 +1483,12 @@ public class WorkflowRetryTests {
                                     activeSubWorkflowId(c.parentId, c.failingRef);
                             String activeCancelledChild =
                                     activeSubWorkflowId(c.parentId, c.cancelledRef);
+                            assertNotNull(
+                                    activeFailingChild,
+                                    "sweeper must assign a fresh child id for the FAILED branch");
+                            assertNotNull(
+                                    activeCancelledChild,
+                                    "sweeper must assign a fresh child id for the CANCELED branch");
                             assertNotEquals(
                                     c.childFailing,
                                     activeFailingChild,
@@ -1479,10 +1497,12 @@ public class WorkflowRetryTests {
                                     c.childCancelled,
                                     activeCancelledChild,
                                     "CANCELED branch must have a NEW subWorkflowId (no resume flag)");
+                            newDynFailingChildHolder[0] = activeFailingChild;
+                            newDynCancelledChildHolder[0] = activeCancelledChild;
                         });
 
-        String newFailingChild = activeSubWorkflowId(c.parentId, c.failingRef);
-        String newCancelledChild = activeSubWorkflowId(c.parentId, c.cancelledRef);
+        String newFailingChild = newDynFailingChildHolder[0];
+        String newCancelledChild = newDynCancelledChildHolder[0];
         completeActiveSimpleRef(newFailingChild, TaskResult.Status.COMPLETED);
         completeActiveSimpleRef(newCancelledChild, TaskResult.Status.COMPLETED);
         awaitWorkflowStatus(c.parentId, Workflow.WorkflowStatus.COMPLETED);
