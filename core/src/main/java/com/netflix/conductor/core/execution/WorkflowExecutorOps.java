@@ -365,8 +365,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     }
                 } else if (task.getStatus() == CANCELED) {
                     if (task.getTaskType().equalsIgnoreCase(TaskType.JOIN.toString())
-                            || task.getTaskType()
-                                    .equalsIgnoreCase(TaskType.DO_WHILE.toString())) {
+                            || task.getTaskType().equalsIgnoreCase(TaskType.DO_WHILE.toString())) {
                         task.setStatus(IN_PROGRESS);
                         executionDAOFacade.updateTask(task);
                     } else {
