@@ -382,7 +382,7 @@ class HierarchicalForkJoinSubworkflowRerunSpec extends AbstractSpecification {
             workflow.tasks[2].taskType == 'integration_task_2' &&
             workflow.tasks[2].status == Task.Status.COMPLETED &&
             workflow.tasks[3].taskType == TASK_TYPE_JOIN &&
-            workflow.tasks[3].status == Task.Status.CANCELED
+            workflow.tasks[3].status == Task.Status.IN_PROGRESS
         }
 
         when: "poll and complete the integration_task_2 task in the mid level workflow"
