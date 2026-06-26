@@ -313,7 +313,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                         "Sub workflow task {} is optional, skip updating parents", subWorkflowTask);
                 break;
             }
-            if (subWorkflowTask.isRetried()) {
+            if (subWorkflowTask.isRetried()
+                    && TaskType.TASK_TYPE_SUB_WORKFLOW.equalsIgnoreCase(
+                            subWorkflowTask.getTaskType())) {
                 // this sub-workflow belongs to a superseded retry attempt; the parent has already
                 // advanced to a newer task — stop walking
                 break;
