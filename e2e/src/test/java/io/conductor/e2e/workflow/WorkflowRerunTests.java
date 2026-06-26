@@ -4921,6 +4921,7 @@ public class WorkflowRerunTests {
                                                                                     .COMPLETED));
                         });
 
+        Workflow workflow;
         Task[] wait_task_holder = new Task[1];
         await().atMost(15, TimeUnit.SECONDS)
                 .untilAsserted(
