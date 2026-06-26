@@ -1992,10 +1992,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 rerunFromTask.setSubWorkflowId(null);
                 rerunFromTask.setStatus(SCHEDULED);
                 rerunFromTask.setReasonForIncompletion(null);
-                // Increment retryCount so that SubWorkflow.start() generates a fresh deterministic
-                // child ID — without this the old TERMINATED child would be returned by
-                // startWorkflowIdempotent, causing the parent to fail immediately.
-                rerunFromTask.setRetryCount(rerunFromTask.getRetryCount() + 1);
                 // Start the child workflow synchronously so the task is IN_PROGRESS before we
                 // return — tests that read state immediately after rerun() need this.
                 systemTaskRegistry
