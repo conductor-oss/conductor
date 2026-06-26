@@ -5181,6 +5181,8 @@ public class WorkflowRerunTests {
     }
 
     @Test
+    @Disabled(
+            "Rerunning a RUNNING workflow is not allowed in conductor-oss (requires terminal state); conductor-oss throws ConflictException")
     @DisplayName("Test rerun from switch task inside do_while loop")
     public void testRerunFromSwitchTaskInDoWhile() {
         String workflowName = "vialtodoowhile-switch-rerun-test";

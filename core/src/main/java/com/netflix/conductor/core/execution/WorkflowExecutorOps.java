@@ -362,6 +362,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                             && child.getTasks().stream().anyMatch(UNSUCCESSFUL_TERMINAL_TASK)) {
                         retry(child);
                         task.setStatus(IN_PROGRESS);
+                        task.setReasonForIncompletion(null);
                         task.setSubworkflowChanged(true);
                         executionDAOFacade.updateTask(task);
                     }
@@ -509,16 +510,27 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
     private WorkflowModel findLastFailedSubWorkflowIfAny(
             TaskModel task, WorkflowModel parentWorkflow) {
-        if (TaskType.TASK_TYPE_SUB_WORKFLOW.equals(task.getTaskType())
-                && UNSUCCESSFUL_TERMINAL_TASK.test(task)) {
+        if (!UNSUCCESSFUL_TERMINAL_TASK.test(task)) return parentWorkflow;
+
+        if (TaskType.TASK_TYPE_SUB_WORKFLOW.equals(task.getTaskType())) {
             WorkflowModel subWorkflow =
                     executionDAOFacade.getWorkflowModel(task.getSubWorkflowId(), true);
-            Optional<TaskModel> taskToRetry =
-                    subWorkflow.getTasks().stream().filter(UNSUCCESSFUL_TERMINAL_TASK).findFirst();
-            if (taskToRetry.isPresent()) {
-                return findLastFailedSubWorkflowIfAny(taskToRetry.get(), subWorkflow);
-            }
+            return subWorkflow.getTasks().stream()
+                    .filter(UNSUCCESSFUL_TERMINAL_TASK)
+                    .findFirst()
+                    .map(t -> findLastFailedSubWorkflowIfAny(t, subWorkflow))
+                    .orElse(parentWorkflow);
         }
+
+        if (TaskType.TASK_TYPE_DO_WHILE.equals(task.getTaskType())) {
+            return parentWorkflow.getTasks().stream()
+                    .filter(t -> TaskType.TASK_TYPE_SUB_WORKFLOW.equals(t.getTaskType()))
+                    .filter(UNSUCCESSFUL_TERMINAL_TASK)
+                    .findFirst()
+                    .map(t -> findLastFailedSubWorkflowIfAny(t, parentWorkflow))
+                    .orElse(parentWorkflow);
+        }
+
         return parentWorkflow;
     }
 
@@ -1961,6 +1973,28 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     workflow.getTasks().stream()
                             .filter(t -> !t.getTaskId().equals(rerunTaskId))
                             .collect(Collectors.toList()));
+            // Direct rerun targeting a SUB_WORKFLOW task: seq-based removal would strip parallel
+            // fork branches — instead reset the task in-place and let finalizeRerun reschedule
+            // all terminal-unsuccessful siblings before the decider runs.
+            if (rerunFromTask.getTaskId().equals(taskId)
+                    && rerunFromTask
+                            .getTaskType()
+                            .equalsIgnoreCase(TaskType.TASK_TYPE_SUB_WORKFLOW)) {
+                rerunFromTask.setScheduledTime(System.currentTimeMillis());
+                rerunFromTask.setStartTime(0);
+                rerunFromTask.setUpdateTime(0);
+                rerunFromTask.setEndTime(0);
+                rerunFromTask.clearOutput();
+                rerunFromTask.setRetried(false);
+                rerunFromTask.setExecuted(false);
+                rerunFromTask.setSubWorkflowId(null);
+                rerunFromTask.setStatus(SCHEDULED);
+                rerunFromTask.setReasonForIncompletion(null);
+                addTaskToQueue(rerunFromTask);
+                executionDAOFacade.updateTask(rerunFromTask);
+                finalizeRerun(workflow, rerunFromTask);
+                return true;
+            }
             // Remove all tasks after the "rerunFromTask"
             List<TaskModel> filteredTasks = new ArrayList<>();
             for (TaskModel task : workflow.getTasks()) {
@@ -2005,6 +2039,45 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             return true;
         }
         return false;
+    }
+
+    private void finalizeRerun(WorkflowModel workflow, TaskModel rerunFromTask) {
+        workflow.getTasks()
+                .forEach(
+                        task -> {
+                            if (!task.getStatus().isSuccessful()
+                                    && task.getStatus().isTerminal()
+                                    && !rerunFromTask
+                                            .getReferenceTaskName()
+                                            .equals(task.getReferenceTaskName())) {
+                                if (TaskType.TASK_TYPE_SUB_WORKFLOW.equalsIgnoreCase(
+                                        task.getTaskType())) {
+                                    task.setSubWorkflowId(null);
+                                    task.getOutputData().remove("subWorkflowId");
+                                }
+                                if (TaskType.JOIN.toString().equalsIgnoreCase(task.getTaskType())
+                                        || TaskType.DO_WHILE
+                                                .toString()
+                                                .equalsIgnoreCase(task.getTaskType())) {
+                                    task.setStatus(IN_PROGRESS);
+                                } else if (systemTaskRegistry.isSystemTask(task.getTaskType())
+                                        && systemTaskRegistry.get(task.getTaskType()) != null
+                                        && !systemTaskRegistry.get(task.getTaskType()).isAsync()) {
+                                    task.setStatus(IN_PROGRESS);
+                                } else {
+                                    task.setStatus(SCHEDULED);
+                                    addTaskToQueue(task);
+                                }
+                                task.setExecuted(false);
+                                task.setStartTime(System.currentTimeMillis());
+                                task.setEndTime(0);
+                                task.setReasonForIncompletion(null);
+                            }
+                        });
+        executionDAOFacade.updateTasks(workflow.getTasks());
+        decide(workflow.getWorkflowId());
+        executionDAOFacade.updateWorkflow(workflow);
+        updateAndPushParents(workflow, "reran");
     }
 
     @Override
