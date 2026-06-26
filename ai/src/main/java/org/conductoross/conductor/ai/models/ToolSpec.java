@@ -25,4 +25,11 @@ public class ToolSpec {
     private String description;
     private Map<String, Object> inputSchema;
     private Map<String, Object> outputSchema;
+
+    /**
+     * When true, this spec is complete as delivered: pass it to the LLM as-is. Consumers must not
+     * resolve, enrich, or replace it by name against integrations, services, or task definitions.
+     * Set by producers that compile full inline tool specs (e.g. AgentSpan).
+     */
+    private boolean selfDescribing;
 }

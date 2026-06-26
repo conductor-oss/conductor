@@ -138,8 +138,7 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
             tasks[3].status == Task.Status.IN_PROGRESS
         }
 
-        and: "poll and complete the integration_task_1 task in the mid-level workflow"
-        workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker', ['op': 'task2.done'])
+        and: "get the leaf workflow from the mid-level workflow and sweep it"
         def midLevelWorkflowInstance = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
         leafWorkflowId = midLevelWorkflowInstance.tasks[1].subWorkflowId
         sweep(leafWorkflowId)
