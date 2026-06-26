@@ -288,10 +288,12 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 workflow = findLastFailedSubWorkflowIfAny(taskToRetry.get(), workflow);
                 retry(workflow);
                 updateAndPushParents(workflow, "retried");
+                decide(workflow.getWorkflowId());
             }
         } else {
             retry(workflow);
             updateAndPushParents(workflow, "retried");
+            decide(workflow.getWorkflowId());
         }
     }
 
@@ -307,13 +309,18 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 break;
             }
             if (subWorkflowTask.getWorkflowTask().isOptional()) {
-                // break out
                 LOGGER.info(
                         "Sub workflow task {} is optional, skip updating parents", subWorkflowTask);
                 break;
             }
+            if (subWorkflowTask.isRetried()) {
+                // this sub-workflow belongs to a superseded retry attempt; the parent has already
+                // advanced to a newer task — stop walking
+                break;
+            }
             subWorkflowTask.setSubworkflowChanged(true);
             subWorkflowTask.setStatus(IN_PROGRESS);
+            subWorkflowTask.setReasonForIncompletion(null);
             executionDAOFacade.updateTask(subWorkflowTask);
 
             // add an execution log
@@ -341,6 +348,43 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             parentWorkflow.setFailedTaskNames(new HashSet<>());
             parentWorkflow.setLastRetriedTime(System.currentTimeMillis());
             executionDAOFacade.updateWorkflow(parentWorkflow);
+
+            for (TaskModel task : parentWorkflow.getTasks()) {
+                if (task.getTaskType().equalsIgnoreCase(TaskType.TASK_TYPE_SUB_WORKFLOW)
+                        && task.getSubWorkflowId() != null
+                        && UNSUCCESSFUL_TERMINAL_TASK.test(task)) {
+                    // retry sibling sub-workflows that are still in a failed/timed-out state
+                    WorkflowModel child =
+                            executionDAOFacade.getWorkflowModel(task.getSubWorkflowId(), true);
+                    if (child != null
+                            && child.getTasks().stream().anyMatch(UNSUCCESSFUL_TERMINAL_TASK)) {
+                        retry(child);
+                        task.setStatus(IN_PROGRESS);
+                        task.setSubworkflowChanged(true);
+                        executionDAOFacade.updateTask(task);
+                    }
+                } else if (task.getStatus() == CANCELED) {
+                    if (task.getTaskType().equalsIgnoreCase(TaskType.JOIN.toString())
+                            || task.getTaskType()
+                                    .equalsIgnoreCase(TaskType.DO_WHILE.toString())) {
+                        task.setStatus(IN_PROGRESS);
+                        executionDAOFacade.updateTask(task);
+                    } else {
+                        task.setRetryCount(task.getRetryCount() + 1);
+                        task.setReasonForIncompletion(null);
+                        task.setPollCount(0);
+                        task.setWorkerId(null);
+                        task.setScheduledTime(System.currentTimeMillis());
+                        task.setStartTime(0);
+                        task.setEndTime(0);
+                        task.setRetried(false);
+                        task.setExecuted(false);
+                        task.setStatus(SCHEDULED);
+                        executionDAOFacade.updateTask(task);
+                        addTaskToQueue(task);
+                    }
+                }
+            }
 
             try {
                 WorkflowStatusListener.WorkflowEventType event =
@@ -1192,7 +1236,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         // we find any sub workflow tasks that have changed
         // and change the workflow/task state accordingly
         adjustStateIfSubWorkflowChanged(workflow);
-        resetUnsuccessfulJoinTasksWithActiveBranches(workflow);
 
         // Guard against holding the lock past its lease time. If synchronous system tasks
         // (e.g. INLINE inside a DO_WHILE) keep changing state, we loop instead of recursing to
@@ -1324,50 +1367,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             // IN_PROGRESS
             resetUnsuccessfulJoinTasks(workflow);
         }
-    }
-
-    private void resetUnsuccessfulJoinTasksWithActiveBranches(WorkflowModel workflow) {
-        if (!workflow.getWorkflowDefinition().containsType(TaskType.TASK_TYPE_JOIN)
-                && !workflow.getWorkflowDefinition()
-                        .containsType(TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC)) {
-            return;
-        }
-        Set<String> activeReferenceTaskNames =
-                workflow.getTasks().stream()
-                        .filter(NON_TERMINAL_TASK)
-                        .map(TaskModel::getReferenceTaskName)
-                        .collect(Collectors.toSet());
-        if (activeReferenceTaskNames.isEmpty()) {
-            return;
-        }
-        // Iteratively expand active set and reset: a reset JOIN (e.g. inner_join) becomes active,
-        // allowing outer JOINs that depend on it to be reset in the same or subsequent pass.
-        boolean resetOccurred;
-        do {
-            resetOccurred = false;
-            for (TaskModel task : workflow.getTasks()) {
-                if (UNSUCCESSFUL_JOIN_TASK.test(task)
-                        && hasActiveJoinDependency(task, activeReferenceTaskNames)) {
-                    task.setStatus(TaskModel.Status.IN_PROGRESS);
-                    addTaskToQueue(task);
-                    executionDAOFacade.updateTask(task);
-                    activeReferenceTaskNames.add(task.getReferenceTaskName());
-                    resetOccurred = true;
-                }
-            }
-        } while (resetOccurred);
-    }
-
-    private boolean hasActiveJoinDependency(
-            TaskModel joinTask, Set<String> activeReferenceTaskNames) {
-        Object joinOn = joinTask.getInputData().get("joinOn");
-        if (!(joinOn instanceof List<?> joinOnRefs)) {
-            return false;
-        }
-        return joinOnRefs.stream()
-                .filter(String.class::isInstance)
-                .map(String.class::cast)
-                .anyMatch(activeReferenceTaskNames::contains);
     }
 
     private Optional<TaskModel> findChangedSubWorkflowTask(WorkflowModel workflow) {
