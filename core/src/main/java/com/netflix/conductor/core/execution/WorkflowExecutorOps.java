@@ -1965,6 +1965,31 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             updateAndPushParents(workflow, "reran");
             notifyWorkflowStatusListener(workflow, WorkflowEventType.RETRIED);
 
+            // Recursive rerun targeting a SUB_WORKFLOW task: the child's finalizeRerun →
+            // updateAndPushParents already wrote the correct states for this workflow's downstream
+            // tasks (JOIN → IN_PROGRESS, sibling tasks → SCHEDULED) into the DB.
+            // Writing the stale in-memory task list below would overwrite those correct DB values,
+            // reverting JOIN to CANCELED. An async decider triggered by
+            // expediteLazyWorkflowEvaluation would then see the CANCELED JOIN and terminate this
+            // workflow. Skip the stale write, reset only rerunFromTask, then decide.
+            if (!rerunFromTask.getTaskId().equals(taskId)
+                    && rerunFromTask
+                            .getTaskType()
+                            .equalsIgnoreCase(TaskType.TASK_TYPE_SUB_WORKFLOW)) {
+                rerunFromTask.setScheduledTime(System.currentTimeMillis());
+                rerunFromTask.setStartTime(System.currentTimeMillis());
+                rerunFromTask.setUpdateTime(0);
+                rerunFromTask.setEndTime(0);
+                rerunFromTask.setRetried(false);
+                rerunFromTask.setExecuted(false);
+                rerunFromTask.setPollCount(0);
+                rerunFromTask.setStatus(IN_PROGRESS);
+                rerunFromTask.setReasonForIncompletion(null);
+                executionDAOFacade.updateTask(rerunFromTask);
+                decide(workflow.getWorkflowId());
+                return true;
+            }
+
             // update tasks in datastore to update workflow-tasks relationship for archived
             // workflows; exclude rerunFromTask, which is updated individually below — writing its
             // stale FAILED state here would race with the sweeper and can re-terminate the parent

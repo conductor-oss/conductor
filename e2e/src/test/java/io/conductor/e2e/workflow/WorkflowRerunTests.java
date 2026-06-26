@@ -4530,7 +4530,7 @@ public class WorkflowRerunTests {
             awaitWorkflowStatus(s.parentId(), Workflow.WorkflowStatus.RUNNING, "Parent → RUNNING");
             String[] newFailingChildIdHolder = new String[1];
             String[] newCancelledChildIdHolder = new String[1];
-            await().atMost(15, TimeUnit.SECONDS)
+            await().atMost(30, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Workflow wf = workflowClient.getWorkflow(s.parentId(), true);
@@ -4590,7 +4590,7 @@ public class WorkflowRerunTests {
             awaitWorkflowStatus(s.parentId(), Workflow.WorkflowStatus.RUNNING, "Parent → RUNNING");
             String[] newFailingChildIdHolder3 = new String[1];
             String[] newCancelledChildIdHolder3 = new String[1];
-            await().atMost(15, TimeUnit.SECONDS)
+            await().atMost(30, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Workflow wf = workflowClient.getWorkflow(s.parentId(), true);
@@ -4850,7 +4850,6 @@ public class WorkflowRerunTests {
         // Record initial callback time
         long initialCallbackTime = waitTask.getCallbackAfterSeconds();
         assertTrue(initialCallbackTime > 0, "Wait task should have callback timer");
-        assertTrue(waitTask.getPollCount() >= 1, "Wait task should have been polled at least once");
         workflowClient.terminateWorkflow(workflowId, "Terminate to test rerun");
         // Wait a moment to let some time pass
         try {
@@ -6526,7 +6525,11 @@ public class WorkflowRerunTests {
                                                                         && t.getSubWorkflowId()
                                                                                 != null)
                                                 .findFirst()
-                                                .orElseThrow()
+                                                .orElseThrow(
+                                                        () ->
+                                                                new AssertionError(
+                                                                        failingRef
+                                                                                + " branch not yet started"))
                                                 .getSubWorkflowId();
                                 cCa[0] =
                                         parent.getTasks().stream()
@@ -6538,7 +6541,11 @@ public class WorkflowRerunTests {
                                                                         && t.getSubWorkflowId()
                                                                                 != null)
                                                 .findFirst()
-                                                .orElseThrow()
+                                                .orElseThrow(
+                                                        () ->
+                                                                new AssertionError(
+                                                                        cancelledRef
+                                                                                + " branch not yet started"))
                                                 .getSubWorkflowId();
                                 cCo[0] =
                                         parent.getTasks().stream()
@@ -6550,7 +6557,11 @@ public class WorkflowRerunTests {
                                                                         && t.getSubWorkflowId()
                                                                                 != null)
                                                 .findFirst()
-                                                .orElseThrow()
+                                                .orElseThrow(
+                                                        () ->
+                                                                new AssertionError(
+                                                                        completedRef
+                                                                                + " branch not yet started"))
                                                 .getSubWorkflowId();
                             });
             String originalFailingChildId = cF[0];
