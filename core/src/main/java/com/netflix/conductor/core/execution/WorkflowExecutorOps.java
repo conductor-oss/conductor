@@ -2094,7 +2094,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                         });
         executionDAOFacade.updateTasks(workflow.getTasks());
         decide(workflow.getWorkflowId());
-        executionDAOFacade.updateWorkflow(workflow);
         updateAndPushParents(workflow, "reran");
     }
 
