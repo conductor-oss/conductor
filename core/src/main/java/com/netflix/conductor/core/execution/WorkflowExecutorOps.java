@@ -2084,7 +2084,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 }
             }
             executionDAOFacade.updateTask(rerunFromTask);
-            // Push AFTER task reset so async decider sees updated task state, not stale FAILED/CANCELED
+            // Push AFTER task reset so async decider sees updated task state, not stale
+            // FAILED/CANCELED
             queueDAO.push(
                     DECIDER_QUEUE,
                     workflow.getWorkflowId(),
