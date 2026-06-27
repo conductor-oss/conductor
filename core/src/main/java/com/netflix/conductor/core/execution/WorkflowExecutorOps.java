@@ -2027,12 +2027,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     addTaskToQueue(rerunFromTask);
                 }
                 executionDAOFacade.updateTask(rerunFromTask);
-                // Push AFTER task reset so async decider sees IN_PROGRESS, not stale FAILED state
-                queueDAO.push(
-                        DECIDER_QUEUE,
-                        workflow.getWorkflowId(),
-                        workflow.getPriority(),
-                        properties.getWorkflowOffsetTimeout().getSeconds());
                 finalizeRerun(workflow, rerunFromTask);
                 return true;
             }
@@ -2084,13 +2078,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 }
             }
             executionDAOFacade.updateTask(rerunFromTask);
-            // Push AFTER task reset so async decider sees updated task state, not stale
-            // FAILED/CANCELED
-            queueDAO.push(
-                    DECIDER_QUEUE,
-                    workflow.getWorkflowId(),
-                    workflow.getPriority(),
-                    properties.getWorkflowOffsetTimeout().getSeconds());
             if (rerunFromTask.getTaskId().equals(taskId)) {
                 // Direct rerun: reset container tasks (DO_WHILE, JOIN) that stayed terminal
                 // after seq-based removal, then push parents.
@@ -2106,6 +2093,36 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     }
 
     private void finalizeRerun(WorkflowModel workflow, TaskModel rerunFromTask) {
+        // FORK_JOIN_DYNAMIC rerun: rerunFromTask is the TASK_TYPE_FORK model created by the
+        // mapper (task type "FORK", not "FORK_JOIN_DYNAMIC"). Seq-based removal already stripped
+        // the branch tasks and JOIN but left the FORK task itself (same seq). Remove it and
+        // directly re-invoke the mapper so that branch tasks are re-created — decide()'s
+        // getNextTask(FORK) path only returns the JOIN task and never re-expands branches.
+        if (TaskType.TASK_TYPE_FORK.equalsIgnoreCase(rerunFromTask.getTaskType())
+                && rerunFromTask.getWorkflowTask() != null
+                && TaskType.FORK_JOIN_DYNAMIC
+                        .name()
+                        .equalsIgnoreCase(rerunFromTask.getWorkflowTask().getType())) {
+            executionDAOFacade.removeTask(rerunFromTask.getTaskId());
+            final String forkTaskId = rerunFromTask.getTaskId();
+            workflow.setTasks(
+                    workflow.getTasks().stream()
+                            .filter(t -> !t.getTaskId().equals(forkTaskId))
+                            .collect(Collectors.toList()));
+            List<TaskModel> newTasks =
+                    deciderService.getTasksToBeScheduled(
+                            workflow, rerunFromTask.getWorkflowTask(), 0);
+            dedupAndAddTasks(workflow, newTasks);
+            scheduleTask(workflow, newTasks);
+            queueDAO.push(
+                    DECIDER_QUEUE,
+                    workflow.getWorkflowId(),
+                    workflow.getPriority(),
+                    properties.getWorkflowOffsetTimeout().getSeconds());
+            decide(workflow.getWorkflowId());
+            updateAndPushParents(workflow, "reran");
+            return;
+        }
         workflow.getTasks()
                 .forEach(
                         task -> {
@@ -2139,6 +2156,12 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                             }
                         });
         executionDAOFacade.updateTasks(workflow.getTasks());
+        // Push AFTER all sibling tasks are reset so async decider never sees stale CANCELED/FAILED
+        queueDAO.push(
+                DECIDER_QUEUE,
+                workflow.getWorkflowId(),
+                workflow.getPriority(),
+                properties.getWorkflowOffsetTimeout().getSeconds());
         decide(workflow.getWorkflowId());
         updateAndPushParents(workflow, "reran");
     }
