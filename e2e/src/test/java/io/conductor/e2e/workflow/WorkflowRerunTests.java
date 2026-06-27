@@ -5087,6 +5087,19 @@ public class WorkflowRerunTests {
                         "Sub-workflow should have taskToDomain if passed from parent");
             }
         }
+        await().atMost(10, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () ->
+                                assertTrue(
+                                        workflowClient
+                                                .getWorkflow(workflowId, true)
+                                                .getTasks()
+                                                .stream()
+                                                .anyMatch(
+                                                        t ->
+                                                                "WAIT".equals(t.getTaskType())
+                                                                        && t.getIteration() == 1)));
+        workflow = workflowClient.getWorkflow(workflowId, true);
         Task wait_task =
                 workflow.getTasks().stream()
                         .filter(t -> "WAIT".equals(t.getTaskType()) && t.getIteration() == 1)
