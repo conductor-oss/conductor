@@ -1955,12 +1955,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             if (workflowInput != null) {
                 workflow.setInput(workflowInput);
             }
-            // Add to decider queue
-            queueDAO.push(
-                    DECIDER_QUEUE,
-                    workflow.getWorkflowId(),
-                    workflow.getPriority(),
-                    properties.getWorkflowOffsetTimeout().getSeconds());
             executionDAOFacade.updateWorkflow(workflow);
             updateAndPushParents(workflow, "reran");
             notifyWorkflowStatusListener(workflow, WorkflowEventType.RETRIED);
@@ -1986,6 +1980,12 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 rerunFromTask.setStatus(IN_PROGRESS);
                 rerunFromTask.setReasonForIncompletion(null);
                 executionDAOFacade.updateTask(rerunFromTask);
+                // Push AFTER task reset so async decider sees IN_PROGRESS, not stale FAILED state
+                queueDAO.push(
+                        DECIDER_QUEUE,
+                        workflow.getWorkflowId(),
+                        workflow.getPriority(),
+                        properties.getWorkflowOffsetTimeout().getSeconds());
                 decide(workflow.getWorkflowId());
                 return true;
             }
@@ -2027,6 +2027,12 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     addTaskToQueue(rerunFromTask);
                 }
                 executionDAOFacade.updateTask(rerunFromTask);
+                // Push AFTER task reset so async decider sees IN_PROGRESS, not stale FAILED state
+                queueDAO.push(
+                        DECIDER_QUEUE,
+                        workflow.getWorkflowId(),
+                        workflow.getPriority(),
+                        properties.getWorkflowOffsetTimeout().getSeconds());
                 finalizeRerun(workflow, rerunFromTask);
                 return true;
             }
@@ -2078,6 +2084,12 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 }
             }
             executionDAOFacade.updateTask(rerunFromTask);
+            // Push AFTER task reset so async decider sees updated task state, not stale FAILED/CANCELED
+            queueDAO.push(
+                    DECIDER_QUEUE,
+                    workflow.getWorkflowId(),
+                    workflow.getPriority(),
+                    properties.getWorkflowOffsetTimeout().getSeconds());
             if (rerunFromTask.getTaskId().equals(taskId)) {
                 // Direct rerun: reset container tasks (DO_WHILE, JOIN) that stayed terminal
                 // after seq-based removal, then push parents.

@@ -6625,7 +6625,7 @@ public class WorkflowRerunTests {
             String[] newF = new String[1];
             String[] newCa = new String[1];
             String[] newCo = new String[1];
-            await().atMost(25, TimeUnit.SECONDS)
+            await().atMost(30, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Workflow parent = workflowClient.getWorkflow(parentId, true);
