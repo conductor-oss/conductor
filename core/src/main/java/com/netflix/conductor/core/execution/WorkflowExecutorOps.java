@@ -477,12 +477,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         workflow.setLastRetriedTime(System.currentTimeMillis());
         String lastReasonForIncompletion = workflow.getReasonForIncompletion();
         workflow.setReasonForIncompletion(null);
-        // Add to decider queue
-        queueDAO.push(
-                DECIDER_QUEUE,
-                workflow.getWorkflowId(),
-                workflow.getPriority(),
-                properties.getWorkflowOffsetTimeout().getSeconds());
         executionDAOFacade.updateWorkflow(workflow);
         notifyWorkflowStatusListener(workflow, WorkflowEventType.RETRIED);
         LOGGER.info(
@@ -506,6 +500,12 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         // exist in primary store.
         executionDAOFacade.updateTasks(workflow.getTasks());
         scheduleTask(workflow, retriableTasks);
+        // Push AFTER tasks are reset so async decider sees SCHEDULED/IN_PROGRESS, not stale state
+        queueDAO.push(
+                DECIDER_QUEUE,
+                workflow.getWorkflowId(),
+                workflow.getPriority(),
+                properties.getWorkflowOffsetTimeout().getSeconds());
     }
 
     private WorkflowModel findLastFailedSubWorkflowIfAny(
