@@ -2689,9 +2689,7 @@ public class WorkflowRetryTests {
                                         "taskA should be active in cancelled child");
                                 Task failingSub =
                                         findActiveTask(
-                                                workflowId,
-                                                failingSubRef,
-                                                "failing sub missing");
+                                                workflowId, failingSubRef, "failing sub missing");
                                 assertNotNull(failingSub.getSubWorkflowId());
                             });
 
