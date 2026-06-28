@@ -19,7 +19,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.execution.tasks.Join
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
-import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
 
 import spock.lang.Shared
@@ -35,9 +34,6 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
 
     @Shared
     def SIMPLE_WORKFLOW = "integration_test_wf"
-
-    @Autowired
-    QueueDAO queueDAO
 
     @Autowired
     Join joinTask
@@ -78,8 +74,11 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
                 correlationId, input, null)
 
         then: "verify that the workflow is in a RUNNING state"
-        List<String> polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
+        def nestedSetupSubWfTask = workflowExecutionService.getExecutionStatus(parentWorkflowId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        if (nestedSetupSubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, nestedSetupSubWfTask.taskId)
+        }
         with(workflowExecutionService.getExecutionStatus(parentWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 7
@@ -188,6 +187,7 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
     def "test restart on the sub workflow in a nested fork join workflow"() {
         when:
         workflowExecutor.restart(subworkflowId, false)
+        sweep(parentWorkflowId)
 
         then: "verify that the subworkflow is RUNNING state"
         with(workflowExecutionService.getExecutionStatus(subworkflowId, true)) {
@@ -210,11 +210,11 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
             tasks[3].taskType == 'integration_task_2'
             tasks[3].status == Task.Status.COMPLETED
             tasks[4].taskType == TASK_TYPE_JOIN
-            tasks[4].status == Task.Status.CANCELED
+            tasks[4].status == Task.Status.IN_PROGRESS
             tasks[5].taskType == 'integration_task_2'
             tasks[5].status == Task.Status.COMPLETED
             tasks[6].taskType == TASK_TYPE_JOIN
-            tasks[6].status == Task.Status.CANCELED
+            tasks[6].status == Task.Status.IN_PROGRESS
         }
 
         when: "the parent workflow is swept"
@@ -302,8 +302,11 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
     def "test restart on the parent workflow in a nested fork join workflow"() {
         when:
         workflowExecutor.restart(parentWorkflowId, false)
-        List<String> polledRestartedSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledRestartedSubWorkflowIds[0])
+        def restartedNestedSubWfTask = workflowExecutionService.getExecutionStatus(parentWorkflowId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        if (restartedNestedSubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, restartedNestedSubWfTask.taskId)
+        }
 
         then: "verify that the parent workflow is in RUNNING state"
         with(workflowExecutionService.getExecutionStatus(parentWorkflowId, true)) {
@@ -422,8 +425,11 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
     def "test retry on the parent workflow in a nested fork join workflow"() {
         when:
         workflowExecutor.retry(parentWorkflowId, false)
-        List<String> polledRetriedSubWorkflowIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledRetriedSubWorkflowIds[0])
+        def retriedNestedSubWfTask = workflowExecutionService.getExecutionStatus(parentWorkflowId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        if (retriedNestedSubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, retriedNestedSubWfTask.taskId)
+        }
 
         then: "verify that the parent workflow is in RUNNING state"
         with(workflowExecutionService.getExecutionStatus(parentWorkflowId, true)) {
@@ -570,6 +576,7 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
     def "test retry with resume on the parent workflow in a nested fork join workflow"() {
         when:
         workflowExecutor.retry(parentWorkflowId, true)
+        sweep(parentWorkflowId)
 
         then: "verify that the sub workflow is in RUNNING state"
         with(workflowExecutionService.getExecutionStatus(subworkflowId, true)) {
@@ -598,11 +605,11 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
             tasks[3].taskType == 'integration_task_2'
             tasks[3].status == Task.Status.COMPLETED
             tasks[4].taskType == TASK_TYPE_JOIN
-            tasks[4].status == Task.Status.CANCELED
+            tasks[4].status == Task.Status.IN_PROGRESS
             tasks[5].taskType == 'integration_task_2'
             tasks[5].status == Task.Status.COMPLETED
             tasks[6].taskType == TASK_TYPE_JOIN
-            tasks[6].status == Task.Status.CANCELED
+            tasks[6].status == Task.Status.IN_PROGRESS
         }
 
         when: "the parent is swept"
@@ -692,6 +699,7 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
     def "test retry on the sub workflow in a nested fork join workflow"() {
         when:
         workflowExecutor.retry(subworkflowId, false)
+        sweep(parentWorkflowId)
 
         then: "verify that the sub workflow is in RUNNING state"
         with(workflowExecutionService.getExecutionStatus(subworkflowId, true)) {
@@ -720,11 +728,11 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
             tasks[3].taskType == 'integration_task_2'
             tasks[3].status == Task.Status.COMPLETED
             tasks[4].taskType == TASK_TYPE_JOIN
-            tasks[4].status == Task.Status.CANCELED
+            tasks[4].status == Task.Status.IN_PROGRESS
             tasks[5].taskType == 'integration_task_2'
             tasks[5].status == Task.Status.COMPLETED
             tasks[6].taskType == TASK_TYPE_JOIN
-            tasks[6].status == Task.Status.CANCELED
+            tasks[6].status == Task.Status.IN_PROGRESS
         }
 
         when: "the parent is swept"
