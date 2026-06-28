@@ -29,7 +29,10 @@ import lombok.extern.slf4j.Slf4j;
         matchIfMissing = true)
 public class SpaInterceptor implements HandlerInterceptor {
 
-    /** A2A server base path — backend JSON-RPC, never an SPA route (see {@code A2AServerProperties}). */
+    /**
+     * A2A server base path — backend JSON-RPC, never an SPA route (see {@code
+     * A2AServerProperties}).
+     */
     @Value("${conductor.a2a.server.basePath:/a2a}")
     private String a2aBasePath;
 
