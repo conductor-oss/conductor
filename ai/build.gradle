@@ -17,12 +17,6 @@ dependencies {
     implementation project(':conductor-common')
     implementation project(':conductor-core')
 
-    // AgentSpan library (agent compilation, runtime services, REST controllers, SPI contracts).
-    // Its Conductor dependencies are compileOnly in the published artifact, so the host (this
-    // build) supplies conductor-core/common/ai/http-task at runtime. Activated only when
-    // conductor.integrations.ai.enabled=true (see org.conductoross.conductor.ai.agentspan).
-    api 'org.conductoross:conductor-agentspan:0.3.0'
-
     api "org.springframework.ai:spring-ai-model:${revSpringAI}"
     api "org.springframework.ai:spring-ai-client-chat:${revSpringAI}"
     api "org.springframework.ai:spring-ai-mistral-ai:${revSpringAI}"
