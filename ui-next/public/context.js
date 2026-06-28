@@ -29,6 +29,10 @@ window.conductor = {
   SENDGRID_TASK_ENABLED: false,
   SKU_ENABLED: false,
 
+  // Embedded AgentSpan agent UI. Default off here; the Conductor server overrides
+  // /context.js at runtime with the value of conductor.integrations.ai.enabled.
+  AGENTSPAN_ENABLED: false,
+
   // UI Configuration
   PLAYGROUND: false,
   ENABLE_METRICS_DASHBOARD: false,

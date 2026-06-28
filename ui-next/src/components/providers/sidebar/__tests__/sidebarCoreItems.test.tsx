@@ -7,6 +7,9 @@ vi.mock("@mui/icons-material/PlayArrowOutlined", () => ({
 vi.mock("@mui/icons-material/PlaylistPlay", () => ({ default: () => null }));
 vi.mock("@mui/icons-material/Support", () => ({ default: () => null }));
 vi.mock("@mui/icons-material/WebhookOutlined", () => ({ default: () => null }));
+vi.mock("@mui/icons-material/SmartToyOutlined", () => ({
+  default: () => null,
+}));
 vi.mock("components/providers/sidebar/RunWorkflowButton", () => ({
   default: () => null,
 }));
@@ -16,6 +19,7 @@ vi.mock("utils", () => ({
     PLAYGROUND: "PLAYGROUND",
     SHOW_FEEDBACK_FORM: "SHOW_FEEDBACK_FORM",
     SCHEDULER: "SCHEDULER",
+    AGENTSPAN_ENABLED: "AGENTSPAN_ENABLED",
   },
   featureFlags: {
     isEnabled: vi.fn((feature: string) => feature === "SCHEDULER"),
@@ -37,6 +41,10 @@ vi.mock("utils/constants/route", () => ({
     NEW: "/newScheduleDef",
   },
   SCHEDULER_EXECUTION_URL: "/schedulerExecs",
+  AGENT_DEFINITION_URL: { BASE: "/agents" },
+  AGENT_EXECUTIONS_URL: "/agentExecutions",
+  AGENT_SECRETS_URL: "/agentSecrets",
+  SKILLS_URL: { BASE: "/skills" },
   TASK_DEF_URL: { BASE: "/taskDef", NAME: "/taskDef/:name" },
   TASK_QUEUE_URL: { BASE: "/taskQueue" },
   WORKFLOW_DEFINITION_URL: {
