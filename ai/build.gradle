@@ -23,7 +23,7 @@ ext.sqliteVecArtifacts = [
 ]
 def sqliteVecResourceDir = layout.buildDirectory.dir('generated/resources/sqlite-vec')
 
-tasks.register('downloadSqliteVec') {
+def downloadSqliteVec = tasks.register('downloadSqliteVec') {
     description = 'Downloads, verifies and stages the sqlite-vec loadable extensions as jar resources.'
     group = 'build'
     inputs.property('version', sqliteVecVersion)
@@ -56,8 +56,10 @@ tasks.register('downloadSqliteVec') {
     }
 }
 
-sourceSets.main.resources.srcDir(sqliteVecResourceDir)
-tasks.named('processResources') { dependsOn 'downloadSqliteVec' }
+// Register the task provider (not the bare directory) as a resource source dir so that every
+// consumer of the resources — processResources, sourcesJar, etc. — automatically depends on
+// downloadSqliteVec instead of racing it.
+sourceSets.main.resources.srcDir(downloadSqliteVec)
 
 dependencies {
     compileOnly 'org.springframework.boot:spring-boot-starter'
