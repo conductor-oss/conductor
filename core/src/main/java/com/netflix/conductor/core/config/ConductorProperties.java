@@ -135,6 +135,55 @@ public class ConductorProperties {
     private int isolatedSystemTaskWorkerThreadCount = 1;
 
     /**
+     * Per-task-type overrides for thread count and permit count. Keyed by task type name (e.g.
+     * "HTTP", "LLM_TEXT_COMPLETE"). When {@code threadCount} is set the task type gets a dedicated
+     * pool; otherwise it shares the common pool. {@code permitCount} controls how many tasks of
+     * this type may be in-flight concurrently, defaulting to the effective thread count.
+     *
+     * <p>Example (YAML):
+     *
+     * <pre>
+     * conductor:
+     *   app:
+     *     taskWorkerConfigs:
+     *       HTTP:
+     *         threadCount: 20
+     *       LLM_TEXT_COMPLETE:
+     *         threadCount: 4
+     *         permitCount: 4
+     * </pre>
+     */
+    private Map<String, TaskWorkerConfig> taskWorkerConfigs = new HashMap<>();
+
+    public static class TaskWorkerConfig {
+
+        /** Number of dedicated threads for this task type. 0 = share the common pool. */
+        private int threadCount = 0;
+
+        /**
+         * Maximum number of tasks of this type that may be in-flight at once (semaphore permits). 0
+         * = use effective thread count.
+         */
+        private int permitCount = 0;
+
+        public int getThreadCount() {
+            return threadCount;
+        }
+
+        public void setThreadCount(int threadCount) {
+            this.threadCount = threadCount;
+        }
+
+        public int getPermitCount() {
+            return permitCount;
+        }
+
+        public void setPermitCount(int permitCount) {
+            this.permitCount = permitCount;
+        }
+    }
+
+    /**
      * The duration of workflow execution which qualifies a workflow as a short-running workflow
      * when async indexing to elasticsearch is enabled.
      */
@@ -451,6 +500,14 @@ public class ConductorProperties {
 
     public void setIsolatedSystemTaskWorkerThreadCount(int isolatedSystemTaskWorkerThreadCount) {
         this.isolatedSystemTaskWorkerThreadCount = isolatedSystemTaskWorkerThreadCount;
+    }
+
+    public Map<String, TaskWorkerConfig> getTaskWorkerConfigs() {
+        return taskWorkerConfigs;
+    }
+
+    public void setTaskWorkerConfigs(Map<String, TaskWorkerConfig> taskWorkerConfigs) {
+        this.taskWorkerConfigs = taskWorkerConfigs;
     }
 
     public Duration getAsyncUpdateShortRunningWorkflowDuration() {
