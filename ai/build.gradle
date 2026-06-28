@@ -9,12 +9,19 @@ repositories {
 
 dependencies {
     compileOnly 'org.springframework.boot:spring-boot-starter'
-    // Spring Web is needed only to compile the A2A push-notification callback controller.
-    // Kept compileOnly so it stays out of this library's runtime footprint; the server provides it.
+    // Needed to compile A2A push-notification callback controller and AgentSpan activation glue;
+    // supplied by the server at runtime.
     compileOnly 'org.springframework.boot:spring-boot-starter-web'
+    compileOnly 'org.springframework.boot:spring-boot-autoconfigure'
 
     implementation project(':conductor-common')
     implementation project(':conductor-core')
+
+    // AgentSpan library (agent compilation, runtime services, REST controllers, SPI contracts).
+    // Its Conductor dependencies are compileOnly in the published artifact, so the host (this
+    // build) supplies conductor-core/common/ai/http-task at runtime. Activated only when
+    // conductor.integrations.ai.enabled=true (see org.conductoross.conductor.ai.agentspan).
+    api 'org.conductoross:conductor-agentspan:0.2.0'
 
     api "org.springframework.ai:spring-ai-model:${revSpringAI}"
     api "org.springframework.ai:spring-ai-client-chat:${revSpringAI}"
