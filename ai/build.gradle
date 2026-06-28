@@ -1,3 +1,5 @@
+import java.security.MessageDigest
+
 plugins {
     id 'java'
 }
@@ -6,6 +8,56 @@ repositories {
     maven { url 'https://repo.spring.io/snapshot' }
     maven { url 'https://repo.spring.io/milestone' }
 }
+
+// --- sqlite-vec loadable extensions -------------------------------------------------------------
+// sqlite-vec has no Maven artifact and no JVM binding, so we download the official, checksum-pinned
+// loadable binaries at build time and package them as jar resources under /sqlite-vec/<platform>/.
+// SqliteVecExtensions extracts the right one at runtime. Apache-2.0/MIT licensed, redistributable.
+ext.sqliteVecVersion = '0.1.9'
+ext.sqliteVecArtifacts = [
+        'linux-x86_64'  : 'b959baa1d8dc88861b1edb337b8587178cdcb12d60b4998f9d10b6a82052d5d7',
+        'linux-aarch64' : 'ea03d39541e478fab5974253c461e1cb5d77742f69e40cf96e3fad5bc309a37c',
+        'macos-aarch64' : '8282126333399ddfe98bbbcc7a1936e7252625aac49df056a98be602e46bfd29',
+        'macos-x86_64'  : '53ad76e400786515e2edcaed2f01271dda846316390b761fadbd2dcf56aa4713',
+        'windows-x86_64': '51581189d52066b4dfc6631f6d7a3eab7dedc2260656ab09ca97ab3fb8165983',
+]
+def sqliteVecResourceDir = layout.buildDirectory.dir('generated/resources/sqlite-vec')
+
+tasks.register('downloadSqliteVec') {
+    description = 'Downloads, verifies and stages the sqlite-vec loadable extensions as jar resources.'
+    group = 'build'
+    inputs.property('version', sqliteVecVersion)
+    inputs.property('artifacts', sqliteVecArtifacts)
+    outputs.dir(sqliteVecResourceDir)
+    doLast {
+        def base = sqliteVecResourceDir.get().asFile
+        def cache = new File(temporaryDir, 'archives')
+        cache.mkdirs()
+        sqliteVecArtifacts.each { platform, expectedSha ->
+            def archive = new File(cache, "sqlite-vec-${platform}.tar.gz")
+            if (!archive.exists()) {
+                def url = "https://github.com/asg017/sqlite-vec/releases/download/v${sqliteVecVersion}/sqlite-vec-${sqliteVecVersion}-loadable-${platform}.tar.gz"
+                logger.lifecycle("Downloading sqlite-vec ${platform} from ${url}")
+                ant.get(src: url, dest: archive, verbose: false)
+            }
+            def digest = MessageDigest.getInstance('SHA-256')
+            archive.eachByte(64 * 1024) { buf, len -> digest.update(buf, 0, len) }
+            def actualSha = digest.digest().encodeHex().toString()
+            if (actualSha != expectedSha) {
+                throw new GradleException("Checksum mismatch for sqlite-vec ${platform}: expected ${expectedSha}, got ${actualSha}")
+            }
+            def platformDir = new File(base, "sqlite-vec/${platform}")
+            platformDir.mkdirs()
+            copy {
+                from tarTree(resources.gzip(archive))
+                into platformDir
+            }
+        }
+    }
+}
+
+sourceSets.main.resources.srcDir(sqliteVecResourceDir)
+tasks.named('processResources') { dependsOn 'downloadSqliteVec' }
 
 dependencies {
     compileOnly 'org.springframework.boot:spring-boot-starter'
@@ -48,6 +100,9 @@ dependencies {
     api "org.mongodb:bson:${mongodb}"
     api "io.pinecone:pinecone-client:${pinecone}"
     api "com.pgvector:pgvector:${pgVector}"
+    // SQLite + sqlite-vec backend. The native vec0 extension is supplied by the operator at
+    // runtime (no JVM binding / Maven artifact exists); see SqliteConfig.
+    api "org.xerial:sqlite-jdbc:${sqliteJdbc}"
     api "org.springframework.boot:spring-boot-starter-jdbc"
 
 

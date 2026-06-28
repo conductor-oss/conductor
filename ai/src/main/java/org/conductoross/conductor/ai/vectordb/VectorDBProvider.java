@@ -15,6 +15,7 @@ package org.conductoross.conductor.ai.vectordb;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.sdk.workflow.executor.task.TaskContext;
@@ -35,14 +36,27 @@ public class VectorDBProvider {
     private final Map<String, VectorDB> vectorDBs = new ConcurrentHashMap<>();
 
     /**
-     * Initializes the provider with configured vector database instances.
+     * Initializes the provider with configured vector database instances, then merges in any
+     * auto-configured default instances (e.g. the bundled SQLite/sqlite-vec store) that are not
+     * already provided explicitly.
      *
      * @param instanceConfig Configuration containing all vector DB instances
+     * @param defaultInstances Auto-configured default VectorDB beans, if any
      */
-    public VectorDBProvider(VectorDBInstanceConfig instanceConfig) {
+    public VectorDBProvider(
+            VectorDBInstanceConfig instanceConfig, ObjectProvider<VectorDB> defaultInstances) {
         try {
             Map<String, VectorDB> instances = instanceConfig.getVectorDBInstances();
             vectorDBs.putAll(instances);
+            defaultInstances.forEach(
+                    db -> {
+                        if (vectorDBs.putIfAbsent(db.getName(), db) == null) {
+                            log.info(
+                                    "Registered default vector DB instance: {} (type: {})",
+                                    db.getName(),
+                                    db.getType());
+                        }
+                    });
             log.info("Initialized VectorDBProvider with {} instances", vectorDBs.size());
             vectorDBs
                     .keySet()

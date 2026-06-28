@@ -84,6 +84,7 @@ The server will be available at `http://localhost:3001/mcp`.
 | `20-extended-thinking.json` | Extended thinking with token budget for reasoning | Anthropic |
 | `21-web-search-research-agent.json` | Research agent: web search → synthesize → PDF | OpenAI, Anthropic |
 | `22-multi-turn-chain.json` | Multi-turn conversation chaining with previousResponseId | OpenAI |
+| `30-rag-sqlite-vec.json` | Zero-infra RAG on the bundled SQLite + sqlite-vec store | OpenAI, SQLite (built-in) |
 
 ### A2A (Agent2Agent) examples
 
@@ -234,6 +235,26 @@ curl -X POST 'http://localhost:8080/api/metadata/workflow' \
 curl -X POST 'http://localhost:8080/api/workflow/complete_rag_demo' \
   -H 'Content-Type: application/json' \
   -d '{}'
+```
+
+### 30. RAG on SQLite (sqlite-vec, zero infrastructure)
+
+Runs the full index → search → answer RAG loop against the **embedded** SQLite + sqlite-vec vector
+store — no PostgreSQL, MongoDB or Pinecone required. When the server runs with `conductor.db.type=sqlite`
+and `conductor.integrations.ai.enabled=true`, Conductor bundles the native `vec0` extension and
+auto-registers a vector DB instance named `default`, which this workflow targets. Embeddings are
+requested at 256 dimensions to match that default instance.
+
+```bash
+# Register
+curl -X POST 'http://localhost:8080/api/metadata/workflow' \
+  -H 'Content-Type: application/json' \
+  -d @30-rag-sqlite-vec.json
+
+# Execute with a question
+curl -X POST 'http://localhost:8080/api/workflow/rag_sqlite_vec_demo' \
+  -H 'Content-Type: application/json' \
+  -d '{"question": "What vector databases does Conductor support?"}'
 ```
 
 ### 8. MCP List Tools
