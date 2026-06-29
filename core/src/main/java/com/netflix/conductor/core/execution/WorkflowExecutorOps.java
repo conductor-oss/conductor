@@ -664,7 +664,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             return;
         }
         workflow.setStatus(WorkflowModel.Status.TERMINATED);
-        terminateWorkflow(workflow, reason, null, null);
+        terminateWorkflow(workflow, reason, null);
     }
 
     /**
