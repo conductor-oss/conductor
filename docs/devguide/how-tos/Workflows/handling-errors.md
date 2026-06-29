@@ -25,7 +25,7 @@ Additionally, you may also specify the _version_ of it by using the `failureWork
 
 ```json
 "failureWorkflow": "<Name of your compensation flow>",
-"failureWorkflowVersion": "<Version of your compensation flow. If not specified, the latest version will be used>",
+"failureWorkflowVersion": 2,
 ```
 
 If your main workflow fails, Conductor will trigger this failure workflow. By default, the following parameters are passed to the failure workflow as input:
