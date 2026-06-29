@@ -361,7 +361,7 @@ public class WorkflowDefValidatorTest {
         // Given a workflow with a failure compensation definition
         var workflowDef = new WorkflowDef();
         workflowDef.setName("workflow_with_failure_definition");
-        workflowDef.setOwnerEmail("owner@orkers.io");
+        workflowDef.setOwnerEmail("owner@orkes.io");
         workflowDef.setFailureWorkflow("failure_workflow");
         workflowDef.setFailureWorkflowVersion(1);
 
