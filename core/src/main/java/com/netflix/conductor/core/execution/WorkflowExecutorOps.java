@@ -358,13 +358,22 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     // retry sibling sub-workflows that are still in a failed/timed-out state
                     WorkflowModel child =
                             executionDAOFacade.getWorkflowModel(task.getSubWorkflowId(), true);
-                    if (child != null
-                            && child.getTasks().stream().anyMatch(UNSUCCESSFUL_TERMINAL_TASK)) {
-                        retry(child);
-                        task.setStatus(IN_PROGRESS);
-                        task.setReasonForIncompletion(null);
-                        task.setSubworkflowChanged(true);
-                        executionDAOFacade.updateTask(task);
+                    if (child != null) {
+                        if (child.getStatus() == WorkflowModel.Status.RUNNING) {
+                            // Child was already set RUNNING by an in-progress rerun; surfacing that
+                            // to the parent task without calling retry() avoids creating a spurious
+                            // new task instance that conflicts with the rerun's own finalizeRerun.
+                            task.setStatus(IN_PROGRESS);
+                            task.setReasonForIncompletion(null);
+                            task.setSubworkflowChanged(true);
+                            executionDAOFacade.updateTask(task);
+                        } else if (child.getTasks().stream().anyMatch(UNSUCCESSFUL_TERMINAL_TASK)) {
+                            retry(child);
+                            task.setStatus(IN_PROGRESS);
+                            task.setReasonForIncompletion(null);
+                            task.setSubworkflowChanged(true);
+                            executionDAOFacade.updateTask(task);
+                        }
                     }
                 } else if (task.getStatus() == CANCELED) {
                     if (task.getTaskType().equalsIgnoreCase(TaskType.JOIN.toString())
