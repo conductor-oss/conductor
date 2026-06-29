@@ -28,6 +28,7 @@ import { ActorRef } from "xstate";
 import { UpdateTaskStatusForm } from "..";
 import {
   DEFINITION_TAB,
+  GUARDRAILS_TAB,
   INPUT_TAB,
   JSON_TAB,
   LOGS_TAB,
@@ -36,6 +37,7 @@ import {
 } from "../state/constants";
 import TaskLogs from "../TaskLogs";
 import TaskSummary from "../TaskSummary";
+import TaskGuardrails from "../TaskGuardrails";
 import { RightPanelContextEventTypes, RightPanelEvents } from "./state";
 import { useRightPanelActor } from "./state/hook";
 import { SummaryTask } from "./SummaryTask";
@@ -335,6 +337,15 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
             label="Definition"
             onClick={() => changeCurrentTab(DEFINITION_TAB)}
           />
+          {(`${selectedTask?.taskType}`.startsWith("LLM_") ||
+            selectedTask?.taskType === "PARSE_DOCUMENT") && (
+            <Tab
+              label="Guardrails"
+              value={GUARDRAILS_TAB}
+              onClick={() => changeCurrentTab(GUARDRAILS_TAB)}
+              disabled={!selectedTask.status}
+            />
+          )}
         </Tabs>
         <Paper square elevation={0}>
           {currentTab === SUMMARY_TAB && (
@@ -411,6 +422,17 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
               workflowName={workflowName}
               editorHeight="calc(100vh - 280px)"
             />
+          )}
+          {currentTab === GUARDRAILS_TAB && (
+            <Box
+              style={{
+                overflowY: "auto",
+                overflowX: "hidden",
+                maxHeight: "calc(100vh - 100px)",
+              }}
+            >
+              <TaskGuardrails taskResult={selectedTask} />
+            </Box>
           )}
         </Paper>
       </>

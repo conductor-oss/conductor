@@ -5,3 +5,4 @@ export const OUTPUT_TAB = 2;
 export const LOGS_TAB = 3;
 export const JSON_TAB = 4;
 export const DEFINITION_TAB = 5;
+export const GUARDRAILS_TAB = 6;

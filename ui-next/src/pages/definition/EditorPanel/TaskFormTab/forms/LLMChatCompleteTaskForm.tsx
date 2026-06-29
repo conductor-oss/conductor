@@ -2,6 +2,7 @@ import { Box } from "@mui/material";
 import { UiIntegrationsFieldType } from "types/FormFieldTypes";
 import { fieldsToFieldsFieldsComponents } from "utils/fieldHelpers";
 import { ConductorCacheOutput } from "./ConductorCacheOutputForm";
+import { GuardrailsForm } from "./GuardrailsForm";
 import { LLMFormFields } from "./LLMFormFields/LLMFormFields";
 import LLMFormFieldsWrapper from "./LLMFormFields/LLMFormFieldsWrapper";
 import { Optional } from "./OptionalFieldForm";
@@ -68,6 +69,9 @@ export const LLMChatCompleteTaskForm = ({ task, onChange }: TaskFormProps) => {
               fieldFieldComponents={modelFieldComponents}
               actor={actor}
             />
+          </TaskFormSection>
+          <TaskFormSection title="Guardrails">
+            <GuardrailsForm onChange={onChange} taskJson={task} />
           </TaskFormSection>
           <TaskFormSection title="Structured Messages">
             <LLMFormFields
