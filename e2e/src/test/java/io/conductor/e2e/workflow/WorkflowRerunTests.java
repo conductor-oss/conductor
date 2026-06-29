@@ -6714,38 +6714,13 @@ public class WorkflowRerunTests {
                                         "completed branch must also have a FRESH subWorkflowId after dyn-fork rerun");
                             });
 
-            // Drive each fresh branch to completion.
-            // startWorkflowIdempotent queues the child's first decide asynchronously, so
-            // simple_ref may not exist yet when the branch task first becomes IN_PROGRESS.
-            await().atMost(15, TimeUnit.SECONDS)
-                    .untilAsserted(
-                            () ->
-                                    findActiveTask(
-                                            newF[0],
-                                            "simple_ref",
-                                            "fresh failing simple_ref must be active"));
+            // Drive each fresh branch to completion
             completeTask(
                     findActiveTask(newF[0], "simple_ref", "fresh failing simple_ref"),
                     TaskResult.Status.COMPLETED);
-
-            await().atMost(15, TimeUnit.SECONDS)
-                    .untilAsserted(
-                            () ->
-                                    findActiveTask(
-                                            newCa[0],
-                                            "simple_ref",
-                                            "fresh cancelled simple_ref must be active"));
             completeTask(
                     findActiveTask(newCa[0], "simple_ref", "fresh cancelled simple_ref"),
                     TaskResult.Status.COMPLETED);
-
-            await().atMost(15, TimeUnit.SECONDS)
-                    .untilAsserted(
-                            () ->
-                                    findActiveTask(
-                                            newCo[0],
-                                            "simple_ref",
-                                            "fresh completed simple_ref must be active"));
             completeTask(
                     findActiveTask(newCo[0], "simple_ref", "fresh completed simple_ref"),
                     TaskResult.Status.COMPLETED);
