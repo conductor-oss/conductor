@@ -221,4 +221,44 @@ public class SqliteVectorDBTest {
         assertThrows(
                 RuntimeException.class, () -> vectorDB.search("idx", "ns", List.of(1f, 2f, 3f), 1));
     }
+
+    @Test
+    public void testUpsertRollsBackAndRestoresAutocommitOnInsertFailure() throws SQLException {
+        try (MockedConstruction<HikariDataSource> mockedDataSource =
+                mockConstruction(
+                        HikariDataSource.class,
+                        (mock, context) -> {
+                            when(mock.isRunning()).thenReturn(true);
+                            Connection conn = mock(Connection.class);
+                            when(mock.getConnection()).thenReturn(conn);
+
+                            PreparedStatement createStmt = mock(PreparedStatement.class);
+                            when(conn.prepareStatement(contains("CREATE VIRTUAL TABLE")))
+                                    .thenReturn(createStmt);
+
+                            PreparedStatement deleteStmt = mock(PreparedStatement.class);
+                            when(conn.prepareStatement(contains("DELETE FROM")))
+                                    .thenReturn(deleteStmt);
+
+                            PreparedStatement insertStmt = mock(PreparedStatement.class);
+                            when(insertStmt.executeUpdate())
+                                    .thenThrow(new java.sql.SQLException("Insert failed"));
+                            when(conn.prepareStatement(contains("INSERT INTO")))
+                                    .thenReturn(insertStmt);
+                        })) {
+
+            assertThrows(
+                    RuntimeException.class,
+                    () ->
+                            vectorDB.updateEmbeddings(
+                                    "idx", "ns", "doc", "p", "id", List.of(1f, 2f, 3f), Map.of()));
+
+            HikariDataSource ds = mockedDataSource.constructed().get(0);
+            Connection conn = ds.getConnection();
+            // Rollback must be called on failure.
+            verify(conn).rollback();
+            // Autocommit must be restored so the pooled connection is safe for the next caller.
+            verify(conn).setAutoCommit(true);
+        }
+    }
 }

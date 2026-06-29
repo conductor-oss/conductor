@@ -72,12 +72,18 @@ public class SqliteVectorDBAutoConfiguration {
      * co-locates a {@code *_vectordb.db} file next to the persistence database, falling back to a
      * file in the working directory.
      */
-    static String resolveDbPath(String configured, String datasourceUrl) {
+    public static String resolveDbPath(String configured, String datasourceUrl) {
         if (StringUtils.isNotBlank(configured)) {
             return configured;
         }
         if (StringUtils.isNotBlank(datasourceUrl) && datasourceUrl.startsWith("jdbc:sqlite:")) {
             String path = datasourceUrl.substring("jdbc:sqlite:".length()).trim();
+            // Strip query parameters (e.g. ?busy_timeout=15000&journal_mode=WAL) so they don't
+            // end up as part of the filesystem path.
+            int queryIdx = path.indexOf('?');
+            if (queryIdx > 0) {
+                path = path.substring(0, queryIdx);
+            }
             if (StringUtils.isNotBlank(path) && !path.contains(":memory:")) {
                 int dot = path.lastIndexOf('.');
                 int sep = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));

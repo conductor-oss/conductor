@@ -115,6 +115,11 @@ public class SqliteVectorDB extends VectorDB {
         if (StringUtils.isBlank(extension)) {
             extension = "vec0";
         }
+        // Allowlist check on operator-supplied paths to prevent unexpected SQL content. Bundled
+        // paths (temp-dir extractions) match this pattern; bare "vec0" also matches.
+        if (!extension.matches("[a-zA-Z0-9/_\\-.]+")) {
+            throw new RuntimeException("extensionPath contains invalid characters: " + extension);
+        }
         // Loaded once per physical connection so every pooled connection has vec0 available.
         String loadExtensionSql = "SELECT load_extension('" + extension.replace("'", "''") + "')";
 
@@ -248,6 +253,15 @@ public class SqliteVectorDB extends VectorDB {
             }
             log.error("Error occurred upserting embeddings for sqlite-vec : {}", e.getMessage(), e);
             throw new RuntimeException(e);
+        } finally {
+            // Always restore autocommit so this connection is safe to reuse from the Hikari pool.
+            try {
+                conn.setAutoCommit(true);
+            } catch (Exception ex) {
+                log.warn(
+                        "Failed to restore autocommit on sqlite-vec connection: {}",
+                        ex.getMessage());
+            }
         }
     }
 

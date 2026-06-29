@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
 import lombok.extern.slf4j.Slf4j;
@@ -49,7 +50,16 @@ public final class SqliteVecExtensions {
      */
     public static String resolveBundledExtensionPath() {
         if (cachedPath != null) {
-            return cachedPath;
+            // Guard against the temp file being deleted (e.g. by OS cleanup) between calls.
+            if (Files.exists(Paths.get(cachedPath))) {
+                return cachedPath;
+            }
+            log.warn(
+                    "Previously extracted sqlite-vec extension no longer exists at {}; re-extracting",
+                    cachedPath);
+            synchronized (LOCK) {
+                cachedPath = null;
+            }
         }
         synchronized (LOCK) {
             if (cachedPath != null) {
@@ -91,7 +101,7 @@ public final class SqliteVecExtensions {
      * Maps the current OS/architecture to the bundled resource path, or {@code null} if
      * unsupported. Package-private for testing.
      */
-    static String bundledResourcePath() {
+    public static String bundledResourcePath() {
         String os = System.getProperty("os.name", "").toLowerCase();
         String arch = System.getProperty("os.arch", "").toLowerCase();
 

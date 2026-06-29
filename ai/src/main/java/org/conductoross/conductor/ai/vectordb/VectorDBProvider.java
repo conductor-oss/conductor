@@ -55,6 +55,11 @@ public class VectorDBProvider {
                                     "Registered default vector DB instance: {} (type: {})",
                                     db.getName(),
                                     db.getType());
+                        } else {
+                            log.warn(
+                                    "Vector DB instance '{}' already registered explicitly; "
+                                            + "auto-registered default not applied",
+                                    db.getName());
                         }
                     });
             log.info("Initialized VectorDBProvider with {} instances", vectorDBs.size());
