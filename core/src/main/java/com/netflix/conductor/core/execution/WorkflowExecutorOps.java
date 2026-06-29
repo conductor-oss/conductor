@@ -2074,10 +2074,14 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 } else {
                     // Set the task to rerun as SCHEDULED
                     rerunFromTask.setStatus(SCHEDULED);
-                    addTaskToQueue(rerunFromTask);
                 }
             }
+            // Write the new state to DB before queueing so any async worker sees SCHEDULED,
+            // not the stale CANCELED/FAILED state that was in the DB before this rerun.
             executionDAOFacade.updateTask(rerunFromTask);
+            if (rerunFromTask.getStatus() == SCHEDULED) {
+                addTaskToQueue(rerunFromTask);
+            }
             if (rerunFromTask.getTaskId().equals(taskId)) {
                 // Direct rerun: reset container tasks (DO_WHILE, JOIN) that stayed terminal
                 // after seq-based removal, then push parents.
@@ -2123,6 +2127,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             updateAndPushParents(workflow, "reran");
             return;
         }
+        List<TaskModel> tasksToQueue = new ArrayList<>();
         workflow.getTasks()
                 .forEach(
                         task -> {
@@ -2147,7 +2152,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                                     task.setStatus(IN_PROGRESS);
                                 } else {
                                     task.setStatus(SCHEDULED);
-                                    addTaskToQueue(task);
+                                    tasksToQueue.add(task);
                                 }
                                 task.setExecuted(false);
                                 task.setStartTime(System.currentTimeMillis());
@@ -2155,7 +2160,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                                 task.setReasonForIncompletion(null);
                             }
                         });
+        // Write SCHEDULED to DB before queueing so async workers (e.g. SystemTaskWorker)
+        // never read a stale CANCELED/FAILED state and silently drop the queue entry.
         executionDAOFacade.updateTasks(workflow.getTasks());
+        tasksToQueue.forEach(this::addTaskToQueue);
         // Push AFTER all sibling tasks are reset so async decider never sees stale CANCELED/FAILED
         queueDAO.push(
                 DECIDER_QUEUE,
