@@ -55,6 +55,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.mockito.ArgumentCaptor;
 
 public class WorkflowResourceTest {
 
@@ -82,7 +83,7 @@ public class WorkflowResourceTest {
         String workflowID = "w112";
         when(mockWorkflowService.startWorkflow(any(StartWorkflowRequest.class)))
                 .thenReturn(workflowID);
-        assertEquals("w112", workflowResource.startWorkflow(startWorkflowRequest));
+        assertEquals("w112",  workflowResource.startWorkflow(startWorkflowRequest, new HashMap<>()));
     }
 
     @Test
@@ -94,6 +95,33 @@ public class WorkflowResourceTest {
                         anyString(), anyInt(), anyString(), anyInt(), anyMap()))
                 .thenReturn(workflowID);
         assertEquals("w112", workflowResource.startWorkflow("test1", 1, "c123", 0, input));
+    }
+    @Test
+    public void testStartWorkflowWithQueryParams() {
+        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
+        startWorkflowRequest.setName("w123");
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("1", "abc");
+        startWorkflowRequest.setInput(input);
+
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("url_param", "1234");
+
+        String workflowID = "w112";
+        when(mockWorkflowService.startWorkflow(any(StartWorkflowRequest.class)))
+                .thenReturn(workflowID);
+
+        assertEquals("w112", workflowResource.startWorkflow(startWorkflowRequest, queryParams));
+
+        ArgumentCaptor<StartWorkflowRequest> requestCaptor =
+                ArgumentCaptor.forClass(StartWorkflowRequest.class);
+
+        verify(mockWorkflowService).startWorkflow(requestCaptor.capture());
+
+        Map<String, Object> capturedInput = requestCaptor.getValue().getInput();
+        assertEquals("abc", capturedInput.get("1"));
+        assertEquals("1234", capturedInput.get("url_param"));
     }
 
     @Test
