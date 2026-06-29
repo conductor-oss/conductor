@@ -1965,6 +1965,17 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 workflow.setInput(workflowInput);
             }
             executionDAOFacade.updateWorkflow(workflow);
+            // For direct non-SUB_WORKFLOW reruns, persist the target task as SCHEDULED before
+            // updateAndPushParents fires expediteLazyWorkflowEvaluation. Without this early write,
+            // an async decider that runs between the workflow-RUNNING write above and the
+            // rerunFromTask-SCHEDULED write below can see all tasks as terminal and re-terminate
+            // the workflow before PATH 3 gets a chance to reset rerunFromTask.
+            if (rerunFromTask.getTaskId().equals(taskId)
+                    && !TaskType.TASK_TYPE_SUB_WORKFLOW.equalsIgnoreCase(
+                            rerunFromTask.getTaskType())) {
+                rerunFromTask.setStatus(SCHEDULED);
+                executionDAOFacade.updateTask(rerunFromTask);
+            }
             updateAndPushParents(workflow, "reran");
             notifyWorkflowStatusListener(workflow, WorkflowEventType.RETRIED);
 
