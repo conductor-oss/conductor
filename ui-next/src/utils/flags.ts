@@ -15,6 +15,7 @@ declare global {
       authorizationEndpoint?: string;
       tokenEndpoint?: string;
       endSessionEndpoint?: string;
+      isTestEnvironment?: boolean;
     };
     auth0Identifiers?: {
       domain?: string;
@@ -85,11 +86,15 @@ export const FEATURES = Object.freeze({
   GOOGLE_CLIENT_ID: "GOOGLE_CLIENT_ID",
   NOTIFY_HUMAN_TASK: "NOTIFY_HUMAN_TASK",
   WORKFLOW_INTROSPECTION: "WORKFLOW_INTROSPECTION",
+  WORKFLOW_SUMMARIZE: "WORKFLOW_SUMMARIZE",
   ENABLE_CONFETTI: "ENABLE_CONFETTI",
   OIDC_REMOVE_OFFLINE_ACCESS: "OIDC_REMOVE_OFFLINE_ACCESS",
   SHOW_ROLES_MENU_ITEM: "SHOW_ROLES_MENU_ITEM",
   SHOW_AGENT: "SHOW_AGENT",
   ENABLE_AGENT_AUDIO_INPUT: "ENABLE_AGENT_AUDIO_INPUT",
+  // Driven by the server's conductor.integrations.ai.enabled (injected via /context.js).
+  // Gates the embedded AgentSpan agent pages (Agents, Executions, Skills, Secrets).
+  AGENTSPAN_ENABLED: "AGENTSPAN_ENABLED",
   AI_CODER_WORKER: "AI_CODER_WORKER",
   AI_CODER_CLOUD_WORKER: "AI_CODER_CLOUD_WORKER",
   TAG_VISIBILITY: "TAG_VISIBILITY",
@@ -123,7 +128,9 @@ const result = _merge(
 );
 
 export const featureFlags = {
-  isEnabled: (feature: string) => {
+  isEnabled: (feature: string, defaultValue = false) => {
+    if (result[feature] === undefined || result[feature] === null)
+      return defaultValue;
     return result[feature] === "true" || result[feature] === true;
   },
   getValue: (feature: string, defaultValue?: string) => {

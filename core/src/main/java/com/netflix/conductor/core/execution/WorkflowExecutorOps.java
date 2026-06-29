@@ -61,6 +61,7 @@ import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 import static com.netflix.conductor.model.TaskModel.Status.*;
 
 import static org.conductoross.conductor.core.execution.ExecutorUtils.computePostpone;
+import static org.conductoross.conductor.core.execution.ExecutorUtils.hasInProgressHumanTask;
 
 /** Workflow services provider interface */
 @Trace
@@ -987,6 +988,20 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     task.getTaskDefName(), lastDuration, false, task.getStatus());
         }
 
+        if (properties.isHumanTaskPreventsDeciderQueue()
+                && TaskType.TASK_TYPE_HUMAN.equals(task.getTaskType())
+                && task.getStatus().isTerminal()) {
+            // The sweeper removes workflows blocked on a HUMAN task from the decider queue.
+            // Re-queue this workflow so it is evaluated immediately now that the HUMAN task has
+            // reached a terminal status.
+            queueDAO.push(DECIDER_QUEUE, workflowId, workflowInstance.getPriority(), 0);
+            LOGGER.debug(
+                    "Waking up workflow {} because HUMAN task {} reached terminal status {}",
+                    workflowId,
+                    task.getTaskId(),
+                    task.getStatus());
+        }
+
         if (!isLazyEvaluateWorkflow(workflowInstance.getWorkflowDefinition(), task)) {
             decide(workflowId);
         }
@@ -1252,19 +1267,33 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
                 Duration timeout = properties.getWorkflowOffsetTimeout();
                 if (!workflow.getStatus().isTerminal()) {
-                    Duration updatedOffset =
-                            computePostpone(
-                                    workflow, timeout, properties.getMaxPostponeDurationSeconds());
-                    if (updatedOffset.getSeconds() != timeout.getSeconds()) {
-                        // we have a new value, setUnack uses time in millis
+                    if (properties.isHumanTaskPreventsDeciderQueue()
+                            && hasInProgressHumanTask(workflow)) {
+                        // A workflow blocked on a HUMAN task can wait indefinitely for external
+                        // input. Keeping it in the decider queue only churns the sweeper, so
+                        // remove it; updateTask() re-queues the workflow when the HUMAN task
+                        // reaches a terminal status.
                         LOGGER.debug(
-                                "Pushing the workflow {} into decider queue by {} millis",
-                                workflow.getWorkflowId(),
-                                updatedOffset.getSeconds() * 1000);
-                        queueDAO.setUnackTimeout(
-                                DECIDER_QUEUE,
-                                workflow.getWorkflowId(),
-                                updatedOffset.getSeconds() * 1000);
+                                "Removing workflow {} from decider queue; blocked on HUMAN task",
+                                workflow.getWorkflowId());
+                        queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());
+                    } else {
+                        Duration updatedOffset =
+                                computePostpone(
+                                        workflow,
+                                        timeout,
+                                        properties.getMaxPostponeDurationSeconds());
+                        if (updatedOffset.getSeconds() != timeout.getSeconds()) {
+                            // we have a new value, setUnack uses time in millis
+                            LOGGER.debug(
+                                    "Pushing the workflow {} into decider queue by {} millis",
+                                    workflow.getWorkflowId(),
+                                    updatedOffset.getSeconds() * 1000);
+                            queueDAO.setUnackTimeout(
+                                    DECIDER_QUEUE,
+                                    workflow.getWorkflowId(),
+                                    updatedOffset.getSeconds() * 1000);
+                        }
                     }
                 }
             }
@@ -1308,9 +1337,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                         .containsType(TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC)) {
             return;
         }
-
-        // A rerun/retry/restart can reactivate one fork branch while the previous JOIN is still
-        // terminal. Reopen only those JOIN tasks whose dependencies include an active branch.
         Set<String> activeReferenceTaskNames =
                 workflow.getTasks().stream()
                         .filter(NON_TERMINAL_TASK)
@@ -1319,16 +1345,22 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         if (activeReferenceTaskNames.isEmpty()) {
             return;
         }
-
-        workflow.getTasks().stream()
-                .filter(UNSUCCESSFUL_JOIN_TASK)
-                .filter(task -> hasActiveJoinDependency(task, activeReferenceTaskNames))
-                .peek(
-                        task -> {
-                            task.setStatus(TaskModel.Status.IN_PROGRESS);
-                            addTaskToQueue(task);
-                        })
-                .forEach(executionDAOFacade::updateTask);
+        // Iteratively expand active set and reset: a reset JOIN (e.g. inner_join) becomes active,
+        // allowing outer JOINs that depend on it to be reset in the same or subsequent pass.
+        boolean resetOccurred;
+        do {
+            resetOccurred = false;
+            for (TaskModel task : workflow.getTasks()) {
+                if (UNSUCCESSFUL_JOIN_TASK.test(task)
+                        && hasActiveJoinDependency(task, activeReferenceTaskNames)) {
+                    task.setStatus(TaskModel.Status.IN_PROGRESS);
+                    addTaskToQueue(task);
+                    executionDAOFacade.updateTask(task);
+                    activeReferenceTaskNames.add(task.getReferenceTaskName());
+                    resetOccurred = true;
+                }
+            }
+        } while (resetOccurred);
     }
 
     private boolean hasActiveJoinDependency(
@@ -1933,8 +1965,13 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             notifyWorkflowStatusListener(workflow, WorkflowEventType.RETRIED);
 
             // update tasks in datastore to update workflow-tasks relationship for archived
-            // workflows
-            executionDAOFacade.updateTasks(workflow.getTasks());
+            // workflows; exclude rerunFromTask, which is updated individually below — writing its
+            // stale FAILED state here would race with the sweeper and can re-terminate the parent
+            final String rerunTaskId = rerunFromTask.getTaskId();
+            executionDAOFacade.updateTasks(
+                    workflow.getTasks().stream()
+                            .filter(t -> !t.getTaskId().equals(rerunTaskId))
+                            .collect(Collectors.toList()));
             // Remove all tasks after the "rerunFromTask"
             List<TaskModel> filteredTasks = new ArrayList<>();
             for (TaskModel task : workflow.getTasks()) {

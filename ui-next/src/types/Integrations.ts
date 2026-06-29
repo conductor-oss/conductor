@@ -44,6 +44,7 @@ export enum IntegrationType {
   COMMONROOM = "commonroom",
   AWS_S3 = "aws-s3",
   HUBSPOT = "hubspot",
+  SLACK = "slack",
 }
 export enum IntegrationCategory {
   API = "API",

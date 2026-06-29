@@ -14,6 +14,7 @@ package com.netflix.conductor.service;
 
 import java.util.*;
 
+import org.conductoross.conductor.core.listener.MetadataChangeListenerStub;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.stubbing.Answer;
@@ -96,7 +97,8 @@ public class MetadataServiceTest {
                             invocation ->
                                     taskDefinitions.get(invocation.getArgument(0, String.class)));
 
-            return new MetadataServiceImpl(metadataDAO, eventHandlerDAO, properties);
+            return new MetadataServiceImpl(
+                    metadataDAO, eventHandlerDAO, new MetadataChangeListenerStub(), properties);
         }
 
         private List<WorkflowDef> mockWorkflowDefs() {

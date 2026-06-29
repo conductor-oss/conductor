@@ -37,6 +37,16 @@ export const SCHEDULER_DEFINITION_URL = {
 
 export const SCHEDULER_EXECUTION_URL = "/schedulerExecs";
 
+// Embedded AgentSpan agent pages (gated by AGENTSPAN_ENABLED / conductor.integrations.ai.enabled)
+export const AGENT_DEFINITION_URL = {
+  BASE: "/agents",
+};
+export const AGENT_EXECUTIONS_URL = "/agentExecutions";
+export const SKILLS_URL = {
+  BASE: "/skills",
+};
+export const AGENT_SECRETS_URL = "/agentSecrets";
+
 export const USER_MANAGEMENT_URL = {
   BASE: "/userManagement",
   TYPE_ID: "/userManagement/:type?/:id?",
@@ -132,8 +142,6 @@ export const SERVICE_URL = {
 export const AUTHENTICATION_URL = "/authentication";
 
 export const ERROR_URL = "/error";
-
-export const WORKFLOW_EXPLORER_URL = "/workflowExplorer";
 
 export const OIDC_CALLBACK_ROUTE = "/login/oidc/callback";
 

@@ -18,6 +18,7 @@ vi.mock("utils", async (importOriginal) => {
       PLAYGROUND: "PLAYGROUND",
       SHOW_GET_STARTED_PAGE: "SHOW_GET_STARTED_PAGE",
       TASK_INDEXING: "TASK_INDEXING",
+      AGENTSPAN_ENABLED: "AGENTSPAN_ENABLED",
     },
   };
 });
@@ -63,6 +64,10 @@ vi.mock("utils/constants/route", () => ({
   },
   SCHEMAS_URL: { BASE: "/schemas", EDIT: "/schemas/:id/edit" },
   SECRETS_URL: { BASE: "/secrets" },
+  AGENT_DEFINITION_URL: { BASE: "/agents" },
+  AGENT_EXECUTIONS_URL: "/agentExecutions",
+  AGENT_SECRETS_URL: "/agentSecrets",
+  SKILLS_URL: { BASE: "/skills" },
   SERVICE_URL: {
     LIST: "/services",
     SERVICE_ID: "/services/:serviceId",
@@ -86,7 +91,6 @@ vi.mock("utils/constants/route", () => ({
     NAME_VERSION: "/workflowDef/:name/:version",
     NEW: "/workflowDef/new",
   },
-  WORKFLOW_EXPLORER_URL: "/workflow-explorer",
   WORKERS_URL: {
     BASE: "/workers",
   },
@@ -131,6 +135,12 @@ vi.mock("pages/executions", () => ({
 }));
 vi.mock("pages/tags/TagsDashboard", () => ({
   default: () => ({ type: "TagsDashboard" }),
+}));
+vi.mock("pages/agent", () => ({
+  AgentDefinitions: () => ({ type: "AgentDefinitions" }),
+  AgentExecutions: () => ({ type: "AgentExecutions" }),
+  Skills: () => ({ type: "Skills" }),
+  Secrets: () => ({ type: "Secrets" }),
 }));
 vi.mock("../pages/definition/EventHandler/EventHandler", () => ({
   default: () => ({ type: "EventHandlerDefinition" }),
@@ -221,6 +231,29 @@ describe("router (OSS)", () => {
 
   it("should export the router instance", () => {
     expect(router).toBeDefined();
+  });
+
+  describe("AgentSpan gating (AGENTSPAN_ENABLED)", () => {
+    const AGENT_PATHS = [
+      "/agents",
+      "/agentExecutions",
+      "/skills",
+      "/agentSecrets",
+    ];
+
+    it("omits agent routes when AGENTSPAN_ENABLED is off", () => {
+      mockFeatureFlags.isEnabled.mockReturnValue(false);
+      const paths = collectPaths(getRoutes());
+      AGENT_PATHS.forEach((p) => expect(paths).not.toContain(p));
+    });
+
+    it("includes agent routes when AGENTSPAN_ENABLED is on", () => {
+      mockFeatureFlags.isEnabled.mockImplementation(
+        (feature: string) => feature === "AGENTSPAN_ENABLED",
+      );
+      const paths = collectPaths(getRoutes());
+      AGENT_PATHS.forEach((p) => expect(paths).toContain(p));
+    });
   });
 
   describe("Route structure", () => {

@@ -54,7 +54,7 @@ class OpenAIConfigurationTest {
     @Test
     void testAllArgsConstructor() {
         OpenAIConfiguration config =
-                new OpenAIConfiguration("api-key", "https://custom.url", "org-id");
+                new OpenAIConfiguration("api-key", "https://custom.url", "org-id", null);
 
         assertEquals("api-key", config.getApiKey());
         assertEquals("https://custom.url", config.getBaseURL());

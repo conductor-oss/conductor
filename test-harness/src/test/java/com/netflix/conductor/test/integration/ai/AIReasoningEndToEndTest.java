@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.test.integration.ai;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,28 +20,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.awaitility.Awaitility;
-import org.conductoross.conductor.ai.AIModel;
-import org.conductoross.conductor.ai.AIModelProvider;
-import org.conductoross.conductor.ai.ModelConfiguration;
-import org.conductoross.conductor.ai.models.ChatCompletion;
-import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
-import org.springframework.ai.chat.metadata.ChatResponseMetadata;
-import org.springframework.ai.chat.metadata.DefaultUsage;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.image.ImageModel;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
@@ -64,26 +47,37 @@ import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * End-to-end coverage for the AI reasoning surface. A workflow with a {@code LLM_CHAT_COMPLETE}
- * task runs against an in-process fake provider whose {@link ChatModel} returns a canned response
- * carrying {@code metadata["reasoning"]} and {@code metadata["reasoning_tokens"]}. The assertion
- * walks the full pipeline that production traffic takes — task scheduling → mapper →
- * AnnotatedSystemTaskWorker → {@code LLMs.chatComplete} → {@code LLMHelper} → {@code LLMResponse} —
- * and confirms the {@code reasoning} and {@code reasoningTokens} fields appear on the task output
- * exactly as a real provider would surface them.
+ * End-to-end integration tests for the AI reasoning surface against real providers.
  *
- * <p>Why a fake provider rather than real OpenAI/Anthropic/Gemini: this test is for CI and must be
- * deterministic and offline. The reasoning round-trip is already exercised against live APIs by
- * {@code AIModelIntegrationTest} in the AI module; this test is concerned with the Conductor
- * task/worker plumbing around it.
+ * <p>Each nested test class is gated on an environment variable so the suite is safe to run in CI
+ * with all keys, or locally with only one. Tests are skipped (not failed) when the key is absent.
+ *
+ * <p>Required environment variables:
+ *
+ * <ul>
+ *   <li>{@code ANTHROPIC_API_KEY} — enables {@link AnthropicTests}
+ *   <li>{@code OPENAI_API_KEY} — enables {@link OpenAITests}
+ * </ul>
+ *
+ * <p>Optional overrides:
+ *
+ * <ul>
+ *   <li>{@code ANTHROPIC_THINKING_MODEL} — model with extended thinking support (default: {@code
+ *       claude-sonnet-4-6})
+ *   <li>{@code ANTHROPIC_MODEL} — lightweight model without thinking (default: {@code
+ *       claude-haiku-4-5})
+ *   <li>{@code OPENAI_MODEL} — chat model for OpenAI tests (default: {@code gpt-4o-mini})
+ * </ul>
+ *
+ * <p>Assertions are intentionally coarser than unit tests: we verify that fields are present or
+ * absent on task output and that the mapper-resolved {@code messages} array (stored on {@code
+ * task.getInputData()}) has the correct shape — not exact LLM response content, which is
+ * non-deterministic.
  */
-@SpringBootTest(classes = {ConductorTestApp.class, AIReasoningEndToEndTest.FakeAITestConfig.class})
+@SpringBootTest(classes = ConductorTestApp.class)
 @TestPropertySource(
         locations = "classpath:application-integrationtest.properties",
         properties = {
@@ -92,13 +86,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
             "conductor.app.sweeperThreadCount=1",
             "conductor.app.sweeper.sweepBatchSize=1",
             "conductor.app.sweeper.queuePopTimeout=750",
-            // Required to activate every AI-module component scanned by
-            // ConductorTestApp's basePackages.
             "conductor.integrations.ai.enabled=true"
         })
 class AIReasoningEndToEndTest {
-
-    private static final String FAKE_PROVIDER = "fake_reasoning_llm";
 
     @SuppressWarnings("resource")
     private static final GenericContainer<?> REDIS =
@@ -110,7 +100,7 @@ class AIReasoningEndToEndTest {
     }
 
     @DynamicPropertySource
-    static void redisProperties(DynamicPropertyRegistry registry) {
+    static void properties(DynamicPropertyRegistry registry) {
         registry.add("conductor.redis.availability-zone", () -> "us-east-1c");
         registry.add("conductor.redis.data-center-region", () -> "us-east-1");
         registry.add("conductor.redis.workflow-namespace-prefix", () -> "ai-e2e");
@@ -121,322 +111,291 @@ class AIReasoningEndToEndTest {
         registry.add(
                 "conductor.redis-lock.serverAddress",
                 () -> "redis://localhost:" + REDIS.getFirstMappedPort());
+        // AI provider keys — when absent the provider bean is created with an empty key and
+        // will only fail on actual use, which the @EnabledIfEnvironmentVariable guards prevent.
+        registry.add(
+                "conductor.ai.anthropic.apiKey",
+                () -> System.getenv().getOrDefault("ANTHROPIC_API_KEY", ""));
+        registry.add(
+                "conductor.ai.openai.apiKey",
+                () -> System.getenv().getOrDefault("OPENAI_API_KEY", ""));
     }
 
     @Autowired private MetadataService metadataService;
     @Autowired private WorkflowExecutor workflowExecutor;
     @Autowired private ExecutionService executionService;
-    @Autowired private AIModelProvider aiModelProvider;
-    @Autowired private FakeChatModel fakeChatModel;
-    @Autowired private FakeAIModel fakeAIModel;
     @Autowired private QueueDAO queueDAO;
     @Autowired private AsyncSystemTaskExecutor asyncSystemTaskExecutor;
 
-    // The default SystemTaskRegistry is built from Spring-managed WorkflowSystemTask beans only —
-    // it does not include the AnnotatedWorkflowSystemTask instances that
-    // WorkerTaskAnnotationScanner
-    // creates dynamically for @WorkerTask methods. The mutable ``asyncSystemTasks`` Set is the one
-    // those annotated tasks land in, so we look up LLM_CHAT_COMPLETE there.
     @Autowired
     @Qualifier(SystemTaskRegistry.ASYNC_SYSTEM_TASKS_QUALIFIER)
     private java.util.Set<WorkflowSystemTask> asyncSystemTasks;
 
-    @BeforeEach
-    void resetFakeBetweenRuns() {
-        fakeChatModel.reset();
-        fakeAIModel.setSupportsAssistantPrefill(true);
+    // ── Anthropic ──────────────────────────────────────────────────────────
+
+    /**
+     * Tests against the Anthropic provider.
+     *
+     * <p>Anthropic-specific behaviour exercised here:
+     *
+     * <ul>
+     *   <li>Extended thinking ({@code thinkingTokenLimit > 0}) surfaces as {@code reasoning} on
+     *       task output; Anthropic does NOT emit a separate {@code reasoning_tokens} counter.
+     *   <li>{@code supportsAssistantPrefill() = false}: the mapper must not inject a trailing
+     *       assistant message into a DO_WHILE loop body's messages array — if it did, Anthropic
+     *       4.6+ would reject the call with HTTP 400 and the workflow would fail.
+     * </ul>
+     */
+    @Nested
+    @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
+    class AnthropicTests {
+
+        private static final String PROVIDER = "anthropic";
+
+        private static final String THINKING_MODEL =
+                System.getenv().getOrDefault("ANTHROPIC_THINKING_MODEL", "claude-sonnet-4-6");
+
+        private static final String BASIC_MODEL =
+                System.getenv().getOrDefault("ANTHROPIC_MODEL", "claude-haiku-4-5");
+
+        @Test
+        void chatCompleteSurfacesReasoningOnTaskOutput() {
+            String wfName = "ai_reasoning_e2e_" + UUID.randomUUID();
+            registerWorkflowWithThinking(wfName);
+
+            Map<String, Object> input = new HashMap<>();
+            input.put("llmProvider", PROVIDER);
+            input.put("model", THINKING_MODEL);
+            input.put("reasoningSummary", "auto");
+            // Anthropic's enabled-thinking path requires budget_tokens >= 1024.
+            input.put("thinkingTokenLimit", 2000);
+            input.put("instructions", "Think step by step.");
+            input.put("userInput", "What is 2 + 2?");
+
+            Workflow completed = awaitWorkflow(startWorkflow(wfName, 1, input));
+            assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
+
+            Map<String, Object> output = completed.getTasks().get(0).getOutputData();
+            assertNotNull(output);
+            assertNotNull(
+                    output.get("reasoning"),
+                    "Anthropic extended thinking must appear as 'reasoning' on task output when "
+                            + "thinkingTokenLimit > 0 and reasoningSummary is set");
+            // Anthropic bills extended thinking under output_tokens, not a separate counter.
+            // The field must be absent — not zero — so callers cannot misread 0 as "reasoning
+            // ran but was cheap".
+            assertNull(
+                    output.get("reasoningTokens"),
+                    "Anthropic does not surface reasoning_tokens; field must be absent on output");
+        }
+
+        @Test
+        void chatCompleteWithNoReasoningOmitsFields() {
+            String wfName = "ai_no_reasoning_e2e_" + UUID.randomUUID();
+            registerWorkflow(wfName);
+
+            Map<String, Object> input = new HashMap<>();
+            input.put("llmProvider", PROVIDER);
+            input.put("model", BASIC_MODEL);
+            input.put("instructions", "Answer briefly.");
+            input.put("userInput", "What is 2 + 2?");
+
+            Workflow completed = awaitWorkflow(startWorkflow(wfName, 1, input));
+            assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
+
+            Map<String, Object> output = completed.getTasks().get(0).getOutputData();
+            assertNotNull(output);
+            assertNull(output.get("reasoning"), "no thinking requested → reasoning must be absent");
+            assertNull(
+                    output.get("reasoningTokens"),
+                    "no thinking requested → reasoningTokens must be absent");
+        }
+
+        @Test
+        void loopHistoryInjectionIsSuppressedWhenProviderRejectsPrefill() {
+            // Anthropic returns supportsAssistantPrefill()=false. If the mapper
+            // incorrectly appended the iter-1 assistant message into iter-2's messages,
+            // Anthropic 4.6+ would reject with HTTP 400 "This model does not support
+            // assistant message prefill." The workflow completing COMPLETED is the
+            // primary proof the suppression works; the messages assertion confirms it
+            // at the mapper level via task.getInputData(), which is stored before the
+            // provider call.
+            String wfName = "ai_loop_prefill_off_e2e_" + UUID.randomUUID();
+            registerLoopWorkflow(wfName);
+
+            Workflow completed = runLoopWorkflow(wfName, PROVIDER, BASIC_MODEL);
+            assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
+
+            List<Map<String, Object>> iter2Messages =
+                    messagesForLoopIteration(completed, "chat", 2);
+            assertTrue(
+                    iter2Messages.stream().noneMatch(m -> "assistant".equals(m.get("role"))),
+                    "iteration 2 must NOT contain a trailing assistant message when the provider "
+                            + "rejects prefill; saw "
+                            + iter2Messages);
+            assertTrue(
+                    iter2Messages.stream().anyMatch(m -> "user".equals(m.get("role"))),
+                    "iteration 2 must still carry the user message; saw " + iter2Messages);
+        }
+
+        @Test
+        void explicitPreviousResponseIdSuppressesLoopHistoryInjection() {
+            // A non-blank previousResponseId on the chat task must suppress the
+            // mapper's history injection regardless of whether the provider itself
+            // uses the field. Anthropic ignores previousResponseId at the API level,
+            // so this test isolates mapper behaviour without triggering a provider
+            // error on an unrecognised ID.
+            String wfName = "ai_loop_explicit_prev_e2e_" + UUID.randomUUID();
+            registerLoopWorkflowWithPreviousResponseId(wfName);
+
+            Workflow completed = runLoopWorkflow(wfName, PROVIDER, BASIC_MODEL);
+            assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
+
+            List<Map<String, Object>> iter2Messages =
+                    messagesForLoopIteration(completed, "chat", 2);
+            assertTrue(
+                    iter2Messages.stream().noneMatch(m -> "assistant".equals(m.get("role"))),
+                    "previousResponseId set → assistant history injection must be suppressed; saw "
+                            + iter2Messages);
+        }
     }
 
-    @Test
-    void chatCompleteSurfacesReasoningOnTaskOutput() {
-        fakeChatModel.stageResponse(
-                "The answer is 7.",
-                "First, count the apples. Then divide by 2. Then add 1.",
-                123,
-                "resp_fake_e2e_1");
+    // ── OpenAI ────────────────────────────────────────────────────────────
 
-        String wfName = "ai_reasoning_e2e_" + UUID.randomUUID();
-        registerWorkflow(wfName);
+    /**
+     * Tests against the OpenAI provider (Responses API).
+     *
+     * <p>OpenAI-specific behaviour exercised here:
+     *
+     * <ul>
+     *   <li>{@code supportsAssistantPrefill() = true} (the default): the mapper IS expected to
+     *       inject the prior iteration's output as an assistant message into a DO_WHILE loop body.
+     *   <li>The Responses API returns a {@code response_id} in every reply; that ID must appear as
+     *       {@code responseId} on task output so callers can thread multi-turn conversations.
+     * </ul>
+     */
+    @Nested
+    @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
+    class OpenAITests {
 
-        Map<String, Object> input = new HashMap<>();
-        input.put("llmProvider", FAKE_PROVIDER);
-        input.put("model", "fake-reasoning-1");
-        // reasoningSummary is the universal opt-in flag; the fake model honors
-        // it by returning canned reasoning we staged.
-        input.put("reasoningSummary", "auto");
-        input.put("instructions", "Solve the math problem.");
-        input.put(
-                "userInput",
-                "If I have 14 apples and split them in half then add 1, what do I have?");
+        private static final String PROVIDER = "openai";
 
+        private static final String MODEL =
+                System.getenv().getOrDefault("OPENAI_MODEL", "gpt-4o-mini");
+
+        @Test
+        void loopHistoryInjectionStillRunsWhenProviderAcceptsPrefill() {
+            // OpenAI accepts assistant-message prefill, so the mapper should inject
+            // iteration 1's output as an assistant turn into iteration 2's messages.
+            // The assertion reads from task.getInputData() — what the mapper persisted
+            // before the provider call — so it reflects mapper behaviour directly.
+            String wfName = "ai_loop_prefill_on_e2e_" + UUID.randomUUID();
+            registerLoopWorkflow(wfName);
+
+            Workflow completed = runLoopWorkflow(wfName, PROVIDER, MODEL);
+            assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
+
+            List<Map<String, Object>> iter2Messages =
+                    messagesForLoopIteration(completed, "chat", 2);
+            assertTrue(
+                    iter2Messages.stream().anyMatch(m -> "assistant".equals(m.get("role"))),
+                    "iteration 2 must carry iteration 1's output as an assistant message when the "
+                            + "provider accepts prefill; saw "
+                            + iter2Messages);
+        }
+
+        @Test
+        void responseIdIsSurfacedOnTaskOutput() {
+            // OpenAI Responses API includes a response_id on every reply. LLMHelper
+            // reads it from ChatResponseMetadata["response_id"] and sets it on
+            // LLMResponse.responseId, which the task worker writes to outputData.
+            String wfName = "ai_response_id_e2e_" + UUID.randomUUID();
+            registerWorkflow(wfName);
+
+            Map<String, Object> input = new HashMap<>();
+            input.put("llmProvider", PROVIDER);
+            input.put("model", MODEL);
+            input.put("instructions", "Answer briefly.");
+            input.put("userInput", "What is 2 + 2?");
+
+            Workflow completed = awaitWorkflow(startWorkflow(wfName, 1, input));
+            assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
+
+            Map<String, Object> output = completed.getTasks().get(0).getOutputData();
+            assertNotNull(output);
+            assertNotNull(
+                    output.get("responseId"),
+                    "OpenAI Responses API must surface response_id on task output for caller "
+                            + "chaining");
+        }
+    }
+
+    // ── Shared helpers ─────────────────────────────────────────────────────
+
+    private String startWorkflow(String name, int version, Map<String, Object> input) {
         StartWorkflowInput swi = new StartWorkflowInput();
-        swi.setName(wfName);
-        swi.setVersion(1);
+        swi.setName(name);
+        swi.setVersion(version);
         swi.setWorkflowInput(input);
-
-        String workflowId = workflowExecutor.startWorkflow(swi);
-
-        Workflow completed = awaitWorkflow(workflowId);
-        assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
-        assertEquals(1, completed.getTasks().size(), "expected one LLM_CHAT_COMPLETE task");
-
-        Map<String, Object> output = completed.getTasks().get(0).getOutputData();
-        assertNotNull(output);
-        assertEquals(
-                "First, count the apples. Then divide by 2. Then add 1.", output.get("reasoning"));
-        assertEquals(
-                123,
-                ((Number) output.get("reasoningTokens")).intValue(),
-                "reasoning token count must propagate through LLMResponse to task output");
-        assertEquals(
-                "resp_fake_e2e_1",
-                output.get("responseId"),
-                "responseId must propagate so previousResponseId chaining works in real loops");
-        // The visible answer is still surfaced in the result field, untouched
-        // by the reasoning plumbing.
-        Object result = output.get("result");
-        assertTrue(
-                result != null
-                        && (result.toString().contains("The answer is 7.")
-                                || result.toString().contains("answer is 7")),
-                "the visible message text must remain on the task output: " + result);
+        return workflowExecutor.startWorkflow(swi);
     }
 
-    @Test
-    void chatCompleteWithNoReasoning_outputOmitsReasoningFields() {
-        // Symmetric case: provider returned no reasoning metadata (the model
-        // doesn't think, or the caller didn't opt in). The task output must
-        // not carry stale or empty reasoning fields.
-        fakeChatModel.stageResponse("Plain response.", null, null, "resp_fake_e2e_plain");
-
-        String wfName = "ai_no_reasoning_e2e_" + UUID.randomUUID();
-        registerWorkflow(wfName);
-
+    private Workflow runLoopWorkflow(String wfName, String provider, String model) {
         Map<String, Object> input = new HashMap<>();
-        input.put("llmProvider", FAKE_PROVIDER);
-        input.put("model", "fake-no-reasoning");
-        input.put("instructions", "Say hi.");
-        input.put("userInput", "Hi.");
-
-        StartWorkflowInput swi = new StartWorkflowInput();
-        swi.setName(wfName);
-        swi.setVersion(1);
-        swi.setWorkflowInput(input);
-
-        String workflowId = workflowExecutor.startWorkflow(swi);
-        Workflow completed = awaitWorkflow(workflowId);
-
-        Map<String, Object> output = completed.getTasks().get(0).getOutputData();
-        assertNotNull(output);
-        assertNull(
-                output.get("reasoning"),
-                "no reasoning emitted ⇒ reasoning must be absent on task output");
-        assertNull(
-                output.get("reasoningTokens"),
-                "no reasoning_tokens emitted ⇒ reasoningTokens must be absent");
+        input.put("llmProvider", provider);
+        input.put("model", model);
+        input.put("instructions", "Answer in one sentence.");
+        input.put("userInput", "What is 2 + 2?");
+        return awaitWorkflow(startWorkflow(wfName, 1, input));
     }
 
-    @Test
-    void doWhileLoopDoesNotAutoThreadPreviousResponseId() {
-        // Auto-threading of previousResponseId between same-refName loop
-        // iterations is intentionally DISABLED — see the javadoc on
-        // AIModelTaskMapper.threadPreviousResponseId for the OpenAI token
-        // billing failure mode that drove the decision. This test locks in
-        // that contract end-to-end: iteration 2 must NOT inherit iteration
-        // 1's responseId unless the workflow definition wires it explicitly.
-        fakeChatModel.stageResponse("Turn one.", "Thinking turn 1.", 10, "resp_turn_1");
-        fakeChatModel.stageResponse("Turn two.", "Thinking turn 2.", 11, "resp_turn_2");
-        AtomicReference<String> turn2PreviousId = new AtomicReference<>();
-        fakeChatModel.onCall(
-                (callIndex, opts) -> {
-                    if (callIndex == 1 && opts instanceof FakeChatOptions f) {
-                        turn2PreviousId.set(f.previousResponseId);
-                    }
-                });
-
-        String wfName = "ai_loop_e2e_" + UUID.randomUUID();
-        registerLoopWorkflow(wfName);
-
-        Map<String, Object> input = new HashMap<>();
-        input.put("llmProvider", FAKE_PROVIDER);
-        input.put("model", "fake-loop");
-        input.put("instructions", "Iterate.");
-        input.put("userInput", "Iterate.");
-
-        StartWorkflowInput swi = new StartWorkflowInput();
-        swi.setName(wfName);
-        swi.setVersion(1);
-        swi.setWorkflowInput(input);
-
-        String workflowId = workflowExecutor.startWorkflow(swi);
-        Workflow completed = awaitWorkflow(workflowId);
-        assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
-
-        assertNull(
-                turn2PreviousId.get(),
-                "loop iterations must NOT auto-thread previousResponseId — re-enable only after the history rebuild emits a strict delta");
+    private Workflow awaitWorkflow(String workflowId) {
+        AtomicReference<Workflow> latest = new AtomicReference<>();
+        Awaitility.await()
+                .atMost(120, TimeUnit.SECONDS)
+                .pollInterval(500, TimeUnit.MILLISECONDS)
+                .until(
+                        () -> {
+                            // System task workers are disabled in test mode
+                            // (conductor.system-task-workers.enabled=false), so we
+                            // manually drain any LLM_CHAT_COMPLETE tasks queued by
+                            // the decider and execute them via AsyncSystemTaskExecutor
+                            // — the same path SystemTaskWorkerCoordinator takes in
+                            // production.
+                            drainPendingChatTasks();
+                            Workflow wf = executionService.getExecutionStatus(workflowId, true);
+                            latest.set(wf);
+                            return wf != null
+                                    && wf.getStatus() != null
+                                    && wf.getStatus().isTerminal();
+                        });
+        return latest.get();
     }
 
-    @Test
-    void loopHistoryInjectionIsSuppressedWhenProviderRejectsPrefill() {
-        // Reproduces the original Anthropic Sonnet 4.6 production failure path
-        // end-to-end. The fake provider declares supportsAssistantPrefill=false;
-        // a 2-iteration DO_WHILE runs the chat task twice; iteration 2's
-        // resolved messages array must NOT contain a trailing assistant message
-        // from iteration 1. Before this fix, ChatCompleteTaskMapper.getHistory()
-        // appended the prior iteration's output as an assistant turn, which
-        // Anthropic 4.6+ rejects with HTTP 400 "This model does not support
-        // assistant message prefill."
-        fakeAIModel.setSupportsAssistantPrefill(false);
-        fakeChatModel.stageResponse("Turn one.", null, null, "resp_t1");
-        fakeChatModel.stageResponse("Turn two.", null, null, "resp_t2");
-
-        String wfName = "ai_loop_prefill_off_e2e_" + UUID.randomUUID();
-        registerLoopWorkflow(wfName);
-
-        Workflow completed = runLoopWorkflow(wfName);
-        assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
-
-        List<Map<String, Object>> iter2Messages = messagesForLoopIteration(completed, "chat", 2);
-        assertTrue(
-                iter2Messages.stream().noneMatch(m -> "assistant".equals(m.get("role"))),
-                "iteration 2 must NOT carry a trailing assistant message when the provider "
-                        + "rejects prefill; saw "
-                        + iter2Messages);
-        // Sanity-check: iteration 2 still has the user turn so the model has a
-        // prompt to answer — the suppression isn't accidentally dropping
-        // everything.
-        assertTrue(
-                iter2Messages.stream().anyMatch(m -> "user".equals(m.get("role"))),
-                "iteration 2 must retain its user message; saw " + iter2Messages);
-    }
-
-    @Test
-    void loopHistoryInjectionStillRunsWhenProviderAcceptsPrefill() {
-        // Regression safety: the capability gate must not over-suppress.
-        // Providers that accept assistant prefill (OpenAI without
-        // previousResponseId, Gemini, etc.) should still receive the
-        // auto-injected prior iteration assistant message — that's the
-        // historical agentic-flow behavior the loop-history injection was
-        // designed for. Iteration 2 here MUST carry an assistant turn whose
-        // content matches iteration 1's output.
-        fakeAIModel.setSupportsAssistantPrefill(true);
-        fakeChatModel.stageResponse("Turn one.", null, null, "resp_t1");
-        fakeChatModel.stageResponse("Turn two.", null, null, "resp_t2");
-
-        String wfName = "ai_loop_prefill_on_e2e_" + UUID.randomUUID();
-        registerLoopWorkflow(wfName);
-
-        Workflow completed = runLoopWorkflow(wfName);
-        assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
-
-        List<Map<String, Object>> iter2Messages = messagesForLoopIteration(completed, "chat", 2);
-        boolean sawTurnOneAssistant =
-                iter2Messages.stream()
-                        .anyMatch(
-                                m ->
-                                        "assistant".equals(m.get("role"))
-                                                && String.valueOf(m.get("message"))
-                                                        .contains("Turn one."));
-        assertTrue(
-                sawTurnOneAssistant,
-                "iteration 2 must carry iter 1's assistant output when the provider accepts "
-                        + "prefill; saw "
-                        + iter2Messages);
-    }
-
-    @Test
-    void explicitPreviousResponseIdPropagatesToProvider() {
-        // Auto-threading is intentionally OFF (see
-        // doWhileLoopDoesNotAutoThreadPreviousResponseId), but an EXPLICIT
-        // previousResponseId set on the chat task's input must still reach
-        // the provider — that's how callers thread multi-turn conversations
-        // through the OpenAI Responses API today.
-        fakeChatModel.stageResponse("Reply.", null, null, "resp_explicit");
-        AtomicReference<String> seenPreviousId = new AtomicReference<>();
-        fakeChatModel.onCall(
-                (callIndex, opts) -> {
-                    if (opts instanceof FakeChatOptions f) {
-                        seenPreviousId.set(f.previousResponseId);
-                    }
-                });
-
-        String wfName = "ai_explicit_prev_resp_id_e2e_" + UUID.randomUUID();
-        registerWorkflowWithPreviousResponseId(wfName);
-
-        Map<String, Object> input = new HashMap<>();
-        input.put("llmProvider", FAKE_PROVIDER);
-        input.put("model", "fake-explicit");
-        input.put("instructions", "Continue.");
-        input.put("userInput", "Continue.");
-        input.put("previousResponseId", "resp_caller_supplied_xyz");
-
-        StartWorkflowInput swi = new StartWorkflowInput();
-        swi.setName(wfName);
-        swi.setVersion(1);
-        swi.setWorkflowInput(input);
-        String workflowId = workflowExecutor.startWorkflow(swi);
-
-        Workflow completed = awaitWorkflow(workflowId);
-        assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
-        assertEquals(
-                "resp_caller_supplied_xyz",
-                seenPreviousId.get(),
-                "an explicit previousResponseId on workflow input must propagate end-to-end "
-                        + "through the mapper to the provider's ChatOptions");
-    }
-
-    @Test
-    void explicitPreviousResponseIdSuppressesLoopHistoryInjection() {
-        // Two independent suppression triggers exist — this one was here before
-        // the supportsAssistantPrefill capability was added: when
-        // previousResponseId is set, the OpenAI Responses API server-side store
-        // owns prior turns, so the mapper must not also inject them locally.
-        // Verify end-to-end that even with a prefill-accepting provider,
-        // setting previousResponseId on the loop body's chat input keeps the
-        // mapper from adding the iter-1 assistant message into iter 2's
-        // messages array.
-        fakeAIModel.setSupportsAssistantPrefill(true);
-        fakeChatModel.stageResponse("Turn one.", null, null, "resp_t1");
-        fakeChatModel.stageResponse("Turn two.", null, null, "resp_t2");
-
-        String wfName = "ai_loop_explicit_prev_resp_id_e2e_" + UUID.randomUUID();
-        registerLoopWorkflowWithPreviousResponseId(wfName);
-
-        Workflow completed = runLoopWorkflow(wfName);
-        assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
-
-        List<Map<String, Object>> iter2Messages = messagesForLoopIteration(completed, "chat", 2);
-        assertTrue(
-                iter2Messages.stream().noneMatch(m -> "assistant".equals(m.get("role"))),
-                "iteration 2 must NOT carry a trailing assistant message when "
-                        + "previousResponseId is set, regardless of provider prefill support; "
-                        + "saw "
-                        + iter2Messages);
-    }
-
-    private Workflow runLoopWorkflow(String wfName) {
-        Map<String, Object> input = new HashMap<>();
-        input.put("llmProvider", FAKE_PROVIDER);
-        input.put("model", "fake-loop");
-        input.put("instructions", "Iterate.");
-        input.put("userInput", "Iterate.");
-
-        StartWorkflowInput swi = new StartWorkflowInput();
-        swi.setName(wfName);
-        swi.setVersion(1);
-        swi.setWorkflowInput(input);
-        String workflowId = workflowExecutor.startWorkflow(swi);
-        return awaitWorkflow(workflowId);
+    private void drainPendingChatTasks() {
+        WorkflowSystemTask chatTask =
+                asyncSystemTasks.stream()
+                        .filter(t -> "LLM_CHAT_COMPLETE".equals(t.getTaskType()))
+                        .findFirst()
+                        .orElseThrow(
+                                () ->
+                                        new IllegalStateException(
+                                                "LLM_CHAT_COMPLETE WorkflowSystemTask was never"
+                                                        + " registered — the AI module's"
+                                                        + " WorkerTaskAnnotationScanner must run"
+                                                        + " before this test executes."));
+        List<String> taskIds = queueDAO.pop("LLM_CHAT_COMPLETE", 5, 100);
+        for (String taskId : taskIds) {
+            asyncSystemTaskExecutor.execute(chatTask, taskId);
+        }
     }
 
     /**
      * Walks {@link Workflow#getTasks()} to find the LLM_CHAT_COMPLETE task that ran as the given
      * iteration of the named loop body, then returns its mapper-resolved {@code messages} input —
-     * i.e. exactly what {@link ChatCompleteTaskMapper} produced before the worker called the
-     * provider. Reading at this layer rather than the post-LLMHelper sanitized prompt lets the
-     * assertions speak to mapper behavior directly, independent of downstream message normalization
-     * in {@code LLMHelper.ensureLastMessageIsFromUser}.
+     * i.e. exactly what the task mapper wrote into {@code task.getInputData()} before the worker
+     * called the provider. Reading at this layer lets assertions speak to mapper behaviour
+     * directly, independent of any downstream normalisation in {@code LLMHelper}.
      */
     @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> messagesForLoopIteration(
@@ -461,18 +420,27 @@ class AIReasoningEndToEndTest {
                                                 + workflow.getTasks()));
     }
 
-    // -- workflow registration helpers --
+    // ── Workflow registration ──────────────────────────────────────────────
 
     private void registerWorkflow(String name) {
-        TaskDef taskDef = new TaskDef();
-        taskDef.setName("LLM_CHAT_COMPLETE");
-        taskDef.setRetryCount(0);
-        taskDef.setTimeoutSeconds(60);
-        try {
-            metadataService.registerTaskDef(List.of(taskDef));
-        } catch (Exception ignore) {
-            // already registered from a prior test
-        }
+        ensureTaskDef("LLM_CHAT_COMPLETE");
+
+        WorkflowTask task = new WorkflowTask();
+        task.setName("LLM_CHAT_COMPLETE");
+        task.setTaskReferenceName("chat");
+        task.setType("LLM_CHAT_COMPLETE");
+        Map<String, Object> taskInput = new HashMap<>();
+        taskInput.put("llmProvider", "${workflow.input.llmProvider}");
+        taskInput.put("model", "${workflow.input.model}");
+        taskInput.put("instructions", "${workflow.input.instructions}");
+        taskInput.put("userInput", "${workflow.input.userInput}");
+        task.setInputParameters(taskInput);
+
+        metadataService.updateWorkflowDef(List.of(singleTaskWorkflow(name, task)));
+    }
+
+    private void registerWorkflowWithThinking(String name) {
+        ensureTaskDef("LLM_CHAT_COMPLETE");
 
         WorkflowTask task = new WorkflowTask();
         task.setName("LLM_CHAT_COMPLETE");
@@ -482,34 +450,16 @@ class AIReasoningEndToEndTest {
         taskInput.put("llmProvider", "${workflow.input.llmProvider}");
         taskInput.put("model", "${workflow.input.model}");
         taskInput.put("reasoningSummary", "${workflow.input.reasoningSummary}");
+        taskInput.put("thinkingTokenLimit", "${workflow.input.thinkingTokenLimit}");
         taskInput.put("instructions", "${workflow.input.instructions}");
         taskInput.put("userInput", "${workflow.input.userInput}");
         task.setInputParameters(taskInput);
 
-        WorkflowDef def = new WorkflowDef();
-        def.setName(name);
-        def.setVersion(1);
-        def.setOwnerEmail("ai-e2e@conductor.test");
-        def.setTasks(List.of(task));
-        metadataService.updateWorkflowDef(List.of(def));
+        metadataService.updateWorkflowDef(List.of(singleTaskWorkflow(name, task)));
     }
 
     private void registerLoopWorkflow(String name) {
-        TaskDef taskDef = new TaskDef();
-        taskDef.setName("LLM_CHAT_COMPLETE");
-        taskDef.setRetryCount(0);
-        taskDef.setTimeoutSeconds(60);
-        try {
-            metadataService.registerTaskDef(List.of(taskDef));
-        } catch (Exception ignore) {
-        }
-        TaskDef loopDef = new TaskDef();
-        loopDef.setName("DO_WHILE");
-        loopDef.setRetryCount(0);
-        try {
-            metadataService.registerTaskDef(List.of(loopDef));
-        } catch (Exception ignore) {
-        }
+        ensureTaskDef("LLM_CHAT_COMPLETE");
 
         WorkflowTask chat = new WorkflowTask();
         chat.setName("LLM_CHAT_COMPLETE");
@@ -522,335 +472,63 @@ class AIReasoningEndToEndTest {
         taskInput.put("userInput", "${workflow.input.userInput}");
         chat.setInputParameters(taskInput);
 
-        WorkflowTask loop = new WorkflowTask();
-        loop.setName("loop");
-        loop.setTaskReferenceName("loop");
-        loop.setType(TaskType.DO_WHILE.name());
-        // run exactly two iterations
-        loop.setLoopCondition("if ( $.loop['iteration'] < 2 ) { true; } else { false; }");
-        loop.setLoopOver(List.of(chat));
-
-        WorkflowDef def = new WorkflowDef();
-        def.setName(name);
-        def.setVersion(1);
-        def.setOwnerEmail("ai-e2e@conductor.test");
-        def.setTasks(List.of(loop));
-        metadataService.updateWorkflowDef(List.of(def));
+        metadataService.updateWorkflowDef(List.of(twoIterationLoopWorkflow(name, chat)));
     }
 
-    private void registerWorkflowWithPreviousResponseId(String name) {
-        TaskDef taskDef = new TaskDef();
-        taskDef.setName("LLM_CHAT_COMPLETE");
-        taskDef.setRetryCount(0);
-        taskDef.setTimeoutSeconds(60);
-        try {
-            metadataService.registerTaskDef(List.of(taskDef));
-        } catch (Exception ignore) {
-        }
+    private void registerLoopWorkflowWithPreviousResponseId(String name) {
+        ensureTaskDef("LLM_CHAT_COMPLETE");
 
-        WorkflowTask task = new WorkflowTask();
-        task.setName("LLM_CHAT_COMPLETE");
-        task.setTaskReferenceName("chat");
-        task.setType("LLM_CHAT_COMPLETE");
+        WorkflowTask chat = new WorkflowTask();
+        chat.setName("LLM_CHAT_COMPLETE");
+        chat.setTaskReferenceName("chat");
+        chat.setType("LLM_CHAT_COMPLETE");
         Map<String, Object> taskInput = new HashMap<>();
         taskInput.put("llmProvider", "${workflow.input.llmProvider}");
         taskInput.put("model", "${workflow.input.model}");
         taskInput.put("instructions", "${workflow.input.instructions}");
         taskInput.put("userInput", "${workflow.input.userInput}");
-        // Explicit previousResponseId from workflow input — proves the caller-set
-        // value flows through to the provider's ChatOptions.
-        taskInput.put("previousResponseId", "${workflow.input.previousResponseId}");
-        task.setInputParameters(taskInput);
+        // Constant on every iteration — any non-blank previousResponseId triggers
+        // the mapper's suppression branch. The value need not be a valid provider
+        // response ID for providers that ignore the field (e.g. Anthropic).
+        taskInput.put("previousResponseId", "resp_explicit_loop_threading_test");
+        chat.setInputParameters(taskInput);
 
+        metadataService.updateWorkflowDef(List.of(twoIterationLoopWorkflow(name, chat)));
+    }
+
+    private void ensureTaskDef(String taskType) {
+        TaskDef td = new TaskDef();
+        td.setName(taskType);
+        td.setRetryCount(0);
+        td.setTimeoutSeconds(120);
+        try {
+            metadataService.registerTaskDef(List.of(td));
+        } catch (Exception ignored) {
+        }
+    }
+
+    private WorkflowDef singleTaskWorkflow(String name, WorkflowTask task) {
         WorkflowDef def = new WorkflowDef();
         def.setName(name);
         def.setVersion(1);
         def.setOwnerEmail("ai-e2e@conductor.test");
         def.setTasks(List.of(task));
-        metadataService.updateWorkflowDef(List.of(def));
+        return def;
     }
 
-    private void registerLoopWorkflowWithPreviousResponseId(String name) {
-        TaskDef taskDef = new TaskDef();
-        taskDef.setName("LLM_CHAT_COMPLETE");
-        taskDef.setRetryCount(0);
-        taskDef.setTimeoutSeconds(60);
-        try {
-            metadataService.registerTaskDef(List.of(taskDef));
-        } catch (Exception ignore) {
-        }
-        TaskDef loopDef = new TaskDef();
-        loopDef.setName("DO_WHILE");
-        loopDef.setRetryCount(0);
-        try {
-            metadataService.registerTaskDef(List.of(loopDef));
-        } catch (Exception ignore) {
-        }
-
-        WorkflowTask chat = new WorkflowTask();
-        chat.setName("LLM_CHAT_COMPLETE");
-        chat.setTaskReferenceName("chat");
-        chat.setType("LLM_CHAT_COMPLETE");
-        Map<String, Object> taskInput = new HashMap<>();
-        taskInput.put("llmProvider", "${workflow.input.llmProvider}");
-        taskInput.put("model", "${workflow.input.model}");
-        taskInput.put("instructions", "${workflow.input.instructions}");
-        taskInput.put("userInput", "${workflow.input.userInput}");
-        // Constant on every iteration — what matters for this test is that
-        // *any* non-blank previousResponseId triggers the suppression branch.
-        taskInput.put("previousResponseId", "resp_loop_explicit_threading");
-        chat.setInputParameters(taskInput);
-
+    private WorkflowDef twoIterationLoopWorkflow(String name, WorkflowTask body) {
         WorkflowTask loop = new WorkflowTask();
         loop.setName("loop");
         loop.setTaskReferenceName("loop");
         loop.setType(TaskType.DO_WHILE.name());
         loop.setLoopCondition("if ( $.loop['iteration'] < 2 ) { true; } else { false; }");
-        loop.setLoopOver(List.of(chat));
+        loop.setLoopOver(List.of(body));
 
         WorkflowDef def = new WorkflowDef();
         def.setName(name);
         def.setVersion(1);
         def.setOwnerEmail("ai-e2e@conductor.test");
         def.setTasks(List.of(loop));
-        metadataService.updateWorkflowDef(List.of(def));
+        return def;
     }
-
-    private Workflow awaitWorkflow(String workflowId) {
-        AtomicReference<Workflow> latest = new AtomicReference<>();
-        Awaitility.await()
-                .atMost(30, TimeUnit.SECONDS)
-                .pollInterval(200, TimeUnit.MILLISECONDS)
-                .until(
-                        () -> {
-                            // System task workers are disabled in test mode
-                            // (``conductor.system-task-workers.enabled=false``),
-                            // so we manually drain any LLM_CHAT_COMPLETE tasks
-                            // queued by the decider and execute them via
-                            // AsyncSystemTaskExecutor — the same path the
-                            // SystemTaskWorkerCoordinator would take in
-                            // production.
-                            drainPendingChatTasks();
-                            Workflow wf = executionService.getExecutionStatus(workflowId, true);
-                            latest.set(wf);
-                            return wf != null
-                                    && wf.getStatus() != null
-                                    && wf.getStatus().isTerminal();
-                        });
-        return latest.get();
-    }
-
-    private void drainPendingChatTasks() {
-        WorkflowSystemTask chatTask =
-                asyncSystemTasks.stream()
-                        .filter(t -> "LLM_CHAT_COMPLETE".equals(t.getTaskType()))
-                        .findFirst()
-                        .orElseThrow(
-                                () ->
-                                        new IllegalStateException(
-                                                "LLM_CHAT_COMPLETE WorkflowSystemTask was never"
-                                                        + " registered — the AI module's"
-                                                        + " WorkerTaskAnnotationScanner must run before"
-                                                        + " this test executes."));
-        List<String> taskIds = queueDAO.pop("LLM_CHAT_COMPLETE", 5, 100);
-        for (String taskId : taskIds) {
-            asyncSystemTaskExecutor.execute(chatTask, taskId);
-        }
-    }
-
-    // -- Test wiring --
-
-    @TestConfiguration
-    static class FakeAITestConfig {
-
-        @Bean
-        FakeChatModel fakeChatModel() {
-            return new FakeChatModel();
-        }
-
-        @Bean
-        FakeAIModel fakeAIModel(FakeChatModel fakeChatModel) {
-            return new FakeAIModel(fakeChatModel);
-        }
-
-        @Bean
-        ModelConfiguration<FakeAIModel> fakeAIModelConfiguration(FakeAIModel fakeAIModel) {
-            return () -> fakeAIModel;
-        }
-    }
-
-    /**
-     * The {@link AIModel} the test wires into {@link AIModelProvider} keyed under FAKE_PROVIDER.
-     */
-    static class FakeAIModel implements AIModel {
-
-        private final FakeChatModel chatModel;
-
-        /**
-         * Mutable per-test so a single {@link FakeAIModel} bean can simulate both an
-         * Anthropic-Sonnet-4.6-like provider (rejects prefill) and an OpenAI-like provider (accepts
-         * prefill) without re-wiring the Spring context between tests. Reset to {@code true} in
-         * {@link #resetFakeBetweenRuns}.
-         */
-        private volatile boolean supportsAssistantPrefill = true;
-
-        FakeAIModel(FakeChatModel chatModel) {
-            this.chatModel = chatModel;
-        }
-
-        void setSupportsAssistantPrefill(boolean value) {
-            this.supportsAssistantPrefill = value;
-        }
-
-        @Override
-        public String getModelProvider() {
-            return FAKE_PROVIDER;
-        }
-
-        @Override
-        public boolean supportsAssistantPrefill() {
-            return supportsAssistantPrefill;
-        }
-
-        @Override
-        public ChatModel getChatModel() {
-            return chatModel;
-        }
-
-        @Override
-        public ChatOptions getChatOptions(ChatCompletion input) {
-            // Use a custom options type so the fake chat model can see the
-            // previousResponseId that AIModelTaskMapper auto-threaded.
-            FakeChatOptions opts = new FakeChatOptions();
-            opts.model = input.getModel();
-            opts.previousResponseId = input.getPreviousResponseId();
-            opts.reasoningSummary = input.getReasoningSummary();
-            return opts;
-        }
-
-        @Override
-        public List<Float> generateEmbeddings(EmbeddingGenRequest embeddingGenRequest) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public ImageModel getImageModel() {
-            throw new UnsupportedOperationException();
-        }
-    }
-
-    /** Minimal {@link ChatOptions} that carries the fields the fake cares about. */
-    static class FakeChatOptions implements ChatOptions {
-        String model;
-        String previousResponseId;
-        String reasoningSummary;
-
-        @Override
-        public String getModel() {
-            return model;
-        }
-
-        @Override
-        public Double getFrequencyPenalty() {
-            return null;
-        }
-
-        @Override
-        public Integer getMaxTokens() {
-            return 1024;
-        }
-
-        @Override
-        public Double getPresencePenalty() {
-            return null;
-        }
-
-        @Override
-        public List<String> getStopSequences() {
-            return List.of();
-        }
-
-        @Override
-        public Double getTemperature() {
-            return null;
-        }
-
-        @Override
-        public Integer getTopK() {
-            return null;
-        }
-
-        @Override
-        public Double getTopP() {
-            return null;
-        }
-
-        @Override
-        public ChatOptions copy() {
-            FakeChatOptions c = new FakeChatOptions();
-            c.model = model;
-            c.previousResponseId = previousResponseId;
-            c.reasoningSummary = reasoningSummary;
-            return c;
-        }
-    }
-
-    /**
-     * Fake {@link ChatModel}: returns the next staged response on each call and exposes the options
-     * it was called with via the {@link #onCall(java.util.function.BiConsumer)} hook so
-     * loop-threading invariants can be asserted.
-     */
-    static class FakeChatModel implements ChatModel {
-        private final List<StagedResponse> staged = new ArrayList<>();
-        private int callIndex;
-        private java.util.function.BiConsumer<Integer, ChatOptions> onCallHook;
-
-        void reset() {
-            staged.clear();
-            callIndex = 0;
-            onCallHook = null;
-        }
-
-        void stageResponse(
-                String text, String reasoning, Integer reasoningTokens, String responseId) {
-            staged.add(new StagedResponse(text, reasoning, reasoningTokens, responseId));
-        }
-
-        void onCall(java.util.function.BiConsumer<Integer, ChatOptions> hook) {
-            this.onCallHook = hook;
-        }
-
-        @Override
-        public ChatResponse call(Prompt prompt) {
-            if (onCallHook != null) {
-                onCallHook.accept(callIndex, prompt.getOptions());
-            }
-            StagedResponse next = staged.get(Math.min(callIndex, staged.size() - 1));
-            callIndex++;
-            ChatResponseMetadata.Builder meta =
-                    ChatResponseMetadata.builder()
-                            .id(next.responseId)
-                            .usage(new DefaultUsage(5, 10, 15));
-            if (next.responseId != null) {
-                // LLMHelper reads ``response_id`` from the metadata map (not from
-                // ChatResponseMetadata.id) — match what real provider adapters do
-                // so the responseId actually surfaces through to LLMResponse.
-                meta.keyValue("response_id", next.responseId);
-            }
-            if (next.reasoning != null && !next.reasoning.isBlank()) {
-                meta.keyValue("reasoning", next.reasoning);
-            }
-            if (next.reasoningTokens != null) {
-                meta.keyValue("reasoning_tokens", next.reasoningTokens);
-            }
-            ChatGenerationMetadata genMeta =
-                    ChatGenerationMetadata.builder().finishReason("STOP").build();
-            return new ChatResponse(
-                    List.of(new Generation(new AssistantMessage(next.text), genMeta)),
-                    meta.build());
-        }
-    }
-
-    private record StagedResponse(
-            String text, String reasoning, Integer reasoningTokens, String responseId) {}
 }

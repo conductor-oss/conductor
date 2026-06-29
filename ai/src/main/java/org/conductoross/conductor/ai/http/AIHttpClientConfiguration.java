@@ -12,41 +12,40 @@
  */
 package org.conductoross.conductor.ai.http;
 
-import java.util.concurrent.TimeUnit;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import jakarta.annotation.PreDestroy;
-import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
 
+/**
+ * Spring configuration for the shared AI {@link OkHttpClient}.
+ *
+ * <p>Exposes a single application-wide client, {@link #conductorAiHttpClient}, used by all LLM/AI
+ * provider calls. Its timeouts, connection pooling and retries are bound from {@link
+ * AIHttpClientProperties} (prefix {@code conductor.ai.http.*}). The client is built once via {@link
+ * AIHttpClients} and torn down on shutdown (see {@link #shutdown()}) so its dispatcher thread pool
+ * and connection pool are released cleanly.
+ */
 @Configuration
 public class AIHttpClientConfiguration {
 
     private OkHttpClient client;
 
+    /**
+     * The shared {@link OkHttpClient} bean for AI/LLM provider calls.
+     *
+     * <p>Configured from {@link AIHttpClientProperties} ({@code conductor.ai.http.*}) — notably a
+     * generous read timeout suited to reasoning models over large contexts. Inject it by type, or
+     * by name via {@code @Qualifier("conductorAiHttpClient")}.
+     */
     @Bean
     public OkHttpClient conductorAiHttpClient(AIHttpClientProperties props) {
-        OkHttpClient.Builder builder =
-                new OkHttpClient.Builder()
-                        .connectTimeout(props.getConnectTimeout())
-                        .readTimeout(props.getReadTimeout())
-                        .writeTimeout(props.getWriteTimeout())
-                        .connectionPool(
-                                new ConnectionPool(
-                                        props.getMaxIdleConnections(),
-                                        props.getKeepAlive().toMillis(),
-                                        TimeUnit.MILLISECONDS));
-
-        if (props.getMaxRetries() > 0) {
-            builder.addInterceptor(new RetryInterceptor(props.getMaxRetries()));
-        }
-
-        client = builder.build();
+        client = AIHttpClients.build(props);
         return client;
     }
 
+    /** Releases the client's dispatcher thread pool and connection pool when the context closes. */
     @PreDestroy
     public void shutdown() {
         if (client != null) {
