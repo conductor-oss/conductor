@@ -78,6 +78,9 @@ const AI_QUICK_ADD_TYPES: TaskType[] = [
   TaskType.LLM_GET_EMBEDDINGS,
   TaskType.LLM_INDEX_DOCUMENT,
   TaskType.LLM_SEARCH_INDEX,
+  TaskType.AGENT,
+  TaskType.GET_AGENT_CARD,
+  TaskType.CANCEL_AGENT,
 ];
 
 const noRandomSuffix = (aPram: string) => ({

@@ -1,16 +1,15 @@
 import { Box, Grid, Typography } from "@mui/material";
 import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
-import ConductorInput from "components/ui/inputs/ConductorInput";
-import { LLMFormFields } from "pages/definition/EditorPanel/TaskFormTab/forms/LLMFormFields";
 import { path as _path } from "lodash/fp";
 import { UiIntegrationsFieldType } from "types/FormFieldTypes";
 import { fieldsToFieldsFieldsComponents, updateField } from "utils/fieldHelpers";
 import { ConductorAdditionalHeadersBase } from "./HTTPTaskForm/ConductorAdditionalHeaders";
 import { ConductorCacheOutput } from "./ConductorCacheOutputForm";
+import { LLMFormFields } from "./LLMFormFields/LLMFormFields";
+import LLMFormFieldsWrapper from "./LLMFormFields/LLMFormFieldsWrapper";
 import { Optional } from "./OptionalFieldForm";
 import TaskFormSection from "./TaskFormSection";
 import { TaskFormProps } from "./types";
-import LLMFormFieldsWrapper from "./LLMFormFields/LLMFormFieldsWrapper";
 
 const vectorDbFields = [
   UiIntegrationsFieldType.VECTOR_DB,
@@ -21,33 +20,33 @@ const vectorDbFields = [
 const embeddingModelFields = [
   UiIntegrationsFieldType.EMBEDDING_MODEL_PROVIDER,
   UiIntegrationsFieldType.EMBEDDING_MODEL,
+];
+
+const searchFields = [
+  UiIntegrationsFieldType.QUERY,
+  UiIntegrationsFieldType.MAX_RESULTS,
   UiIntegrationsFieldType.DIMENSIONS,
-];
-
-const documentFields = [
-  UiIntegrationsFieldType.URL,
-  UiIntegrationsFieldType.MEDIA_TYPE,
-];
-
-const chunkingFields = [
-  UiIntegrationsFieldType.CHUNK_SIZE,
-  UiIntegrationsFieldType.CHUNK_OVERLAP,
 ];
 
 const vectorDbFieldComponents = fieldsToFieldsFieldsComponents(vectorDbFields);
 const embeddingModelFieldComponents =
   fieldsToFieldsFieldsComponents(embeddingModelFields);
-const documentFieldComponents = fieldsToFieldsFieldsComponents(documentFields);
-const chunkingFieldComponents = fieldsToFieldsFieldsComponents(chunkingFields);
+const searchFieldComponents = fieldsToFieldsFieldsComponents(searchFields);
 
 const allFieldComponents = [
   ...vectorDbFieldComponents,
   ...embeddingModelFieldComponents,
-  ...documentFieldComponents,
-  ...chunkingFieldComponents,
+  ...searchFieldComponents,
 ];
 
-export const LLMIndexDocumentTaskForm = ({ task, onChange }: TaskFormProps) => {
+/**
+ * Config form for LLM_SEARCH_EMBEDDINGS — searches a vector database using pre-computed embeddings
+ * (as opposed to LLM_SEARCH_INDEX, which generates embeddings from a query string).
+ */
+export const LLMSearchEmbeddingsTaskForm = ({
+  task,
+  onChange,
+}: TaskFormProps) => {
   const get = (p: string) => _path(p, task);
   const set = (p: string, value: any) => onChange(updateField(p, value, task));
 
@@ -61,10 +60,10 @@ export const LLMIndexDocumentTaskForm = ({ task, onChange }: TaskFormProps) => {
       allFieldComponents={allFieldComponents}
     >
       {(actor) => (
-        <Box padding={1} width="100%" key={task.taskReferenceName}>
+        <Box padding={1} width="100%">
           <TaskFormSection
             accordionAdditionalProps={{ defaultExpanded: true }}
-            title="Vector Database Configuration"
+            title="Vector Database"
           >
             <LLMFormFields
               task={task}
@@ -73,6 +72,7 @@ export const LLMIndexDocumentTaskForm = ({ task, onChange }: TaskFormProps) => {
               actor={actor}
             />
           </TaskFormSection>
+
           <TaskFormSection title="Embedding Model">
             <LLMFormFields
               task={task}
@@ -81,50 +81,37 @@ export const LLMIndexDocumentTaskForm = ({ task, onChange }: TaskFormProps) => {
               actor={actor}
             />
           </TaskFormSection>
-          <TaskFormSection title="Document Source">
-            <LLMFormFields
-              task={task}
-              onChange={onChange}
-              fieldFieldComponents={documentFieldComponents}
-              actor={actor}
-            />
-            <Grid container spacing={3} sx={{ width: "100%" }} mt={0}>
+
+          <TaskFormSection
+            accordionAdditionalProps={{ defaultExpanded: true }}
+            title="Search"
+          >
+            <Grid container spacing={3} sx={{ width: "100%" }}>
+              <Grid size={12}>
+                <ConductorAutocompleteVariables
+                  label="Embeddings"
+                  value={get("inputParameters.embeddings") as string}
+                  onChange={(v) => set("inputParameters.embeddings", v)}
+                  placeholder="${generateEmbeddings.output.result}"
+                />
+              </Grid>
               <Grid size={12}>
                 <Typography variant="body2" color="text.secondary">
-                  Provide a document <strong>URL</strong> above, or index
-                  inline <strong>text</strong> directly below.
+                  When <strong>embeddings</strong> is set it is used directly;
+                  otherwise the <strong>query</strong> below is embedded with the
+                  selected embedding model.
                 </Typography>
               </Grid>
-              <Grid size={12}>
-                <ConductorInput
-                  label="Text (inline)"
-                  name="text"
-                  value={(get("inputParameters.text") as string) || ""}
-                  onTextInputChange={(v) => set("inputParameters.text", v)}
-                  multiline
-                  rows={4}
-                  fullWidth
-                  placeholder="Inline text to index (alternative to URL)"
-                />
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <ConductorAutocompleteVariables
-                  label="Document ID"
-                  value={get("inputParameters.docId") as string}
-                  onChange={(v) => set("inputParameters.docId", v)}
-                />
-              </Grid>
             </Grid>
-          </TaskFormSection>
-          <TaskFormSection title="Text Chunking">
             <LLMFormFields
               task={task}
               onChange={onChange}
-              fieldFieldComponents={chunkingFieldComponents}
+              fieldFieldComponents={searchFieldComponents}
               actor={actor}
             />
           </TaskFormSection>
-          <TaskFormSection title="Metadata">
+
+          <TaskFormSection title="Metadata filter">
             <Grid container spacing={2} sx={{ width: "100%" }}>
               <Grid size={12}>
                 <ConductorAdditionalHeadersBase
@@ -134,6 +121,7 @@ export const LLMIndexDocumentTaskForm = ({ task, onChange }: TaskFormProps) => {
               </Grid>
             </Grid>
           </TaskFormSection>
+
           <TaskFormSection>
             <Box display="flex" flexDirection="column" gap={3}>
               <ConductorCacheOutput onChange={onChange} taskJson={task} />

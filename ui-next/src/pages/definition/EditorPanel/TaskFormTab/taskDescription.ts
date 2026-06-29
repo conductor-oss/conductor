@@ -91,4 +91,18 @@ export const taskDescriptions: TaskDescriptions = {
     "Fetches a remote A2A agent's Agent Card to discover its skills and capabilities at runtime.",
   [TaskType.CANCEL_AGENT]:
     "Cancels a running task on a remote A2A agent (A2A tasks/cancel).",
+  [TaskType.LLM_SEARCH_EMBEDDINGS]:
+    "Searches a vector database for the closest matches using a set of pre-computed embeddings, rather than generating embeddings from a query string.",
+  [TaskType.LIST_MCP_TOOLS]:
+    "Lists the tools advertised by a Model Context Protocol (MCP) server so they can be used by agents and downstream tasks.",
+  [TaskType.CALL_MCP_TOOL]:
+    "Invokes a named tool on a Model Context Protocol (MCP) server with the provided arguments and returns its result.",
+  [TaskType.GENERATE_IMAGE]:
+    "Generates one or more images from a text prompt using an integrated LLM image-generation model.",
+  [TaskType.GENERATE_AUDIO]:
+    "Synthesizes speech or audio from text using an integrated LLM audio model.",
+  [TaskType.GENERATE_VIDEO]:
+    "Generates video from a text prompt or input image using an integrated LLM video model. Runs asynchronously, polling for completion.",
+  [TaskType.GENERATE_PDF]:
+    "Converts markdown content into a styled PDF document with configurable page size, margins, and theme.",
 };

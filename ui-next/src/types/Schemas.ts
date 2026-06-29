@@ -1679,6 +1679,13 @@ export const schemasByType = {
   [TaskType.AGENT]: genericSchema,
   [TaskType.GET_AGENT_CARD]: genericSchema,
   [TaskType.CANCEL_AGENT]: genericSchema,
+  [TaskType.LLM_SEARCH_EMBEDDINGS]: genericSchema,
+  [TaskType.LIST_MCP_TOOLS]: genericSchema,
+  [TaskType.CALL_MCP_TOOL]: genericSchema,
+  [TaskType.GENERATE_IMAGE]: genericSchema,
+  [TaskType.GENERATE_AUDIO]: genericSchema,
+  [TaskType.GENERATE_VIDEO]: genericSchema,
+  [TaskType.GENERATE_PDF]: genericSchema,
 };
 
 // Object.values(TaskType)

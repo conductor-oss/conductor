@@ -662,4 +662,11 @@ export type FormTaskType =
   | TaskType.PARSE_DOCUMENT
   | TaskType.AGENT
   | TaskType.GET_AGENT_CARD
-  | TaskType.CANCEL_AGENT;
+  | TaskType.CANCEL_AGENT
+  | TaskType.LLM_SEARCH_EMBEDDINGS
+  | TaskType.LIST_MCP_TOOLS
+  | TaskType.CALL_MCP_TOOL
+  | TaskType.GENERATE_IMAGE
+  | TaskType.GENERATE_AUDIO
+  | TaskType.GENERATE_VIDEO
+  | TaskType.GENERATE_PDF;
