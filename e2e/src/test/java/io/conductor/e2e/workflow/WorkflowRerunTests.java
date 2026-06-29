@@ -4441,7 +4441,12 @@ public class WorkflowRerunTests {
      */
     private void driveBothBranchesToCompletion(
             String parentId, String activeFailingChildId, String activeCancelledChildId) {
-        await().atMost(15, TimeUnit.SECONDS)
+        // Fresh children are created via a two-hop async path: finalizeRerun queues the reset
+        // sibling, SystemTaskWorker creates the child, then the child's first decide runs
+        // asynchronously (the load-bearing async decide). The inner task is irreducibly async,
+        // so allow the full 30s window other awaits in this file use — under CI load the
+        // WorkflowSweeper can take longer than 15s to schedule it.
+        await().atMost(30, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             findActiveTask(
