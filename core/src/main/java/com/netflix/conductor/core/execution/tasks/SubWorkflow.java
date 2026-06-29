@@ -192,6 +192,8 @@ public class SubWorkflow extends WorkflowSystemTask {
             startWorkflowInput.setIdempotencyKey(idempotencyKey);
             startWorkflowInput.setIdempotencyStrategy(idempotencyStrategy);
 
+            // Attach to the created child as soon as the workflow record exists. The child's
+            // initial decide continues asynchronously through the decider queue.
             WorkflowModel subWorkflow =
                     workflowExecutor.startWorkflowIdempotent(startWorkflowInput);
             if (subWorkflow.getStatus().isTerminal() && !subWorkflow.getStatus().isSuccessful()) {
@@ -201,13 +203,6 @@ public class SubWorkflow extends WorkflowSystemTask {
                 subWorkflow = workflowExecutor.startWorkflowIdempotent(startWorkflowInput);
             }
             attachToSubWorkflow(task, subWorkflow);
-            // Run the child's first decide synchronously so its initial tasks are scheduled
-            // before start() returns. Without this, the decide runs asynchronously via
-            // WorkflowSweeper and tasks can take several seconds to appear — long enough to
-            // cause timing races in rerun/retry paths that read child state immediately after.
-            if (!subWorkflow.getStatus().isTerminal()) {
-                workflowExecutor.decide(subWorkflow.getWorkflowId());
-            }
         } catch (TransientException te) {
             task.setStatus(TaskModel.Status.SCHEDULED);
             task.setReasonForIncompletion(
