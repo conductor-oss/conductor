@@ -92,6 +92,9 @@ export const FEATURES = Object.freeze({
   SHOW_ROLES_MENU_ITEM: "SHOW_ROLES_MENU_ITEM",
   SHOW_AGENT: "SHOW_AGENT",
   ENABLE_AGENT_AUDIO_INPUT: "ENABLE_AGENT_AUDIO_INPUT",
+  // Driven by the server's conductor.integrations.ai.enabled (injected via /context.js).
+  // Gates the embedded AgentSpan agent pages (Agents, Executions, Skills, Secrets).
+  AGENTSPAN_ENABLED: "AGENTSPAN_ENABLED",
   AI_CODER_WORKER: "AI_CODER_WORKER",
   AI_CODER_CLOUD_WORKER: "AI_CODER_CLOUD_WORKER",
   TAG_VISIBILITY: "TAG_VISIBILITY",
