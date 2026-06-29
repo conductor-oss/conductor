@@ -11,7 +11,7 @@ export type ResultObjType = TaskExecutionResult;
 export interface DoSearchProps {
   resultObj: ResultObjType;
   queryFT: QueryFTType;
-  buildQuery: (defaultStartTime?: string) => QueryFTType;
+  buildQuery: () => QueryFTType;
   setQueryFT: (value: QueryFTType) => void;
   refetch: () => void;
   setPage: QueryDispatch<SetStateAction<number>>;

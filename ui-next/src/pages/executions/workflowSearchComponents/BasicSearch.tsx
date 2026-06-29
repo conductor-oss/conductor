@@ -1,29 +1,20 @@
-import {
-  Box,
-  FormControl,
-  FormControlLabel,
-  Grid,
-  InputLabel,
-  Switch,
-  useMediaQuery,
-} from "@mui/material";
-import { Theme } from "@mui/material/styles";
-import { Button, Paper } from "components";
+import { Box, Paper } from "@mui/material";
 import { DEFAULT_ROWS_PER_PAGE } from "components/ui/DataTable/DataTable";
-import StatusBadge from "components/StatusBadge";
-import { renderStatusTagChip } from "components/StatusTagChip";
-import { ConductorAutoComplete } from "components/ui/inputs";
-import ConductorInput from "components/ui/inputs/ConductorInput";
-import SplitButton from "components/ui/buttons/ConductorSplitButton";
-import ResetIcon from "components/icons/ResetIcon";
-import SearchIcon from "components/icons/SearchIcon";
+import { atom, useAtom } from "jotai";
 import _isEmpty from "lodash/isEmpty";
-import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import _isEqual from "lodash/isEqual";
+import {
+  ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { Navigate } from "react-router";
 import { useQueryState } from "react-router-use-location-state";
 import { Key } from "ts-key-enum";
-import { WorkflowExecutionStatus } from "types/Execution";
 import { TaskExecutionResult } from "types/TaskExecution";
 import { DoSearchProps } from "types/WorkflowExecution";
 import { IObject } from "types/common";
@@ -33,11 +24,13 @@ import { useAutoCompleteInputValidation } from "utils/hooks/useAutoCompleteInput
 import { useWorkflowNames, useWorkflowSearch } from "utils/query";
 import { getErrors } from "utils/utils";
 import { ApiSearchModalIntegration } from "../ApiSearchModalIntegration";
-import { DateControlComponent } from "../DateControlComponent";
 import ResultsTable from "../ResultsTable";
+import { DatePickerButtonHandle } from "./DatePickerButton";
+import { MoreFiltersPopover } from "./MoreFiltersPopover";
+import { QuickFiltersCard } from "./QuickFiltersCard";
+import { WorkflowSearchBar } from "./WorkflowSearchBar";
 
 const DEFAULT_SORT = "startTime:DESC";
-const workflowStatuses = Object.values(WorkflowExecutionStatus);
 
 export interface BasicSearchProps {
   doSearch: ({
@@ -71,16 +64,16 @@ export interface BasicSearchProps {
   setFromDisplayTime: (val: string) => void;
   toDisplayTime: string;
   setToDisplayTime: (val: string) => void;
-  openDateSelect: boolean;
-  setOpenDateSelect: (val: boolean) => void;
-  openStartDatePicker: boolean;
-  setStartOpenDatePicker: (val: boolean) => void;
-  openEndDatePicker: boolean;
-  setEndOpenDatePicker: (val: boolean) => void;
   excludeSubWorkflows: boolean;
   setExcludeSubWorkflows: (val: boolean) => void;
   recentSearches: { start: string; end: string };
 }
+
+// Module-level atoms for MoreFiltersPopover draft state
+const workflowIdDraftAtom = atom("");
+const freeTextDraftAtom = atom("");
+const idempotencyKeyDraftAtom = atom<string[]>([]);
+const excludeSubWorkflowsDraftAtom = atom(false);
 
 export default function BasicSearch({
   doSearch,
@@ -106,12 +99,6 @@ export default function BasicSearch({
   setFromDisplayTime,
   toDisplayTime,
   setToDisplayTime,
-  openDateSelect,
-  setOpenDateSelect,
-  openStartDatePicker,
-  setStartOpenDatePicker,
-  openEndDatePicker,
-  setEndOpenDatePicker,
   excludeSubWorkflows,
   setExcludeSubWorkflows,
   recentSearches,
@@ -153,9 +140,20 @@ export default function BasicSearch({
     hasError: idempotencyKeyHasError,
   } = useAutoCompleteInputValidation();
 
-  const isMobile = useMediaQuery((theme: Theme) =>
-    theme.breakpoints.down("sm"),
+  const [filtersAnchor, setFiltersAnchor] = useState<HTMLElement | null>(null);
+
+  // Jotai draft atoms — synced to applied values in the open-button onClick, not via useEffect
+  const [workflowIdDraft, setWorkflowIdDraft] = useAtom(workflowIdDraftAtom);
+  const [freeTextDraft, setFreeTextDraft] = useAtom(freeTextDraftAtom);
+  const [idempotencyKeyDraft, setIdempotencyKeyDraft] = useAtom(
+    idempotencyKeyDraftAtom,
   );
+  const [excludeSubWorkflowsDraft, setExcludeSubWorkflowsDraft] = useAtom(
+    excludeSubWorkflowsDraftAtom,
+  );
+
+  const startPickerRef = useRef<DatePickerButtonHandle>(null);
+  const endPickerRef = useRef<DatePickerButtonHandle>(null);
 
   // For dropdown
   const workflowNames: string[] = useWorkflowNames();
@@ -178,6 +176,7 @@ export default function BasicSearch({
     setCorrelationIds([]);
     setIdempotencyKey([]);
     setWorkflowId("");
+    setWorkflowIdDraft("");
     setStatus([]);
     setStartTimeFrom("");
     setStartTimeTo("");
@@ -214,70 +213,103 @@ export default function BasicSearch({
     error?: string;
   } | null>(null);
 
-  const buildQuery = useCallback(() => {
-    const clauses = [];
-    if (!_isEmpty(workflowType)) {
-      clauses.push(`workflowType IN (${workflowType.join(",")})`);
-    }
-    if (!_isEmpty(workflowId)) {
-      clauses.push(`workflowId='${workflowId}'`);
-    }
-    if (!_isEmpty(status)) {
-      clauses.push(`status IN (${status.join(",")})`);
-    }
-    if (!_isEmpty(startTimeFrom)) {
-      clauses.push(`startTime>${dateToEpoch(startTimeFrom)}`);
-    }
-    if (!_isEmpty(startTimeTo)) {
-      clauses.push(`startTime<${dateToEpoch(startTimeTo)}`);
-    }
-    if (!_isEmpty(endTimeFrom)) {
-      clauses.push(`endTime>${dateToEpoch(endTimeFrom)}`);
-    }
-    if (!_isEmpty(endTimeTo)) {
-      clauses.push(`endTime<${dateToEpoch(endTimeTo)}`);
-    }
+  type QueryOverrides = Partial<{
+    workflowType: string[];
+    status: string[];
+    startTimeFrom: string;
+    startTimeTo: string;
+    workflowId: string;
+    correlationIds: string[];
+    idempotencyKey: string[];
+    freeText: string;
+    endTimeFrom: string;
+    endTimeTo: string;
+    modifiedFrom: string;
+    modifiedTo: string;
+    excludeSubWorkflows: boolean;
+  }>;
 
-    if (!_isEmpty(modifiedFrom)) {
-      clauses.push(`modifiedTime>${modifiedFrom}`);
-    }
-    if (!_isEmpty(modifiedTo)) {
-      clauses.push(`modifiedTime<${modifiedTo}`);
-    }
+  const buildQuery = useCallback(
+    (overrides: QueryOverrides = {}) => {
+      const _workflowType = overrides.workflowType ?? workflowType;
+      const _workflowId = overrides.workflowId ?? workflowId;
+      const _status = overrides.status ?? status;
+      const _startTimeFrom = overrides.startTimeFrom ?? startTimeFrom;
+      const _startTimeTo = overrides.startTimeTo ?? startTimeTo;
+      const _endTimeFrom = overrides.endTimeFrom ?? endTimeFrom;
+      const _endTimeTo = overrides.endTimeTo ?? endTimeTo;
+      const _modifiedFrom = overrides.modifiedFrom ?? modifiedFrom;
+      const _modifiedTo = overrides.modifiedTo ?? modifiedTo;
+      const _correlationIds = overrides.correlationIds ?? correlationIds;
+      const _idempotencyKey = overrides.idempotencyKey ?? idempotencyKey;
+      const _excludeSubWorkflows =
+        overrides.excludeSubWorkflows ?? excludeSubWorkflows;
+      const _freeText = overrides.freeText ?? freeText;
 
-    if (!_isEmpty(correlationIds)) {
-      clauses.push(`correlationId IN (${correlationIds.join(",")})`);
-    }
+      const clauses = [];
+      if (!_isEmpty(_workflowType)) {
+        clauses.push(`workflowType IN (${_workflowType.join(",")})`);
+      }
+      if (!_isEmpty(_workflowId)) {
+        clauses.push(`workflowId='${_workflowId}'`);
+      }
+      if (!_isEmpty(_status)) {
+        clauses.push(`status IN (${_status.join(",")})`);
+      }
+      if (!_isEmpty(_startTimeFrom)) {
+        clauses.push(`startTime>${dateToEpoch(_startTimeFrom)}`);
+      }
+      if (!_isEmpty(_startTimeTo)) {
+        clauses.push(`startTime<${dateToEpoch(_startTimeTo)}`);
+      }
+      if (!_isEmpty(_endTimeFrom)) {
+        clauses.push(`endTime>${dateToEpoch(_endTimeFrom)}`);
+      }
+      if (!_isEmpty(_endTimeTo)) {
+        clauses.push(`endTime<${dateToEpoch(_endTimeTo)}`);
+      }
+      if (!_isEmpty(_modifiedFrom)) {
+        clauses.push(`modifiedTime>${_modifiedFrom}`);
+      }
+      if (!_isEmpty(_modifiedTo)) {
+        clauses.push(`modifiedTime<${_modifiedTo}`);
+      }
+      if (!_isEmpty(_correlationIds)) {
+        clauses.push(`correlationId IN (${_correlationIds.join(",")})`);
+      }
+      if (!_isEmpty(_idempotencyKey)) {
+        clauses.push(`idempotencyKey IN (${_idempotencyKey.join(",")})`);
+      }
+      if (_excludeSubWorkflows) {
+        clauses.push(`parentWorkflowId=""`);
+      }
 
-    if (!_isEmpty(idempotencyKey)) {
-      clauses.push(`idempotencyKey IN (${idempotencyKey.join(",")})`);
-    }
-
-    if (excludeSubWorkflows) {
-      clauses.push(`parentWorkflowId=""`);
-    }
-
-    return {
-      query: clauses.join(" AND "),
-      freeText: _isEmpty(freeText) ? "*" : freeText,
-    };
-  }, [
-    freeText,
-    startTimeFrom,
-    startTimeTo,
-    status,
-    workflowId,
-    workflowType,
-    modifiedFrom,
-    modifiedTo,
-    correlationIds,
-    idempotencyKey,
-    endTimeFrom,
-    endTimeTo,
-    excludeSubWorkflows,
-  ]);
+      return {
+        query: clauses.join(" AND "),
+        freeText: _isEmpty(_freeText) ? "*" : _freeText,
+      };
+    },
+    [
+      freeText,
+      startTimeFrom,
+      startTimeTo,
+      status,
+      workflowId,
+      workflowType,
+      modifiedFrom,
+      modifiedTo,
+      correlationIds,
+      idempotencyKey,
+      endTimeFrom,
+      endTimeTo,
+      excludeSubWorkflows,
+    ],
+  );
 
   const [queryFT, setQueryFT] = useState(buildQuery);
+  // Derive the live query directly from URL state so react-query refetches
+  // automatically when any committed filter changes (date, status, etc.).
+  const currentQuery = useMemo(() => buildQuery(), [buildQuery]);
   const {
     data: resultObj,
     error,
@@ -288,8 +320,8 @@ export default function BasicSearch({
       page,
       rowsPerPage,
       sort,
-      query: queryFT.query,
-      freeText: queryFT.freeText,
+      query: currentQuery.query,
+      freeText: currentQuery.freeText,
     },
     {},
     {
@@ -344,12 +376,8 @@ export default function BasicSearch({
   };
 
   const filterOn = useMemo(() => {
-    if (queryFT.query !== "" || queryFT.freeText !== "*") {
-      return true;
-    } else {
-      return false;
-    }
-  }, [queryFT]);
+    return currentQuery.query !== "" || currentQuery.freeText !== "*";
+  }, [currentQuery]);
 
   const setRecentTaskSearch = () => {
     if (startTimeFrom || startTimeTo || endTimeFrom || endTimeTo) {
@@ -372,12 +400,30 @@ export default function BasicSearch({
     // eslint-disable-next-line
   }, []);
 
-  // @ts-ignore
+  // Immediately applies a search without waiting for React state to propagate.
+  // Pass overrides for values that have just changed but aren't reflected in state yet.
+  const triggerSearchWith = (overrides: QueryOverrides = {}) => {
+    setPage(1);
+    const newQueryFT = buildQuery(overrides);
+    setQueryFT(newQueryFT);
+    if (_isEqual(queryFT, newQueryFT)) {
+      refetch();
+    }
+    setRecentTaskSearch();
+  };
+
+  const advancedFilterCount = [
+    !_isEmpty(workflowId),
+    !_isEmpty(correlationIds),
+    !_isEmpty(idempotencyKey),
+    !_isEmpty(freeText),
+    excludeSubWorkflows,
+  ].filter(Boolean).length;
+
   if (error?.status === 401) {
     const errorResult = error;
     const parseErrorResponse = async () => {
       try {
-        // @ts-ignore
         const json = await errorResult.clone().json();
         setUnauthorized(json);
       } catch {
@@ -408,312 +454,118 @@ export default function BasicSearch({
 
   return (
     <>
-      <Paper variant="outlined" sx={{ marginBottom: 6 }}>
+      <Paper variant="outlined" sx={{ marginBottom: 2 }}>
         {SwitchComponent}
-        <Box sx={{ padding: SwitchComponent ? "0 24px 24px 24px" : 6 }}>
-          {showCodeDialog && (
-            <ApiSearchModalIntegration
-              onClose={() => setShowCodeDialog("")}
-              buildQueryOutput={{
-                start: (page - 1) * rowsPerPage,
-                size: rowsPerPage,
-                sort,
-                freeText,
-                query: buildQuery().query,
-              }}
-            />
-          )}
-          <Grid
-            container
-            sx={{ width: "100%" }}
-            spacing={3}
-            pt={2}
-            justifyContent="flex-end"
-          >
-            <Grid
-              size={{
-                xs: 6,
-                md: 6,
-                lg: 4,
-              }}
-            >
-              <ConductorAutoComplete
-                id="workflow-search-name-dropdown"
-                fullWidth
-                label="Workflow name"
-                options={workflowNames.sort((a, b) =>
-                  a.toLowerCase().localeCompare(b.toLowerCase()),
-                )}
-                multiple
-                freeSolo
-                onChange={(__, val: string[]) => setWorkflowType(val)}
-                value={workflowType}
-                autoFocus
-                conductorInputProps={{
-                  tooltip: {
-                    title: "Partial Name Search",
-                    content:
-                      "Search workflows by partial names with a wildcard * in your keyword. Then hit ENTER, and now you can click SEARCH. i.e. Workfl* or *orkfl*w",
-                    placement: "top",
-                    showInitial: !tooltipFlags.executionSearch ? true : false,
-                    initialTimeout: 2000,
-                    onClose: handleToolTipOnClose,
-                  },
-                  autoFocus: true,
-                }}
-              />
-            </Grid>
-            <Grid
-              size={{
-                xs: 6,
-                md: 6,
-                lg: 2,
-              }}
-            >
-              <ConductorInput
-                id="workflow-search-id"
-                fullWidth
-                label="Workflow id"
-                value={workflowId}
-                onTextInputChange={setWorkflowId}
-                showClearButton
-              />
-            </Grid>
-            <Grid
-              position="relative"
-              size={{
-                xs: 6,
-                md: 6,
-                lg: 2,
-              }}
-            >
-              <ConductorAutoComplete
-                id="workflow-search-correlation-id"
-                fullWidth
-                label="Correlation id"
-                options={[]}
-                multiple
-                freeSolo
-                onTextInputChange={(typingValue: string) => {
-                  setCorrelationInputVal(typingValue);
-                }}
-                onChange={(evt: any, val: string[]) => {
-                  if (evt.key === "Backspace" || evt.key === "Enter") {
-                    setCorrelationInputVal("");
-                  }
-                  setCorrelationIds(val);
-                }}
-                onFocus={() => setCorrelationFieldFocus(true)}
-                onBlur={() => setCorrelationFieldFocus(false)}
-                value={correlationIds}
-                error={correlationIdHasError}
-                conductorInputProps={{
-                  tooltip: {
-                    title: "Get Workflows by Correlation ID",
-                    content:
-                      "Search workflows by Correlation ID. This field has support for multiple values, so please remember to press 'Enter' for each value to apply the search.",
-                  },
-                  error: correlationIdHasError,
-                }}
-              />
-            </Grid>
-            <Grid
-              position="relative"
-              size={{
-                xs: 6,
-                md: 6,
-                lg: 2,
-              }}
-            >
-              <ConductorAutoComplete
-                id="workflow-search-idempotency-key"
-                fullWidth
-                label="Idempotency key"
-                options={[]}
-                multiple
-                freeSolo
-                onTextInputChange={(typingValue: string) => {
-                  setIdempotencyKeyInputVal(typingValue);
-                }}
-                onChange={(evt: any, val: string[]) => {
-                  if (evt.key === "Backspace" || evt.key === "Enter") {
-                    setIdempotencyKeyInputVal("");
-                  }
 
-                  setIdempotencyKey(val);
-                }}
-                onFocus={() => setIdempotencyKeyFieldFocus(true)}
-                onBlur={() => setIdempotencyKeyFieldFocus(false)}
-                value={idempotencyKey}
-                error={idempotencyKeyHasError}
-                conductorInputProps={{
-                  tooltip: {
-                    title: "Get Workflows by Idempotency key",
-                    content:
-                      "Search workflows by Idempotency key. This field has support for multiple values, so please remember to press 'Enter' for each value to apply the search.",
-                  },
-                  error: idempotencyKeyHasError,
-                }}
-              />
-            </Grid>
-            <Grid
-              size={{
-                xs: 12,
-                md: 6,
-                lg: 2,
-              }}
-            >
-              <ConductorAutoComplete
-                id="workflow-search-status"
-                label="Status"
-                fullWidth
-                options={workflowStatuses}
-                multiple
-                onChange={(__, val: string[]) => setStatus(val)}
-                value={status}
-                renderTags={renderStatusTagChip}
-                renderOption={(props, option) => (
-                  <Box component="li" {...props}>
-                    <StatusBadge status={option} />
-                  </Box>
-                )}
-              />
-            </Grid>
-            <Grid
-              display="flex"
-              alignItems="end"
-              size={{
-                xs: 12,
-                sm: 12,
-                md: 6,
-                lg: 6,
-              }}
-            >
-              <DateControlComponent
-                startTime={startTimeFrom}
-                onStartFromChange={onStartFromChange}
-                startTimeEnd={startTimeTo}
-                onStartToChange={onStartToChange}
-                endTimeStart={endTimeFrom}
-                onEndFromChange={onEndFromChange}
-                endTime={endTimeTo}
-                onEndToChange={onEndToChange}
-                fromDisplayTime={fromDisplayTime}
-                setFromDisplayTime={setFromDisplayTime}
-                toDisplayTime={toDisplayTime}
-                setToDisplayTime={setToDisplayTime}
-                openDateSelect={openDateSelect}
-                setOpenDateSelect={setOpenDateSelect}
-                openStartDatePicker={openStartDatePicker}
-                setStartOpenDatePicker={setStartOpenDatePicker}
-                openEndDatePicker={openEndDatePicker}
-                setEndOpenDatePicker={setEndOpenDatePicker}
-                recentSearches={recentSearches}
-                startDialogTitle="Execution Start Time"
-                startDialogHelpText="Select a date range within which the Workflow Execution has started."
-                endDialogTitle="Execution End Time"
-                endDialogHelpText="Select a date range within which the Workflow Execution has ended."
-                startTimeLabel="Execution Start Time"
-                endTimeLabel="Execution End Time"
-              />
-            </Grid>
-            <Grid
-              size={{
-                xs: 12,
-                sm: 6,
-                md: 6,
-                lg: 2,
-              }}
-            >
-              <ConductorInput
-                fullWidth
-                label="Free text search"
-                value={freeText}
-                onTextInputChange={setFreeText}
-                showClearButton
-              />
-            </Grid>
-            <Grid
-              display="flex"
-              alignItems="end"
-              size={{
-                xs: 12,
-                sm: 6,
-                md: 3,
-                lg: 2,
-              }}
-            >
-              <FormControlLabel
-                sx={{ whiteSpace: "nowrap", mb: 0.5 }}
-                control={
-                  <Switch
-                    color="primary"
-                    checked={excludeSubWorkflows}
-                    onChange={(e) => setExcludeSubWorkflows(e.target.checked)}
-                    size="small"
-                  />
-                }
-                label="Exclude sub-workflows"
-                slotProps={{
-                  typography: { variant: "body2" },
-                }}
-              />
-            </Grid>
-            <Grid
-              display="flex"
-              justifyContent="end"
-              size={{
-                xs: 12,
-                sm: 6,
-                md: 3,
-                lg: 2,
-              }}
-            >
-              <Grid size={5}>
-                <FormControl>
-                  {!isMobile && <InputLabel>&nbsp;</InputLabel>}
-                  <Button
-                    id="reset-workflow-btn"
-                    variant="text"
-                    onClick={handleReset}
-                    style={{ width: "100%" }}
-                    startIcon={<ResetIcon />}
-                  >
-                    Reset
-                  </Button>
-                </FormControl>
-              </Grid>
-              <Grid>
-                <FormControl>
-                  {!isMobile && <InputLabel>&nbsp;</InputLabel>}
+        {showCodeDialog && (
+          <ApiSearchModalIntegration
+            onClose={() => setShowCodeDialog("")}
+            buildQueryOutput={{
+              start: (page - 1) * rowsPerPage,
+              size: rowsPerPage,
+              sort,
+              freeText,
+              query: buildQuery().query,
+            }}
+          />
+        )}
 
-                  <SplitButton
-                    id="search-workflow-btn"
-                    startIcon={<SearchIcon />}
-                    options={[
-                      {
-                        label: "Show as code",
-                        onClick: () => setShowCodeDialog("active"),
-                      },
-                    ]}
-                    primaryOnClick={() =>
-                      doSearch({
-                        resultObj,
-                        queryFT,
-                        buildQuery,
-                        setQueryFT,
-                        refetch,
-                        setPage,
-                        setRecentTaskSearch,
-                      })
-                    }
-                  >
-                    Search
-                  </SplitButton>
-                </FormControl>
-              </Grid>
-            </Grid>
-          </Grid>
+        <Box sx={SwitchComponent ? { pt: 0, px: 4, pb: 2 } : { p: 4 }}>
+          <WorkflowSearchBar
+            workflowNames={workflowNames}
+            workflowType={workflowType}
+            onWorkflowTypeChange={(val) => {
+              setWorkflowType(val);
+              triggerSearchWith({ workflowType: val });
+            }}
+            tooltipShown={!!tooltipFlags.executionSearch}
+            onTooltipClose={handleToolTipOnClose}
+          />
+
+          <QuickFiltersCard
+            startPickerRef={startPickerRef}
+            endPickerRef={endPickerRef}
+            status={status}
+            onStatusChange={(val) => {
+              setStatus(val);
+              triggerSearchWith({ status: val });
+            }}
+            startTimeFrom={startTimeFrom}
+            onStartFromChange={onStartFromChange}
+            startTimeTo={startTimeTo}
+            onStartToChange={onStartToChange}
+            fromDisplayTime={fromDisplayTime}
+            setFromDisplayTime={setFromDisplayTime}
+            endTimeFrom={endTimeFrom}
+            onEndFromChange={onEndFromChange}
+            endTimeTo={endTimeTo}
+            onEndToChange={onEndToChange}
+            toDisplayTime={toDisplayTime}
+            setToDisplayTime={setToDisplayTime}
+            recentSearches={recentSearches}
+            advancedFilterCount={advancedFilterCount}
+            onOpenFilters={(anchor) => {
+              setWorkflowIdDraft(workflowId);
+              setFreeTextDraft(freeText);
+              setIdempotencyKeyDraft(idempotencyKey);
+              setExcludeSubWorkflowsDraft(excludeSubWorkflows);
+              setFiltersAnchor(anchor);
+            }}
+            onReset={handleReset}
+            onSearch={() =>
+              doSearch({
+                resultObj,
+                queryFT,
+                buildQuery,
+                setQueryFT,
+                refetch,
+                setPage,
+                setRecentTaskSearch,
+              })
+            }
+            onShowCode={() => setShowCodeDialog("active")}
+          />
+
+          <MoreFiltersPopover
+            anchor={filtersAnchor}
+            onClose={() => setFiltersAnchor(null)}
+            workflowIdDraft={workflowIdDraft}
+            setWorkflowIdDraft={setWorkflowIdDraft}
+            freeTextDraft={freeTextDraft}
+            setFreeTextDraft={setFreeTextDraft}
+            idempotencyKeyDraft={idempotencyKeyDraft}
+            setIdempotencyKeyDraft={setIdempotencyKeyDraft}
+            excludeSubWorkflowsDraft={excludeSubWorkflowsDraft}
+            setExcludeSubWorkflowsDraft={setExcludeSubWorkflowsDraft}
+            correlationIds={correlationIds}
+            setCorrelationIds={setCorrelationIds}
+            correlationIdHasError={correlationIdHasError}
+            onCorrelationInputChange={setCorrelationInputVal}
+            onCorrelationFocus={() => setCorrelationFieldFocus(true)}
+            onCorrelationBlur={() => setCorrelationFieldFocus(false)}
+            idempotencyKeyHasError={idempotencyKeyHasError}
+            onIdempotencyKeyInputChange={setIdempotencyKeyInputVal}
+            onIdempotencyKeyFocus={() => setIdempotencyKeyFieldFocus(true)}
+            onIdempotencyKeyBlur={() => setIdempotencyKeyFieldFocus(false)}
+            onApply={({
+              workflowId: wfId,
+              freeText: ft,
+              idempotencyKey: ik,
+              excludeSubWorkflows: esw,
+            }) => {
+              setWorkflowId(wfId);
+              setFreeText(ft);
+              setIdempotencyKey(ik);
+              setExcludeSubWorkflows(esw);
+              triggerSearchWith({
+                workflowId: wfId,
+                freeText: ft,
+                idempotencyKey: ik,
+                excludeSubWorkflows: esw,
+              });
+              setFiltersAnchor(null);
+            }}
+          />
         </Box>
       </Paper>
       <ResultsTable

@@ -83,9 +83,6 @@ export function TaskSearch() {
     error?: string;
   } | null>(null);
 
-  const [openDateSelect, setOpenDateSelect] = useState(false);
-  const [openStartDatePicker, setStartOpenDatePicker] = useState(false);
-  const [openEndDatePicker, setEndOpenDatePicker] = useState(false);
   const [fromDisplayTime, setFromDisplayTime] = useState(
     startTimeFrom
       ? getSearchDateTime(startTimeFrom, startTimeEnd)
@@ -398,14 +395,8 @@ export function TaskSearch() {
               setFreeText={setFreeText}
               fromDisplayTime={fromDisplayTime}
               setFromDisplayTime={setFromDisplayTime}
-              openEndDatePicker={openEndDatePicker}
-              setEndOpenDatePicker={setEndOpenDatePicker}
               toDisplayTime={toDisplayTime}
               setToDisplayTime={setToDisplayTime}
-              openDateSelect={openDateSelect}
-              setOpenDateSelect={setOpenDateSelect}
-              openStartDatePicker={openStartDatePicker}
-              setStartOpenDatePicker={setStartOpenDatePicker}
               onEndFromChange={onEndFromChange}
               onEndToChange={onEndToChange}
               startTimeEnd={startTimeEnd}
@@ -439,14 +430,8 @@ export function TaskSearch() {
               setStatus={setStatus}
               fromDisplayTime={fromDisplayTime}
               setFromDisplayTime={setFromDisplayTime}
-              openEndDatePicker={openEndDatePicker}
-              setEndOpenDatePicker={setEndOpenDatePicker}
               toDisplayTime={toDisplayTime}
               setToDisplayTime={setToDisplayTime}
-              openDateSelect={openDateSelect}
-              setOpenDateSelect={setOpenDateSelect}
-              openStartDatePicker={openStartDatePicker}
-              setStartOpenDatePicker={setStartOpenDatePicker}
               onEndFromChange={onEndFromChange}
               onEndToChange={onEndToChange}
               queryText={queryText}

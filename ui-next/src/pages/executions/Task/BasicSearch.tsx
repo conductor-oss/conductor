@@ -32,13 +32,8 @@ interface BasicSearchComponentProps {
   endTime: string;
   status: string[];
   toDisplayTime: string;
-  openDateSelect: boolean;
-  openStartDatePicker: boolean;
-  setStartOpenDatePicker: Dispatch<SetStateAction<boolean>>;
-  setOpenDateSelect: Dispatch<SetStateAction<boolean>>;
   setToDisplayTime: Dispatch<SetStateAction<string>>;
   taskType: string[];
-  openEndDatePicker: boolean;
   setTaskDefName: QueryDispatch<SetStateAction<string>>;
   setTaskExecutionId: QueryDispatch<SetStateAction<string>>;
   setTaskRefName: QueryDispatch<SetStateAction<string>>;
@@ -48,7 +43,6 @@ interface BasicSearchComponentProps {
   setTaskType: QueryDispatch<SetStateAction<string[]>>;
   setShowCodeDialog: QueryDispatch<SetStateAction<string>>;
   setFromDisplayTime: Dispatch<SetStateAction<string>>;
-  setEndOpenDatePicker: Dispatch<SetStateAction<boolean>>;
   handleReset: () => void;
   doSearch: () => void;
   onStartFromChange: (val: string) => void;
@@ -68,22 +62,16 @@ export const BasicSearch = ({
   startTime,
   toDisplayTime,
   setToDisplayTime,
-  setOpenDateSelect,
-  setStartOpenDatePicker,
   startTimeEnd,
-  openDateSelect,
   endTime,
   endTimeStart,
   status,
   queryText,
-  openEndDatePicker,
   taskType,
   fromDisplayTime,
-  openStartDatePicker,
   setTaskDefName,
   setFromDisplayTime,
   setTaskExecutionId,
-  setEndOpenDatePicker,
   setTaskRefName,
   setWorkflowName,
   setFreeText,
@@ -218,12 +206,6 @@ export const BasicSearch = ({
           setFromDisplayTime={setFromDisplayTime}
           toDisplayTime={toDisplayTime}
           setToDisplayTime={setToDisplayTime}
-          openDateSelect={openDateSelect}
-          setOpenDateSelect={setOpenDateSelect}
-          openStartDatePicker={openStartDatePicker}
-          setStartOpenDatePicker={setStartOpenDatePicker}
-          openEndDatePicker={openEndDatePicker}
-          setEndOpenDatePicker={setEndOpenDatePicker}
           disabled={
             queryText.includes("startTime") || queryText.includes("endTime")
           }

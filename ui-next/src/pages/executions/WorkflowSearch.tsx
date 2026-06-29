@@ -57,9 +57,6 @@ export default function WorkflowPanel() {
     "excludeSubWorkflows",
     false,
   );
-  const [openDateSelect, setOpenDateSelect] = useState(false);
-  const [openStartDatePicker, setStartOpenDatePicker] = useState(false);
-  const [openEndDatePicker, setEndOpenDatePicker] = useState(false);
   const [startTimeFrom, setStartTimeFrom] = useQueryState(
     "startFrom",
     commonlyUsedDateTime("last72Hours").rangeStart,
@@ -193,12 +190,6 @@ export default function WorkflowPanel() {
             setFromDisplayTime={setFromDisplayTime}
             toDisplayTime={toDisplayTime}
             setToDisplayTime={setToDisplayTime}
-            openDateSelect={openDateSelect}
-            setOpenDateSelect={setOpenDateSelect}
-            openStartDatePicker={openStartDatePicker}
-            setStartOpenDatePicker={setStartOpenDatePicker}
-            openEndDatePicker={openEndDatePicker}
-            setEndOpenDatePicker={setEndOpenDatePicker}
             recentSearches={recentSearches}
           />
         ) : (
@@ -230,12 +221,6 @@ export default function WorkflowPanel() {
             setFromDisplayTime={setFromDisplayTime}
             toDisplayTime={toDisplayTime}
             setToDisplayTime={setToDisplayTime}
-            openDateSelect={openDateSelect}
-            setOpenDateSelect={setOpenDateSelect}
-            openStartDatePicker={openStartDatePicker}
-            setStartOpenDatePicker={setStartOpenDatePicker}
-            openEndDatePicker={openEndDatePicker}
-            setEndOpenDatePicker={setEndOpenDatePicker}
             recentSearches={recentSearches}
           />
         )}

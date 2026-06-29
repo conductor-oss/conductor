@@ -139,7 +139,7 @@ export default function SplitButton({
           boxShadow: "4px 4px 10px 0px rgba(89, 89, 89, 0.41)",
           border: `1px solid ${blueLight}`,
           borderRadius: "6px",
-          width: "inherit",
+          width: "auto",
           minWidth: anchorRef.current?.offsetWidth ?? "100px",
         }}
         open={open}

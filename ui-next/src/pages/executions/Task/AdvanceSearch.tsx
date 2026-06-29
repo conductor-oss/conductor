@@ -34,12 +34,7 @@ interface AdvanceSearchComponentProps {
   endTimeStart: string;
   endTime: string;
   toDisplayTime: string;
-  openDateSelect: boolean;
-  openStartDatePicker: boolean;
-  setStartOpenDatePicker: Dispatch<SetStateAction<boolean>>;
-  setOpenDateSelect: Dispatch<SetStateAction<boolean>>;
   setToDisplayTime: Dispatch<SetStateAction<string>>;
-  openEndDatePicker: boolean;
   setFreeText: QueryDispatch<SetStateAction<string>>;
   setQueryText: QueryDispatch<SetStateAction<string>>;
   setShowCodeDialog: QueryDispatch<SetStateAction<string>>;
@@ -50,7 +45,6 @@ interface AdvanceSearchComponentProps {
   onEndFromChange: (val: string) => void;
   onEndToChange: (val: string) => void;
   setFromDisplayTime: Dispatch<SetStateAction<string>>;
-  setEndOpenDatePicker: Dispatch<SetStateAction<boolean>>;
   recentSearches: { start: string; end: string };
 }
 
@@ -68,16 +62,10 @@ export const AdvanceSearch = ({
   setShowCodeDialog,
   toDisplayTime,
   setToDisplayTime,
-  setOpenDateSelect,
-  setStartOpenDatePicker,
   startTimeEnd,
-  openDateSelect,
   endTimeStart,
-  openEndDatePicker,
   fromDisplayTime,
-  openStartDatePicker,
   setFromDisplayTime,
-  setEndOpenDatePicker,
   onEndFromChange,
   onEndToChange,
   recentSearches,
@@ -194,12 +182,6 @@ export const AdvanceSearch = ({
           setFromDisplayTime={setFromDisplayTime}
           toDisplayTime={toDisplayTime}
           setToDisplayTime={setToDisplayTime}
-          openDateSelect={openDateSelect}
-          setOpenDateSelect={setOpenDateSelect}
-          openStartDatePicker={openStartDatePicker}
-          setStartOpenDatePicker={setStartOpenDatePicker}
-          openEndDatePicker={openEndDatePicker}
-          setEndOpenDatePicker={setEndOpenDatePicker}
           disabled={
             queryText.includes("startTime") || queryText.includes("endTime")
           }
