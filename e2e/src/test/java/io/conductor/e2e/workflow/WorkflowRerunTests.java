@@ -6714,16 +6714,35 @@ public class WorkflowRerunTests {
                                         "completed branch must also have a FRESH subWorkflowId after dyn-fork rerun");
                             });
 
-            // Drive each fresh branch to completion
-            completeTask(
-                    findActiveTask(newF[0], "simple_ref", "fresh failing simple_ref"),
-                    TaskResult.Status.COMPLETED);
-            completeTask(
-                    findActiveTask(newCa[0], "simple_ref", "fresh cancelled simple_ref"),
-                    TaskResult.Status.COMPLETED);
-            completeTask(
-                    findActiveTask(newCo[0], "simple_ref", "fresh completed simple_ref"),
-                    TaskResult.Status.COMPLETED);
+            // Drive each fresh branch to completion — await before findActiveTask because
+            // SubWorkflow.start() creates children asynchronously; tasks may not be scheduled yet.
+            await().atMost(15, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () ->
+                                    completeTask(
+                                            findActiveTask(
+                                                    newF[0],
+                                                    "simple_ref",
+                                                    "fresh failing simple_ref"),
+                                            TaskResult.Status.COMPLETED));
+            await().atMost(15, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () ->
+                                    completeTask(
+                                            findActiveTask(
+                                                    newCa[0],
+                                                    "simple_ref",
+                                                    "fresh cancelled simple_ref"),
+                                            TaskResult.Status.COMPLETED));
+            await().atMost(15, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () ->
+                                    completeTask(
+                                            findActiveTask(
+                                                    newCo[0],
+                                                    "simple_ref",
+                                                    "fresh completed simple_ref"),
+                                            TaskResult.Status.COMPLETED));
 
             awaitWorkflowStatus(
                     parentId,
