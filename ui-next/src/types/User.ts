@@ -32,11 +32,13 @@ export interface AccessRole {
   permissions?: AccessPermission[];
 }
 
+export type DefaultAccess = "SYSTEM" | "READ_ONLY" | "NONE";
+
 export interface AccessGroup {
   id: string;
   description: string;
   roles: AccessRole[];
-  defaultAccess: unknown; // TODO fixme
+  defaultAccess: DefaultAccess | null;
 }
 
 export interface User {
@@ -46,6 +48,8 @@ export interface User {
   name: string;
   roles: AccessRole[];
   uuid: string;
+  /** Broad access level computed by the backend on /token/userInfo. */
+  defaultAccess?: DefaultAccess;
 }
 
 export interface UserContext {
