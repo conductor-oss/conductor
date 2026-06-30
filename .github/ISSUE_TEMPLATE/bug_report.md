@@ -7,6 +7,10 @@ assignees: ''
 
 ---
 
+> [!WARNING]
+> **Are you using the conductor.build AI coding assistant?**
+> This repo is for [Conductor OSS](https://github.com/conductor-oss/conductor) — the workflow orchestration engine — **not** the conductor.build desktop app. If your issue is with the AI coding tool, visit [conductor.build/docs](https://www.conductor.build/docs) where you'll find their Discord and support email.
+
 **Describe the bug**
 A clear and concise description of what the bug is.
 
