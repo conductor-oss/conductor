@@ -51,8 +51,8 @@ class SetVariableTaskTest extends AbstractSpecification {
         assertEquals(1, workflow.getTasks().size());
         assertEquals("SET_VARIABLE", workflow.getTasks().get(0).getTaskType());
         assertEquals(Task.Status.COMPLETED, workflow.getTasks().get(0).getStatus());
-        assertEquals("[var:var_test_value]", workflow.getVariables().toString());
-        assertEquals("[variables:[var:var_test_value]]", workflow.getOutput().toString());
+        assertEquals(Map.of("var", "var_test_value"), workflow.getVariables());
+        assertEquals(Map.of("variables", Map.of("var", "var_test_value")), workflow.getOutput());
     }
 
     @Test
@@ -85,7 +85,8 @@ class SetVariableTaskTest extends AbstractSpecification {
         assertEquals(
                 Task.Status.FAILED_WITH_TERMINAL_ERROR, workflow.getTasks().get(0).getStatus());
         assertEquals(expectedErrorMessage, workflow.getTasks().get(0).getReasonForIncompletion());
-        assertEquals("[:]", workflow.getVariables().toString());
-        assertEquals("[variables:[:]]", workflow.getOutput().toString());
+        assertTrue(workflow.getVariables().isEmpty());
+        assertTrue(workflow.getOutput().containsKey("variables"));
+        assertTrue(((Map<?, ?>) workflow.getOutput().get("variables")).isEmpty());
     }
 }

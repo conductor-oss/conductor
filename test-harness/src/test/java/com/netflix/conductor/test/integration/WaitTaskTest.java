@@ -78,7 +78,7 @@ class WaitTaskTest extends AbstractSpecification {
         assertEquals(Task.Status.COMPLETED, execution2.getTasks().get(1).getStatus());
         assertEquals("WAIT", execution2.getTasks().get(2).getTaskType());
         assertEquals(Task.Status.IN_PROGRESS, execution2.getTasks().get(2).getStatus());
-        assertEquals("[var:var_test_value]", execution2.getVariables().toString());
+        assertEquals(Map.of("var", "var_test_value"), execution2.getVariables());
 
         // when: The wait task is completed
         Task waitTask =
@@ -99,8 +99,8 @@ class WaitTaskTest extends AbstractSpecification {
         assertEquals(Task.Status.COMPLETED, execution3.getTasks().get(1).getStatus());
         assertEquals("WAIT", execution3.getTasks().get(2).getTaskType());
         assertEquals(Task.Status.COMPLETED, execution3.getTasks().get(2).getStatus());
-        assertEquals("[var:var_test_value]", execution3.getVariables().toString());
-        assertEquals("[variables:[var:var_test_value]]", execution3.getOutput().toString());
+        assertEquals(Map.of("var", "var_test_value"), execution3.getVariables());
+        assertEquals(Map.of("variables", Map.of("var", "var_test_value")), execution3.getOutput());
     }
 
     @Test

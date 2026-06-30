@@ -83,7 +83,7 @@ class LambdaAndTerminateTaskTest extends AbstractSpecification {
         assertEquals("TERMINATE", workflow.getTasks().get(1).getTaskType());
         assertEquals(2, workflow.getTasks().get(1).getSeq());
         assertEquals(1, workflow.getOutput().size());
-        assertEquals("[result:[testvalue:true]]", workflow.getOutput().toString());
+        assertEquals(Map.of("result", Map.of("testvalue", true)), workflow.getOutput());
     }
 
     @Test
@@ -277,7 +277,7 @@ class LambdaAndTerminateTaskTest extends AbstractSpecification {
         assertEquals(Workflow.WorkflowStatus.FAILED, workflow.getStatus());
         assertEquals(3, workflow.getTasks().size());
         assertEquals(1, workflow.getOutput().size());
-        assertEquals("[output:task1 completed]", workflow.getOutput().toString());
+        assertEquals(Map.of("output", "task1 completed"), workflow.getOutput());
         assertTrue(
                 workflow.getReasonForIncompletion()
                         .contains("Workflow is FAILED by TERMINATE task"));
@@ -311,7 +311,8 @@ class LambdaAndTerminateTaskTest extends AbstractSpecification {
         assertEquals(Task.Status.COMPLETED, workflow.getTasks().get(0).getStatus());
         assertEquals("LAMBDA", workflow.getTasks().get(0).getTaskType());
         assertEquals(
-                "[result:[testvalue:true]]", workflow.getTasks().get(0).getOutputData().toString());
+                Map.of("result", Map.of("testvalue", true)),
+                workflow.getTasks().get(0).getOutputData());
         assertEquals(1, workflow.getTasks().get(0).getSeq());
     }
 }

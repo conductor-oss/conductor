@@ -129,7 +129,10 @@ class SimpleWorkflowTest extends AbstractSpecification {
         assertNull(workflow.getTasks().get(0).getInputData().get("someNullKey"));
 
         Map<String, Object> outputParams = new HashMap<>();
-        outputParams.put("someOtherKey", Map.of("a", 1, "A", null));
+        Map<String, Object> innerMap = new HashMap<>();
+        innerMap.put("a", 1);
+        innerMap.put("A", null);
+        outputParams.put("someOtherKey", innerMap);
         outputParams.put("someKey", null);
         Task task1 =
                 workflowTestUtil.pollAndCompleteTask(
