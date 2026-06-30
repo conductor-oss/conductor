@@ -99,9 +99,7 @@ export const useSidebarMenu = (
 
   return {
     openedMenus,
-    isSidebarHidden:
-      location.pathname === "/integrations/addIntegration" ||
-      location.pathname === "/login",
+    isSidebarHidden: location.pathname === "/login",
     isBannerOpen,
     isSearchModalOpen,
     location,
