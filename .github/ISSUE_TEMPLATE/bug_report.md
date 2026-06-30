@@ -8,8 +8,16 @@ assignees: ''
 ---
 
 > [!WARNING]
-> **Are you using the conductor.build AI coding assistant?**
-> This repo is for [Conductor OSS](https://github.com/conductor-oss/conductor) — the workflow orchestration engine — **not** the conductor.build desktop app. If your issue is with the AI coding tool, visit [conductor.build/docs](https://www.conductor.build/docs) where you'll find their Discord and support email.
+> **Wrong repository?** This is `conductor-oss/conductor` — an open-source Java workflow orchestration engine (server JAR, REST API, task workers). It is **not** `conductor.build`, which is a separate AI coding desktop app.
+>
+> **Stop and go to [conductor.build/docs](https://www.conductor.build/docs) instead if your issue involves any of:**
+> - OpenCode, ACP providers, or AI model selection in a desktop UI
+> - Bundled binaries under `~/Library/Application Support/com.conductor.app/`
+> - Workspaces, branches, or coding agent tasks in a desktop app
+> - `settings.toml` configuration for a desktop app
+> - Errors like "Internal error: OpenCode service failure"
+>
+> Their Discord and support email are listed on that page.
 
 **Describe the bug**
 A clear and concise description of what the bug is.
