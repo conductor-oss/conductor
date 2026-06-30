@@ -644,6 +644,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
 
         if (task.getStatus() != null && task.getStatus().isTerminal()) {
             removeTaskInProgress(connection, task);
+            removeScheduledTask(connection, task, taskKey(task));
         }
 
         addWorkflowToTaskMapping(connection, task);
