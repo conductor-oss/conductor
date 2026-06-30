@@ -13,20 +13,25 @@
 package com.netflix.conductor.metrics;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.dao.TaskMetricInfo;
+import com.netflix.conductor.dao.WorkflowMetricInfo;
 import com.netflix.conductor.service.MetadataService;
+
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class)
 public class WorkflowMonitorTest {
@@ -43,32 +48,59 @@ public class WorkflowMonitorTest {
                 new WorkflowMonitor(metadataService, queueDAO, executionDAOFacade, 1000, Set.of());
     }
 
-    private WorkflowDef makeDef(String name, int version, String ownerApp) {
-        WorkflowDef wd = new WorkflowDef();
-        wd.setName(name);
-        wd.setVersion(version);
-        wd.setOwnerApp(ownerApp);
-        return wd;
+    @Test
+    public void testReportMetricsQueriesPerWorkflowName() {
+        when(metadataService.getWorkflowMetricInfo())
+                .thenReturn(
+                        List.of(
+                                new WorkflowMetricInfo("workflow1", "owner1"),
+                                new WorkflowMetricInfo("workflow2", "owner2")));
+        when(metadataService.getTaskMetricInfo()).thenReturn(List.of());
+
+        workflowMonitor.reportMetrics();
+
+        verify(executionDAOFacade).getPendingWorkflowCount("workflow1");
+        verify(executionDAOFacade).getPendingWorkflowCount("workflow2");
     }
 
     @Test
-    public void testPendingWorkflowDataMap() {
-        WorkflowDef test1_1 = makeDef("test1", 1, null);
-        WorkflowDef test1_2 = makeDef("test1", 2, "name1");
+    public void testReportMetricsRecordsInProgressOnlyWhenConcurrencyLimited() {
+        when(metadataService.getWorkflowMetricInfo()).thenReturn(List.of());
+        when(metadataService.getTaskMetricInfo())
+                .thenReturn(
+                        List.of(
+                                new TaskMetricInfo("limited", "owner", 5),
+                                new TaskMetricInfo("unlimited", "owner", 0)));
 
-        WorkflowDef test2_1 = makeDef("test2", 1, "first");
-        WorkflowDef test2_2 = makeDef("test2", 2, "mid");
-        WorkflowDef test2_3 = makeDef("test2", 3, "last");
+        workflowMonitor.reportMetrics();
 
-        final Map<String, String> mapping =
-                workflowMonitor.getPendingWorkflowToOwnerAppMap(
-                        List.of(test1_1, test1_2, test2_1, test2_2, test2_3));
+        // Queue depth is recorded for every task; in-progress count is queried for both, but
+        // only the concurrency-limited task should drive an in-progress metric.
+        verify(queueDAO).getSize("limited");
+        verify(queueDAO).getSize("unlimited");
+        verify(executionDAOFacade).getInProgressTaskCount("limited");
+    }
 
-        Assert.assertEquals(2, mapping.keySet().size());
-        Assert.assertTrue(mapping.containsKey("test1"));
-        Assert.assertTrue(mapping.containsKey("test2"));
+    @Test
+    public void testRefreshHappensOncePerInterval() {
+        when(metadataService.getWorkflowMetricInfo()).thenReturn(List.of());
+        when(metadataService.getTaskMetricInfo()).thenReturn(List.of());
 
-        Assert.assertEquals("name1", mapping.get("test1"));
-        Assert.assertEquals("last", mapping.get("test2"));
+        workflowMonitor.reportMetrics();
+        workflowMonitor.reportMetrics();
+
+        // metadataRefreshInterval is 1000, so the cached defs are reused on the second call.
+        verify(metadataService, times(1)).getWorkflowMetricInfo();
+        verify(metadataService, times(1)).getTaskMetricInfo();
+    }
+
+    @Test
+    public void testNoMetricsWhenCatalogEmpty() {
+        when(metadataService.getWorkflowMetricInfo()).thenReturn(List.of());
+        when(metadataService.getTaskMetricInfo()).thenReturn(List.of());
+
+        workflowMonitor.reportMetrics();
+
+        verify(executionDAOFacade, never()).getPendingWorkflowCount(anyString());
     }
 }

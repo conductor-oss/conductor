@@ -34,6 +34,8 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dao.TaskMetricInfo;
+import com.netflix.conductor.dao.WorkflowMetricInfo;
 import com.netflix.conductor.validations.ValidationContext;
 
 @Service
@@ -236,6 +238,16 @@ public class MetadataServiceImpl implements MetadataService {
     @Override
     public List<WorkflowDef> getWorkflowDefsLatestVersions() {
         return metadataDAO.getAllWorkflowDefsLatestVersions();
+    }
+
+    @Override
+    public List<WorkflowMetricInfo> getWorkflowMetricInfo() {
+        return metadataDAO.getWorkflowMetricInfo();
+    }
+
+    @Override
+    public List<TaskMetricInfo> getTaskMetricInfo() {
+        return metadataDAO.getTaskMetricInfo();
     }
 
     public Map<String, ? extends Iterable<WorkflowDefSummary>> getWorkflowNamesAndVersions() {
