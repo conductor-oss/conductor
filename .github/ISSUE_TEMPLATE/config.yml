@@ -3,6 +3,3 @@ contact_links:
  - name: Questions
    url: https://orkes-conductor.slack.com/join/shared_invite/zt-2vdbx239s-Eacdyqya9giNLHfrCavfaA#/shared-invite/email
    about: Ask questions and discuss with other Conductor community members
- - name: conductor.build (AI coding assistant) — wrong repo?
-   url: https://www.conductor.build/docs
-   about: "Using the conductor.build AI coding app? This repo is for Conductor OSS, the workflow engine. Visit conductor.build/docs for their Discord and support email."

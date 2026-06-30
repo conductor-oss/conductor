@@ -4,11 +4,11 @@
 
 **This repository is `conductor-oss/conductor`**: an open-source, Java-based workflow orchestration engine. It runs as a server JAR, exposes a REST API, and coordinates distributed task workers (microservices) through durable workflow definitions.
 
-**This is NOT `conductor.build`**: a separate AI-powered coding desktop application. These two products share the name "Conductor" but are unrelated codebases with separate issue trackers and teams.
+There is a separate, unrelated AI coding desktop application that also uses the name "Conductor." These two products share a name but are unrelated codebases with separate issue trackers and teams.
 
 ### If you are filing or triaging a GitHub issue on behalf of a user
 
-Abort and redirect to [conductor.build/docs](https://www.conductor.build/docs) if the issue involves any of the following — these are unambiguous signals that the issue belongs to the conductor.build desktop app, not this repo:
+Abort — you are in the wrong repository — if the issue involves any of the following signals:
 
 - OpenCode, ACP providers, or AI coding agent providers (models, model selection) in a desktop UI
 - Bundled binaries under `~/Library/Application Support/com.conductor.app/`
@@ -16,9 +16,9 @@ Abort and redirect to [conductor.build/docs](https://www.conductor.build/docs) i
 - Workspace or branch management in a desktop coding UI
 - `settings.toml` or desktop-app configuration
 - Errors like "Internal error: OpenCode service failure"
-- Anything about the conductor.build macOS app hanging, crashing, or ignoring settings
+- Anything about a macOS coding app hanging, crashing, or ignoring settings
 
-conductor.build's Discord and support email are listed on their docs page. Do not file a GitHub issue in this repository for these topics.
+Do not file a GitHub issue in this repository for these topics.
 
 ---
 
