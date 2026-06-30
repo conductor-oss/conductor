@@ -2,8 +2,10 @@ import { Box, FormControlLabel, Grid, Switch, Typography } from "@mui/material";
 import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
 import ConductorInput from "components/ui/inputs/ConductorInput";
 import ConductorSelect from "components/ui/inputs/ConductorSelect";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import { Button, IconButton } from "@mui/material";
 import { FunctionComponent, useState } from "react";
-import { useWorkflowNames } from "utils/query";
+import { useWorkflowNames, useWorkflowNamesAndVersions } from "utils/query";
 import ConductorFlexibleAutoCompleteVariables from "./ConductorFlexibleAutoCompleteVariables";
 
 interface GuardrailsFormProps {
@@ -17,6 +19,8 @@ type FailureMode = "FAIL" | "WARN";
 interface GuardrailConfig {
   type?: GuardrailType;
   target?: string;
+  version?: number;
+  headers?: Record<string, string>;
   failureMode?: FailureMode;
 }
 
@@ -65,7 +69,16 @@ const GuardrailEditor: FunctionComponent<{
   taskJson: any;
   onChange: (value: any) => void;
   workflowNames: string[];
-}> = ({ title, description, paramKey, taskJson, onChange, workflowNames }) => {
+  versionsByName: Map<string, number[]>;
+}> = ({
+  title,
+  description,
+  paramKey,
+  taskJson,
+  onChange,
+  workflowNames,
+  versionsByName,
+}) => {
   const existing: GuardrailConfig | undefined =
     taskJson?.inputParameters?.[paramKey];
   const [enabled, setEnabled] = useState<boolean>(!!existing);
@@ -93,6 +106,23 @@ const GuardrailEditor: FunctionComponent<{
   };
 
   const patch = (p: Partial<GuardrailConfig>) => writeConfig({ ...value, ...p });
+
+  // HTTP headers are edited as key/value rows, persisted as a Record on the config.
+  const [headerRows, setHeaderRows] = useState<{ key: string; value: string }[]>(
+    () =>
+      Object.entries(value.headers ?? {}).map(([k, v]) => ({
+        key: k,
+        value: String(v),
+      })),
+  );
+  const writeHeaders = (rows: { key: string; value: string }[]) => {
+    setHeaderRows(rows);
+    const obj: Record<string, string> = {};
+    rows.forEach((r) => {
+      if (r.key.trim()) obj[r.key.trim()] = r.value;
+    });
+    patch({ headers: Object.keys(obj).length ? obj : undefined });
+  };
 
   // Client-side validation mirrors the server's GuardrailConfigValidator.
   const typeError = enabled && !value.type;
@@ -149,12 +179,34 @@ const GuardrailEditor: FunctionComponent<{
                 error={!!targetError}
               />
             ) : value.type === "WORKFLOW" ? (
-              <ConductorFlexibleAutoCompleteVariables
-                label={targetLabel(value.type)}
-                options={workflowNames}
-                value={value.target ?? ""}
-                onChange={(v: any) => patch({ target: v })}
-              />
+              <Grid container spacing={2}>
+                <Grid size={8}>
+                  <ConductorFlexibleAutoCompleteVariables
+                    label={targetLabel(value.type)}
+                    options={workflowNames}
+                    value={value.target ?? ""}
+                    onChange={(v: any) =>
+                      patch({ target: v, version: undefined })
+                    }
+                  />
+                </Grid>
+                <Grid size={4}>
+                  <ConductorSelect
+                    label="Version (optional)"
+                    fullWidth
+                    items={[
+                      { label: "Latest", value: "" },
+                      ...(versionsByName.get(value.target ?? "") ?? []).map(
+                        (v) => ({ label: `v${v}`, value: String(v) }),
+                      ),
+                    ]}
+                    value={value.version != null ? String(value.version) : ""}
+                    onTextInputChange={(v) =>
+                      patch({ version: v ? Number(v) : undefined })
+                    }
+                  />
+                </Grid>
+              </Grid>
             ) : (
               <ConductorInput
                 label={targetLabel(value.type)}
@@ -184,6 +236,63 @@ const GuardrailEditor: FunctionComponent<{
               </Typography>
             )}
           </Grid>
+
+          {value.type === "HTTP" && (
+            <Grid size={12}>
+              <Box sx={{ fontWeight: 600, color: "#767676", mb: 1 }}>
+                Headers (optional)
+              </Box>
+              {headerRows.map((row, i) => (
+                <Box
+                  key={i}
+                  sx={{ display: "flex", gap: 1, mb: 1, alignItems: "center" }}
+                >
+                  <ConductorInput
+                    label="Header"
+                    placeholder="Authorization"
+                    value={row.key}
+                    onTextInputChange={(v) =>
+                      writeHeaders(
+                        headerRows.map((r, j) =>
+                          j === i ? { ...r, key: v } : r,
+                        ),
+                      )
+                    }
+                  />
+                  <ConductorInput
+                    label="Value"
+                    placeholder="Bearer ..."
+                    fullWidth
+                    value={row.value}
+                    onTextInputChange={(v) =>
+                      writeHeaders(
+                        headerRows.map((r, j) =>
+                          j === i ? { ...r, value: v } : r,
+                        ),
+                      )
+                    }
+                  />
+                  <IconButton
+                    size="small"
+                    aria-label="Remove header"
+                    onClick={() =>
+                      writeHeaders(headerRows.filter((_, j) => j !== i))
+                    }
+                  >
+                    <DeleteOutlineIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              ))}
+              <Button
+                size="small"
+                onClick={() =>
+                  writeHeaders([...headerRows, { key: "", value: "" }])
+                }
+              >
+                + Add header
+              </Button>
+            </Grid>
+          )}
         </Grid>
       )}
     </Box>
@@ -195,12 +304,15 @@ export const GuardrailsForm: FunctionComponent<GuardrailsFormProps> = ({
   taskJson,
 }) => {
   const workflowNames = useWorkflowNames();
+  const versionsByName = useWorkflowNamesAndVersions();
   return (
     <Box>
       <Box style={{ opacity: 0.5 }}>
         Guardrails scrub or validate the prompt before it reaches the LLM
         (input) and the response before it returns (output). Each guardrail runs
-        as a linked sub-workflow.
+        as a linked sub-workflow that receives the text as{" "}
+        <code>{`{ "prompt": "<text>" }`}</code> and must return{" "}
+        <code>{`{ "prompt": "<scrubbed text>" }`}</code>.
       </Box>
       <GuardrailEditor
         title="Input guardrail"
@@ -209,6 +321,7 @@ export const GuardrailsForm: FunctionComponent<GuardrailsFormProps> = ({
         taskJson={taskJson}
         onChange={onChange}
         workflowNames={workflowNames}
+        versionsByName={versionsByName}
       />
       <GuardrailEditor
         title="Output guardrail"
@@ -217,6 +330,7 @@ export const GuardrailsForm: FunctionComponent<GuardrailsFormProps> = ({
         taskJson={taskJson}
         onChange={onChange}
         workflowNames={workflowNames}
+        versionsByName={versionsByName}
       />
     </Box>
   );
