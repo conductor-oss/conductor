@@ -20,6 +20,7 @@ import {
   SearchProviderRegistration,
   SidebarExtension,
   SidebarItemRegistration,
+  TaskExecutionPanelRegistration,
   TaskMenuItemRegistration,
 } from "./types";
 
@@ -297,6 +298,24 @@ function createPluginRegistry(): PluginRegistry {
       }
       // Sort by order (lower = first)
       return sections.sort((a, b) => a.order - b.order);
+    },
+
+    /**
+     * Get all task execution panels (extra tabs in the execution task detail panel)
+     * registered for the given task type.
+     */
+    getTaskExecutionPanels(taskType: string): TaskExecutionPanelRegistration[] {
+      const panels: TaskExecutionPanelRegistration[] = [];
+      for (const plugin of plugins) {
+        if (plugin.taskExecutionPanels) {
+          panels.push(
+            ...plugin.taskExecutionPanels.filter((p) =>
+              p.taskTypes.includes(taskType),
+            ),
+          );
+        }
+      }
+      return panels;
     },
 
     /**

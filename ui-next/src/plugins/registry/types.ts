@@ -365,6 +365,35 @@ export interface DependencySectionRegistration {
 }
 
 // ============================================================================
+// Task Execution Panel Types
+// ============================================================================
+
+/**
+ * Props passed to a task execution panel component (rendered as an extra tab in
+ * the execution view's right panel for a selected task).
+ */
+export interface TaskExecutionPanelProps {
+  /** The selected task execution. */
+  taskResult: any;
+}
+
+/**
+ * Registration for an extra tab in the execution view's task detail (right) panel.
+ * Plugins use this to surface task-type-specific views (e.g. guardrail executions)
+ * without modifying the core execution page.
+ */
+export interface TaskExecutionPanelRegistration {
+  /** Unique identifier for this panel. */
+  id: string;
+  /** Tab label. */
+  label: string;
+  /** Task types this panel applies to (e.g. ["LLM_CHAT_COMPLETE"]). */
+  taskTypes: string[];
+  /** Component rendered in the tab; receives the selected task. */
+  component: ComponentType<TaskExecutionPanelProps>;
+}
+
+// ============================================================================
 // Main Plugin Interface
 // ============================================================================
 
@@ -466,6 +495,12 @@ export interface ConductorPlugin {
    * Enterprise plugins register sections for integrations, prompts, secrets, etc.
    */
   dependencySections?: DependencySectionRegistration[];
+
+  /**
+   * Extra tabs in the execution view's task detail panel, shown for matching task
+   * types. Enterprise plugins use this to add task-specific views (e.g. guardrails).
+   */
+  taskExecutionPanels?: TaskExecutionPanelRegistration[];
 
   /**
    * Schema edit dialog component for inline schema editing in task forms.
@@ -608,6 +643,9 @@ export interface PluginRegistry {
    * Returns sections sorted by order.
    */
   getDependencySections(): DependencySectionRegistration[];
+
+  /** Get task execution panels registered for the given task type. */
+  getTaskExecutionPanels(taskType: string): TaskExecutionPanelRegistration[];
 
   /**
    * Get the schema edit dialog component.

@@ -28,6 +28,7 @@ import { ActorRef } from "xstate";
 import { UpdateTaskStatusForm } from "..";
 import {
   DEFINITION_TAB,
+  PLUGIN_PANEL_TAB_BASE,
   INPUT_TAB,
   JSON_TAB,
   LOGS_TAB,
@@ -36,6 +37,7 @@ import {
 } from "../state/constants";
 import TaskLogs from "../TaskLogs";
 import TaskSummary from "../TaskSummary";
+import { pluginRegistry } from "plugins/registry";
 import { RightPanelContextEventTypes, RightPanelEvents } from "./state";
 import { useRightPanelActor } from "./state/hook";
 import { SummaryTask } from "./SummaryTask";
@@ -335,6 +337,17 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
             label="Definition"
             onClick={() => changeCurrentTab(DEFINITION_TAB)}
           />
+          {pluginRegistry
+            .getTaskExecutionPanels(`${selectedTask?.taskType}`)
+            .map((panel, i) => (
+              <Tab
+                key={panel.id}
+                label={panel.label}
+                value={PLUGIN_PANEL_TAB_BASE + i}
+                onClick={() => changeCurrentTab(PLUGIN_PANEL_TAB_BASE + i)}
+                disabled={!selectedTask.status}
+              />
+            ))}
         </Tabs>
         <Paper square elevation={0}>
           {currentTab === SUMMARY_TAB && (
@@ -412,6 +425,22 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
               editorHeight="calc(100vh - 280px)"
             />
           )}
+          {pluginRegistry
+            .getTaskExecutionPanels(`${selectedTask?.taskType}`)
+            .map((panel, i) =>
+              currentTab === PLUGIN_PANEL_TAB_BASE + i ? (
+                <Box
+                  key={panel.id}
+                  style={{
+                    overflowY: "auto",
+                    overflowX: "hidden",
+                    maxHeight: "calc(100vh - 100px)",
+                  }}
+                >
+                  <panel.component taskResult={selectedTask} />
+                </Box>
+              ) : null,
+            )}
         </Paper>
       </>
     </Paper>
