@@ -67,6 +67,22 @@ See the [Quickstart guide](https://docs.conductor-oss.org/quickstart/) for the f
 docker run -p 5000:5000 -p 8080:8080 conductoross/conductor:next
 ```
 
+**Docker Compose from this checkout**:
+
+Run this from the repository root so `.env`, `docker\docker-compose.yaml`, and `prompts\` resolve as relative paths:
+
+```powershell
+docker compose --env-file .env -f docker\docker-compose.yaml up --build
+```
+
+For Gemini workflows, keep prompt loading relative in `.env`:
+
+```text
+CONDUCTOR_GEMINI_PROMPT_DIR=prompts
+```
+
+Prompt templates are loaded from `prompts\`, for example `prompts\attachment_classify.j2`, `prompts\grn_extraction.j2`, and `prompts\pod_extraction.j2`.
+
 All CLI commands have equivalent cURL/API calls. See the [Quickstart](https://docs.conductor-oss.org/quickstart/) for details.
 
 

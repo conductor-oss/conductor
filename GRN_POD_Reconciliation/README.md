@@ -26,6 +26,7 @@ Required values:
 - `GEMINI_API_BASE_URL`: optional Gemini API base URL override. Leave empty to use the SDK default endpoint.
 - `GEMINI_API_KEY`: Gemini API key.
 - `GEMINI_MODEL`: Gemini model to use for classification and OCR.
+- `CONDUCTOR_GEMINI_PROMPT_DIR`: Gemini prompt template directory for the Conductor server. Use `prompts` when running from the repository root.
 
 Gemini authentication modes:
 
@@ -60,6 +61,7 @@ Local paths:
 
 - `LOCAL_INPUT_DIR` stores downloaded Drive files.
 - `LOCAL_OUTPUT_DIR` stores `classification.json`, `extracted_data.json`, `extracted_data.csv`, `reconciliation_result.json`, and `reconciliation_result.csv`.
+- `CONDUCTOR_GEMINI_PROMPT_DIR=prompts` loads server-side Gemini prompt templates from `prompts/`.
 
 ## Install
 
@@ -91,10 +93,22 @@ Use this option when you want to run the Conductor server image built from this 
 
 ```powershell
 cd finteract-conductor
-docker compose -f docker/docker-compose.yaml up --build
+docker compose --env-file .env -f docker\docker-compose.yaml up --build
 ```
 
-The compose file in this repository maps container port `8080` to host port `8000`.
+Run this command from the repository root so `.env`, `docker\docker-compose.yaml`, and `prompts\` all resolve as relative paths. The compose file in this repository maps container port `8080` to host port `8000`.
+
+The server-side Gemini prompt templates are loaded from `CONDUCTOR_GEMINI_PROMPT_DIR`. For this checkout, keep the value relative:
+
+```text
+CONDUCTOR_GEMINI_PROMPT_DIR=prompts
+```
+
+The expected prompt files are:
+
+- `prompts\attachment_classify.j2`
+- `prompts\grn_extraction.j2`
+- `prompts\pod_extraction.j2`
 
 Local URLs:
 
@@ -114,7 +128,7 @@ CONDUCTOR_API_BASE_URL=http://localhost:8000/api
 Stop the stack when done:
 
 ```powershell
-docker compose -f docker/docker-compose.yaml down
+docker compose --env-file .env -f docker\docker-compose.yaml down
 ```
 
 

@@ -1748,6 +1748,8 @@ export const schemasByType = {
   [TaskType.LIST_FILES]: listFilesTaskSchema,
   [TaskType.PARSE_DOCUMENT]: parseDocumentTaskSchema,
   [TaskType.GDRIVE_READ]: gDriveReadTaskSchema,
+  [TaskType.GEMINI_LLM]: genericSchema,
+  [TaskType.GRN_POD_RECONCILE]: genericSchema,
 };
 
 // Object.values(TaskType)

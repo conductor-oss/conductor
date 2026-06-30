@@ -18,6 +18,7 @@ LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
 COPY . /conductor
 WORKDIR /conductor
+RUN mkdir -p /conductor/prompts
 
 RUN if [ "$PREBUILT" = "true" ]; then \
       rm -rf server/build/libs && mkdir -p server/build/libs && \
@@ -73,6 +74,7 @@ RUN mkdir -p /app/config /app/logs /app/libs
 COPY docker/server/bin /app
 COPY docker/server/config /app/config
 COPY --from=builder /conductor/server/build/libs/*boot*.jar /app/libs/conductor-server.jar
+COPY --from=builder /conductor/prompts /app/libs/prompts
 
 # Copy compiled UI assets to nginx www directory
 WORKDIR /usr/share/nginx/html

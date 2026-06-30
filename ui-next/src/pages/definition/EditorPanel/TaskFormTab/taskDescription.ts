@@ -29,6 +29,10 @@ export const taskDescriptions: TaskDescriptions = {
   [TaskType.UPDATE_TASK]: "A system task to update the status of other tasks.",
   [TaskType.GDRIVE_READ]:
     "A system task that reads file metadata from Google Drive using a stored account connection.",
+  [TaskType.GEMINI_LLM]:
+    "A system task that runs Gemini on Google Drive documents.",
+  [TaskType.GRN_POD_RECONCILE]:
+    "A system task that reconciles extracted GRN and POD records.",
 
   // operator
 

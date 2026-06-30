@@ -231,6 +231,14 @@ const extractIntegrationName = (task: CommonTaskDef): string[] => {
 const extractPromptName = (task: CommonTaskDef): string[] => {
   if (isLLMTask(task)) {
     if (
+      "promptname" in task.inputParameters &&
+      task.inputParameters.promptname != null &&
+      !hasWorkflowVariable(task.inputParameters.promptname)
+    ) {
+      return [task.inputParameters.promptname];
+    }
+
+    if (
       "promptName" in task.inputParameters &&
       task.inputParameters.promptName != null &&
       !hasWorkflowVariable(task.inputParameters.promptName)

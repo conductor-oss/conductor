@@ -33,6 +33,12 @@ import { fetchWithContext, useFetchContext } from "../../plugins/fetch";
 const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.readonly";
 const SESSION_KEY = "conductor.gdrive.oauth";
 const READ_G_DRIVE_TASK_NAME = "read_g_drive";
+const GEMINI_TASK_NAME = "gemini_llm";
+const GEMINI_RECONCILE_TASK_NAME = "grn_pod_reconcile";
+const DEFAULT_GEMINI_CONNECTION_ID = "gemini-default";
+const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+const DEFAULT_GEMINI_PROMPT_NAME = "enterj2 name";
+const DEFAULT_GEMINI_PROMPT = "enter your prompt";
 
 function createConnectionId() {
   if (window.crypto && window.crypto.randomUUID) {
@@ -150,34 +156,6 @@ function safeParseJson(value) {
   }
 }
 
-function getOAuthClient(jsonText) {
-  const json = safeParseJson(jsonText);
-  if (!json) {
-    return {};
-  }
-
-  const client = json.installed || json.web || json;
-  return {
-    clientId: client.client_id || json.client_id,
-    clientSecret: client.client_secret || json.client_secret,
-    redirectUri:
-      window.location.origin +
-      window.location.pathname.replace(/\/+$/, "") +
-      window.location.search.replace(/\?.*$/, ""),
-  };
-}
-
-function buildOAuthClientJson(clientId, clientSecret) {
-  return JSON.stringify({
-    installed: {
-      client_id: clientId,
-      client_secret: clientSecret,
-      auth_uri: "https://accounts.google.com/o/oauth2/auth",
-      token_uri: "https://oauth2.googleapis.com/token",
-    },
-  });
-}
-
 function buildOAuthUrl({ connectionId, clientId }) {
   if (!clientId) {
     return "";
@@ -220,18 +198,83 @@ function workflowInput(name) {
 }
 
 function taskSnippet(maxFiles) {
+  return JSON.stringify(buildReadDriveWorkflowTask(maxFiles), null, 2);
+}
+
+function reconcileTaskSnippet() {
   return JSON.stringify(
     {
-      name: READ_G_DRIVE_TASK_NAME,
-      taskReferenceName: `${READ_G_DRIVE_TASK_NAME}_ref`,
-      type: "GDRIVE_READ",
+      name: GEMINI_RECONCILE_TASK_NAME,
+      taskReferenceName: `${GEMINI_RECONCILE_TASK_NAME}_ref`,
+      type: "GRN_POD_RECONCILE",
       inputParameters: {
-        connectionId: workflowInput("gdriveConnectionId"),
-        folderIds: workflowInput("driveFolderIds"),
-        fileIds: workflowInput("driveFileIds"),
-        maxFiles,
+        grnList: workflowInput("grnList"),
+        podList: workflowInput("podList"),
       },
     },
+    null,
+    2
+  );
+}
+
+function buildReadDriveWorkflowTask(maxFiles) {
+  return {
+    name: READ_G_DRIVE_TASK_NAME,
+    taskReferenceName: `${READ_G_DRIVE_TASK_NAME}_ref`,
+    type: "GDRIVE_READ",
+    inputParameters: {
+      connectionId: workflowInput("gdriveConnectionId"),
+      folderIds: workflowInput("driveFolderIds"),
+      fileIds: workflowInput("driveFileIds"),
+      maxFiles,
+    },
+  };
+}
+
+function buildGeminiTask({
+  connectionId,
+  promptname,
+  model,
+  files,
+  prompt,
+  gdriveConnectionId,
+  taskReferenceName = `${GEMINI_TASK_NAME}_ref`,
+}) {
+  const inputParameters = {
+    connectionId,
+    model,
+    jsonOutput: true,
+  };
+  if (promptname !== undefined) {
+    inputParameters.promptname = promptname;
+  }
+  if (prompt !== undefined) {
+    inputParameters.prompt = prompt;
+  }
+  if (files !== undefined) {
+    inputParameters.files = files;
+  }
+  if (gdriveConnectionId !== undefined) {
+    inputParameters.gdriveConnectionId = gdriveConnectionId;
+  }
+
+  return {
+    name: GEMINI_TASK_NAME,
+    taskReferenceName,
+    type: "GEMINI_LLM",
+    inputParameters,
+  };
+}
+
+function geminiTaskSnippet({ connectionId, model, promptname, prompt }) {
+  return JSON.stringify(
+    buildGeminiTask({
+      connectionId,
+      model,
+      promptname,
+      prompt,
+      files: `${String.fromCharCode(36)}{gdrive_task_ref.output.files}`,
+    }),
     null,
     2
   );
@@ -280,7 +323,7 @@ function buildReadGDriveTaskDefinition() {
       "maxFiles",
       "mimeTypes",
     ],
-    outputKeys: ["folderIds", "fileIds", "files", "count"],
+    outputKeys: ["folderIds", "fileIds", "files", "documents", "count"],
     timeoutPolicy: "TIME_OUT_WF",
     retryLogic: "FIXED",
     retryDelaySeconds: 60,
@@ -322,13 +365,15 @@ export default function GDriveIntegrations() {
     () => ({ ready: fetchContext.ready, stack: fetchContext.stack }),
     [fetchContext.ready, fetchContext.stack]
   );
+  const [providerTab, setProviderTab] = useState("gdrive");
   const [activeTab, setActiveTab] = useState("create");
+  const [geminiTab, setGeminiTab] = useState("create");
   const [connectionId, setConnectionId] = useState(createConnectionId);
   const [accountName, setAccountName] = useState("");
   const [clientId, setClientId] = useState("");
-  const [clientSecret, setClientSecret] = useState("");
+  const [envOAuthClientConfigured, setEnvOAuthClientConfigured] =
+    useState(false);
   const [oauthTokenJson, setOauthTokenJson] = useState("");
-  const [clientJsonFileName, setClientJsonFileName] = useState("");
   const [tokenJsonFileName, setTokenJsonFileName] = useState("");
   const [maxFiles, setMaxFiles] = useState(100);
   const [files, setFiles] = useState([]);
@@ -337,6 +382,16 @@ export default function GDriveIntegrations() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [connections, setConnections] = useState([]);
+  const [geminiConnectionId, setGeminiConnectionId] = useState(
+    DEFAULT_GEMINI_CONNECTION_ID
+  );
+  const [geminiApiKey, setGeminiApiKey] = useState("");
+  const [geminiModel, setGeminiModel] = useState(DEFAULT_GEMINI_MODEL);
+  const [geminiPromptName, setGeminiPromptName] = useState(
+    DEFAULT_GEMINI_PROMPT_NAME
+  );
+  const [geminiPrompt, setGeminiPrompt] = useState(DEFAULT_GEMINI_PROMPT);
+  const [geminiConnections, setGeminiConnections] = useState([]);
   const processedOAuthCode = useRef(false);
 
   const refreshConnections = useCallback(() => {
@@ -350,6 +405,29 @@ export default function GDriveIntegrations() {
   }, [refreshConnections]);
 
   useEffect(() => {
+    fetchWithContext("integrations/gdrive/oauth/client", requestContext)
+      .then((response) => {
+        if (response && response.configured) {
+          setEnvOAuthClientConfigured(true);
+          setClientId(response.clientId || "");
+        }
+      })
+      .catch(() => {});
+  }, [requestContext]);
+
+  const refreshGemini = useCallback(() => {
+    return fetchWithContext("integrations/gemini/connections", requestContext)
+      .then((connectionsResponse) =>
+        setGeminiConnections(connectionsResponse || [])
+      )
+      .catch((err) => setError(formatError(err)));
+  }, [requestContext]);
+
+  useEffect(() => {
+    refreshGemini();
+  }, [refreshGemini]);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
     if (!code || processedOAuthCode.current) {
@@ -359,10 +437,6 @@ export default function GDriveIntegrations() {
 
     const stored = safeParseJson(sessionStorage.getItem(SESSION_KEY)) || {};
     const storedClientId = stored.clientId || "";
-    const storedClientSecret = stored.clientSecret || "";
-    const storedClientJson =
-      stored.oauthClientJson ||
-      buildOAuthClientJson(storedClientId, storedClientSecret);
     const storedConnectionId = stored.connectionId || params.get("state") || "";
     const storedAccountName = stored.accountName || storedConnectionId;
     const redirectUri =
@@ -371,7 +445,6 @@ export default function GDriveIntegrations() {
     setConnectionId(storedConnectionId);
     setAccountName(storedAccountName);
     setClientId(storedClientId);
-    setClientSecret(storedClientSecret);
     setLoading(true);
     setError("");
     setMessage("Completing Google OAuth...");
@@ -383,7 +456,6 @@ export default function GDriveIntegrations() {
         connectionId: storedConnectionId,
         accountName: storedAccountName,
         authorizationCode: code,
-        oauthClientJson: storedClientJson,
         redirectUri,
       }),
     })
@@ -444,11 +516,9 @@ export default function GDriveIntegrations() {
     });
 
     if (!nextOAuthUrl) {
-      setError("OAuth client ID is required before generating OAuth.");
-      return;
-    }
-    if (!clientSecret.trim()) {
-      setError("OAuth client secret is required before generating OAuth.");
+      setError(
+        "OAuth client ID is required. Configure CONDUCTOR_GDRIVE_OAUTH_CLIENT_ID before starting the server."
+      );
       return;
     }
 
@@ -458,40 +528,9 @@ export default function GDriveIntegrations() {
         connectionId: nextConnectionId,
         accountName: nextAccountName,
         clientId: clientId.trim(),
-        clientSecret: clientSecret.trim(),
-        oauthClientJson: buildOAuthClientJson(
-          clientId.trim(),
-          clientSecret.trim()
-        ),
       })
     );
     window.location.assign(nextOAuthUrl);
-  }
-
-  function handleOAuthClientFileChange(event) {
-    const file = event.target.files && event.target.files[0];
-    if (!file) {
-      return;
-    }
-    file
-      .text()
-      .then((content) => {
-        JSON.parse(content);
-        const client = getOAuthClient(content);
-        if (!client.clientId || !client.clientSecret) {
-          throw new Error(
-            "OAuth client JSON must include client_id and client_secret."
-          );
-        }
-        setClientId(client.clientId);
-        setClientSecret(client.clientSecret);
-        setClientJsonFileName(file.name);
-        setMessage(`${file.name} loaded as OAuth client JSON.`);
-        setError("");
-      })
-      .catch((err) =>
-        setError(err.message || "OAuth client JSON file is invalid.")
-      );
   }
 
   function handleOAuthTokenFileChange(event) {
@@ -507,13 +546,6 @@ export default function GDriveIntegrations() {
           throw new Error(
             "OAuth token JSON must include access_token, token, or refresh_token."
           );
-        }
-        const client = getOAuthClient(content);
-        if (client.clientId) {
-          setClientId(client.clientId);
-        }
-        if (client.clientSecret) {
-          setClientSecret(client.clientSecret);
         }
         setOauthTokenJson(content);
         setTokenJsonFileName(file.name);
@@ -546,10 +578,6 @@ export default function GDriveIntegrations() {
         connectionId: nextConnectionId,
         accountName: nextAccountName,
         oauthTokenJson,
-        oauthClientJson:
-          clientId.trim() && clientSecret.trim()
-            ? buildOAuthClientJson(clientId.trim(), clientSecret.trim())
-            : undefined,
       }),
     })
       .then((response) => {
@@ -558,6 +586,59 @@ export default function GDriveIntegrations() {
         setAccountName(response.accountName || nextAccountName);
         setMessage(`Google Drive connection ${savedConnectionId} created.`);
         refreshConnections();
+      })
+      .catch((err) => setError(formatError(err)))
+      .finally(() => setLoading(false));
+  }
+
+  function handleSaveGeminiConnection() {
+    setError("");
+    setMessage("");
+    setLoading(true);
+    const nextConnectionId =
+      geminiConnectionId.trim() || DEFAULT_GEMINI_CONNECTION_ID;
+    fetchWithContext("integrations/gemini/connections", requestContext, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        connectionId: nextConnectionId,
+        apiKey: geminiApiKey.trim() || undefined,
+        model: geminiModel.trim() || DEFAULT_GEMINI_MODEL,
+      }),
+    })
+      .then((response) => {
+        setGeminiConnectionId(response.connectionId || geminiConnectionId);
+        setGeminiModel(response.model || geminiModel);
+        setGeminiApiKey("");
+        setMessage(
+          `Gemini connection ${
+            response.connectionId || geminiConnectionId
+          } saved.`
+        );
+        return refreshGemini();
+      })
+      .catch((err) => setError(formatError(err)))
+      .finally(() => setLoading(false));
+  }
+
+  function handleDeleteGeminiConnection(targetConnectionId) {
+    setError("");
+    setMessage("");
+    setLoading(true);
+    fetchWithContext(
+      `integrations/gemini/connections/${encodeURIComponent(
+        targetConnectionId
+      )}`,
+      requestContext,
+      { method: "DELETE" },
+      false
+    )
+      .then(() => {
+        setMessage(`Gemini connection ${targetConnectionId} deleted.`);
+        if (geminiConnectionId === targetConnectionId) {
+          setGeminiConnectionId(DEFAULT_GEMINI_CONNECTION_ID);
+        }
+        return refreshGemini();
       })
       .catch((err) => setError(formatError(err)))
       .finally(() => setLoading(false));
@@ -617,6 +698,14 @@ export default function GDriveIntegrations() {
     setActiveTab("create");
   }
 
+  function handleUseGeminiConnection(connection) {
+    setGeminiConnectionId(
+      connection.connectionId || DEFAULT_GEMINI_CONNECTION_ID
+    );
+    setGeminiModel(connection.model || geminiModel);
+    setGeminiTab("create");
+  }
+
   return (
     <>
       <Helmet>
@@ -627,286 +716,495 @@ export default function GDriveIntegrations() {
         <Grid container spacing={3}>
           <Grid item xs={12} md={3}>
             <Paper padded className={classes.card}>
-              <div className={classes.selector}>
-                <CloudQueueIcon className={classes.selectorIcon} />
-                <Box>
-                  <Text level={2}>Google Drive Read</Text>
-                  <Text className={classes.muted}>
-                    Task: {READ_G_DRIVE_TASK_NAME}
-                  </Text>
-                  <Text className={classes.muted}>Type: GDRIVE_READ</Text>
-                </Box>
-              </div>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={5}>
-            <Paper padded className={classes.card}>
               <div className={classes.tabbedPanel}>
                 <Tabs
                   orientation="vertical"
-                  value={activeTab}
-                  onChange={(event, value) => setActiveTab(value)}
+                  value={providerTab}
+                  onChange={(event, value) => {
+                    setProviderTab(value);
+                    setError("");
+                    setMessage("");
+                  }}
                   className={classes.verticalTabs}
+                  indicatorColor="primary"
+                  textColor="primary"
                 >
-                  <Tab value="create" label="Create" />
-                  <Tab value="manage" label="Manage" />
+                  <Tab value="gdrive" label="GDrive" />
+                  <Tab value="gemini" label="Gemini" />
+                  <Tab value="reconciliation" label="Reconciliation" />
                 </Tabs>
                 <div className={classes.tabContent}>
-                  {activeTab === "create" && (
-                    <div className={classes.formStack}>
-                      <Box className={classes.actionRow}>
-                        <Text level={2}>Google Drive</Text>
-                        <Chip size="small" label="Account connection" />
-                      </Box>
-                      <Input
-                        label="Connection ID"
-                        value={connectionId}
-                        fullWidth
-                        variant="outlined"
-                        onChange={setConnectionId}
-                      />
-                      <Input
-                        label="Account Name"
-                        value={accountName}
-                        fullWidth
-                        variant="outlined"
-                        onChange={setAccountName}
-                      />
-                      <Input
-                        label="OAuth Client ID"
-                        value={clientId}
-                        fullWidth
-                        variant="outlined"
-                        onChange={setClientId}
-                      />
-                      <Input
-                        label="OAuth Client Secret"
-                        value={clientSecret}
-                        fullWidth
-                        variant="outlined"
-                        type="password"
-                        onChange={setClientSecret}
-                      />
-                      <Box className={classes.actionRow}>
-                        <input
-                          id="gdrive-oauth-client-json-file"
-                          className={classes.fileInput}
-                          type="file"
-                          accept=".json,application/json"
-                          onChange={handleOAuthClientFileChange}
-                        />
-                        <label htmlFor="gdrive-oauth-client-json-file">
-                          <Button
-                            component="span"
-                            variant="outlined"
-                            startIcon={<FolderOpenIcon />}
-                          >
-                            Upload Client JSON
-                          </Button>
-                        </label>
-                        {clientJsonFileName && (
+                  <div className={classes.selector}>
+                    <CloudQueueIcon className={classes.selectorIcon} />
+                    <Box>
+                      {providerTab === "gdrive" && (
+                        <>
+                          <Text level={2}>Google Drive Read</Text>
                           <Text className={classes.muted}>
-                            {clientJsonFileName}
+                            Task: {READ_G_DRIVE_TASK_NAME}
                           </Text>
-                        )}
-                      </Box>
-                      <Box className={classes.actionRow}>
-                        <input
-                          id="gdrive-oauth-token-json-file"
-                          className={classes.fileInput}
-                          type="file"
-                          accept=".json,application/json"
-                          onChange={handleOAuthTokenFileChange}
-                        />
-                        <label htmlFor="gdrive-oauth-token-json-file">
-                          <Button
-                            component="span"
-                            variant="outlined"
-                            startIcon={<FolderOpenIcon />}
-                          >
-                            Upload OAuth Token JSON
-                          </Button>
-                        </label>
-                        {tokenJsonFileName && (
                           <Text className={classes.muted}>
-                            {tokenJsonFileName}
+                            Type: GDRIVE_READ
                           </Text>
-                        )}
-                      </Box>
-                      <TextField
-                        label="OAuth Token JSON for import"
-                        value={oauthTokenJson}
-                        onChange={(event) =>
-                          setOauthTokenJson(event.target.value)
-                        }
-                        fullWidth
-                        multiline
-                        minRows={9}
-                        variant="outlined"
-                      />
-                      <Input
-                        label="Max Files"
-                        value={maxFiles}
-                        fullWidth
-                        variant="outlined"
-                        type="number"
-                        onChange={(value) =>
-                          setMaxFiles(Math.max(1, Number(value)))
-                        }
-                      />
-                      <Box className={classes.actionRow}>
-                        <Button
-                          color="primary"
-                          variant="contained"
-                          onClick={handleGenerateOAuth}
-                          disabled={loading}
-                        >
-                          Generate OAuth
-                        </Button>
-                        <Button
-                          color="primary"
-                          variant="outlined"
-                          onClick={handleSaveConnection}
-                          disabled={loading}
-                        >
-                          Create Connection
-                        </Button>
-                        <Button
-                          color="primary"
-                          variant="outlined"
-                          onClick={handleLoadDrive}
-                          disabled={loading}
-                        >
-                          Load Drive
-                        </Button>
-                        
-                      </Box>
-                    </div>
-                  )}
-                  {activeTab === "manage" && (
-                    <div className={classes.formStack}>
-                      <Box className={classes.actionRow}>
-                        <Text level={2}>Connections</Text>
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          onClick={refreshConnections}
-                          disabled={loading}
-                        >
-                          Refresh
-                        </Button>
-                      </Box>
-                      <div className={classes.connectionList}>
-                        <div
-                          className={`${classes.connectionRow} ${classes.connectionHeader}`}
-                        >
-                          <div>Connection ID</div>
-                          <div>Account Name</div>
-                          <div />
-                        </div>
-                        {connections.length === 0 && (
-                          <div className={classes.connectionRow}>
-                            <div>No connections saved.</div>
-                            <div />
-                            <div />
-                          </div>
-                        )}
-                        {connections.map((connection) => (
-                          <div
-                            key={connection.connectionId}
-                            className={classes.connectionRow}
-                          >
-                            <div className={classes.truncate}>
-                              {connection.connectionId}
-                            </div>
-                            <div className={classes.truncate}>
-                              {connection.accountName ||
-                                connection.connectionId}
-                            </div>
-                            <Box className={classes.actionRow}>
-                              <Button
-                                size="small"
-                                onClick={() => handleUseConnection(connection)}
-                              >
-                                Use
-                              </Button>
-                              <Button
-                                size="small"
-                                color="primary"
-                                onClick={() =>
-                                  handleDeleteConnection(
-                                    connection.connectionId
-                                  )
-                                }
-                                disabled={loading}
-                              >
-                                Delete
-                              </Button>
-                            </Box>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {message && <Text>{message}</Text>}
-                  {error && <Text color="error">{error}</Text>}
+                        </>
+                      )}
+                      {providerTab === "gemini" && (
+                        <>
+                          <Text level={2}>Gemini LLM</Text>
+                          <Text className={classes.muted}>
+                            Task: {GEMINI_TASK_NAME}
+                          </Text>
+                          <Text className={classes.muted}>
+                            Type: GEMINI_LLM
+                          </Text>
+                        </>
+                      )}
+                      {providerTab === "reconciliation" && (
+                        <>
+                          <Text level={2}>Reconciliation</Text>
+                          <Text className={classes.muted}>
+                            Task: {GEMINI_RECONCILE_TASK_NAME}
+                          </Text>
+                          <Text className={classes.muted}>
+                            Type: GRN_POD_RECONCILE
+                          </Text>
+                        </>
+                      )}
+                    </Box>
+                  </div>
                 </div>
               </div>
             </Paper>
           </Grid>
-          <Grid item xs={12} md={4}>
-            <Paper padded className={classes.card}>
-              <Text level={2}>Workflow Task</Text>
-              <pre className={classes.codeBlock}>{taskSnippet(maxFiles)}</pre>
-            </Paper>
-          </Grid>
-          <Grid item xs={12}>
-            <Paper padded>
-              <Box className={classes.actionRow} mb={2}>
-                <Text level={2}>Files</Text>
-                <Chip size="small" label={`${count} loaded`} />
-              </Box>
-              <TableContainer>
-                <Table className={classes.table} size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Name</TableCell>
-                      <TableCell>MIME Type</TableCell>
-                      <TableCell>Modified</TableCell>
-                      <TableCell>ID</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {files.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={4}>No files loaded.</TableCell>
-                      </TableRow>
-                    )}
-                    {files.map((file) => (
-                      <TableRow key={file.id}>
-                        <TableCell>
-                          {file.webViewLink ? (
-                            <Link
-                              href={file.webViewLink}
-                              target="_blank"
-                              rel="noreferrer"
+
+          {providerTab === "gdrive" && (
+            <>
+              <Grid item xs={12} md={5}>
+                <Paper padded className={classes.card}>
+                  <div className={classes.tabbedPanel}>
+                    <Tabs
+                      orientation="vertical"
+                      value={activeTab}
+                      onChange={(event, value) => setActiveTab(value)}
+                      className={classes.verticalTabs}
+                    >
+                      <Tab value="create" label="Create" />
+                      <Tab value="manage" label="Manage" />
+                    </Tabs>
+                    <div className={classes.tabContent}>
+                      {activeTab === "create" && (
+                        <div className={classes.formStack}>
+                          <Box className={classes.actionRow}>
+                            <Text level={2}>Google Drive</Text>
+                            <Chip size="small" label="Account connection" />
+                          </Box>
+                          <Text className={classes.muted}>
+                            OAuth client ID and secret are loaded from server
+                            environment variables.
+                          </Text>
+                          <Chip
+                            size="small"
+                            label={
+                              envOAuthClientConfigured
+                                ? `OAuth configured: ${
+                                    clientId || "server env"
+                                  }`
+                                : "OAuth env not configured"
+                            }
+                            color={
+                              envOAuthClientConfigured ? "primary" : "default"
+                            }
+                          />
+                          <Input
+                            label="Connection ID"
+                            value={connectionId}
+                            fullWidth
+                            variant="outlined"
+                            onChange={setConnectionId}
+                          />
+                          <Input
+                            label="Account Name"
+                            value={accountName}
+                            fullWidth
+                            variant="outlined"
+                            onChange={setAccountName}
+                          />
+                          <Box className={classes.actionRow}>
+                            <input
+                              id="gdrive-oauth-token-json-file"
+                              className={classes.fileInput}
+                              type="file"
+                              accept=".json,application/json"
+                              onChange={handleOAuthTokenFileChange}
+                            />
+                            <label htmlFor="gdrive-oauth-token-json-file">
+                              <Button
+                                component="span"
+                                variant="outlined"
+                                startIcon={<FolderOpenIcon />}
+                              >
+                                Upload OAuth Token JSON
+                              </Button>
+                            </label>
+                            {tokenJsonFileName && (
+                              <Text className={classes.muted}>
+                                {tokenJsonFileName}
+                              </Text>
+                            )}
+                          </Box>
+                          <TextField
+                            label="OAuth Token JSON for import"
+                            value={oauthTokenJson}
+                            onChange={(event) =>
+                              setOauthTokenJson(event.target.value)
+                            }
+                            fullWidth
+                            multiline
+                            minRows={9}
+                            variant="outlined"
+                          />
+                          <Input
+                            label="Max Files"
+                            value={maxFiles}
+                            fullWidth
+                            variant="outlined"
+                            type="number"
+                            onChange={(value) =>
+                              setMaxFiles(Math.max(1, Number(value)))
+                            }
+                          />
+                          <Box className={classes.actionRow}>
+                            <Button
+                              color="primary"
+                              variant="contained"
+                              onClick={handleGenerateOAuth}
+                              disabled={loading}
                             >
-                              {file.name}
-                            </Link>
-                          ) : (
-                            file.name
-                          )}
-                        </TableCell>
-                        <TableCell>{file.mimeType}</TableCell>
-                        <TableCell>{file.modifiedTime || "-"}</TableCell>
-                        <TableCell>{file.id}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Paper>
-          </Grid>
+                              Generate OAuth
+                            </Button>
+                            <Button
+                              color="primary"
+                              variant="outlined"
+                              onClick={handleSaveConnection}
+                              disabled={loading}
+                            >
+                              Create Connection
+                            </Button>
+                            <Button
+                              color="primary"
+                              variant="outlined"
+                              onClick={handleLoadDrive}
+                              disabled={loading}
+                            >
+                              Load Drive
+                            </Button>
+                          </Box>
+                        </div>
+                      )}
+                      {activeTab === "manage" && (
+                        <div className={classes.formStack}>
+                          <Box className={classes.actionRow}>
+                            <Text level={2}>Connections</Text>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              onClick={refreshConnections}
+                              disabled={loading}
+                            >
+                              Refresh
+                            </Button>
+                          </Box>
+                          <div className={classes.connectionList}>
+                            <div
+                              className={`${classes.connectionRow} ${classes.connectionHeader}`}
+                            >
+                              <div>Connection ID</div>
+                              <div>Account Name</div>
+                              <div />
+                            </div>
+                            {connections.length === 0 && (
+                              <div className={classes.connectionRow}>
+                                <div>No connections saved.</div>
+                                <div />
+                                <div />
+                              </div>
+                            )}
+                            {connections.map((connection) => (
+                              <div
+                                key={connection.connectionId}
+                                className={classes.connectionRow}
+                              >
+                                <div className={classes.truncate}>
+                                  {connection.connectionId}
+                                </div>
+                                <div className={classes.truncate}>
+                                  {connection.accountName ||
+                                    connection.connectionId}
+                                </div>
+                                <Box className={classes.actionRow}>
+                                  <Button
+                                    size="small"
+                                    onClick={() =>
+                                      handleUseConnection(connection)
+                                    }
+                                  >
+                                    Use
+                                  </Button>
+                                  <Button
+                                    size="small"
+                                    color="primary"
+                                    onClick={() =>
+                                      handleDeleteConnection(
+                                        connection.connectionId
+                                      )
+                                    }
+                                    disabled={loading}
+                                  >
+                                    Delete
+                                  </Button>
+                                </Box>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {message && <Text>{message}</Text>}
+                      {error && <Text color="error">{error}</Text>}
+                    </div>
+                  </div>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} md={7}>
+                <Paper padded className={classes.card}>
+                  <Text level={2}>Workflow Task</Text>
+                  <pre className={classes.codeBlock}>
+                    {taskSnippet(maxFiles)}
+                  </pre>
+                </Paper>
+              </Grid>
+              <Grid item xs={12}>
+                <Paper padded>
+                  <Box className={classes.actionRow} mb={2}>
+                    <Text level={2}>Files</Text>
+                    <Chip size="small" label={`${count} loaded`} />
+                  </Box>
+                  <TableContainer>
+                    <Table className={classes.table} size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Name</TableCell>
+                          <TableCell>MIME Type</TableCell>
+                          <TableCell>Modified</TableCell>
+                          <TableCell>ID</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {files.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={4}>No files loaded.</TableCell>
+                          </TableRow>
+                        )}
+                        {files.map((file) => (
+                          <TableRow key={file.id}>
+                            <TableCell>
+                              {file.webViewLink ? (
+                                <Link
+                                  href={file.webViewLink}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  {file.name}
+                                </Link>
+                              ) : (
+                                file.name
+                              )}
+                            </TableCell>
+                            <TableCell>{file.mimeType}</TableCell>
+                            <TableCell>{file.modifiedTime || "-"}</TableCell>
+                            <TableCell>{file.id}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Paper>
+              </Grid>
+            </>
+          )}
+
+          {providerTab === "gemini" && (
+            <>
+              <Grid item xs={12} md={5}>
+                <Paper padded className={classes.card}>
+                  <div className={classes.tabbedPanel}>
+                    <Tabs
+                      orientation="vertical"
+                      value={geminiTab}
+                      onChange={(event, value) => setGeminiTab(value)}
+                      className={classes.verticalTabs}
+                    >
+                      <Tab value="create" label="Create" />
+                      <Tab value="manage" label="Manage" />
+                    </Tabs>
+                    <div className={classes.tabContent}>
+                      {geminiTab === "create" && (
+                        <div className={classes.formStack}>
+                          <Box className={classes.actionRow}>
+                            <Text level={2}>Gemini LLM</Text>
+                            <Chip size="small" label="GEMINI_LLM" />
+                          </Box>
+                          <Text className={classes.muted}>
+                            Gemini API key can be entered here or loaded from
+                            server environment variables. The workflow task
+                            references this connection ID to resolve the API
+                            key.
+                          </Text>
+                          <Input
+                            label="Connection ID"
+                            value={geminiConnectionId}
+                            fullWidth
+                            variant="outlined"
+                            onChange={setGeminiConnectionId}
+                          />
+                          <Input
+                            label="Gemini API Key"
+                            value={geminiApiKey}
+                            fullWidth
+                            variant="outlined"
+                            type="password"
+                            onChange={setGeminiApiKey}
+                          />
+                          <Input
+                            label="Model"
+                            value={geminiModel}
+                            fullWidth
+                            variant="outlined"
+                            onChange={setGeminiModel}
+                          />
+                          
+                          <Box className={classes.actionRow}>
+                            <Button
+                              color="primary"
+                              variant="contained"
+                              onClick={handleSaveGeminiConnection}
+                              disabled={loading}
+                            >
+                              Create Connection
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              onClick={refreshGemini}
+                              disabled={loading}
+                            >
+                              Refresh
+                            </Button>
+                          </Box>
+                        </div>
+                      )}
+                      {geminiTab === "manage" && (
+                        <div className={classes.formStack}>
+                          <Box className={classes.actionRow}>
+                            <Text level={2}>Gemini Connections</Text>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              onClick={refreshGemini}
+                              disabled={loading}
+                            >
+                              Refresh
+                            </Button>
+                          </Box>
+                          <div className={classes.connectionList}>
+                            <div
+                              className={`${classes.connectionRow} ${classes.connectionHeader}`}
+                            >
+                              <div>Connection ID</div>
+                              <div>Model</div>
+                              <div />
+                            </div>
+                            {geminiConnections.length === 0 && (
+                              <div className={classes.connectionRow}>
+                                <div>No Gemini connections saved.</div>
+                                <div />
+                                <div />
+                              </div>
+                            )}
+                            {geminiConnections.map((connection) => (
+                              <div
+                                key={connection.connectionId}
+                                className={classes.connectionRow}
+                              >
+                                <div className={classes.truncate}>
+                                  {connection.connectionId}
+                                </div>
+                                <div className={classes.truncate}>
+                                  {connection.model || DEFAULT_GEMINI_MODEL}
+                                </div>
+                                <Box className={classes.actionRow}>
+                                  <Button
+                                    size="small"
+                                    onClick={() =>
+                                      handleUseGeminiConnection(connection)
+                                    }
+                                  >
+                                    Use
+                                  </Button>
+                                  <Button
+                                    size="small"
+                                    color="primary"
+                                    onClick={() =>
+                                      handleDeleteGeminiConnection(
+                                        connection.connectionId
+                                      )
+                                    }
+                                    disabled={loading}
+                                  >
+                                    Delete
+                                  </Button>
+                                </Box>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {message && <Text>{message}</Text>}
+                      {error && <Text color="error">{error}</Text>}
+                    </div>
+                  </div>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Paper padded className={classes.card}>
+                  <Text level={2}>Task JSON</Text>
+                  <pre className={classes.codeBlock}>
+                    {geminiTaskSnippet({
+                      connectionId:
+                        geminiConnectionId.trim() ||
+                        DEFAULT_GEMINI_CONNECTION_ID,
+                      model: geminiModel,
+                      promptname: geminiPromptName,
+                      prompt: geminiPrompt,
+                    })}
+                  </pre>
+                </Paper>
+              </Grid>
+            </>
+          )}
+
+          {providerTab === "reconciliation" && (
+            <Grid item xs={12} md={9}>
+              <Paper padded className={classes.card}>
+                <Text level={2}>Reconciliation Task</Text>
+                <Text className={classes.muted}>
+                  Reconciliation consumes GRN and POD lists and returns matched
+                  results.
+                </Text>
+                <pre className={classes.codeBlock}>
+                  {reconcileTaskSnippet()}
+                </pre>
+              </Paper>
+            </Grid>
+          )}
         </Grid>
       </div>
     </>

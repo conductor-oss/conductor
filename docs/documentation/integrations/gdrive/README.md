@@ -12,6 +12,8 @@ The Google Drive integration reads file metadata from Google Drive using account
 
 The integration returns metadata only. It does not download file contents. Account credentials are stored once under a `connectionId`; runtime restrictions such as `folderIds`, `fileIds`, `maxFiles`, and `mimeTypes` are request inputs. OAuth credentials are not folder-specific and should not be embedded in workflow JSON.
 
+Google Drive metadata can be passed directly to the `GEMINI_LLM` system task. When a Gemini task receives Drive file metadata, it downloads file bytes using the saved Google Drive connection and sends them to Gemini with either an inline `prompt` or a server-side `.j2` prompt template.
+
 For the advanced connection-management architecture, dynamic multi-document ingestion contract, and GRN/POD classification handoff, see [Google Drive Connection Management and Document Ingestion](connection-management-document-ingestion.md).
 
 ## Authentication
@@ -196,11 +198,270 @@ If neither `folderIds` nor `fileIds` is supplied, the task reads metadata for al
 
 Each item in `files` can include `id`, `name`, `mimeType`, `size`, `modifiedTime`, `webViewLink`, and `webContentLink`, depending on what Google Drive returns for that file.
 
+## Gemini LLM handoff
+
+Use `GEMINI_LLM` after `GDRIVE_READ` when a workflow needs to classify or extract data from Drive documents. The task accepts file metadata from `GDRIVE_READ` through `files`, `documents`, or `classifiedDocuments`.
+
+### Gemini configuration
+
+The server reads Gemini defaults from environment variables:
+
+| Name | Required | Description |
+| --- | ---: | --- |
+| `CONDUCTOR_GEMINI_API_KEY` | Yes | Default Gemini API key used when a task does not provide `apiKey`. |
+| `CONDUCTOR_GEMINI_CONNECTION_ID` | No | Default Gemini connection ID. Defaults to `gemini-default`. |
+| `CONDUCTOR_GEMINI_MODEL` | No | Default Gemini model. Defaults to `gemini-2.5-flash`. |
+| `CONDUCTOR_GEMINI_PROMPT_DIR` | No | Prompt template directory. Defaults to `prompts`. Use `prompts` for this repository. |
+
+When running this checkout with Docker Compose, start the server from the repository root:
+
+```powershell
+docker compose --env-file .env -f docker\docker-compose.yaml up --build
+```
+
+Keep prompt loading relative in `.env`:
+
+```text
+CONDUCTOR_GEMINI_PROMPT_DIR=prompts
+```
+
+The prompt names used by workflow tasks map to `.j2` files under `prompts\`:
+
+| Task input `promptname` | Template file |
+| --- | --- |
+| `attachment_classify` | `prompts\attachment_classify.j2` |
+| `grn_extraction` | `prompts\grn_extraction.j2` |
+| `pod_extraction` | `prompts\pod_extraction.j2` |
+
+Prompt names are normalized to the file name without `.j2`; do not pass absolute paths in workflow JSON.
+
+### Gemini REST API
+
+Save or override a Gemini connection:
+
+```text
+POST /api/integrations/gemini/connections
+```
+
+Request body:
+
+```json
+{
+  "connectionId": "gemini-default",
+  "apiKey": "<gemini-api-key>",
+  "model": "gemini-2.5-flash",
+  "promptName": "attachment_classify"
+}
+```
+
+List Gemini connections:
+
+```text
+GET /api/integrations/gemini/connections
+```
+
+Delete a Gemini connection:
+
+```text
+DELETE /api/integrations/gemini/connections/{connectionId}
+```
+
+List available prompt templates and defaults:
+
+```text
+GET /api/integrations/gemini/prompts
+```
+
+Response body:
+
+```json
+{
+  "promptDirectory": "prompts",
+  "prompts": [
+    "attachment_classify",
+    "grn_extraction",
+    "pod_extraction"
+  ],
+  "defaultConnectionId": "gemini-default",
+  "defaultModel": "gemini-2.5-flash"
+}
+```
+
+### GEMINI_LLM system task
+
+```json
+{
+  "name": "classify_documents",
+  "taskReferenceName": "classify_documents_ref",
+  "type": "GEMINI_LLM",
+  "inputParameters": {
+    "connectionId": "gemini-default",
+    "model": "gemini-2.5-flash",
+    "jsonOutput": true,
+    "promptname": "attachment_classify",
+    "gdriveConnectionId": "${workflow.input.gdriveConnectionId}",
+    "files": "${read_g_drive_ref.output.files}"
+  }
+}
+```
+
+Inputs:
+
+| Name | Type | Required | Description |
+| --- | --- | ---: | --- |
+| `connectionId` | String | No | Gemini connection ID. Defaults to `CONDUCTOR_GEMINI_CONNECTION_ID` when available. |
+| `apiKey` | String | No | Per-task Gemini API key override. Prefer server configuration or a saved connection. |
+| `model` | String | No | Gemini model override. |
+| `jsonOutput` | Boolean | No | Requests JSON output from Gemini. Defaults to `true`. |
+| `promptname` | String | No | Prompt template name. The task loads `{promptname}.j2` from `CONDUCTOR_GEMINI_PROMPT_DIR`. |
+| `promptName` | String | No | Legacy alias for `promptname`. |
+| `prompt` | String | No | Inline prompt text. Used when no usable prompt template name is provided. |
+| `promptVariables` | Object | No | Values substituted into prompt templates using `{{ key }}` or `{{key}}`. Nested values can be referenced with dotted keys. |
+| `files` | List[Object] | No | Drive file metadata from `GDRIVE_READ`, local file records, or classified document records. |
+| `documents` | List[Object] | No | Alias for `files`. |
+| `classifiedDocuments` | List[Object] | No | Alias for `files`, useful after classification. |
+| `gdriveConnectionId` | String | No | Google Drive connection used to download Drive file bytes when file records do not include `localPath`. |
+
+At least one of `promptname`, `promptName`, or `prompt` must resolve to a real prompt. Placeholder UI values such as `enterj2 name`, `select j2`, `enter your prompt`, and `paste your prompt here` are ignored.
+
+File records can include:
+
+| Name | Description |
+| --- | --- |
+| `localPath` | Relative or absolute local file path readable by the server process. |
+| `id` | Google Drive file ID from `GDRIVE_READ`. |
+| `driveFileId` | Explicit Google Drive file ID. |
+| `mimeType` | File MIME type. Defaults to `application/pdf` when omitted. |
+
+For portable workflows, prefer Drive file IDs from `GDRIVE_READ` instead of machine-specific local paths.
+
+Outputs:
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `promptname` | String | Prompt template name used by the task. |
+| `promptName` | String | Same value as `promptname`. |
+| `model` | String | Gemini model used by the task. |
+| `responses` | List[Object] | One response per input document, including original file metadata and `result`. |
+| `results` | List[Object] | Alias for `responses`. |
+| `classifiedDocuments` | List[Object] | Present for classification prompts. Contains original file metadata and `classification`. |
+| `grnDocuments` | List[Object] | Documents classified as GRN. |
+| `podDocuments` | List[Object] | Documents classified as POD. |
+| `grn` | List[Object] | Alias for `grnDocuments`. |
+| `pod` | List[Object] | Alias for `podDocuments`. |
+| `records` | List[Object] | Present for extraction prompts. Contains original file metadata and `extracted`. |
+
+Classification prompts are detected by the `attachment_classify` prompt name or any prompt name containing `classify`. Classification output is routed into `grnDocuments` and `podDocuments` for downstream extraction.
+
+### GDrive to Gemini workflow example
+
+This workflow reads Drive file metadata, classifies attachments, then runs GRN and POD extraction in parallel.
+
+```json
+{
+  "name": "gdrive_gemini_demo",
+  "description": "Classify Google Drive documents and extract GRN/POD data with Gemini",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "read_g_drive",
+      "taskReferenceName": "read_g_drive_ref",
+      "type": "GDRIVE_READ",
+      "inputParameters": {
+        "connectionId": "${workflow.input.gdriveConnectionId}",
+        "folderIds": "${workflow.input.driveFolderIds}",
+        "fileIds": "${workflow.input.driveFileIds}",
+        "maxFiles": 100
+      }
+    },
+    {
+      "name": "attachment_classify",
+      "taskReferenceName": "attachment_classify_ref",
+      "type": "GEMINI_LLM",
+      "inputParameters": {
+        "connectionId": "gemini-default",
+        "model": "gemini-2.5-flash",
+        "jsonOutput": true,
+        "promptname": "attachment_classify",
+        "gdriveConnectionId": "${workflow.input.gdriveConnectionId}",
+        "files": "${read_g_drive_ref.output.files}"
+      }
+    },
+    {
+      "name": "extract_by_type",
+      "taskReferenceName": "extract_by_type_ref",
+      "type": "FORK_JOIN",
+      "inputParameters": {},
+      "forkTasks": [
+        [
+          {
+            "name": "extract_grn",
+            "taskReferenceName": "extract_grn_ref",
+            "type": "GEMINI_LLM",
+            "inputParameters": {
+              "connectionId": "gemini-default",
+              "model": "gemini-2.5-flash",
+              "jsonOutput": true,
+              "promptname": "grn_extraction",
+              "gdriveConnectionId": "${workflow.input.gdriveConnectionId}",
+              "files": "${attachment_classify_ref.output.grnDocuments}"
+            }
+          }
+        ],
+        [
+          {
+            "name": "extract_pod",
+            "taskReferenceName": "extract_pod_ref",
+            "type": "GEMINI_LLM",
+            "inputParameters": {
+              "connectionId": "gemini-default",
+              "model": "gemini-2.5-flash",
+              "jsonOutput": true,
+              "promptname": "pod_extraction",
+              "gdriveConnectionId": "${workflow.input.gdriveConnectionId}",
+              "files": "${attachment_classify_ref.output.podDocuments}"
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "join_extractions",
+      "taskReferenceName": "join_extractions_ref",
+      "type": "JOIN",
+      "inputParameters": {},
+      "joinOn": [
+        "extract_grn_ref",
+        "extract_pod_ref"
+      ]
+    }
+  ],
+  "inputParameters": [
+    "gdriveConnectionId",
+    "driveFolderIds",
+    "driveFileIds"
+  ],
+  "outputParameters": {
+    "classified": "${attachment_classify_ref.output}",
+    "grn": "${extract_grn_ref.output.records}",
+    "pod": "${extract_pod_ref.output.records}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "ownerEmail": "example@email.com",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0
+}
+```
+
 ## Failure behavior
 
 The task fails with `FAILED_WITH_TERMINAL_ERROR` when required workflow inputs are missing or invalid before making a Drive request. Examples include no available stored connection, an unknown stored connection, an invalid Drive ID, or a non-numeric `maxFiles` string.
 
 The task fails with `FAILED` when Google Drive or OAuth processing fails. Examples include invalid token JSON, an expired token that cannot be refreshed, a Drive API error response, or an interrupted Drive request.
+
+`GEMINI_LLM` fails when Gemini credentials are missing, no prompt can be resolved, a named prompt template is missing, a file record has no `localPath`, `driveFileId`, or `id`, Drive file download fails, or Gemini returns non-JSON text while `jsonOutput` is `true`.
 
 REST endpoint validation and integration failures are returned as HTTP `400` responses.
 
@@ -225,10 +486,15 @@ When deploying behind a reverse proxy or load balancer, make sure the browser-vi
 
 If multiple Conductor server instances are running, all instances must use the same persistence backend so stored Google Drive connections are visible to every instance.
 
+Gemini prompt templates are server-side files. Keep `CONDUCTOR_GEMINI_PROMPT_DIR` relative, such as `prompts`, when building and running from this repository. The Docker server image copies `prompts\` into the image, so the same relative prompt directory works on another machine after checkout and build.
+
 ## Implementation references
 
 - REST controller: `rest/src/main/java/com/netflix/conductor/rest/controllers/IntegrationsResource.java`
 - Integration service and DTOs: `common/src/main/java/org/conductoross/conductor/common/integrations/gdrive/`
+- Gemini integration service and DTOs: `common/src/main/java/org/conductoross/conductor/common/integrations/gemini/`
 - System task: `core/src/main/java/com/netflix/conductor/core/execution/tasks/GDriveRead.java`
+- Gemini worker: `ai/src/main/java/org/conductoross/conductor/ai/tasks/worker/GeminiWorkflowWorkers.java`
 - Task mapper: `core/src/main/java/com/netflix/conductor/core/execution/mapper/GDriveReadTaskMapper.java`
 - UI task form: `ui-next/src/pages/definition/EditorPanel/TaskFormTab/forms/GDriveReadTaskForm.tsx`
+- Gemini UI task form: `ui-next/src/pages/definition/EditorPanel/TaskFormTab/forms/GeminiLlmTaskForm.tsx`

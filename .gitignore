@@ -1,6 +1,12 @@
 # Worktrees
 .worktrees/
 
+# Environment variables
+.env
+.env.*
+!.env.example
+!.env.sample
+
 # Java Build
 .gradle
 .classpath

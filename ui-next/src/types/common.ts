@@ -91,6 +91,8 @@ export enum TaskType {
   LIST_FILES = "LIST_FILES",
   PARSE_DOCUMENT = "PARSE_DOCUMENT",
   GDRIVE_READ = "GDRIVE_READ",
+  GEMINI_LLM = "GEMINI_LLM",
+  GRN_POD_RECONCILE = "GRN_POD_RECONCILE",
 }
 
 export interface TaskDef {

@@ -73,6 +73,18 @@ export const SYSTEM_TASKS: BaseTaskMenuItem[] = [
     category: "System",
   },
   {
+    name: "Gemini LLM",
+    description: "Run Gemini on Google Drive documents.",
+    type: TaskType.GEMINI_LLM,
+    category: "System",
+  },
+  {
+    name: "GRN/POD Reconcile",
+    description: "Reconcile extracted GRN and POD records inside Conductor.",
+    type: TaskType.GRN_POD_RECONCILE,
+    category: "System",
+  },
+  {
     name: "Get Signed JWT Task",
     description: "Get signed JWT task.",
     type: TaskType.GET_SIGNED_JWT,

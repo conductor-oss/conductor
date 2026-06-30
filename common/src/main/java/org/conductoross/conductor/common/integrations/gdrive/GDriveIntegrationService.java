@@ -106,7 +106,7 @@ public class GDriveIntegrationService {
             throw new GDriveIntegrationException("Google OAuth redirect URI is required");
         }
 
-        JsonNode clientJson = readTokenJson(request.getOauthClientJson());
+        JsonNode clientJson = readTokenJson(oauthClientJsonOrDefault(request.getOauthClientJson()));
         String clientId = clientText(clientJson, "client_id");
         String clientSecret = clientText(clientJson, "client_secret");
         String tokenUri = clientText(clientJson, "token_uri");
@@ -156,8 +156,9 @@ public class GDriveIntegrationService {
         JsonNode tokenJson = readTokenJson(oauthTokenJson);
         ObjectNode normalizedTokenJson = tokenJson.deepCopy();
 
-        if (!isBlank(oauthClientJson)) {
-            JsonNode clientJson = readTokenJson(oauthClientJson);
+        String resolvedOAuthClientJson = oauthClientJsonOrDefault(oauthClientJson);
+        if (!isBlank(resolvedOAuthClientJson)) {
+            JsonNode clientJson = readTokenJson(resolvedOAuthClientJson);
             copyClientFieldIfMissing(normalizedTokenJson, clientJson, "client_id");
             copyClientFieldIfMissing(normalizedTokenJson, clientJson, "client_secret");
             copyClientFieldIfMissing(normalizedTokenJson, clientJson, "token_uri");
@@ -181,6 +182,41 @@ public class GDriveIntegrationService {
                     .writeValueAsString(normalizedTokenJson);
         } catch (IOException e) {
             throw new GDriveIntegrationException("Unable to serialize OAuth token JSON", e);
+        }
+    }
+
+    public GDriveOAuthClientConfig defaultOAuthClientConfig() {
+        String clientId =
+                configuredValue(
+                        "conductor.gdrive.oauth.client-id", "CONDUCTOR_GDRIVE_OAUTH_CLIENT_ID", "");
+        if (isBlank(clientId)) {
+            clientId = configuredValue("google.oauth.client-id", "GOOGLE_OAUTH_CLIENT_ID", "");
+        }
+        String clientSecret =
+                configuredValue(
+                        "conductor.gdrive.oauth.client-secret",
+                        "CONDUCTOR_GDRIVE_OAUTH_CLIENT_SECRET",
+                        "");
+        if (isBlank(clientSecret)) {
+            clientSecret =
+                    configuredValue("google.oauth.client-secret", "GOOGLE_OAUTH_CLIENT_SECRET", "");
+        }
+        return new GDriveOAuthClientConfig(!isBlank(clientId) && !isBlank(clientSecret), clientId);
+    }
+
+    public byte[] downloadFile(String oauthTokenJson, String fileId) {
+        JsonNode tokenJson = readTokenJson(oauthTokenJson);
+        String accessToken = firstText(tokenJson, "access_token", "token");
+        if (isBlank(accessToken)) {
+            accessToken = refreshAccessToken(tokenJson);
+        }
+        try {
+            return downloadFileWithAccessToken(fileId, accessToken);
+        } catch (UnauthorizedDriveRequest unauthorized) {
+            if (!canRefresh(tokenJson)) {
+                throw unauthorized;
+            }
+            return downloadFileWithAccessToken(fileId, refreshAccessToken(tokenJson));
         }
     }
 
@@ -343,6 +379,33 @@ public class GDriveIntegrationService {
         return treeToFile(sendJsonRequest(request));
     }
 
+    private byte[] downloadFileWithAccessToken(String fileId, String accessToken) {
+        HttpRequest request =
+                HttpRequest.newBuilder(fileContentUri(normalizeFileId(fileId)))
+                        .timeout(Duration.ofSeconds(60))
+                        .header("Authorization", "Bearer " + accessToken)
+                        .GET()
+                        .build();
+        try {
+            HttpResponse<byte[]> response =
+                    httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            if (response.statusCode() == 401) {
+                throw new UnauthorizedDriveRequest(
+                        "Google Drive OAuth token is invalid or expired");
+            }
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new GDriveIntegrationException(
+                        "Google Drive file download failed with HTTP " + response.statusCode());
+            }
+            return response.body();
+        } catch (IOException e) {
+            throw new GDriveIntegrationException("Unable to download Google Drive file", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new GDriveIntegrationException("Google Drive file download was interrupted", e);
+        }
+    }
+
     private void addFile(
             List<GDriveFile> files,
             Set<String> seenFileIds,
@@ -380,6 +443,11 @@ public class GDriveIntegrationService {
         params.add("supportsAllDrives=true");
         params.add("fields=" + encode(FILE_FIELDS));
         return URI.create(DRIVE_FILES_URL + "/" + encode(fileId) + "?" + String.join("&", params));
+    }
+
+    private URI fileContentUri(String fileId) {
+        return URI.create(
+                DRIVE_FILES_URL + "/" + encode(fileId) + "?alt=media&supportsAllDrives=true");
     }
 
     private JsonNode sendJsonRequest(HttpRequest request) {
@@ -534,6 +602,52 @@ public class GDriveIntegrationService {
     private static boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
     }
+
+    private String oauthClientJsonOrDefault(String oauthClientJson) {
+        if (!isBlank(oauthClientJson)) {
+            return oauthClientJson;
+        }
+        String clientId =
+                configuredValue(
+                        "conductor.gdrive.oauth.client-id", "CONDUCTOR_GDRIVE_OAUTH_CLIENT_ID", "");
+        if (isBlank(clientId)) {
+            clientId = configuredValue("google.oauth.client-id", "GOOGLE_OAUTH_CLIENT_ID", "");
+        }
+        String clientSecret =
+                configuredValue(
+                        "conductor.gdrive.oauth.client-secret",
+                        "CONDUCTOR_GDRIVE_OAUTH_CLIENT_SECRET",
+                        "");
+        if (isBlank(clientSecret)) {
+            clientSecret =
+                    configuredValue("google.oauth.client-secret", "GOOGLE_OAUTH_CLIENT_SECRET", "");
+        }
+        if (isBlank(clientId) || isBlank(clientSecret)) {
+            return oauthClientJson;
+        }
+        ObjectNode clientJson = objectMapper.createObjectNode();
+        ObjectNode installed = clientJson.putObject("installed");
+        installed.put("client_id", clientId);
+        installed.put("client_secret", clientSecret);
+        installed.put("auth_uri", "https://accounts.google.com/o/oauth2/auth");
+        installed.put("token_uri", TOKEN_URL);
+        return clientJson.toString();
+    }
+
+    private static String configuredValue(
+            String propertyName, String envName, String defaultValue) {
+        String propertyValue = System.getProperty(propertyName);
+        if (!isBlank(propertyValue)) {
+            return propertyValue.trim();
+        }
+        String envValue = System.getenv(envName);
+        if (!isBlank(envValue)) {
+            return envValue.trim();
+        }
+        return defaultValue;
+    }
+
+    public record GDriveOAuthClientConfig(boolean configured, String clientId) {}
 
     private static class UnauthorizedDriveRequest extends GDriveIntegrationException {
 

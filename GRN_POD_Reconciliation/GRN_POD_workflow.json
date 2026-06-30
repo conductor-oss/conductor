@@ -1,0 +1,2717 @@
+{
+  "ownerApp": "",
+  "createTime": 1782799932566,
+  "updateTime": 1782799977867,
+  "status": "COMPLETED",
+  "endTime": 1782799977867,
+  "workflowId": "0ff156f8-e742-4b94-b268-7ec530581dd7",
+  "tasks": [
+    {
+      "taskType": "GDRIVE_READ",
+      "status": "COMPLETED",
+      "inputData": {
+        "fileIds": null,
+        "connectionId": "gdrive-e8f36f51-0cc7-4c4d-ac54-e42385bfdac3",
+        "folderIds": [
+          "1kFNN32E3EhSVjFVDp4nCXrcxKY9sdLPl"
+        ],
+        "maxFiles": 100
+      },
+      "referenceTaskName": "read_g_drive_ref",
+      "retryCount": 0,
+      "seq": 1,
+      "pollCount": 0,
+      "taskDefName": "read_g_drive",
+      "scheduledTime": 1782799932603,
+      "startTime": 1782799932603,
+      "endTime": 1782799934230,
+      "updateTime": 1782799932607,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": true,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "0ff156f8-e742-4b94-b268-7ec530581dd7",
+      "workflowType": "gdrive_demo_2",
+      "taskId": "69ab8683-dfd4-4395-a489-39d7e89558bf",
+      "callbackAfterSeconds": 0,
+      "outputData": {
+        "fileIds": [],
+        "count": 2,
+        "connectionId": "gdrive-e8f36f51-0cc7-4c4d-ac54-e42385bfdac3",
+        "files": [
+          {
+            "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+            "name": "BLR-INV-012584-POD.jpeg",
+            "mimeType": "image/jpeg",
+            "size": "160821",
+            "modifiedTime": "2026-06-16T07:09:30.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download"
+          },
+          {
+            "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+            "name": "BLR-INV-012584-GRN.pdf",
+            "mimeType": "application/pdf",
+            "size": "31233",
+            "modifiedTime": "2026-06-16T07:09:19.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download"
+          }
+        ],
+        "folderIds": [
+          "1kFNN32E3EhSVjFVDp4nCXrcxKY9sdLPl"
+        ],
+        "folderId": "1kFNN32E3EhSVjFVDp4nCXrcxKY9sdLPl"
+      },
+      "workflowTask": {
+        "name": "read_g_drive",
+        "taskReferenceName": "read_g_drive_ref",
+        "inputParameters": {
+          "connectionId": "${workflow.input.gdriveConnectionId}",
+          "folderIds": "${workflow.input.driveFolderIds}",
+          "fileIds": "${workflow.input.driveFileIds}",
+          "maxFiles": 100
+        },
+        "type": "GDRIVE_READ",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 0,
+          "updateTime": 0,
+          "name": "read_g_drive",
+          "retryCount": 0,
+          "timeoutSeconds": 0,
+          "inputKeys": [],
+          "outputKeys": [],
+          "timeoutPolicy": "TIME_OUT_WF",
+          "retryLogic": "FIXED",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 0,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1,
+          "maxRetryDelaySeconds": 0,
+          "backoffJitterMs": 0,
+          "totalTimeoutSeconds": 0,
+          "taskStatusListenerEnabled": true,
+          "enforceSchema": false
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {},
+        "permissive": false
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 0,
+      "workflowPriority": 0,
+      "iteration": 0,
+      "subworkflowChanged": false,
+      "firstStartTime": 0,
+      "executionMetadata": {
+        "additionalContext": {},
+        "additionalContextMap": {},
+        "empty": true
+      },
+      "taskDefinition": {
+        "createTime": 0,
+        "updateTime": 0,
+        "name": "read_g_drive",
+        "retryCount": 0,
+        "timeoutSeconds": 0,
+        "inputKeys": [],
+        "outputKeys": [],
+        "timeoutPolicy": "TIME_OUT_WF",
+        "retryLogic": "FIXED",
+        "retryDelaySeconds": 60,
+        "responseTimeoutSeconds": 0,
+        "inputTemplate": {},
+        "rateLimitPerFrequency": 0,
+        "rateLimitFrequencyInSeconds": 1,
+        "backoffScaleFactor": 1,
+        "maxRetryDelaySeconds": 0,
+        "backoffJitterMs": 0,
+        "totalTimeoutSeconds": 0,
+        "taskStatusListenerEnabled": true,
+        "enforceSchema": false
+      },
+      "loopOverTask": false,
+      "queueWaitTime": 0,
+      "orCreateExecutionMetadata": {
+        "additionalContext": {},
+        "additionalContextMap": {},
+        "empty": true
+      }
+    },
+    {
+      "taskType": "GEMINI_LLM",
+      "status": "COMPLETED",
+      "inputData": {
+        "jsonOutput": true,
+        "promptname": "attachment_classify",
+        "connectionId": "gemini-default",
+        "files": [
+          {
+            "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+            "name": "BLR-INV-012584-POD.jpeg",
+            "mimeType": "image/jpeg",
+            "size": "160821",
+            "modifiedTime": "2026-06-16T07:09:30.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download"
+          },
+          {
+            "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+            "name": "BLR-INV-012584-GRN.pdf",
+            "mimeType": "application/pdf",
+            "size": "31233",
+            "modifiedTime": "2026-06-16T07:09:19.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download"
+          }
+        ],
+        "model": "gemini-2.5-flash"
+      },
+      "referenceTaskName": "gemini_llm_ref",
+      "retryCount": 0,
+      "seq": 2,
+      "pollCount": 1,
+      "taskDefName": "gemini_llm",
+      "scheduledTime": 1782799934254,
+      "startTime": 1782799937095,
+      "endTime": 1782799956281,
+      "updateTime": 1782799956281,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": true,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "0ff156f8-e742-4b94-b268-7ec530581dd7",
+      "workflowType": "gdrive_demo_2",
+      "taskId": "73bbd8d5-5c06-42d4-ad9e-afb2f49ca23a",
+      "callbackAfterSeconds": 0,
+      "outputData": {
+        "promptname": "attachment_classify",
+        "promptName": "attachment_classify",
+        "model": "gemini-2.5-flash",
+        "responses": [
+          {
+            "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+            "name": "BLR-INV-012584-POD.jpeg",
+            "mimeType": "image/jpeg",
+            "size": "160821",
+            "modifiedTime": "2026-06-16T07:09:30.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download",
+            "promptname": "attachment_classify",
+            "promptName": "attachment_classify",
+            "result": {
+              "classification": "pod",
+              "confidence": "high",
+              "reason": "Document is a Tax Invoice with a customer 'GOODS RECEIPT' stamp, handwritten received quantities, and receiver signature, indicating delivery acknowledgement."
+            }
+          },
+          {
+            "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+            "name": "BLR-INV-012584-GRN.pdf",
+            "mimeType": "application/pdf",
+            "size": "31233",
+            "modifiedTime": "2026-06-16T07:09:19.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download",
+            "promptname": "attachment_classify",
+            "promptName": "attachment_classify",
+            "result": {
+              "classification": "grn",
+              "confidence": "high",
+              "reason": "Document title is GRN and contains 'Recv qty' column, indicating a Goods Receipt Note."
+            }
+          }
+        ],
+        "results": [
+          {
+            "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+            "name": "BLR-INV-012584-POD.jpeg",
+            "mimeType": "image/jpeg",
+            "size": "160821",
+            "modifiedTime": "2026-06-16T07:09:30.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download",
+            "promptname": "attachment_classify",
+            "promptName": "attachment_classify",
+            "result": {
+              "classification": "pod",
+              "confidence": "high",
+              "reason": "Document is a Tax Invoice with a customer 'GOODS RECEIPT' stamp, handwritten received quantities, and receiver signature, indicating delivery acknowledgement."
+            }
+          },
+          {
+            "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+            "name": "BLR-INV-012584-GRN.pdf",
+            "mimeType": "application/pdf",
+            "size": "31233",
+            "modifiedTime": "2026-06-16T07:09:19.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download",
+            "promptname": "attachment_classify",
+            "promptName": "attachment_classify",
+            "result": {
+              "classification": "grn",
+              "confidence": "high",
+              "reason": "Document title is GRN and contains 'Recv qty' column, indicating a Goods Receipt Note."
+            }
+          }
+        ],
+        "classifiedDocuments": [
+          {
+            "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+            "name": "BLR-INV-012584-POD.jpeg",
+            "mimeType": "image/jpeg",
+            "size": "160821",
+            "modifiedTime": "2026-06-16T07:09:30.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download",
+            "classification": {
+              "classification": "pod",
+              "confidence": "high",
+              "reason": "Document is a Tax Invoice with a customer 'GOODS RECEIPT' stamp, handwritten received quantities, and receiver signature, indicating delivery acknowledgement."
+            }
+          },
+          {
+            "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+            "name": "BLR-INV-012584-GRN.pdf",
+            "mimeType": "application/pdf",
+            "size": "31233",
+            "modifiedTime": "2026-06-16T07:09:19.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download",
+            "classification": {
+              "classification": "grn",
+              "confidence": "high",
+              "reason": "Document title is GRN and contains 'Recv qty' column, indicating a Goods Receipt Note."
+            }
+          }
+        ],
+        "grn": [
+          {
+            "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+            "name": "BLR-INV-012584-GRN.pdf",
+            "mimeType": "application/pdf",
+            "size": "31233",
+            "modifiedTime": "2026-06-16T07:09:19.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download",
+            "classification": {
+              "classification": "grn",
+              "confidence": "high",
+              "reason": "Document title is GRN and contains 'Recv qty' column, indicating a Goods Receipt Note."
+            }
+          }
+        ],
+        "pod": [
+          {
+            "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+            "name": "BLR-INV-012584-POD.jpeg",
+            "mimeType": "image/jpeg",
+            "size": "160821",
+            "modifiedTime": "2026-06-16T07:09:30.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download",
+            "classification": {
+              "classification": "pod",
+              "confidence": "high",
+              "reason": "Document is a Tax Invoice with a customer 'GOODS RECEIPT' stamp, handwritten received quantities, and receiver signature, indicating delivery acknowledgement."
+            }
+          }
+        ],
+        "grn docs": [
+          {
+            "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+            "name": "BLR-INV-012584-GRN.pdf",
+            "mimeType": "application/pdf",
+            "size": "31233",
+            "modifiedTime": "2026-06-16T07:09:19.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download",
+            "classification": {
+              "classification": "grn",
+              "confidence": "high",
+              "reason": "Document title is GRN and contains 'Recv qty' column, indicating a Goods Receipt Note."
+            }
+          }
+        ],
+        "pod docs": [
+          {
+            "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+            "name": "BLR-INV-012584-POD.jpeg",
+            "mimeType": "image/jpeg",
+            "size": "160821",
+            "modifiedTime": "2026-06-16T07:09:30.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download",
+            "classification": {
+              "classification": "pod",
+              "confidence": "high",
+              "reason": "Document is a Tax Invoice with a customer 'GOODS RECEIPT' stamp, handwritten received quantities, and receiver signature, indicating delivery acknowledgement."
+            }
+          }
+        ],
+        "grnDocuments": [
+          {
+            "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+            "name": "BLR-INV-012584-GRN.pdf",
+            "mimeType": "application/pdf",
+            "size": "31233",
+            "modifiedTime": "2026-06-16T07:09:19.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download",
+            "classification": {
+              "classification": "grn",
+              "confidence": "high",
+              "reason": "Document title is GRN and contains 'Recv qty' column, indicating a Goods Receipt Note."
+            }
+          }
+        ],
+        "podDocuments": [
+          {
+            "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+            "name": "BLR-INV-012584-POD.jpeg",
+            "mimeType": "image/jpeg",
+            "size": "160821",
+            "modifiedTime": "2026-06-16T07:09:30.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download",
+            "classification": {
+              "classification": "pod",
+              "confidence": "high",
+              "reason": "Document is a Tax Invoice with a customer 'GOODS RECEIPT' stamp, handwritten received quantities, and receiver signature, indicating delivery acknowledgement."
+            }
+          }
+        ]
+      },
+      "workflowTask": {
+        "name": "gemini_llm",
+        "taskReferenceName": "gemini_llm_ref",
+        "inputParameters": {
+          "connectionId": "gemini-default",
+          "model": "gemini-2.5-flash",
+          "jsonOutput": true,
+          "promptname": "attachment_classify",
+          "files": "${read_g_drive_ref.output.files}"
+        },
+        "type": "GEMINI_LLM",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 0,
+          "updateTime": 0,
+          "name": "gemini_llm",
+          "retryCount": 0,
+          "timeoutSeconds": 0,
+          "inputKeys": [],
+          "outputKeys": [],
+          "timeoutPolicy": "TIME_OUT_WF",
+          "retryLogic": "FIXED",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 0,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1,
+          "maxRetryDelaySeconds": 0,
+          "backoffJitterMs": 0,
+          "totalTimeoutSeconds": 0,
+          "taskStatusListenerEnabled": true,
+          "enforceSchema": false
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {},
+        "permissive": false
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 1,
+      "workflowPriority": 0,
+      "iteration": 0,
+      "subworkflowChanged": false,
+      "firstStartTime": 0,
+      "executionMetadata": {
+        "additionalContext": {},
+        "additionalContextMap": {},
+        "empty": true
+      },
+      "taskDefinition": {
+        "createTime": 0,
+        "updateTime": 0,
+        "name": "gemini_llm",
+        "retryCount": 0,
+        "timeoutSeconds": 0,
+        "inputKeys": [],
+        "outputKeys": [],
+        "timeoutPolicy": "TIME_OUT_WF",
+        "retryLogic": "FIXED",
+        "retryDelaySeconds": 60,
+        "responseTimeoutSeconds": 0,
+        "inputTemplate": {},
+        "rateLimitPerFrequency": 0,
+        "rateLimitFrequencyInSeconds": 1,
+        "backoffScaleFactor": 1,
+        "maxRetryDelaySeconds": 0,
+        "backoffJitterMs": 0,
+        "totalTimeoutSeconds": 0,
+        "taskStatusListenerEnabled": true,
+        "enforceSchema": false
+      },
+      "loopOverTask": false,
+      "queueWaitTime": 2841,
+      "orCreateExecutionMetadata": {
+        "additionalContext": {},
+        "additionalContextMap": {},
+        "empty": true
+      }
+    },
+    {
+      "taskType": "FORK",
+      "status": "COMPLETED",
+      "inputData": {},
+      "referenceTaskName": "classify_children_ref",
+      "retryCount": 0,
+      "seq": 3,
+      "pollCount": 0,
+      "taskDefName": "FORK",
+      "scheduledTime": 1782799956306,
+      "startTime": 1782799956306,
+      "endTime": 1782799956306,
+      "updateTime": 1782799956318,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": true,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "0ff156f8-e742-4b94-b268-7ec530581dd7",
+      "workflowType": "gdrive_demo_2",
+      "taskId": "12212706-3277-42eb-ad93-5925cc6dc26b",
+      "callbackAfterSeconds": 0,
+      "outputData": {},
+      "workflowTask": {
+        "name": "classify_children",
+        "taskReferenceName": "classify_children_ref",
+        "inputParameters": {},
+        "type": "FORK_JOIN",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [
+          [
+            {
+              "name": "Grn",
+              "taskReferenceName": "grn_ref",
+              "inputParameters": {
+                "connectionId": "gemini-default",
+                "model": "gemini-2.5-flash",
+                "jsonOutput": true,
+                "promptname": "grn_extraction",
+                "prompt": "enter your prompt",
+                "files": "${gemini_llm_ref.output.grnDocuments}"
+              },
+              "type": "GEMINI_LLM",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "taskDefinition": {
+                "createTime": 0,
+                "updateTime": 0,
+                "name": "Grn",
+                "retryCount": 0,
+                "timeoutSeconds": 0,
+                "inputKeys": [],
+                "outputKeys": [],
+                "timeoutPolicy": "TIME_OUT_WF",
+                "retryLogic": "FIXED",
+                "retryDelaySeconds": 60,
+                "responseTimeoutSeconds": 0,
+                "inputTemplate": {},
+                "rateLimitPerFrequency": 0,
+                "rateLimitFrequencyInSeconds": 1,
+                "backoffScaleFactor": 1,
+                "maxRetryDelaySeconds": 0,
+                "backoffJitterMs": 0,
+                "totalTimeoutSeconds": 0,
+                "taskStatusListenerEnabled": true,
+                "enforceSchema": false
+              },
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": [],
+              "onStateChange": {},
+              "permissive": false
+            }
+          ],
+          [
+            {
+              "name": "pod",
+              "taskReferenceName": "pod_ref",
+              "inputParameters": {
+                "connectionId": "gemini-default",
+                "model": "gemini-2.5-flash",
+                "jsonOutput": true,
+                "promptname": "pod_extraction",
+                "prompt": "enter your prompt",
+                "files": "${gemini_llm_ref.output.podDocuments}"
+              },
+              "type": "GEMINI_LLM",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "taskDefinition": {
+                "createTime": 0,
+                "updateTime": 0,
+                "name": "pod",
+                "retryCount": 0,
+                "timeoutSeconds": 0,
+                "inputKeys": [],
+                "outputKeys": [],
+                "timeoutPolicy": "TIME_OUT_WF",
+                "retryLogic": "FIXED",
+                "retryDelaySeconds": 60,
+                "responseTimeoutSeconds": 0,
+                "inputTemplate": {},
+                "rateLimitPerFrequency": 0,
+                "rateLimitFrequencyInSeconds": 1,
+                "backoffScaleFactor": 1,
+                "maxRetryDelaySeconds": 0,
+                "backoffJitterMs": 0,
+                "totalTimeoutSeconds": 0,
+                "taskStatusListenerEnabled": true,
+                "enforceSchema": false
+              },
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": [],
+              "onStateChange": {},
+              "permissive": false
+            }
+          ]
+        ],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 0,
+          "updateTime": 0,
+          "name": "classify_children",
+          "retryCount": 0,
+          "timeoutSeconds": 0,
+          "inputKeys": [],
+          "outputKeys": [],
+          "timeoutPolicy": "TIME_OUT_WF",
+          "retryLogic": "FIXED",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 0,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1,
+          "maxRetryDelaySeconds": 0,
+          "backoffJitterMs": 0,
+          "totalTimeoutSeconds": 0,
+          "taskStatusListenerEnabled": true,
+          "enforceSchema": false
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {},
+        "permissive": false
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 0,
+      "workflowPriority": 0,
+      "iteration": 0,
+      "subworkflowChanged": false,
+      "firstStartTime": 0,
+      "executionMetadata": {
+        "additionalContext": {},
+        "additionalContextMap": {},
+        "empty": true
+      },
+      "taskDefinition": {
+        "createTime": 0,
+        "updateTime": 0,
+        "name": "classify_children",
+        "retryCount": 0,
+        "timeoutSeconds": 0,
+        "inputKeys": [],
+        "outputKeys": [],
+        "timeoutPolicy": "TIME_OUT_WF",
+        "retryLogic": "FIXED",
+        "retryDelaySeconds": 60,
+        "responseTimeoutSeconds": 0,
+        "inputTemplate": {},
+        "rateLimitPerFrequency": 0,
+        "rateLimitFrequencyInSeconds": 1,
+        "backoffScaleFactor": 1,
+        "maxRetryDelaySeconds": 0,
+        "backoffJitterMs": 0,
+        "totalTimeoutSeconds": 0,
+        "taskStatusListenerEnabled": true,
+        "enforceSchema": false
+      },
+      "loopOverTask": false,
+      "queueWaitTime": 0,
+      "orCreateExecutionMetadata": {
+        "additionalContext": {},
+        "additionalContextMap": {},
+        "empty": true
+      }
+    },
+    {
+      "taskType": "GEMINI_LLM",
+      "status": "COMPLETED",
+      "inputData": {
+        "jsonOutput": true,
+        "promptname": "grn_extraction",
+        "connectionId": "gemini-default",
+        "files": [
+          {
+            "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+            "name": "BLR-INV-012584-GRN.pdf",
+            "mimeType": "application/pdf",
+            "size": "31233",
+            "modifiedTime": "2026-06-16T07:09:19.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download",
+            "classification": {
+              "classification": "grn",
+              "confidence": "high",
+              "reason": "Document title is GRN and contains 'Recv qty' column, indicating a Goods Receipt Note."
+            }
+          }
+        ],
+        "model": "gemini-2.5-flash",
+        "prompt": "enter your prompt"
+      },
+      "referenceTaskName": "grn_ref",
+      "retryCount": 0,
+      "seq": 4,
+      "pollCount": 1,
+      "taskDefName": "Grn",
+      "scheduledTime": 1782799956307,
+      "startTime": 1782799962803,
+      "endTime": 1782799982242,
+      "updateTime": 1782799982242,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "0ff156f8-e742-4b94-b268-7ec530581dd7",
+      "workflowType": "gdrive_demo_2",
+      "taskId": "20210363-7a31-426f-a8e6-0a0116c07c37",
+      "callbackAfterSeconds": 0,
+      "outputData": {
+        "promptname": "grn_extraction",
+        "promptName": "grn_extraction",
+        "model": "gemini-2.5-flash",
+        "responses": [
+          {
+            "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+            "name": "BLR-INV-012584-GRN.pdf",
+            "mimeType": "application/pdf",
+            "size": "31233",
+            "modifiedTime": "2026-06-16T07:09:19.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download",
+            "classification": {
+              "classification": "grn",
+              "confidence": "high",
+              "reason": "Document title is GRN and contains 'Recv qty' column, indicating a Goods Receipt Note."
+            },
+            "promptname": "grn_extraction",
+            "promptName": "grn_extraction",
+            "result": {
+              "grn_number": "GrnCode40645510",
+              "purchase_order_no": "BLR073P1T3N",
+              "supplier_bill_number": "BRL-INV-012584",
+              "delivered_on": "2026-03-18",
+              "account_number": null,
+              "supplier": {
+                "name": "SAMBERRY EXOTICS PRIVATE LIMITED",
+                "gstin": "36AAZCS6817K1ZE"
+              },
+              "buyer": {
+                "name": "Zomato Hyperpure",
+                "gstin": "29AAJCK4861F1Z8",
+                "fulfillment_center_code": "BLR"
+              },
+              "line_items": [
+                {
+                  "product_no": null,
+                  "product_name": "Avocado Hass Imported",
+                  "hsn": null,
+                  "qty_ordered": 276,
+                  "qty_delivered": 230,
+                  "grn_qty": 230,
+                  "damaged_qty": null,
+                  "price_per_unit": 55,
+                  "uom": null,
+                  "gst_rate": 0,
+                  "total_tax_amount": 0,
+                  "amount": 12650
+                },
+                {
+                  "product_no": null,
+                  "product_name": "Avocado Large Premium",
+                  "hsn": null,
+                  "qty_ordered": 2,
+                  "qty_delivered": 1,
+                  "grn_qty": 1,
+                  "damaged_qty": null,
+                  "price_per_unit": 180,
+                  "uom": null,
+                  "gst_rate": 0,
+                  "total_tax_amount": 0,
+                  "amount": 180
+                }
+              ],
+              "total_amount": 21680,
+              "debit_note_number": null,
+              "debit_note_amount": null,
+              "debit_note_line_items": null,
+              "extraction_confidence": "high"
+            }
+          }
+        ],
+        "results": [
+          {
+            "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+            "name": "BLR-INV-012584-GRN.pdf",
+            "mimeType": "application/pdf",
+            "size": "31233",
+            "modifiedTime": "2026-06-16T07:09:19.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download",
+            "classification": {
+              "classification": "grn",
+              "confidence": "high",
+              "reason": "Document title is GRN and contains 'Recv qty' column, indicating a Goods Receipt Note."
+            },
+            "promptname": "grn_extraction",
+            "promptName": "grn_extraction",
+            "result": {
+              "grn_number": "GrnCode40645510",
+              "purchase_order_no": "BLR073P1T3N",
+              "supplier_bill_number": "BRL-INV-012584",
+              "delivered_on": "2026-03-18",
+              "account_number": null,
+              "supplier": {
+                "name": "SAMBERRY EXOTICS PRIVATE LIMITED",
+                "gstin": "36AAZCS6817K1ZE"
+              },
+              "buyer": {
+                "name": "Zomato Hyperpure",
+                "gstin": "29AAJCK4861F1Z8",
+                "fulfillment_center_code": "BLR"
+              },
+              "line_items": [
+                {
+                  "product_no": null,
+                  "product_name": "Avocado Hass Imported",
+                  "hsn": null,
+                  "qty_ordered": 276,
+                  "qty_delivered": 230,
+                  "grn_qty": 230,
+                  "damaged_qty": null,
+                  "price_per_unit": 55,
+                  "uom": null,
+                  "gst_rate": 0,
+                  "total_tax_amount": 0,
+                  "amount": 12650
+                },
+                {
+                  "product_no": null,
+                  "product_name": "Avocado Large Premium",
+                  "hsn": null,
+                  "qty_ordered": 2,
+                  "qty_delivered": 1,
+                  "grn_qty": 1,
+                  "damaged_qty": null,
+                  "price_per_unit": 180,
+                  "uom": null,
+                  "gst_rate": 0,
+                  "total_tax_amount": 0,
+                  "amount": 180
+                }
+              ],
+              "total_amount": 21680,
+              "debit_note_number": null,
+              "debit_note_amount": null,
+              "debit_note_line_items": null,
+              "extraction_confidence": "high"
+            }
+          }
+        ],
+        "records": [
+          {
+            "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+            "name": "BLR-INV-012584-GRN.pdf",
+            "mimeType": "application/pdf",
+            "size": "31233",
+            "modifiedTime": "2026-06-16T07:09:19.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download",
+            "classification": {
+              "classification": "grn",
+              "confidence": "high",
+              "reason": "Document title is GRN and contains 'Recv qty' column, indicating a Goods Receipt Note."
+            },
+            "extracted": {
+              "grn_number": "GrnCode40645510",
+              "purchase_order_no": "BLR073P1T3N",
+              "supplier_bill_number": "BRL-INV-012584",
+              "delivered_on": "2026-03-18",
+              "account_number": null,
+              "supplier": {
+                "name": "SAMBERRY EXOTICS PRIVATE LIMITED",
+                "gstin": "36AAZCS6817K1ZE"
+              },
+              "buyer": {
+                "name": "Zomato Hyperpure",
+                "gstin": "29AAJCK4861F1Z8",
+                "fulfillment_center_code": "BLR"
+              },
+              "line_items": [
+                {
+                  "product_no": null,
+                  "product_name": "Avocado Hass Imported",
+                  "hsn": null,
+                  "qty_ordered": 276,
+                  "qty_delivered": 230,
+                  "grn_qty": 230,
+                  "damaged_qty": null,
+                  "price_per_unit": 55,
+                  "uom": null,
+                  "gst_rate": 0,
+                  "total_tax_amount": 0,
+                  "amount": 12650
+                },
+                {
+                  "product_no": null,
+                  "product_name": "Avocado Large Premium",
+                  "hsn": null,
+                  "qty_ordered": 2,
+                  "qty_delivered": 1,
+                  "grn_qty": 1,
+                  "damaged_qty": null,
+                  "price_per_unit": 180,
+                  "uom": null,
+                  "gst_rate": 0,
+                  "total_tax_amount": 0,
+                  "amount": 180
+                }
+              ],
+              "total_amount": 21680,
+              "debit_note_number": null,
+              "debit_note_amount": null,
+              "debit_note_line_items": null,
+              "extraction_confidence": "high"
+            }
+          }
+        ]
+      },
+      "workflowTask": {
+        "name": "Grn",
+        "taskReferenceName": "grn_ref",
+        "inputParameters": {
+          "connectionId": "gemini-default",
+          "model": "gemini-2.5-flash",
+          "jsonOutput": true,
+          "promptname": "grn_extraction",
+          "prompt": "enter your prompt",
+          "files": "${gemini_llm_ref.output.grnDocuments}"
+        },
+        "type": "GEMINI_LLM",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 0,
+          "updateTime": 0,
+          "name": "Grn",
+          "retryCount": 0,
+          "timeoutSeconds": 0,
+          "inputKeys": [],
+          "outputKeys": [],
+          "timeoutPolicy": "TIME_OUT_WF",
+          "retryLogic": "FIXED",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 0,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1,
+          "maxRetryDelaySeconds": 0,
+          "backoffJitterMs": 0,
+          "totalTimeoutSeconds": 0,
+          "taskStatusListenerEnabled": true,
+          "enforceSchema": false
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {},
+        "permissive": false
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 1,
+      "workflowPriority": 0,
+      "iteration": 0,
+      "subworkflowChanged": false,
+      "firstStartTime": 0,
+      "executionMetadata": {
+        "additionalContext": {},
+        "additionalContextMap": {},
+        "empty": true
+      },
+      "taskDefinition": {
+        "createTime": 0,
+        "updateTime": 0,
+        "name": "Grn",
+        "retryCount": 0,
+        "timeoutSeconds": 0,
+        "inputKeys": [],
+        "outputKeys": [],
+        "timeoutPolicy": "TIME_OUT_WF",
+        "retryLogic": "FIXED",
+        "retryDelaySeconds": 60,
+        "responseTimeoutSeconds": 0,
+        "inputTemplate": {},
+        "rateLimitPerFrequency": 0,
+        "rateLimitFrequencyInSeconds": 1,
+        "backoffScaleFactor": 1,
+        "maxRetryDelaySeconds": 0,
+        "backoffJitterMs": 0,
+        "totalTimeoutSeconds": 0,
+        "taskStatusListenerEnabled": true,
+        "enforceSchema": false
+      },
+      "loopOverTask": false,
+      "queueWaitTime": 6496,
+      "orCreateExecutionMetadata": {
+        "additionalContext": {},
+        "additionalContextMap": {},
+        "empty": true
+      }
+    },
+    {
+      "taskType": "GEMINI_LLM",
+      "status": "COMPLETED",
+      "inputData": {
+        "jsonOutput": true,
+        "promptname": "pod_extraction",
+        "connectionId": "gemini-default",
+        "files": [
+          {
+            "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+            "name": "BLR-INV-012584-POD.jpeg",
+            "mimeType": "image/jpeg",
+            "size": "160821",
+            "modifiedTime": "2026-06-16T07:09:30.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download",
+            "classification": {
+              "classification": "pod",
+              "confidence": "high",
+              "reason": "Document is a Tax Invoice with a customer 'GOODS RECEIPT' stamp, handwritten received quantities, and receiver signature, indicating delivery acknowledgement."
+            }
+          }
+        ],
+        "model": "gemini-2.5-flash",
+        "prompt": "enter your prompt"
+      },
+      "referenceTaskName": "pod_ref",
+      "retryCount": 0,
+      "seq": 5,
+      "pollCount": 1,
+      "taskDefName": "pod",
+      "scheduledTime": 1782799956308,
+      "startTime": 1782799962700,
+      "endTime": 1782799977295,
+      "updateTime": 1782799977295,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": true,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "0ff156f8-e742-4b94-b268-7ec530581dd7",
+      "workflowType": "gdrive_demo_2",
+      "taskId": "016ca340-a545-423c-aab2-e6324314aed3",
+      "callbackAfterSeconds": 0,
+      "outputData": {
+        "promptname": "pod_extraction",
+        "promptName": "pod_extraction",
+        "model": "gemini-2.5-flash",
+        "responses": [
+          {
+            "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+            "name": "BLR-INV-012584-POD.jpeg",
+            "mimeType": "image/jpeg",
+            "size": "160821",
+            "modifiedTime": "2026-06-16T07:09:30.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download",
+            "classification": {
+              "classification": "pod",
+              "confidence": "high",
+              "reason": "Document is a Tax Invoice with a customer 'GOODS RECEIPT' stamp, handwritten received quantities, and receiver signature, indicating delivery acknowledgement."
+            },
+            "promptname": "pod_extraction",
+            "promptName": "pod_extraction",
+            "result": {
+              "invoice_number": "BLR-INV-012584",
+              "invoice_date": "2026-03-18",
+              "purchase_order_number": "BLR-SO-07125",
+              "vendor_name": "Samberry Exotics Private Limited",
+              "buyer_name": "KIRANAKART WHOLESALE PRIVATE LIMITED",
+              "received_by_stamp_present": true,
+              "received_by_entity": "KIRANAKART WHOLESALE PVT LTD C/o ACCESS WARHOUSING PVT LTD GOODS RECEIPT",
+              "authorized_signature_present": true,
+              "delivery_date": "2026-03-18",
+              "line_items": [
+                {
+                  "item_name": "Snacky Avocado Regular",
+                  "printed_quantity": 231,
+                  "handwritten_quantity": 171,
+                  "rate": 50,
+                  "amount": 11550
+                },
+                {
+                  "item_name": "Avocado Large Premium",
+                  "printed_quantity": 2,
+                  "handwritten_quantity": 1,
+                  "rate": 180,
+                  "amount": 360
+                },
+                {
+                  "item_name": "Avocado Hass Imported",
+                  "printed_quantity": 276,
+                  "handwritten_quantity": 230,
+                  "rate": 55,
+                  "amount": 15180
+                }
+              ],
+              "total_amount": 27090,
+              "currency": "INR",
+              "remarks": "Thanks for your business. Recd By: Q/Venk. Vehicle No: KA05AF 7787. Inward No: 46767. Vehicle Out Time: 2:30. NOTE: GOODS RECEIVED SUBJECT TO V...",
+              "extraction_confidence": "medium"
+            }
+          }
+        ],
+        "results": [
+          {
+            "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+            "name": "BLR-INV-012584-POD.jpeg",
+            "mimeType": "image/jpeg",
+            "size": "160821",
+            "modifiedTime": "2026-06-16T07:09:30.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download",
+            "classification": {
+              "classification": "pod",
+              "confidence": "high",
+              "reason": "Document is a Tax Invoice with a customer 'GOODS RECEIPT' stamp, handwritten received quantities, and receiver signature, indicating delivery acknowledgement."
+            },
+            "promptname": "pod_extraction",
+            "promptName": "pod_extraction",
+            "result": {
+              "invoice_number": "BLR-INV-012584",
+              "invoice_date": "2026-03-18",
+              "purchase_order_number": "BLR-SO-07125",
+              "vendor_name": "Samberry Exotics Private Limited",
+              "buyer_name": "KIRANAKART WHOLESALE PRIVATE LIMITED",
+              "received_by_stamp_present": true,
+              "received_by_entity": "KIRANAKART WHOLESALE PVT LTD C/o ACCESS WARHOUSING PVT LTD GOODS RECEIPT",
+              "authorized_signature_present": true,
+              "delivery_date": "2026-03-18",
+              "line_items": [
+                {
+                  "item_name": "Snacky Avocado Regular",
+                  "printed_quantity": 231,
+                  "handwritten_quantity": 171,
+                  "rate": 50,
+                  "amount": 11550
+                },
+                {
+                  "item_name": "Avocado Large Premium",
+                  "printed_quantity": 2,
+                  "handwritten_quantity": 1,
+                  "rate": 180,
+                  "amount": 360
+                },
+                {
+                  "item_name": "Avocado Hass Imported",
+                  "printed_quantity": 276,
+                  "handwritten_quantity": 230,
+                  "rate": 55,
+                  "amount": 15180
+                }
+              ],
+              "total_amount": 27090,
+              "currency": "INR",
+              "remarks": "Thanks for your business. Recd By: Q/Venk. Vehicle No: KA05AF 7787. Inward No: 46767. Vehicle Out Time: 2:30. NOTE: GOODS RECEIVED SUBJECT TO V...",
+              "extraction_confidence": "medium"
+            }
+          }
+        ],
+        "records": [
+          {
+            "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+            "name": "BLR-INV-012584-POD.jpeg",
+            "mimeType": "image/jpeg",
+            "size": "160821",
+            "modifiedTime": "2026-06-16T07:09:30.000Z",
+            "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+            "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download",
+            "classification": {
+              "classification": "pod",
+              "confidence": "high",
+              "reason": "Document is a Tax Invoice with a customer 'GOODS RECEIPT' stamp, handwritten received quantities, and receiver signature, indicating delivery acknowledgement."
+            },
+            "extracted": {
+              "invoice_number": "BLR-INV-012584",
+              "invoice_date": "2026-03-18",
+              "purchase_order_number": "BLR-SO-07125",
+              "vendor_name": "Samberry Exotics Private Limited",
+              "buyer_name": "KIRANAKART WHOLESALE PRIVATE LIMITED",
+              "received_by_stamp_present": true,
+              "received_by_entity": "KIRANAKART WHOLESALE PVT LTD C/o ACCESS WARHOUSING PVT LTD GOODS RECEIPT",
+              "authorized_signature_present": true,
+              "delivery_date": "2026-03-18",
+              "line_items": [
+                {
+                  "item_name": "Snacky Avocado Regular",
+                  "printed_quantity": 231,
+                  "handwritten_quantity": 171,
+                  "rate": 50,
+                  "amount": 11550
+                },
+                {
+                  "item_name": "Avocado Large Premium",
+                  "printed_quantity": 2,
+                  "handwritten_quantity": 1,
+                  "rate": 180,
+                  "amount": 360
+                },
+                {
+                  "item_name": "Avocado Hass Imported",
+                  "printed_quantity": 276,
+                  "handwritten_quantity": 230,
+                  "rate": 55,
+                  "amount": 15180
+                }
+              ],
+              "total_amount": 27090,
+              "currency": "INR",
+              "remarks": "Thanks for your business. Recd By: Q/Venk. Vehicle No: KA05AF 7787. Inward No: 46767. Vehicle Out Time: 2:30. NOTE: GOODS RECEIVED SUBJECT TO V...",
+              "extraction_confidence": "medium"
+            }
+          }
+        ]
+      },
+      "workflowTask": {
+        "name": "pod",
+        "taskReferenceName": "pod_ref",
+        "inputParameters": {
+          "connectionId": "gemini-default",
+          "model": "gemini-2.5-flash",
+          "jsonOutput": true,
+          "promptname": "pod_extraction",
+          "prompt": "enter your prompt",
+          "files": "${gemini_llm_ref.output.podDocuments}"
+        },
+        "type": "GEMINI_LLM",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 0,
+          "updateTime": 0,
+          "name": "pod",
+          "retryCount": 0,
+          "timeoutSeconds": 0,
+          "inputKeys": [],
+          "outputKeys": [],
+          "timeoutPolicy": "TIME_OUT_WF",
+          "retryLogic": "FIXED",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 0,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1,
+          "maxRetryDelaySeconds": 0,
+          "backoffJitterMs": 0,
+          "totalTimeoutSeconds": 0,
+          "taskStatusListenerEnabled": true,
+          "enforceSchema": false
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {},
+        "permissive": false
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 1,
+      "workflowPriority": 0,
+      "iteration": 0,
+      "subworkflowChanged": false,
+      "firstStartTime": 0,
+      "executionMetadata": {
+        "additionalContext": {},
+        "additionalContextMap": {},
+        "empty": true
+      },
+      "taskDefinition": {
+        "createTime": 0,
+        "updateTime": 0,
+        "name": "pod",
+        "retryCount": 0,
+        "timeoutSeconds": 0,
+        "inputKeys": [],
+        "outputKeys": [],
+        "timeoutPolicy": "TIME_OUT_WF",
+        "retryLogic": "FIXED",
+        "retryDelaySeconds": 60,
+        "responseTimeoutSeconds": 0,
+        "inputTemplate": {},
+        "rateLimitPerFrequency": 0,
+        "rateLimitFrequencyInSeconds": 1,
+        "backoffScaleFactor": 1,
+        "maxRetryDelaySeconds": 0,
+        "backoffJitterMs": 0,
+        "totalTimeoutSeconds": 0,
+        "taskStatusListenerEnabled": true,
+        "enforceSchema": false
+      },
+      "loopOverTask": false,
+      "queueWaitTime": 6392,
+      "orCreateExecutionMetadata": {
+        "additionalContext": {},
+        "additionalContextMap": {},
+        "empty": true
+      }
+    },
+    {
+      "taskType": "JOIN",
+      "status": "COMPLETED",
+      "inputData": {
+        "joinOn": [
+          "grn_ref",
+          "pod_ref"
+        ]
+      },
+      "referenceTaskName": "join_classify_children_ref",
+      "retryCount": 0,
+      "seq": 6,
+      "pollCount": 100,
+      "taskDefName": "JOIN",
+      "scheduledTime": 1782799956309,
+      "startTime": 1782799956309,
+      "endTime": 1782799977826,
+      "updateTime": 1782799977675,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "0ff156f8-e742-4b94-b268-7ec530581dd7",
+      "workflowType": "gdrive_demo_2",
+      "taskId": "4c0093dc-567e-43ca-8261-f7f0a79db64d",
+      "callbackAfterSeconds": 0,
+      "outputData": {
+        "pod_ref": {
+          "promptname": "pod_extraction",
+          "promptName": "pod_extraction",
+          "model": "gemini-2.5-flash",
+          "responses": [
+            {
+              "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+              "name": "BLR-INV-012584-POD.jpeg",
+              "mimeType": "image/jpeg",
+              "size": "160821",
+              "modifiedTime": "2026-06-16T07:09:30.000Z",
+              "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+              "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download",
+              "classification": {
+                "classification": "pod",
+                "confidence": "high",
+                "reason": "Document is a Tax Invoice with a customer 'GOODS RECEIPT' stamp, handwritten received quantities, and receiver signature, indicating delivery acknowledgement."
+              },
+              "promptname": "pod_extraction",
+              "promptName": "pod_extraction",
+              "result": {
+                "invoice_number": "BLR-INV-012584",
+                "invoice_date": "2026-03-18",
+                "purchase_order_number": "BLR-SO-07125",
+                "vendor_name": "Samberry Exotics Private Limited",
+                "buyer_name": "KIRANAKART WHOLESALE PRIVATE LIMITED",
+                "received_by_stamp_present": true,
+                "received_by_entity": "KIRANAKART WHOLESALE PVT LTD C/o ACCESS WARHOUSING PVT LTD GOODS RECEIPT",
+                "authorized_signature_present": true,
+                "delivery_date": "2026-03-18",
+                "line_items": [
+                  {
+                    "item_name": "Snacky Avocado Regular",
+                    "printed_quantity": 231,
+                    "handwritten_quantity": 171,
+                    "rate": 50,
+                    "amount": 11550
+                  },
+                  {
+                    "item_name": "Avocado Large Premium",
+                    "printed_quantity": 2,
+                    "handwritten_quantity": 1,
+                    "rate": 180,
+                    "amount": 360
+                  },
+                  {
+                    "item_name": "Avocado Hass Imported",
+                    "printed_quantity": 276,
+                    "handwritten_quantity": 230,
+                    "rate": 55,
+                    "amount": 15180
+                  }
+                ],
+                "total_amount": 27090,
+                "currency": "INR",
+                "remarks": "Thanks for your business. Recd By: Q/Venk. Vehicle No: KA05AF 7787. Inward No: 46767. Vehicle Out Time: 2:30. NOTE: GOODS RECEIVED SUBJECT TO V...",
+                "extraction_confidence": "medium"
+              }
+            }
+          ],
+          "results": [
+            {
+              "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+              "name": "BLR-INV-012584-POD.jpeg",
+              "mimeType": "image/jpeg",
+              "size": "160821",
+              "modifiedTime": "2026-06-16T07:09:30.000Z",
+              "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+              "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download",
+              "classification": {
+                "classification": "pod",
+                "confidence": "high",
+                "reason": "Document is a Tax Invoice with a customer 'GOODS RECEIPT' stamp, handwritten received quantities, and receiver signature, indicating delivery acknowledgement."
+              },
+              "promptname": "pod_extraction",
+              "promptName": "pod_extraction",
+              "result": {
+                "invoice_number": "BLR-INV-012584",
+                "invoice_date": "2026-03-18",
+                "purchase_order_number": "BLR-SO-07125",
+                "vendor_name": "Samberry Exotics Private Limited",
+                "buyer_name": "KIRANAKART WHOLESALE PRIVATE LIMITED",
+                "received_by_stamp_present": true,
+                "received_by_entity": "KIRANAKART WHOLESALE PVT LTD C/o ACCESS WARHOUSING PVT LTD GOODS RECEIPT",
+                "authorized_signature_present": true,
+                "delivery_date": "2026-03-18",
+                "line_items": [
+                  {
+                    "item_name": "Snacky Avocado Regular",
+                    "printed_quantity": 231,
+                    "handwritten_quantity": 171,
+                    "rate": 50,
+                    "amount": 11550
+                  },
+                  {
+                    "item_name": "Avocado Large Premium",
+                    "printed_quantity": 2,
+                    "handwritten_quantity": 1,
+                    "rate": 180,
+                    "amount": 360
+                  },
+                  {
+                    "item_name": "Avocado Hass Imported",
+                    "printed_quantity": 276,
+                    "handwritten_quantity": 230,
+                    "rate": 55,
+                    "amount": 15180
+                  }
+                ],
+                "total_amount": 27090,
+                "currency": "INR",
+                "remarks": "Thanks for your business. Recd By: Q/Venk. Vehicle No: KA05AF 7787. Inward No: 46767. Vehicle Out Time: 2:30. NOTE: GOODS RECEIVED SUBJECT TO V...",
+                "extraction_confidence": "medium"
+              }
+            }
+          ],
+          "records": [
+            {
+              "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+              "name": "BLR-INV-012584-POD.jpeg",
+              "mimeType": "image/jpeg",
+              "size": "160821",
+              "modifiedTime": "2026-06-16T07:09:30.000Z",
+              "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+              "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download",
+              "classification": {
+                "classification": "pod",
+                "confidence": "high",
+                "reason": "Document is a Tax Invoice with a customer 'GOODS RECEIPT' stamp, handwritten received quantities, and receiver signature, indicating delivery acknowledgement."
+              },
+              "extracted": {
+                "invoice_number": "BLR-INV-012584",
+                "invoice_date": "2026-03-18",
+                "purchase_order_number": "BLR-SO-07125",
+                "vendor_name": "Samberry Exotics Private Limited",
+                "buyer_name": "KIRANAKART WHOLESALE PRIVATE LIMITED",
+                "received_by_stamp_present": true,
+                "received_by_entity": "KIRANAKART WHOLESALE PVT LTD C/o ACCESS WARHOUSING PVT LTD GOODS RECEIPT",
+                "authorized_signature_present": true,
+                "delivery_date": "2026-03-18",
+                "line_items": [
+                  {
+                    "item_name": "Snacky Avocado Regular",
+                    "printed_quantity": 231,
+                    "handwritten_quantity": 171,
+                    "rate": 50,
+                    "amount": 11550
+                  },
+                  {
+                    "item_name": "Avocado Large Premium",
+                    "printed_quantity": 2,
+                    "handwritten_quantity": 1,
+                    "rate": 180,
+                    "amount": 360
+                  },
+                  {
+                    "item_name": "Avocado Hass Imported",
+                    "printed_quantity": 276,
+                    "handwritten_quantity": 230,
+                    "rate": 55,
+                    "amount": 15180
+                  }
+                ],
+                "total_amount": 27090,
+                "currency": "INR",
+                "remarks": "Thanks for your business. Recd By: Q/Venk. Vehicle No: KA05AF 7787. Inward No: 46767. Vehicle Out Time: 2:30. NOTE: GOODS RECEIVED SUBJECT TO V...",
+                "extraction_confidence": "medium"
+              }
+            }
+          ]
+        },
+        "grn_ref": {
+          "promptname": "grn_extraction",
+          "promptName": "grn_extraction",
+          "model": "gemini-2.5-flash",
+          "responses": [
+            {
+              "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+              "name": "BLR-INV-012584-GRN.pdf",
+              "mimeType": "application/pdf",
+              "size": "31233",
+              "modifiedTime": "2026-06-16T07:09:19.000Z",
+              "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+              "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download",
+              "classification": {
+                "classification": "grn",
+                "confidence": "high",
+                "reason": "Document title is GRN and contains 'Recv qty' column, indicating a Goods Receipt Note."
+              },
+              "promptname": "grn_extraction",
+              "promptName": "grn_extraction",
+              "result": {
+                "grn_number": "GrnCode40645510",
+                "purchase_order_no": "BLR073P1T3N",
+                "supplier_bill_number": "BRL-INV-012584",
+                "delivered_on": "2026-03-18",
+                "account_number": null,
+                "supplier": {
+                  "name": "SAMBERRY EXOTICS PRIVATE LIMITED",
+                  "gstin": "36AAZCS6817K1ZE"
+                },
+                "buyer": {
+                  "name": "Zomato Hyperpure",
+                  "gstin": "29AAJCK4861F1Z8",
+                  "fulfillment_center_code": "BLR"
+                },
+                "line_items": [
+                  {
+                    "product_no": null,
+                    "product_name": "Avocado Hass Imported",
+                    "hsn": null,
+                    "qty_ordered": 276,
+                    "qty_delivered": 230,
+                    "grn_qty": 230,
+                    "damaged_qty": null,
+                    "price_per_unit": 55,
+                    "uom": null,
+                    "gst_rate": 0,
+                    "total_tax_amount": 0,
+                    "amount": 12650
+                  },
+                  {
+                    "product_no": null,
+                    "product_name": "Avocado Large Premium",
+                    "hsn": null,
+                    "qty_ordered": 2,
+                    "qty_delivered": 1,
+                    "grn_qty": 1,
+                    "damaged_qty": null,
+                    "price_per_unit": 180,
+                    "uom": null,
+                    "gst_rate": 0,
+                    "total_tax_amount": 0,
+                    "amount": 180
+                  }
+                ],
+                "total_amount": 21680,
+                "debit_note_number": null,
+                "debit_note_amount": null,
+                "debit_note_line_items": null,
+                "extraction_confidence": "high"
+              }
+            }
+          ],
+          "results": [
+            {
+              "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+              "name": "BLR-INV-012584-GRN.pdf",
+              "mimeType": "application/pdf",
+              "size": "31233",
+              "modifiedTime": "2026-06-16T07:09:19.000Z",
+              "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+              "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download",
+              "classification": {
+                "classification": "grn",
+                "confidence": "high",
+                "reason": "Document title is GRN and contains 'Recv qty' column, indicating a Goods Receipt Note."
+              },
+              "promptname": "grn_extraction",
+              "promptName": "grn_extraction",
+              "result": {
+                "grn_number": "GrnCode40645510",
+                "purchase_order_no": "BLR073P1T3N",
+                "supplier_bill_number": "BRL-INV-012584",
+                "delivered_on": "2026-03-18",
+                "account_number": null,
+                "supplier": {
+                  "name": "SAMBERRY EXOTICS PRIVATE LIMITED",
+                  "gstin": "36AAZCS6817K1ZE"
+                },
+                "buyer": {
+                  "name": "Zomato Hyperpure",
+                  "gstin": "29AAJCK4861F1Z8",
+                  "fulfillment_center_code": "BLR"
+                },
+                "line_items": [
+                  {
+                    "product_no": null,
+                    "product_name": "Avocado Hass Imported",
+                    "hsn": null,
+                    "qty_ordered": 276,
+                    "qty_delivered": 230,
+                    "grn_qty": 230,
+                    "damaged_qty": null,
+                    "price_per_unit": 55,
+                    "uom": null,
+                    "gst_rate": 0,
+                    "total_tax_amount": 0,
+                    "amount": 12650
+                  },
+                  {
+                    "product_no": null,
+                    "product_name": "Avocado Large Premium",
+                    "hsn": null,
+                    "qty_ordered": 2,
+                    "qty_delivered": 1,
+                    "grn_qty": 1,
+                    "damaged_qty": null,
+                    "price_per_unit": 180,
+                    "uom": null,
+                    "gst_rate": 0,
+                    "total_tax_amount": 0,
+                    "amount": 180
+                  }
+                ],
+                "total_amount": 21680,
+                "debit_note_number": null,
+                "debit_note_amount": null,
+                "debit_note_line_items": null,
+                "extraction_confidence": "high"
+              }
+            }
+          ],
+          "records": [
+            {
+              "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+              "name": "BLR-INV-012584-GRN.pdf",
+              "mimeType": "application/pdf",
+              "size": "31233",
+              "modifiedTime": "2026-06-16T07:09:19.000Z",
+              "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+              "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download",
+              "classification": {
+                "classification": "grn",
+                "confidence": "high",
+                "reason": "Document title is GRN and contains 'Recv qty' column, indicating a Goods Receipt Note."
+              },
+              "extracted": {
+                "grn_number": "GrnCode40645510",
+                "purchase_order_no": "BLR073P1T3N",
+                "supplier_bill_number": "BRL-INV-012584",
+                "delivered_on": "2026-03-18",
+                "account_number": null,
+                "supplier": {
+                  "name": "SAMBERRY EXOTICS PRIVATE LIMITED",
+                  "gstin": "36AAZCS6817K1ZE"
+                },
+                "buyer": {
+                  "name": "Zomato Hyperpure",
+                  "gstin": "29AAJCK4861F1Z8",
+                  "fulfillment_center_code": "BLR"
+                },
+                "line_items": [
+                  {
+                    "product_no": null,
+                    "product_name": "Avocado Hass Imported",
+                    "hsn": null,
+                    "qty_ordered": 276,
+                    "qty_delivered": 230,
+                    "grn_qty": 230,
+                    "damaged_qty": null,
+                    "price_per_unit": 55,
+                    "uom": null,
+                    "gst_rate": 0,
+                    "total_tax_amount": 0,
+                    "amount": 12650
+                  },
+                  {
+                    "product_no": null,
+                    "product_name": "Avocado Large Premium",
+                    "hsn": null,
+                    "qty_ordered": 2,
+                    "qty_delivered": 1,
+                    "grn_qty": 1,
+                    "damaged_qty": null,
+                    "price_per_unit": 180,
+                    "uom": null,
+                    "gst_rate": 0,
+                    "total_tax_amount": 0,
+                    "amount": 180
+                  }
+                ],
+                "total_amount": 21680,
+                "debit_note_number": null,
+                "debit_note_amount": null,
+                "debit_note_line_items": null,
+                "extraction_confidence": "high"
+              }
+            }
+          ]
+        }
+      },
+      "workflowTask": {
+        "name": "join_classify_children",
+        "taskReferenceName": "join_classify_children_ref",
+        "inputParameters": {},
+        "type": "JOIN",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [
+          "grn_ref",
+          "pod_ref"
+        ],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 0,
+          "updateTime": 0,
+          "name": "join_classify_children",
+          "retryCount": 0,
+          "timeoutSeconds": 0,
+          "inputKeys": [],
+          "outputKeys": [],
+          "timeoutPolicy": "TIME_OUT_WF",
+          "retryLogic": "FIXED",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 0,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1,
+          "maxRetryDelaySeconds": 0,
+          "backoffJitterMs": 0,
+          "totalTimeoutSeconds": 0,
+          "taskStatusListenerEnabled": true,
+          "enforceSchema": false
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {},
+        "permissive": false
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 0,
+      "workflowPriority": 0,
+      "iteration": 0,
+      "subworkflowChanged": false,
+      "firstStartTime": 0,
+      "executionMetadata": {
+        "additionalContext": {},
+        "additionalContextMap": {},
+        "empty": true
+      },
+      "taskDefinition": {
+        "createTime": 0,
+        "updateTime": 0,
+        "name": "join_classify_children",
+        "retryCount": 0,
+        "timeoutSeconds": 0,
+        "inputKeys": [],
+        "outputKeys": [],
+        "timeoutPolicy": "TIME_OUT_WF",
+        "retryLogic": "FIXED",
+        "retryDelaySeconds": 60,
+        "responseTimeoutSeconds": 0,
+        "inputTemplate": {},
+        "rateLimitPerFrequency": 0,
+        "rateLimitFrequencyInSeconds": 1,
+        "backoffScaleFactor": 1,
+        "maxRetryDelaySeconds": 0,
+        "backoffJitterMs": 0,
+        "totalTimeoutSeconds": 0,
+        "taskStatusListenerEnabled": true,
+        "enforceSchema": false
+      },
+      "loopOverTask": false,
+      "queueWaitTime": 0,
+      "orCreateExecutionMetadata": {
+        "additionalContext": {},
+        "additionalContextMap": {},
+        "empty": true
+      }
+    }
+  ],
+  "input": {
+    "gdriveConnectionId": "gdrive-e8f36f51-0cc7-4c4d-ac54-e42385bfdac3",
+    "driveFolderIds": [
+      "1kFNN32E3EhSVjFVDp4nCXrcxKY9sdLPl"
+    ]
+  },
+  "output": {
+    "grn": {
+      "promptname": "grn_extraction",
+      "promptName": "grn_extraction",
+      "model": "gemini-2.5-flash",
+      "responses": [
+        {
+          "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+          "name": "BLR-INV-012584-GRN.pdf",
+          "mimeType": "application/pdf",
+          "size": "31233",
+          "modifiedTime": "2026-06-16T07:09:19.000Z",
+          "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+          "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download",
+          "classification": {
+            "classification": "grn",
+            "confidence": "high",
+            "reason": "Document title is GRN and contains 'Recv qty' column, indicating a Goods Receipt Note."
+          },
+          "promptname": "grn_extraction",
+          "promptName": "grn_extraction",
+          "result": {
+            "grn_number": "GrnCode40645510",
+            "purchase_order_no": "BLR073P1T3N",
+            "supplier_bill_number": "BRL-INV-012584",
+            "delivered_on": "2026-03-18",
+            "account_number": null,
+            "supplier": {
+              "name": "SAMBERRY EXOTICS PRIVATE LIMITED",
+              "gstin": "36AAZCS6817K1ZE"
+            },
+            "buyer": {
+              "name": "Zomato Hyperpure",
+              "gstin": "29AAJCK4861F1Z8",
+              "fulfillment_center_code": "BLR"
+            },
+            "line_items": [
+              {
+                "product_no": null,
+                "product_name": "Avocado Hass Imported",
+                "hsn": null,
+                "qty_ordered": 276,
+                "qty_delivered": 230,
+                "grn_qty": 230,
+                "damaged_qty": null,
+                "price_per_unit": 55,
+                "uom": null,
+                "gst_rate": 0,
+                "total_tax_amount": 0,
+                "amount": 12650
+              },
+              {
+                "product_no": null,
+                "product_name": "Avocado Large Premium",
+                "hsn": null,
+                "qty_ordered": 2,
+                "qty_delivered": 1,
+                "grn_qty": 1,
+                "damaged_qty": null,
+                "price_per_unit": 180,
+                "uom": null,
+                "gst_rate": 0,
+                "total_tax_amount": 0,
+                "amount": 180
+              }
+            ],
+            "total_amount": 21680,
+            "debit_note_number": null,
+            "debit_note_amount": null,
+            "debit_note_line_items": null,
+            "extraction_confidence": "high"
+          }
+        }
+      ],
+      "results": [
+        {
+          "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+          "name": "BLR-INV-012584-GRN.pdf",
+          "mimeType": "application/pdf",
+          "size": "31233",
+          "modifiedTime": "2026-06-16T07:09:19.000Z",
+          "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+          "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download",
+          "classification": {
+            "classification": "grn",
+            "confidence": "high",
+            "reason": "Document title is GRN and contains 'Recv qty' column, indicating a Goods Receipt Note."
+          },
+          "promptname": "grn_extraction",
+          "promptName": "grn_extraction",
+          "result": {
+            "grn_number": "GrnCode40645510",
+            "purchase_order_no": "BLR073P1T3N",
+            "supplier_bill_number": "BRL-INV-012584",
+            "delivered_on": "2026-03-18",
+            "account_number": null,
+            "supplier": {
+              "name": "SAMBERRY EXOTICS PRIVATE LIMITED",
+              "gstin": "36AAZCS6817K1ZE"
+            },
+            "buyer": {
+              "name": "Zomato Hyperpure",
+              "gstin": "29AAJCK4861F1Z8",
+              "fulfillment_center_code": "BLR"
+            },
+            "line_items": [
+              {
+                "product_no": null,
+                "product_name": "Avocado Hass Imported",
+                "hsn": null,
+                "qty_ordered": 276,
+                "qty_delivered": 230,
+                "grn_qty": 230,
+                "damaged_qty": null,
+                "price_per_unit": 55,
+                "uom": null,
+                "gst_rate": 0,
+                "total_tax_amount": 0,
+                "amount": 12650
+              },
+              {
+                "product_no": null,
+                "product_name": "Avocado Large Premium",
+                "hsn": null,
+                "qty_ordered": 2,
+                "qty_delivered": 1,
+                "grn_qty": 1,
+                "damaged_qty": null,
+                "price_per_unit": 180,
+                "uom": null,
+                "gst_rate": 0,
+                "total_tax_amount": 0,
+                "amount": 180
+              }
+            ],
+            "total_amount": 21680,
+            "debit_note_number": null,
+            "debit_note_amount": null,
+            "debit_note_line_items": null,
+            "extraction_confidence": "high"
+          }
+        }
+      ],
+      "records": [
+        {
+          "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+          "name": "BLR-INV-012584-GRN.pdf",
+          "mimeType": "application/pdf",
+          "size": "31233",
+          "modifiedTime": "2026-06-16T07:09:19.000Z",
+          "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+          "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download",
+          "classification": {
+            "classification": "grn",
+            "confidence": "high",
+            "reason": "Document title is GRN and contains 'Recv qty' column, indicating a Goods Receipt Note."
+          },
+          "extracted": {
+            "grn_number": "GrnCode40645510",
+            "purchase_order_no": "BLR073P1T3N",
+            "supplier_bill_number": "BRL-INV-012584",
+            "delivered_on": "2026-03-18",
+            "account_number": null,
+            "supplier": {
+              "name": "SAMBERRY EXOTICS PRIVATE LIMITED",
+              "gstin": "36AAZCS6817K1ZE"
+            },
+            "buyer": {
+              "name": "Zomato Hyperpure",
+              "gstin": "29AAJCK4861F1Z8",
+              "fulfillment_center_code": "BLR"
+            },
+            "line_items": [
+              {
+                "product_no": null,
+                "product_name": "Avocado Hass Imported",
+                "hsn": null,
+                "qty_ordered": 276,
+                "qty_delivered": 230,
+                "grn_qty": 230,
+                "damaged_qty": null,
+                "price_per_unit": 55,
+                "uom": null,
+                "gst_rate": 0,
+                "total_tax_amount": 0,
+                "amount": 12650
+              },
+              {
+                "product_no": null,
+                "product_name": "Avocado Large Premium",
+                "hsn": null,
+                "qty_ordered": 2,
+                "qty_delivered": 1,
+                "grn_qty": 1,
+                "damaged_qty": null,
+                "price_per_unit": 180,
+                "uom": null,
+                "gst_rate": 0,
+                "total_tax_amount": 0,
+                "amount": 180
+              }
+            ],
+            "total_amount": 21680,
+            "debit_note_number": null,
+            "debit_note_amount": null,
+            "debit_note_line_items": null,
+            "extraction_confidence": "high"
+          }
+        }
+      ]
+    },
+    "pod": {
+      "promptname": "pod_extraction",
+      "promptName": "pod_extraction",
+      "model": "gemini-2.5-flash",
+      "responses": [
+        {
+          "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+          "name": "BLR-INV-012584-POD.jpeg",
+          "mimeType": "image/jpeg",
+          "size": "160821",
+          "modifiedTime": "2026-06-16T07:09:30.000Z",
+          "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+          "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download",
+          "classification": {
+            "classification": "pod",
+            "confidence": "high",
+            "reason": "Document is a Tax Invoice with a customer 'GOODS RECEIPT' stamp, handwritten received quantities, and receiver signature, indicating delivery acknowledgement."
+          },
+          "promptname": "pod_extraction",
+          "promptName": "pod_extraction",
+          "result": {
+            "invoice_number": "BLR-INV-012584",
+            "invoice_date": "2026-03-18",
+            "purchase_order_number": "BLR-SO-07125",
+            "vendor_name": "Samberry Exotics Private Limited",
+            "buyer_name": "KIRANAKART WHOLESALE PRIVATE LIMITED",
+            "received_by_stamp_present": true,
+            "received_by_entity": "KIRANAKART WHOLESALE PVT LTD C/o ACCESS WARHOUSING PVT LTD GOODS RECEIPT",
+            "authorized_signature_present": true,
+            "delivery_date": "2026-03-18",
+            "line_items": [
+              {
+                "item_name": "Snacky Avocado Regular",
+                "printed_quantity": 231,
+                "handwritten_quantity": 171,
+                "rate": 50,
+                "amount": 11550
+              },
+              {
+                "item_name": "Avocado Large Premium",
+                "printed_quantity": 2,
+                "handwritten_quantity": 1,
+                "rate": 180,
+                "amount": 360
+              },
+              {
+                "item_name": "Avocado Hass Imported",
+                "printed_quantity": 276,
+                "handwritten_quantity": 230,
+                "rate": 55,
+                "amount": 15180
+              }
+            ],
+            "total_amount": 27090,
+            "currency": "INR",
+            "remarks": "Thanks for your business. Recd By: Q/Venk. Vehicle No: KA05AF 7787. Inward No: 46767. Vehicle Out Time: 2:30. NOTE: GOODS RECEIVED SUBJECT TO V...",
+            "extraction_confidence": "medium"
+          }
+        }
+      ],
+      "results": [
+        {
+          "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+          "name": "BLR-INV-012584-POD.jpeg",
+          "mimeType": "image/jpeg",
+          "size": "160821",
+          "modifiedTime": "2026-06-16T07:09:30.000Z",
+          "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+          "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download",
+          "classification": {
+            "classification": "pod",
+            "confidence": "high",
+            "reason": "Document is a Tax Invoice with a customer 'GOODS RECEIPT' stamp, handwritten received quantities, and receiver signature, indicating delivery acknowledgement."
+          },
+          "promptname": "pod_extraction",
+          "promptName": "pod_extraction",
+          "result": {
+            "invoice_number": "BLR-INV-012584",
+            "invoice_date": "2026-03-18",
+            "purchase_order_number": "BLR-SO-07125",
+            "vendor_name": "Samberry Exotics Private Limited",
+            "buyer_name": "KIRANAKART WHOLESALE PRIVATE LIMITED",
+            "received_by_stamp_present": true,
+            "received_by_entity": "KIRANAKART WHOLESALE PVT LTD C/o ACCESS WARHOUSING PVT LTD GOODS RECEIPT",
+            "authorized_signature_present": true,
+            "delivery_date": "2026-03-18",
+            "line_items": [
+              {
+                "item_name": "Snacky Avocado Regular",
+                "printed_quantity": 231,
+                "handwritten_quantity": 171,
+                "rate": 50,
+                "amount": 11550
+              },
+              {
+                "item_name": "Avocado Large Premium",
+                "printed_quantity": 2,
+                "handwritten_quantity": 1,
+                "rate": 180,
+                "amount": 360
+              },
+              {
+                "item_name": "Avocado Hass Imported",
+                "printed_quantity": 276,
+                "handwritten_quantity": 230,
+                "rate": 55,
+                "amount": 15180
+              }
+            ],
+            "total_amount": 27090,
+            "currency": "INR",
+            "remarks": "Thanks for your business. Recd By: Q/Venk. Vehicle No: KA05AF 7787. Inward No: 46767. Vehicle Out Time: 2:30. NOTE: GOODS RECEIVED SUBJECT TO V...",
+            "extraction_confidence": "medium"
+          }
+        }
+      ],
+      "records": [
+        {
+          "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+          "name": "BLR-INV-012584-POD.jpeg",
+          "mimeType": "image/jpeg",
+          "size": "160821",
+          "modifiedTime": "2026-06-16T07:09:30.000Z",
+          "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+          "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download",
+          "classification": {
+            "classification": "pod",
+            "confidence": "high",
+            "reason": "Document is a Tax Invoice with a customer 'GOODS RECEIPT' stamp, handwritten received quantities, and receiver signature, indicating delivery acknowledgement."
+          },
+          "extracted": {
+            "invoice_number": "BLR-INV-012584",
+            "invoice_date": "2026-03-18",
+            "purchase_order_number": "BLR-SO-07125",
+            "vendor_name": "Samberry Exotics Private Limited",
+            "buyer_name": "KIRANAKART WHOLESALE PRIVATE LIMITED",
+            "received_by_stamp_present": true,
+            "received_by_entity": "KIRANAKART WHOLESALE PVT LTD C/o ACCESS WARHOUSING PVT LTD GOODS RECEIPT",
+            "authorized_signature_present": true,
+            "delivery_date": "2026-03-18",
+            "line_items": [
+              {
+                "item_name": "Snacky Avocado Regular",
+                "printed_quantity": 231,
+                "handwritten_quantity": 171,
+                "rate": 50,
+                "amount": 11550
+              },
+              {
+                "item_name": "Avocado Large Premium",
+                "printed_quantity": 2,
+                "handwritten_quantity": 1,
+                "rate": 180,
+                "amount": 360
+              },
+              {
+                "item_name": "Avocado Hass Imported",
+                "printed_quantity": 276,
+                "handwritten_quantity": 230,
+                "rate": 55,
+                "amount": 15180
+              }
+            ],
+            "total_amount": 27090,
+            "currency": "INR",
+            "remarks": "Thanks for your business. Recd By: Q/Venk. Vehicle No: KA05AF 7787. Inward No: 46767. Vehicle Out Time: 2:30. NOTE: GOODS RECEIVED SUBJECT TO V...",
+            "extraction_confidence": "medium"
+          }
+        }
+      ]
+    },
+    "classified": {
+      "promptname": "attachment_classify",
+      "promptName": "attachment_classify",
+      "model": "gemini-2.5-flash",
+      "responses": [
+        {
+          "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+          "name": "BLR-INV-012584-POD.jpeg",
+          "mimeType": "image/jpeg",
+          "size": "160821",
+          "modifiedTime": "2026-06-16T07:09:30.000Z",
+          "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+          "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download",
+          "promptname": "attachment_classify",
+          "promptName": "attachment_classify",
+          "result": {
+            "classification": "pod",
+            "confidence": "high",
+            "reason": "Document is a Tax Invoice with a customer 'GOODS RECEIPT' stamp, handwritten received quantities, and receiver signature, indicating delivery acknowledgement."
+          }
+        },
+        {
+          "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+          "name": "BLR-INV-012584-GRN.pdf",
+          "mimeType": "application/pdf",
+          "size": "31233",
+          "modifiedTime": "2026-06-16T07:09:19.000Z",
+          "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+          "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download",
+          "promptname": "attachment_classify",
+          "promptName": "attachment_classify",
+          "result": {
+            "classification": "grn",
+            "confidence": "high",
+            "reason": "Document title is GRN and contains 'Recv qty' column, indicating a Goods Receipt Note."
+          }
+        }
+      ],
+      "results": [
+        {
+          "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+          "name": "BLR-INV-012584-POD.jpeg",
+          "mimeType": "image/jpeg",
+          "size": "160821",
+          "modifiedTime": "2026-06-16T07:09:30.000Z",
+          "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+          "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download",
+          "promptname": "attachment_classify",
+          "promptName": "attachment_classify",
+          "result": {
+            "classification": "pod",
+            "confidence": "high",
+            "reason": "Document is a Tax Invoice with a customer 'GOODS RECEIPT' stamp, handwritten received quantities, and receiver signature, indicating delivery acknowledgement."
+          }
+        },
+        {
+          "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+          "name": "BLR-INV-012584-GRN.pdf",
+          "mimeType": "application/pdf",
+          "size": "31233",
+          "modifiedTime": "2026-06-16T07:09:19.000Z",
+          "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+          "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download",
+          "promptname": "attachment_classify",
+          "promptName": "attachment_classify",
+          "result": {
+            "classification": "grn",
+            "confidence": "high",
+            "reason": "Document title is GRN and contains 'Recv qty' column, indicating a Goods Receipt Note."
+          }
+        }
+      ],
+      "classifiedDocuments": [
+        {
+          "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+          "name": "BLR-INV-012584-POD.jpeg",
+          "mimeType": "image/jpeg",
+          "size": "160821",
+          "modifiedTime": "2026-06-16T07:09:30.000Z",
+          "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+          "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download",
+          "classification": {
+            "classification": "pod",
+            "confidence": "high",
+            "reason": "Document is a Tax Invoice with a customer 'GOODS RECEIPT' stamp, handwritten received quantities, and receiver signature, indicating delivery acknowledgement."
+          }
+        },
+        {
+          "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+          "name": "BLR-INV-012584-GRN.pdf",
+          "mimeType": "application/pdf",
+          "size": "31233",
+          "modifiedTime": "2026-06-16T07:09:19.000Z",
+          "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+          "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download",
+          "classification": {
+            "classification": "grn",
+            "confidence": "high",
+            "reason": "Document title is GRN and contains 'Recv qty' column, indicating a Goods Receipt Note."
+          }
+        }
+      ],
+      "grn": [
+        {
+          "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+          "name": "BLR-INV-012584-GRN.pdf",
+          "mimeType": "application/pdf",
+          "size": "31233",
+          "modifiedTime": "2026-06-16T07:09:19.000Z",
+          "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+          "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download",
+          "classification": {
+            "classification": "grn",
+            "confidence": "high",
+            "reason": "Document title is GRN and contains 'Recv qty' column, indicating a Goods Receipt Note."
+          }
+        }
+      ],
+      "pod": [
+        {
+          "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+          "name": "BLR-INV-012584-POD.jpeg",
+          "mimeType": "image/jpeg",
+          "size": "160821",
+          "modifiedTime": "2026-06-16T07:09:30.000Z",
+          "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+          "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download",
+          "classification": {
+            "classification": "pod",
+            "confidence": "high",
+            "reason": "Document is a Tax Invoice with a customer 'GOODS RECEIPT' stamp, handwritten received quantities, and receiver signature, indicating delivery acknowledgement."
+          }
+        }
+      ],
+      "grn docs": [
+        {
+          "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+          "name": "BLR-INV-012584-GRN.pdf",
+          "mimeType": "application/pdf",
+          "size": "31233",
+          "modifiedTime": "2026-06-16T07:09:19.000Z",
+          "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+          "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download",
+          "classification": {
+            "classification": "grn",
+            "confidence": "high",
+            "reason": "Document title is GRN and contains 'Recv qty' column, indicating a Goods Receipt Note."
+          }
+        }
+      ],
+      "pod docs": [
+        {
+          "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+          "name": "BLR-INV-012584-POD.jpeg",
+          "mimeType": "image/jpeg",
+          "size": "160821",
+          "modifiedTime": "2026-06-16T07:09:30.000Z",
+          "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+          "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download",
+          "classification": {
+            "classification": "pod",
+            "confidence": "high",
+            "reason": "Document is a Tax Invoice with a customer 'GOODS RECEIPT' stamp, handwritten received quantities, and receiver signature, indicating delivery acknowledgement."
+          }
+        }
+      ],
+      "grnDocuments": [
+        {
+          "id": "1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK",
+          "name": "BLR-INV-012584-GRN.pdf",
+          "mimeType": "application/pdf",
+          "size": "31233",
+          "modifiedTime": "2026-06-16T07:09:19.000Z",
+          "webViewLink": "https://drive.google.com/file/d/1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK/view?usp=drivesdk",
+          "webContentLink": "https://drive.google.com/uc?id=1LVpXeebhVM8A2OdVgPDNoDGDChSh__kK&export=download",
+          "classification": {
+            "classification": "grn",
+            "confidence": "high",
+            "reason": "Document title is GRN and contains 'Recv qty' column, indicating a Goods Receipt Note."
+          }
+        }
+      ],
+      "podDocuments": [
+        {
+          "id": "1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7",
+          "name": "BLR-INV-012584-POD.jpeg",
+          "mimeType": "image/jpeg",
+          "size": "160821",
+          "modifiedTime": "2026-06-16T07:09:30.000Z",
+          "webViewLink": "https://drive.google.com/file/d/1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7/view?usp=drivesdk",
+          "webContentLink": "https://drive.google.com/uc?id=1NQ0sPLhn-t0x0VLS-5imFWehc6-N2zu7&export=download",
+          "classification": {
+            "classification": "pod",
+            "confidence": "high",
+            "reason": "Document is a Tax Invoice with a customer 'GOODS RECEIPT' stamp, handwritten received quantities, and receiver signature, indicating delivery acknowledgement."
+          }
+        }
+      ]
+    }
+  },
+  "taskToDomain": {},
+  "failedReferenceTaskNames": [],
+  "workflowDefinition": {
+    "createTime": 1782799808647,
+    "updateTime": 1782738998977,
+    "name": "gdrive_demo_2",
+    "description": "Edit or extend this sample workflow. Set the workflow name to get started",
+    "version": 1,
+    "tasks": [
+      {
+        "name": "read_g_drive",
+        "taskReferenceName": "read_g_drive_ref",
+        "inputParameters": {
+          "connectionId": "${workflow.input.gdriveConnectionId}",
+          "folderIds": "${workflow.input.driveFolderIds}",
+          "fileIds": "${workflow.input.driveFileIds}",
+          "maxFiles": 100
+        },
+        "type": "GDRIVE_READ",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 0,
+          "updateTime": 0,
+          "name": "read_g_drive",
+          "retryCount": 0,
+          "timeoutSeconds": 0,
+          "inputKeys": [],
+          "outputKeys": [],
+          "timeoutPolicy": "TIME_OUT_WF",
+          "retryLogic": "FIXED",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 0,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1,
+          "maxRetryDelaySeconds": 0,
+          "backoffJitterMs": 0,
+          "totalTimeoutSeconds": 0,
+          "taskStatusListenerEnabled": true,
+          "enforceSchema": false
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {},
+        "permissive": false
+      },
+      {
+        "name": "gemini_llm",
+        "taskReferenceName": "gemini_llm_ref",
+        "inputParameters": {
+          "connectionId": "gemini-default",
+          "model": "gemini-2.5-flash",
+          "jsonOutput": true,
+          "promptname": "attachment_classify",
+          "files": "${read_g_drive_ref.output.files}"
+        },
+        "type": "GEMINI_LLM",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 0,
+          "updateTime": 0,
+          "name": "gemini_llm",
+          "retryCount": 0,
+          "timeoutSeconds": 0,
+          "inputKeys": [],
+          "outputKeys": [],
+          "timeoutPolicy": "TIME_OUT_WF",
+          "retryLogic": "FIXED",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 0,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1,
+          "maxRetryDelaySeconds": 0,
+          "backoffJitterMs": 0,
+          "totalTimeoutSeconds": 0,
+          "taskStatusListenerEnabled": true,
+          "enforceSchema": false
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {},
+        "permissive": false
+      },
+      {
+        "name": "classify_children",
+        "taskReferenceName": "classify_children_ref",
+        "inputParameters": {},
+        "type": "FORK_JOIN",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [
+          [
+            {
+              "name": "Grn",
+              "taskReferenceName": "grn_ref",
+              "inputParameters": {
+                "connectionId": "gemini-default",
+                "model": "gemini-2.5-flash",
+                "jsonOutput": true,
+                "promptname": "grn_extraction",
+                "prompt": "enter your prompt",
+                "files": "${gemini_llm_ref.output.grnDocuments}"
+              },
+              "type": "GEMINI_LLM",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "taskDefinition": {
+                "createTime": 0,
+                "updateTime": 0,
+                "name": "Grn",
+                "retryCount": 0,
+                "timeoutSeconds": 0,
+                "inputKeys": [],
+                "outputKeys": [],
+                "timeoutPolicy": "TIME_OUT_WF",
+                "retryLogic": "FIXED",
+                "retryDelaySeconds": 60,
+                "responseTimeoutSeconds": 0,
+                "inputTemplate": {},
+                "rateLimitPerFrequency": 0,
+                "rateLimitFrequencyInSeconds": 1,
+                "backoffScaleFactor": 1,
+                "maxRetryDelaySeconds": 0,
+                "backoffJitterMs": 0,
+                "totalTimeoutSeconds": 0,
+                "taskStatusListenerEnabled": true,
+                "enforceSchema": false
+              },
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": [],
+              "onStateChange": {},
+              "permissive": false
+            }
+          ],
+          [
+            {
+              "name": "pod",
+              "taskReferenceName": "pod_ref",
+              "inputParameters": {
+                "connectionId": "gemini-default",
+                "model": "gemini-2.5-flash",
+                "jsonOutput": true,
+                "promptname": "pod_extraction",
+                "prompt": "enter your prompt",
+                "files": "${gemini_llm_ref.output.podDocuments}"
+              },
+              "type": "GEMINI_LLM",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "taskDefinition": {
+                "createTime": 0,
+                "updateTime": 0,
+                "name": "pod",
+                "retryCount": 0,
+                "timeoutSeconds": 0,
+                "inputKeys": [],
+                "outputKeys": [],
+                "timeoutPolicy": "TIME_OUT_WF",
+                "retryLogic": "FIXED",
+                "retryDelaySeconds": 60,
+                "responseTimeoutSeconds": 0,
+                "inputTemplate": {},
+                "rateLimitPerFrequency": 0,
+                "rateLimitFrequencyInSeconds": 1,
+                "backoffScaleFactor": 1,
+                "maxRetryDelaySeconds": 0,
+                "backoffJitterMs": 0,
+                "totalTimeoutSeconds": 0,
+                "taskStatusListenerEnabled": true,
+                "enforceSchema": false
+              },
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": [],
+              "onStateChange": {},
+              "permissive": false
+            }
+          ]
+        ],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 0,
+          "updateTime": 0,
+          "name": "classify_children",
+          "retryCount": 0,
+          "timeoutSeconds": 0,
+          "inputKeys": [],
+          "outputKeys": [],
+          "timeoutPolicy": "TIME_OUT_WF",
+          "retryLogic": "FIXED",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 0,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1,
+          "maxRetryDelaySeconds": 0,
+          "backoffJitterMs": 0,
+          "totalTimeoutSeconds": 0,
+          "taskStatusListenerEnabled": true,
+          "enforceSchema": false
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {},
+        "permissive": false
+      },
+      {
+        "name": "join_classify_children",
+        "taskReferenceName": "join_classify_children_ref",
+        "inputParameters": {},
+        "type": "JOIN",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [
+          "grn_ref",
+          "pod_ref"
+        ],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 0,
+          "updateTime": 0,
+          "name": "join_classify_children",
+          "retryCount": 0,
+          "timeoutSeconds": 0,
+          "inputKeys": [],
+          "outputKeys": [],
+          "timeoutPolicy": "TIME_OUT_WF",
+          "retryLogic": "FIXED",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 0,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1,
+          "maxRetryDelaySeconds": 0,
+          "backoffJitterMs": 0,
+          "totalTimeoutSeconds": 0,
+          "taskStatusListenerEnabled": true,
+          "enforceSchema": false
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "onStateChange": {},
+        "permissive": false
+      }
+    ],
+    "inputParameters": [
+      "gdriveConnectionId",
+      "driveFolderIds",
+      "driveFileIds"
+    ],
+    "outputParameters": {
+      "grn": "${grn_ref.output}",
+      "pod": "${pod_ref.output}",
+      "classified": "${gemini_llm_ref.output}"
+    },
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": false,
+    "ownerEmail": "example@email.com",
+    "timeoutPolicy": "ALERT_ONLY",
+    "timeoutSeconds": 0,
+    "variables": {},
+    "inputTemplate": {},
+    "enforceSchema": true,
+    "metadata": {},
+    "maskedFields": []
+  },
+  "priority": 0,
+  "variables": {},
+  "lastRetriedTime": 0,
+  "failedTaskNames": [],
+  "history": [],
+  "rateLimited": false,
+  "startTime": 1782799932566,
+  "workflowName": "gdrive_demo_2",
+  "workflowVersion": 1
+}

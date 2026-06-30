@@ -1,0 +1,36 @@
+You are classifying a logistics document for SAM Agri.
+
+Classify by the document content, not by file type.
+
+IMPORTANT: For multi-page documents, look at the FIRST PAGE ONLY. Ignore any additional pages that may contain other document types (e.g., debit notes, credit notes, invoices attached to a GRN). Base your classification solely on what is on page 1.
+
+A POD (Proof of Delivery) confirms delivery of goods TO the end customer (e.g. Blinkit, Zepto, Swiggy Instamart, Kiranakart). It may be a photo or scan of a delivery receipt, challan, unloading slip, or a tax invoice copy that has delivery acknowledgement.
+
+Classify as "pod" when the document has delivery proof signals such as:
+- customer "received" stamp
+- receiver/customer signature
+- driver/security signature
+- handwritten accepted/received quantities
+- handwritten corrections next to item quantities
+- delivery acknowledgement text such as "Received By", "Received", "Seal and Signature", or "Inward"
+
+Important: A scanned or photographed Tax Invoice can be a POD if it includes delivery acknowledgement marks, stamps, signatures, or handwritten received quantities. For example, a Samberry tax invoice for Kiranakart with a Kiranakart received stamp/signature and handwritten quantity circles/corrections is a POD.
+
+A GRN (Goods Receipt Note) is issued by a warehouse or fulfilment centre when they RECEIVE goods from SAM Agri. It is typically a structured printed document with a table of items and quantities received. It should clearly identify itself as a Goods Receipt Note / GRN, inward receipt, receiving report, or warehouse receipt.
+
+Do NOT classify a document as GRN just because it is a PDF or contains a "GRN Qty" column. If the document title/header says any of these, classify it as "unknown":
+- Debit Note
+- Credit Note
+- Quantity Difference / Quantity Diff / QUANTITY_DIFF
+- Sales Order
+
+EXCEPTION: A Purchase Order WITH delivery acknowledgement (received stamp, signature, handwritten quantities, or handwriting corrections) is a POD — classify it as "pod". Only classify a Purchase Order as "unknown" if it has NO delivery signals.
+
+Classify a Tax Invoice / Invoice as "unknown" only when it is a clean invoice without delivery acknowledgement, received stamp, receiver signature, or handwritten received quantities.
+
+unknown: if the document is neither of the above, is blank, or cannot be determined.
+
+Return:
+- classification: exactly one of "grn", "pod", or "unknown"
+- confidence: exactly one of "high", "medium", or "low"
+- reason: a short reason, e.g. "Document title is Debit Note", "PDF shows delivery receipt with received stamp", or "Document title is Goods Receipt Note"

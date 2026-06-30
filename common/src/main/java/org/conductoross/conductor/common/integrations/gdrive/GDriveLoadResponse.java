@@ -88,4 +88,8 @@ public class GDriveLoadResponse {
         this.files = files;
         this.count = files == null ? 0 : files.size();
     }
+
+    public List<GDriveFile> getDocuments() {
+        return files;
+    }
 }

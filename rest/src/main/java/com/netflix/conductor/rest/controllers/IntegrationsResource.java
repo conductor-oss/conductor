@@ -14,6 +14,7 @@ package com.netflix.conductor.rest.controllers;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -26,6 +27,11 @@ import org.conductoross.conductor.common.integrations.gdrive.GDriveLoadRequest;
 import org.conductoross.conductor.common.integrations.gdrive.GDriveLoadResponse;
 import org.conductoross.conductor.common.integrations.gdrive.GDriveOAuthTokenRequest;
 import org.conductoross.conductor.common.integrations.gdrive.GDriveOAuthTokenResponse;
+import org.conductoross.conductor.common.integrations.gemini.GeminiConnection;
+import org.conductoross.conductor.common.integrations.gemini.GeminiConnectionRequest;
+import org.conductoross.conductor.common.integrations.gemini.GeminiConnectionResponse;
+import org.conductoross.conductor.common.integrations.gemini.GeminiIntegrationException;
+import org.conductoross.conductor.common.integrations.gemini.GeminiIntegrationService;
 import org.conductoross.conductor.core.dao.InMemoryGDriveConnectionDAO;
 import org.conductoross.conductor.dao.GDriveConnectionDAO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,18 +56,30 @@ public class IntegrationsResource {
     private static final Pattern SAFE_CONNECTION_ID_PATTERN = Pattern.compile("[A-Za-z0-9._-]+");
 
     private final GDriveIntegrationService gDriveIntegrationService;
+    private final GeminiIntegrationService geminiIntegrationService;
     private final GDriveConnectionDAO gDriveConnectionDAO;
 
     public IntegrationsResource(GDriveIntegrationService gDriveIntegrationService) {
-        this(gDriveIntegrationService, new InMemoryGDriveConnectionDAO());
+        this(
+                gDriveIntegrationService,
+                new GeminiIntegrationService(),
+                new InMemoryGDriveConnectionDAO());
     }
 
     @Autowired
     public IntegrationsResource(
             GDriveIntegrationService gDriveIntegrationService,
+            GeminiIntegrationService geminiIntegrationService,
             GDriveConnectionDAO gDriveConnectionDAO) {
         this.gDriveIntegrationService = gDriveIntegrationService;
+        this.geminiIntegrationService = geminiIntegrationService;
         this.gDriveConnectionDAO = gDriveConnectionDAO;
+    }
+
+    IntegrationsResource(
+            GDriveIntegrationService gDriveIntegrationService,
+            GDriveConnectionDAO gDriveConnectionDAO) {
+        this(gDriveIntegrationService, new GeminiIntegrationService(), gDriveConnectionDAO);
     }
 
     @PostMapping("/gdrive/load")
@@ -99,6 +117,12 @@ public class IntegrationsResource {
         } catch (GDriveIntegrationException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }
+    }
+
+    @GetMapping("/gdrive/oauth/client")
+    @Operation(summary = "Get Google Drive OAuth client configuration status")
+    public GDriveIntegrationService.GDriveOAuthClientConfig getGoogleDriveOAuthClientConfig() {
+        return gDriveIntegrationService.defaultOAuthClientConfig();
     }
 
     @PostMapping("/gdrive/connections")
@@ -149,6 +173,44 @@ public class IntegrationsResource {
     @Operation(summary = "Delete a stored Google Drive connection")
     public void deleteGoogleDriveConnection(@PathVariable("connectionId") String connectionId) {
         gDriveConnectionDAO.deleteConnection(normalizeConnectionId(connectionId));
+    }
+
+    @PostMapping("/gemini/connections")
+    @Operation(summary = "Store Gemini API credentials for a connection")
+    public GeminiConnectionResponse saveGeminiConnection(
+            @RequestBody GeminiConnectionRequest request) {
+        try {
+            GeminiConnection connection = geminiIntegrationService.saveConnection(request);
+            return new GeminiConnectionResponse(connection, true);
+        } catch (GeminiIntegrationException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        }
+    }
+
+    @GetMapping("/gemini/connections")
+    @Operation(summary = "List Gemini LLM connections")
+    public List<GeminiConnectionResponse> listGeminiConnections() {
+        return geminiIntegrationService.listConnections();
+    }
+
+    @DeleteMapping("/gemini/connections/{connectionId}")
+    @Operation(summary = "Delete a Gemini LLM connection")
+    public void deleteGeminiConnection(@PathVariable("connectionId") String connectionId) {
+        geminiIntegrationService.deleteConnection(connectionId);
+    }
+
+    @GetMapping("/gemini/prompts")
+    @Operation(summary = "List Gemini prompt templates")
+    public Map<String, Object> listGeminiPrompts() {
+        return Map.of(
+                "promptDirectory",
+                geminiIntegrationService.promptDirectory().toString(),
+                "prompts",
+                geminiIntegrationService.listPromptNames(),
+                "defaultConnectionId",
+                geminiIntegrationService.defaultConnectionId(),
+                "defaultModel",
+                geminiIntegrationService.defaultModel());
     }
 
     private GDriveLoadRequest resolveConnection(GDriveLoadRequest request) {
