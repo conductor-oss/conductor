@@ -96,19 +96,21 @@ export const LLMSearchEmbeddingsTaskForm = ({
                 />
               </Grid>
               <Grid size={12}>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" mb={1}>
                   When <strong>embeddings</strong> is set it is used directly;
                   otherwise the <strong>query</strong> below is embedded with the
                   selected embedding model.
                 </Typography>
               </Grid>
             </Grid>
-            <LLMFormFields
-              task={task}
-              onChange={onChange}
-              fieldFieldComponents={searchFieldComponents}
-              actor={actor}
-            />
+            <Box mt={3}>
+              <LLMFormFields
+                task={task}
+                onChange={onChange}
+                fieldFieldComponents={searchFieldComponents}
+                actor={actor}
+              />
+            </Box>
           </TaskFormSection>
 
           <TaskFormSection title="Metadata filter">

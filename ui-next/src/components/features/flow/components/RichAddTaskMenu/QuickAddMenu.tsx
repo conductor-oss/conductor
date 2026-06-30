@@ -71,7 +71,7 @@ const OSS_QUICK_ADD_TYPES: TaskType[] = [
 /** Placeholder in core quick-add type list → opens Add Task side panel (Integrations tab). */
 const QUICK_ADD_INTEGRATIONS_PANEL = "QUICK_ADD_INTEGRATIONS_PANEL" as const;
 
-// AI/LLM task types for the Agentic Orchestration section
+// AI/LLM task types for the Agentic Orchestration section (two rows of five).
 const AI_QUICK_ADD_TYPES: TaskType[] = [
   TaskType.LLM_CHAT_COMPLETE,
   TaskType.LLM_GENERATE_EMBEDDINGS,
@@ -81,6 +81,8 @@ const AI_QUICK_ADD_TYPES: TaskType[] = [
   TaskType.AGENT,
   TaskType.GET_AGENT_CARD,
   TaskType.CANCEL_AGENT,
+  TaskType.CALL_MCP_TOOL,
+  TaskType.GENERATE_IMAGE,
 ];
 
 const noRandomSuffix = (aPram: string) => ({

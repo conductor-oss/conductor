@@ -73,33 +73,31 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
       </TaskFormSection>
 
       <TaskFormSection title="Execution mode">
-        <Grid container spacing={2} sx={{ width: "100%" }}>
-          <Grid size={12}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={!!get("inputParameters.streaming")}
-                  onChange={(e) =>
-                    set("inputParameters.streaming", e.target.checked)
-                  }
-                />
-              }
-              label="Streaming (SSE)"
-            />
-          </Grid>
-          <Grid size={12}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={!!get("inputParameters.pushNotification")}
-                  onChange={(e) =>
-                    set("inputParameters.pushNotification", e.target.checked)
-                  }
-                />
-              }
-              label="Push notification (webhook callback)"
-            />
-          </Grid>
+        <Box display="flex" flexDirection="column" mb={3}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={!!get("inputParameters.streaming")}
+                onChange={(e) =>
+                  set("inputParameters.streaming", e.target.checked)
+                }
+              />
+            }
+            label="Streaming (SSE)"
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={!!get("inputParameters.pushNotification")}
+                onChange={(e) =>
+                  set("inputParameters.pushNotification", e.target.checked)
+                }
+              />
+            }
+            label="Push notification (webhook callback)"
+          />
+        </Box>
+        <Grid container spacing={3} sx={{ width: "100%" }}>
           <Grid size={{ xs: 12, md: 6 }}>
             <ConductorAutocompleteVariables
               label="Push backstop poll (seconds)"
