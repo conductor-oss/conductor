@@ -1,5 +1,3 @@
-apply plugin: 'groovy'
-
 dependencies {
     testImplementation project(':conductor-server')
     testImplementation project(':conductor-common')
@@ -31,16 +29,11 @@ dependencies {
     testImplementation "redis.clients:jedis:${revJedis}"
     implementation "io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}"
 
-    testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
-    testImplementation "org.spockframework:spock-core:${revSpock}"
-    testImplementation "org.spockframework:spock-spring:${revSpock}"
-
     testImplementation "org.elasticsearch.client:elasticsearch-rest-client:${revElasticSearch7}"
     testImplementation "org.elasticsearch.client:elasticsearch-rest-high-level-client:${revElasticSearch7}"
 
     testImplementation "org.testcontainers:elasticsearch:${revTestContainer}"
     testImplementation "org.testcontainers:localstack:${revTestContainer}"
-    testImplementation "org.testcontainers:spock:${revTestContainer}"
     testImplementation('junit:junit:4.13.2')
     testImplementation "org.junit.vintage:junit-vintage-engine"
     testImplementation "jakarta.ws.rs:jakarta.ws.rs-api:${revJAXRS}"
