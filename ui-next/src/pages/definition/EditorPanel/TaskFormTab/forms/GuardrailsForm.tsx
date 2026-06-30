@@ -1,4 +1,5 @@
-import { Box, FormControlLabel, Grid, Switch } from "@mui/material";
+import { Box, FormControlLabel, Grid, Switch, Typography } from "@mui/material";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
 import ConductorInput from "components/ui/inputs/ConductorInput";
 import ConductorSelect from "components/ui/inputs/ConductorSelect";
 import { FunctionComponent, useState } from "react";
@@ -28,13 +29,28 @@ const FAILURE_ITEMS = [
 const targetLabel = (type?: GuardrailType) => {
   switch (type) {
     case "JAVASCRIPT":
-      return "JavaScript expression (reads $.prompt)";
+      return "JavaScript expression";
     case "HTTP":
-      return "HTTP endpoint URL (POST {prompt})";
+      return "HTTP endpoint URL";
     case "WORKFLOW":
       return "Guardrail workflow name";
     default:
       return "Target";
+  }
+};
+
+// The text to scrub is passed to every guardrail under `prompt`, and the
+// scrubbed text must be returned under `prompt`. Shown as contract hints.
+const contractHint = (type?: GuardrailType) => {
+  switch (type) {
+    case "JAVASCRIPT":
+      return "Reads the text as $.prompt and must return the scrubbed string. e.g. $.prompt.replace(/[0-9]{13,19}/g, '[REDACTED]')";
+    case "HTTP":
+      return 'Method POST · request body { "prompt": "<text>" } · expected response body { "prompt": "<scrubbed text>" }. Failure or a missing prompt is treated per the failure mode.';
+    case "WORKFLOW":
+      return 'Started with input { "prompt": "<text>" }; must output { "prompt": "<scrubbed text>" }.';
+    default:
+      return "";
   }
 };
 
@@ -121,7 +137,18 @@ const GuardrailEditor: FunctionComponent<{
             />
           </Grid>
           <Grid size={12}>
-            {value.type === "WORKFLOW" ? (
+            {value.type === "JAVASCRIPT" ? (
+              <ConductorCodeBlockInput
+                label={targetLabel(value.type)}
+                language="javascript"
+                languageLabel="ECMASCRIPT"
+                value={value.target ?? ""}
+                onChange={(v) => patch({ target: v })}
+                height={160}
+                minHeight={140}
+                error={!!targetError}
+              />
+            ) : value.type === "WORKFLOW" ? (
               <ConductorFlexibleAutoCompleteVariables
                 label={targetLabel(value.type)}
                 options={workflowNames}
@@ -132,13 +159,29 @@ const GuardrailEditor: FunctionComponent<{
               <ConductorInput
                 label={targetLabel(value.type)}
                 fullWidth
-                multiline={value.type === "JAVASCRIPT"}
-                minRows={value.type === "JAVASCRIPT" ? 2 : 1}
+                placeholder={value.type === "HTTP" ? "https://host/scrub" : undefined}
                 value={value.target ?? ""}
                 error={!!targetError}
                 helperText={targetError ? "Target is required" : undefined}
                 onTextInputChange={(v) => patch({ target: v })}
               />
+            )}
+            {value.type && (
+              <Typography
+                variant="caption"
+                sx={{ display: "block", mt: 0.5, opacity: 0.6 }}
+              >
+                {contractHint(value.type)}
+              </Typography>
+            )}
+            {value.type === "JAVASCRIPT" && targetError && (
+              <Typography
+                variant="caption"
+                color="error"
+                sx={{ display: "block" }}
+              >
+                Target is required
+              </Typography>
             )}
           </Grid>
         </Grid>
