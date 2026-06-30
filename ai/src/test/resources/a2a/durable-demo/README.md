@@ -36,7 +36,7 @@ Requires **Java 21+**, **python3**, **curl** — no Docker, no Redis, no API key
 ./run-durable-demo.sh
 ```
 
-It builds the server-lite jar (this branch), starts the seller + Conductor, places an order,
+It builds the Conductor server jar (this branch), starts the seller + Conductor, places an order,
 waits until it's in preparation, **`kill -9`s the server**, restarts it on the same SQLite store,
 and waits for the order to complete.
 

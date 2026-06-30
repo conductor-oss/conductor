@@ -61,9 +61,9 @@ for _ in $(seq 1 20); do curl -sS -m2 -o /dev/null localhost:9999/.well-known/ag
 ok "Restaurant agent up on :9999"
 
 # ── 2. build + start Conductor (SQLite = durable, zero external deps) ────────────────────────
-say "Building the Conductor server-lite jar (this branch, with A2A)"
-"$ROOT/gradlew" -p "$ROOT" :conductor-server-lite:bootJar -q
-JAR="$(ls "$ROOT"/server-lite/build/libs/*.jar | head -1)"
+say "Building the Conductor server jar (this branch, with A2A)"
+"$ROOT/gradlew" -p "$ROOT" :conductor-server:bootJar -q
+JAR="$(ls "$ROOT"/server/build/libs/*-boot.jar | head -1)"
 say "Starting Conductor (SQLite at $DB)"
 start_server
 wait_health

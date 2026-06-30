@@ -40,7 +40,7 @@ public class SqliteVectorDBAutoConfigurationTest {
 
     @Test
     void testQueryParamsAreStripped() {
-        // The real server-lite URL — without stripping, the old code produced
+        // The real Conductor server URL — without stripping, the old code produced
         // "conductoross_vectordb.db?busy_timeout=15000&journal_mode=WAL" which is not a valid path.
         String result =
                 SqliteVectorDBAutoConfiguration.resolveDbPath(
