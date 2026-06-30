@@ -1,0 +1,14 @@
+dependencies {
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+    // Needed to compile A2A push-notification callback controller and AgentSpan activation glue;
+    // supplied by the server at runtime.
+    compileOnly 'org.springframework.boot:spring-boot-starter-web'
+    compileOnly 'org.springframework.boot:spring-boot-autoconfigure'
+
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+    implementation project(':conductor-ai')
+
+    implementation "org.conductoross:conductor-agentspan:0.3.0"
+
+}

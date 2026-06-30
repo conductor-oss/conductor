@@ -1,0 +1,27 @@
+{
+  "name": "a2a_interop_echo",
+  "version": 1,
+  "schemaVersion": 2,
+  "description": "Conductor as an A2A client against a REAL non-Conductor agent: discover its Agent Card (GET_AGENT_CARD), then call it (AGENT). Works against any A2A agent — here the official a2a-sdk echo agent.",
+  "ownerEmail": "a2a@example.com",
+  "tasks": [
+    {
+      "name": "discover_agent",
+      "taskReferenceName": "discover",
+      "type": "GET_AGENT_CARD",
+      "inputParameters": {
+        "agentUrl": "${workflow.input.agentUrl}"
+      }
+    },
+    {
+      "name": "call_agent",
+      "taskReferenceName": "call",
+      "type": "AGENT",
+      "inputParameters": {
+        "agentUrl": "${workflow.input.agentUrl}",
+        "text": "${workflow.input.prompt}",
+        "pollIntervalSeconds": 2
+      }
+    }
+  ]
+}

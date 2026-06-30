@@ -14,11 +14,11 @@
 rootProject.name = 'conductor'
 
 include 'ai'
+include 'agentspan-server'
 include 'annotations'
 include 'annotations-processor'
 
 include 'server'
-include 'server-lite'
 include 'common'
 include 'core'
 
