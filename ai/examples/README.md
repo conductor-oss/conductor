@@ -84,6 +84,27 @@ The server will be available at `http://localhost:3001/mcp`.
 | `20-extended-thinking.json` | Extended thinking with token budget for reasoning | Anthropic |
 | `21-web-search-research-agent.json` | Research agent: web search → synthesize → PDF | OpenAI, Anthropic |
 | `22-multi-turn-chain.json` | Multi-turn conversation chaining with previousResponseId | OpenAI |
+| `30-rag-sqlite-vec.json` | Zero-infra RAG on the bundled SQLite + sqlite-vec store | OpenAI, SQLite (built-in) |
+
+### A2A (Agent2Agent) examples
+
+Conductor as an A2A **client** (calling remote agents) and **server** (exposing a workflow as an
+agent). The client tasks (`AGENT`, `GET_AGENT_CARD`, `CANCEL_AGENT`) need a reachable A2A
+agent — see `ai/src/test/resources/a2a/` for a runnable test agent. The server examples are exposed
+by registering them with `metadata.a2a.enabled=true` and `conductor.a2a.server.enabled=true`.
+
+| File | Description | Requirements |
+|------|-------------|--------------|
+| `10-a2a-call-agent.json` | Call a remote agent (poll mode) | A2A agent |
+| `11-a2a-get-agent-card.json` | Discover an agent's skills/capabilities | A2A agent |
+| `12-a2a-server-workflow.json` | Expose a workflow as an A2A agent (server) | `conductor.a2a.server.enabled=true` |
+| `23-a2a-streaming.json` | Call an agent in streaming (SSE) mode | A2A agent (`capabilities.streaming=true`) |
+| `24-a2a-push.json` | Call an agent in push-notification mode | A2A agent, `conductor.a2a.callback.url` |
+| `25-a2a-server-multi-turn.json` | Multi-turn server agent (HUMAN task → input-required → resume) | `conductor.a2a.server.enabled=true` |
+| `26-a2a-cancel.json` | Start then cancel a remote agent task | A2A agent |
+| `27-a2a-multi-agent.json` | Call multiple agents in parallel (FORK_JOIN → JOIN) | A2A agents |
+| `28-a2a-llm-pick-skill.json` | Discover an agent, let an LLM pick the prompt, then call it | A2A agent, OpenAI/Anthropic |
+| `29-a2a-client-multi-turn.json` | Client multi-turn: branch on input-required, re-call with the same context | A2A agent |
 
 ---
 
@@ -214,6 +235,26 @@ curl -X POST 'http://localhost:8080/api/metadata/workflow' \
 curl -X POST 'http://localhost:8080/api/workflow/complete_rag_demo' \
   -H 'Content-Type: application/json' \
   -d '{}'
+```
+
+### 30. RAG on SQLite (sqlite-vec, zero infrastructure)
+
+Runs the full index → search → answer RAG loop against the **embedded** SQLite + sqlite-vec vector
+store — no PostgreSQL, MongoDB or Pinecone required. When the server runs with `conductor.db.type=sqlite`
+and `conductor.integrations.ai.enabled=true`, Conductor bundles the native `vec0` extension and
+auto-registers a vector DB instance named `default`, which this workflow targets. Embeddings are
+requested at 256 dimensions to match that default instance.
+
+```bash
+# Register
+curl -X POST 'http://localhost:8080/api/metadata/workflow' \
+  -H 'Content-Type: application/json' \
+  -d @30-rag-sqlite-vec.json
+
+# Execute with a question
+curl -X POST 'http://localhost:8080/api/workflow/rag_sqlite_vec_demo' \
+  -H 'Content-Type: application/json' \
+  -d '{"question": "What vector databases does Conductor support?"}'
 ```
 
 ### 8. MCP List Tools

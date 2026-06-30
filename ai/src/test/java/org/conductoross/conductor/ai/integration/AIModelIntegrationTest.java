@@ -17,11 +17,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
-import org.conductoross.conductor.ai.models.AudioGenRequest;
-import org.conductoross.conductor.ai.models.ChatCompletion;
-import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
-import org.conductoross.conductor.ai.models.LLMResponse;
-import org.conductoross.conductor.ai.models.ToolSpec;
+import org.conductoross.conductor.ai.model.AudioGenRequest;
+import org.conductoross.conductor.ai.model.ChatCompletion;
+import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
+import org.conductoross.conductor.ai.model.LLMResponse;
+import org.conductoross.conductor.ai.model.ToolSpec;
 import org.conductoross.conductor.ai.providers.anthropic.Anthropic;
 import org.conductoross.conductor.ai.providers.anthropic.AnthropicConfiguration;
 import org.conductoross.conductor.ai.providers.azureopenai.AzureOpenAI;
