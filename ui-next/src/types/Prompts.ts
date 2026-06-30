@@ -14,4 +14,7 @@ export type PromptDef = {
   topP?: number;
   stopWords?: string[];
   responseFormat?: "json";
+  /** Per-instance write capability hints — populated on GET and list responses. */
+  canEdit?: boolean | null;
+  canDelete?: boolean | null;
 };
