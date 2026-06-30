@@ -12,7 +12,7 @@
  */
 package org.conductoross.conductor.ai.vectordb;
 
-import org.conductoross.conductor.ai.models.IndexedDoc;
+import org.conductoross.conductor.ai.model.IndexedDoc;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
