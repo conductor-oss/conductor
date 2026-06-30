@@ -121,6 +121,8 @@ export interface SidebarItemRegistration {
   linkTo: string;
   /** Additional routes that should mark this item as active */
   activeRoutes?: string[];
+  /** When set, an activeRoutes match also requires these search params to be present. */
+  activeSearchParams?: Record<string, string>;
   /** Keyboard shortcuts */
   shortcuts?: string[];
   /** Hotkey string */

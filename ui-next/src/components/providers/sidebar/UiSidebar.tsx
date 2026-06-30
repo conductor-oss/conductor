@@ -50,6 +50,7 @@ function pluginItemToMenuItem(item: SidebarItemRegistration): MenuItemType {
     icon: item.icon,
     linkTo: item.linkTo,
     activeRoutes: item.activeRoutes,
+    activeSearchParams: item.activeSearchParams,
     shortcuts: item.shortcuts || [],
     hotkeys: item.hotkeys || "",
     hidden: item.hidden ?? false,
