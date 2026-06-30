@@ -25,6 +25,5 @@ import com.netflix.conductor.dao.QueueDAO;
         })
 public abstract class AbstractResiliencySpecification extends AbstractSpecification {
 
-    @Autowired
-    protected QueueDAO queueDAO;
+    @Autowired protected QueueDAO queueDAO;
 }

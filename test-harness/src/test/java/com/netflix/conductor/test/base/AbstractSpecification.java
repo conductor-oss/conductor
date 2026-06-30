@@ -50,28 +50,23 @@ public abstract class AbstractSpecification {
     private static final GenericContainer redis;
 
     static {
-        redis = new GenericContainer<>(DockerImageName.parse("redis:6.2-alpine"))
-                .withExposedPorts(6379);
+        redis =
+                new GenericContainer<>(DockerImageName.parse("redis:6.2-alpine"))
+                        .withExposedPorts(6379);
         redis.start();
     }
 
-    @Autowired
-    protected ExecutionService workflowExecutionService;
+    @Autowired protected ExecutionService workflowExecutionService;
 
-    @Autowired
-    protected MetadataService metadataService;
+    @Autowired protected MetadataService metadataService;
 
-    @Autowired
-    protected WorkflowExecutor workflowExecutor;
+    @Autowired protected WorkflowExecutor workflowExecutor;
 
-    @Autowired
-    protected WorkflowTestUtil workflowTestUtil;
+    @Autowired protected WorkflowTestUtil workflowTestUtil;
 
-    @Autowired
-    protected WorkflowSweeper workflowSweeper;
+    @Autowired protected WorkflowSweeper workflowSweeper;
 
-    @Autowired
-    protected AsyncSystemTaskExecutor asyncSystemTaskExecutor;
+    @Autowired protected AsyncSystemTaskExecutor asyncSystemTaskExecutor;
 
     @DynamicPropertySource
     static void dynamicProperties(DynamicPropertyRegistry registry) {

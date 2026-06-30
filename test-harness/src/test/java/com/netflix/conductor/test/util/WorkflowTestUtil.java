@@ -243,9 +243,7 @@ public class WorkflowTestUtil {
 
     private Task pollForTask(String taskName, String workerId) {
         return await().atMost(5, SECONDS)
-                .until(
-                        () -> workflowExecutionService.poll(taskName, workerId),
-                        notNullValue());
+                .until(() -> workflowExecutionService.poll(taskName, workerId), notNullValue());
     }
 
     public Task pollAndFailTask(
@@ -355,8 +353,7 @@ public class WorkflowTestUtil {
         assert polledTask != null : "The task polled cannot be null";
     }
 
-    public static void verifyPayload(
-            Map<String, Object> expected, Map<String, Object> payload) {
+    public static void verifyPayload(Map<String, Object> expected, Map<String, Object> payload) {
         expected.forEach(
                 (k, v) -> {
                     assert payload.containsKey(k);

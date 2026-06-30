@@ -38,15 +38,14 @@ import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.test.base.AbstractSpecification;
 
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SimpleWorkflowTest extends AbstractSpecification {
 
-    @Autowired
-    QueueDAO queueDAO;
+    @Autowired QueueDAO queueDAO;
 
     private static final String LINEAR_WORKFLOW_T1_T2 = "integration_test_wf";
     private static final String INTEGRATION_TEST_WF_NON_RESTARTABLE =
@@ -146,7 +145,8 @@ class SimpleWorkflowTest extends AbstractSpecification {
         assertNull(workflow.getTasks().get(0).getOutputData().get("someKey"));
         @SuppressWarnings("unchecked")
         Map<String, Object> someOtherKey =
-                (Map<String, Object>) workflow.getTasks().get(0).getOutputData().get("someOtherKey");
+                (Map<String, Object>)
+                        workflow.getTasks().get(0).getOutputData().get("someOtherKey");
         assertTrue(someOtherKey.containsKey("A"));
         assertNull(someOtherKey.get("A"));
     }
@@ -213,7 +213,8 @@ class SimpleWorkflowTest extends AbstractSpecification {
                                     + " failed with status: FAILED and reason: "
                                     + "'NON TRANSIENT ERROR OCCURRED: An integration point required to complete the task is down'");
             assertEquals("p1 value", workflow.getOutput().get("o1"));
-            assertEquals("There was a terminal error", workflow.getOutput().get("validationErrors"));
+            assertEquals(
+                    "There was a terminal error", workflow.getOutput().get("validationErrors"));
             assertEquals(0, t1.getRetryCount());
             assertEquals(new HashSet<>(List.of("t1")), workflow.getFailedReferenceTaskNames());
             assertEquals(
@@ -233,8 +234,7 @@ class SimpleWorkflowTest extends AbstractSpecification {
         workflowInput.put("param1", "p1 value");
         workflowInput.put("param2", "p2 value");
 
-        String workflowInstanceId =
-                startWorkflow("RTOWF", 1, correlationId, workflowInput, null);
+        String workflowInstanceId = startWorkflow("RTOWF", 1, correlationId, workflowInput, null);
 
         var workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true);
         assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
@@ -302,7 +302,8 @@ class SimpleWorkflowTest extends AbstractSpecification {
     }
 
     @Test
-    @DisplayName("Test if the workflow definitions with and without schema version can be registered")
+    @DisplayName(
+            "Test if the workflow definitions with and without schema version can be registered")
     void testWorkflowDefinitionSchemaVersion() {
         WorkflowDef workflowDef1 = new WorkflowDef();
         workflowDef1.setName("Test_schema_version1");
@@ -323,10 +324,8 @@ class SimpleWorkflowTest extends AbstractSpecification {
         workflowDef2.getTasks().add(workflowTask);
         metadataService.updateWorkflowDef(workflowDef2);
 
-        WorkflowDef foundWorkflowDef1 =
-                metadataService.getWorkflowDef(workflowDef1.getName(), 1);
-        WorkflowDef foundWorkflowDef2 =
-                metadataService.getWorkflowDef(workflowDef2.getName(), 1);
+        WorkflowDef foundWorkflowDef1 = metadataService.getWorkflowDef(workflowDef1.getName(), 1);
+        WorkflowDef foundWorkflowDef2 = metadataService.getWorkflowDef(workflowDef2.getName(), 1);
 
         assertNotNull(foundWorkflowDef1);
         assertEquals(2, foundWorkflowDef1.getSchemaVersion());
@@ -587,8 +586,7 @@ class SimpleWorkflowTest extends AbstractSpecification {
             assertEquals(
                     workflow.getTasks().get(2).getTaskId(),
                     workflow.getTasks().get(3).getRetriedTaskId());
-            assertEquals(
-                    new HashSet<>(List.of("t2")), workflow.getFailedReferenceTaskNames());
+            assertEquals(new HashSet<>(List.of("t2")), workflow.getFailedReferenceTaskNames());
             assertEquals(
                     new HashSet<>(List.of("integration_task_2")), workflow.getFailedTaskNames());
         } finally {
@@ -693,8 +691,7 @@ class SimpleWorkflowTest extends AbstractSpecification {
             assertEquals(4, workflow.getTasks().size());
             assertEquals(Task.Status.COMPLETED, workflow.getTasks().get(2).getStatus());
             assertEquals(Task.Status.COMPLETED, workflow.getTasks().get(3).getStatus());
-            assertEquals(
-                    new HashSet<>(List.of("t1")), workflow.getFailedReferenceTaskNames());
+            assertEquals(new HashSet<>(List.of("t1")), workflow.getFailedReferenceTaskNames());
             assertEquals(
                     new HashSet<>(List.of("integration_task_1")), workflow.getFailedTaskNames());
         } finally {
@@ -878,7 +875,11 @@ class SimpleWorkflowTest extends AbstractSpecification {
 
             String workflowInstanceId =
                     startWorkflow(
-                            INTEGRATION_TEST_WF_NON_RESTARTABLE, 1, correlationId, workflowInput, null);
+                            INTEGRATION_TEST_WF_NON_RESTARTABLE,
+                            1,
+                            correlationId,
+                            workflowInput,
+                            null);
 
             Task task1try1 =
                     workflowTestUtil.pollAndFailTask(
@@ -1008,5 +1009,4 @@ class SimpleWorkflowTest extends AbstractSpecification {
                 workflowExecutionService.poll("integration_task_1", "task1.integration.worker");
         assertNull(pollTaskTry3);
     }
-
 }
