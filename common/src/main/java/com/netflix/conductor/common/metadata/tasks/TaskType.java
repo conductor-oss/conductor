@@ -51,7 +51,10 @@ public enum TaskType {
     LLM_GET_EMBEDDINGS,
     LIST_MCP_TOOLS,
     CALL_MCP_TOOL,
-    PULL_WORKFLOW_MESSAGES;
+    PULL_WORKFLOW_MESSAGES,
+    AGENT,
+    GET_AGENT_CARD,
+    CANCEL_AGENT;
 
     /**
      * TaskType constants representing each of the possible enumeration values. Motivation: to not

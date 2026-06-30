@@ -14,6 +14,7 @@
 rootProject.name = 'conductor'
 
 include 'ai'
+include 'agentspan-server'
 include 'annotations'
 include 'annotations-processor'
 
