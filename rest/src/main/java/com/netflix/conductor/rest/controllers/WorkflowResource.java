@@ -78,7 +78,21 @@ public class WorkflowResource {
     @Operation(
             summary =
                     "Start a new workflow with StartWorkflowRequest, which allows task to be executed in a domain")
-    public String startWorkflow(@RequestBody StartWorkflowRequest request) {
+    public String startWorkflow(
+            @RequestBody StartWorkflowRequest request,
+            @RequestParam Map<String, String> queryParams) {
+
+        if (queryParams != null && !queryParams.isEmpty()) {
+            Map<String, Object> input = request.getInput();
+
+            if (input == null) {
+                input = new HashMap<>();
+                request.setInput(input);
+            }
+
+            input.putAll(queryParams);
+        }
+
         return workflowService.startWorkflow(request);
     }
 
