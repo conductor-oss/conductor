@@ -1,5 +1,7 @@
+import RefreshIcon from "@mui/icons-material/Refresh";
 import {
   Box,
+  Button,
   CircularProgress,
   Paper,
   Table,
@@ -72,28 +74,45 @@ function GuardrailRow({
 
 export default function TaskGuardrails({ taskResult }: TaskGuardrailsProps) {
   const taskId = taskResult?.taskId;
-  const { data, isLoading, error } = useWorkflowSearch<any>(
-    {
-      rowsPerPage: 100,
-      page: 1,
-      sort: "startTime:ASC",
-      query: `correlationId="guardrail:${taskId}"`,
-    },
-    { enabled: !!taskId },
-  );
+  // Guardrail sub-workflows are created during execution and indexed with a small
+  // lag, so always refetch on mount (and offer a manual refresh) rather than serve
+  // a possibly-stale empty result cached from an earlier open of this tab.
+  const { data, isLoading, isFetching, error, refetch } =
+    useWorkflowSearch<any>(
+      {
+        rowsPerPage: 100,
+        page: 1,
+        sort: "startTime:ASC",
+        query: `correlationId="guardrail:${taskId}"`,
+      },
+      { enabled: !!taskId },
+      { staleTime: 0, refetchOnMount: "always" },
+    );
 
   const results: any[] = data?.results ?? [];
 
   return (
     <Paper variant="outlined" sx={{ margin: 3 }}>
       <Box p={2}>
-        <Typography variant="subtitle1" gutterBottom>
-          Guardrail executions
-        </Typography>
+        <Box
+          sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}
+        >
+          <Typography variant="subtitle1" gutterBottom>
+            Guardrail executions
+          </Typography>
+          <Button
+            size="small"
+            startIcon={<RefreshIcon />}
+            disabled={isFetching}
+            onClick={() => refetch()}
+          >
+            Refresh
+          </Button>
+        </Box>
         <Typography variant="body2" sx={{ opacity: 0.6, mb: 2 }}>
           Each guardrail runs as a linked sub-workflow (correlationId{" "}
           <code>guardrail:{taskId}</code>). Input = before scrubbing, output =
-          after.
+          after. Runs may take a moment to appear — use Refresh if empty.
         </Typography>
 
         {isLoading && <CircularProgress size={20} />}
