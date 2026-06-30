@@ -51,25 +51,6 @@ const hasAnyRole = (
 };
 
 export const accessControl = {
-  hasUserManagement: (userInfo?: UserInfo) => {
-    return hasAnyRole(userInfo, ["ADMIN"]);
-  },
-  hasApplicationManagement: (userInfo?: UserInfo) => {
-    return hasAnyRole(userInfo, ["ADMIN", "APPLICATION_MANAGER"]);
-  },
-  hasOnlyReadOnlyAccess: (userInfo?: UserInfo) => {
-    if (
-      hasAnyRole(userInfo, [
-        "ADMIN",
-        "USER",
-        "METADATA_MANAGER",
-        "WORKFLOW_MANAGER",
-      ])
-    ) {
-      return false;
-    }
-    return hasAnyRole(userInfo, ["USER_READ_ONLY"]);
-  },
   hasAnyRole,
 };
 
