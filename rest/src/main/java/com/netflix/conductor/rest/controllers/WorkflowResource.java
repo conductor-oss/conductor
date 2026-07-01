@@ -13,7 +13,6 @@
 package com.netflix.conductor.rest.controllers;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,21 +37,16 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.run.*;
-import com.netflix.conductor.core.execution.NotificationResult;
-import com.netflix.conductor.model.TaskModel;
-import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.WorkflowService;
 import com.netflix.conductor.service.WorkflowTestService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import static com.netflix.conductor.rest.config.RequestMappingConstants.WORKFLOW;
@@ -143,59 +137,13 @@ public class WorkflowResource {
                         ? waitUntilTaskRef.split(",")
                         : new String[0];
 
-        // Poll every 100ms using Flux.interval
-        return Flux.interval(Duration.ofMillis(100))
-                .map(tick -> workflowService.getWorkflowModel(workflowId, true))
-                .filter(
-                        workflow -> {
-                            // Check if workflow is terminal
-                            if (workflow.getStatus().isTerminal()) {
-                                return true;
-                            }
-
-                            // Check recursively for blocking tasks in the workflow and all
-                            // sub-workflows
-                            BlockingTaskResult blockingResult =
-                                    findBlockingTasks(workflow, taskRefs);
-                            return blockingResult.hasBlockingTasks();
-                        })
-                .next() // Take the first matching workflow
-                .map(
-                        workflow -> {
-                            // Find blocking tasks and blocking workflow recursively
-                            BlockingTaskResult blockingResult =
-                                    findBlockingTasks(workflow, taskRefs);
-
-                            // Create NotificationResult and return response based on strategy
-                            NotificationResult result =
-                                    NotificationResult.builder()
-                                            .targetWorkflow(workflow)
-                                            .blockingWorkflow(
-                                                    blockingResult.blockingWorkflow != null
-                                                            ? blockingResult.blockingWorkflow
-                                                            : workflow)
-                                            .blockingTasks(blockingResult.blockingTasks)
-                                            .build();
-
-                            return result.toResponse(returnStrategy, workflowRequestId);
-                        })
-                .timeout(
-                        Duration.ofSeconds(waitForSeconds),
-                        Mono.defer(
-                                () -> {
-                                    log.info("Execution timed out for {}", workflowId);
-                                    // Timeout reached, return current state
-                                    var workflow =
-                                            workflowService.getWorkflowModel(workflowId, true);
-                                    NotificationResult result =
-                                            NotificationResult.builder()
-                                                    .targetWorkflow(workflow)
-                                                    .blockingWorkflow(workflow)
-                                                    .blockingTasks(new ArrayList<>())
-                                                    .build();
-                                    return Mono.just(
-                                            result.toResponse(returnStrategy, workflowRequestId));
-                                }));
+        return WorkflowSignalResponder.awaitSignalResponse(
+                workflowService,
+                workflowId,
+                taskRefs,
+                returnStrategy,
+                workflowRequestId,
+                Duration.ofSeconds(waitForSeconds));
     }
 
     @GetMapping("/{name}/correlated/{correlationId}")
@@ -470,80 +418,5 @@ public class WorkflowResource {
 
         systemMetadata.put("dynamic", true);
         workflowInput.put(systemMetadataKey, systemMetadata);
-    }
-
-    /**
-     * Recursively finds blocking tasks in the workflow and all its sub-workflows. A blocking task
-     * is: 1. A WAIT task that is not in terminal state 2. A task matching waitUntilTaskRef that is
-     * in terminal state
-     *
-     * @param workflow The workflow to search
-     * @param taskRefs Array of task reference names to wait for
-     * @return BlockingTaskResult containing blocking tasks and the workflow where they were found
-     */
-    private BlockingTaskResult findBlockingTasks(WorkflowModel workflow, String[] taskRefs) {
-        List<TaskModel> blockingTasks = new ArrayList<>();
-        WorkflowModel blockingWorkflow = null;
-
-        // Check tasks in the current workflow
-        for (TaskModel task : workflow.getTasks()) {
-            // Check for WAIT tasks that are not terminal (actively waiting)
-            if (TaskType.TASK_TYPE_WAIT.equals(task.getTaskType())
-                    && !task.getStatus().isTerminal()
-                    && task.getWaitTimeout() == 0) {
-                blockingTasks.add(task);
-                if (blockingWorkflow == null) {
-                    blockingWorkflow = workflow;
-                }
-            }
-
-            // Check if this task matches any of the specified task refs and is terminal
-            for (String taskRef : taskRefs) {
-                String trimmedRef = taskRef.trim();
-                if (trimmedRef.equals(task.getReferenceTaskName())
-                        && task.getStatus().isTerminal()) {
-                    blockingTasks.add(task);
-                    if (blockingWorkflow == null) {
-                        blockingWorkflow = workflow;
-                    }
-                }
-            }
-
-            // If this is a SUB_WORKFLOW task, recursively check the sub-workflow
-            if (TaskType.TASK_TYPE_SUB_WORKFLOW.equals(task.getTaskType())
-                    && StringUtils.isNotBlank(task.getSubWorkflowId())
-                    && !task.getStatus().isTerminal()) {
-                try {
-                    WorkflowModel subWorkflow =
-                            workflowService.getWorkflowModel(task.getSubWorkflowId(), true);
-                    BlockingTaskResult subResult = findBlockingTasks(subWorkflow, taskRefs);
-                    if (subResult.hasBlockingTasks()) {
-                        blockingTasks.addAll(subResult.blockingTasks);
-                        if (blockingWorkflow == null) {
-                            blockingWorkflow = subResult.blockingWorkflow;
-                        }
-                    }
-                } catch (Exception e) {
-                    // If we can't fetch the sub-workflow, skip it
-                }
-            }
-        }
-
-        return new BlockingTaskResult(blockingTasks, blockingWorkflow);
-    }
-
-    /** Result of finding blocking tasks in a workflow hierarchy */
-    private static class BlockingTaskResult {
-        final List<TaskModel> blockingTasks;
-        final WorkflowModel blockingWorkflow;
-
-        BlockingTaskResult(List<TaskModel> blockingTasks, WorkflowModel blockingWorkflow) {
-            this.blockingTasks = blockingTasks;
-            this.blockingWorkflow = blockingWorkflow;
-        }
-
-        boolean hasBlockingTasks() {
-            return blockingTasks != null && !blockingTasks.isEmpty();
-        }
     }
 }

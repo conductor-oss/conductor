@@ -12,10 +12,14 @@
  */
 package com.netflix.conductor.rest.controllers;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
+import org.conductoross.conductor.model.SignalResponse;
+import org.conductoross.conductor.model.WorkflowSignalReturnStrategy;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,6 +44,7 @@ import com.netflix.conductor.service.WorkflowService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
+import reactor.core.publisher.Mono;
 
 import static com.netflix.conductor.rest.config.RequestMappingConstants.TASKS;
 
@@ -139,6 +144,48 @@ public class TaskResource {
         taskResult.setWorkerId(workerId);
         taskService.updateTask(taskResult);
         return workflowService.getExecutionStatus(pending.getWorkflowInstanceId(), true);
+    }
+
+    @PostMapping(value = "/{workflowId}/{status}/signal", produces = APPLICATION_JSON_VALUE)
+    @Operation(
+            summary =
+                    "Signal the workflow's currently blocked task with the given status and output asynchronously")
+    public void signalWorkflowTaskAsync(
+            @PathVariable("workflowId") String workflowId,
+            @PathVariable("status") TaskResult.Status status,
+            @RequestBody Map<String, Object> output) {
+        taskService.signalTask(workflowId, status, output);
+    }
+
+    @PostMapping(value = "/{workflowId}/{status}/signal/sync", produces = APPLICATION_JSON_VALUE)
+    @Operation(
+            summary =
+                    "Signal the workflow's currently blocked task synchronously and return the updated workflow per the return strategy")
+    public Mono<SignalResponse> signalWorkflowTaskSync(
+            @PathVariable("workflowId") String workflowId,
+            @PathVariable("status") TaskResult.Status status,
+            @RequestParam(
+                            value = "returnStrategy",
+                            required = false,
+                            defaultValue = "TARGET_WORKFLOW")
+                    WorkflowSignalReturnStrategy returnStrategy,
+            @RequestParam(value = "timeoutMillis", required = false, defaultValue = "5000")
+                    long timeoutMillis,
+            @RequestBody Map<String, Object> output) {
+
+        String taskId = taskService.signalTask(workflowId, status, output);
+        if (taskId == null) {
+            throw new NotFoundException(
+                    String.format("Found no blocked task in workflow %s to signal", workflowId));
+        }
+
+        return WorkflowSignalResponder.awaitSignalResponse(
+                workflowService,
+                workflowId,
+                new String[0],
+                returnStrategy,
+                UUID.randomUUID().toString(),
+                Duration.ofMillis(timeoutMillis));
     }
 
     @PostMapping("/{taskId}/log")
