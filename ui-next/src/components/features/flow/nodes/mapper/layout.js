@@ -12,8 +12,42 @@ const computeAdditionalWidth = (portsAmount) =>
     ? (portsAmount - MIN_AMOUNT_OF_SWITCH_PORTS) * SWITCH_SIZE_INCREMENTER
     : 0;
 
+// AI / agentic task cards render header-only content (no custom body like HTTP/SIMPLE), so they
+// size to a snug header height instead of the taller DEFAULT, avoiding empty space below the label.
+const HEADER_ONLY_AI_HEIGHT = 80;
+const HEADER_ONLY_AI_TASKS = new Set([
+  TaskType.LLM_CHAT_COMPLETE,
+  TaskType.LLM_TEXT_COMPLETE,
+  TaskType.LLM_GENERATE_EMBEDDINGS,
+  TaskType.LLM_GET_EMBEDDINGS,
+  TaskType.LLM_STORE_EMBEDDINGS,
+  TaskType.LLM_SEARCH_INDEX,
+  TaskType.LLM_SEARCH_EMBEDDINGS,
+  TaskType.LLM_INDEX_TEXT,
+  TaskType.LLM_INDEX_DOCUMENT,
+  TaskType.GET_DOCUMENT,
+  TaskType.CHUNK_TEXT,
+  TaskType.LIST_FILES,
+  TaskType.PARSE_DOCUMENT,
+  TaskType.AGENT,
+  TaskType.GET_AGENT_CARD,
+  TaskType.CANCEL_AGENT,
+  TaskType.LIST_MCP_TOOLS,
+  TaskType.CALL_MCP_TOOL,
+  TaskType.GENERATE_IMAGE,
+  TaskType.GENERATE_AUDIO,
+  TaskType.GENERATE_VIDEO,
+  TaskType.GENERATE_PDF,
+]);
+
 export const taskToSize = (task) => {
   const { type, executionData = null } = task;
+  if (HEADER_ONLY_AI_TASKS.has(type)) {
+    return {
+      width: theme.nodeTypes.DEFAULT.width,
+      height: HEADER_ONLY_AI_HEIGHT,
+    };
+  }
   switch (type) {
     case TaskType.START:
     case TaskType.TERMINAL:
