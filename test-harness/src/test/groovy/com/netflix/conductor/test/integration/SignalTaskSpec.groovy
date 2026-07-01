@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskResult
 import com.netflix.conductor.common.run.Workflow
+import com.netflix.conductor.core.exception.NotFoundException
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
 import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.service.TaskService
@@ -101,12 +102,12 @@ class SignalTaskSpec extends AbstractSpecification {
         taskId == null
     }
 
-    def "Signal on a non-existent workflow returns null"() {
+    def "Signal on a non-existent workflow throws NotFoundException"() {
         when: "signaling a workflow id that does not exist"
-        def taskId = taskService.signalTask('non-existent-wf-id', TaskResult.Status.COMPLETED, [:])
+        taskService.signalTask('non-existent-wf-id', TaskResult.Status.COMPLETED, [:])
 
-        then: "signalTask returns null rather than throwing"
-        taskId == null
+        then: "the DAO throws NotFoundException because the workflow is not in the store"
+        thrown(NotFoundException)
     }
 
     def "Signal descends into a sub-workflow to complete its blocked WAIT task"() {
