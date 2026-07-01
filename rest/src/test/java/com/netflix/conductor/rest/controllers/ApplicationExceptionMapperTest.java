@@ -23,9 +23,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import com.netflix.conductor.core.exception.ConflictException;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.model.TaskModel;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,6 +50,9 @@ public class ApplicationExceptionMapperTest {
     public void before() {
         mockLoggerFactory = Mockito.mockStatic(LoggerFactory.class);
         when(LoggerFactory.getLogger(ApplicationExceptionMapper.class)).thenReturn(logger);
+        // logger is a static mock reused across tests; clear its invocation history
+        // so per-test verifications (e.g. never().error()) are order-independent.
+        clearInvocations(logger);
 
         this.queueAdminResource = mock(QueueAdminResource.class);
         this.mockMvc =
@@ -85,6 +91,43 @@ public class ApplicationExceptionMapperTest {
                         "Exception",
                         "/api/queue/update/workflowId/taskRefName/SKIPPED",
                         exception);
+        verifyNoMoreInteractions(logger);
+    }
+
+    @Test
+    public void testClientErrorsLoggedAtWarn() throws Exception {
+        // Client (4xx) errors are logged at WARN, not ERROR, across the mapped
+        // exception types (for example ConflictException -> 409,
+        // NotFoundException -> 404).
+        assertLoggedAtWarn(new ConflictException("resource already exists"), status().isConflict());
+        assertLoggedAtWarn(new NotFoundException("resource not found"), status().isNotFound());
+    }
+
+    private void assertLoggedAtWarn(RuntimeException exception, ResultMatcher expectedStatus)
+            throws Exception {
+        // logger is a static mock reused across assertions; start each one clean.
+        clearInvocations(logger);
+        doThrow(exception).when(this.queueAdminResource).update(any(), any(), any(), any());
+
+        this.mockMvc
+                .perform(
+                        MockMvcRequestBuilders.post(
+                                        "/api/queue/update/workflowId/taskRefName/{status}",
+                                        TaskModel.Status.SKIPPED)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        new ObjectMapper()
+                                                .writeValueAsString(Collections.emptyMap())))
+                .andDo(print())
+                .andExpect(expectedStatus);
+        // client (4xx) errors must be logged at WARN, not ERROR
+        verify(logger)
+                .warn(
+                        "Error {} url: '{}'",
+                        exception.getClass().getSimpleName(),
+                        "/api/queue/update/workflowId/taskRefName/SKIPPED",
+                        exception);
+        verify(logger, never()).error(any(), any(), any(), any());
         verifyNoMoreInteractions(logger);
     }
 }
