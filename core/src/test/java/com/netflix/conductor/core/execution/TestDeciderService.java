@@ -1548,6 +1548,31 @@ public class TestDeciderService {
     }
 
     @Test
+    public void testIsResponseTimedOut_signalWaitWithMaxCallbackAfterSeconds() {
+        // Signal-wait WAIT tasks (no duration/until) use Integer.MAX_VALUE as a sentinel meaning
+        // "never re-queue to AsyncSystemTaskExecutor". Before the fix, this made
+        // adjustedResponseTimeout ~68 years, permanently disabling response-timeout enforcement.
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("wait_task");
+        taskDef.setResponseTimeoutSeconds(10);
+
+        TaskModel task = new TaskModel();
+        task.setTaskDefName("wait_task");
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        task.setTaskId("wait-1");
+        task.setTaskType(TaskType.TASK_TYPE_WAIT);
+        task.setCallbackAfterSeconds(Integer.MAX_VALUE);
+
+        // 11 s since last update — past the 10 s response timeout; must fire
+        task.setUpdateTime(System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(11));
+        assertTrue(deciderService.isResponseTimedOut(taskDef, task));
+
+        // 5 s since last update — still within the 10 s window; must not fire
+        task.setUpdateTime(System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(5));
+        assertFalse(deciderService.isResponseTimedOut(taskDef, task));
+    }
+
+    @Test
     public void testFilterNextLoopOverTasks() {
 
         WorkflowModel workflow = new WorkflowModel();

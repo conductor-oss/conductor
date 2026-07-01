@@ -909,7 +909,12 @@ public class DeciderService {
 
         // calculate pendingTime
         long now = System.currentTimeMillis();
-        long callbackTime = 1000L * task.getCallbackAfterSeconds();
+        long callbackAfterSecs = task.getCallbackAfterSeconds();
+        // Integer.MAX_VALUE is WaitTaskMapper's sentinel for "wait indefinitely for an external
+        // signal" (no duration/until). Adding ~68 years to the timeout window makes
+        // isResponseTimedOut permanently return false — treat it as zero callback delay instead.
+        long callbackTime =
+                (callbackAfterSecs >= Integer.MAX_VALUE) ? 0 : 1000L * callbackAfterSecs;
         long referenceTime =
                 task.getUpdateTime() > 0 ? task.getUpdateTime() : task.getScheduledTime();
         long pendingTime = now - (referenceTime + callbackTime);
