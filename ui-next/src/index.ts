@@ -102,7 +102,7 @@ export {
 // =============================================================================
 // Shared Utilities & Hooks
 // =============================================================================
-export { useAuth } from "./components/features/auth";
+export { useAuth, useResourcePermissions } from "./components/features/auth";
 export { UISidebar } from "./components/providers/sidebar/UiSidebar";
 
 // =============================================================================

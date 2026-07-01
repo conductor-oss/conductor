@@ -28,6 +28,15 @@ export interface ResourcePermissionFlags {
   canExecute: boolean;
 }
 
+/**
+ * Per-instance write capability hints on list/GET resource responses.
+ * Global create/read flags come from GET /api/resource/capabilities/{resourceKey}.
+ */
+export interface InstanceCapabilities {
+  update?: boolean | null;
+  delete?: boolean | null;
+}
+
 const hasAnyRole = (
   userInfo: UserInfo | undefined | null,
   allowedRoles: string[],
