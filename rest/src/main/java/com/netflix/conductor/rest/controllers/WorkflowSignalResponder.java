@@ -101,6 +101,7 @@ final class WorkflowSignalResponder {
                                                     .targetWorkflow(workflow)
                                                     .blockingWorkflow(workflow)
                                                     .blockingTasks(new ArrayList<>())
+                                                    .signalTimeout(true)
                                                     .build();
                                     return Mono.just(result.toResponse(returnStrategy, requestId));
                                 }));
