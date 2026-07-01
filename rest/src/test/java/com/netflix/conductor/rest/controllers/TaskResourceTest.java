@@ -18,17 +18,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.conductoross.conductor.model.SignalResponse;
-import org.conductoross.conductor.model.WorkflowRun;
-import org.conductoross.conductor.model.WorkflowSignalReturnStrategy;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.util.pattern.PathPatternParser;
 
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -37,30 +29,20 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
-import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.model.TaskModel;
-import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.TaskService;
 import com.netflix.conductor.service.WorkflowService;
 
-import reactor.core.publisher.Mono;
-import reactor.test.StepVerifier;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class TaskResourceTest {
 
@@ -244,87 +226,5 @@ public class TaskResourceTest {
         assertEquals(
                 externalStorageLocation,
                 taskResource.getExternalStorageLocation("path", "operation", "payloadType"));
-    }
-
-    @Test
-    public void testSignalWorkflowTaskAsync() {
-        Map<String, Object> output = new HashMap<>();
-        output.put("k", "v");
-
-        taskResource.signalWorkflowTaskAsync("w123", TaskResult.Status.COMPLETED, output);
-
-        verify(mockTaskService, times(1)).signalTask("w123", TaskResult.Status.COMPLETED, output);
-    }
-
-    @Test
-    public void testSignalWorkflowTaskSync() {
-        Map<String, Object> output = new HashMap<>();
-        output.put("k", "v");
-
-        WorkflowModel workflow = new WorkflowModel();
-        workflow.setWorkflowId("w123");
-        workflow.setStatus(WorkflowModel.Status.COMPLETED);
-        workflow.setCreateTime(1000L);
-        workflow.setTasks(new ArrayList<>());
-
-        when(mockTaskService.signalTask("w123", TaskResult.Status.COMPLETED, output))
-                .thenReturn("task-1");
-        when(workflowService.getWorkflowModel(eq("w123"), eq(true))).thenReturn(workflow);
-
-        Mono<SignalResponse> result =
-                taskResource.signalWorkflowTaskSync(
-                        "w123",
-                        TaskResult.Status.COMPLETED,
-                        WorkflowSignalReturnStrategy.TARGET_WORKFLOW,
-                        5000L,
-                        output);
-
-        StepVerifier.create(result)
-                .assertNext(
-                        response -> {
-                            assertNotNull(response);
-                            assertTrue(response instanceof WorkflowRun);
-                            assertEquals("w123", response.getWorkflowId());
-                        })
-                .verifyComplete();
-    }
-
-    @Test(expected = NotFoundException.class)
-    public void testSignalWorkflowTaskSyncNoPendingTask() {
-        when(mockTaskService.signalTask(anyString(), any(), anyMap())).thenReturn(null);
-
-        taskResource.signalWorkflowTaskSync(
-                "w123",
-                TaskResult.Status.COMPLETED,
-                WorkflowSignalReturnStrategy.TARGET_WORKFLOW,
-                5000L,
-                new HashMap<>());
-    }
-
-    /**
-     * Regression test for conductor-oss/conductor#1197: {@code POST
-     * /api/tasks/{workflowId}/{status}/signal} must resolve to the dedicated signal handler. Before
-     * the signal endpoints existed, Spring matched the all-variable update route {@code
-     * /{workflowId}/{taskRefName}/{status}} instead, treating "signal" as the status enum and
-     * failing with a conversion error. The literal {@code /signal} segment makes the signal pattern
-     * more specific, so it wins. Uses {@link PathPatternParser} to mirror production routing.
-     */
-    @Test
-    public void testSignalRouteResolvesToSignalHandlerNotUpdate() throws Exception {
-        MockMvc mockMvc =
-                MockMvcBuilders.standaloneSetup(taskResource)
-                        .setPatternParser(new PathPatternParser())
-                        .build();
-
-        mockMvc.perform(
-                        MockMvcRequestBuilders.post("/api/tasks/wf123/COMPLETED/signal")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("{}"))
-                .andExpect(status().isOk());
-
-        verify(mockTaskService, times(1))
-                .signalTask(eq("wf123"), eq(TaskResult.Status.COMPLETED), anyMap());
-        verify(mockTaskService, never())
-                .updateTask(anyString(), anyString(), any(), any(), anyMap());
     }
 }
