@@ -436,7 +436,7 @@ public class GeminiWorkflowWorkers implements AnnotatedSystemTaskWorker {
     }
 
     private String documentType(Map<String, Object> record) {
-        Map<String, Object> extracted = mapValue(record.get("extracted"));
+        Map<String, Object> extracted = extractedPayload(record);
         Map<String, Object> classification = mapValue(record.get("classification"));
         Object rawClassification = record.get("classification");
         String rawClassificationValue =
@@ -510,7 +510,7 @@ public class GeminiWorkflowWorkers implements AnnotatedSystemTaskWorker {
 
     private List<IdentifierCandidate> documentIdentifierCandidates(Map<String, Object> record) {
         List<RawIdentifier> rawIdentifiers = new ArrayList<>();
-        collectIdentifierValues(mapValue(record.get("extracted")), "", rawIdentifiers);
+        collectIdentifierValues(extractedPayload(record), "", rawIdentifiers);
         collectIdentifierValues(
                 mapValue(record.get("classification")), "classification", rawIdentifiers);
         List<IdentifierCandidate> candidates = new ArrayList<>();
@@ -560,7 +560,9 @@ public class GeminiWorkflowWorkers implements AnnotatedSystemTaskWorker {
                 || normalized.contains("referencenumber")
                 || normalized.contains("referenceno")
                 || normalized.contains("ponumber")
-                || normalized.contains("purchaseordernumber")
+                || normalized.contains("purchaseorder")
+                || normalized.contains("billnumber")
+                || normalized.contains("billno")
                 || normalized.contains("grnnumber")
                 || normalized.contains("grnno")
                 || normalized.contains("deliverynumber");
@@ -771,18 +773,30 @@ public class GeminiWorkflowWorkers implements AnnotatedSystemTaskWorker {
     }
 
     private Object extractedValue(Map<String, Object> record, String field) {
-        return record == null ? null : mapValue(record.get("extracted")).get(field);
+        return record == null ? null : extractedPayload(record).get(field);
     }
 
     private List<Map<String, Object>> lineItems(Map<String, Object> record) {
         if (record == null) {
             return List.of();
         }
-        Object lineItems = mapValue(record.get("extracted")).get("line_items");
+        Map<String, Object> extracted = extractedPayload(record);
+        Object lineItems = extracted.get("line_items");
         if (lineItems == null) {
-            lineItems = mapValue(record.get("extracted")).get("debit_note_line_items");
+            lineItems = extracted.get("debit_note_line_items");
         }
         return listOfMaps(lineItems);
+    }
+
+    private Map<String, Object> extractedPayload(Map<String, Object> record) {
+        if (record == null) {
+            return Map.of();
+        }
+        Map<String, Object> extracted = mapValue(record.get("extracted"));
+        if (!extracted.isEmpty()) {
+            return extracted;
+        }
+        return mapValue(record.get("result"));
     }
 
     private int itemCount(Map<String, Object> record) {

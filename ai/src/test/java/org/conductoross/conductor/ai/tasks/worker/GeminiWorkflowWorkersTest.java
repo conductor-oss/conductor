@@ -79,6 +79,95 @@ class GeminiWorkflowWorkersTest {
     }
 
     @Test
+    void reconcileMatchesGeminiResultPayloadsByInvoiceDigits() {
+        GeminiWorkflowWorkers workers =
+                new GeminiWorkflowWorkers(
+                        new GeminiIntegrationService(),
+                        new GDriveIntegrationService(),
+                        new InMemoryGDriveConnectionDAO());
+
+        Map<String, Object> grn =
+                Map.of(
+                        "id",
+                        "grn-drive-file-id",
+                        "name",
+                        "BLR-INV-012584-GRN.pdf",
+                        "classification",
+                        Map.of("classification", "grn"),
+                        "result",
+                        Map.of(
+                                "supplier_bill_number",
+                                "BRL-INV-012584",
+                                "purchase_order_no",
+                                "BLR073P1T3N",
+                                "line_items",
+                                List.of(
+                                        Map.of(
+                                                "product_name",
+                                                "Avocado Hass Imported",
+                                                "grn_qty",
+                                                230,
+                                                "qty_delivered",
+                                                230),
+                                        Map.of(
+                                                "product_name",
+                                                "Avocado Large Premium",
+                                                "grn_qty",
+                                                1,
+                                                "qty_delivered",
+                                                1))));
+        Map<String, Object> pod =
+                Map.of(
+                        "id",
+                        "pod-drive-file-id",
+                        "name",
+                        "BLR-INV-012584-POD.jpeg",
+                        "classification",
+                        Map.of("classification", "pod"),
+                        "result",
+                        Map.of(
+                                "invoice_number",
+                                "BLR-INV-012584",
+                                "purchase_order_number",
+                                "BLR-SO-07125",
+                                "line_items",
+                                List.of(
+                                        Map.of(
+                                                "item_name",
+                                                "Snacky Avocado Regular",
+                                                "handwritten_quantity",
+                                                171),
+                                        Map.of(
+                                                "item_name",
+                                                "Avocado Large Premium",
+                                                "handwritten_quantity",
+                                                1),
+                                        Map.of(
+                                                "item_name",
+                                                "Avocado Hass Imported",
+                                                "handwritten_quantity",
+                                                230))));
+
+        Map<String, Object> output =
+                workers.reconcile(Map.of("grnList", List.of(grn), "podList", List.of(pod)));
+
+        Map<?, ?> summary = (Map<?, ?>) output.get("summary");
+        assertEquals(1L, summary.get("matchedDocuments"));
+        assertEquals(0L, summary.get("missingPodDocuments"));
+        assertEquals(0L, summary.get("missingGrnDocuments"));
+
+        List<?> documentMatches = (List<?>) output.get("documentMatches");
+        Map<?, ?> documentMatch = (Map<?, ?>) documentMatches.get(0);
+        assertEquals("MATCHED", documentMatch.get("status"));
+        assertEquals("012584", documentMatch.get("matchKey"));
+        assertEquals(
+                "supplier_bill_number_digits=invoice_number_digits",
+                documentMatch.get("matchStrategy"));
+        assertEquals(2, documentMatch.get("grnItemCount"));
+        assertEquals(3, documentMatch.get("podItemCount"));
+    }
+
+    @Test
     void runGeminiExecutesPromptOnceWithoutFiles() throws Exception {
         MockWebServer server = startServer();
         try {
