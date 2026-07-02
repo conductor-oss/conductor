@@ -28,6 +28,7 @@ import { ActorRef } from "xstate";
 import { UpdateTaskStatusForm } from "..";
 import {
   DEFINITION_TAB,
+  PLUGIN_PANEL_TAB_BASE,
   INPUT_TAB,
   JSON_TAB,
   LOGS_TAB,
@@ -36,6 +37,7 @@ import {
 } from "../state/constants";
 import TaskLogs from "../TaskLogs";
 import TaskSummary from "../TaskSummary";
+import { pluginRegistry } from "plugins/registry";
 import { RightPanelContextEventTypes, RightPanelEvents } from "./state";
 import { useRightPanelActor } from "./state/hook";
 import { SummaryTask } from "./SummaryTask";
@@ -132,6 +134,13 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
       currentTab: tab,
     });
   };
+
+  // Plugin execution-panel tabs for this task type, minus any whose shouldShow
+  // predicate excludes this specific task. Computed once so the tab list and the
+  // tab content below stay index-aligned.
+  const pluginPanels = pluginRegistry
+    .getTaskExecutionPanels(`${selectedTask?.taskType}`)
+    .filter((panel) => !panel.shouldShow || panel.shouldShow(selectedTask));
 
   // If the summary task is selected just show a small summary
   if (selectedTask?.taskType === "TASK_SUMMARY")
@@ -335,6 +344,15 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
             label="Definition"
             onClick={() => changeCurrentTab(DEFINITION_TAB)}
           />
+          {pluginPanels.map((panel, i) => (
+            <Tab
+              key={panel.id}
+              label={panel.label}
+              value={PLUGIN_PANEL_TAB_BASE + i}
+              onClick={() => changeCurrentTab(PLUGIN_PANEL_TAB_BASE + i)}
+              disabled={!selectedTask.status}
+            />
+          ))}
         </Tabs>
         <Paper square elevation={0}>
           {currentTab === SUMMARY_TAB && (
@@ -411,6 +429,20 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
               workflowName={workflowName}
               editorHeight="calc(100vh - 280px)"
             />
+          )}
+          {pluginPanels.map((panel, i) =>
+            currentTab === PLUGIN_PANEL_TAB_BASE + i ? (
+              <Box
+                key={panel.id}
+                style={{
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  maxHeight: "calc(100vh - 100px)",
+                }}
+              >
+                <panel.component taskResult={selectedTask} />
+              </Box>
+            ) : null,
           )}
         </Paper>
       </>
