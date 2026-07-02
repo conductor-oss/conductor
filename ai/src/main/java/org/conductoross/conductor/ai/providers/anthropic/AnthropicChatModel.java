@@ -170,7 +170,31 @@ public class AnthropicChatModel implements ChatModel {
         switch (msg.getMessageType()) {
             case USER -> {
                 UserMessage userMsg = (UserMessage) msg;
-                messages.add(Message.user(userMsg.getText()));
+                List<org.springframework.ai.content.Media> media = userMsg.getMedia();
+                if (media != null && !media.isEmpty()) {
+                    // Multi-modal: text + image content blocks. Without this the
+                    // image is silently dropped and the model never sees it.
+                    List<ContentBlock> blocks = new ArrayList<>();
+                    if (userMsg.getText() != null && !userMsg.getText().isBlank()) {
+                        blocks.add(ContentBlock.text(userMsg.getText()));
+                    }
+                    for (org.springframework.ai.content.Media m : media) {
+                        String mediaType =
+                                m.getMimeType() != null
+                                        ? m.getMimeType().toString()
+                                        : "application/octet-stream";
+                        // Conductor downloads media URLs to bytes upstream; encode
+                        // to the base64 payload Anthropic's image source expects.
+                        String base64 =
+                                m.getData() instanceof byte[] bytes
+                                        ? java.util.Base64.getEncoder().encodeToString(bytes)
+                                        : m.getData().toString();
+                        blocks.add(ContentBlock.image(mediaType, base64));
+                    }
+                    messages.add(Message.user(blocks));
+                } else {
+                    messages.add(Message.user(userMsg.getText()));
+                }
             }
 
             case ASSISTANT -> {
