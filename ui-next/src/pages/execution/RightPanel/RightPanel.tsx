@@ -432,18 +432,18 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
           )}
           {pluginPanels.map((panel, i) =>
             currentTab === PLUGIN_PANEL_TAB_BASE + i ? (
-                <Box
-                  key={panel.id}
-                  style={{
-                    overflowY: "auto",
-                    overflowX: "hidden",
-                    maxHeight: "calc(100vh - 100px)",
-                  }}
-                >
-                  <panel.component taskResult={selectedTask} />
-                </Box>
-              ) : null,
-            )}
+              <Box
+                key={panel.id}
+                style={{
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  maxHeight: "calc(100vh - 100px)",
+                }}
+              >
+                <panel.component taskResult={selectedTask} />
+              </Box>
+            ) : null,
+          )}
         </Paper>
       </>
     </Paper>

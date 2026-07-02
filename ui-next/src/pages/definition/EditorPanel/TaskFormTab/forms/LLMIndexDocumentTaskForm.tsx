@@ -4,7 +4,10 @@ import ConductorInput from "components/ui/inputs/ConductorInput";
 import { LLMFormFields } from "pages/definition/EditorPanel/TaskFormTab/forms/LLMFormFields";
 import { path as _path } from "lodash/fp";
 import { UiIntegrationsFieldType } from "types/FormFieldTypes";
-import { fieldsToFieldsFieldsComponents, updateField } from "utils/fieldHelpers";
+import {
+  fieldsToFieldsFieldsComponents,
+  updateField,
+} from "utils/fieldHelpers";
 import { ConductorAdditionalHeadersBase } from "./HTTPTaskForm/ConductorAdditionalHeaders";
 import { ConductorCacheOutput } from "./ConductorCacheOutputForm";
 import { Optional } from "./OptionalFieldForm";
@@ -91,8 +94,8 @@ export const LLMIndexDocumentTaskForm = ({ task, onChange }: TaskFormProps) => {
             <Grid container spacing={3} sx={{ width: "100%" }} mt={0}>
               <Grid size={12}>
                 <Typography variant="body2" color="text.secondary">
-                  Provide a document <strong>URL</strong> above, or index
-                  inline <strong>text</strong> directly below.
+                  Provide a document <strong>URL</strong> above, or index inline{" "}
+                  <strong>text</strong> directly below.
                 </Typography>
               </Grid>
               <Grid size={12}>

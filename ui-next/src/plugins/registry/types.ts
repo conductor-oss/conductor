@@ -16,6 +16,8 @@
 import { ComponentType, ReactNode } from "react";
 import { RouteObject } from "react-router-dom";
 import { CSSObject } from "@mui/material/styles";
+import type { TaskDef } from "types";
+import type { ValidationError } from "pages/definition/errorInspector/state/types";
 import { AuthHeaders } from "types/common";
 import { BaseIntegration, IntegrationDef } from "types/Integrations";
 
@@ -404,6 +406,11 @@ export interface TaskExecutionPanelRegistration {
 // ============================================================================
 // Task Form Validator Types
 // ============================================================================
+
+/** Optional per-task validation contributed by enterprise plugins. */
+export type TaskValidatorFn = (task: TaskDef) => ValidationError[];
+
+// ============================================================================
 // Main Plugin Interface
 // ============================================================================
 
@@ -511,6 +518,17 @@ export interface ConductorPlugin {
    * types. Enterprise plugins use this to add task-specific views (e.g. guardrails).
    */
   taskExecutionPanels?: TaskExecutionPanelRegistration[];
+
+  /**
+   * Optional validators run by the workflow error inspector for each task.
+   */
+  taskValidators?: TaskValidatorFn[];
+
+  /**
+   * Called immediately before the user initiates a workflow save, so forms can
+   * surface field-level validation (e.g. touch required inputs).
+   */
+  onPreSaveValidation?: () => void;
 
   /**
    * Schema edit dialog component for inline schema editing in task forms.
@@ -656,6 +674,12 @@ export interface PluginRegistry {
 
   /** Get task execution panels registered for the given task type. */
   getTaskExecutionPanels(taskType: string): TaskExecutionPanelRegistration[];
+
+  /** Aggregate task validation errors from all registered plugins. */
+  getTaskValidationErrors(task: TaskDef): ValidationError[];
+
+  /** Notify plugins to run pre-save form validation. */
+  runPreSaveValidation(): void;
 
   /**
    * Get the schema edit dialog component.

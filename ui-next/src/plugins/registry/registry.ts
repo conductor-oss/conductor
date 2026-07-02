@@ -22,7 +22,10 @@ import {
   SidebarItemRegistration,
   TaskExecutionPanelRegistration,
   TaskMenuItemRegistration,
+  TaskValidatorFn,
 } from "./types";
+import type { TaskDef } from "types";
+import type { ValidationError } from "pages/definition/errorInspector/state/types";
 
 /**
  * Creates a new plugin registry instance
@@ -397,6 +400,32 @@ function createPluginRegistry(): PluginRegistry {
         }
       }
       return null;
+    },
+
+    getTaskValidationErrors(task: TaskDef): ValidationError[] {
+      const errors: ValidationError[] = [];
+      for (const plugin of plugins) {
+        plugin.taskValidators?.forEach((validate: TaskValidatorFn) => {
+          errors.push(...validate(task));
+        });
+      }
+      return errors;
+    },
+
+    runPreSaveValidation(): void {
+      for (const plugin of plugins) {
+        if (!plugin.onPreSaveValidation) {
+          continue;
+        }
+        try {
+          plugin.onPreSaveValidation();
+        } catch (error) {
+          console.error(
+            `Error in onPreSaveValidation hook for plugin "${plugin.id}":`,
+            error,
+          );
+        }
+      }
     },
   };
 }
