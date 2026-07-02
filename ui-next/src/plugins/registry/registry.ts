@@ -21,6 +21,7 @@ import {
   SidebarExtension,
   SidebarItemRegistration,
   TaskExecutionPanelRegistration,
+  TaskFormValidatorRegistration,
   TaskMenuItemRegistration,
 } from "./types";
 
@@ -316,6 +317,23 @@ function createPluginRegistry(): PluginRegistry {
         }
       }
       return panels;
+    },
+
+    /**
+     * Get all task-form validators registered for the given task type.
+     */
+    getTaskFormValidators(taskType: string): TaskFormValidatorRegistration[] {
+      const validators: TaskFormValidatorRegistration[] = [];
+      for (const plugin of plugins) {
+        if (plugin.taskFormValidators) {
+          validators.push(
+            ...plugin.taskFormValidators.filter((v) =>
+              v.taskTypes.includes(taskType),
+            ),
+          );
+        }
+      }
+      return validators;
     },
 
     /**

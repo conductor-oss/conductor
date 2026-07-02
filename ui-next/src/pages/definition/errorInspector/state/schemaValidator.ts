@@ -13,6 +13,7 @@ import {
   workflowSchemaAjv,
 } from "types";
 import { logger } from "utils";
+import { pluginRegistry } from "plugins/registry";
 import {
   ErrorIds,
   ErrorSeverity,
@@ -265,6 +266,64 @@ const getJSONParseErrorHint = (errorMessage?: string): string => {
   return DEFAULT_ERROR_MESSAGE;
 };
 
+/**
+ * Run plugin-registered task-form validators over the workflow's tasks and turn
+ * any returned messages into blocking task errors. Keeps guardrail (and other
+ * plugin) required-field checks out of core validation via the registry.
+ */
+const collectPluginTaskErrors = (
+  workflow: Partial<WorkflowDef>,
+): TaskErrors[] => {
+  const result: TaskErrors[] = [];
+  for (const task of workflow?.tasks ?? []) {
+    const type = (task as TaskDef)?.type;
+    if (!type) continue;
+    const validators = pluginRegistry.getTaskFormValidators(type);
+    if (validators.length === 0) continue;
+
+    const errors: ValidationError[] = [];
+    for (const validator of validators) {
+      let messages: string[] = [];
+      try {
+        messages = validator.validate(task as Record<string, any>) ?? [];
+      } catch (e) {
+        logger.error(`Task form validator '${validator.id}' threw`, e);
+      }
+      for (const message of messages) {
+        errors.push({
+          id: ErrorIds.TASK_REQUIRED_FIELD_MISSING,
+          message,
+          type: ErrorTypes.TASK,
+          severity: ErrorSeverity.ERROR,
+          taskReferenceName: (task as TaskDef).taskReferenceName,
+        });
+      }
+    }
+    if (errors.length) result.push({ task: task as TaskDef, errors });
+  }
+  return result;
+};
+
+/** Merge plugin task errors into schema task errors, grouping by task reference. */
+const mergeTaskErrors = (
+  base: TaskErrors[],
+  extra: TaskErrors[],
+): TaskErrors[] => {
+  if (extra.length === 0) return base;
+  const merged = [...base];
+  for (const entry of extra) {
+    const existing = merged.find(
+      (m) => m.task.taskReferenceName === entry.task.taskReferenceName,
+    );
+    if (existing) {
+      existing.errors = [...existing.errors, ...entry.errors];
+    } else {
+      merged.push(entry);
+    }
+  }
+  return merged;
+};
+
 export const computeWorkflowErrors = (
   workflow: Partial<WorkflowDef>,
 ): SchemaValidationResponse => {
@@ -299,7 +358,7 @@ export const computeWorkflowErrors = (
   );
 
   return {
-    taskErrors,
+    taskErrors: mergeTaskErrors(taskErrors, collectPluginTaskErrors(workflow)),
     workflowErrors,
   };
 };
