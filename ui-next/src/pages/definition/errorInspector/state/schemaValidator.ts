@@ -327,10 +327,15 @@ const mergeTaskErrors = (
 export const computeWorkflowErrors = (
   workflow: Partial<WorkflowDef>,
 ): SchemaValidationResponse => {
+  // Plugin task-form validators are independent of the JSON-schema validator, so
+  // collect them up front and always include them (even when the schema
+  // validator can't be built).
+  const pluginTaskErrors = collectPluginTaskErrors(workflow);
+
   const mainValidator = createMainValidator(workflow);
   if (_isNil(mainValidator)) {
     return {
-      taskErrors: [],
+      taskErrors: pluginTaskErrors,
       workflowErrors: [],
     };
   }
@@ -358,7 +363,7 @@ export const computeWorkflowErrors = (
   );
 
   return {
-    taskErrors: mergeTaskErrors(taskErrors, collectPluginTaskErrors(workflow)),
+    taskErrors: mergeTaskErrors(taskErrors, pluginTaskErrors),
     workflowErrors,
   };
 };
