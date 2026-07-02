@@ -110,7 +110,34 @@ public class OpenAICompatChatModel implements ChatModel {
         List<MessageItem> items = new ArrayList<>();
         switch (msg.getMessageType()) {
             case SYSTEM -> items.add(MessageItem.system(((SystemMessage) msg).getText()));
-            case USER -> items.add(MessageItem.user(((UserMessage) msg).getText()));
+            case USER -> {
+                UserMessage userMsg = (UserMessage) msg;
+                List<org.springframework.ai.content.Media> media = userMsg.getMedia();
+                if (media != null && !media.isEmpty()) {
+                    // Multi-modal: text + image_url content parts. Without this the
+                    // image is silently dropped and the model never sees it.
+                    List<ContentPart> parts = new ArrayList<>();
+                    if (userMsg.getText() != null && !userMsg.getText().isBlank()) {
+                        parts.add(ContentPart.text(userMsg.getText()));
+                    }
+                    for (org.springframework.ai.content.Media m : media) {
+                        // Media can be a URL or raw bytes; conductor-ai usually
+                        // pre-downloads to bytes, which we send as a data URI.
+                        String url =
+                                m.getData() instanceof byte[] bytes
+                                        ? "data:"
+                                                + m.getMimeType()
+                                                + ";base64,"
+                                                + java.util.Base64.getEncoder()
+                                                        .encodeToString(bytes)
+                                        : m.getData().toString();
+                        parts.add(ContentPart.imageUrl(url));
+                    }
+                    items.add(MessageItem.user(parts));
+                } else {
+                    items.add(MessageItem.user(userMsg.getText()));
+                }
+            }
             case ASSISTANT -> {
                 AssistantMessage assistantMsg = (AssistantMessage) msg;
                 if (assistantMsg.hasToolCalls()) {
