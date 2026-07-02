@@ -1,6 +1,6 @@
 # Conductor AI Module
 
-The Conductor AI module provides built-in integration with 12 popular LLM providers and vector databases, enabling AI-powered workflows through simple task definitions -- including chat, embeddings, image generation, audio synthesis, video generation, document generation, and tool calling.
+The Conductor AI module provides built-in integration with 13 popular LLM providers and vector databases, enabling AI-powered workflows through simple task definitions -- including chat, embeddings, image generation, audio synthesis, video generation, document generation, and tool calling.
 
 ## Table of Contents
 - [Supported Providers](#supported-providers)
@@ -29,6 +29,7 @@ The Conductor AI module provides built-in integration with 12 popular LLM provid
 | **Perplexity AI** | ✅ | ❌ | ❌ | ❌ | ❌ | Sonar, Sonar Pro |
 | **HuggingFace** | ✅ | ❌ | ❌ | ❌ | ❌ | Llama 3.x, Mistral 7B, Zephyr |
 | **Ollama** | ✅ | ✅ | ❌ | ❌ | ❌ | Llama 3.x, Mistral, Phi, nomic-embed-text (local deployment) |
+| **LiteLLM** | ✅ | ❌ | ❌ | ❌ | ❌ | 100+ models via [LiteLLM proxy](https://docs.litellm.ai/) (OpenAI, Anthropic, Azure, Bedrock, Vertex, etc.) |
 | **Stability AI** | ❌ | ❌ | ✅ | ❌ | ❌ | SD3.5 Large/Medium, Stable Image Core, Stable Image Ultra |
 
 ### Vector Database Providers
@@ -591,6 +592,32 @@ conductor.ai.perplexity.base-url=https://api.perplexity.ai
 | `api-key` | ✅ | - | Perplexity API key |
 | `base-url` | ❌ | `https://api.perplexity.ai` | API base URL |
 
+#### LiteLLM (AI Gateway)
+
+[LiteLLM](https://docs.litellm.ai/) is an AI gateway/proxy that provides a unified OpenAI-compatible interface to 100+ LLM providers including OpenAI, Anthropic, Azure, AWS Bedrock, Google Vertex AI, Mistral, Cohere, and more. Run the LiteLLM proxy and point Conductor at it to access any supported model through a single configuration.
+
+```properties
+conductor.ai.litellm.api-key=${LITELLM_API_KEY}
+conductor.ai.litellm.base-url=http://localhost:4000
+```
+
+| Property | Required | Default | Description |
+|----------|:--------:|---------|-------------|
+| `api-key` | ✅ | - | LiteLLM proxy API key (master key or virtual key) |
+| `base-url` | ❌ | `http://localhost:4000` | LiteLLM proxy URL |
+
+**Usage:**
+
+Set `llmProvider` to `litellm` in your workflow tasks and use any model supported by your LiteLLM proxy configuration:
+
+```json
+{
+  "llmProvider": "litellm",
+  "model": "gpt-4o",
+  "messages": [...]
+}
+```
+
 #### HuggingFace
 
 ```properties
@@ -645,6 +672,8 @@ The AI module reads from standard environment variables automatically. Set the e
 | Grok / xAI | `XAI_API_KEY` | API key from [x.ai](https://x.ai/) |
 | Perplexity | `PERPLEXITY_API_KEY` | API key from [perplexity.ai](https://www.perplexity.ai/) |
 | HuggingFace | `HUGGINGFACE_API_KEY` | Token from [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) |
+| LiteLLM | `LITELLM_API_KEY` | LiteLLM proxy API key |
+| LiteLLM | `LITELLM_BASE_URL` | LiteLLM proxy URL (default: `http://localhost:4000`) |
 | Stability AI | `STABILITY_API_KEY` | API key from [platform.stability.ai](https://platform.stability.ai/) |
 | Azure OpenAI | `AZURE_OPENAI_API_KEY` | API key from Azure portal |
 | Azure OpenAI | `AZURE_OPENAI_ENDPOINT` | Endpoint URL (e.g., `https://your-resource.openai.azure.com`) |
