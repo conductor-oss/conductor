@@ -1,3 +1,5 @@
+import { InstanceCapabilities } from "utils/accessControl";
+
 export type PromptDef = {
   name: string;
   createdBy?: string;
@@ -14,4 +16,6 @@ export type PromptDef = {
   topP?: number;
   stopWords?: string[];
   responseFormat?: "json";
+  /** Per-instance write capability hints — populated on GET and list responses. */
+  capabilities?: InstanceCapabilities | null;
 };

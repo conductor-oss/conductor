@@ -26,6 +26,7 @@ export interface CloneDialogProps {
   title?: string;
   id?: string;
   label?: string;
+  notOneOfMessage?: string;
 }
 
 const CloneDialog = ({
@@ -37,13 +38,14 @@ const CloneDialog = ({
   title,
   id,
   label,
+  notOneOfMessage = "This name already exists.",
 }: CloneDialogProps) => {
   const formSchema = yup.object().shape({
     name: yup
       .string()
       .required("Name cannot be blank.")
       .matches(WORKFLOW_NAME_REGEX, WORKFLOW_NAME_ERROR_MESSAGE)
-      .notOneOf(namesList, "This name is existing."),
+      .notOneOf(namesList, notOneOfMessage),
   });
 
   const defaultValues: DefaultValues<DialogData> = {
