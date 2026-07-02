@@ -270,8 +270,8 @@ public class GeminiApi {
         }
 
         /**
-         * Inline image (or other binary) part. {@code mimeType} is e.g. {@code image/png};
-         * {@code base64Data} is the raw base64 payload without any {@code data:} URI prefix.
+         * Inline image (or other binary) part. {@code mimeType} is e.g. {@code image/png}; {@code
+         * base64Data} is the raw base64 payload without any {@code data:} URI prefix.
          */
         public static Part inlineData(String mimeType, String base64Data) {
             return new Part(null, null, null, new InlineData(mimeType, base64Data), null);

@@ -82,7 +82,8 @@ class GeminiChatModelMediaTest {
         chatModel.call(new Prompt(List.of(userMsg), options));
 
         ArgumentCaptor<List<Content>> captor = ArgumentCaptor.forClass(List.class);
-        verify(api).generateContent(eq("gemini-2.5-flash"), captor.capture(), isNull(), any(), any());
+        verify(api)
+                .generateContent(eq("gemini-2.5-flash"), captor.capture(), isNull(), any(), any());
         List<Content> sentContents = captor.getValue();
 
         Content user =
@@ -91,8 +92,7 @@ class GeminiChatModelMediaTest {
                         .reduce((a, b) -> b)
                         .orElseThrow();
 
-        List<Part> imageParts =
-                user.parts().stream().filter(p -> p.inlineData() != null).toList();
+        List<Part> imageParts = user.parts().stream().filter(p -> p.inlineData() != null).toList();
         assertFalse(
                 imageParts.isEmpty(),
                 "inline image part missing — media was dropped (the original bug)");
