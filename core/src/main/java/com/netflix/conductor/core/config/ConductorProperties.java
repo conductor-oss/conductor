@@ -67,6 +67,14 @@ public class ConductorProperties {
     /** The number of threads to configure the threadpool in the event processor. */
     private int eventProcessorThreadCount = 2;
 
+    /**
+     * Enables the self-tuning adaptive event scheduler. When true, the legacy thread-per-event
+     * RxJava subscription model is replaced by a multiplexed poller + DRR dispatcher + per-lane
+     * Vegas concurrency limiters running on a virtual-thread executor. No additional configuration
+     * is required: weights and per-lane limits are inferred from runtime signals.
+     */
+    private boolean adaptiveSchedulerEnabled = false;
+
     /** Used to enable/disable the indexing of messages within event payloads. */
     private boolean eventMessageIndexingEnabled = true;
 
@@ -323,6 +331,14 @@ public class ConductorProperties {
 
     public void setEventProcessorThreadCount(int eventProcessorThreadCount) {
         this.eventProcessorThreadCount = eventProcessorThreadCount;
+    }
+
+    public boolean isAdaptiveSchedulerEnabled() {
+        return adaptiveSchedulerEnabled;
+    }
+
+    public void setAdaptiveSchedulerEnabled(boolean adaptiveSchedulerEnabled) {
+        this.adaptiveSchedulerEnabled = adaptiveSchedulerEnabled;
     }
 
     public boolean isEventMessageIndexingEnabled() {
