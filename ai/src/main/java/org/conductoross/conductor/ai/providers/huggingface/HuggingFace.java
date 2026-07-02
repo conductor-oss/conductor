@@ -12,24 +12,37 @@
  */
 package org.conductoross.conductor.ai.providers.huggingface;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.http.AIHttpClients;
 import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
+import org.conductoross.conductor.ai.model.ToolSpec;
+import org.conductoross.conductor.ai.providers.openai.OpenAIResponsesChatModel;
+import org.conductoross.conductor.ai.providers.openai.OpenAIResponsesChatOptions;
+import org.conductoross.conductor.ai.providers.openai.api.OpenAIResponsesApi;
+import org.conductoross.conductor.ai.providers.openai.api.OpenAIResponsesApi.Tool;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.image.ImageModel;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 
 import okhttp3.OkHttpClient;
 
+/**
+ * HuggingFace provider, backed by HuggingFace's OpenAI-compatible <b>router</b> endpoint
+ * ({@code https://router.huggingface.co/v1}). This reuses {@link OpenAIResponsesChatModel} (the same
+ * Responses-API model used by OpenAI/Azure), which converts multimodal input — text plus
+ * {@code input_image} content parts — so vision-capable HuggingFace models receive images.
+ *
+ * <p>Auth is a Bearer token (the OpenAI, non-Azure, header). Image support is model-dependent.
+ */
 public class HuggingFace implements AIModel {
 
     public static final String NAME = "huggingface";
     private final HuggingFaceConfiguration config;
-    private final OkHttpClient httpClient;
+    private final OpenAIResponsesChatModel chatModel;
 
     public HuggingFace(HuggingFaceConfiguration config) {
         this(config, AIHttpClients.defaultClient());
@@ -37,7 +50,11 @@ public class HuggingFace implements AIModel {
 
     public HuggingFace(HuggingFaceConfiguration config, OkHttpClient httpClient) {
         this.config = config;
-        this.httpClient = httpClient;
+        // Bearer auth (azureAuth=false via the 3-arg constructor). baseURL is the
+        // router /v1 root; the client appends /responses.
+        OpenAIResponsesApi responsesApi =
+                new OpenAIResponsesApi(httpClient, config.getApiKey(), config.getBaseURL());
+        this.chatModel = new OpenAIResponsesChatModel(responsesApi);
     }
 
     @Override
@@ -52,25 +69,41 @@ public class HuggingFace implements AIModel {
 
     @Override
     public ChatOptions getChatOptions(ChatCompletion input) {
-        // HuggingFace has limited options support through generic interface
-        return ToolCallingChatOptions.builder()
+        List<Tool> tools = convertTools(input);
+        return OpenAIResponsesChatOptions.builder()
                 .model(input.getModel())
                 .temperature(input.getTemperature())
                 .topP(input.getTopP())
+                .frequencyPenalty(input.getFrequencyPenalty())
+                .presencePenalty(input.getPresencePenalty())
                 .maxTokens(input.getMaxTokens())
-                .internalToolExecutionEnabled(false)
+                .stopSequences(input.getStopWords())
+                .jsonOutput(input.isJsonOutput())
+                .responsesApiTools(tools.isEmpty() ? null : tools)
                 .build();
     }
 
     @Override
     public ChatModel getChatModel() {
-        HuggingFaceApi api =
-                new HuggingFaceApi(httpClient, config.getApiKey(), config.getBaseURL());
-        return new HuggingFaceChatModel(api);
+        return this.chatModel;
     }
 
     @Override
     public ImageModel getImageModel() {
         throw new UnsupportedOperationException("Image generation not supported by the model yet");
+    }
+
+    private List<Tool> convertTools(ChatCompletion input) {
+        List<Tool> tools = new ArrayList<>();
+        if (input.getTools() != null) {
+            for (ToolSpec toolSpec : input.getTools()) {
+                tools.add(
+                        Tool.function(
+                                toolSpec.getName(),
+                                toolSpec.getDescription(),
+                                toolSpec.getInputSchema()));
+            }
+        }
+        return tools;
     }
 }
