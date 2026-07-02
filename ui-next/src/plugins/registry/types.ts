@@ -398,26 +398,6 @@ export interface TaskExecutionPanelRegistration {
 // ============================================================================
 // Task Form Validator Types
 // ============================================================================
-
-/**
- * Registration for a plugin task-form validator. During workflow validation the
- * editor runs each validator whose `taskTypes` include a task's type; any
- * returned messages become blocking task errors (so Save is prevented and the
- * messages show in the Error Inspector), alongside the built-in schema errors.
- *
- * Plugins use this to enforce required fields on config they add to a task
- * (e.g. guardrails) without modifying the core validation.
- */
-export interface TaskFormValidatorRegistration {
-  /** Unique identifier for this validator. */
-  id: string;
-  /** Task types this validator applies to (e.g. ["LLM_CHAT_COMPLETE"]). */
-  taskTypes: string[];
-  /** Returns one message per problem found on the task; empty array = valid. */
-  validate: (task: Record<string, any>) => string[];
-}
-
-// ============================================================================
 // Main Plugin Interface
 // ============================================================================
 
@@ -525,13 +505,6 @@ export interface ConductorPlugin {
    * types. Enterprise plugins use this to add task-specific views (e.g. guardrails).
    */
   taskExecutionPanels?: TaskExecutionPanelRegistration[];
-
-  /**
-   * Validators run during workflow validation for matching task types; returned
-   * messages become blocking task errors (prevent Save). Enterprise plugins use
-   * this to enforce required fields on config they add (e.g. guardrails).
-   */
-  taskFormValidators?: TaskFormValidatorRegistration[];
 
   /**
    * Schema edit dialog component for inline schema editing in task forms.
@@ -677,9 +650,6 @@ export interface PluginRegistry {
 
   /** Get task execution panels registered for the given task type. */
   getTaskExecutionPanels(taskType: string): TaskExecutionPanelRegistration[];
-
-  /** Get task-form validators registered for the given task type. */
-  getTaskFormValidators(taskType: string): TaskFormValidatorRegistration[];
 
   /**
    * Get the schema edit dialog component.
