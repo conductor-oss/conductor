@@ -40,8 +40,8 @@ import static org.mockito.Mockito.when;
 /**
  * Verifies that image media on a {@link UserMessage} is forwarded to Cohere's v2 chat API as an
  * {@code image_url} content part. Cohere is vision-capable (e.g. {@code command-a-vision-07-2025});
- * this is the regression guard for the fix where {@code toCohereMessage} took only
- * {@code getText()} (and the request DTO's content was a bare String).
+ * this is the regression guard for the fix where {@code toCohereMessage} took only {@code
+ * getText()} (and the request DTO's content was a bare String).
  *
  * <p>The HTTP layer is stubbed via Mockito; the request built by {@link CohereChatModel} is
  * captured and inspected.
@@ -59,7 +59,9 @@ class CohereChatModelMediaTest {
                         "id_img",
                         new ChatCompletionResponse.ResponseMessage(
                                 "assistant",
-                                List.of(new ChatCompletionResponse.ContentBlock("text", "MELON7391"))),
+                                List.of(
+                                        new ChatCompletionResponse.ContentBlock(
+                                                "text", "MELON7391"))),
                         "COMPLETE",
                         new ChatCompletionResponse.Usage(10, 5));
         when(api.chat(any(ChatCompletionRequest.class))).thenReturn(ResponseEntity.ok(canned));
