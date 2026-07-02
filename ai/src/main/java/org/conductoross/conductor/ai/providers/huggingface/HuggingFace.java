@@ -31,10 +31,10 @@ import org.springframework.ai.image.ImageModel;
 import okhttp3.OkHttpClient;
 
 /**
- * HuggingFace provider, backed by HuggingFace's OpenAI-compatible <b>router</b> endpoint
- * ({@code https://router.huggingface.co/v1}). This reuses {@link OpenAIResponsesChatModel} (the same
- * Responses-API model used by OpenAI/Azure), which converts multimodal input — text plus
- * {@code input_image} content parts — so vision-capable HuggingFace models receive images.
+ * HuggingFace provider, backed by HuggingFace's OpenAI-compatible <b>router</b> endpoint ({@code
+ * https://router.huggingface.co/v1}). This reuses {@link OpenAIResponsesChatModel} (the same
+ * Responses-API model used by OpenAI/Azure), which converts multimodal input — text plus {@code
+ * input_image} content parts — so vision-capable HuggingFace models receive images.
  *
  * <p>Auth is a Bearer token (the OpenAI, non-Azure, header). Image support is model-dependent.
  */
