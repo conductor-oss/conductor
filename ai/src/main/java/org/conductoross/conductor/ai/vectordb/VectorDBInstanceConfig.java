@@ -19,6 +19,7 @@ import java.util.Map;
 import org.conductoross.conductor.ai.vectordb.mongodb.MongoDBConfig;
 import org.conductoross.conductor.ai.vectordb.pinecone.PineconeConfig;
 import org.conductoross.conductor.ai.vectordb.postgres.PostgresConfig;
+import org.conductoross.conductor.ai.vectordb.sqlite.SqliteConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -117,6 +118,9 @@ public class VectorDBInstanceConfig implements VectorDBConfig<VectorDB> {
             case "pinecone":
             case "pineconedb":
                 return createPineconeVectorDB(instance);
+            case "sqlite":
+            case "sqlitevec":
+                return createSqliteVectorDB(instance);
             default:
                 log.error("Unknown vector DB type: {} for instance: {}", type, instance.getName());
                 return null;
@@ -150,6 +154,15 @@ public class VectorDBInstanceConfig implements VectorDBConfig<VectorDB> {
         return config.get(instance.getName());
     }
 
+    private VectorDB createSqliteVectorDB(VectorDBInstance instance) {
+        SqliteConfig config = instance.getSqlite();
+        if (config == null) {
+            log.error("SQLite configuration missing for instance: {}", instance.getName());
+            return null;
+        }
+        return config.get(instance.getName());
+    }
+
     /** Represents a single vector DB instance configuration. */
     public static class VectorDBInstance {
         private String name;
@@ -157,6 +170,7 @@ public class VectorDBInstanceConfig implements VectorDBConfig<VectorDB> {
         private PostgresConfig postgres;
         private MongoDBConfig mongodb;
         private PineconeConfig pinecone;
+        private SqliteConfig sqlite;
 
         public String getName() {
             return name;
@@ -196,6 +210,14 @@ public class VectorDBInstanceConfig implements VectorDBConfig<VectorDB> {
 
         public void setPinecone(PineconeConfig pinecone) {
             this.pinecone = pinecone;
+        }
+
+        public SqliteConfig getSqlite() {
+            return sqlite;
+        }
+
+        public void setSqlite(SqliteConfig sqlite) {
+            this.sqlite = sqlite;
         }
     }
 }
