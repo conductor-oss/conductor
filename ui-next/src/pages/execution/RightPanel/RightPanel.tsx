@@ -135,6 +135,13 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
     });
   };
 
+  // Plugin execution-panel tabs for this task type, minus any whose shouldShow
+  // predicate excludes this specific task. Computed once so the tab list and the
+  // tab content below stay index-aligned.
+  const pluginPanels = pluginRegistry
+    .getTaskExecutionPanels(`${selectedTask?.taskType}`)
+    .filter((panel) => !panel.shouldShow || panel.shouldShow(selectedTask));
+
   // If the summary task is selected just show a small summary
   if (selectedTask?.taskType === "TASK_SUMMARY")
     return <SummaryTask selectedTask={selectedTask} onClose={onClosePanel!} />;
@@ -337,17 +344,15 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
             label="Definition"
             onClick={() => changeCurrentTab(DEFINITION_TAB)}
           />
-          {pluginRegistry
-            .getTaskExecutionPanels(`${selectedTask?.taskType}`)
-            .map((panel, i) => (
-              <Tab
-                key={panel.id}
-                label={panel.label}
-                value={PLUGIN_PANEL_TAB_BASE + i}
-                onClick={() => changeCurrentTab(PLUGIN_PANEL_TAB_BASE + i)}
-                disabled={!selectedTask.status}
-              />
-            ))}
+          {pluginPanels.map((panel, i) => (
+            <Tab
+              key={panel.id}
+              label={panel.label}
+              value={PLUGIN_PANEL_TAB_BASE + i}
+              onClick={() => changeCurrentTab(PLUGIN_PANEL_TAB_BASE + i)}
+              disabled={!selectedTask.status}
+            />
+          ))}
         </Tabs>
         <Paper square elevation={0}>
           {currentTab === SUMMARY_TAB && (
@@ -425,10 +430,8 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
               editorHeight="calc(100vh - 280px)"
             />
           )}
-          {pluginRegistry
-            .getTaskExecutionPanels(`${selectedTask?.taskType}`)
-            .map((panel, i) =>
-              currentTab === PLUGIN_PANEL_TAB_BASE + i ? (
+          {pluginPanels.map((panel, i) =>
+            currentTab === PLUGIN_PANEL_TAB_BASE + i ? (
                 <Box
                   key={panel.id}
                   style={{

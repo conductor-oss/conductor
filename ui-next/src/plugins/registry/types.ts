@@ -393,6 +393,12 @@ export interface TaskExecutionPanelRegistration {
   taskTypes: string[];
   /** Component rendered in the tab; receives the selected task. */
   component: ComponentType<TaskExecutionPanelProps>;
+  /**
+   * Optional predicate to show the tab only for certain task executions (e.g.
+   * only when the task was configured with the relevant feature). When omitted,
+   * the tab shows for every matching task type.
+   */
+  shouldShow?: (taskResult: TaskExecutionPanelProps["taskResult"]) => boolean;
 }
 
 // ============================================================================
