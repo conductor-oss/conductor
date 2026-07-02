@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.conductoross.conductor.core.utils.TaskMapperUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -99,9 +100,10 @@ public class UserDefinedTaskMapper implements TaskMapper {
         userDefinedTask.setStatus(TaskModel.Status.SCHEDULED);
         userDefinedTask.setRetryCount(retryCount);
         userDefinedTask.setCallbackAfterSeconds(workflowTask.getStartDelay());
-        userDefinedTask.setRateLimitPerFrequency(taskDefinition.getRateLimitPerFrequency());
-        userDefinedTask.setRateLimitFrequencyInSeconds(
-                taskDefinition.getRateLimitFrequencyInSeconds());
+
+        // Apply dynamic or default rate limits via common utility
+        TaskMapperUtils.applyRateLimits(
+                workflowModel, workflowTask, taskDefinition, userDefinedTask);
 
         return List.of(userDefinedTask);
     }
