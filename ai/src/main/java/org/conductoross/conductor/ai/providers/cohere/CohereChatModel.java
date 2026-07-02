@@ -12,6 +12,8 @@
  */
 package org.conductoross.conductor.ai.providers.cohere;
 
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,8 +21,11 @@ import org.conductoross.conductor.ai.providers.cohere.api.CohereApi;
 import org.conductoross.conductor.ai.providers.cohere.api.CohereApi.ChatCompletionRequest;
 import org.conductoross.conductor.ai.providers.cohere.api.CohereApi.ChatCompletionResponse;
 import org.conductoross.conductor.ai.providers.cohere.api.CohereApi.ChatMessage;
+import org.conductoross.conductor.ai.providers.cohere.api.CohereApi.ContentPart;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.Usage;
@@ -150,6 +155,29 @@ public class CohereChatModel implements ChatModel {
                     case SYSTEM -> "system";
                     case TOOL -> "tool";
                 };
+        if (message instanceof UserMessage userMsg
+                && userMsg.getMedia() != null
+                && !userMsg.getMedia().isEmpty()) {
+            // Multi-modal: text + image_url content parts. Without this the image
+            // is silently dropped and the model never sees it.
+            List<ContentPart> parts = new ArrayList<>();
+            if (userMsg.getText() != null && !userMsg.getText().isBlank()) {
+                parts.add(ContentPart.text(userMsg.getText()));
+            }
+            for (Media m : userMsg.getMedia()) {
+                // Media can be a URL or raw bytes; conductor-ai usually
+                // pre-downloads to bytes, which we send as a data URI.
+                String url =
+                        m.getData() instanceof byte[] bytes
+                                ? "data:"
+                                        + m.getMimeType()
+                                        + ";base64,"
+                                        + Base64.getEncoder().encodeToString(bytes)
+                                : m.getData().toString();
+                parts.add(ContentPart.imageUrl(url));
+            }
+            return new ChatMessage(role, parts);
+        }
         return new ChatMessage(role, message.getText());
     }
 
