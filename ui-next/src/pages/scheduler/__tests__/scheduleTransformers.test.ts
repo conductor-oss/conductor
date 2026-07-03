@@ -26,6 +26,8 @@ const baseScheduleState: ScheduleType = {
   scheduleEndTime: "",
   priority: "5",
   zoneId: "UTC",
+  cronSchedules: [],
+  cronMode: "single",
 };
 
 describe("JSONParse", () => {
@@ -237,5 +239,95 @@ describe("codeToFormData", () => {
     const result = codeToFormData("{}", baseScheduleState);
     expect(result.scheduleStartTime).toBe("");
     expect(result.scheduleEndTime).toBe("");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Multi-cron round-tripping
+// ---------------------------------------------------------------------------
+
+describe("formToCodeData (multi-cron)", () => {
+  const multiCronState: ScheduleType = {
+    ...baseScheduleState,
+    cronMode: "multi",
+    cronSchedules: [
+      { cronExpression: "0 0 8 * * ?", zoneId: "Europe/London" },
+      { cronExpression: "0 0 20 * * ?", zoneId: "Asia/Tokyo" },
+    ],
+  };
+
+  it("emits cronSchedules and omits the single cronExpression", () => {
+    const result = formToCodeData(multiCronState, null);
+
+    expect(result).not.toBeNull();
+    expect(result!.cronSchedules).toEqual([
+      { cronExpression: "0 0 8 * * ?", zoneId: "Europe/London" },
+      { cronExpression: "0 0 20 * * ?", zoneId: "Asia/Tokyo" },
+    ]);
+    expect(result!.cronExpression).toBeUndefined();
+    expect(result!.zoneId).toBeUndefined();
+  });
+
+  it("defaults a missing entry zoneId to UTC", () => {
+    const result = formToCodeData(
+      {
+        ...multiCronState,
+        cronSchedules: [{ cronExpression: "0 0 8 * * ?", zoneId: "" }],
+      },
+      null,
+    );
+    expect(result!.cronSchedules).toEqual([
+      { cronExpression: "0 0 8 * * ?", zoneId: "UTC" },
+    ]);
+  });
+});
+
+describe("codeToFormData (multi-cron)", () => {
+  const multiCronJson = JSON.stringify({
+    name: "multi-schedule",
+    cronSchedules: [
+      { cronExpression: "0 0 8 * * ?", zoneId: "Europe/London" },
+      { cronExpression: "0 0 20 * * ?" },
+    ],
+    startWorkflowRequest: { name: "wf", version: "1", input: {} },
+  });
+
+  it("sets cronMode to multi and normalizes cronSchedules", () => {
+    const result = codeToFormData(multiCronJson, baseScheduleState);
+
+    expect(result.cronMode).toBe("multi");
+    expect(result.cronSchedules).toEqual([
+      { cronExpression: "0 0 8 * * ?", zoneId: "Europe/London" },
+      { cronExpression: "0 0 20 * * ?", zoneId: "UTC" },
+    ]);
+  });
+
+  it("sets cronMode to single and empty cronSchedules when none are present", () => {
+    const result = codeToFormData(
+      JSON.stringify({
+        name: "single-schedule",
+        cronExpression: "0 0 12 * * ?",
+        startWorkflowRequest: { name: "wf", version: "1", input: {} },
+      }),
+      baseScheduleState,
+    );
+
+    expect(result.cronMode).toBe("single");
+    expect(result.cronSchedules).toEqual([]);
+    expect(result.cronExpression).toBe("0 0 12 * * ?");
+  });
+
+  it("treats an empty cronSchedules array as single mode", () => {
+    const result = codeToFormData(
+      JSON.stringify({
+        name: "empty-multi",
+        cronSchedules: [],
+        startWorkflowRequest: { name: "wf", version: "1", input: {} },
+      }),
+      baseScheduleState,
+    );
+
+    expect(result.cronMode).toBe("single");
+    expect(result.cronSchedules).toEqual([]);
   });
 });
