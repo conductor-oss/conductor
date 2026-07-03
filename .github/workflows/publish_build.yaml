@@ -1,4 +1,4 @@
-name: Publish Conductor OSS Server Lite
+name: Publish Conductor OSS Server
 on:
   release:
     types:
@@ -15,7 +15,7 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    name: Build and Publish the server-lite
+    name: Build and Publish the server
     permissions:
       contents: write
     steps:
@@ -44,30 +44,6 @@ jobs:
           echo "version=$PUBLISH_VERSION" >> $GITHUB_OUTPUT
           echo "RELEASE_VERSION=$PUBLISH_VERSION" >> $GITHUB_ENV
           echo "Publishing version: $PUBLISH_VERSION"
-      - name: Create Standalone server
-        run: |
-          cd server-lite
-          # ./build_ui.sh
-          ../gradlew clean build -x test -Pversion=${{ steps.version.outputs.version }}
-      - name: Prepare JAR for distribution
-        run: |
-          # Find the standalone JAR and copy with standardized names
-          JAR_FILE=$(find server-lite/build/libs -name "*standalone.jar" | head -1)
-          cp "$JAR_FILE" "server-lite/build/libs/conductor-lite-${{ steps.version.outputs.version }}.jar"
-          # Create "latest" version for stable download link - only for Release
-          if [[ "${{ github.event_name }}" == "release" && "${{ github.event.release.prerelease }}" == "false" ]]; then
-             cp "$JAR_FILE" "server-lite/build/libs/conductor-server-lite-latest.jar"
-          fi
-
-      - name: Upload JARs to GitHub Release
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: ${{ github.event.inputs.version || github.ref_name }}
-          files: |
-            server-lite/build/libs/conductor-lite-*.jar
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Build Server JAR
         run: |
           ./gradlew :conductor-server:build -x test -x spotlessCheck -x shadowJar -x :conductor-os-persistence-v3:build \
@@ -78,14 +54,16 @@ jobs:
         with:
           node-version: 'lts/*'
 
-      - name: Build UI
+      - name: Build ui-next and embed into server static resources
         run: |
-          cd ui
-          corepack enable && corepack prepare yarn@stable --activate
-          export REACT_APP_MONACO_EDITOR_USING_CDN=false
-          export REACT_APP_ENABLE_ERRORS_INSPECTOR=true
-          yarn config set network-timeout 600000 -g
-          yarn install && cp -r node_modules/monaco-editor public/ && yarn build
+          corepack enable
+          cd ui-next
+          pnpm install
+          NODE_OPTIONS=--max-old-space-size=4096 pnpm build
+          cd ..
+          mkdir -p server/src/main/resources/static
+          rm -rf server/src/main/resources/static/*
+          cp -r ui-next/dist/. server/src/main/resources/static/
 
       - name: Stage artifacts for Docker build
         run: |

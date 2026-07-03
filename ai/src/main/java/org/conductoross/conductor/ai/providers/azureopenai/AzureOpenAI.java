@@ -18,9 +18,9 @@ import java.util.List;
 
 import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.http.AIHttpClients;
-import org.conductoross.conductor.ai.models.ChatCompletion;
-import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
-import org.conductoross.conductor.ai.models.ToolSpec;
+import org.conductoross.conductor.ai.model.ChatCompletion;
+import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
+import org.conductoross.conductor.ai.model.ToolSpec;
 import org.conductoross.conductor.ai.providers.openai.OpenAIHttpImageModel;
 import org.conductoross.conductor.ai.providers.openai.OpenAIResponsesChatModel;
 import org.conductoross.conductor.ai.providers.openai.OpenAIResponsesChatOptions;
