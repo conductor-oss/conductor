@@ -597,14 +597,14 @@ conductor.ai.perplexity.base-url=https://api.perplexity.ai
 [LiteLLM](https://docs.litellm.ai/) is an AI gateway/proxy that provides a unified OpenAI-compatible interface to 100+ LLM providers including OpenAI, Anthropic, Azure, AWS Bedrock, Google Vertex AI, Mistral, Cohere, and more. Run the LiteLLM proxy and point Conductor at it to access any supported model through a single configuration.
 
 ```properties
+conductor.ai.litellm.base-url=${LITELLM_BASE_URL}
 conductor.ai.litellm.api-key=${LITELLM_API_KEY}
-conductor.ai.litellm.base-url=http://localhost:4000
 ```
 
 | Property | Required | Default | Description |
 |----------|:--------:|---------|-------------|
-| `api-key` | ✅ | - | LiteLLM proxy API key (master key or virtual key) |
-| `base-url` | ❌ | `http://localhost:4000` | LiteLLM proxy URL |
+| `base-url` | ✅ | - | LiteLLM proxy URL (e.g., `http://litellm-proxy:4000`, `https://my-gateway.example.com`) |
+| `api-key` | ❌ | - | LiteLLM proxy API key (master key or virtual key). Required only if your proxy has auth enabled |
 
 **Usage:**
 
@@ -617,6 +617,8 @@ Set `llmProvider` to `litellm` in your workflow tasks and use any model supporte
   "messages": [...]
 }
 ```
+
+> **Note**: Set `drop_params: true` in your LiteLLM proxy config (`litellm_settings`) so provider-unsupported parameters (e.g. `frequency_penalty` for Anthropic) are silently dropped instead of causing 400 errors.
 
 #### HuggingFace
 
@@ -672,8 +674,8 @@ The AI module reads from standard environment variables automatically. Set the e
 | Grok / xAI | `XAI_API_KEY` | API key from [x.ai](https://x.ai/) |
 | Perplexity | `PERPLEXITY_API_KEY` | API key from [perplexity.ai](https://www.perplexity.ai/) |
 | HuggingFace | `HUGGINGFACE_API_KEY` | Token from [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) |
-| LiteLLM | `LITELLM_API_KEY` | LiteLLM proxy API key |
-| LiteLLM | `LITELLM_BASE_URL` | LiteLLM proxy URL (default: `http://localhost:4000`) |
+| LiteLLM | `LITELLM_BASE_URL` | LiteLLM proxy URL (required - e.g., `http://litellm-proxy:4000`) |
+| LiteLLM | `LITELLM_API_KEY` | LiteLLM proxy API key (optional - only if proxy has auth enabled) |
 | Stability AI | `STABILITY_API_KEY` | API key from [platform.stability.ai](https://platform.stability.ai/) |
 | Azure OpenAI | `AZURE_OPENAI_API_KEY` | API key from Azure portal |
 | Azure OpenAI | `AZURE_OPENAI_ENDPOINT` | Endpoint URL (e.g., `https://your-resource.openai.azure.com`) |
