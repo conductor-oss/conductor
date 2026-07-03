@@ -4380,7 +4380,7 @@ public class WorkflowRerunTests {
                 findActiveTask(parentId, COMPLETED_SUB_REF, "missing").getSubWorkflowId();
 
         completeTask(
-                findActiveTask(completedChildId, COMPLETED_INNER, "missing"),
+                awaitActiveTask(completedChildId, COMPLETED_INNER, "missing"),
                 TaskResult.Status.COMPLETED);
         await().atMost(15, TimeUnit.SECONDS)
                 .untilAsserted(
@@ -4392,7 +4392,7 @@ public class WorkflowRerunTests {
                                                 COMPLETED_SUB_REF)));
 
         completeTask(
-                findActiveTask(failingChildId, FAILING_INNER, "missing"),
+                awaitActiveTask(failingChildId, FAILING_INNER, "missing"),
                 TaskResult.Status.FAILED_WITH_TERMINAL_ERROR);
 
         await().atMost(15, TimeUnit.SECONDS)
@@ -4446,23 +4446,13 @@ public class WorkflowRerunTests {
         // asynchronously (the load-bearing async decide). The inner task is irreducibly async,
         // so allow the full 30s window other awaits in this file use — under CI load the
         // WorkflowSweeper can take longer than 15s to schedule it.
-        await().atMost(30, TimeUnit.SECONDS)
-                .untilAsserted(
-                        () -> {
-                            findActiveTask(
-                                    activeFailingChildId,
-                                    FAILING_INNER,
-                                    "failing inner task not active");
-                            findActiveTask(
-                                    activeCancelledChildId,
-                                    CANCELLED_INNER,
-                                    "cancelled inner task not active");
-                        });
         completeTask(
-                findActiveTask(activeFailingChildId, FAILING_INNER, "missing"),
+                awaitActiveTask(
+                        activeFailingChildId, FAILING_INNER, "failing inner task not active"),
                 TaskResult.Status.COMPLETED);
         completeTask(
-                findActiveTask(activeCancelledChildId, CANCELLED_INNER, "missing"),
+                awaitActiveTask(
+                        activeCancelledChildId, CANCELLED_INNER, "cancelled inner task not active"),
                 TaskResult.Status.COMPLETED);
         awaitWorkflowStatus(
                 parentId, Workflow.WorkflowStatus.COMPLETED, 20, "Parent should reach COMPLETED");
@@ -4760,6 +4750,20 @@ public class WorkflowRerunTests {
     /** Convenience: fetch the workflow then find the active task. */
     private Task findActiveTask(String workflowId, String refName, String errorMessage) {
         return findActiveTask(workflowClient.getWorkflow(workflowId, true), refName, errorMessage);
+    }
+
+    /**
+     * Await a non-terminal task with {@code refName} becoming active in the given workflow and
+     * return it. A child sub-workflow's first decide (which schedules its inner task) runs
+     * asynchronously after the parent SUB_WORKFLOW task is assigned a subWorkflowId, so a direct
+     * {@link #findActiveTask} on a freshly created child can throw before the inner task exists.
+     * Route every child-inner lookup through here; 30s matches the CI-load window other awaits use.
+     */
+    private Task awaitActiveTask(String workflowId, String refName, String errorMessage) {
+        Task[] holder = new Task[1];
+        await().atMost(30, TimeUnit.SECONDS)
+                .untilAsserted(() -> holder[0] = findActiveTask(workflowId, refName, errorMessage));
+        return holder[0];
     }
 
     /** Status of a task in the given workflow by ref name (terminal or otherwise). */
