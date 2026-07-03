@@ -55,6 +55,17 @@ public class WorkflowRetryTests {
     static TaskClient taskClient;
     static MetadataClient metadataClient;
 
+    /**
+     * Uniform ceiling for every "await async workflow/task state" poll in this suite. All such
+     * awaits are positive "eventually reaches X" conditions, so a generous ceiling is free on
+     * passing runs (awaitility returns the instant the condition holds) and only adds headroom when
+     * the WorkflowSweeper-paced child→parent completion cascade is slow under CI load. The ported
+     * tests originally used a grab-bag of 3s–33s literals; the tight ones flaked under load (e.g.
+     * child→parent FAILED/COMPLETED propagation goes through the async DECIDER_QUEUE, not a
+     * synchronous path). Route every state-poll timeout through this one knob.
+     */
+    private static final int WF_AWAIT_SECS = 60;
+
     @BeforeAll
     public static void init() {
         workflowClient = ApiUtil.WORKFLOW_CLIENT;
@@ -78,7 +89,7 @@ public class WorkflowRetryTests {
         startWorkflowRequest.setVersion(1);
 
         String workflowId = workflowClient.startWorkflow(startWorkflowRequest);
-        await().atMost(4, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .pollInterval(500, TimeUnit.MILLISECONDS)
                 .untilAsserted(
                         () -> {
@@ -87,7 +98,7 @@ public class WorkflowRetryTests {
                         });
         Workflow workflow = workflowClient.getWorkflow(workflowId, true);
         // Fail the simple task
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
@@ -104,7 +115,7 @@ public class WorkflowRetryTests {
         taskClient.updateTask(taskResult);
 
         // Wait for workflow to get failed
-        await().atMost(30, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
@@ -117,7 +128,7 @@ public class WorkflowRetryTests {
         // Retry the workflow
         workflowClient.retryLastFailedTask(workflowId);
         // Check the workflow status and few other parameters
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
@@ -139,7 +150,7 @@ public class WorkflowRetryTests {
         taskClient.updateTask(taskResult);
 
         // Wait for workflow to get completed
-        await().atMost(30, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .pollInterval(10, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
@@ -183,7 +194,7 @@ public class WorkflowRetryTests {
         taskClient.updateTask(taskResult);
 
         // Wait for parent workflow to get failed
-        await().atMost(3, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
@@ -196,7 +207,7 @@ public class WorkflowRetryTests {
         // Retry the sub workflow.
         workflowClient.retryLastFailedTask(subworkflowId);
         // Check the workflow status and few other parameters
-        await().atMost(3, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             Workflow workflow1 = workflowClient.getWorkflow(subworkflowId, true);
@@ -219,7 +230,7 @@ public class WorkflowRetryTests {
         taskResult.setStatus(TaskResult.Status.COMPLETED);
         taskClient.updateTask(taskResult);
 
-        await().atMost(33, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             Workflow workflow1 = workflowClient.getWorkflow(workflowId, false);
@@ -242,7 +253,7 @@ public class WorkflowRetryTests {
         taskClient.updateTask(taskResult);
 
         // Wait for parent workflow to get failed
-        await().atMost(3, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
@@ -256,7 +267,7 @@ public class WorkflowRetryTests {
         workflowClient.retryLastFailedTask(newWorkflowId);
 
         // Wait for parent workflow to get failed
-        await().atMost(3, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
@@ -274,7 +285,7 @@ public class WorkflowRetryTests {
         taskResult.setStatus(TaskResult.Status.COMPLETED);
         taskClient.updateTask(taskResult);
 
-        await().atMost(3, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
@@ -317,7 +328,7 @@ public class WorkflowRetryTests {
 
         // Wait for the child sub-workflow to be scheduled and get its ID
         String childWorkflowId =
-                await().atMost(10, TimeUnit.SECONDS)
+                await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                         .pollInterval(1, TimeUnit.SECONDS)
                         .until(
                                 () -> {
@@ -336,7 +347,7 @@ public class WorkflowRetryTests {
 
         // Wait for the child workflow to be available
         Workflow childWorkflow =
-                await().atMost(10, TimeUnit.SECONDS)
+                await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                         .pollInterval(1, TimeUnit.SECONDS)
                         .until(
                                 () -> {
@@ -357,7 +368,7 @@ public class WorkflowRetryTests {
         taskClient.updateTask(taskResult);
 
         // Wait for parent to complete (since child is optional)
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
@@ -371,7 +382,7 @@ public class WorkflowRetryTests {
         workflowClient.retryLastFailedTask(childWorkflowId);
 
         // Check child is running, parent remains completed
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             Workflow child = workflowClient.getWorkflow(childWorkflowId, true);
@@ -413,7 +424,7 @@ public class WorkflowRetryTests {
 
     private String awaitSubWorkflowId(String workflowId) {
         final String[] subWorkflowId = new String[1];
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .pollInterval(100, TimeUnit.MILLISECONDS)
                 .untilAsserted(
                         () -> {
@@ -429,7 +440,7 @@ public class WorkflowRetryTests {
 
     private String awaitTaskId(String workflowId, int taskIndex) {
         final String[] taskId = new String[1];
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .pollInterval(100, TimeUnit.MILLISECONDS)
                 .untilAsserted(
                         () -> {
@@ -502,7 +513,7 @@ public class WorkflowRetryTests {
         req.setVersion(1);
         String parentId = workflowClient.startWorkflow(req);
 
-        await().atMost(15, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             Workflow wf = workflowClient.getWorkflow(parentId, true);
@@ -518,7 +529,7 @@ public class WorkflowRetryTests {
         String originalCancelledChildId =
                 findTaskByRef(parentSnapshot, cancelledBranchRef).getSubWorkflowId();
 
-        await().atMost(15, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () ->
                                 assertNotNull(
@@ -529,7 +540,7 @@ public class WorkflowRetryTests {
                 findActiveTaskByRef(failingChildId, taskARef).getTaskId(),
                 TaskResult.Status.COMPLETED);
 
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () ->
                                 assertEquals(
@@ -540,7 +551,7 @@ public class WorkflowRetryTests {
         String originalATaskId = originalA.getTaskId();
         long originalAEndTime = originalA.getEndTime();
 
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () ->
                                 assertNotNull(
@@ -551,7 +562,7 @@ public class WorkflowRetryTests {
                 findActiveTaskByRef(failingChildId, taskBRef).getTaskId(),
                 failStatus.status);
 
-        await().atMost(20, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             Workflow parent = workflowClient.getWorkflow(parentId, true);
@@ -571,7 +582,7 @@ public class WorkflowRetryTests {
 
         workflowClient.retryLastFailedTask(parentId, true);
 
-        await().atMost(20, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () ->
                                 assertEquals(
@@ -579,7 +590,7 @@ public class WorkflowRetryTests {
                                         workflowClient.getWorkflow(parentId, false).getStatus(),
                                         "parent should be RUNNING after retry-with-resume"));
 
-        await().atMost(20, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             Workflow parent = workflowClient.getWorkflow(parentId, true);
@@ -643,7 +654,7 @@ public class WorkflowRetryTests {
                 findActiveTaskByRef(failingChildId, taskBRef).getTaskId(),
                 TaskResult.Status.COMPLETED);
 
-        await().atMost(15, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () ->
                                 assertNotNull(
@@ -654,7 +665,7 @@ public class WorkflowRetryTests {
                 findActiveTaskByRef(failingChildId, taskCRef).getTaskId(),
                 TaskResult.Status.COMPLETED);
 
-        await().atMost(15, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () ->
                                 assertNotNull(
@@ -665,7 +676,7 @@ public class WorkflowRetryTests {
                 findActiveTaskByRef(originalCancelledChildId, taskDRef).getTaskId(),
                 TaskResult.Status.COMPLETED);
 
-        await().atMost(25, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () ->
                                 assertEquals(
@@ -807,7 +818,7 @@ public class WorkflowRetryTests {
 
         String[] iter1A = new String[1];
         String[] iter1B = new String[1];
-        await().atMost(20, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             iter1A[0] = subWorkflowIdAtIteration(parentId, "sub_workflow_ref_1", 1);
@@ -823,13 +834,13 @@ public class WorkflowRetryTests {
 
         String[] iter2A = new String[1];
         String[] iter2B = new String[1];
-        await().atMost(20, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             iter2A[0] = subWorkflowIdAtIteration(parentId, "sub_workflow_ref_1", 2);
                             iter2B[0] = subWorkflowIdAtIteration(parentId, "sub_workflow_ref", 2);
                         });
-        await().atMost(15, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () ->
                                 assertEquals(
@@ -846,7 +857,7 @@ public class WorkflowRetryTests {
         assertIter1Unchanged(iter1A[0], snapA);
         assertIter1Unchanged(iter1B[0], snapB);
 
-        await().atMost(20, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             Task inlineAfter = onlyTaskByRef(iter2B[0], "inline_ref");
@@ -955,7 +966,7 @@ public class WorkflowRetryTests {
     }
 
     private void completeActiveSimpleRef(String childId, TaskResult.Status status) {
-        await().atMost(15, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () ->
                                 assertNotNull(
@@ -978,7 +989,7 @@ public class WorkflowRetryTests {
     }
 
     private void awaitWorkflowStatus(String workflowId, Workflow.WorkflowStatus expected) {
-        await().atMost(30, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () ->
                                 assertEquals(
@@ -1064,7 +1075,7 @@ public class WorkflowRetryTests {
 
         String[] newFailingChildHolder = new String[1];
         String[] newCancelledChildHolder = new String[1];
-        await().atMost(20, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             assertEquals(
@@ -1127,7 +1138,7 @@ public class WorkflowRetryTests {
         workflowClient.retryLastFailedTask(c.parentId, true);
         awaitWorkflowStatus(c.parentId, Workflow.WorkflowStatus.RUNNING);
 
-        await().atMost(20, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             assertEquals(
@@ -1248,7 +1259,7 @@ public class WorkflowRetryTests {
         String[] cA = new String[1];
         String[] cB = new String[1];
         String[] cC = new String[1];
-        await().atMost(20, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             cA[0] = subWorkflowIdAtIteration(parentId, "sub_workflow_ref_1", 1);
@@ -1404,7 +1415,7 @@ public class WorkflowRetryTests {
         workflowClient.retryLastFailedTask(c.parentId, true);
         awaitWorkflowStatus(c.parentId, Workflow.WorkflowStatus.RUNNING);
 
-        await().atMost(20, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             assertEquals(
@@ -1471,7 +1482,7 @@ public class WorkflowRetryTests {
 
         String[] newDynFailingChildHolder = new String[1];
         String[] newDynCancelledChildHolder = new String[1];
-        await().atMost(20, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             assertEquals(
@@ -1569,7 +1580,7 @@ public class WorkflowRetryTests {
         req.setVersion(1);
         String parentId = workflowClient.startWorkflow(req);
 
-        await().atMost(15, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () ->
                                 assertNotNull(
@@ -1580,7 +1591,7 @@ public class WorkflowRetryTests {
         String[] cF = new String[1];
         String[] cCa = new String[1];
         String[] cCo = new String[1];
-        await().atMost(20, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             Workflow parent = workflowClient.getWorkflow(parentId, true);
@@ -1789,7 +1800,7 @@ public class WorkflowRetryTests {
         workflowClient.retryWorkflow(List.of(c.childFailing));
         awaitWorkflowStatus(c.parentId, Workflow.WorkflowStatus.RUNNING);
 
-        await().atMost(20, TimeUnit.SECONDS)
+        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             assertEquals(
@@ -1880,7 +1891,7 @@ public class WorkflowRetryTests {
         try {
             String workflowId = start(parentWfName);
 
-            await().atMost(15, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Workflow wf = workflowClient.getWorkflow(workflowId, true);
@@ -1916,7 +1927,7 @@ public class WorkflowRetryTests {
                             "failing inner task not active"),
                     TaskResult.Status.FAILED);
 
-            await().atMost(15, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Workflow wf = workflowClient.getWorkflow(workflowId, true);
@@ -1939,7 +1950,7 @@ public class WorkflowRetryTests {
                     Workflow.WorkflowStatus.RUNNING,
                     "Parent should be RUNNING after retry");
 
-            await().atMost(15, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Task cancelledSiblingNow =
@@ -1974,7 +1985,7 @@ public class WorkflowRetryTests {
             String resumedChildId =
                     findActiveTask(workflowId, cancelledSubRef, "active cancelled_sub_ref missing")
                             .getSubWorkflowId();
-            await().atMost(15, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () ->
                                     findActiveTask(
@@ -1986,7 +1997,7 @@ public class WorkflowRetryTests {
                             resumedChildId, taskInCancelledSubRef, "resumed inner task missing"),
                     TaskResult.Status.COMPLETED);
 
-            await().atMost(15, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () ->
                                     findActiveTask(
@@ -2072,7 +2083,7 @@ public class WorkflowRetryTests {
             String[] innerCancelledIdHolder = new String[1];
             String[] outerCancelledIdHolder = new String[1];
 
-            await().atMost(20, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Workflow top = workflowClient.getWorkflow(topId, true);
@@ -2156,7 +2167,7 @@ public class WorkflowRetryTests {
                             innerFailingId, innerFailingTaskRef, "inner failing task not active"),
                     TaskResult.Status.FAILED);
 
-            await().atMost(20, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Workflow top = workflowClient.getWorkflow(topId, true);
@@ -2196,7 +2207,7 @@ public class WorkflowRetryTests {
                     20,
                     "Mid should resume to RUNNING after retry");
 
-            await().atMost(20, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Task active =
@@ -2223,7 +2234,7 @@ public class WorkflowRetryTests {
                                         "mid.inner_failing_ref reasonForIncompletion must be cleared after retry walk-up");
                             });
 
-            await().atMost(20, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Task active =
@@ -2250,7 +2261,7 @@ public class WorkflowRetryTests {
                                         "top.mid_ref reasonForIncompletion must be cleared after retry walk-up");
                             });
 
-            await().atMost(15, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () ->
                                     findActiveTask(
@@ -2264,7 +2275,7 @@ public class WorkflowRetryTests {
                             "inner_cancelled inner task missing"),
                     TaskResult.Status.COMPLETED);
 
-            await().atMost(15, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () ->
                                     findActiveTask(
@@ -2278,7 +2289,7 @@ public class WorkflowRetryTests {
                             "outer_cancelled inner task missing"),
                     TaskResult.Status.COMPLETED);
 
-            await().atMost(15, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () ->
                                     findActiveTask(
@@ -2380,7 +2391,7 @@ public class WorkflowRetryTests {
             String[] failingLeafIdHolder = new String[1];
             String[] topCancelledIdHolder = new String[1];
 
-            await().atMost(30, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Workflow top = workflowClient.getWorkflow(topId, true);
@@ -2469,7 +2480,7 @@ public class WorkflowRetryTests {
                             .orElseThrow();
             completeTask(leafInner, TaskResult.Status.FAILED);
 
-            await().atMost(20, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Workflow top = workflowClient.getWorkflow(topId, true);
@@ -2526,7 +2537,7 @@ public class WorkflowRetryTests {
                     30,
                     "Grandchild must resume to RUNNING");
 
-            await().atMost(20, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 findActiveTask(
@@ -2542,7 +2553,7 @@ public class WorkflowRetryTests {
                                         "grandchild.failing_leaf_ref reasonForIncompletion must be cleared after retry walk-up");
                             });
 
-            await().atMost(20, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 findActiveTask(
@@ -2558,7 +2569,7 @@ public class WorkflowRetryTests {
                                         "mid.grandchild_ref reasonForIncompletion must be cleared after retry walk-up");
                             });
 
-            await().atMost(20, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Task topCancelledNow =
@@ -2598,7 +2609,7 @@ public class WorkflowRetryTests {
                             "mid_cancelled_simple active task missing"),
                     TaskResult.Status.COMPLETED);
 
-            await().atMost(15, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () ->
                                     findActiveTask(
@@ -2612,7 +2623,7 @@ public class WorkflowRetryTests {
                             "top-cancelled inner task missing"),
                     TaskResult.Status.COMPLETED);
 
-            await().atMost(15, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () ->
                                     findActiveTask(
@@ -2674,7 +2685,7 @@ public class WorkflowRetryTests {
         try {
             String workflowId = start(parentWfName);
 
-            await().atMost(15, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Task cancelledSub =
@@ -2705,7 +2716,7 @@ public class WorkflowRetryTests {
                             "taskA must be active in cancelled child"),
                     TaskResult.Status.COMPLETED);
 
-            await().atMost(10, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Workflow ch =
@@ -2737,7 +2748,7 @@ public class WorkflowRetryTests {
                             "failing inner task not active"),
                     TaskResult.Status.FAILED);
 
-            await().atMost(15, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Workflow wf = workflowClient.getWorkflow(workflowId, true);
@@ -2759,7 +2770,7 @@ public class WorkflowRetryTests {
 
             workflowClient.retryWorkflow(List.of(failingSubWorkflowId));
 
-            await().atMost(20, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Task siblingTaskNow =
@@ -2836,7 +2847,7 @@ public class WorkflowRetryTests {
         try {
             String workflowId = start(parentWfName);
 
-            await().atMost(15, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Task sub =
@@ -2874,7 +2885,7 @@ public class WorkflowRetryTests {
                     Workflow.WorkflowStatus.RUNNING,
                     "Parent must be RUNNING after retry");
 
-            await().atMost(15, TimeUnit.SECONDS)
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Task retried =
@@ -3028,7 +3039,7 @@ public class WorkflowRetryTests {
 
     private void awaitWorkflowStatus(
             String workflowId, Workflow.WorkflowStatus expected, String message) {
-        awaitWorkflowStatus(workflowId, expected, 15, message);
+        awaitWorkflowStatus(workflowId, expected, WF_AWAIT_SECS, message);
     }
 
     private void awaitWorkflowStatus(
