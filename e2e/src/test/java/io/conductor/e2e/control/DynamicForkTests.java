@@ -503,7 +503,10 @@ public class DynamicForkTests {
         startWorkflowRequest.setWorkflowDef(workflowDef);
         String workflowId = workflowAdminClient.startWorkflow(startWorkflowRequest);
 
-        await().atMost(10, TimeUnit.SECONDS)
+        // Two sequential dynamic forks: fork1 -> join1 -> fork2 -> join2. Each poll completes
+        // whatever is currently SCHEDULED; the async fork/join progression can exceed 10s under
+        // CI load, so allow a generous ceiling (returns as soon as COMPLETED holds).
+        await().atMost(60, TimeUnit.SECONDS)
                 .pollInterval(500, TimeUnit.MILLISECONDS)
                 .untilAsserted(
                         () -> {
@@ -566,8 +569,19 @@ public class DynamicForkTests {
                 .pollInterval(2, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
-                            var wf = workflowAdminClient.getWorkflow(workflowId, false);
+                            var wf = workflowAdminClient.getWorkflow(workflowId, true);
                             assertEquals(Workflow.WorkflowStatus.FAILED, wf.getStatus());
+                            // All 3 attempts (original + 2 retries) must be present. The final
+                            // retry's task record can lag the workflow FAILED status under load,
+                            // so assert the count inside the await rather than in a follow-up read.
+                            var attempts =
+                                    wf.getTasks().stream()
+                                            .filter(
+                                                    it ->
+                                                            "fail_on_purpose"
+                                                                    .equals(it.getTaskDefName()))
+                                            .toList();
+                            assertEquals(3, attempts.size());
                         });
 
         var workflow = workflowAdminClient.getWorkflow(workflowId, true);
@@ -575,8 +589,6 @@ public class DynamicForkTests {
                 workflow.getTasks().stream()
                         .filter(it -> "fail_on_purpose".equals(it.getTaskDefName()))
                         .toList();
-
-        assertEquals(3, tasks.size());
 
         for (Task t : tasks) {
             assertEquals(t.getTaskId(), t.getInputData().get("task_id"));

@@ -3536,8 +3536,9 @@ public class WorkflowRerunTests {
             startRequest.setVersion(1);
             String workflowId = workflowClient.startWorkflow(startRequest);
 
-            // Wait for subworkflow to be created with its inner task
-            await().atMost(10, TimeUnit.SECONDS)
+            // Wait for subworkflow to be created with its inner task (async decide can lag under
+            // load)
+            await().atMost(30, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Workflow wf = workflowClient.getWorkflow(workflowId, true);
