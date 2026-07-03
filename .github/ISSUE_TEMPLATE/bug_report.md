@@ -7,6 +7,16 @@ assignees: ''
 
 ---
 
+> [!WARNING]
+> **Make sure you're in the right repository.** This is `conductor-oss/conductor` — an open-source Java workflow orchestration engine (server JAR, REST API, task workers).
+>
+> **If your issue involves any of the following, you are in the wrong repo:**
+> - OpenCode, ACP providers, or AI model selection in a desktop UI
+> - Bundled binaries under `~/Library/Application Support/com.conductor.app/`
+> - Workspaces, branches, or coding agent tasks in a desktop app
+> - `settings.toml` configuration for a desktop app
+> - Errors like "Internal error: OpenCode service failure"
+
 **Describe the bug**
 A clear and concise description of what the bug is.
 
