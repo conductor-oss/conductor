@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.model.SignalResponse;
 import org.conductoross.conductor.model.WorkflowSignalReturnStrategy;
+import org.conductoross.conductor.model.WorkflowStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -206,6 +207,18 @@ public class WorkflowResource {
             @RequestParam(value = "includeTasks", defaultValue = "true", required = false)
                     boolean includeTasks) {
         return workflowService.getExecutionStatus(workflowId, includeTasks);
+    }
+
+    @GetMapping("/{workflowId}/status")
+    @Operation(summary = "Gets the workflow status summary by workflow (execution) id")
+    public WorkflowStatus getWorkflowStatusSummary(
+            @PathVariable("workflowId") String workflowId,
+            @RequestParam(value = "includeOutput", defaultValue = "false", required = false)
+                    boolean includeOutput,
+            @RequestParam(value = "includeVariables", defaultValue = "false", required = false)
+                    boolean includeVariables) {
+        Workflow workflow = workflowService.getExecutionStatus(workflowId, false);
+        return new WorkflowStatus(workflow, includeOutput, includeVariables);
     }
 
     @DeleteMapping("/{workflowId}/remove")
