@@ -1,16 +1,16 @@
 import { Monaco } from "@monaco-editor/react";
 import { Box, Grid } from "@mui/material";
 import { Button, Paper } from "components";
-import { DEFAULT_ROWS_PER_PAGE } from "components/ui/DataTable/DataTable";
-import MuiTypography from "components/ui/MuiTypography";
+import ResetIcon from "components/icons/ResetIcon";
+import SearchIcon from "components/icons/SearchIcon";
 import StatusBadge from "components/StatusBadge";
 import { renderStatusTagChip } from "components/StatusTagChip";
+import SplitButton from "components/ui/buttons/ConductorSplitButton";
+import { DEFAULT_ROWS_PER_PAGE } from "components/ui/DataTable/DataTable";
 import { ConductorAutoComplete } from "components/ui/inputs";
 import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
 import ConductorInput from "components/ui/inputs/ConductorInput";
-import SplitButton from "components/ui/buttons/ConductorSplitButton";
-import ResetIcon from "components/icons/ResetIcon";
-import SearchIcon from "components/icons/SearchIcon";
+import MuiTypography from "components/ui/MuiTypography";
 import _isEmpty from "lodash/isEmpty";
 import {
   ReactNode,
@@ -436,6 +436,46 @@ export default function AdvancedSearch({
                 }}
               />
             </Grid>
+            <Grid
+              size={{
+                xs: 12,
+                md: 2,
+                lg: 2,
+              }}
+            >
+              <ConductorAutoComplete
+                id="workflow-search-status"
+                label="Status"
+                disabled={queryText.includes("status")}
+                fullWidth
+                options={workflowStatuses}
+                multiple
+                onChange={(__, val: string[]) => setStatus(val)}
+                value={status}
+                renderTags={renderStatusTagChip}
+                renderOption={(props, option) => (
+                  <Box component="li" {...props}>
+                    <StatusBadge status={option} />
+                  </Box>
+                )}
+              />
+            </Grid>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 12,
+                md: 2,
+                lg: 2.5,
+              }}
+            >
+              <ConductorInput
+                fullWidth
+                label="Free text search"
+                value={freeText}
+                onTextInputChange={setFreeText}
+                showClearButton
+              />
+            </Grid>
 
             <Grid
               size={{
@@ -475,94 +515,44 @@ export default function AdvancedSearch({
             </Grid>
 
             <Grid
-              size={{
-                xs: 12,
-                sm: 12,
-                md: 2,
-                lg: 2.5,
-              }}
-            >
-              <ConductorInput
-                fullWidth
-                label="Free text search"
-                value={freeText}
-                onTextInputChange={setFreeText}
-                showClearButton
-              />
-            </Grid>
-
-            <Grid
-              size={{
-                xs: 12,
-                sm: 6,
-                md: 2,
-                lg: 2,
-              }}
-            >
-              <ConductorAutoComplete
-                id="workflow-search-status"
-                label="Status"
-                disabled={queryText.includes("status")}
-                fullWidth
-                options={workflowStatuses}
-                multiple
-                onChange={(__, val: string[]) => setStatus(val)}
-                value={status}
-                renderTags={renderStatusTagChip}
-                renderOption={(props, option) => (
-                  <Box component="li" {...props}>
-                    <StatusBadge status={option} />
-                  </Box>
-                )}
-              />
-            </Grid>
-
-            <Grid
               display="flex"
               justifyContent="end"
-              size={{
-                xs: 12,
-                sm: 6,
-                md: 2.5,
-                lg: 2.5,
-              }}
+              alignItems="center"
+              gap={1}
+              size={12}
+              sx={{ flexWrap: "nowrap" }}
             >
-              <Grid alignSelf="center" size={5}>
-                <Button
-                  id="reset-workflow-btn"
-                  variant="text"
-                  onClick={handleReset}
-                  style={{ width: "100%" }}
-                  startIcon={<ResetIcon />}
-                >
-                  Reset
-                </Button>
-              </Grid>
-              <Grid alignSelf="center">
-                <SplitButton
-                  id="search-workflow-btn"
-                  startIcon={<SearchIcon />}
-                  options={[
-                    {
-                      label: "Show as code",
-                      onClick: () => setShowCodeDialog("active"),
-                    },
-                  ]}
-                  primaryOnClick={() =>
-                    doSearch({
-                      resultObj,
-                      queryFT,
-                      buildQuery,
-                      setQueryFT,
-                      refetch,
-                      setPage,
-                      setRecentTaskSearch,
-                    })
-                  }
-                >
-                  Search
-                </SplitButton>
-              </Grid>
+              <Button
+                id="reset-workflow-btn"
+                variant="text"
+                onClick={handleReset}
+                startIcon={<ResetIcon />}
+              >
+                Reset
+              </Button>
+              <SplitButton
+                id="search-workflow-btn"
+                startIcon={<SearchIcon />}
+                options={[
+                  {
+                    label: "Show as code",
+                    onClick: () => setShowCodeDialog("active"),
+                  },
+                ]}
+                primaryOnClick={() =>
+                  doSearch({
+                    resultObj,
+                    queryFT,
+                    buildQuery,
+                    setQueryFT,
+                    refetch,
+                    setPage,
+                    setRecentTaskSearch,
+                  })
+                }
+              >
+                Search
+              </SplitButton>
             </Grid>
           </Grid>
         </Box>

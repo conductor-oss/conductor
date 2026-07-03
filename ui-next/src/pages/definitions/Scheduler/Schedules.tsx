@@ -54,6 +54,7 @@ import {
 } from "utils/hooks/useGetSchedulerDefinitions";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { useActionWithPath } from "utils/query";
+import { featureFlags, FEATURES } from "utils/flags";
 import { createSearchableTags } from "utils/utils";
 import CloneScheduleDialog from "../dialog/CloneScheduleDialog";
 import {
@@ -287,6 +288,7 @@ export default function ScheduleDefinitions() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const { isTrialExpired } = useAuth();
+  const tagsEnabled = featureFlags.isEnabled(FEATURES.TAG_VISIBILITY);
   const [toast, setToast] = useState({
     isOpen: false,
     message: "",
@@ -492,7 +494,7 @@ export default function ScheduleDefinitions() {
 
   const renderColumns = useMemo(
     () => [
-      ...columns,
+      ...columns.filter((col) => col.id !== "tags" || tagsEnabled),
       {
         id: "actions",
         name: "name",
@@ -542,18 +544,20 @@ export default function ScheduleDefinitions() {
               </IconButton>
             </Tooltip>
 
-            <Tooltip title={"Add/Edit tags"}>
-              <IconButton
-                disabled={isTrialExpired}
-                onClick={() => {
-                  setAddTagDialogData(row);
-                  setShowAddTagDialog(true);
-                }}
-                size="small"
-              >
-                <TagIcon />
-              </IconButton>
-            </Tooltip>
+            {tagsEnabled && (
+              <Tooltip title={"Add/Edit tags"}>
+                <IconButton
+                  disabled={isTrialExpired}
+                  onClick={() => {
+                    setAddTagDialogData(row);
+                    setShowAddTagDialog(true);
+                  }}
+                  size="small"
+                >
+                  <TagIcon />
+                </IconButton>
+              </Tooltip>
+            )}
 
             <Tooltip title={"Delete schedule"}>
               <IconButton
@@ -567,7 +571,7 @@ export default function ScheduleDefinitions() {
         ),
       },
     ],
-    [handlePauseSchedule, handleResumeSchedule, isTrialExpired],
+    [handlePauseSchedule, handleResumeSchedule, isTrialExpired, tagsEnabled],
   );
 
   const handleClickDefineSchedule = () => {
@@ -655,19 +659,21 @@ export default function ScheduleDefinitions() {
         />
       )}
 
-      <AddTagDialog
-        open={showAddTagDialog && !!addTagDialogData}
-        tags={addTagDialogData?.tags || []}
-        itemName={addTagDialogData?.name}
-        onClose={() => {
-          setShowAddTagDialog(false);
-        }}
-        onSuccess={() => {
-          setShowAddTagDialog(false);
-          refetch();
-        }}
-        apiPath={`/scheduler/schedules/${addTagDialogData?.name}/tags`}
-      />
+      {tagsEnabled && (
+        <AddTagDialog
+          open={showAddTagDialog && !!addTagDialogData}
+          tags={addTagDialogData?.tags || []}
+          itemName={addTagDialogData?.name}
+          onClose={() => {
+            setShowAddTagDialog(false);
+          }}
+          onSuccess={() => {
+            setShowAddTagDialog(false);
+            refetch();
+          }}
+          apiPath={`/scheduler/schedules/${addTagDialogData?.name}/tags`}
+        />
+      )}
 
       {selectedSchedule && (
         <CloneScheduleDialog
@@ -790,7 +796,7 @@ export default function ScheduleDefinitions() {
                   "nextRunTime",
                   "workflowExecutionsLink",
                   "schedulerExecutionsLink",
-                  "tags",
+                  ...(tagsEnabled ? ["tags"] : []),
                   "cronTabExpression",
                   "startWorkflowRequest",
                   "createTime",
