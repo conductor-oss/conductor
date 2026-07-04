@@ -41,6 +41,7 @@ import com.netflix.conductor.model.TaskModel;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -58,6 +59,7 @@ public class ExecutionServiceTest {
     @Mock private ExternalPayloadStorage externalPayloadStorage;
     @Mock private SystemTaskRegistry systemTaskRegistry;
     @Mock private TaskStatusListener taskStatusListener;
+    @Mock private com.netflix.conductor.core.utils.ParametersUtils parametersUtils;
 
     private ExecutionService executionService;
 
@@ -71,6 +73,7 @@ public class ExecutionServiceTest {
     public void setup() {
         when(conductorProperties.getTaskExecutionPostponeDuration())
                 .thenReturn(Duration.ofSeconds(60));
+        when(parametersUtils.substituteSecrets(any())).thenAnswer(inv -> inv.getArgument(0));
         executionService =
                 new ExecutionService(
                         workflowExecutor,
@@ -79,7 +82,8 @@ public class ExecutionServiceTest {
                         conductorProperties,
                         externalPayloadStorage,
                         systemTaskRegistry,
-                        taskStatusListener);
+                        taskStatusListener,
+                        parametersUtils);
         WorkflowDef workflowDef = new WorkflowDef();
         workflow1 = new Workflow();
         workflow1.setWorkflowId("wf1");
@@ -334,5 +338,32 @@ public class ExecutionServiceTest {
         // Assert: null returned, no ack called
         assertNull(result);
         verify(queueDAO, times(0)).ack(anyString(), anyString());
+    }
+
+    @Test
+    public void testPollSubstitutesSecretsOnOutgoingTask() {
+        String taskType = "t";
+        String taskId = "task-1";
+        TaskModel taskModel = new TaskModel();
+        taskModel.setTaskId(taskId);
+        taskModel.setTaskType(taskType);
+        taskModel.setStatus(TaskModel.Status.SCHEDULED);
+        java.util.Map<String, Object> literal = new java.util.HashMap<>();
+        literal.put("pwd", "${workflow.secrets.DB_PASSWORD}");
+        taskModel.setInputData(literal);
+
+        when(queueDAO.pop(anyString(), anyInt(), anyInt()))
+                .thenReturn(java.util.List.of(taskId));
+        when(executionDAOFacade.getTaskModel(taskId)).thenReturn(taskModel);
+        java.util.Map<String, Object> resolved = new java.util.HashMap<>();
+        resolved.put("pwd", "s3cr3t");
+        when(parametersUtils.substituteSecrets(any())).thenReturn(resolved);
+
+        List<Task> polled = executionService.poll(taskType, "worker", null, 1, 100);
+
+        assertEquals(1, polled.size());
+        assertEquals("s3cr3t", polled.get(0).getInputData().get("pwd"));
+        // persisted model keeps the literal
+        assertEquals("${workflow.secrets.DB_PASSWORD}", taskModel.getInputData().get("pwd"));
     }
 }

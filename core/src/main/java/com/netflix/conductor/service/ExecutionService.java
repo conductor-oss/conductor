@@ -36,6 +36,7 @@ import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.listener.TaskStatusListener;
+import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.core.utils.Utils;
 import com.netflix.conductor.dao.QueueDAO;
@@ -56,6 +57,7 @@ public class ExecutionService {
     private final ExternalPayloadStorage externalPayloadStorage;
     private final SystemTaskRegistry systemTaskRegistry;
     private final TaskStatusListener taskStatusListener;
+    private final ParametersUtils parametersUtils;
 
     private final long queueTaskMessagePostponeSecs;
 
@@ -70,7 +72,8 @@ public class ExecutionService {
             ConductorProperties properties,
             ExternalPayloadStorage externalPayloadStorage,
             SystemTaskRegistry systemTaskRegistry,
-            TaskStatusListener taskStatusListener) {
+            TaskStatusListener taskStatusListener,
+            ParametersUtils parametersUtils) {
         this.workflowExecutor = workflowExecutor;
         this.executionDAOFacade = executionDAOFacade;
         this.queueDAO = queueDAO;
@@ -81,6 +84,7 @@ public class ExecutionService {
                 properties.getTaskExecutionPostponeDuration().getSeconds();
         this.systemTaskRegistry = systemTaskRegistry;
         this.taskStatusListener = taskStatusListener;
+        this.parametersUtils = parametersUtils;
     }
 
     public Task poll(String taskType, String workerId) {
@@ -180,7 +184,9 @@ public class ExecutionService {
                 taskModel.incrementPollCount();
                 executionDAOFacade.updateTask(taskModel);
                 adjustDeciderQueuePostpone(taskModel, taskDef);
-                tasks.add(taskModel.toTask());
+                Task task = taskModel.toTask();
+                task.setInputData(parametersUtils.substituteSecrets(task.getInputData()));
+                tasks.add(task);
             } catch (Exception e) {
                 // db operation failed for dequeued message, re-enqueue with a delay
                 LOGGER.warn(
