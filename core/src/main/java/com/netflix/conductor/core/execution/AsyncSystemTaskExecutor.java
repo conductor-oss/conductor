@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.core.execution;
 
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Component;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
+import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
@@ -35,6 +38,7 @@ public class AsyncSystemTaskExecutor {
     private final long queueTaskMessagePostponeSecs;
     private final long systemTaskCallbackTime;
     private final WorkflowExecutor workflowExecutor;
+    private final ParametersUtils parametersUtils;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AsyncSystemTaskExecutor.class);
 
@@ -43,7 +47,8 @@ public class AsyncSystemTaskExecutor {
             QueueDAO queueDAO,
             MetadataDAO metadataDAO,
             ConductorProperties conductorProperties,
-            WorkflowExecutor workflowExecutor) {
+            WorkflowExecutor workflowExecutor,
+            ParametersUtils parametersUtils) {
         this.executionDAOFacade = executionDAOFacade;
         this.queueDAO = queueDAO;
         this.metadataDAO = metadataDAO;
@@ -52,6 +57,7 @@ public class AsyncSystemTaskExecutor {
                 conductorProperties.getSystemTaskWorkerCallbackDuration().getSeconds();
         this.queueTaskMessagePostponeSecs =
                 conductorProperties.getTaskExecutionPostponeDuration().getSeconds();
+        this.parametersUtils = parametersUtils;
     }
 
     /**
@@ -146,12 +152,22 @@ public class AsyncSystemTaskExecutor {
                 task.incrementPollCount();
             }
 
-            if (task.getStatus() == TaskModel.Status.SCHEDULED) {
-                task.setStartTime(System.currentTimeMillis());
-                Monitors.recordQueueWaitTime(task.getTaskType(), task.getQueueWaitTime());
-                systemTask.start(workflow, task, workflowExecutor);
-            } else if (task.getStatus() == TaskModel.Status.IN_PROGRESS) {
-                systemTask.execute(workflow, task, workflowExecutor);
+            if (task.getStatus() == TaskModel.Status.SCHEDULED
+                    || task.getStatus() == TaskModel.Status.IN_PROGRESS) {
+                Map<String, Object> literalInput = task.getInputData();
+                task.setInputData(parametersUtils.substituteSecrets(literalInput));
+                try {
+                    if (task.getStatus() == TaskModel.Status.SCHEDULED) {
+                        task.setStartTime(System.currentTimeMillis());
+                        Monitors.recordQueueWaitTime(
+                                task.getTaskType(), task.getQueueWaitTime());
+                        systemTask.start(workflow, task, workflowExecutor);
+                    } else {
+                        systemTask.execute(workflow, task, workflowExecutor);
+                    }
+                } finally {
+                    task.setInputData(literalInput);
+                }
             }
 
             // Update message in Task queue based on Task status
