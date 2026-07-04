@@ -1,0 +1,62 @@
+/*
+ * Copyright 2026 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+package com.netflix.conductor.core.secrets;
+
+import java.util.List;
+import org.junit.After;
+import org.junit.Test;
+import static org.junit.Assert.*;
+
+public class EnvVariableSecretsDAOTest {
+
+    private final EnvVariableSecretsDAO dao =
+            new EnvVariableSecretsDAO("CONDUCTOR_SECRET_");
+
+    @After
+    public void cleanup() {
+        System.clearProperty("CONDUCTOR_SECRET_DB_PASSWORD");
+        System.clearProperty("CONDUCTOR_SECRET_CREDS");
+    }
+
+    @Test
+    public void testGetSecretReadsPrefixedProperty() {
+        System.setProperty("CONDUCTOR_SECRET_DB_PASSWORD", "s3cr3t");
+        assertEquals("s3cr3t", dao.getSecret("DB_PASSWORD"));
+    }
+
+    @Test
+    public void testSecretExists() {
+        System.setProperty("CONDUCTOR_SECRET_DB_PASSWORD", "s3cr3t");
+        assertTrue(dao.secretExists("DB_PASSWORD"));
+        assertFalse(dao.secretExists("NOPE"));
+    }
+
+    @Test
+    public void testListSecretNamesStripsPrefixAndOmitsValues() {
+        System.setProperty("CONDUCTOR_SECRET_DB_PASSWORD", "s3cr3t");
+        List<String> names = dao.listSecretNames();
+        assertTrue(names.contains("DB_PASSWORD"));
+        assertFalse(names.contains("CONDUCTOR_SECRET_DB_PASSWORD"));
+        assertFalse(names.contains("s3cr3t"));
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testPutThrows() {
+        dao.putSecret("DB_PASSWORD", "x");
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testDeleteThrows() {
+        dao.deleteSecret("DB_PASSWORD");
+    }
+}
