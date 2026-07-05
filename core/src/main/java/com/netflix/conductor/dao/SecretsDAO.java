@@ -16,8 +16,12 @@ import java.util.List;
 
 public interface SecretsDAO {
     String getSecret(String name);
+
     boolean secretExists(String name);
+
     List<String> listSecretNames();
+
     void putSecret(String name, String value);
+
     void deleteSecret(String name);
 }

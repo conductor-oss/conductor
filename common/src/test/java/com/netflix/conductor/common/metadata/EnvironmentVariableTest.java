@@ -13,6 +13,7 @@
 package com.netflix.conductor.common.metadata;
 
 import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 
 public class EnvironmentVariableTest {

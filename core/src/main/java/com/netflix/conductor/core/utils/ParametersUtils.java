@@ -365,8 +365,8 @@ public class ParametersUtils {
 
     /**
      * Resolves any {@code ${workflow.secrets.*}} references in the given input, returning a new
-     * structure. The input map is not mutated. Returns the input unchanged when no secrets
-     * provider is configured.
+     * structure. The input map is not mutated. Returns the input unchanged when no secrets provider
+     * is configured.
      */
     @SuppressWarnings("unchecked")
     public Map<String, Object> substituteSecrets(Map<String, Object> input) {
@@ -415,11 +415,10 @@ public class ParametersUtils {
     }
 
     /**
-     * Splits {@code ref} on the first '.' into a name and an optional JSON path, looks up the
-     * name via {@code lookup}, and if a JSON path is present, reads it out of the looked-up
-     * value. Returns null if the looked-up value is null, or if the JSON path cannot be read from
-     * it (e.g. the value is not valid JSON) -- in which case a warning is logged instead of
-     * throwing.
+     * Splits {@code ref} on the first '.' into a name and an optional JSON path, looks up the name
+     * via {@code lookup}, and if a JSON path is present, reads it out of the looked-up value.
+     * Returns null if the looked-up value is null, or if the JSON path cannot be read from it (e.g.
+     * the value is not valid JSON) -- in which case a warning is logged instead of throwing.
      */
     private Object resolveWithOptionalJsonPath(String ref, Function<String, String> lookup) {
         int dot = ref.indexOf('.');

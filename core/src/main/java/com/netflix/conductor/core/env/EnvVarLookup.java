@@ -29,7 +29,10 @@ public final class EnvVarLookup {
         return value;
     }
 
-    /** Returns all env vars / system properties whose key starts with {@code prefix}, prefix stripped. */
+    /**
+     * Returns all env vars / system properties whose key starts with {@code prefix}, prefix
+     * stripped.
+     */
     public static Map<String, String> allWithPrefix(String prefix) {
         Map<String, String> out = new LinkedHashMap<>();
         System.getenv()

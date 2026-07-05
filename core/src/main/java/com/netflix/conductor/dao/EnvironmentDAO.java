@@ -13,11 +13,15 @@
 package com.netflix.conductor.dao;
 
 import java.util.List;
+
 import com.netflix.conductor.common.metadata.EnvironmentVariable;
 
 public interface EnvironmentDAO {
     String getEnvVariable(String key);
+
     void setEnvVariable(String key, String value);
+
     void delete(String key);
+
     List<EnvironmentVariable> getAll();
 }

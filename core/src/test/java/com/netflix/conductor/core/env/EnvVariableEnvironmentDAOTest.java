@@ -13,15 +13,17 @@
 package com.netflix.conductor.core.env;
 
 import java.util.List;
+
 import org.junit.After;
 import org.junit.Test;
+
 import com.netflix.conductor.common.metadata.EnvironmentVariable;
+
 import static org.junit.Assert.*;
 
 public class EnvVariableEnvironmentDAOTest {
 
-    private final EnvVariableEnvironmentDAO dao =
-            new EnvVariableEnvironmentDAO("CONDUCTOR_ENV_");
+    private final EnvVariableEnvironmentDAO dao = new EnvVariableEnvironmentDAO("CONDUCTOR_ENV_");
 
     @After
     public void cleanup() {
@@ -45,8 +47,14 @@ public class EnvVariableEnvironmentDAOTest {
         System.setProperty("CONDUCTOR_ENV_REGION", "us-east-1");
         System.setProperty("CONDUCTOR_ENV_ZONE", "a");
         List<EnvironmentVariable> all = dao.getAll();
-        assertTrue(all.stream().anyMatch(e -> e.getName().equals("REGION") && e.getValue().equals("us-east-1")));
-        assertTrue(all.stream().anyMatch(e -> e.getName().equals("ZONE") && e.getValue().equals("a")));
+        assertTrue(
+                all.stream()
+                        .anyMatch(
+                                e ->
+                                        e.getName().equals("REGION")
+                                                && e.getValue().equals("us-east-1")));
+        assertTrue(
+                all.stream().anyMatch(e -> e.getName().equals("ZONE") && e.getValue().equals("a")));
         assertTrue(all.stream().noneMatch(e -> e.getName().startsWith("CONDUCTOR_ENV_")));
     }
 

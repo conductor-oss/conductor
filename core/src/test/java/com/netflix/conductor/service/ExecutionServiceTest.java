@@ -352,8 +352,7 @@ public class ExecutionServiceTest {
         literal.put("pwd", "${workflow.secrets.DB_PASSWORD}");
         taskModel.setInputData(literal);
 
-        when(queueDAO.pop(anyString(), anyInt(), anyInt()))
-                .thenReturn(java.util.List.of(taskId));
+        when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(java.util.List.of(taskId));
         when(executionDAOFacade.getTaskModel(taskId)).thenReturn(taskModel);
         java.util.Map<String, Object> resolved = new java.util.HashMap<>();
         resolved.put("pwd", "s3cr3t");

@@ -23,10 +23,7 @@ import com.netflix.conductor.core.env.EnvVarLookup;
 import com.netflix.conductor.dao.SecretsDAO;
 
 @Component
-@ConditionalOnProperty(
-        name = "conductor.secrets.type",
-        havingValue = "env",
-        matchIfMissing = true)
+@ConditionalOnProperty(name = "conductor.secrets.type", havingValue = "env", matchIfMissing = true)
 public class EnvVariableSecretsDAO implements SecretsDAO {
 
     private final String prefix;

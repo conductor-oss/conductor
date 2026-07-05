@@ -13,14 +13,15 @@
 package com.netflix.conductor.core.secrets;
 
 import java.util.List;
+
 import org.junit.After;
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 
 public class EnvVariableSecretsDAOTest {
 
-    private final EnvVariableSecretsDAO dao =
-            new EnvVariableSecretsDAO("CONDUCTOR_SECRET_");
+    private final EnvVariableSecretsDAO dao = new EnvVariableSecretsDAO("CONDUCTOR_SECRET_");
 
     @After
     public void cleanup() {
