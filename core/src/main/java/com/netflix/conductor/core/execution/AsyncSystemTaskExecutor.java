@@ -155,6 +155,14 @@ public class AsyncSystemTaskExecutor {
             if (task.getStatus() == TaskModel.Status.SCHEDULED
                     || task.getStatus() == TaskModel.Status.IN_PROGRESS) {
                 Map<String, Object> literalInput = task.getInputData();
+                // Secrets substitution only sees task.getInputData(); when input has been
+                // offloaded to external payload storage, getInputData()/setInputData() operate on
+                // a different field and this substitution silently becomes a no-op.
+                if (task.getExternalInputPayloadStoragePath() != null) {
+                    LOGGER.warn(
+                            "Task {} has externalized input; ${{workflow.secrets.*}} references are not resolved for external payload storage",
+                            task.getTaskId());
+                }
                 task.setInputData(parametersUtils.substituteSecrets(literalInput));
                 try {
                     if (task.getStatus() == TaskModel.Status.SCHEDULED) {

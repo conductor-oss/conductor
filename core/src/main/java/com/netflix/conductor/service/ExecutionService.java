@@ -185,6 +185,14 @@ public class ExecutionService {
                 executionDAOFacade.updateTask(taskModel);
                 adjustDeciderQueuePostpone(taskModel, taskDef);
                 Task task = taskModel.toTask();
+                // Secrets substitution only sees taskModel.getInputData(); when input has been
+                // offloaded to external payload storage, getInputData()/setInputData() operate on
+                // a different field and this substitution silently becomes a no-op.
+                if (taskModel.getExternalInputPayloadStoragePath() != null) {
+                    LOGGER.warn(
+                            "Task {} has externalized input; ${{workflow.secrets.*}} references are not resolved for external payload storage",
+                            taskModel.getTaskId());
+                }
                 task.setInputData(parametersUtils.substituteSecrets(task.getInputData()));
                 tasks.add(task);
             } catch (Exception e) {

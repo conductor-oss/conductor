@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -359,17 +360,7 @@ public class ParametersUtils {
     }
 
     private Object resolveEnvVariable(String ref) {
-        int dot = ref.indexOf('.');
-        if (dot < 0) {
-            return environmentDAO.getEnvVariable(ref);
-        }
-        String name = ref.substring(0, dot);
-        String jsonPath = ref.substring(dot + 1);
-        String value = environmentDAO.getEnvVariable(name);
-        if (value == null) {
-            return null;
-        }
-        return JsonPath.parse(value).read(jsonPath);
+        return resolveWithOptionalJsonPath(ref, environmentDAO::getEnvVariable);
     }
 
     /**
@@ -420,17 +411,37 @@ public class ParametersUtils {
     }
 
     private Object resolveSecretRef(String ref) {
+        return resolveWithOptionalJsonPath(ref, secretsDAO::getSecret);
+    }
+
+    /**
+     * Splits {@code ref} on the first '.' into a name and an optional JSON path, looks up the
+     * name via {@code lookup}, and if a JSON path is present, reads it out of the looked-up
+     * value. Returns null if the looked-up value is null, or if the JSON path cannot be read from
+     * it (e.g. the value is not valid JSON) -- in which case a warning is logged instead of
+     * throwing.
+     */
+    private Object resolveWithOptionalJsonPath(String ref, Function<String, String> lookup) {
         int dot = ref.indexOf('.');
         if (dot < 0) {
-            return secretsDAO.getSecret(ref);
+            return lookup.apply(ref);
         }
         String name = ref.substring(0, dot);
         String jsonPath = ref.substring(dot + 1);
-        String secret = secretsDAO.getSecret(name);
-        if (secret == null) {
+        String value = lookup.apply(name);
+        if (value == null) {
             return null;
         }
-        return JsonPath.parse(secret).read(jsonPath);
+        try {
+            return JsonPath.parse(value).read(jsonPath);
+        } catch (Exception e) {
+            LOGGER.warn(
+                    "Failed to extract JSON path '{}' from reference '{}': {}",
+                    jsonPath,
+                    ref,
+                    e.toString());
+            return null;
+        }
     }
 
     private static class Replacement implements Comparable<Replacement> {

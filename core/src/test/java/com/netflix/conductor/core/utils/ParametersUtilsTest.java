@@ -438,6 +438,21 @@ public class ParametersUtilsTest {
     }
 
     @Test
+    public void testSubstituteSecretsMalformedJsonResolvesToNull() {
+        EnvironmentDAO env = mock(EnvironmentDAO.class);
+        SecretsDAO secrets = mock(SecretsDAO.class);
+        when(secrets.getSecret("CREDS")).thenReturn("not-json");
+        ParametersUtils pu = new ParametersUtils(objectMapper, env, secrets);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("v", "${workflow.secrets.CREDS.field}");
+
+        Map<String, Object> out = pu.substituteSecrets(input);
+
+        assertNull(out.get("v"));
+    }
+
+    @Test
     public void testSubstituteSecretsNullDaoReturnsInput() {
         ParametersUtils pu = new ParametersUtils(objectMapper);
         Map<String, Object> input = new HashMap<>();
