@@ -1749,6 +1749,7 @@ export const schemasByType = {
   [TaskType.PARSE_DOCUMENT]: parseDocumentTaskSchema,
   [TaskType.GDRIVE_READ]: gDriveReadTaskSchema,
   [TaskType.GEMINI_LLM]: genericSchema,
+  [TaskType.ZOHO_BOOKS_FETCH]: genericSchema,
   [TaskType.GRN_POD_RECONCILE]: genericSchema,
 };
 

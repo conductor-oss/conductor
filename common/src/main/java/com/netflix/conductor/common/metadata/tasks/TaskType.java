@@ -53,6 +53,7 @@ public enum TaskType {
     CALL_MCP_TOOL,
     GDRIVE_READ,
     GEMINI_LLM,
+    ZOHO_BOOKS_FETCH,
     GRN_POD_RECONCILE,
     PULL_WORKFLOW_MESSAGES;
 
@@ -86,6 +87,7 @@ public enum TaskType {
     public static final String TASK_TYPE_NOOP = "NOOP";
     public static final String TASK_TYPE_GDRIVE_READ = "GDRIVE_READ";
     public static final String TASK_TYPE_GEMINI_LLM = "GEMINI_LLM";
+    public static final String TASK_TYPE_ZOHO_BOOKS_FETCH = "ZOHO_BOOKS_FETCH";
     public static final String TASK_TYPE_GRN_POD_RECONCILE = "GRN_POD_RECONCILE";
     public static final String TASK_TYPE_PULL_WORKFLOW_MESSAGES = "PULL_WORKFLOW_MESSAGES";
 

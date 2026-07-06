@@ -605,6 +605,17 @@ export interface GrnPodReconcileTaskDef extends CommonTaskDef {
   };
 }
 
+export interface ZohoBooksFetchTaskDef extends CommonTaskDef {
+  type: TaskType.ZOHO_BOOKS_FETCH;
+  inputParameters: {
+    connectionId: string;
+    billNumbers: string | string[];
+    billNumber?: string;
+    invoiceNumbers?: string | string[];
+    invoiceNumber?: string;
+  };
+}
+
 export type LLMTaskTypes =
   | LLMGenerateEmbeddings
   | LLMGetEmbeddings
@@ -664,4 +675,5 @@ export type FormTaskType =
   | TaskType.PARSE_DOCUMENT
   | TaskType.GDRIVE_READ
   | TaskType.GEMINI_LLM
+  | TaskType.ZOHO_BOOKS_FETCH
   | TaskType.GRN_POD_RECONCILE;

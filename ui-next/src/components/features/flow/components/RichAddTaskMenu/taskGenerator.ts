@@ -57,6 +57,7 @@ import {
   GDriveReadTaskDef,
   GeminiLlmTaskDef,
   GrnPodReconcileTaskDef,
+  ZohoBooksFetchTaskDef,
 } from "types";
 import { HTTP_TEST_ENDPOINT } from "utils/constants/common";
 import { BaseTaskMenuItem } from "./state/types";
@@ -776,6 +777,21 @@ export const generateGrnPodReconcileTask: GenerateTaskFn<
   ...overrides,
 });
 
+export const generateZohoBooksFetchTask: GenerateTaskFn<
+  ZohoBooksFetchTaskDef
+> = ({
+  overrides = {},
+  nameGenerator = generateNameAndTaskReference,
+} = DEFAULT_ARGS): ZohoBooksFetchTaskDef => ({
+  ...nameGenerator("zoho_books_fetch"),
+  type: TaskType.ZOHO_BOOKS_FETCH,
+  inputParameters: {
+    connectionId: "${workflow.input.zohoBooksConnectionId}",
+    billNumbers: "${workflow.input.billNumbers}",
+  },
+  ...overrides,
+});
+
 export const taskGeneratorMap = {
   [TaskType.WAIT]: generateWaitTask,
   [TaskType.HTTP]: generateHTTPTask,
@@ -828,6 +844,7 @@ export const taskGeneratorMap = {
   [TaskType.PARSE_DOCUMENT]: generateParseDocumentTask,
   [TaskType.GDRIVE_READ]: generateGDriveReadTask,
   [TaskType.GEMINI_LLM]: generateGeminiLlmTask,
+  [TaskType.ZOHO_BOOKS_FETCH]: generateZohoBooksFetchTask,
   [TaskType.GRN_POD_RECONCILE]: generateGrnPodReconcileTask,
 } satisfies Record<FormTaskType, GenerateTaskFn<any>>;
 

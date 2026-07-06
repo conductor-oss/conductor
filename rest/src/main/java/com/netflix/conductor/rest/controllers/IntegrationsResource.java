@@ -32,8 +32,18 @@ import org.conductoross.conductor.common.integrations.gemini.GeminiConnectionReq
 import org.conductoross.conductor.common.integrations.gemini.GeminiConnectionResponse;
 import org.conductoross.conductor.common.integrations.gemini.GeminiIntegrationException;
 import org.conductoross.conductor.common.integrations.gemini.GeminiIntegrationService;
+import org.conductoross.conductor.common.integrations.zoho.ZohoBooksConnection;
+import org.conductoross.conductor.common.integrations.zoho.ZohoBooksConnectionRequest;
+import org.conductoross.conductor.common.integrations.zoho.ZohoBooksConnectionResponse;
+import org.conductoross.conductor.common.integrations.zoho.ZohoBooksFetchRequest;
+import org.conductoross.conductor.common.integrations.zoho.ZohoBooksFetchResponse;
+import org.conductoross.conductor.common.integrations.zoho.ZohoBooksIntegrationException;
+import org.conductoross.conductor.common.integrations.zoho.ZohoBooksIntegrationService;
+import org.conductoross.conductor.common.integrations.zoho.ZohoBooksInvoicesResponse;
 import org.conductoross.conductor.core.dao.InMemoryGDriveConnectionDAO;
+import org.conductoross.conductor.core.dao.InMemoryZohoBooksConnectionDAO;
 import org.conductoross.conductor.dao.GDriveConnectionDAO;
+import org.conductoross.conductor.dao.ZohoBooksConnectionDAO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -57,29 +67,42 @@ public class IntegrationsResource {
 
     private final GDriveIntegrationService gDriveIntegrationService;
     private final GeminiIntegrationService geminiIntegrationService;
+    private final ZohoBooksIntegrationService zohoBooksIntegrationService;
     private final GDriveConnectionDAO gDriveConnectionDAO;
+    private final ZohoBooksConnectionDAO zohoBooksConnectionDAO;
 
     public IntegrationsResource(GDriveIntegrationService gDriveIntegrationService) {
         this(
                 gDriveIntegrationService,
                 new GeminiIntegrationService(),
-                new InMemoryGDriveConnectionDAO());
+                new ZohoBooksIntegrationService(),
+                new InMemoryGDriveConnectionDAO(),
+                new InMemoryZohoBooksConnectionDAO());
     }
 
     @Autowired
     public IntegrationsResource(
             GDriveIntegrationService gDriveIntegrationService,
             GeminiIntegrationService geminiIntegrationService,
-            GDriveConnectionDAO gDriveConnectionDAO) {
+            ZohoBooksIntegrationService zohoBooksIntegrationService,
+            GDriveConnectionDAO gDriveConnectionDAO,
+            ZohoBooksConnectionDAO zohoBooksConnectionDAO) {
         this.gDriveIntegrationService = gDriveIntegrationService;
         this.geminiIntegrationService = geminiIntegrationService;
+        this.zohoBooksIntegrationService = zohoBooksIntegrationService;
         this.gDriveConnectionDAO = gDriveConnectionDAO;
+        this.zohoBooksConnectionDAO = zohoBooksConnectionDAO;
     }
 
     IntegrationsResource(
             GDriveIntegrationService gDriveIntegrationService,
             GDriveConnectionDAO gDriveConnectionDAO) {
-        this(gDriveIntegrationService, new GeminiIntegrationService(), gDriveConnectionDAO);
+        this(
+                gDriveIntegrationService,
+                new GeminiIntegrationService(),
+                new ZohoBooksIntegrationService(),
+                gDriveConnectionDAO,
+                new InMemoryZohoBooksConnectionDAO());
     }
 
     @PostMapping("/gdrive/load")
@@ -213,6 +236,64 @@ public class IntegrationsResource {
                 geminiIntegrationService.defaultModel());
     }
 
+    @PostMapping("/zoho-books/connections")
+    @Operation(summary = "Store Zoho Books credentials for a connection")
+    public ZohoBooksConnectionResponse saveZohoBooksConnection(
+            @RequestBody ZohoBooksConnectionRequest request) {
+        try {
+            ZohoBooksConnection connection = zohoBooksIntegrationService.saveConnection(request);
+            connection.setConnectionId(
+                    normalizeConnectionId(connection.getConnectionId(), "Zoho Books"));
+            zohoBooksConnectionDAO.saveConnection(connection);
+            return new ZohoBooksConnectionResponse(
+                    zohoBooksConnectionDAO.getConnection(connection.getConnectionId()));
+        } catch (ZohoBooksIntegrationException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        }
+    }
+
+    @GetMapping("/zoho-books/connections")
+    @Operation(summary = "List stored Zoho Books connections")
+    public List<ZohoBooksConnectionResponse> listZohoBooksConnections() {
+        return zohoBooksConnectionDAO.getAllConnections().stream()
+                .map(ZohoBooksConnectionResponse::new)
+                .collect(Collectors.toList());
+    }
+
+    @DeleteMapping("/zoho-books/connections/{connectionId}")
+    @Operation(summary = "Delete a stored Zoho Books connection")
+    public void deleteZohoBooksConnection(@PathVariable("connectionId") String connectionId) {
+        zohoBooksConnectionDAO.deleteConnection(normalizeConnectionId(connectionId, "Zoho Books"));
+    }
+
+    @PostMapping("/zoho-books/fetch")
+    @Operation(summary = "Fetch GRN and POD records for a Zoho Books bill")
+    public ZohoBooksFetchResponse fetchZohoBooksInvoiceDocuments(
+            @RequestBody ZohoBooksFetchRequest request) {
+        try {
+            ZohoBooksConnection connection = zohoBooksConnection(request.getConnectionId());
+            request.setConnectionId(connection.getConnectionId());
+            return zohoBooksIntegrationService.fetchInvoiceDocuments(connection, request);
+        } catch (ZohoBooksIntegrationException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        }
+    }
+
+    @PostMapping({
+        "/zoho-books/connections/{connectionId}/bills",
+        "/zoho-books/connections/{connectionId}/invoices"
+    })
+    @Operation(summary = "Fetch all bills for a stored Zoho Books connection")
+    public ZohoBooksInvoicesResponse fetchZohoBooksInvoices(
+            @PathVariable("connectionId") String connectionId) {
+        try {
+            ZohoBooksConnection connection = zohoBooksConnection(connectionId);
+            return zohoBooksIntegrationService.fetchInvoices(connection);
+        } catch (ZohoBooksIntegrationException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        }
+    }
+
     private GDriveLoadRequest resolveConnection(GDriveLoadRequest request) {
         if (request == null) {
             return request;
@@ -275,15 +356,31 @@ public class IntegrationsResource {
     }
 
     private String normalizeConnectionId(String connectionId) {
+        return normalizeConnectionId(connectionId, "Google Drive");
+    }
+
+    private String normalizeConnectionId(String connectionId, String providerName) {
         if (isBlank(connectionId)) {
-            throw new GDriveIntegrationException("Google Drive connectionId is required");
+            throw new GDriveIntegrationException(providerName + " connectionId is required");
         }
         String normalized = connectionId.trim();
         if (!SAFE_CONNECTION_ID_PATTERN.matcher(normalized).matches()) {
             throw new GDriveIntegrationException(
-                    "Google Drive connectionId must contain only letters, numbers, dot, underscore, or dash");
+                    providerName
+                            + " connectionId must contain only letters, numbers, dot, underscore, or dash");
         }
         return normalized;
+    }
+
+    private ZohoBooksConnection zohoBooksConnection(String connectionId) {
+        String normalizedConnectionId = normalizeConnectionId(connectionId, "Zoho Books");
+        ZohoBooksConnection connection =
+                zohoBooksConnectionDAO.getConnection(normalizedConnectionId);
+        if (connection == null) {
+            throw new ZohoBooksIntegrationException(
+                    "No Zoho Books connection found for connectionId " + normalizedConnectionId);
+        }
+        return connection;
     }
 
     private String normalizeAccountName(String accountName, String connectionId) {

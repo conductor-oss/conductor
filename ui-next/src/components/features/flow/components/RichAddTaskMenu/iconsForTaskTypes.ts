@@ -96,5 +96,6 @@ export const iconForTaskTypeMap = {
   [TaskType.PARSE_DOCUMENT]: FileMagnifyingGlass,
   [TaskType.GDRIVE_READ]: FilesIcon,
   [TaskType.GEMINI_LLM]: LlmChatComplete,
+  [TaskType.ZOHO_BOOKS_FETCH]: FileMagnifyingGlass,
   [TaskType.GRN_POD_RECONCILE]: RowsIcon,
 } satisfies Record<FormTaskType, React.FC>;

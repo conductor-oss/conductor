@@ -35,16 +35,17 @@ const SESSION_KEY = "conductor.gdrive.oauth";
 const READ_G_DRIVE_TASK_NAME = "read_g_drive";
 const GEMINI_TASK_NAME = "gemini_llm";
 const GEMINI_RECONCILE_TASK_NAME = "grn_pod_reconcile";
+const ZOHO_BOOKS_TASK_NAME = "zoho_books_fetch";
 const DEFAULT_GEMINI_CONNECTION_ID = "gemini-default";
 const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
 const DEFAULT_GEMINI_PROMPT_NAME = "enterj2 name";
 const DEFAULT_GEMINI_PROMPT = "enter your prompt";
 
-function createConnectionId() {
+function createConnectionId(prefix = "gdrive") {
   if (window.crypto && window.crypto.randomUUID) {
-    return `gdrive-${window.crypto.randomUUID()}`;
+    return `${prefix}-${window.crypto.randomUUID()}`;
   }
-  return `gdrive-${Date.now().toString(36)}-${Math.random()
+  return `${prefix}-${Date.now().toString(36)}-${Math.random()
     .toString(36)
     .slice(2, 10)}`;
 }
@@ -217,6 +218,22 @@ function reconcileTaskSnippet() {
   );
 }
 
+function zohoBooksTaskSnippet() {
+  return JSON.stringify(
+    {
+      name: ZOHO_BOOKS_TASK_NAME,
+      taskReferenceName: `${ZOHO_BOOKS_TASK_NAME}_ref`,
+      type: "ZOHO_BOOKS_FETCH",
+      inputParameters: {
+        connectionId: workflowInput("zohoBooksConnectionId"),
+        billNumbers: workflowInput("billNumbers"),
+      },
+    },
+    null,
+    2
+  );
+}
+
 function buildReadDriveWorkflowTask(maxFiles) {
   return {
     name: READ_G_DRIVE_TASK_NAME,
@@ -368,6 +385,7 @@ export default function GDriveIntegrations() {
   const [providerTab, setProviderTab] = useState("gdrive");
   const [activeTab, setActiveTab] = useState("create");
   const [geminiTab, setGeminiTab] = useState("create");
+  const [zohoBooksTab, setZohoBooksTab] = useState("create");
   const [connectionId, setConnectionId] = useState(createConnectionId);
   const [accountName, setAccountName] = useState("");
   const [clientId, setClientId] = useState("");
@@ -392,6 +410,14 @@ export default function GDriveIntegrations() {
   );
   const [geminiPrompt, setGeminiPrompt] = useState(DEFAULT_GEMINI_PROMPT);
   const [geminiConnections, setGeminiConnections] = useState([]);
+  const [zohoBooksConnectionId, setZohoBooksConnectionId] = useState(() =>
+    createConnectionId("zoho-books")
+  );
+  const [zohoBooksClientId, setZohoBooksClientId] = useState("");
+  const [zohoBooksClientSecret, setZohoBooksClientSecret] = useState("");
+  const [zohoBooksOrganizationId, setZohoBooksOrganizationId] = useState("");
+  const [zohoBooksConnections, setZohoBooksConnections] = useState([]);
+  const [zohoBooksInvoicesResult, setZohoBooksInvoicesResult] = useState(null);
   const processedOAuthCode = useRef(false);
 
   const refreshConnections = useCallback(() => {
@@ -426,6 +452,21 @@ export default function GDriveIntegrations() {
   useEffect(() => {
     refreshGemini();
   }, [refreshGemini]);
+
+  const refreshZohoBooks = useCallback(() => {
+    return fetchWithContext(
+      "integrations/zoho-books/connections",
+      requestContext
+    )
+      .then((connectionsResponse) =>
+        setZohoBooksConnections(connectionsResponse || [])
+      )
+      .catch((err) => setError(formatError(err)));
+  }, [requestContext]);
+
+  useEffect(() => {
+    refreshZohoBooks();
+  }, [refreshZohoBooks]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -644,6 +685,85 @@ export default function GDriveIntegrations() {
       .finally(() => setLoading(false));
   }
 
+  function handleSaveZohoBooksConnection() {
+    setError("");
+    setMessage("");
+    setLoading(true);
+    const nextConnectionId =
+      zohoBooksConnectionId.trim() || createConnectionId("zoho-books");
+    fetchWithContext("integrations/zoho-books/connections", requestContext, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        connectionId: nextConnectionId,
+        clientId: zohoBooksClientId.trim(),
+        clientSecret: zohoBooksClientSecret.trim(),
+        organizationId: zohoBooksOrganizationId.trim(),
+      }),
+    })
+      .then((response) => {
+        setZohoBooksConnectionId(response.connectionId || nextConnectionId);
+        setZohoBooksOrganizationId(
+          response.organizationId || zohoBooksOrganizationId
+        );
+        setZohoBooksClientSecret("");
+        setMessage(
+          `Zoho Books connection ${
+            response.connectionId || nextConnectionId
+          } saved.`
+        );
+        return refreshZohoBooks();
+      })
+      .catch((err) => setError(formatError(err)))
+      .finally(() => setLoading(false));
+  }
+
+  function handleDeleteZohoBooksConnection(targetConnectionId) {
+    setError("");
+    setMessage("");
+    setLoading(true);
+    fetchWithContext(
+      `integrations/zoho-books/connections/${encodeURIComponent(
+        targetConnectionId
+      )}`,
+      requestContext,
+      { method: "DELETE" },
+      false
+    )
+      .then(() => {
+        setMessage(`Zoho Books connection ${targetConnectionId} deleted.`);
+        if (zohoBooksConnectionId === targetConnectionId) {
+          setZohoBooksConnectionId(createConnectionId("zoho-books"));
+        }
+        return refreshZohoBooks();
+      })
+      .catch((err) => setError(formatError(err)))
+      .finally(() => setLoading(false));
+  }
+
+  function handleFetchZohoBooksInvoices(targetConnectionId) {
+    setError("");
+    setMessage("");
+    setZohoBooksInvoicesResult(null);
+    setLoading(true);
+    fetchWithContext(
+      `integrations/zoho-books/connections/${encodeURIComponent(
+        targetConnectionId
+      )}/bills`,
+      requestContext,
+      { method: "POST" }
+    )
+      .then((response) => {
+        const count = response && response.count ? response.count : 0;
+        setZohoBooksInvoicesResult(response || { count: 0, bills: [] });
+        setMessage(
+          `Fetched ${count} Zoho Books bill${count === 1 ? "" : "s"} from ${targetConnectionId}.`
+        );
+      })
+      .catch((err) => setError(formatError(err)))
+      .finally(() => setLoading(false));
+  }
+
   function handleLoadDrive() {
     setError("");
     setMessage("");
@@ -706,6 +826,12 @@ export default function GDriveIntegrations() {
     setGeminiTab("create");
   }
 
+  function handleUseZohoBooksConnection(connection) {
+    setZohoBooksConnectionId(connection.connectionId || "");
+    setZohoBooksOrganizationId(connection.organizationId || "");
+    setZohoBooksTab("create");
+  }
+
   return (
     <>
       <Helmet>
@@ -731,6 +857,7 @@ export default function GDriveIntegrations() {
                 >
                   <Tab value="gdrive" label="GDrive" />
                   <Tab value="gemini" label="Gemini" />
+                  <Tab value="zoho-books" label="Zoho Books" />
                   <Tab value="reconciliation" label="Reconciliation" />
                 </Tabs>
                 <div className={classes.tabContent}>
@@ -767,6 +894,17 @@ export default function GDriveIntegrations() {
                           </Text>
                           <Text className={classes.muted}>
                             Type: GRN_POD_RECONCILE
+                          </Text>
+                        </>
+                      )}
+                      {providerTab === "zoho-books" && (
+                        <>
+                          <Text level={2}>Zoho Books</Text>
+                          <Text className={classes.muted}>
+                            Task: {ZOHO_BOOKS_TASK_NAME}
+                          </Text>
+                          <Text className={classes.muted}>
+                            Type: ZOHO_BOOKS_FETCH
                           </Text>
                         </>
                       )}
@@ -1186,6 +1324,242 @@ export default function GDriveIntegrations() {
                       prompt: geminiPrompt,
                     })}
                   </pre>
+                </Paper>
+              </Grid>
+            </>
+          )}
+
+          {providerTab === "zoho-books" && (
+            <>
+              <Grid item xs={12} md={5}>
+                <Paper padded className={classes.card}>
+                  <div className={classes.tabbedPanel}>
+                    <Tabs
+                      orientation="vertical"
+                      value={zohoBooksTab}
+                      onChange={(event, value) => setZohoBooksTab(value)}
+                      className={classes.verticalTabs}
+                    >
+                      <Tab value="create" label="Create" />
+                      <Tab value="manage" label="Manage" />
+                    </Tabs>
+                    <div className={classes.tabContent}>
+                      {zohoBooksTab === "create" && (
+                        <div className={classes.formStack}>
+                          <Box className={classes.actionRow}>
+                            <Text level={2}>Zoho Books</Text>
+                            <Chip size="small" label="ZOHO_BOOKS_FETCH" />
+                          </Box>
+                          <Input
+                            label="Connection ID"
+                            value={zohoBooksConnectionId}
+                            fullWidth
+                            variant="outlined"
+                            onChange={setZohoBooksConnectionId}
+                          />
+                          <Input
+                            label="Client ID"
+                            value={zohoBooksClientId}
+                            fullWidth
+                            variant="outlined"
+                            onChange={setZohoBooksClientId}
+                          />
+                          <Input
+                            label="Client Secret"
+                            value={zohoBooksClientSecret}
+                            fullWidth
+                            variant="outlined"
+                            type="password"
+                            onChange={setZohoBooksClientSecret}
+                          />
+                          <Input
+                            label="Organization ID"
+                            value={zohoBooksOrganizationId}
+                            fullWidth
+                            variant="outlined"
+                            onChange={setZohoBooksOrganizationId}
+                          />
+                          <Box className={classes.actionRow}>
+                            <Button
+                              color="primary"
+                              variant="contained"
+                              onClick={handleSaveZohoBooksConnection}
+                              disabled={loading}
+                            >
+                              Create Connection
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              onClick={refreshZohoBooks}
+                              disabled={loading}
+                            >
+                              Refresh
+                            </Button>
+                          </Box>
+                        </div>
+                      )}
+                      {zohoBooksTab === "manage" && (
+                        <div className={classes.formStack}>
+                          <Box className={classes.actionRow}>
+                            <Text level={2}>Zoho Books Connections</Text>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              onClick={refreshZohoBooks}
+                              disabled={loading}
+                            >
+                              Refresh
+                            </Button>
+                          </Box>
+                          <div className={classes.connectionList}>
+                            <div
+                              className={`${classes.connectionRow} ${classes.connectionHeader}`}
+                            >
+                              <div>Connection ID</div>
+                              <div>Organization ID</div>
+                              <div />
+                            </div>
+                            {zohoBooksConnections.length === 0 && (
+                              <div className={classes.connectionRow}>
+                                <div>No Zoho Books connections saved.</div>
+                                <div />
+                                <div />
+                              </div>
+                            )}
+                            {zohoBooksConnections.map((connection) => (
+                              <div
+                                key={connection.connectionId}
+                                className={classes.connectionRow}
+                              >
+                                <div className={classes.truncate}>
+                                  {connection.connectionId}
+                                </div>
+                                <div className={classes.truncate}>
+                                  {connection.organizationId}
+                                </div>
+                                <Box className={classes.actionRow}>
+                                  <Button
+                                    size="small"
+                                    onClick={() =>
+                                      handleUseZohoBooksConnection(connection)
+                                    }
+                                  >
+                                    Use
+                                  </Button>
+                                  <Button
+                                    size="small"
+                                    variant="outlined"
+                                    onClick={() =>
+                                      handleFetchZohoBooksInvoices(
+                                        connection.connectionId
+                                      )
+                                    }
+                                    disabled={loading}
+                                  >
+                                    Fetch Bills
+                                  </Button>
+                                  <Button
+                                    size="small"
+                                    color="primary"
+                                    onClick={() =>
+                                      handleDeleteZohoBooksConnection(
+                                        connection.connectionId
+                                      )
+                                    }
+                                    disabled={loading}
+                                  >
+                                    Delete
+                                  </Button>
+                                </Box>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {message && <Text>{message}</Text>}
+                      {error && <Text color="error">{error}</Text>}
+                    </div>
+                  </div>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} md={7}>
+                <Paper padded className={classes.card}>
+                  <Text level={2}>Workflow Task</Text>
+                  <pre className={classes.codeBlock}>
+                    {zohoBooksTaskSnippet()}
+                  </pre>
+                </Paper>
+              </Grid>
+              <Grid item xs={12}>
+                <Paper padded>
+                  <Box className={classes.actionRow} mb={2}>
+                    <Text level={2}>Bills</Text>
+                    <Chip
+                      size="small"
+                      label={`${zohoBooksInvoicesResult?.count || 0} fetched`}
+                    />
+                  </Box>
+                  <TableContainer>
+                    <Table className={classes.table} size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Bill Number</TableCell>
+                          <TableCell>Reference</TableCell>
+                          <TableCell>Vendor</TableCell>
+                          <TableCell>Status</TableCell>
+                          <TableCell>Date</TableCell>
+                          <TableCell>Total</TableCell>
+                          <TableCell>ID</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {!(
+                          zohoBooksInvoicesResult?.bills ||
+                          zohoBooksInvoicesResult?.invoices
+                        )?.length && (
+                          <TableRow>
+                            <TableCell colSpan={7}>
+                              No bills fetched.
+                            </TableCell>
+                          </TableRow>
+                        )}
+                        {(
+                          zohoBooksInvoicesResult?.bills ||
+                          zohoBooksInvoicesResult?.invoices
+                        )?.map(
+                          (invoice, index) => (
+                            <TableRow
+                              key={
+                                invoice.bill_id ||
+                                invoice.invoice_id ||
+                                index.toString()
+                              }
+                            >
+                              <TableCell>
+                                {invoice.bill_number ||
+                                  invoice.invoice_number ||
+                                  "-"}
+                              </TableCell>
+                              <TableCell>
+                                {invoice.reference_number || "-"}
+                              </TableCell>
+                              <TableCell>
+                                {invoice.vendor_name ||
+                                  invoice.customer_name ||
+                                  "-"}
+                              </TableCell>
+                              <TableCell>{invoice.status || "-"}</TableCell>
+                              <TableCell>{invoice.date || "-"}</TableCell>
+                              <TableCell>{invoice.total ?? "-"}</TableCell>
+                              <TableCell>
+                                {invoice.bill_id || invoice.invoice_id || "-"}
+                              </TableCell>
+                            </TableRow>
+                          )
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
                 </Paper>
               </Grid>
             </>

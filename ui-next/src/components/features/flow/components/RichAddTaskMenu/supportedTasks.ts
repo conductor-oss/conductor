@@ -79,6 +79,12 @@ export const SYSTEM_TASKS: BaseTaskMenuItem[] = [
     category: "System",
   },
   {
+    name: "Zoho Books Fetch",
+    description: "Fetch GRN and POD records for a Zoho Books invoice.",
+    type: TaskType.ZOHO_BOOKS_FETCH,
+    category: "System",
+  },
+  {
     name: "GRN/POD Reconcile",
     description: "Reconcile extracted GRN and POD records inside Conductor.",
     type: TaskType.GRN_POD_RECONCILE,

@@ -22,9 +22,11 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.conductoross.conductor.core.dao.InMemoryGDriveConnectionDAO;
+import org.conductoross.conductor.core.dao.InMemoryZohoBooksConnectionDAO;
 import org.conductoross.conductor.core.listener.MetadataChangeListener;
 import org.conductoross.conductor.core.listener.MetadataChangeListenerStub;
 import org.conductoross.conductor.dao.GDriveConnectionDAO;
+import org.conductoross.conductor.dao.ZohoBooksConnectionDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -166,5 +168,11 @@ public class ConductorCoreConfiguration {
     @ConditionalOnMissingBean(GDriveConnectionDAO.class)
     public GDriveConnectionDAO inMemoryGDriveConnectionDAO() {
         return new InMemoryGDriveConnectionDAO();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(ZohoBooksConnectionDAO.class)
+    public ZohoBooksConnectionDAO inMemoryZohoBooksConnectionDAO() {
+        return new InMemoryZohoBooksConnectionDAO();
     }
 }
