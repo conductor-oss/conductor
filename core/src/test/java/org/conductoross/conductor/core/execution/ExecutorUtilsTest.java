@@ -292,6 +292,22 @@ public class ExecutorUtilsTest {
     }
 
     @Test
+    public void computePostponeDefersHumanWrappedInDoWhile() {
+        WorkflowModel workflow =
+                newWorkflow(
+                        Arrays.asList(
+                                newTask(TaskType.TASK_TYPE_DO_WHILE, TaskModel.Status.IN_PROGRESS),
+                                newTask(TaskType.TASK_TYPE_HUMAN, TaskModel.Status.IN_PROGRESS)),
+                        0);
+        // The DO_WHILE only wraps the running HUMAN leaf, so the workflow still defers to
+        // maxPostpone.
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
+        assertEquals(3600, result.getSeconds());
+    }
+
+    @Test
     public void computePostponeDoesNotDeferHumanInsideFork() {
         WorkflowDef workflowDef = new WorkflowDef();
         WorkflowTask fork = new WorkflowTask();
