@@ -26,7 +26,9 @@ import org.mockito.Mock;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.Workflow;
@@ -37,6 +39,7 @@ import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.listener.TaskStatusListener;
+import com.netflix.conductor.core.secrets.TaskSecretsResolver;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
@@ -63,6 +66,7 @@ public class ExecutionServiceTest {
     @Mock private SystemTaskRegistry systemTaskRegistry;
     @Mock private TaskStatusListener taskStatusListener;
     @Mock private ParametersUtils parametersUtils;
+    @Mock private TaskSecretsResolver taskSecretsResolver;
 
     private ExecutionService executionService;
 
@@ -86,7 +90,8 @@ public class ExecutionServiceTest {
                         externalPayloadStorage,
                         systemTaskRegistry,
                         taskStatusListener,
-                        parametersUtils);
+                        parametersUtils,
+                        taskSecretsResolver);
         WorkflowDef workflowDef = new WorkflowDef();
         workflow1 = new Workflow();
         workflow1.setWorkflowId("wf1");
@@ -367,5 +372,33 @@ public class ExecutionServiceTest {
         assertEquals("s3cr3t", polled.get(0).getInputData().get("pwd"));
         // persisted model keeps the literal
         assertEquals("${workflow.secrets.DB_PASSWORD}", taskModel.getInputData().get("pwd"));
+    }
+
+    @Test
+    public void testPollInjectsDeclaredValuesOntoOutgoingTask() {
+        String taskType = "t";
+        String taskId = "task-1";
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setSecrets(List.of("API_KEY"));
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setTaskDefinition(taskDef);
+
+        TaskModel taskModel = new TaskModel();
+        taskModel.setTaskId(taskId);
+        taskModel.setTaskType(taskType);
+        taskModel.setStatus(TaskModel.Status.SCHEDULED);
+        taskModel.setWorkflowTask(workflowTask);
+
+        when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(List.of(taskId));
+        when(executionDAOFacade.getTaskModel(taskId)).thenReturn(taskModel);
+        when(taskSecretsResolver.resolve(any())).thenReturn(Map.of("API_KEY", "token-value-123"));
+
+        List<Task> polled = executionService.poll(taskType, "worker", null, 1, 100);
+
+        assertEquals(1, polled.size());
+        Task returnedTask = polled.get(0);
+        assertEquals("token-value-123", returnedTask.getSecrets().get("API_KEY"));
+        verify(taskSecretsResolver).resolve(any());
     }
 }

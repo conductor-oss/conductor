@@ -36,6 +36,7 @@ import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.listener.TaskStatusListener;
+import com.netflix.conductor.core.secrets.TaskSecretsResolver;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.core.utils.Utils;
@@ -58,6 +59,7 @@ public class ExecutionService {
     private final SystemTaskRegistry systemTaskRegistry;
     private final TaskStatusListener taskStatusListener;
     private final ParametersUtils parametersUtils;
+    private final TaskSecretsResolver taskSecretsResolver;
 
     private final long queueTaskMessagePostponeSecs;
 
@@ -73,7 +75,8 @@ public class ExecutionService {
             ExternalPayloadStorage externalPayloadStorage,
             SystemTaskRegistry systemTaskRegistry,
             TaskStatusListener taskStatusListener,
-            ParametersUtils parametersUtils) {
+            ParametersUtils parametersUtils,
+            TaskSecretsResolver taskSecretsResolver) {
         this.workflowExecutor = workflowExecutor;
         this.executionDAOFacade = executionDAOFacade;
         this.queueDAO = queueDAO;
@@ -85,6 +88,7 @@ public class ExecutionService {
         this.systemTaskRegistry = systemTaskRegistry;
         this.taskStatusListener = taskStatusListener;
         this.parametersUtils = parametersUtils;
+        this.taskSecretsResolver = taskSecretsResolver;
     }
 
     public Task poll(String taskType, String workerId) {
@@ -194,6 +198,11 @@ public class ExecutionService {
                             taskModel.getTaskId());
                 }
                 task.setInputData(parametersUtils.substituteSecrets(task.getInputData()));
+                taskModel
+                        .getTaskDefinition()
+                        .map(TaskDef::getSecrets)
+                        .map(taskSecretsResolver::resolve)
+                        .ifPresent(task::setSecrets);
                 tasks.add(task);
             } catch (Exception e) {
                 // db operation failed for dequeued message, re-enqueue with a delay
