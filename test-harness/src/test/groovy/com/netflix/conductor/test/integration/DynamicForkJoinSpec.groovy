@@ -569,7 +569,7 @@ class DynamicForkJoinSpec extends AbstractSpecification {
             tasks[3].taskType == 'integration_task_10'
             tasks[3].status == Task.Status.COMPLETED
             tasks[4].taskType == 'JOIN'
-            tasks[4].status == Task.Status.CANCELED
+            tasks[4].status == Task.Status.IN_PROGRESS
             tasks[4].referenceTaskName == 'dynamicfanouttask_join'
         }
 

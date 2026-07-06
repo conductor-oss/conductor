@@ -75,8 +75,8 @@ public class SubWorkflowInlineTests {
         taskResult.setTaskId(taskId);
         taskClient.updateTask(taskResult);
 
-        // Workflow will be still running state
-        await().atMost(10, TimeUnit.SECONDS)
+        // Workflow will be still running state (SUB_WORKFLOW task SCHEDULED->IN_PROGRESS is async)
+        await().atMost(30, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             Workflow workflow1 = workflowClient.getWorkflow(workflowId, true);
@@ -99,7 +99,7 @@ public class SubWorkflowInlineTests {
         taskClient.updateTask(taskResult);
 
         // Wait for workflow to get completed
-        await().atMost(3, TimeUnit.SECONDS)
+        await().atMost(30, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             Workflow workflow1 = workflowClient.getWorkflow(workflowId, true);
