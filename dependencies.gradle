@@ -66,7 +66,7 @@ ext {
     revMicrometer = '1.14.6'
     revPrometheus = '0.9.0'
     revElasticSearch7 = '7.17.25'
-    revNetty = '4.2.10.Final'
+    revNetty = '4.2.15.Final'
     revCodec = '1.15'
     revAzureStorageBlobSdk = '12.25.1'
     revNatsStreaming = '2.6.5'

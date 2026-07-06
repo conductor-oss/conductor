@@ -68,11 +68,9 @@ allprojects {
                 if (details.requested.group == 'org.apache.commons' && details.requested.name == 'commons-lang3') {
                     details.useVersion "3.18.0"
                 }
-                // Force all Netty components to fixed version (excluding newer/experimental components)
+                // Force Netty components that follow the core Netty version to the fixed version.
                 if (details.requested.group == 'io.netty' && 
                     !details.requested.name.contains('tcnative') && 
-                    !details.requested.name.contains('http3') &&
-                    !details.requested.name.contains('quic') &&
                     !details.requested.name.contains('codec-base') &&
                     !details.requested.name.contains('codec-compression')) {
                     details.useVersion revNetty
