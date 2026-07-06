@@ -14,11 +14,13 @@ package com.netflix.conductor.common.tasks;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.Test;
 
+import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.ExecutionMetadata;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
@@ -26,11 +28,14 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Any;
 
 import static org.junit.Assert.*;
 
 public class TaskTest {
+
+    private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
 
     @Test
     public void test() {
@@ -96,7 +101,9 @@ public class TaskTest {
         final Task task = new Task();
         // In order to avoid forgetting putting inside the copy method the newly added fields check
         // the number of declared fields.
-        final int expectedTaskFieldsNumber = 43;
+        // NOTE: `secrets` (wire-only resolved secret values, injected at poll time) is
+        // intentionally NOT propagated by copy()/deepCopy() - see testSecretsExcludedFromCopy.
+        final int expectedTaskFieldsNumber = 44;
         final int declaredFieldsNumber = task.getClass().getDeclaredFields().length;
 
         final ExecutionMetadata executionMetadata = new ExecutionMetadata();
@@ -166,5 +173,89 @@ public class TaskTest {
                 Long.valueOf(6000L), copy.getOrCreateExecutionMetadata().getPollNetworkLatency());
         assertEquals(
                 Long.valueOf(7000L), copy.getOrCreateExecutionMetadata().getUpdateNetworkLatency());
+    }
+
+    @Test
+    public void testSecretsGetterSetterRoundTrip() {
+        Task task = new Task();
+        assertNotNull(task.getSecrets());
+        assertTrue(task.getSecrets().isEmpty());
+
+        Map<String, String> secrets = new HashMap<>();
+        secrets.put("OPENAI_API_KEY", "sk-secret-value");
+        task.setSecrets(secrets);
+
+        assertEquals(secrets, task.getSecrets());
+    }
+
+    @Test
+    public void testSetSecretsNullGuard() {
+        Task task = new Task();
+        task.setSecrets(null);
+        assertNotNull(task.getSecrets());
+        assertTrue(task.getSecrets().isEmpty());
+    }
+
+    @Test
+    public void testSecretsSerializedOnlyWhenNonEmpty() throws Exception {
+        Task task = new Task();
+        task.setTaskId("task-1");
+        Map<String, String> secrets = new HashMap<>();
+        secrets.put("OPENAI_API_KEY", "sk-secret-value");
+        task.setSecrets(secrets);
+
+        String json = objectMapper.writeValueAsString(task);
+        assertTrue(json.contains("\"secrets\""));
+        assertTrue(json.contains("OPENAI_API_KEY"));
+        assertTrue(json.contains("sk-secret-value"));
+
+        Task emptySecretsTask = new Task();
+        emptySecretsTask.setTaskId("task-2");
+        String emptyJson = objectMapper.writeValueAsString(emptySecretsTask);
+        assertFalse(emptyJson.contains("\"secrets\""));
+    }
+
+    @Test
+    public void testSecretsExcludedFromEquals() {
+        Task task1 = new Task();
+        task1.setTaskId("task-1");
+        Map<String, String> secrets1 = new HashMap<>();
+        secrets1.put("OPENAI_API_KEY", "sk-secret-value-1");
+        task1.setSecrets(secrets1);
+
+        Task task2 = new Task();
+        task2.setTaskId("task-1");
+        Map<String, String> secrets2 = new HashMap<>();
+        secrets2.put("OPENAI_API_KEY", "sk-secret-value-2");
+        task2.setSecrets(secrets2);
+
+        assertEquals(task1, task2);
+        assertEquals(task1.hashCode(), task2.hashCode());
+    }
+
+    @Test
+    public void testSecretsExcludedFromToString() {
+        Task task = new Task();
+        task.setTaskId("task-1");
+        Map<String, String> secrets = new HashMap<>();
+        secrets.put("OPENAI_API_KEY", "sk-super-secret-value");
+        task.setSecrets(secrets);
+
+        assertFalse(task.toString().contains("sk-super-secret-value"));
+    }
+
+    @Test
+    public void testSecretsExcludedFromCopy() {
+        Task task = new Task();
+        task.setTaskId("task-1");
+        Map<String, String> secrets = new HashMap<>();
+        secrets.put("OPENAI_API_KEY", "sk-secret-value");
+        task.setSecrets(secrets);
+
+        Task copy = task.copy();
+        assertTrue(copy.getSecrets().isEmpty());
+
+        Task deepCopy = task.deepCopy();
+        assertTrue(deepCopy.getSecrets().isEmpty());
     }
 }
