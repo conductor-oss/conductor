@@ -263,6 +263,44 @@ public class ExecutorUtilsTest {
     }
 
     @Test
+    public void computePostponeDefersHumanToItsTimeoutBoundary() {
+        TaskDef humanDef = new TaskDef();
+        humanDef.setTimeoutSeconds(600);
+        WorkflowTask humanWorkflowTask = new WorkflowTask();
+        humanWorkflowTask.setTaskDefinition(humanDef);
+        TaskModel human = newTask(TaskType.TASK_TYPE_HUMAN, TaskModel.Status.IN_PROGRESS);
+        human.setStartTime(System.currentTimeMillis());
+        human.setWorkflowTask(humanWorkflowTask);
+
+        WorkflowModel workflow = newWorkflow(Arrays.asList(human), 0);
+        // A human with a 600s timeout must wake near that boundary (not the 3600s maxPostpone) so
+        // DeciderService.checkTaskTimeout can time it out on schedule.
+        long result =
+                ExecutorUtils.computePostpone(
+                                workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600))
+                        .getSeconds();
+        assertTrue("expected ~600s, got " + result, result >= 595 && result <= 601);
+    }
+
+    @Test
+    public void computePostponeCapsHumanTimeoutAtMaxPostpone() {
+        TaskDef humanDef = new TaskDef();
+        humanDef.setTimeoutSeconds(7200); // 2h, beyond the maxPostpone ceiling
+        WorkflowTask humanWorkflowTask = new WorkflowTask();
+        humanWorkflowTask.setTaskDefinition(humanDef);
+        TaskModel human = newTask(TaskType.TASK_TYPE_HUMAN, TaskModel.Status.IN_PROGRESS);
+        human.setStartTime(System.currentTimeMillis());
+        human.setWorkflowTask(humanWorkflowTask);
+
+        WorkflowModel workflow = newWorkflow(Arrays.asList(human), 0);
+        long result =
+                ExecutorUtils.computePostpone(
+                                workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600))
+                        .getSeconds();
+        assertEquals(3600, result);
+    }
+
+    @Test
     public void computePostponeDoesNotDeferHumanBesideAnotherPendingTask() {
         WorkflowModel workflow =
                 newWorkflow(

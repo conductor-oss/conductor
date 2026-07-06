@@ -210,7 +210,9 @@ public class ExecutorUtils {
         if (maxPostponeSeconds <= 0) {
             return null; // no ceiling configured — cannot defer safely
         }
+        long now = System.currentTimeMillis();
         boolean anyHuman = false;
+        long postponeSeconds = maxPostponeSeconds;
         for (TaskModel taskModel : workflowModel.getTasks()) {
             TaskModel.Status status = taskModel.getStatus();
             if (status != TaskModel.Status.IN_PROGRESS && status != TaskModel.Status.SCHEDULED) {
@@ -219,6 +221,15 @@ public class ExecutorUtils {
             String taskType = taskModel.getTaskType();
             if (TASK_TYPE_HUMAN.equals(taskType)) {
                 anyHuman = true;
+                // Wake by the human's own timeout deadline so DeciderService.checkTaskTimeout can
+                // enforce it on schedule; only a human with no timeout configured is deferred the
+                // full maxPostpone (indefinite).
+                long timeoutSeconds = humanTimeoutSeconds(taskModel, now);
+                long candidateSeconds =
+                        (timeoutSeconds > 0)
+                                ? Math.min(timeoutSeconds, maxPostponeSeconds)
+                                : maxPostponeSeconds;
+                postponeSeconds = Math.min(postponeSeconds, candidateSeconds);
             } else if (TASK_TYPE_DO_WHILE.equals(taskType)) {
                 // only wraps the running HUMAN leaf inside its loop
             } else {
@@ -228,7 +239,38 @@ public class ExecutorUtils {
         if (!anyHuman || hasForkStructure(workflowModel)) {
             return null;
         }
-        return maxPostponeSeconds;
+        return postponeSeconds;
+    }
+
+    /**
+     * Seconds until a HUMAN task's soonest configured timeout deadline (the OSS analog of an SLA),
+     * derived from its {@link TaskDef} {@code timeoutSeconds}/{@code responseTimeoutSeconds} and
+     * its start time. Returns {@code 0} when the task has no timeout configured (indefinite) or has
+     * not started yet — matching {@code DeciderService.checkTaskTimeout}, which does not time out a
+     * task with {@code timeoutSeconds <= 0} or {@code startTime <= 0}.
+     */
+    private static long humanTimeoutSeconds(TaskModel taskModel, long now) {
+        TaskDef taskDef = taskModel.getTaskDefinition().orElse(null);
+        if (taskDef == null || taskModel.getStartTime() <= 0) {
+            return 0;
+        }
+        long deadlineSeconds = 0;
+        if (taskDef.getTimeoutSeconds() > 0) {
+            deadlineSeconds = taskDef.getTimeoutSeconds();
+        }
+        if (taskDef.getResponseTimeoutSeconds() > 0) {
+            deadlineSeconds =
+                    (deadlineSeconds == 0)
+                            ? taskDef.getResponseTimeoutSeconds()
+                            : Math.min(deadlineSeconds, taskDef.getResponseTimeoutSeconds());
+        }
+        if (deadlineSeconds == 0) {
+            return 0; // no timeout configured — indefinite
+        }
+        long elapsedSeconds = Math.max(0, (now - taskModel.getStartTime()) / 1000);
+        // +1 gives a one-second buffer past the deadline before re-evaluating; floor at 1 so an
+        // already-overdue task wakes on the next sweep rather than immediately churning.
+        return Math.max(1, deadlineSeconds - elapsedSeconds + 1);
     }
 
     private static boolean hasForkStructure(WorkflowModel workflowModel) {
