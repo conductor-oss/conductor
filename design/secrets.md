@@ -2,10 +2,10 @@
 Workers often need sensitive information to operate on.  e.g. api keys, to make calls, run LLM tasks etc.
 This is a proposal to pass such information back to the worker without having to inject it as part of the workflow definition
 
-# High Level Approach
+## High Level Approach
 Task definition declares all the secrets and env variables it needs from the server.  This should be persent in the TaskDef.  At runtime, server checks the task definition and injects the necessary values as K,V in the Task.
 
-# Changes needed
+## Changes needed
 ### TaskDef.java
 Add a new parameter that lists secrets / env variables
 
