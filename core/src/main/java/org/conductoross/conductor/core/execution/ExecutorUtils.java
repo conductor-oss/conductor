@@ -42,6 +42,12 @@ public class ExecutorUtils {
      * Computes how long to postpone the next sweep/re-check of a workflow so that the scheduler
      * does not poll more frequently than necessary.
      *
+     * <p>Special case first: if the only pending work is HUMAN task(s) (looking past a wrapping
+     * {@code DO_WHILE}, and provided the definition has no FORK), the workflow is deferred by
+     * {@link #humanOnlyPostpone} to the human's timeout deadline, or {@code maxPostponeDuration}
+     * when the human has no timeout — it is waiting on a person, not the sweeper. Otherwise the
+     * per-task algorithm below runs.
+     *
      * <p>Algorithm:
      *
      * <ol>
