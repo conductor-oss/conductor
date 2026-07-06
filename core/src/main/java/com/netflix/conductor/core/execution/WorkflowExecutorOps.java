@@ -1396,6 +1396,32 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         }
     }
 
+    /**
+     * Re-queue every IN_PROGRESS JOIN in {@code parentWorkflowId} for immediate re-evaluation.
+     * Called when a fork branch's sub-workflow reaches a terminal state: the sibling JOIN may now
+     * be satisfiable, but as an async task it only re-polls on exponential backoff (capped at
+     * workflowOffsetTimeout, default 30s). Without this nudge the parent can hang for up to that
+     * cap after the last branch finishes before the JOIN notices. Mirrors {@link
+     * #expediteLazyWorkflowEvaluation}: postpone the existing queue message to 0 if present, else
+     * push a fresh one — idempotent by task id, so no duplicate queue entries.
+     */
+    private void expediteInProgressJoinTasks(String parentWorkflowId) {
+        WorkflowModel parentWorkflow = executionDAOFacade.getWorkflowModel(parentWorkflowId, true);
+        for (TaskModel joinTask : parentWorkflow.getTasks()) {
+            if (!TaskType.TASK_TYPE_JOIN.equals(joinTask.getTaskType())
+                    || joinTask.getStatus() != TaskModel.Status.IN_PROGRESS) {
+                continue;
+            }
+            String queueName = QueueUtils.getQueueName(joinTask);
+            if (queueDAO.containsMessage(queueName, joinTask.getTaskId())) {
+                queueDAO.postpone(
+                        queueName, joinTask.getTaskId(), joinTask.getWorkflowPriority(), 0);
+            } else {
+                queueDAO.push(queueName, joinTask.getTaskId(), joinTask.getWorkflowPriority(), 0);
+            }
+        }
+    }
+
     private Optional<TaskModel> findChangedSubWorkflowTask(WorkflowModel workflow) {
         WorkflowDef workflowDef =
                 Optional.ofNullable(workflow.getWorkflowDefinition())
@@ -2256,6 +2282,12 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         }
         executeSubworkflowTaskAndSyncData(subWorkflow, subWorkflowTask);
         executionDAOFacade.updateTask(subWorkflowTask);
+        if (subWorkflowTask.getStatus().isTerminal()) {
+            // This fork branch's sub-workflow just finished; a sibling JOIN waiting on it may now
+            // be satisfiable. Nudge it off its exponential-backoff poll so the parent completes
+            // promptly instead of stalling until the JOIN's next scheduled evaluation.
+            expediteInProgressJoinTasks(subWorkflowTask.getWorkflowInstanceId());
+        }
     }
 
     private void executeSubworkflowTaskAndSyncData(
