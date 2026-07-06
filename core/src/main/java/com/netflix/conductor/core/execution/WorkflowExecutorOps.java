@@ -1407,6 +1407,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
      */
     private void expediteInProgressJoinTasks(String parentWorkflowId) {
         WorkflowModel parentWorkflow = executionDAOFacade.getWorkflowModel(parentWorkflowId, true);
+        if (parentWorkflow == null) {
+            return;
+        }
         for (TaskModel joinTask : parentWorkflow.getTasks()) {
             if (!TaskType.TASK_TYPE_JOIN.equals(joinTask.getTaskType())
                     || joinTask.getStatus() != TaskModel.Status.IN_PROGRESS) {
