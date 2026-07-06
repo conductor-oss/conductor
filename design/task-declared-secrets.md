@@ -66,7 +66,8 @@ These are the choices made where the origin doc was silent — call them out in 
 
 ### `common` — `TaskDef.java`
 Add, mirroring the existing `inputKeys`/`outputKeys` treatment (field, getter/setter,
-and inclusion in `equals`/`hashCode`/`toString`):
+and inclusion in `equals`/`hashCode`; note `TaskDef.toString()` only renders `name`, so
+`secrets` — like `inputKeys`/`outputKeys` — is not added there):
 ```java
 private List<String> secrets = new ArrayList<>();
 public List<String> getSecrets() { return secrets; }

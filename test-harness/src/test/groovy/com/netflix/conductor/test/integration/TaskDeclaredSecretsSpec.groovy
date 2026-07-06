@@ -87,5 +87,8 @@ class TaskDeclaredSecretsSpec extends AbstractSpecification {
         polled.secrets['REGION'] == 'us-east-1'
         !polled.secrets.containsKey('MISSING_ONE')
         polled.secrets.size() == 2
+
+        and: "the resolved values are NOT persisted — a re-fetch of the task has no secrets"
+        workflowExecutionService.getTask(polled.taskId).secrets.isEmpty()
     }
 }
