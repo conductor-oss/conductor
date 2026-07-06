@@ -394,7 +394,7 @@ public class ParametersUtilsTest {
         input.put("region", "${workflow.env.REGION}");
 
         WorkflowModel wf = new WorkflowModel();
-        wf.setWorkflowDefinition(new com.netflix.conductor.common.metadata.workflow.WorkflowDef());
+        wf.setWorkflowDefinition(new WorkflowDef());
         Map<String, Object> out = pu.getTaskInput(input, wf, null, "t1");
 
         assertEquals("us-east-1", out.get("region"));
@@ -410,7 +410,7 @@ public class ParametersUtilsTest {
         input.put("pwd", "${workflow.secrets.DB_PASSWORD}");
 
         WorkflowModel wf = new WorkflowModel();
-        wf.setWorkflowDefinition(new com.netflix.conductor.common.metadata.workflow.WorkflowDef());
+        wf.setWorkflowDefinition(new WorkflowDef());
         Map<String, Object> out = pu.getTaskInput(input, wf, null, "t1");
 
         assertEquals("${workflow.secrets.DB_PASSWORD}", out.get("pwd"));

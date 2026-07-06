@@ -15,7 +15,9 @@ package com.netflix.conductor.service;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -35,6 +37,7 @@ import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.listener.TaskStatusListener;
+import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 
@@ -59,7 +62,7 @@ public class ExecutionServiceTest {
     @Mock private ExternalPayloadStorage externalPayloadStorage;
     @Mock private SystemTaskRegistry systemTaskRegistry;
     @Mock private TaskStatusListener taskStatusListener;
-    @Mock private com.netflix.conductor.core.utils.ParametersUtils parametersUtils;
+    @Mock private ParametersUtils parametersUtils;
 
     private ExecutionService executionService;
 
@@ -348,13 +351,13 @@ public class ExecutionServiceTest {
         taskModel.setTaskId(taskId);
         taskModel.setTaskType(taskType);
         taskModel.setStatus(TaskModel.Status.SCHEDULED);
-        java.util.Map<String, Object> literal = new java.util.HashMap<>();
+        Map<String, Object> literal = new HashMap<>();
         literal.put("pwd", "${workflow.secrets.DB_PASSWORD}");
         taskModel.setInputData(literal);
 
-        when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(java.util.List.of(taskId));
+        when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(List.of(taskId));
         when(executionDAOFacade.getTaskModel(taskId)).thenReturn(taskModel);
-        java.util.Map<String, Object> resolved = new java.util.HashMap<>();
+        Map<String, Object> resolved = new HashMap<>();
         resolved.put("pwd", "s3cr3t");
         when(parametersUtils.substituteSecrets(any())).thenReturn(resolved);
 
