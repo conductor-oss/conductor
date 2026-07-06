@@ -13,6 +13,7 @@ export interface ScheduleButtonsProps {
   saveScheduleSubmit: () => void;
   clearScheduleForm: () => void;
   setSaveConfirmationOpen: () => void;
+  canSave?: boolean;
 }
 
 const VALID_WIDTH_BREAKPOINT = 491;
@@ -24,6 +25,7 @@ const ScheduleButtons: FunctionComponent<ScheduleButtonsProps> = ({
   saveScheduleSubmit,
   clearScheduleForm,
   setSaveConfirmationOpen,
+  canSave = true,
 }) => {
   const { isTrialExpired } = useAuth();
   const isValidWidth = useMediaQuery((theme: Theme) =>
@@ -45,7 +47,11 @@ const ScheduleButtons: FunctionComponent<ScheduleButtonsProps> = ({
           >
             Cancel
           </Button>
-          <Button onClick={() => saveScheduleSubmit()} startIcon={<SaveIcon />}>
+          <Button
+            onClick={() => saveScheduleSubmit()}
+            startIcon={<SaveIcon />}
+            disabled={!canSave}
+          >
             Confirm
           </Button>
         </Stack>
@@ -58,14 +64,14 @@ const ScheduleButtons: FunctionComponent<ScheduleButtonsProps> = ({
           <Button
             variant="text"
             onClick={() => clearScheduleForm()}
-            disabled={couldNotParseJson}
+            disabled={couldNotParseJson || !canSave}
             startIcon={<ResetIcon />}
           >
             Reset
           </Button>
           <Button
             onClick={() => setSaveConfirmationOpen()}
-            disabled={couldNotParseJson || isTrialExpired}
+            disabled={couldNotParseJson || isTrialExpired || !canSave}
             startIcon={<SaveIcon />}
           >
             Save

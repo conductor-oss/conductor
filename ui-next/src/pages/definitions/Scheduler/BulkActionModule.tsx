@@ -84,10 +84,12 @@ export default function BulkActionModule({
   selectedRows,
   refetchExecution,
   handleError,
+  canUpdate = true,
 }: {
   selectedRows: any[];
   refetchExecution: () => void;
   handleError: (error: any) => void;
+  canUpdate?: boolean;
 }) {
   const selectedIds = selectedRows.map((row) => row.name);
   const [results, setResults] = useState<any>(null);
@@ -147,11 +149,13 @@ export default function BulkActionModule({
             label: "Pause",
             // @ts-ignore
             handler: () => pauseAction({ body: JSON.stringify(selectedIds) }),
+            disabled: !canUpdate,
           },
           {
             label: "Resume",
             // @ts-ignore
             handler: () => resumeAction({ body: JSON.stringify(selectedIds) }),
+            disabled: !canUpdate,
           },
         ]}
       >

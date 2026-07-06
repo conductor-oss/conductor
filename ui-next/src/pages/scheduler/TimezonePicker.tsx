@@ -6,6 +6,7 @@ type TimezonePickerProps = {
   onChange: (newValue: any) => void;
   error: boolean;
   helperText: string;
+  disabled?: boolean;
 };
 
 export const TimezonePicker = ({
@@ -13,6 +14,7 @@ export const TimezonePicker = ({
   onChange,
   error,
   helperText,
+  disabled = false,
 }: TimezonePickerProps) => {
   return (
     <ConductorAutoComplete
@@ -20,6 +22,7 @@ export const TimezonePicker = ({
       label="Select Timezone"
       required
       fullWidth
+      disabled={disabled}
       error={error}
       helperText={helperText}
       value={timezone}

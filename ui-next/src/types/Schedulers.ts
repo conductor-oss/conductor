@@ -9,6 +9,13 @@ export interface IStartWorkflowRequest {
   priority?: number;
 }
 
+export interface IScheduleCapabilities {
+  update?: boolean;
+  delete?: boolean;
+  /** Can create a new schedule targeting this row's workflow (clone). */
+  create?: boolean;
+}
+
 export interface IScheduleDto {
   name: string;
   cronExpression: string;
@@ -24,6 +31,8 @@ export interface IScheduleDto {
   lastRunTimeInEpoch?: number;
   nextRunTime?: number;
   tags?: TagDto[];
+  /** Per-instance capability hints — populated on GET and list responses. */
+  capabilities?: IScheduleCapabilities | null;
 }
 
 export interface SchedulerSearchResult {

@@ -11,16 +11,18 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import { LinearProgress } from "components";
-import { DocLink } from "components/ui/DocLink";
-import { SnackbarMessage } from "components/ui/SnackbarMessage";
-import ConductorInput from "components/ui/inputs/ConductorInput";
-import { MessageContext } from "components/providers/messageContext";
+import { useResourcePermissions } from "components/features/auth/useResourcePermissions";
+import { ResourceKey } from "utils/accessControl";
 import { ConductorSectionHeader } from "components/layout/section/ConductorSectionHeader";
+import { MessageContext } from "components/providers/messageContext";
+import { DocLink } from "components/ui/DocLink";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import SectionContainer from "components/ui/layout/SectionContainer";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
 import { IdempotencyStrategyEnum } from "pages/runWorkflow/types";
 import { useCallback, useContext, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
 import { useLocation, useParams } from "react-router";
-import SectionContainer from "components/ui/layout/SectionContainer";
 import { colors } from "theme/tokens/variables";
 import { IObject } from "types/common";
 import { DOC_LINK_URL } from "utils/constants/docLink";
@@ -91,6 +93,13 @@ export function Schedule() {
   const { data: schedule, isLoading } = useSchedule(
     isNewScheduleDef ? null : scheduleNameFromUrl,
   );
+
+  const { canCreate: canCreateSchedule } = useResourcePermissions(
+    ResourceKey.WORKFLOW_SCHEDULE,
+  );
+  const canEditSchedule = isNewScheduleDef
+    ? canCreateSchedule
+    : !isLoading && (schedule?.capabilities?.update ?? false);
 
   const workflowDefByVersions = useWorkflowDefsByVersions();
 
@@ -571,6 +580,7 @@ export function Schedule() {
                 saveScheduleSubmit={saveScheduleSubmit}
                 clearScheduleForm={clearScheduleForm}
                 setSaveConfirmationOpen={setSaveConfirmationOpen}
+                canSave={canEditSchedule}
               />
             }
           />
@@ -642,6 +652,7 @@ export function Schedule() {
                           <ConductorInput
                             fullWidth
                             required
+                            disabled={!canEditSchedule}
                             label="Name"
                             id="schedule-name-field"
                             value={scheduleState.name}
@@ -664,6 +675,7 @@ export function Schedule() {
                             multiline
                             minRows={3}
                             fullWidth
+                            disabled={!canEditSchedule}
                             value={scheduleState.description}
                             onTextInputChange={(value) =>
                               formHandlers.setScheduleNewState(
@@ -688,6 +700,7 @@ export function Schedule() {
                           setZoneId={handleZoneIdChange}
                           cronError={errors?.cronExpression}
                           minWidthCronExpression={minWidthCronExpression}
+                          readOnly={!canEditSchedule}
                         />
                         <WorkflowConfigSection
                           workflowType={scheduleState.workflowType || null}
@@ -722,6 +735,7 @@ export function Schedule() {
                             formHandlers.handleIdempotencyValues
                           }
                           errors={errors}
+                          readOnly={!canEditSchedule}
                         />
                         <ScheduleTimingSection
                           scheduleStartTime={scheduleState.scheduleStartTime}
@@ -738,6 +752,7 @@ export function Schedule() {
                           }
                           paused={scheduleState.paused}
                           setCronPausedState={formHandlers.setCronPausedState}
+                          readOnly={!canEditSchedule}
                         />
                       </Grid>
                     </Box>
@@ -755,6 +770,7 @@ export function Schedule() {
                         handleChange={handleChangeTransitionData}
                         isConfirmingSave={isConfirmingSave}
                         handleDiffEditorMount={diffEditorDidMount}
+                        readOnly={!canEditSchedule}
                       />
                     </Box>
                   )}

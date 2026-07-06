@@ -6,21 +6,21 @@ import {
   DialogTitle,
   Grid,
 } from "@mui/material";
+import { fetchWithContext, useFetchContext } from "plugins/fetch";
 import { DefaultValues, SubmitHandler, useForm } from "react-hook-form";
-import * as yup from "yup";
-
 import ActionButton from "components/ui/buttons/ActionButton";
 import Button from "components/ui/buttons/MuiButton";
 import ReactHookFormInput from "components/ui/react-hook-form/ReactHookFormInput";
 import { WORKFLOW_NAME_ERROR_MESSAGE } from "utils/constants/common";
 import { WORKFLOW_NAME_REGEX } from "utils/constants/regex";
+import { useAuthHeaders } from "utils/query";
+import * as yup from "yup";
 
 interface DialogData {
   name: string;
 }
 export interface CloneScheduleDialogProps {
   name: string;
-  scheduleNames: string[];
   onClose: () => void;
   onSuccess: (data: DialogData) => void;
   isFetching?: boolean;
@@ -28,17 +28,43 @@ export interface CloneScheduleDialogProps {
 
 const CloneScheduleDialog = ({
   name,
-  scheduleNames,
   onClose,
   onSuccess,
   isFetching,
 }: CloneScheduleDialogProps) => {
+  const fetchContext = useFetchContext();
+  const authHeaders = useAuthHeaders();
+
   const formSchema = yup.object().shape({
     name: yup
       .string()
       .required("Name cannot be blank.")
       .matches(WORKFLOW_NAME_REGEX, WORKFLOW_NAME_ERROR_MESSAGE)
-      .notOneOf(scheduleNames, "This name is existing."),
+      .test("unique-name", "This name is existing.", async (value) => {
+        if (!value) {
+          return true;
+        }
+
+        try {
+          await fetchWithContext(
+            `/scheduler/schedules/${encodeURIComponent(value)}`,
+            fetchContext,
+            { headers: authHeaders },
+          );
+          return false;
+        } catch (error) {
+          if (error instanceof Response) {
+            if (error.status === 404) {
+              return true;
+            }
+            // Schedule exists but caller may lack READ, or other client error
+            if (error.status === 403) {
+              return false;
+            }
+          }
+          return true;
+        }
+      }),
   });
 
   const defaultValues: DefaultValues<DialogData> = {

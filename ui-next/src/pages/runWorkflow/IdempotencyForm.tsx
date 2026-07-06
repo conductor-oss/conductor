@@ -26,6 +26,7 @@ export interface IdempotencyFormProps {
     idempotencyStrategy?: IdempotencyStrategyEnum;
   }) => void;
   showStrategyInitially?: boolean;
+  disabled?: boolean;
 }
 
 enum IdempotencyStrategyEnum {
@@ -38,6 +39,7 @@ export default function IdempotencyForm({
   idempotencyValues,
   onChange,
   showStrategyInitially,
+  disabled = false,
 }: IdempotencyFormProps) {
   const { idempotencyKey, idempotencyStrategy } = idempotencyValues;
   return (
@@ -46,6 +48,7 @@ export default function IdempotencyForm({
         <ConductorInput
           id="idempotency-key-field"
           fullWidth
+          disabled={disabled}
           label="Idempotency key"
           value={idempotencyKey ?? ""}
           onTextInputChange={(value) =>
@@ -91,18 +94,21 @@ export default function IdempotencyForm({
                       label: "Return Existing",
                       helperText:
                         "Request will not fail rather it will return the workflowId of the workflow which was triggered with the same idempotencyKey.",
+                      disabled,
                     },
                     {
                       value: IdempotencyStrategyEnum.FAIL,
                       label: "Fail",
                       helperText:
                         "Request will fail if the workflow has been triggered with the same idempotencyKey in the past.",
+                      disabled,
                     },
                     {
                       value: IdempotencyStrategyEnum.FAIL_ON_RUNNING,
                       label: "Fail on Running",
                       helperText:
                         "Request will fail if another workflow with the same idempotencyKey is Running or Paused.",
+                      disabled,
                     },
                   ]}
                   name="idempotency strategy"

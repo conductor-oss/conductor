@@ -23,6 +23,7 @@ interface WorkflowConfigSectionProps {
   };
   handleIdempotencyValues: (data: IdempotencyValuesProp) => void;
   errors?: any;
+  readOnly?: boolean;
 }
 
 export function WorkflowConfigSection({
@@ -39,6 +40,7 @@ export function WorkflowConfigSection({
   idempotencyValues,
   handleIdempotencyValues,
   errors,
+  readOnly = false,
 }: WorkflowConfigSectionProps) {
   return (
     <>
@@ -46,6 +48,7 @@ export function WorkflowConfigSection({
         <ConductorAutoComplete
           fullWidth
           required
+          disabled={readOnly}
           label="Workflow name"
           options={workflowNames}
           onChange={(__, val: any) => setWorkflowType(val)}
@@ -58,6 +61,7 @@ export function WorkflowConfigSection({
         <ConductorAutoComplete
           fullWidth
           disableClearable
+          disabled={readOnly}
           label="Workflow version"
           options={[...workflowVersions, "Latest version"]}
           onChange={(_, val: any) => setWorkflowVersion(val)}
@@ -78,11 +82,13 @@ export function WorkflowConfigSection({
           value={workflowInputTemplate}
           onChange={setWorkflowInputTemplate}
           options={SMALL_EDITOR_DEFAULT_OPTIONS}
+          disabled={readOnly}
         />
       </Grid>
       <Grid size={12}>
         <ConductorInput
           fullWidth
+          disabled={readOnly}
           label="Correlation id"
           value={workflowCorrelationId}
           onTextInputChange={setWorkflowCorrelationId}
@@ -93,6 +99,7 @@ export function WorkflowConfigSection({
           <IdempotencyForm
             idempotencyValues={idempotencyValues}
             onChange={handleIdempotencyValues}
+            disabled={readOnly}
           />
         </Grid>
       </Grid>

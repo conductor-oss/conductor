@@ -1,3 +1,8 @@
+export interface IPromptCapabilities {
+  update?: boolean;
+  delete?: boolean;
+}
+
 export type PromptDef = {
   name: string;
   createdBy?: string;
@@ -15,6 +20,5 @@ export type PromptDef = {
   stopWords?: string[];
   responseFormat?: "json";
   /** Per-instance write capability hints — populated on GET and list responses. */
-  canEdit?: boolean | null;
-  canDelete?: boolean | null;
+  capabilities?: IPromptCapabilities | null;
 };

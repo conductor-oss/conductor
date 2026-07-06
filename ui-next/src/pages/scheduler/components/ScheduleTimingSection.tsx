@@ -20,6 +20,7 @@ interface ScheduleTimingSectionProps {
   setWorkflowTasksToDomainState: (value: string) => void;
   paused: boolean;
   setCronPausedState: () => void;
+  readOnly?: boolean;
 }
 
 export function ScheduleTimingSection({
@@ -31,6 +32,7 @@ export function ScheduleTimingSection({
   setWorkflowTasksToDomainState,
   paused,
   setCronPausedState,
+  readOnly = false,
 }: ScheduleTimingSectionProps) {
   return (
     <>
@@ -42,6 +44,7 @@ export function ScheduleTimingSection({
           to={scheduleEndTime ? new Date(scheduleEndTime) : null}
           onFromChange={handleScheduleStartTime}
           onToChange={handleScheduleEndTime}
+          disabled={readOnly}
         />
       </Grid>
       <Grid size={12}>
@@ -52,6 +55,7 @@ export function ScheduleTimingSection({
           value={taskToDomain}
           onChange={setWorkflowTasksToDomainState}
           options={SMALL_EDITOR_DEFAULT_OPTIONS}
+          disabled={readOnly}
         />
       </Grid>
       <Grid size={12}>
@@ -68,6 +72,7 @@ export function ScheduleTimingSection({
                 color="primary"
                 checked={paused}
                 name="pausedSchedule"
+                disabled={readOnly}
                 onChange={() => setCronPausedState()}
               />
             }

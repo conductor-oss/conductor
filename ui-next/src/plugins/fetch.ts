@@ -70,5 +70,14 @@ export async function fetchWithContext(
     return null;
   }
 
-  return isText ? text : tryToJson(text);
+  if (isText) {
+    return text;
+  }
+
+  const parsed = tryToJson(text);
+  if (parsed === undefined) {
+    throw new Error(`Invalid JSON response from ${cleanPath}`);
+  }
+
+  return parsed;
 }

@@ -36,6 +36,8 @@ import SectionContainer from "components/ui/layout/SectionContainer";
 import SectionHeader from "components/layout/SectionHeader";
 import SectionHeaderActions from "components/ui/layout/SectionHeaderActions";
 import { useAuth } from "components/features/auth";
+import { useResourcePermissions } from "components/features/auth/useResourcePermissions";
+import { ResourceKey } from "utils/accessControl";
 import { colors } from "theme/tokens/variables";
 import { PopoverMessage } from "types/Messages";
 import { IScheduleDto, IStartWorkflowRequest } from "types/Schedulers";
@@ -48,7 +50,6 @@ import {
 } from "utils/constants/common";
 import { SCHEDULER_DEFINITION_URL } from "utils/constants/route";
 import {
-  useGetSchedulerDefinitions,
   useGetSchedulerDefinitionsWithPagination,
   SchedulerSearchParams,
 } from "utils/hooks/useGetSchedulerDefinitions";
@@ -288,6 +289,9 @@ export default function ScheduleDefinitions() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const { isTrialExpired } = useAuth();
+  const { canCreate, canUpdate } = useResourcePermissions(
+    ResourceKey.WORKFLOW_SCHEDULE,
+  );
   const tagsEnabled = featureFlags.isEnabled(FEATURES.TAG_VISIBILITY);
   const [toast, setToast] = useState({
     isOpen: false,
@@ -343,8 +347,18 @@ export default function ScheduleDefinitions() {
     refetch,
   } = useGetSchedulerDefinitionsWithPagination(searchParams);
 
-  // For backward compatibility with clone dialog (fetch all schedule names)
-  const { data: allSchedulesData } = useGetSchedulerDefinitions();
+  const cloneNameSearchParams: SchedulerSearchParams = useMemo(
+    () => ({
+      scheduleName: selectedSchedule?.name,
+      size: 100,
+    }),
+    [selectedSchedule?.name],
+  );
+
+  const { data: cloneNamesData, isFetching: isFetchingScheduleNames } =
+    useGetSchedulerDefinitionsWithPagination(cloneNameSearchParams, {
+      enabled: !!selectedSchedule,
+    });
 
   useEffect(() => {
     setSelectedRows([]);
@@ -414,12 +428,9 @@ export default function ScheduleDefinitions() {
     return [];
   }, [paginatedData]);
 
-  const scheduleNames: string[] = useMemo(
-    () =>
-      allSchedulesData
-        ? allSchedulesData.map((schedule: IScheduleDto) => schedule.name)
-        : [],
-    [allSchedulesData],
+  const siblingScheduleNames: string[] = useMemo(
+    () => cloneNamesData?.results?.map((schedule) => schedule.name) ?? [],
+    [cloneNamesData],
   );
 
   const totalCount = paginatedData?.totalHits ?? 0;
@@ -505,70 +516,101 @@ export default function ScheduleDefinitions() {
         searchable: false,
         grow: 0.5,
         minWidth: "160px",
-        renderer: (name: string, row: IScheduleDto) => (
-          <Box style={{ display: "flex", justifyContent: "space-evenly" }}>
-            {row.active && (
-              <Tooltip title={"Pause schedule"}>
-                <IconButton
-                  onClick={() => handlePauseSchedule(name)}
-                  color="primary"
-                  disabled={isTrialExpired}
+        renderer: (name: string, row: IScheduleDto) => {
+          const rowCanEdit = row.capabilities?.update ?? false;
+          const rowCanDelete = row.capabilities?.delete ?? false;
+          const rowCanClone = row.capabilities?.create ?? false;
+          return (
+            <Box style={{ display: "flex", justifyContent: "space-evenly" }}>
+              {row.active && (
+                <Tooltip
+                  title={rowCanEdit ? "Pause schedule" : "No edit permission"}
                 >
-                  <PauseIcon size={22} />
-                </IconButton>
-              </Tooltip>
-            )}
+                  <span>
+                    <IconButton
+                      onClick={() => handlePauseSchedule(name)}
+                      color="primary"
+                      disabled={isTrialExpired || !rowCanEdit}
+                    >
+                      <PauseIcon size={22} />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              )}
 
-            {!row.active && (
-              <Tooltip title={"Resume schedule"}>
-                <IconButton
-                  onClick={() => handleResumeSchedule(name)}
-                  color="primary"
-                  disabled={isTrialExpired}
+              {!row.active && (
+                <Tooltip
+                  title={rowCanEdit ? "Resume schedule" : "No edit permission"}
                 >
-                  <PlayIcon size={22} />
-                </IconButton>
-              </Tooltip>
-            )}
+                  <span>
+                    <IconButton
+                      onClick={() => handleResumeSchedule(name)}
+                      color="primary"
+                      disabled={isTrialExpired || !rowCanEdit}
+                    >
+                      <PlayIcon size={22} />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              )}
 
-            <Tooltip title={"Clone schedule"}>
-              <IconButton
-                onClick={() => setSelectedSchedule(row)}
-                size="small"
-                disabled={isTrialExpired}
-                sx={{
-                  whiteSpace: "nowrap",
-                }}
+              <Tooltip
+                title={
+                  !rowCanClone
+                    ? "No clone permission"
+                    : "Clone schedule — creates a new schedule with a new name"
+                }
               >
-                <CopyIcon size={20} />
-              </IconButton>
-            </Tooltip>
-
-            {tagsEnabled && (
-              <Tooltip title={"Add/Edit tags"}>
-                <IconButton
-                  disabled={isTrialExpired}
-                  onClick={() => {
-                    setAddTagDialogData(row);
-                    setShowAddTagDialog(true);
-                  }}
-                  size="small"
-                >
-                  <TagIcon />
-                </IconButton>
+                <span>
+                  <IconButton
+                    onClick={() => setSelectedSchedule(row)}
+                    size="small"
+                    disabled={isTrialExpired || !rowCanClone}
+                    sx={{
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    <CopyIcon size={20} />
+                  </IconButton>
+                </span>
               </Tooltip>
-            )}
 
-            <Tooltip title={"Delete schedule"}>
-              <IconButton
-                disabled={isTrialExpired}
-                onClick={() => deleteSchedule(name)}
+              {tagsEnabled && (
+                <Tooltip
+                  title={rowCanEdit ? "Add/Edit tags" : "No edit permission"}
+                >
+                  <span>
+                    <IconButton
+                      disabled={isTrialExpired || !rowCanEdit}
+                      onClick={() => {
+                        setAddTagDialogData(row);
+                        setShowAddTagDialog(true);
+                      }}
+                      size="small"
+                    >
+                      <TagIcon />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              )}
+
+              <Tooltip
+                title={
+                  rowCanDelete ? "Delete schedule" : "No delete permission"
+                }
               >
-                <DeleteIcon size={20} />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        ),
+                <span>
+                  <IconButton
+                    disabled={isTrialExpired || !rowCanDelete}
+                    onClick={() => deleteSchedule(name)}
+                  >
+                    <DeleteIcon size={20} />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </Box>
+          );
+        },
       },
     ],
     [handlePauseSchedule, handleResumeSchedule, isTrialExpired, tagsEnabled],
@@ -675,12 +717,12 @@ export default function ScheduleDefinitions() {
         />
       )}
 
-      {selectedSchedule && (
+      {selectedSchedule && !isFetchingScheduleNames && (
         <CloneScheduleDialog
           name={
             getSequentiallySuffix({
               name: selectedSchedule.name,
-              refNames: scheduleNames,
+              refNames: siblingScheduleNames,
             }).name
           }
           onClose={() => setSelectedSchedule(null)}
@@ -690,7 +732,6 @@ export default function ScheduleDefinitions() {
               body: JSON.stringify({ ...selectedSchedule, name }),
             });
           }}
-          scheduleNames={scheduleNames}
           isFetching={isSavingSchedule}
         />
       )}
@@ -704,6 +745,7 @@ export default function ScheduleDefinitions() {
                 label: "Define schedule",
                 onClick: () => pushHistory(SCHEDULER_DEFINITION_URL.NEW),
                 startIcon: <AddIcon />,
+                disabled: !canCreate,
               },
             ]}
           />
@@ -847,6 +889,7 @@ export default function ScheduleDefinitions() {
                     selectedRows={selectedRows}
                     refetchExecution={refetch}
                     handleError={handleError}
+                    canUpdate={canUpdate}
                   />
                 }
                 onSelectedRowsChange={({ selectedRows }) =>
@@ -874,7 +917,7 @@ export default function ScheduleDefinitions() {
                     description={INTRO_CONTENT}
                     buttonText="Define a Schedule"
                     buttonHandler={handleClickDefineSchedule}
-                    disableButton={isTrialExpired}
+                    disableButton={isTrialExpired || !canCreate}
                   />
                 }
               />

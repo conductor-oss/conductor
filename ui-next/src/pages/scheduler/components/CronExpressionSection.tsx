@@ -71,6 +71,7 @@ interface CronExpressionSectionProps {
   setZoneId: (value: string) => void;
   cronError?: string;
   minWidthCronExpression: string;
+  readOnly?: boolean;
 }
 
 export function CronExpressionSection({
@@ -87,6 +88,7 @@ export function CronExpressionSection({
   setZoneId,
   cronError,
   minWidthCronExpression,
+  readOnly = false,
 }: CronExpressionSectionProps) {
   const isMDWidth = useMediaQuery((theme: Theme) => theme.breakpoints.up("md"));
 
@@ -113,6 +115,7 @@ export function CronExpressionSection({
           </Box>
           <ConductorSelect
             fullWidth
+            disabled={readOnly}
             label="Choose a template to get started"
             SelectProps={{
               displayEmpty: true,
@@ -205,6 +208,7 @@ export function CronExpressionSection({
             <Grid size={12}>
               <ConductorInput
                 fullWidth
+                disabled={readOnly}
                 label="Cron expression"
                 value={cronExpression}
                 onTextInputChange={(value) =>
@@ -239,6 +243,7 @@ export function CronExpressionSection({
                   timezone={timezone}
                   error={false}
                   helperText=""
+                  disabled={readOnly}
                   onChange={(value) => {
                     setZoneId(value);
                     setCronExpression(cronExpression, value);

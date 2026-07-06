@@ -13,6 +13,7 @@ function ScheduleDiffEditor({
   handleChange,
   isConfirmingSave,
   handleDiffEditorMount,
+  readOnly = false,
 }) {
   const { mode } = useContext(ColorModeContext);
   const monacoObjects = useRef(null);
@@ -23,6 +24,7 @@ function ScheduleDiffEditor({
     editorOptions: {
       ...defaultEditorOptions,
       selectOnLineNumbers: true,
+      readOnly,
     },
   };
 

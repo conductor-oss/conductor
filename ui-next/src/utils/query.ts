@@ -153,7 +153,11 @@ export function useFetch<T = any>(
       ? [fetchContext.stack, path]
       : [fetchContext.stack, path, optionalKey],
     () =>
-      fetchWithContext(path, fetchContext, { ...fetchParams, ...fetchOptions }),
+      fetchWithContext(path, fetchContext, {
+        method: "GET",
+        ...fetchParams,
+        ...fetchOptions,
+      }),
     {
       // In OSS mode (ACCESS_MANAGEMENT disabled), always enabled when fetchContext is ready
       keepPreviousData: true,

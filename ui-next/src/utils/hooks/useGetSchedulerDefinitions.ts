@@ -8,9 +8,10 @@ import { STALE_TIME_SEARCH, useAuthHeaders } from "utils/query";
 const SCHEDULER_PATH = "/scheduler/schedules";
 const SCHEDULER_SEARCH_PATH = "/scheduler/schedules/search?";
 
-export const useGetSchedulerDefinitions = () => {
+export const useGetSchedulerDefinitions = (options?: { enabled?: boolean }) => {
   const fetchContext = useFetchContext();
   const fetchParams = { headers: useAuthHeaders() };
+  const enabled = options?.enabled ?? true;
 
   return useQuery<IScheduleDto[]>(
     [fetchContext.stack, SCHEDULER_PATH],
@@ -20,7 +21,7 @@ export const useGetSchedulerDefinitions = () => {
       // staletime to ensure stable view when paginating back and forth (even if underlying results change)
     },
     {
-      enabled: fetchContext.ready,
+      enabled: fetchContext.ready && enabled,
       keepPreviousData: true,
       staleTime: STALE_TIME_SEARCH,
       retry: (failureCount: number, error: any) => {
@@ -38,15 +39,20 @@ export interface SchedulerSearchParams {
   size?: number;
   sort?: string;
   workflowName?: string;
+  /** Maps to search `freeText` (table search box). */
   name?: string;
+  /** Maps to search `name` (schedule name filter). */
+  scheduleName?: string;
   paused?: boolean;
 }
 
 export const useGetSchedulerDefinitionsWithPagination = (
   searchParams: SchedulerSearchParams,
+  options?: { enabled?: boolean },
 ) => {
   const fetchContext = useFetchContext();
   const fetchParams = { headers: useAuthHeaders() };
+  const enabled = options?.enabled ?? true;
 
   return useQuery<SchedulerSearchResult>(
     [fetchContext.stack, SCHEDULER_SEARCH_PATH, searchParams],
@@ -59,6 +65,7 @@ export const useGetSchedulerDefinitionsWithPagination = (
           workflowName: searchParams.workflowName,
         }),
         ...(searchParams.name && { freeText: searchParams.name }),
+        ...(searchParams.scheduleName && { name: searchParams.scheduleName }),
         ...(searchParams.paused !== undefined && {
           paused: searchParams.paused,
         }),
@@ -67,7 +74,7 @@ export const useGetSchedulerDefinitionsWithPagination = (
       return fetchWithContext(path, fetchContext, fetchParams);
     },
     {
-      enabled: fetchContext.ready,
+      enabled: fetchContext.ready && enabled,
       keepPreviousData: true,
       staleTime: STALE_TIME_SEARCH,
       retry: (failureCount: number, error: any) => {
