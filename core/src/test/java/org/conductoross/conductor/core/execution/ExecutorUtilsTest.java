@@ -26,7 +26,6 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class ExecutorUtilsTest {
@@ -247,31 +246,73 @@ public class ExecutorUtilsTest {
     }
 
     @Test
-    public void hasInProgressHumanTaskTrueForInProgressHuman() {
+    public void computePostponeDefersHumanOnlyWorkflowToMaxPostpone() {
         WorkflowModel workflow =
                 newWorkflow(
                         Arrays.asList(
                                 newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.COMPLETED),
                                 newTask(TaskType.TASK_TYPE_HUMAN, TaskModel.Status.IN_PROGRESS)),
                         0);
-        assertTrue(ExecutorUtils.hasInProgressHumanTask(workflow));
+        // Parked only on a HUMAN (no FORK in the definition): defer to maxPostpone rather than
+        // churn the sweeper every offset. The workflow stays in the decider queue (deferred, not
+        // removed) as a recovery backstop.
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
+        assertEquals(3600, result.getSeconds());
     }
 
     @Test
-    public void hasInProgressHumanTaskFalseWhenNoInProgressHuman() {
-        WorkflowModel noHuman =
+    public void computePostponeDoesNotDeferHumanBesideAnotherPendingTask() {
+        WorkflowModel workflow =
                 newWorkflow(
                         Arrays.asList(
+                                newTask(TaskType.TASK_TYPE_HUMAN, TaskModel.Status.IN_PROGRESS),
                                 newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.IN_PROGRESS)),
                         0);
-        assertFalse(ExecutorUtils.hasInProgressHumanTask(noHuman));
+        // A non-HUMAN pending leaf can still make progress -> keep the normal offset cadence.
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
+        assertEquals(30, result.getSeconds());
+    }
 
-        WorkflowModel terminalHuman =
+    @Test
+    public void computePostponeDoesNotDeferHumanOnlyWhenMaxPostponeDisabled() {
+        WorkflowModel workflow =
                 newWorkflow(
                         Arrays.asList(
-                                newTask(TaskType.TASK_TYPE_HUMAN, TaskModel.Status.COMPLETED)),
+                                newTask(TaskType.TASK_TYPE_HUMAN, TaskModel.Status.IN_PROGRESS)),
                         0);
-        assertFalse(ExecutorUtils.hasInProgressHumanTask(terminalHuman));
+        // No maxPostpone ceiling configured -> cannot defer safely; keep the offset cadence.
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(0));
+        assertEquals(30, result.getSeconds());
+    }
+
+    @Test
+    public void computePostponeDoesNotDeferHumanInsideFork() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        WorkflowTask fork = new WorkflowTask();
+        fork.setType(TaskType.FORK_JOIN.name());
+        fork.setTaskReferenceName("fork_ref");
+        workflowDef.setTasks(Arrays.asList(fork));
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("workflowId");
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setTasks(
+                Arrays.asList(newTask(TaskType.TASK_TYPE_HUMAN, TaskModel.Status.IN_PROGRESS)));
+
+        // The FORK in the definition forces the offset cadence so the branch-coordination re-sweep
+        // survives, even though the HUMAN is momentarily the only pending leaf (a fork's JOIN can
+        // be
+        // transiently absent from the live task list on some persistence layers mid-decide).
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
+        assertEquals(30, result.getSeconds());
     }
 
     private TaskModel newTask(String taskType, TaskModel.Status status) {
