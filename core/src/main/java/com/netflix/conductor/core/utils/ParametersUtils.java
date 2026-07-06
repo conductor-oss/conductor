@@ -381,21 +381,41 @@ public class ParametersUtils {
         if (value instanceof String) {
             return resolveSecretString((String) value);
         } else if (value instanceof Map) {
-            Map<String, Object> result = new HashMap<>();
-            ((Map<String, Object>) value)
-                    .forEach((k, v) -> result.put(k, substituteSecretsValue(v)));
-            return result;
-        } else if (value instanceof List) {
-            List<Object> result = new ArrayList<>();
-            for (Object item : (List<Object>) value) {
-                result.add(substituteSecretsValue(item));
+            Map<String, Object> src = (Map<String, Object>) value;
+            Map<String, Object> result = null;
+            for (Map.Entry<String, Object> e : src.entrySet()) {
+                Object original = e.getValue();
+                Object substituted = substituteSecretsValue(original);
+                if (substituted != original) {
+                    if (result == null) {
+                        result = new HashMap<>(src);
+                    }
+                    result.put(e.getKey(), substituted);
+                }
             }
-            return result;
+            return result == null ? src : result;
+        } else if (value instanceof List) {
+            List<Object> src = (List<Object>) value;
+            List<Object> result = null;
+            for (int i = 0; i < src.size(); i++) {
+                Object original = src.get(i);
+                Object substituted = substituteSecretsValue(original);
+                if (substituted != original) {
+                    if (result == null) {
+                        result = new ArrayList<>(src);
+                    }
+                    result.set(i, substituted);
+                }
+            }
+            return result == null ? src : result;
         }
         return value;
     }
 
     private Object resolveSecretString(String str) {
+        if (str.indexOf("${workflow.secrets.") < 0) {
+            return str; // no secret reference — return the same instance, no regex, no allocation
+        }
         Matcher whole = SECRET_PATTERN.matcher(str);
         if (whole.matches()) {
             return resolveSecretRef(whole.group(1));

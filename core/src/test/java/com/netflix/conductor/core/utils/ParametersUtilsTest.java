@@ -42,6 +42,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -458,5 +459,23 @@ public class ParametersUtilsTest {
         Map<String, Object> input = new HashMap<>();
         input.put("pwd", "${workflow.secrets.DB_PASSWORD}");
         assertTrue(pu.substituteSecrets(input) == input);
+    }
+
+    @Test
+    public void testSubstituteSecretsReturnsSameInstanceWhenNoSecretRef() {
+        EnvironmentDAO env = mock(EnvironmentDAO.class);
+        SecretsDAO secrets = mock(SecretsDAO.class);
+        ParametersUtils pu = new ParametersUtils(objectMapper, env, secrets);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("a", "plain");
+        Map<String, Object> nested = new HashMap<>();
+        nested.put("c", "no secret here");
+        input.put("b", nested);
+        input.put("d", List.of(1, 2, "x"));
+
+        Map<String, Object> out = pu.substituteSecrets(input);
+
+        assertSame(input, out);
     }
 }
