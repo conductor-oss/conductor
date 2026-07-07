@@ -15,8 +15,8 @@ package org.conductoross.conductor.ai.providers.anthropic;
 import java.util.List;
 import java.util.Map;
 
-import org.conductoross.conductor.ai.models.ChatCompletion;
-import org.conductoross.conductor.ai.models.ToolSpec;
+import org.conductoross.conductor.ai.model.ChatCompletion;
+import org.conductoross.conductor.ai.model.ToolSpec;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

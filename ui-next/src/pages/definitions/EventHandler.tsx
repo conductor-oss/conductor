@@ -42,6 +42,7 @@ import { EVENT_HANDLERS_URL } from "utils/constants/route";
 import useCustomPagination from "utils/hooks/useCustomPagination";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { useActionWithPath, useFetch } from "utils/query";
+import { featureFlags, FEATURES } from "utils/flags";
 import Header from "components/ui/Header";
 import {
   activeFilterGroups,
@@ -126,124 +127,134 @@ export default function EventDefinitionList() {
   );
 
   const [confirmDeleteName, setConfirmDeleteName] = useState("");
+  const tagsEnabled = featureFlags.isEnabled(FEATURES.TAG_VISIBILITY);
 
-  const columns = [
-    {
-      id: "name",
-      name: "name",
-      label: "Event handler name",
-      renderer: (name: string, rec: ConductorEvent) => (
-        <NavLink
-          style={{ color: getLinkColor(rec) }}
-          path={`${EVENT_HANDLERS_URL.BASE}/${name}`}
-        >
-          {name}
-        </NavLink>
-      ),
-    },
-    { id: "event", name: "event", label: "Event" },
-    {
-      id: "event_tags",
-      name: "tags",
-      label: "Tags",
-      searchable: true,
-      searchableFunc: (tags: TagDto[]) => createSearchableTags(tags),
-      renderer: TagsRenderer,
-      grow: 2,
-      tooltip: "The tags associated with the event handler",
-    },
-    {
-      id: "active",
-      name: "active",
-      label: "Status",
-      searchable: true,
-      searchableFunc: getStatusLabel,
-      renderer(status: boolean) {
-        return (
-          <Box>
-            <TagChip
-              style={{
-                background: status ? colors.successTag : colors.errorTag,
-                padding: "0 12px",
-                fontSize: "10px",
-                fontWeight: 500,
-              }}
-              label={getStatusLabel(status)}
-            />
-          </Box>
-        );
+  const columns = useMemo(
+    () => [
+      {
+        id: "name",
+        name: "name",
+        label: "Event handler name",
+        renderer: (name: string, rec: ConductorEvent) => (
+          <NavLink
+            style={{ color: getLinkColor(rec) }}
+            path={`${EVENT_HANDLERS_URL.BASE}/${name}`}
+          >
+            {name}
+          </NavLink>
+        ),
       },
-    },
-    {
-      id: "actions",
-      name: "actions",
-      label: "Actions",
-      sortable: false,
-      searchable: false,
-      grow: 0.5,
-      right: true,
-      renderer: (__: string, taskRowData: any) => (
-        <Box sx={{ display: "flex", justifyContent: "space-evenly", gap: 2 }}>
-          {taskRowData.active && (
-            <Tooltip title={"Pause event"}>
+      { id: "event", name: "event", label: "Event" },
+      ...(tagsEnabled
+        ? [
+            {
+              id: "event_tags",
+              name: "tags",
+              label: "Tags",
+              searchable: true,
+              searchableFunc: (tags: TagDto[]) => createSearchableTags(tags),
+              renderer: TagsRenderer,
+              grow: 2,
+              tooltip: "The tags associated with the event handler",
+            },
+          ]
+        : []),
+      {
+        id: "active",
+        name: "active",
+        label: "Status",
+        searchable: true,
+        searchableFunc: getStatusLabel,
+        renderer(status: boolean) {
+          return (
+            <Box>
+              <TagChip
+                style={{
+                  background: status ? colors.successTag : colors.errorTag,
+                  padding: "0 12px",
+                  fontSize: "10px",
+                  fontWeight: 500,
+                }}
+                label={getStatusLabel(status)}
+              />
+            </Box>
+          );
+        },
+      },
+      {
+        id: "actions",
+        name: "actions",
+        label: "Actions",
+        sortable: false,
+        searchable: false,
+        grow: 0.5,
+        right: true,
+        renderer: (__: string, taskRowData: any) => (
+          <Box sx={{ display: "flex", justifyContent: "space-evenly", gap: 2 }}>
+            {taskRowData.active && (
+              <Tooltip title={"Pause event"}>
+                <IconButton
+                  onClick={() => handlePauseResumeEvent(taskRowData, false)}
+                  color="primary"
+                  disabled={isTrialExpired}
+                  size="small"
+                >
+                  <PauseIcon size={22} />
+                </IconButton>
+              </Tooltip>
+            )}
+            {tagsEnabled && (
+              <Tooltip title={"Add/Edit tags"}>
+                <IconButton
+                  id={`add-tags-${taskRowData.name}-btn`}
+                  disabled={isTrialExpired}
+                  onClick={() => {
+                    setAddTagDialogData({
+                      tags: taskRowData.tags || [],
+                      itemName: taskRowData.name,
+                      itemType: "event",
+                    } as TagDialogProps);
+                    setShowAddTagDialog(true);
+                  }}
+                  size="small"
+                >
+                  <TagIcon size={20} />
+                </IconButton>
+              </Tooltip>
+            )}
+            {!taskRowData.active && (
+              <Tooltip title={"Resume event"}>
+                <IconButton
+                  onClick={() => handlePauseResumeEvent(taskRowData, true)}
+                  color="primary"
+                  size="small"
+                  disabled={isTrialExpired}
+                >
+                  <PlayIcon size={22} />
+                </IconButton>
+              </Tooltip>
+            )}
+            <Tooltip title={"Delete event handler"}>
               <IconButton
-                onClick={() => handlePauseResumeEvent(taskRowData, false)}
-                color="primary"
+                id={`delete-${taskRowData.name}-btn`}
+                onClick={() => {
+                  setConfirmDeleteName(taskRowData?.name);
+                }}
                 disabled={isTrialExpired}
                 size="small"
+                sx={{
+                  whiteSpace: "nowrap",
+                }}
               >
-                <PauseIcon size={22} />
+                <DeleteIcon size={20} />
               </IconButton>
             </Tooltip>
-          )}
-          <Tooltip title={"Add/Edit tags"}>
-            <IconButton
-              id={`add-tags-${taskRowData.name}-btn`}
-              disabled={isTrialExpired}
-              onClick={() => {
-                setAddTagDialogData({
-                  tags: taskRowData.tags || [],
-                  itemName: taskRowData.name,
-                  itemType: "event",
-                } as TagDialogProps);
-                setShowAddTagDialog(true);
-              }}
-              size="small"
-            >
-              <TagIcon size={20} />
-            </IconButton>
-          </Tooltip>
-          {!taskRowData.active && (
-            <Tooltip title={"Resume event"}>
-              <IconButton
-                onClick={() => handlePauseResumeEvent(taskRowData, true)}
-                color="primary"
-                size="small"
-                disabled={isTrialExpired}
-              >
-                <PlayIcon size={22} />
-              </IconButton>
-            </Tooltip>
-          )}
-          <Tooltip title={"Delete event handler"}>
-            <IconButton
-              id={`delete-${taskRowData.name}-btn`}
-              onClick={() => {
-                setConfirmDeleteName(taskRowData?.name);
-              }}
-              disabled={isTrialExpired}
-              size="small"
-              sx={{
-                whiteSpace: "nowrap",
-              }}
-            >
-              <DeleteIcon size={20} />
-            </IconButton>
-          </Tooltip>
-        </Box>
-      ),
-    },
-  ];
+          </Box>
+        ),
+      },
+    ],
+    [isTrialExpired, tagsEnabled, handlePauseResumeEvent],
+  );
 
   const deleteEventHandler = useActionWithPath({
     onSuccess: () => {
@@ -306,22 +317,24 @@ export default function EventDefinitionList() {
         />
       )}
 
-      <AddTagDialog
-        open={showAddTagDialog && !!addTagDialogData}
-        tags={addTagDialogData?.tags || []}
-        itemType={addTagDialogData?.itemType}
-        itemName={addTagDialogData?.itemName}
-        onClose={() => {
-          setShowAddTagDialog(false);
-          setAddTagDialogData(null);
-        }}
-        onSuccess={() => {
-          setShowAddTagDialog(false);
-          setAddTagDialogData(null);
-          refetch();
-        }}
-        apiPath={`/event/${addTagDialogData?.itemName}/tags`}
-      />
+      {tagsEnabled && (
+        <AddTagDialog
+          open={showAddTagDialog && !!addTagDialogData}
+          tags={addTagDialogData?.tags || []}
+          itemType={addTagDialogData?.itemType}
+          itemName={addTagDialogData?.itemName}
+          onClose={() => {
+            setShowAddTagDialog(false);
+            setAddTagDialogData(null);
+          }}
+          onSuccess={() => {
+            setShowAddTagDialog(false);
+            setAddTagDialogData(null);
+            refetch();
+          }}
+          apiPath={`/event/${addTagDialogData?.itemName}/tags`}
+        />
+      )}
 
       <SectionHeader
         _deprecate_marginTop={0}
@@ -441,7 +454,12 @@ export default function EventDefinitionList() {
                 />
               )
             }
-            defaultShowColumns={["name", "event", "tags", "actions"]}
+            defaultShowColumns={[
+              "name",
+              "event",
+              ...(tagsEnabled ? ["tags"] : []),
+              "actions",
+            ]}
             keyField="name"
             data={activeNonActiveFiltered}
             columns={columns}

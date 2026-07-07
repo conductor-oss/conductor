@@ -59,6 +59,18 @@ import {
   TASK_QUEUE_URL,
   WORKFLOW_DEFINITION_URL,
 } from "utils/constants/route";
+import {
+  AgentDefinitions,
+  AgentExecutions as AgentExecutionsPage,
+  Secrets as AgentSecretsPage,
+  Skills as SkillsPage,
+} from "pages/agent";
+import {
+  AGENT_DEFINITION_URL,
+  AGENT_EXECUTIONS_URL,
+  AGENT_SECRETS_URL,
+  SKILLS_URL,
+} from "utils/constants/route";
 import EventHandlerDefinition from "../pages/definition/EventHandler/EventHandler";
 import Execution from "../pages/execution/Execution";
 import Examples from "../pages/kitchensink/Examples";
@@ -190,6 +202,17 @@ const getCoreAuthenticatedRoutes = () => [
     path: "/flags",
     element: <CreatorFlags />,
   },
+
+  // Embedded AgentSpan pages (registered only when AGENTSPAN_ENABLED, i.e.
+  // the server's conductor.integrations.ai.enabled is true).
+  ...(featureFlags.isEnabled(FEATURES.AGENTSPAN_ENABLED)
+    ? [
+        { path: AGENT_DEFINITION_URL.BASE, element: <AgentDefinitions /> },
+        { path: AGENT_EXECUTIONS_URL, element: <AgentExecutionsPage /> },
+        { path: SKILLS_URL.BASE, element: <SkillsPage /> },
+        { path: AGENT_SECRETS_URL, element: <AgentSecretsPage /> },
+      ]
+    : []),
 ];
 
 /**

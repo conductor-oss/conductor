@@ -23,7 +23,8 @@ export type TagDialogProps = {
   open: boolean;
   itemName?: string | null;
   itemType?: string | null;
-  onSuccess: () => void;
+  /** Called after tags are successfully saved. Receives the new tag list. */
+  onSuccess: (tags: TagDto[]) => void;
   onClose: () => void;
   tags: TagDto[];
   apiPath?: string;
@@ -66,7 +67,7 @@ export default function AddTagDialog({
     onSuccess: () => {
       setErrorMessage(null);
       setLoading(false);
-      onSuccess();
+      onSuccess(parsedTags(newTags));
     },
     onError: async (response: Response) => {
       setLoading(false);

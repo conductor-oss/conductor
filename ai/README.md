@@ -38,6 +38,7 @@ The Conductor AI module provides built-in integration with 12 popular LLM provid
 | **PostgreSQL (pgvector)** | ✅ | ✅ | Postgres with vector extension |
 | **Pinecone** | ✅ | ✅ | Managed vector database |
 | **MongoDB Atlas** | ✅ | ✅ | MongoDB vector search |
+| **SQLite (sqlite-vec)** | ✅ | ✅ | Embedded, zero-infra; native `vec0` extension bundled. Auto-registered as `default` when SQLite persistence + AI are enabled |
 
 > **Note**: Multiple named instances of these providers can be configured. See [Vector Database Configuration](VECTORDB_CONFIGURATION.md) for details.
 

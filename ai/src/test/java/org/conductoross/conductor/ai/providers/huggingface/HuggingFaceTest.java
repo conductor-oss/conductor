@@ -14,7 +14,7 @@ package org.conductoross.conductor.ai.providers.huggingface;
 
 import java.util.List;
 
-import org.conductoross.conductor.ai.models.ChatCompletion;
+import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
