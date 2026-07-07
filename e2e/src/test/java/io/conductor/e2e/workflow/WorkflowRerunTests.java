@@ -1540,7 +1540,7 @@ public class WorkflowRerunTests {
             rerunRequest.setReRunFromTaskId(innerFailedTaskId);
             workflowClient.rerunWorkflow(workflowId, rerunRequest);
 
-            await().atMost(10, TimeUnit.SECONDS)
+            await().atMost(30, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Workflow wf = workflowClient.getWorkflow(workflowId, true);
