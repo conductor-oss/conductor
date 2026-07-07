@@ -513,6 +513,10 @@ export default function ScheduleDefinitions() {
                   onClick={() => handlePauseSchedule(name)}
                   color="primary"
                   disabled={isTrialExpired}
+                  size="small"
+                  sx={{
+                    whiteSpace: "nowrap",
+                  }}
                 >
                   <PauseIcon size={22} />
                 </IconButton>
@@ -525,6 +529,10 @@ export default function ScheduleDefinitions() {
                   onClick={() => handleResumeSchedule(name)}
                   color="primary"
                   disabled={isTrialExpired}
+                  size="small"
+                  sx={{
+                    whiteSpace: "nowrap",
+                  }}
                 >
                   <PlayIcon size={22} />
                 </IconButton>
@@ -553,8 +561,11 @@ export default function ScheduleDefinitions() {
                     setShowAddTagDialog(true);
                   }}
                   size="small"
+                  sx={{
+                    whiteSpace: "nowrap",
+                  }}
                 >
-                  <TagIcon />
+                  <TagIcon size={20} />
                 </IconButton>
               </Tooltip>
             )}
@@ -563,6 +574,10 @@ export default function ScheduleDefinitions() {
               <IconButton
                 disabled={isTrialExpired}
                 onClick={() => deleteSchedule(name)}
+                size="small"
+                sx={{
+                  whiteSpace: "nowrap",
+                }}
               >
                 <DeleteIcon size={20} />
               </IconButton>
