@@ -1,4 +1,11 @@
-# Task-declared secrets — inject secret/env values into polled tasks
+# Injected values — task-declared secrets & env variables for polled tasks
+
+> **Terminology:** "injected values" is a single, source-neutral concept that covers
+> **both secrets and environment variables**. A `TaskDef` declares the names it needs in
+> `injectedValueKeys`; at poll time each name is resolved from the **secrets store first,
+> then environment variables** (in that order) and the results are placed in
+> `Task.injectedValues`. The name is deliberately not "secrets" because a resolved value
+> may come from either source — calling an env var a "secret" would be misleading.
 
 **Status:** Design for review (draft PR)
 **Base branch:** `feat/env-backed-secrets-and-environment` (this feature builds on that PR and reuses its DAOs)
@@ -167,8 +174,9 @@ tasks.add(task);
 
 ## 10. Open questions for review
 
-- Field name `injectedValueKeys`/`injectedValues` on `TaskDef`/`Task` — acceptable, or prefer
-  alternate naming?
+- Unified list with secrets→env fallback into one `injectedValues` map (current) vs. splitting
+  secrets and environment into separate declaration lists / result maps (which would preserve
+  the base PR's sensitive-vs-non-sensitive distinction for this path).
 - Should a declared-but-missing name be a silent omission (current) or surface as a task/poll
   warning visible to the operator beyond the server log?
 - Is REST-only acceptable for v1, or is gRPC field support required?
