@@ -93,7 +93,7 @@ const CloneWorkflowDialog = ({
       .string()
       .required("Name cannot be blank.")
       .matches(WORKFLOW_NAME_REGEX, WORKFLOW_NAME_ERROR_MESSAGE)
-      .notOneOf(workflowNames, "This name is existing."),
+      .notOneOf(workflowNames, "This name already exists."),
     version: yup
       .number()
       .required("Version cannot be blank.")

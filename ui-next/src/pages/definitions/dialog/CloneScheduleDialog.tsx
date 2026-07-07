@@ -40,7 +40,7 @@ const CloneScheduleDialog = ({
       .string()
       .required("Name cannot be blank.")
       .matches(WORKFLOW_NAME_REGEX, WORKFLOW_NAME_ERROR_MESSAGE)
-      .test("unique-name", "This name is existing.", async (value) => {
+      .test("unique-name", "This name already exists.", async (value) => {
         if (!value) {
           return true;
         }
