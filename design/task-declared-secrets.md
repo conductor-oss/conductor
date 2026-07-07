@@ -24,14 +24,14 @@ default). It is **complementary** to — not a replacement for — the existing
 
 ```
 TaskDef "llm_call":
-    secrets: ["OPENAI_API_KEY", "REGION"]            # new field: list of names
+    injectedValueKeys: ["OPENAI_API_KEY", "REGION"]  # new field: list of names
 
 worker polls a "llm_call" task
   → for each declared name, resolve in order:
        1) SecretsDAO.getSecret(name)        (env-backed: CONDUCTOR_SECRET_<name>)
        2) EnvironmentDAO.getEnvVariable(name) (env-backed: CONDUCTOR_ENV_<name>)   [fallback]
   → returned Task carries a new field:
-       secrets: { "OPENAI_API_KEY": "sk-...", "REGION": "us-east-1" }   # name→value
+       injectedValues: { "OPENAI_API_KEY": "sk-...", "REGION": "us-east-1" }   # name→value
 ```
 
 Resolution reuses the base PR's providers; injection happens in `ExecutionService.poll`
@@ -41,10 +41,10 @@ Resolution reuses the base PR's providers; injection happens in `ExecutionServic
 
 These are the choices made where the origin doc was silent — call them out in review:
 
-1. **Single list, secrets-then-env resolution.** `TaskDef.secrets` is one `List<String>`
-   of names; each name is tried against `SecretsDAO` first, then `EnvironmentDAO`. (Matches
-   the doc: "Find them from 1) secrets store or 2) env variables in that order.") Not two
-   separate lists.
+1. **Single list, secrets-then-env resolution.** `TaskDef.injectedValueKeys` is one
+   `List<String>` of names; each name is tried against `SecretsDAO` first, then
+   `EnvironmentDAO`. (Matches the doc: "Find them from 1) secrets store or 2) env variables
+   in that order.") Not two separate lists.
 2. **Wire-only, never persisted.** The resolved values are set only on the `Task` returned
    to the poller — never on the persisted `TaskModel`. Nothing lands in the datastore, UI,
    or execution history. (Consistent with the base PR's "secret value never persists"
@@ -54,10 +54,10 @@ These are the choices made where the origin doc was silent — call them out in 
 4. **No new config.** The feature reuses the active providers. With
    `conductor.secrets.type=noop` and `conductor.environment.type=noop` it is inert
    (everything resolves to `null` → empty map).
-5. **Field naming.** `TaskDef.secrets` (declared names) and `Task.secrets` (resolved
-   name→value). Same word, two layers: what the task *needs* vs what it *got*.
-6. **JSON/REST only (no gRPC field).** `Task.secrets` is serialized for REST pollers; it is
-   **not** given a `@ProtoField` id, to avoid proto regeneration. gRPC pollers do not
+5. **Field naming.** `TaskDef.injectedValueKeys` (declared names) and `Task.injectedValues`
+   (resolved name→value). Two layers: what the task *needs* vs what it *got*.
+6. **JSON/REST only (no gRPC field).** `Task.injectedValues` is serialized for REST pollers;
+   it is **not** given a `@ProtoField` id, to avoid proto regeneration. gRPC pollers do not
    receive it in this version (OSS polling is predominantly REST/HTTP).
 7. **Poll-only.** Only worker-polled tasks get injection. Server-side system tasks (which
    don't poll) are out of scope.
@@ -67,11 +67,11 @@ These are the choices made where the origin doc was silent — call them out in 
 ### `common` — `TaskDef.java`
 Add, mirroring the existing `inputKeys`/`outputKeys` treatment (field, getter/setter,
 and inclusion in `equals`/`hashCode`; note `TaskDef.toString()` only renders `name`, so
-`secrets` — like `inputKeys`/`outputKeys` — is not added there):
+`injectedValueKeys` — like `inputKeys`/`outputKeys` — is not added there):
 ```java
-private List<String> secrets = new ArrayList<>();
-public List<String> getSecrets() { return secrets; }
-public void setSecrets(List<String> secrets) { this.secrets = secrets; }
+private List<String> injectedValueKeys = new ArrayList<>();
+public List<String> getInjectedValueKeys() { return injectedValueKeys; }
+public void setInjectedValueKeys(List<String> injectedValueKeys) { this.injectedValueKeys = injectedValueKeys; }
 ```
 
 ### `common` — `Task.java`
@@ -79,19 +79,19 @@ Add a wire-only resolved map. **Excluded** from `equals`/`hashCode` (ephemeral w
 not task identity/state); serialized only when non-empty:
 ```java
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
-private Map<String, String> secrets = new HashMap<>();
-public Map<String, String> getSecrets() { return secrets; }
-public void setSecrets(Map<String, String> secrets) { this.secrets = secrets; }
+private Map<String, String> injectedValues = new HashMap<>();
+public Map<String, String> getInjectedValues() { return injectedValues; }
+public void setInjectedValues(Map<String, String> injectedValues) { this.injectedValues = injectedValues; }
 ```
 (No `@ProtoField` — see decision 6.)
 
 ## 5. Resolution component
 
-New `core` component `TaskSecretsResolver` (package `com.netflix.conductor.core.secrets`),
+New `core` component `InjectedValueResolver` (package `com.netflix.conductor.core.secrets`),
 reusing both DAOs — small, single-purpose, unit-testable:
 ```java
 @Component
-public class TaskSecretsResolver {
+public class InjectedValueResolver {
     private final SecretsDAO secretsDAO;
     private final EnvironmentDAO environmentDAO;
     // constructor injection
@@ -120,13 +120,13 @@ base PR's `substituteSecrets` call), populate the new field from the task's defi
 Task task = taskModel.toTask();
 task.setInputData(parametersUtils.substituteSecrets(task.getInputData())); // existing
 taskModel.getTaskDefinition()
-        .map(TaskDef::getSecrets)
-        .map(taskSecretsResolver::resolve)
-        .ifPresent(task::setSecrets);                                       // new
+        .map(TaskDef::getInjectedValueKeys)
+        .map(injectedValueResolver::resolve)
+        .ifPresent(task::setInjectedValues);                                // new
 tasks.add(task);
 ```
 `taskModel.getTaskDefinition()` is already available and used in `poll`. The persisted
-`TaskModel` is untouched. `TaskSecretsResolver` is added as a constructor dependency of
+`TaskModel` is untouched. `InjectedValueResolver` is added as a constructor dependency of
 `ExecutionService`.
 
 ## 7. Security
@@ -142,7 +142,7 @@ tasks.add(task);
 
 ## 8. Non-goals (this version)
 
-- gRPC (`@ProtoField`) support for `Task.secrets`.
+- gRPC (`@ProtoField`) support for `Task.injectedValues`.
 - Injection for server-side system tasks (only worker poll).
 - Per-name source override, aliasing (map to a different key), or "required/optional"
   semantics — a declared name simply resolves or is omitted.
@@ -151,23 +151,24 @@ tasks.add(task);
 
 ## 9. Testing
 
-- **Unit — `TaskSecretsResolverTest`:** secrets-store hit; env fallback hit; secrets take
+- **Unit — `InjectedValueResolverTest`:** secrets-store hit; env fallback hit; secrets take
   precedence over env for the same name; missing name omitted; null/empty list → empty map.
   (Driven via `System.setProperty` per the base PR's DAO test pattern.)
 - **Unit — `ExecutionServiceTest`:** `poll` injects the resolved map onto the outgoing
   `Task` from the task definition's declared names, and the persisted `TaskModel` carries
-  no secrets.
-- **Unit — model:** `TaskDef` round-trips `secrets` (getter/setter, equals/hashCode);
-  `Task.secrets` serializes only when non-empty and is excluded from `equals`.
+  no injected values.
+- **Unit — model:** `TaskDef` round-trips `injectedValueKeys` (getter/setter, equals/hashCode);
+  `Task.injectedValues` serializes only when non-empty and is excluded from `equals`.
 - **Integration — `test-harness` Spock spec:** register a `TaskDef` with
-  `secrets: ["API_KEY"]` (+ `CONDUCTOR_SECRET_API_KEY` / `CONDUCTOR_ENV_...` set via system
-  properties), start a workflow, poll the task, assert `polled.secrets["API_KEY"] == <value>`
-  and the persisted task has an empty secrets map. Add an env-fallback case.
+  `injectedValueKeys: ["API_KEY"]` (+ `CONDUCTOR_SECRET_API_KEY` / `CONDUCTOR_ENV_...` set via
+  system properties), start a workflow, poll the task, assert
+  `polled.injectedValues["API_KEY"] == <value>` and the persisted task has an empty
+  injected-values map. Add an env-fallback case.
 
 ## 10. Open questions for review
 
-- Field name `secrets` on both `TaskDef` and `Task` — acceptable, or prefer
-  `TaskDef.requiredSecrets` / `Task.secrets`?
+- Field name `injectedValueKeys`/`injectedValues` on `TaskDef`/`Task` — acceptable, or prefer
+  alternate naming?
 - Should a declared-but-missing name be a silent omission (current) or surface as a task/poll
   warning visible to the operator beyond the server log?
 - Is REST-only acceptable for v1, or is gRPC field support required?

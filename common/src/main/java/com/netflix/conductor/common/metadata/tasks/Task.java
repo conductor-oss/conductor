@@ -215,12 +215,12 @@ public class Task {
 
     /**
      * Resolved secret/environment name to value map, injected at poll time from the task
-     * definition's declared {@code secrets} names. Wire-only (REST/JSON): never persisted on {@code
-     * TaskModel}, not given a {@code @ProtoField} id, and intentionally excluded from {@link
-     * #toString()}, {@link #equals(Object)}, {@link #hashCode()}, and {@link #copy()}.
+     * definition's declared {@code injectedValueKeys} names. Wire-only (REST/JSON): never persisted
+     * on {@code TaskModel}, not given a {@code @ProtoField} id, and intentionally excluded from
+     * {@link #toString()}, {@link #equals(Object)}, {@link #hashCode()}, and {@link #copy()}.
      */
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    private Map<String, String> secrets = new HashMap<>();
+    private Map<String, String> injectedValues = new HashMap<>();
 
     public Task() {}
 
@@ -787,18 +787,18 @@ public class Task {
     /**
      * @return the resolved secret/environment name to value map, injected at poll time
      */
-    public Map<String, String> getSecrets() {
-        return secrets;
+    public Map<String, String> getInjectedValues() {
+        return injectedValues;
     }
 
     /**
-     * @param secrets the resolved secret/environment name to value map to set
+     * @param injectedValues the resolved secret/environment name to value map to set
      */
-    public void setSecrets(Map<String, String> secrets) {
-        if (secrets == null) {
-            secrets = new HashMap<>();
+    public void setInjectedValues(Map<String, String> injectedValues) {
+        if (injectedValues == null) {
+            injectedValues = new HashMap<>();
         }
-        this.secrets = secrets;
+        this.injectedValues = injectedValues;
     }
 
     public long getFirstStartTime() {

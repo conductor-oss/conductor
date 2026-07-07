@@ -130,28 +130,28 @@ public class TaskDefTest {
     }
 
     @Test
-    public void testSecretsGetterSetterRoundTrip() {
+    public void testInjectedValueKeysGetterSetterRoundTrip() {
         TaskDef taskDef = new TaskDef();
-        assertTrue(taskDef.getSecrets().isEmpty());
+        assertTrue(taskDef.getInjectedValueKeys().isEmpty());
 
-        List<String> secrets = List.of("OPENAI_API_KEY", "REGION");
-        taskDef.setSecrets(secrets);
+        List<String> injectedValueKeys = List.of("OPENAI_API_KEY", "REGION");
+        taskDef.setInjectedValueKeys(injectedValueKeys);
 
-        assertEquals(secrets, taskDef.getSecrets());
+        assertEquals(injectedValueKeys, taskDef.getInjectedValueKeys());
     }
 
     @Test
-    public void testTaskDefsDifferingOnlyBySecretsAreNotEqual() {
+    public void testTaskDefsDifferingOnlyByInjectedValueKeysAreNotEqual() {
         TaskDef taskDef1 = new TaskDef("task1");
-        taskDef1.setSecrets(List.of("OPENAI_API_KEY"));
+        taskDef1.setInjectedValueKeys(List.of("OPENAI_API_KEY"));
 
         TaskDef taskDef2 = new TaskDef("task1");
-        taskDef2.setSecrets(List.of("REGION"));
+        taskDef2.setInjectedValueKeys(List.of("REGION"));
 
         assertNotEquals(taskDef1, taskDef2);
         assertNotEquals(taskDef1.hashCode(), taskDef2.hashCode());
 
-        taskDef2.setSecrets(List.of("OPENAI_API_KEY"));
+        taskDef2.setInjectedValueKeys(List.of("OPENAI_API_KEY"));
         assertEquals(taskDef1, taskDef2);
         assertEquals(taskDef1.hashCode(), taskDef2.hashCode());
     }

@@ -21,9 +21,9 @@ import com.netflix.conductor.test.base.AbstractSpecification
 /**
  * End-to-end integration test proving task-declared secrets injection works through the full
  * Spring server: a {@code TaskDef} declares the secret/environment names it needs via
- * {@code TaskDef.secrets}; at poll time the server resolves each name (secrets store first, then
- * environment fallback) and injects the resolved name-&gt;value pairs onto the polled
- * {@code Task.secrets} map. Names that resolve in neither provider are omitted.
+ * {@code TaskDef.injectedValueKeys}; at poll time the server resolves each name (secrets store
+ * first, then environment fallback) and injects the resolved name-&gt;value pairs onto the polled
+ * {@code Task.injectedValues} map. Names that resolve in neither provider are omitted.
  */
 class TaskDeclaredSecretsSpec extends AbstractSpecification {
 
@@ -47,7 +47,7 @@ class TaskDeclaredSecretsSpec extends AbstractSpecification {
         taskDef.timeoutSeconds = 120
         taskDef.responseTimeoutSeconds = 120
         taskDef.ownerEmail = 'test@example.com'
-        taskDef.setSecrets(["API_KEY", "REGION", "MISSING_ONE"])
+        taskDef.setInjectedValueKeys(["API_KEY", "REGION", "MISSING_ONE"])
         metadataService.registerTaskDef([taskDef])
 
         def wfTask = new WorkflowTask()
@@ -83,12 +83,12 @@ class TaskDeclaredSecretsSpec extends AbstractSpecification {
         }
 
         wfId != null
-        polled.secrets['API_KEY'] == 'key-123'
-        polled.secrets['REGION'] == 'us-east-1'
-        !polled.secrets.containsKey('MISSING_ONE')
-        polled.secrets.size() == 2
+        polled.injectedValues['API_KEY'] == 'key-123'
+        polled.injectedValues['REGION'] == 'us-east-1'
+        !polled.injectedValues.containsKey('MISSING_ONE')
+        polled.injectedValues.size() == 2
 
         and: "the resolved values are NOT persisted — a re-fetch of the task has no secrets"
-        workflowExecutionService.getTask(polled.taskId).secrets.isEmpty()
+        workflowExecutionService.getTask(polled.taskId).injectedValues.isEmpty()
     }
 }

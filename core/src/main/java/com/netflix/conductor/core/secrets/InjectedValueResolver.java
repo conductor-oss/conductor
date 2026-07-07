@@ -24,13 +24,13 @@ import com.netflix.conductor.dao.EnvironmentDAO;
 import com.netflix.conductor.dao.SecretsDAO;
 
 @Component
-public class TaskSecretsResolver {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TaskSecretsResolver.class);
+public class InjectedValueResolver {
+    private static final Logger LOGGER = LoggerFactory.getLogger(InjectedValueResolver.class);
 
     private final SecretsDAO secretsDAO;
     private final EnvironmentDAO environmentDAO;
 
-    public TaskSecretsResolver(SecretsDAO secretsDAO, EnvironmentDAO environmentDAO) {
+    public InjectedValueResolver(SecretsDAO secretsDAO, EnvironmentDAO environmentDAO) {
         this.secretsDAO = secretsDAO;
         this.environmentDAO = environmentDAO;
     }

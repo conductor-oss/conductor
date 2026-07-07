@@ -101,8 +101,9 @@ public class TaskTest {
         final Task task = new Task();
         // In order to avoid forgetting putting inside the copy method the newly added fields check
         // the number of declared fields.
-        // NOTE: `secrets` (wire-only resolved secret values, injected at poll time) is
-        // intentionally NOT propagated by copy()/deepCopy() - see testSecretsExcludedFromCopy.
+        // NOTE: `injectedValues` (wire-only resolved secret values, injected at poll time) is
+        // intentionally NOT propagated by copy()/deepCopy() - see
+        // testInjectedValuesExcludedFromCopy.
         final int expectedTaskFieldsNumber = 44;
         final int declaredFieldsNumber = task.getClass().getDeclaredFields().length;
 
@@ -176,86 +177,86 @@ public class TaskTest {
     }
 
     @Test
-    public void testSecretsGetterSetterRoundTrip() {
+    public void testInjectedValuesGetterSetterRoundTrip() {
         Task task = new Task();
-        assertNotNull(task.getSecrets());
-        assertTrue(task.getSecrets().isEmpty());
+        assertNotNull(task.getInjectedValues());
+        assertTrue(task.getInjectedValues().isEmpty());
 
-        Map<String, String> secrets = new HashMap<>();
-        secrets.put("OPENAI_API_KEY", "sk-secret-value");
-        task.setSecrets(secrets);
+        Map<String, String> injectedValues = new HashMap<>();
+        injectedValues.put("OPENAI_API_KEY", "sk-secret-value");
+        task.setInjectedValues(injectedValues);
 
-        assertEquals(secrets, task.getSecrets());
+        assertEquals(injectedValues, task.getInjectedValues());
     }
 
     @Test
-    public void testSetSecretsNullGuard() {
+    public void testSetInjectedValuesNullGuard() {
         Task task = new Task();
-        task.setSecrets(null);
-        assertNotNull(task.getSecrets());
-        assertTrue(task.getSecrets().isEmpty());
+        task.setInjectedValues(null);
+        assertNotNull(task.getInjectedValues());
+        assertTrue(task.getInjectedValues().isEmpty());
     }
 
     @Test
-    public void testSecretsSerializedOnlyWhenNonEmpty() throws Exception {
+    public void testInjectedValuesSerializedOnlyWhenNonEmpty() throws Exception {
         Task task = new Task();
         task.setTaskId("task-1");
-        Map<String, String> secrets = new HashMap<>();
-        secrets.put("OPENAI_API_KEY", "sk-secret-value");
-        task.setSecrets(secrets);
+        Map<String, String> injectedValues = new HashMap<>();
+        injectedValues.put("OPENAI_API_KEY", "sk-secret-value");
+        task.setInjectedValues(injectedValues);
 
         String json = objectMapper.writeValueAsString(task);
-        assertTrue(json.contains("\"secrets\""));
+        assertTrue(json.contains("\"injectedValues\""));
         assertTrue(json.contains("OPENAI_API_KEY"));
         assertTrue(json.contains("sk-secret-value"));
 
-        Task emptySecretsTask = new Task();
-        emptySecretsTask.setTaskId("task-2");
-        String emptyJson = objectMapper.writeValueAsString(emptySecretsTask);
-        assertFalse(emptyJson.contains("\"secrets\""));
+        Task emptyInjectedValuesTask = new Task();
+        emptyInjectedValuesTask.setTaskId("task-2");
+        String emptyJson = objectMapper.writeValueAsString(emptyInjectedValuesTask);
+        assertFalse(emptyJson.contains("\"injectedValues\""));
     }
 
     @Test
-    public void testSecretsExcludedFromEquals() {
+    public void testInjectedValuesExcludedFromEquals() {
         Task task1 = new Task();
         task1.setTaskId("task-1");
-        Map<String, String> secrets1 = new HashMap<>();
-        secrets1.put("OPENAI_API_KEY", "sk-secret-value-1");
-        task1.setSecrets(secrets1);
+        Map<String, String> injectedValues1 = new HashMap<>();
+        injectedValues1.put("OPENAI_API_KEY", "sk-secret-value-1");
+        task1.setInjectedValues(injectedValues1);
 
         Task task2 = new Task();
         task2.setTaskId("task-1");
-        Map<String, String> secrets2 = new HashMap<>();
-        secrets2.put("OPENAI_API_KEY", "sk-secret-value-2");
-        task2.setSecrets(secrets2);
+        Map<String, String> injectedValues2 = new HashMap<>();
+        injectedValues2.put("OPENAI_API_KEY", "sk-secret-value-2");
+        task2.setInjectedValues(injectedValues2);
 
         assertEquals(task1, task2);
         assertEquals(task1.hashCode(), task2.hashCode());
     }
 
     @Test
-    public void testSecretsExcludedFromToString() {
+    public void testInjectedValuesExcludedFromToString() {
         Task task = new Task();
         task.setTaskId("task-1");
-        Map<String, String> secrets = new HashMap<>();
-        secrets.put("OPENAI_API_KEY", "sk-super-secret-value");
-        task.setSecrets(secrets);
+        Map<String, String> injectedValues = new HashMap<>();
+        injectedValues.put("OPENAI_API_KEY", "sk-super-secret-value");
+        task.setInjectedValues(injectedValues);
 
         assertFalse(task.toString().contains("sk-super-secret-value"));
     }
 
     @Test
-    public void testSecretsExcludedFromCopy() {
+    public void testInjectedValuesExcludedFromCopy() {
         Task task = new Task();
         task.setTaskId("task-1");
-        Map<String, String> secrets = new HashMap<>();
-        secrets.put("OPENAI_API_KEY", "sk-secret-value");
-        task.setSecrets(secrets);
+        Map<String, String> injectedValues = new HashMap<>();
+        injectedValues.put("OPENAI_API_KEY", "sk-secret-value");
+        task.setInjectedValues(injectedValues);
 
         Task copy = task.copy();
-        assertTrue(copy.getSecrets().isEmpty());
+        assertTrue(copy.getInjectedValues().isEmpty());
 
         Task deepCopy = task.deepCopy();
-        assertTrue(deepCopy.getSecrets().isEmpty());
+        assertTrue(deepCopy.getInjectedValues().isEmpty());
     }
 }
