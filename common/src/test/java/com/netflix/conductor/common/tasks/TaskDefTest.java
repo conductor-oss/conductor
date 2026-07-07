@@ -130,28 +130,28 @@ public class TaskDefTest {
     }
 
     @Test
-    public void testInjectedValueKeysGetterSetterRoundTrip() {
+    public void testRuntimeMetadataGetterSetterRoundTrip() {
         TaskDef taskDef = new TaskDef();
-        assertTrue(taskDef.getInjectedValueKeys().isEmpty());
+        assertTrue(taskDef.getRuntimeMetadata().isEmpty());
 
-        List<String> injectedValueKeys = List.of("OPENAI_API_KEY", "REGION");
-        taskDef.setInjectedValueKeys(injectedValueKeys);
+        List<String> runtimeMetadata = List.of("OPENAI_API_KEY", "REGION");
+        taskDef.setRuntimeMetadata(runtimeMetadata);
 
-        assertEquals(injectedValueKeys, taskDef.getInjectedValueKeys());
+        assertEquals(runtimeMetadata, taskDef.getRuntimeMetadata());
     }
 
     @Test
-    public void testTaskDefsDifferingOnlyByInjectedValueKeysAreNotEqual() {
+    public void testTaskDefsDifferingOnlyByRuntimeMetadataAreNotEqual() {
         TaskDef taskDef1 = new TaskDef("task1");
-        taskDef1.setInjectedValueKeys(List.of("OPENAI_API_KEY"));
+        taskDef1.setRuntimeMetadata(List.of("OPENAI_API_KEY"));
 
         TaskDef taskDef2 = new TaskDef("task1");
-        taskDef2.setInjectedValueKeys(List.of("REGION"));
+        taskDef2.setRuntimeMetadata(List.of("REGION"));
 
         assertNotEquals(taskDef1, taskDef2);
         assertNotEquals(taskDef1.hashCode(), taskDef2.hashCode());
 
-        taskDef2.setInjectedValueKeys(List.of("OPENAI_API_KEY"));
+        taskDef2.setRuntimeMetadata(List.of("OPENAI_API_KEY"));
         assertEquals(taskDef1, taskDef2);
         assertEquals(taskDef1.hashCode(), taskDef2.hashCode());
     }

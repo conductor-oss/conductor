@@ -215,12 +215,12 @@ public class Task {
 
     /**
      * Resolved secret/environment name to value map, injected at poll time from the task
-     * definition's declared {@code injectedValueKeys} names. Wire-only (REST/JSON): never persisted
+     * definition's declared {@code runtimeMetadata} names. Wire-only (REST/JSON): never persisted
      * on {@code TaskModel}, not given a {@code @ProtoField} id, and intentionally excluded from
      * {@link #toString()}, {@link #equals(Object)}, {@link #hashCode()}, and {@link #copy()}.
      */
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    private Map<String, String> injectedValues = new HashMap<>();
+    private Map<String, String> runtimeMetadata = new HashMap<>();
 
     public Task() {}
 
@@ -787,18 +787,18 @@ public class Task {
     /**
      * @return the resolved secret/environment name to value map, injected at poll time
      */
-    public Map<String, String> getInjectedValues() {
-        return injectedValues;
+    public Map<String, String> getRuntimeMetadata() {
+        return runtimeMetadata;
     }
 
     /**
-     * @param injectedValues the resolved secret/environment name to value map to set
+     * @param runtimeMetadata the resolved secret/environment name to value map to set
      */
-    public void setInjectedValues(Map<String, String> injectedValues) {
-        if (injectedValues == null) {
-            injectedValues = new HashMap<>();
+    public void setRuntimeMetadata(Map<String, String> runtimeMetadata) {
+        if (runtimeMetadata == null) {
+            runtimeMetadata = new HashMap<>();
         }
-        this.injectedValues = injectedValues;
+        this.runtimeMetadata = runtimeMetadata;
     }
 
     public long getFirstStartTime() {

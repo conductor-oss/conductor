@@ -1,10 +1,12 @@
-# Injected values — task-declared secrets & env variables for polled tasks
+# Runtime metadata — task-declared secrets & env variables for polled tasks
 
-> **Terminology:** "injected values" is a single, source-neutral concept that covers
+> **Terminology:** the field is named `runtimeMetadata` (per stakeholder request), even
+> though the values it carries are runtime parameters resolved from **secrets and/or
+> environment-variable sources** — it is a single, source-neutral concept that covers
 > **both secrets and environment variables**. A `TaskDef` declares the names it needs in
-> `injectedValueKeys`; at poll time each name is resolved from the **secrets store first,
+> `runtimeMetadata`; at poll time each name is resolved from the **secrets store first,
 > then environment variables** (in that order) and the results are placed in
-> `Task.injectedValues`. The name is deliberately not "secrets" because a resolved value
+> `Task.runtimeMetadata`. The name is deliberately not "secrets" because a resolved value
 > may come from either source — calling an env var a "secret" would be misleading.
 
 **Status:** Design for review (draft PR)
@@ -31,14 +33,14 @@ default). It is **complementary** to — not a replacement for — the existing
 
 ```
 TaskDef "llm_call":
-    injectedValueKeys: ["OPENAI_API_KEY", "REGION"]  # new field: list of names
+    runtimeMetadata: ["OPENAI_API_KEY", "REGION"]  # new field: list of names
 
 worker polls a "llm_call" task
   → for each declared name, resolve in order:
        1) SecretsDAO.getSecret(name)        (env-backed: CONDUCTOR_SECRET_<name>)
        2) EnvironmentDAO.getEnvVariable(name) (env-backed: CONDUCTOR_ENV_<name>)   [fallback]
   → returned Task carries a new field:
-       injectedValues: { "OPENAI_API_KEY": "sk-...", "REGION": "us-east-1" }   # name→value
+       runtimeMetadata: { "OPENAI_API_KEY": "sk-...", "REGION": "us-east-1" }   # name→value
 ```
 
 Resolution reuses the base PR's providers; injection happens in `ExecutionService.poll`
@@ -48,7 +50,7 @@ Resolution reuses the base PR's providers; injection happens in `ExecutionServic
 
 These are the choices made where the origin doc was silent — call them out in review:
 
-1. **Single list, secrets-then-env resolution.** `TaskDef.injectedValueKeys` is one
+1. **Single list, secrets-then-env resolution.** `TaskDef.runtimeMetadata` is one
    `List<String>` of names; each name is tried against `SecretsDAO` first, then
    `EnvironmentDAO`. (Matches the doc: "Find them from 1) secrets store or 2) env variables
    in that order.") Not two separate lists.
@@ -61,9 +63,10 @@ These are the choices made where the origin doc was silent — call them out in 
 4. **No new config.** The feature reuses the active providers. With
    `conductor.secrets.type=noop` and `conductor.environment.type=noop` it is inert
    (everything resolves to `null` → empty map).
-5. **Field naming.** `TaskDef.injectedValueKeys` (declared names) and `Task.injectedValues`
-   (resolved name→value). Two layers: what the task *needs* vs what it *got*.
-6. **JSON/REST only (no gRPC field).** `Task.injectedValues` is serialized for REST pollers;
+5. **Field naming.** `TaskDef.runtimeMetadata` (declared names) and `Task.runtimeMetadata`
+   (resolved name→value). Same field name on both classes (per stakeholder request), but
+   different types: two layers — what the task *needs* vs what it *got*.
+6. **JSON/REST only (no gRPC field).** `Task.runtimeMetadata` is serialized for REST pollers;
    it is **not** given a `@ProtoField` id, to avoid proto regeneration. gRPC pollers do not
    receive it in this version (OSS polling is predominantly REST/HTTP).
 7. **Poll-only.** Only worker-polled tasks get injection. Server-side system tasks (which
@@ -74,11 +77,11 @@ These are the choices made where the origin doc was silent — call them out in 
 ### `common` — `TaskDef.java`
 Add, mirroring the existing `inputKeys`/`outputKeys` treatment (field, getter/setter,
 and inclusion in `equals`/`hashCode`; note `TaskDef.toString()` only renders `name`, so
-`injectedValueKeys` — like `inputKeys`/`outputKeys` — is not added there):
+`runtimeMetadata` — like `inputKeys`/`outputKeys` — is not added there):
 ```java
-private List<String> injectedValueKeys = new ArrayList<>();
-public List<String> getInjectedValueKeys() { return injectedValueKeys; }
-public void setInjectedValueKeys(List<String> injectedValueKeys) { this.injectedValueKeys = injectedValueKeys; }
+private List<String> runtimeMetadata = new ArrayList<>();
+public List<String> getRuntimeMetadata() { return runtimeMetadata; }
+public void setRuntimeMetadata(List<String> runtimeMetadata) { this.runtimeMetadata = runtimeMetadata; }
 ```
 
 ### `common` — `Task.java`
@@ -86,19 +89,19 @@ Add a wire-only resolved map. **Excluded** from `equals`/`hashCode` (ephemeral w
 not task identity/state); serialized only when non-empty:
 ```java
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
-private Map<String, String> injectedValues = new HashMap<>();
-public Map<String, String> getInjectedValues() { return injectedValues; }
-public void setInjectedValues(Map<String, String> injectedValues) { this.injectedValues = injectedValues; }
+private Map<String, String> runtimeMetadata = new HashMap<>();
+public Map<String, String> getRuntimeMetadata() { return runtimeMetadata; }
+public void setRuntimeMetadata(Map<String, String> runtimeMetadata) { this.runtimeMetadata = runtimeMetadata; }
 ```
 (No `@ProtoField` — see decision 6.)
 
 ## 5. Resolution component
 
-New `core` component `InjectedValueResolver` (package `com.netflix.conductor.core.secrets`),
+New `core` component `RuntimeMetadataResolver` (package `com.netflix.conductor.core.secrets`),
 reusing both DAOs — small, single-purpose, unit-testable:
 ```java
 @Component
-public class InjectedValueResolver {
+public class RuntimeMetadataResolver {
     private final SecretsDAO secretsDAO;
     private final EnvironmentDAO environmentDAO;
     // constructor injection
@@ -127,13 +130,13 @@ base PR's `substituteSecrets` call), populate the new field from the task's defi
 Task task = taskModel.toTask();
 task.setInputData(parametersUtils.substituteSecrets(task.getInputData())); // existing
 taskModel.getTaskDefinition()
-        .map(TaskDef::getInjectedValueKeys)
-        .map(injectedValueResolver::resolve)
-        .ifPresent(task::setInjectedValues);                                // new
+        .map(TaskDef::getRuntimeMetadata)
+        .map(runtimeMetadataResolver::resolve)
+        .ifPresent(task::setRuntimeMetadata);                               // new
 tasks.add(task);
 ```
 `taskModel.getTaskDefinition()` is already available and used in `poll`. The persisted
-`TaskModel` is untouched. `InjectedValueResolver` is added as a constructor dependency of
+`TaskModel` is untouched. `RuntimeMetadataResolver` is added as a constructor dependency of
 `ExecutionService`.
 
 ## 7. Security
@@ -149,7 +152,7 @@ tasks.add(task);
 
 ## 8. Non-goals (this version)
 
-- gRPC (`@ProtoField`) support for `Task.injectedValues`.
+- gRPC (`@ProtoField`) support for `Task.runtimeMetadata`.
 - Injection for server-side system tasks (only worker poll).
 - Per-name source override, aliasing (map to a different key), or "required/optional"
   semantics — a declared name simply resolves or is omitted.
@@ -158,23 +161,23 @@ tasks.add(task);
 
 ## 9. Testing
 
-- **Unit — `InjectedValueResolverTest`:** secrets-store hit; env fallback hit; secrets take
+- **Unit — `RuntimeMetadataResolverTest`:** secrets-store hit; env fallback hit; secrets take
   precedence over env for the same name; missing name omitted; null/empty list → empty map.
   (Driven via `System.setProperty` per the base PR's DAO test pattern.)
 - **Unit — `ExecutionServiceTest`:** `poll` injects the resolved map onto the outgoing
   `Task` from the task definition's declared names, and the persisted `TaskModel` carries
-  no injected values.
-- **Unit — model:** `TaskDef` round-trips `injectedValueKeys` (getter/setter, equals/hashCode);
-  `Task.injectedValues` serializes only when non-empty and is excluded from `equals`.
+  no runtime metadata.
+- **Unit — model:** `TaskDef` round-trips `runtimeMetadata` (getter/setter, equals/hashCode);
+  `Task.runtimeMetadata` serializes only when non-empty and is excluded from `equals`.
 - **Integration — `test-harness` Spock spec:** register a `TaskDef` with
-  `injectedValueKeys: ["API_KEY"]` (+ `CONDUCTOR_SECRET_API_KEY` / `CONDUCTOR_ENV_...` set via
+  `runtimeMetadata: ["API_KEY"]` (+ `CONDUCTOR_SECRET_API_KEY` / `CONDUCTOR_ENV_...` set via
   system properties), start a workflow, poll the task, assert
-  `polled.injectedValues["API_KEY"] == <value>` and the persisted task has an empty
-  injected-values map. Add an env-fallback case.
+  `polled.runtimeMetadata["API_KEY"] == <value>` and the persisted task has an empty
+  runtime-metadata map. Add an env-fallback case.
 
 ## 10. Open questions for review
 
-- Unified list with secrets→env fallback into one `injectedValues` map (current) vs. splitting
+- Unified list with secrets→env fallback into one `runtimeMetadata` map (current) vs. splitting
   secrets and environment into separate declaration lists / result maps (which would preserve
   the base PR's sensitive-vs-non-sensitive distinction for this path).
 - Should a declared-but-missing name be a silent omission (current) or surface as a task/poll

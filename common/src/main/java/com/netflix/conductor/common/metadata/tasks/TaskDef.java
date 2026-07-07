@@ -77,7 +77,7 @@ public class TaskDef extends Auditable {
     /**
      * Names of secrets/environment variables this task needs resolved and injected at poll time.
      */
-    private List<String> injectedValueKeys = new ArrayList<>();
+    private List<String> runtimeMetadata = new ArrayList<>();
 
     @ProtoField(id = 7)
     private TimeoutPolicy timeoutPolicy = TimeoutPolicy.TIME_OUT_WF;
@@ -271,16 +271,16 @@ public class TaskDef extends Auditable {
     /**
      * @return Returns the declared secret/environment variable names this task needs
      */
-    public List<String> getInjectedValueKeys() {
-        return injectedValueKeys;
+    public List<String> getRuntimeMetadata() {
+        return runtimeMetadata;
     }
 
     /**
-     * @param injectedValueKeys Names of secrets/environment variables that the task needs resolved
+     * @param runtimeMetadata Names of secrets/environment variables that the task needs resolved
      *     and injected at poll time
      */
-    public void setInjectedValueKeys(List<String> injectedValueKeys) {
-        this.injectedValueKeys = injectedValueKeys;
+    public void setRuntimeMetadata(List<String> runtimeMetadata) {
+        this.runtimeMetadata = runtimeMetadata;
     }
 
     /**
@@ -568,7 +568,7 @@ public class TaskDef extends Auditable {
                 && Objects.equals(getDescription(), taskDef.getDescription())
                 && Objects.equals(getInputKeys(), taskDef.getInputKeys())
                 && Objects.equals(getOutputKeys(), taskDef.getOutputKeys())
-                && Objects.equals(getInjectedValueKeys(), taskDef.getInjectedValueKeys())
+                && Objects.equals(getRuntimeMetadata(), taskDef.getRuntimeMetadata())
                 && getTimeoutPolicy() == taskDef.getTimeoutPolicy()
                 && getRetryLogic() == taskDef.getRetryLogic()
                 && Objects.equals(getConcurrentExecLimit(), taskDef.getConcurrentExecLimit())
@@ -595,7 +595,7 @@ public class TaskDef extends Auditable {
                 getTimeoutSeconds(),
                 getInputKeys(),
                 getOutputKeys(),
-                getInjectedValueKeys(),
+                getRuntimeMetadata(),
                 getTimeoutPolicy(),
                 getRetryLogic(),
                 getRetryDelaySeconds(),

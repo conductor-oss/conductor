@@ -36,7 +36,7 @@ import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.listener.TaskStatusListener;
-import com.netflix.conductor.core.secrets.InjectedValueResolver;
+import com.netflix.conductor.core.secrets.RuntimeMetadataResolver;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.core.utils.Utils;
@@ -59,7 +59,7 @@ public class ExecutionService {
     private final SystemTaskRegistry systemTaskRegistry;
     private final TaskStatusListener taskStatusListener;
     private final ParametersUtils parametersUtils;
-    private final InjectedValueResolver injectedValueResolver;
+    private final RuntimeMetadataResolver runtimeMetadataResolver;
 
     private final long queueTaskMessagePostponeSecs;
 
@@ -76,7 +76,7 @@ public class ExecutionService {
             SystemTaskRegistry systemTaskRegistry,
             TaskStatusListener taskStatusListener,
             ParametersUtils parametersUtils,
-            InjectedValueResolver injectedValueResolver) {
+            RuntimeMetadataResolver runtimeMetadataResolver) {
         this.workflowExecutor = workflowExecutor;
         this.executionDAOFacade = executionDAOFacade;
         this.queueDAO = queueDAO;
@@ -88,7 +88,7 @@ public class ExecutionService {
         this.systemTaskRegistry = systemTaskRegistry;
         this.taskStatusListener = taskStatusListener;
         this.parametersUtils = parametersUtils;
-        this.injectedValueResolver = injectedValueResolver;
+        this.runtimeMetadataResolver = runtimeMetadataResolver;
     }
 
     public Task poll(String taskType, String workerId) {
@@ -200,9 +200,9 @@ public class ExecutionService {
                 task.setInputData(parametersUtils.substituteSecrets(task.getInputData()));
                 taskModel
                         .getTaskDefinition()
-                        .map(TaskDef::getInjectedValueKeys)
-                        .map(injectedValueResolver::resolve)
-                        .ifPresent(task::setInjectedValues);
+                        .map(TaskDef::getRuntimeMetadata)
+                        .map(runtimeMetadataResolver::resolve)
+                        .ifPresent(task::setRuntimeMetadata);
                 tasks.add(task);
             } catch (Exception e) {
                 // db operation failed for dequeued message, re-enqueue with a delay

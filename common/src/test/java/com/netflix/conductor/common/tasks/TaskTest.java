@@ -101,9 +101,9 @@ public class TaskTest {
         final Task task = new Task();
         // In order to avoid forgetting putting inside the copy method the newly added fields check
         // the number of declared fields.
-        // NOTE: `injectedValues` (wire-only resolved secret values, injected at poll time) is
+        // NOTE: `runtimeMetadata` (wire-only resolved secret values, injected at poll time) is
         // intentionally NOT propagated by copy()/deepCopy() - see
-        // testInjectedValuesExcludedFromCopy.
+        // testRuntimeMetadataExcludedFromCopy.
         final int expectedTaskFieldsNumber = 44;
         final int declaredFieldsNumber = task.getClass().getDeclaredFields().length;
 
@@ -177,86 +177,86 @@ public class TaskTest {
     }
 
     @Test
-    public void testInjectedValuesGetterSetterRoundTrip() {
+    public void testRuntimeMetadataGetterSetterRoundTrip() {
         Task task = new Task();
-        assertNotNull(task.getInjectedValues());
-        assertTrue(task.getInjectedValues().isEmpty());
+        assertNotNull(task.getRuntimeMetadata());
+        assertTrue(task.getRuntimeMetadata().isEmpty());
 
-        Map<String, String> injectedValues = new HashMap<>();
-        injectedValues.put("OPENAI_API_KEY", "sk-secret-value");
-        task.setInjectedValues(injectedValues);
+        Map<String, String> runtimeMetadata = new HashMap<>();
+        runtimeMetadata.put("OPENAI_API_KEY", "sk-secret-value");
+        task.setRuntimeMetadata(runtimeMetadata);
 
-        assertEquals(injectedValues, task.getInjectedValues());
+        assertEquals(runtimeMetadata, task.getRuntimeMetadata());
     }
 
     @Test
-    public void testSetInjectedValuesNullGuard() {
+    public void testSetRuntimeMetadataNullGuard() {
         Task task = new Task();
-        task.setInjectedValues(null);
-        assertNotNull(task.getInjectedValues());
-        assertTrue(task.getInjectedValues().isEmpty());
+        task.setRuntimeMetadata(null);
+        assertNotNull(task.getRuntimeMetadata());
+        assertTrue(task.getRuntimeMetadata().isEmpty());
     }
 
     @Test
-    public void testInjectedValuesSerializedOnlyWhenNonEmpty() throws Exception {
+    public void testRuntimeMetadataSerializedOnlyWhenNonEmpty() throws Exception {
         Task task = new Task();
         task.setTaskId("task-1");
-        Map<String, String> injectedValues = new HashMap<>();
-        injectedValues.put("OPENAI_API_KEY", "sk-secret-value");
-        task.setInjectedValues(injectedValues);
+        Map<String, String> runtimeMetadata = new HashMap<>();
+        runtimeMetadata.put("OPENAI_API_KEY", "sk-secret-value");
+        task.setRuntimeMetadata(runtimeMetadata);
 
         String json = objectMapper.writeValueAsString(task);
-        assertTrue(json.contains("\"injectedValues\""));
+        assertTrue(json.contains("\"runtimeMetadata\""));
         assertTrue(json.contains("OPENAI_API_KEY"));
         assertTrue(json.contains("sk-secret-value"));
 
-        Task emptyInjectedValuesTask = new Task();
-        emptyInjectedValuesTask.setTaskId("task-2");
-        String emptyJson = objectMapper.writeValueAsString(emptyInjectedValuesTask);
-        assertFalse(emptyJson.contains("\"injectedValues\""));
+        Task emptyRuntimeMetadataTask = new Task();
+        emptyRuntimeMetadataTask.setTaskId("task-2");
+        String emptyJson = objectMapper.writeValueAsString(emptyRuntimeMetadataTask);
+        assertFalse(emptyJson.contains("\"runtimeMetadata\""));
     }
 
     @Test
-    public void testInjectedValuesExcludedFromEquals() {
+    public void testRuntimeMetadataExcludedFromEquals() {
         Task task1 = new Task();
         task1.setTaskId("task-1");
-        Map<String, String> injectedValues1 = new HashMap<>();
-        injectedValues1.put("OPENAI_API_KEY", "sk-secret-value-1");
-        task1.setInjectedValues(injectedValues1);
+        Map<String, String> runtimeMetadata1 = new HashMap<>();
+        runtimeMetadata1.put("OPENAI_API_KEY", "sk-secret-value-1");
+        task1.setRuntimeMetadata(runtimeMetadata1);
 
         Task task2 = new Task();
         task2.setTaskId("task-1");
-        Map<String, String> injectedValues2 = new HashMap<>();
-        injectedValues2.put("OPENAI_API_KEY", "sk-secret-value-2");
-        task2.setInjectedValues(injectedValues2);
+        Map<String, String> runtimeMetadata2 = new HashMap<>();
+        runtimeMetadata2.put("OPENAI_API_KEY", "sk-secret-value-2");
+        task2.setRuntimeMetadata(runtimeMetadata2);
 
         assertEquals(task1, task2);
         assertEquals(task1.hashCode(), task2.hashCode());
     }
 
     @Test
-    public void testInjectedValuesExcludedFromToString() {
+    public void testRuntimeMetadataExcludedFromToString() {
         Task task = new Task();
         task.setTaskId("task-1");
-        Map<String, String> injectedValues = new HashMap<>();
-        injectedValues.put("OPENAI_API_KEY", "sk-super-secret-value");
-        task.setInjectedValues(injectedValues);
+        Map<String, String> runtimeMetadata = new HashMap<>();
+        runtimeMetadata.put("OPENAI_API_KEY", "sk-super-secret-value");
+        task.setRuntimeMetadata(runtimeMetadata);
 
         assertFalse(task.toString().contains("sk-super-secret-value"));
     }
 
     @Test
-    public void testInjectedValuesExcludedFromCopy() {
+    public void testRuntimeMetadataExcludedFromCopy() {
         Task task = new Task();
         task.setTaskId("task-1");
-        Map<String, String> injectedValues = new HashMap<>();
-        injectedValues.put("OPENAI_API_KEY", "sk-secret-value");
-        task.setInjectedValues(injectedValues);
+        Map<String, String> runtimeMetadata = new HashMap<>();
+        runtimeMetadata.put("OPENAI_API_KEY", "sk-secret-value");
+        task.setRuntimeMetadata(runtimeMetadata);
 
         Task copy = task.copy();
-        assertTrue(copy.getInjectedValues().isEmpty());
+        assertTrue(copy.getRuntimeMetadata().isEmpty());
 
         Task deepCopy = task.deepCopy();
-        assertTrue(deepCopy.getInjectedValues().isEmpty());
+        assertTrue(deepCopy.getRuntimeMetadata().isEmpty());
     }
 }

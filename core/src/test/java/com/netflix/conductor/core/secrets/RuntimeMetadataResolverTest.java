@@ -28,16 +28,16 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
-public class InjectedValueResolverTest {
+public class RuntimeMetadataResolverTest {
 
     @Mock private SecretsDAO secretsDAO;
     @Mock private EnvironmentDAO environmentDAO;
 
-    private InjectedValueResolver resolver;
+    private RuntimeMetadataResolver resolver;
 
     @Before
     public void setup() {
-        resolver = new InjectedValueResolver(secretsDAO, environmentDAO);
+        resolver = new RuntimeMetadataResolver(secretsDAO, environmentDAO);
     }
 
     @Test

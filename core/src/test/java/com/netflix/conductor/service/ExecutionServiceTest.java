@@ -39,7 +39,7 @@ import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.listener.TaskStatusListener;
-import com.netflix.conductor.core.secrets.InjectedValueResolver;
+import com.netflix.conductor.core.secrets.RuntimeMetadataResolver;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
@@ -66,7 +66,7 @@ public class ExecutionServiceTest {
     @Mock private SystemTaskRegistry systemTaskRegistry;
     @Mock private TaskStatusListener taskStatusListener;
     @Mock private ParametersUtils parametersUtils;
-    @Mock private InjectedValueResolver injectedValueResolver;
+    @Mock private RuntimeMetadataResolver runtimeMetadataResolver;
 
     private ExecutionService executionService;
 
@@ -91,7 +91,7 @@ public class ExecutionServiceTest {
                         systemTaskRegistry,
                         taskStatusListener,
                         parametersUtils,
-                        injectedValueResolver);
+                        runtimeMetadataResolver);
         WorkflowDef workflowDef = new WorkflowDef();
         workflow1 = new Workflow();
         workflow1.setWorkflowId("wf1");
@@ -380,7 +380,7 @@ public class ExecutionServiceTest {
         String taskId = "task-1";
 
         TaskDef taskDef = new TaskDef();
-        taskDef.setInjectedValueKeys(List.of("API_KEY"));
+        taskDef.setRuntimeMetadata(List.of("API_KEY"));
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setTaskDefinition(taskDef);
 
@@ -392,13 +392,14 @@ public class ExecutionServiceTest {
 
         when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(List.of(taskId));
         when(executionDAOFacade.getTaskModel(taskId)).thenReturn(taskModel);
-        when(injectedValueResolver.resolve(any())).thenReturn(Map.of("API_KEY", "token-value-123"));
+        when(runtimeMetadataResolver.resolve(any()))
+                .thenReturn(Map.of("API_KEY", "token-value-123"));
 
         List<Task> polled = executionService.poll(taskType, "worker", null, 1, 100);
 
         assertEquals(1, polled.size());
         Task returnedTask = polled.get(0);
-        assertEquals("token-value-123", returnedTask.getInjectedValues().get("API_KEY"));
-        verify(injectedValueResolver).resolve(any());
+        assertEquals("token-value-123", returnedTask.getRuntimeMetadata().get("API_KEY"));
+        verify(runtimeMetadataResolver).resolve(any());
     }
 }
