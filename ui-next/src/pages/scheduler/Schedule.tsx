@@ -111,7 +111,6 @@ export function Schedule() {
     schedule?.capabilities?.create === true;
 
   const [showCloneDialog, setShowCloneDialog] = useState(false);
-  const [cloneTargetName, setCloneTargetName] = useState<string | null>(null);
 
   const cloneNameSearchParams = useMemo(
     () => ({
@@ -224,22 +223,28 @@ export function Schedule() {
 
   const { mutate: cloneSchedule, isLoading: isCloningSchedule } =
     useSaveSchedule({
-      onSuccess: () => {
+      onSuccess: (_data: unknown, variables: { body?: string }) => {
         setMessage({
           text: "Schedule cloned successfully.",
           severity: "success",
         });
         setShowCloneDialog(false);
-        if (cloneTargetName) {
+        // Derive the cloned schedule name from the request body so navigation
+        // doesn't depend on async React state captured in this closure.
+        let clonedName: string | undefined;
+        try {
+          clonedName = JSON.parse(variables?.body ?? "{}")?.name;
+        } catch {
+          clonedName = undefined;
+        }
+        if (clonedName) {
           navigate(
-            `${SCHEDULER_DEFINITION_URL.BASE}/${encodeURIComponent(cloneTargetName)}`,
+            `${SCHEDULER_DEFINITION_URL.BASE}/${encodeURIComponent(clonedName)}`,
           );
         }
-        setCloneTargetName(null);
       },
 
       onError: async (response: Response) => {
-        setCloneTargetName(null);
         setErrorMessage(
           await getScheduleMutationErrorMessage(response, "clone"),
         );
@@ -862,7 +867,6 @@ export function Schedule() {
             }
             onClose={() => setShowCloneDialog(false)}
             onSuccess={({ name }) => {
-              setCloneTargetName(name);
               cloneSchedule({
                 body: JSON.stringify({ ...schedule, name }),
               } as any);

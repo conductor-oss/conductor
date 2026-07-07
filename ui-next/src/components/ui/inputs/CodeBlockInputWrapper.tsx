@@ -268,6 +268,15 @@ export const CodeBlockInputWrapper = ({
             ".suggest-widget": {
               zIndex: 99999,
             },
+            // Monaco paints its own theme background over the container. When
+            // disabled, make those layers transparent so the grey container
+            // background shows through and the editor reads as disabled.
+            ...(disabled && {
+              "&, .margin, .monaco-editor-background, .glyph-margin, .view-lines":
+                {
+                  backgroundColor: "transparent !important",
+                },
+            }),
           },
           ...containerStyles,
         }}
@@ -389,6 +398,8 @@ export const CodeBlockInputWrapper = ({
           options={{
             ...smallEditorOptions,
             ...options,
+            readOnly: disabled || options?.readOnly,
+            domReadOnly: disabled || options?.readOnly,
           }}
           value={value}
           {...editorProps}
