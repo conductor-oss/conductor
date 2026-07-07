@@ -1,8 +1,9 @@
 import { FunctionComponent } from "react";
-import { Button, Stack, useMediaQuery } from "@mui/material";
+import { Button, Stack, Tooltip, useMediaQuery } from "@mui/material";
 import SaveIcon from "components/icons/SaveIcon";
 import XCloseIcon from "components/icons/XCloseIcon";
 import ResetIcon from "components/icons/ResetIcon";
+import CopyIcon from "components/icons/CopyIcon";
 import { Theme } from "@mui/material/styles";
 import { useAuth } from "components/features/auth";
 
@@ -14,6 +15,9 @@ export interface ScheduleButtonsProps {
   clearScheduleForm: () => void;
   setSaveConfirmationOpen: () => void;
   canSave?: boolean;
+  showClone?: boolean;
+  canClone?: boolean;
+  onCloneClick?: () => void;
 }
 
 const VALID_WIDTH_BREAKPOINT = 491;
@@ -26,6 +30,9 @@ const ScheduleButtons: FunctionComponent<ScheduleButtonsProps> = ({
   clearScheduleForm,
   setSaveConfirmationOpen,
   canSave = true,
+  showClone = false,
+  canClone = false,
+  onCloneClick,
 }) => {
   const { isTrialExpired } = useAuth();
   const isValidWidth = useMediaQuery((theme: Theme) =>
@@ -69,6 +76,21 @@ const ScheduleButtons: FunctionComponent<ScheduleButtonsProps> = ({
           >
             Reset
           </Button>
+          {showClone && canClone && (
+            <Tooltip title="Clone schedule — creates a new schedule with a new name">
+              <span>
+                <Button
+                  id="clone-schedule-btn"
+                  variant="outlined"
+                  onClick={() => onCloneClick?.()}
+                  disabled={isTrialExpired}
+                  startIcon={<CopyIcon />}
+                >
+                  Clone
+                </Button>
+              </span>
+            </Tooltip>
+          )}
           <Button
             onClick={() => setSaveConfirmationOpen()}
             disabled={couldNotParseJson || isTrialExpired || !canSave}

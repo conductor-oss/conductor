@@ -12,7 +12,7 @@ export interface IStartWorkflowRequest {
 export interface IScheduleCapabilities {
   update?: boolean;
   delete?: boolean;
-  /** Can create a new schedule targeting this row's workflow (clone). */
+  /** Can clone schedules. Requires global CREATE_WORKFLOW_SCHEDULE (same as New Schedule). */
   create?: boolean;
 }
 

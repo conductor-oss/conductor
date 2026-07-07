@@ -16,6 +16,12 @@ export const FORBIDDEN_POST_ERROR_MESSAGE =
 export const FORBIDDEN_GET_ERROR_MESSAGE =
   "It looks like you do not have permissions to get this resource.";
 
+export const FORBIDDEN_CREATE_SCHEDULE_ERROR_MESSAGE =
+  "You don't have permission to create workflow schedules. SCHEDULE_MANAGEMENT, CREATE_WORKFLOW_SCHEDULE, or EXECUTE on the target workflow is required.";
+
+export const FORBIDDEN_UPDATE_SCHEDULE_ERROR_MESSAGE =
+  "You don't have permission to update this workflow schedule.";
+
 export const generateForbiddenMessage = (method: HTTPMethods) => {
   switch (method) {
     case HTTPMethods.POST:

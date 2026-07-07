@@ -519,20 +519,28 @@ export default function ScheduleDefinitions() {
         renderer: (name: string, row: IScheduleDto) => {
           const rowCanEdit = row.capabilities?.update ?? false;
           const rowCanDelete = row.capabilities?.delete ?? false;
-          const rowCanClone = row.capabilities?.create ?? false;
+          const rowCanClone = canCreate && row.capabilities?.create === true;
           return (
-            <Box style={{ display: "flex", justifyContent: "space-evenly" }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-evenly",
+                gap: 1,
+              }}
+            >
               {row.active && (
                 <Tooltip
-                  title={rowCanEdit ? "Pause schedule" : "No edit permission"}
+                  title={rowCanEdit ? "Pause schedule" : "No update permission"}
                 >
                   <span>
                     <IconButton
                       onClick={() => handlePauseSchedule(name)}
                       color="primary"
+                      size="small"
                       disabled={isTrialExpired || !rowCanEdit}
                     >
-                      <PauseIcon size={22} />
+                      <PauseIcon size={20} />
                     </IconButton>
                   </span>
                 </Tooltip>
@@ -540,15 +548,18 @@ export default function ScheduleDefinitions() {
 
               {!row.active && (
                 <Tooltip
-                  title={rowCanEdit ? "Resume schedule" : "No edit permission"}
+                  title={
+                    rowCanEdit ? "Resume schedule" : "No update permission"
+                  }
                 >
                   <span>
                     <IconButton
                       onClick={() => handleResumeSchedule(name)}
                       color="primary"
+                      size="small"
                       disabled={isTrialExpired || !rowCanEdit}
                     >
-                      <PlayIcon size={22} />
+                      <PlayIcon size={20} />
                     </IconButton>
                   </span>
                 </Tooltip>
@@ -557,13 +568,17 @@ export default function ScheduleDefinitions() {
               <Tooltip
                 title={
                   !rowCanClone
-                    ? "No clone permission"
+                    ? "No create permission for this schedule's workflow"
                     : "Clone schedule — creates a new schedule with a new name"
                 }
               >
                 <span>
                   <IconButton
-                    onClick={() => setSelectedSchedule(row)}
+                    onClick={() => {
+                      if (canCreate && row.capabilities?.create === true) {
+                        setSelectedSchedule(row);
+                      }
+                    }}
                     size="small"
                     disabled={isTrialExpired || !rowCanClone}
                     sx={{
@@ -577,7 +592,9 @@ export default function ScheduleDefinitions() {
 
               {tagsEnabled && (
                 <Tooltip
-                  title={rowCanEdit ? "Add/Edit tags" : "No edit permission"}
+                  title={
+                    rowCanEdit ? "Add/Update tags" : "No update permission"
+                  }
                 >
                   <span>
                     <IconButton
@@ -588,7 +605,7 @@ export default function ScheduleDefinitions() {
                       }}
                       size="small"
                     >
-                      <TagIcon />
+                      <TagIcon size={20} />
                     </IconButton>
                   </span>
                 </Tooltip>
@@ -603,6 +620,7 @@ export default function ScheduleDefinitions() {
                   <IconButton
                     disabled={isTrialExpired || !rowCanDelete}
                     onClick={() => deleteSchedule(name)}
+                    size="small"
                   >
                     <DeleteIcon size={20} />
                   </IconButton>
@@ -717,24 +735,27 @@ export default function ScheduleDefinitions() {
         />
       )}
 
-      {selectedSchedule && !isFetchingScheduleNames && (
-        <CloneScheduleDialog
-          name={
-            getSequentiallySuffix({
-              name: selectedSchedule.name,
-              refNames: siblingScheduleNames,
-            }).name
-          }
-          onClose={() => setSelectedSchedule(null)}
-          onSuccess={({ name }) => {
-            // @ts-ignore
-            saveSchedule({
-              body: JSON.stringify({ ...selectedSchedule, name }),
-            });
-          }}
-          isFetching={isSavingSchedule}
-        />
-      )}
+      {selectedSchedule &&
+        canCreate &&
+        selectedSchedule.capabilities?.create === true &&
+        !isFetchingScheduleNames && (
+          <CloneScheduleDialog
+            name={
+              getSequentiallySuffix({
+                name: selectedSchedule.name,
+                refNames: siblingScheduleNames,
+              }).name
+            }
+            onClose={() => setSelectedSchedule(null)}
+            onSuccess={({ name }) => {
+              // @ts-ignore
+              saveSchedule({
+                body: JSON.stringify({ ...selectedSchedule, name }),
+              });
+            }}
+            isFetching={isSavingSchedule}
+          />
+        )}
       <SectionHeader
         title="Workflow Scheduler Definitions"
         _deprecate_marginTop={0}

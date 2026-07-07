@@ -30,6 +30,9 @@ import { SCHEDULER_DEFINITION_URL } from "utils/constants/route";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { getErrors } from "utils/index";
 import { useWorkflowDefsByVersions } from "utils/query";
+import { getSequentiallySuffix } from "utils/strings";
+import { useGetSchedulerDefinitionsWithPagination } from "utils/hooks/useGetSchedulerDefinitions";
+import CloneScheduleDialog from "pages/definitions/dialog/CloneScheduleDialog";
 import { CronExpressionSection } from "./components/CronExpressionSection";
 import { ScheduleTimingSection } from "./components/ScheduleTimingSection";
 import { WorkflowConfigSection } from "./components/WorkflowConfigSection";
@@ -47,6 +50,7 @@ import {
   getDateFromField,
   JSONParse,
 } from "./utils/scheduleTransformers";
+import { getScheduleMutationErrorMessage } from "./utils/scheduleErrors";
 
 export type ScheduleType = {
   name: string;
@@ -100,6 +104,32 @@ export function Schedule() {
   const canEditSchedule = isNewScheduleDef
     ? canCreateSchedule
     : !isLoading && (schedule?.capabilities?.update ?? false);
+  const canCloneSchedule =
+    !isNewScheduleDef &&
+    !isLoading &&
+    canCreateSchedule &&
+    schedule?.capabilities?.create === true;
+
+  const [showCloneDialog, setShowCloneDialog] = useState(false);
+  const [cloneTargetName, setCloneTargetName] = useState<string | null>(null);
+
+  const cloneNameSearchParams = useMemo(
+    () => ({
+      scheduleName: schedule?.name,
+      size: 100,
+    }),
+    [schedule?.name],
+  );
+
+  const { data: cloneNamesData, isFetching: isFetchingScheduleNames } =
+    useGetSchedulerDefinitionsWithPagination(cloneNameSearchParams, {
+      enabled: showCloneDialog && !!schedule?.name,
+    });
+
+  const siblingScheduleNames = useMemo(
+    () => cloneNamesData?.results?.map((item) => item.name) ?? [],
+    [cloneNamesData],
+  );
 
   const workflowDefByVersions = useWorkflowDefsByVersions();
 
@@ -180,24 +210,42 @@ export function Schedule() {
         }));
         console.error("Errors: ", errors);
         setErrors(errors);
-        if (response.status === 403) {
-          setErrorMessage(
-            `Error - You don't have permissions to schedule the selected workflow.`,
-          );
-        } else {
-          if (errors.message) {
-            setErrorMessage(`Error - ${response.status} - ${errors.message}`);
-          } else {
-            setErrorMessage(
-              `Error - ${response.status} - ${response.statusText}`,
-            );
-          }
-        }
+        setErrorMessage(
+          await getScheduleMutationErrorMessage(
+            response,
+            isNewScheduleDef ? "create" : "update",
+          ),
+        );
         setTimeoutHandler(setTimeout(() => setErrorMessage(null), 5000));
         cancelConfirmSave();
       },
     },
   );
+
+  const { mutate: cloneSchedule, isLoading: isCloningSchedule } =
+    useSaveSchedule({
+      onSuccess: () => {
+        setMessage({
+          text: "Schedule cloned successfully.",
+          severity: "success",
+        });
+        setShowCloneDialog(false);
+        if (cloneTargetName) {
+          navigate(
+            `${SCHEDULER_DEFINITION_URL.BASE}/${encodeURIComponent(cloneTargetName)}`,
+          );
+        }
+        setCloneTargetName(null);
+      },
+
+      onError: async (response: Response) => {
+        setCloneTargetName(null);
+        setErrorMessage(
+          await getScheduleMutationErrorMessage(response, "clone"),
+        );
+        setTimeoutHandler(setTimeout(() => setErrorMessage(null), 5000));
+      },
+    });
 
   // Memoized handlers using custom hooks
   const handleWorkflowTypeChange = useCallback(
@@ -581,6 +629,13 @@ export function Schedule() {
                 clearScheduleForm={clearScheduleForm}
                 setSaveConfirmationOpen={setSaveConfirmationOpen}
                 canSave={canEditSchedule}
+                showClone={!isNewScheduleDef}
+                canClone={canCloneSchedule}
+                onCloneClick={() => {
+                  if (canCloneSchedule) {
+                    setShowCloneDialog(true);
+                  }
+                }}
               />
             }
           />
@@ -595,7 +650,7 @@ export function Schedule() {
           isSaveInProgress={isSavingSchedule}
           hasErrors={couldNotParseJson}
         />
-        {(isLoading || isSavingSchedule) && (
+        {(isLoading || isSavingSchedule || isCloningSchedule) && (
           <LinearProgress sx={{ position: "sticky", top: 0 }} />
         )}
         <Paper
@@ -652,7 +707,7 @@ export function Schedule() {
                           <ConductorInput
                             fullWidth
                             required
-                            disabled={!canEditSchedule}
+                            disabled={!canEditSchedule || !isNewScheduleDef}
                             label="Name"
                             id="schedule-name-field"
                             value={scheduleState.name}
@@ -663,7 +718,9 @@ export function Schedule() {
                             helperText={errors ? errors?.name : undefined}
                             tooltip={{
                               title: "Name",
-                              content: "Changing name saves as a new schedule.",
+                              content: isNewScheduleDef
+                                ? "Unique identifier for this schedule."
+                                : "Schedule name cannot be changed after creation.",
                             }}
                           />
                         </Grid>
@@ -791,6 +848,28 @@ export function Schedule() {
           </Grid>
         </Paper>
       </SectionContainer>
+      {showCloneDialog &&
+        canCloneSchedule &&
+        schedule &&
+        !isFetchingScheduleNames &&
+        !isNewScheduleDef && (
+          <CloneScheduleDialog
+            name={
+              getSequentiallySuffix({
+                name: schedule.name,
+                refNames: siblingScheduleNames,
+              }).name
+            }
+            onClose={() => setShowCloneDialog(false)}
+            onSuccess={({ name }) => {
+              setCloneTargetName(name);
+              cloneSchedule({
+                body: JSON.stringify({ ...schedule, name }),
+              } as any);
+            }}
+            isFetching={isCloningSchedule}
+          />
+        )}
     </Box>
   );
 }
