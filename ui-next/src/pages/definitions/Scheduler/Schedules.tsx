@@ -57,6 +57,7 @@ import { usePushHistory } from "utils/hooks/usePushHistory";
 import { useActionWithPath } from "utils/query";
 import { featureFlags, FEATURES } from "utils/flags";
 import { createSearchableTags } from "utils/utils";
+import debounce from "lodash/debounce";
 import CloneScheduleDialog from "../dialog/CloneScheduleDialog";
 import {
   activeFilterGroups,
@@ -287,6 +288,14 @@ export default function ScheduleDefinitions() {
   const [rowsPerPage, setRowsPerPage] = useState(15);
   const [sort, setSort] = useState<string | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState("");
+  // Debounced value that actually drives the query, so typing doesn't fire a
+  // request (and flash the progress bar) on every keystroke.
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
+  const debouncedSetSearchTerm = useMemo(
+    () => debounce((value: string) => setDebouncedSearchTerm(value), 250),
+    [],
+  );
 
   const { isTrialExpired } = useAuth();
   const { canCreate, canUpdate } = useResourcePermissions(
@@ -326,8 +335,8 @@ export default function ScheduleDefinitions() {
       params.sort = sort;
     }
 
-    if (searchTerm) {
-      params.name = searchTerm;
+    if (debouncedSearchTerm) {
+      params.name = debouncedSearchTerm;
     }
 
     // Map active filter to paused parameter
@@ -339,7 +348,7 @@ export default function ScheduleDefinitions() {
     // If "all", don't set paused parameter
 
     return params;
-  }, [page, rowsPerPage, sort, searchTerm, activeFilterParam]);
+  }, [page, rowsPerPage, sort, debouncedSearchTerm, activeFilterParam]);
 
   const {
     data: paginatedData,
@@ -663,6 +672,7 @@ export default function ScheduleDefinitions() {
 
   const handleSearchTermChange = (value: string) => {
     setSearchTerm(value);
+    debouncedSetSearchTerm(value);
     setPage(1); // Reset to first page when searching
   };
 
