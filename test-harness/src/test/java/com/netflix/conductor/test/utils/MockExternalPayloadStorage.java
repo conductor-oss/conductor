@@ -103,7 +103,9 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
             File file = validateAndResolvePath(path);
             String filePath = file.getAbsolutePath();
             try {
-                if (!file.exists() && file.createNewFile()) {
+                if (!file.exists()) {
+                    file.getParentFile().mkdirs();
+                    file.createNewFile();
                     LOGGER.debug("Created file: {}", filePath);
                 }
                 IOUtils.copy(payload, new FileOutputStream(file));
