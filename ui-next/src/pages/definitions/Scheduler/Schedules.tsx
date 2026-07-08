@@ -28,6 +28,7 @@ import TagList from "components/ui/TagList";
 import AddIcon from "components/icons/AddIcon";
 import PlayIcon from "components/icons/PlayIcon";
 import cronstrue from "cronstrue";
+import _debounce from "lodash/debounce";
 import { useSaveSchedule } from "pages/scheduler/schedulerHooks";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
@@ -285,6 +286,7 @@ export default function ScheduleDefinitions() {
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(15);
   const [sort, setSort] = useState<string | undefined>(undefined);
+  const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
   const { isTrialExpired } = useAuth();
@@ -346,10 +348,16 @@ export default function ScheduleDefinitions() {
   // For backward compatibility with clone dialog (fetch all schedule names)
   const { data: allSchedulesData } = useGetSchedulerDefinitions();
 
-  useEffect(() => {
+  const resetSelectedRows = useCallback(() => {
     setSelectedRows([]);
     setToggleCleared((t) => !t);
-  }, [paginatedData]);
+  }, []);
+
+  // Reload the table and drop any stale row selection.
+  const refetchAndResetSelection = useCallback(() => {
+    resetSelectedRows();
+    return refetch();
+  }, [refetch, resetSelectedRows]);
 
   const handleFetchError = async (error: Response, method: HTTPMethods) => {
     logger.error("[Schedules.tsx][handleFetchError] Error:", error);
@@ -371,7 +379,7 @@ export default function ScheduleDefinitions() {
       }
     }
 
-    refetch();
+    refetchAndResetSelection();
   };
 
   const pushHistory = usePushHistory();
@@ -379,7 +387,7 @@ export default function ScheduleDefinitions() {
   const { mutate: saveSchedule, isLoading: isSavingSchedule } = useSaveSchedule(
     {
       onSuccess: () => {
-        refetch();
+        refetchAndResetSelection();
         setSelectedSchedule(null);
         setToastMessage({
           text: "Schedule cloned successfully",
@@ -393,7 +401,7 @@ export default function ScheduleDefinitions() {
 
   const deleteScheduleAction = useActionWithPath({
     onSuccess: () => {
-      refetch();
+      refetchAndResetSelection();
     },
     onError: (error: Response) => handleFetchError(error, HTTPMethods.DELETE),
   });
@@ -426,7 +434,7 @@ export default function ScheduleDefinitions() {
 
   const pauseScheduleAction = useActionWithPath({
     onSuccess: () => {
-      refetch();
+      refetchAndResetSelection();
     },
     onError: (error: Response) => handleFetchError(error, HTTPMethods.GET),
   });
@@ -513,6 +521,10 @@ export default function ScheduleDefinitions() {
                   onClick={() => handlePauseSchedule(name)}
                   color="primary"
                   disabled={isTrialExpired}
+                  size="small"
+                  sx={{
+                    whiteSpace: "nowrap",
+                  }}
                 >
                   <PauseIcon size={22} />
                 </IconButton>
@@ -525,6 +537,10 @@ export default function ScheduleDefinitions() {
                   onClick={() => handleResumeSchedule(name)}
                   color="primary"
                   disabled={isTrialExpired}
+                  size="small"
+                  sx={{
+                    whiteSpace: "nowrap",
+                  }}
                 >
                   <PlayIcon size={22} />
                 </IconButton>
@@ -553,8 +569,11 @@ export default function ScheduleDefinitions() {
                     setShowAddTagDialog(true);
                   }}
                   size="small"
+                  sx={{
+                    whiteSpace: "nowrap",
+                  }}
                 >
-                  <TagIcon />
+                  <TagIcon size={20} />
                 </IconButton>
               </Tooltip>
             )}
@@ -563,6 +582,10 @@ export default function ScheduleDefinitions() {
               <IconButton
                 disabled={isTrialExpired}
                 onClick={() => deleteSchedule(name)}
+                size="small"
+                sx={{
+                  whiteSpace: "nowrap",
+                }}
               >
                 <DeleteIcon size={20} />
               </IconButton>
@@ -585,11 +608,13 @@ export default function ScheduleDefinitions() {
   // Pagination handlers
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
+    resetSelectedRows();
   };
 
   const handleRowsPerPageChange = (newRowsPerPage: number) => {
     setRowsPerPage(newRowsPerPage);
     setPage(1); // Reset to first page when changing rows per page
+    resetSelectedRows();
   };
 
   const handleSort = (column: any, sortDirection: string) => {
@@ -598,18 +623,36 @@ export default function ScheduleDefinitions() {
       const sortParam = `${column.id}:${sortDirection.toUpperCase()}`;
       setSort(sortParam);
       setPage(1); // Reset to first page when sorting
+      resetSelectedRows();
     }
   };
 
+  const debouncedSetSearchTerm = useMemo(
+    () =>
+      _debounce((value: string) => {
+        setSearchTerm(value);
+        setPage(1); // Reset to first page when searching
+        resetSelectedRows();
+      }, 250),
+    [resetSelectedRows],
+  );
+
+  useEffect(() => {
+    return () => {
+      debouncedSetSearchTerm.cancel();
+    };
+  }, [debouncedSetSearchTerm]);
+
   const handleSearchTermChange = (value: string) => {
-    setSearchTerm(value);
-    setPage(1); // Reset to first page when searching
+    setSearchInput(value);
+    debouncedSetSearchTerm(value);
   };
 
-  // Reset page when active filter changes
-  useEffect(() => {
-    setPage(1);
-  }, [activeFilterParam]);
+  const handleActiveFilterChange = (value: string) => {
+    setActiveFilterParam(value);
+    setPage(1); // Reset to first page when the filter changes
+    resetSelectedRows();
+  };
 
   return (
     <>
@@ -669,7 +712,7 @@ export default function ScheduleDefinitions() {
           }}
           onSuccess={() => {
             setShowAddTagDialog(false);
-            refetch();
+            refetchAndResetSelection();
           }}
           apiPath={`/scheduler/schedules/${addTagDialogData?.name}/tags`}
         />
@@ -725,7 +768,7 @@ export default function ScheduleDefinitions() {
                   label="Quick search"
                   placeholder="Search scheduler definitions"
                   showClearButton
-                  value={searchTerm}
+                  value={searchInput}
                   onTextInputChange={handleSearchTermChange}
                   autoFocus
                 />
@@ -755,7 +798,7 @@ export default function ScheduleDefinitions() {
                             name="activeRadioGroup"
                             value={activeFilterParam}
                             onChange={(e) =>
-                              setActiveFilterParam(e.target.value)
+                              handleActiveFilterChange(e.target.value)
                             }
                             sx={{ marginLeft: 2 }}
                           >
@@ -818,7 +861,7 @@ export default function ScheduleDefinitions() {
                       size="small"
                       startIcon={<RefreshIcon />}
                       key="refresh"
-                      onClick={() => refetch()}
+                      onClick={() => refetchAndResetSelection()}
                       sx={{
                         color: (theme) =>
                           theme.palette.mode === "dark"
@@ -845,7 +888,7 @@ export default function ScheduleDefinitions() {
                 contextComponent={
                   <BulkActionModule
                     selectedRows={selectedRows}
-                    refetchExecution={refetch}
+                    refetchExecution={refetchAndResetSelection}
                     handleError={handleError}
                   />
                 }
