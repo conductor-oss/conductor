@@ -415,6 +415,118 @@ public class TestWorkflowSweeper {
                         DECIDER_QUEUE, workflowModel.getWorkflowId(), maxPostponeSeconds * 1000L);
     }
 
+    /*
+     * Reproduction of the CloudAware / Mikhail RegressWorkflow ~10-minute pause reported after
+     * upgrading Conductor 3.21.4 -> 3.30.2 (Spanner persistence, Redis queue + locks).
+     *
+     * IMPORTANT — code-path scope: this exercises the LEGACY sweeper
+     * (com.netflix.conductor.core.reconciliation.WorkflowSweeper), which is only active when
+     * `conductor.app.legacy.sweeper.enabled=true`. The default 3.30.2 sweeper
+     * (org.conductoross.conductor.core.execution.WorkflowSweeper) does NOT use responseTimeout for
+     * its re-sweep interval (it uses workflowOffsetTimeout ~30s and lockLeaseTime/2 ~30s). Since the
+     * legacy `unack()` is the ONLY place in the codebase that derives a ~600s interval from the task
+     * defs, a consistent ~10-minute pause is strong evidence Mikhail is running the legacy sweeper.
+     *
+     * Mechanism: every task def carries responseTimeoutSeconds=600 (10 min) and
+     * pollTimeoutSeconds=1200 (20 min). When a workflow parks (e.g. the event-driven decide after a
+     * JOIN boundary is missed), the decider-queue re-evaluation is scheduled by unack(). Post-#707
+     * that delay is (responseTimeoutSeconds + 1) for an IN_PROGRESS task -> 601s. Before #707 the
+     * fallback was the flat workflowOffsetTimeout (30s), so a missed decide recovered in ~30s and was
+     * invisible. This pins the 601s = ~10 min fallback, exactly the observed pause.
+     */
+    private static final int WORKFLOW_OFFSET_TIMEOUT_3_21_4 = 30; // 3.21.4-era decider offset
+    private static final int MIKHAIL_RESPONSE_TIMEOUT = 600; // responseTimeoutSeconds on every task
+    private static final int MIKHAIL_POLL_TIMEOUT = 1200; // pollTimeoutSeconds on every task
+    private static final int PROD_MAX_POSTPONE = 3600; // ConductorProperties default
+
+    @Test
+    public void testRegressWorkflowTenMinutePauseOnInProgressTask() {
+        WorkflowModel workflowModel = new WorkflowModel();
+        workflowModel.setWorkflowId("regress-wf-1");
+        TaskModel taskModel = new TaskModel();
+        taskModel.setTaskId("regress-task-in-progress");
+        taskModel.setTaskType(TaskType.TASK_TYPE_SIMPLE);
+        taskModel.setStatus(Status.IN_PROGRESS);
+        taskModel.setResponseTimeoutSeconds(MIKHAIL_RESPONSE_TIMEOUT);
+        workflowModel.setTasks(List.of(taskModel));
+        when(properties.getWorkflowOffsetTimeout())
+                .thenReturn(Duration.ofSeconds(WORKFLOW_OFFSET_TIMEOUT_3_21_4));
+        when(properties.getMaxPostponeDurationSeconds())
+                .thenReturn(Duration.ofSeconds(PROD_MAX_POSTPONE));
+
+        workflowSweeper.unack(workflowModel, WORKFLOW_OFFSET_TIMEOUT_3_21_4);
+
+        // 601_000 ms ~= 10 minutes. Pre-#707 this would have been the 30s workflowOffsetTimeout.
+        verify(queueDAO)
+                .setUnackTimeout(
+                        DECIDER_QUEUE,
+                        workflowModel.getWorkflowId(),
+                        (MIKHAIL_RESPONSE_TIMEOUT + 1) * 1000L);
+    }
+
+    @Test
+    public void testRegressWorkflowPauseOnScheduledTaskWithPollTimeout() {
+        WorkflowModel workflowModel = new WorkflowModel();
+        workflowModel.setWorkflowId("regress-wf-2");
+        TaskDef taskDef = new TaskDef();
+        taskDef.setPollTimeoutSeconds(MIKHAIL_POLL_TIMEOUT);
+        TaskModel taskModel = mock(TaskModel.class);
+        when(taskModel.getStatus()).thenReturn(Status.SCHEDULED);
+        when(taskModel.getTaskDefinition()).thenReturn(Optional.of(taskDef));
+        workflowModel.setTasks(List.of(taskModel));
+        when(properties.getWorkflowOffsetTimeout())
+                .thenReturn(Duration.ofSeconds(WORKFLOW_OFFSET_TIMEOUT_3_21_4));
+        when(properties.getMaxPostponeDurationSeconds())
+                .thenReturn(Duration.ofSeconds(PROD_MAX_POSTPONE));
+
+        workflowSweeper.unack(workflowModel, WORKFLOW_OFFSET_TIMEOUT_3_21_4);
+
+        // A workflow parked on a SCHEDULED task (worker not polling) waits pollTimeout+1 = ~20 min.
+        verify(queueDAO)
+                .setUnackTimeout(
+                        DECIDER_QUEUE,
+                        workflowModel.getWorkflowId(),
+                        (MIKHAIL_POLL_TIMEOUT + 1) * 1000L);
+    }
+
+    /*
+     * Faithful "parked at a JOIN boundary" reproduction: the fork child (SIMPLE, IN_PROGRESS,
+     * responseTimeout=600) is still active while the JOIN sits SCHEDULED. unack() takes the minimum
+     * eligible delay across all active tasks, so the whole workflow is not re-decided for ~10 min.
+     */
+    @Test
+    public void testRegressWorkflowParkedAtJoinBoundaryPausesTenMinutes() {
+        WorkflowModel workflowModel = new WorkflowModel();
+        workflowModel.setWorkflowId("regress-wf-join");
+
+        TaskModel forkChild = new TaskModel();
+        forkChild.setTaskId("fork-child-simple");
+        forkChild.setTaskType(TaskType.TASK_TYPE_SIMPLE);
+        forkChild.setStatus(Status.IN_PROGRESS);
+        forkChild.setResponseTimeoutSeconds(MIKHAIL_RESPONSE_TIMEOUT);
+
+        TaskDef joinDef = new TaskDef();
+        joinDef.setPollTimeoutSeconds(MIKHAIL_POLL_TIMEOUT);
+        TaskModel joinTask = mock(TaskModel.class);
+        when(joinTask.getStatus()).thenReturn(Status.SCHEDULED);
+        when(joinTask.getTaskDefinition()).thenReturn(Optional.of(joinDef));
+
+        workflowModel.setTasks(List.of(forkChild, joinTask));
+        when(properties.getWorkflowOffsetTimeout())
+                .thenReturn(Duration.ofSeconds(WORKFLOW_OFFSET_TIMEOUT_3_21_4));
+        when(properties.getMaxPostponeDurationSeconds())
+                .thenReturn(Duration.ofSeconds(PROD_MAX_POSTPONE));
+
+        workflowSweeper.unack(workflowModel, WORKFLOW_OFFSET_TIMEOUT_3_21_4);
+
+        // min(responseTimeout+1=601, pollTimeout+1=1201) = 601s ~= 10 minutes.
+        verify(queueDAO)
+                .setUnackTimeout(
+                        DECIDER_QUEUE,
+                        workflowModel.getWorkflowId(),
+                        (MIKHAIL_RESPONSE_TIMEOUT + 1) * 1000L);
+    }
+
     @Test
     public void testWorkflowOffsetJitter() {
         long offset = 45;

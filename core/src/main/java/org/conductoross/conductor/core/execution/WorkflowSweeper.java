@@ -158,9 +158,31 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
         return CompletableFuture.completedFuture(null);
     }
 
+    /**
+     * Backoff, in seconds, before re-evaluating a workflow whose lock is contended. Uses half the
+     * lock lease time (so a retry lands around when an orphaned lock would expire) and is capped by
+     * {@code maxPostponeDurationSeconds}. Never returns less than 1 second.
+     */
+    private long lockContentionBackoffSeconds() {
+        long backoffMillis = Math.max(1, properties.getLockLeaseTime().toMillis() / 2);
+        long backoffSeconds = Math.max(1, Duration.ofMillis(backoffMillis).toSeconds());
+        long maxPostponeSeconds = properties.getMaxPostponeDurationSeconds().getSeconds();
+        if (maxPostponeSeconds > 0 && backoffSeconds > maxPostponeSeconds) {
+            backoffSeconds = maxPostponeSeconds;
+        }
+        return backoffSeconds;
+    }
+
     public void sweep(String workflowId) {
         if (!executionLockService.acquireLock(workflowId)) {
+            // Another worker/node holds the lock, or it is briefly contended. A bare return here
+            // left the workflow to fall back to its decider-queue entry, which a polled task
+            // postpones out to responseTimeoutSeconds (e.g. 600s) — surfacing as a multi-minute
+            // pause. Re-queue with a bounded backoff so a lock-contended workflow is retried in
+            // seconds instead of parking.
+            long backoffSeconds = lockContentionBackoffSeconds();
             log.error("Couldn't acquire lock to sweep workflow {}", workflowId);
+            queueDAO.push(DECIDER_QUEUE, workflowId, 0, backoffSeconds);
             return;
         }
         log.info("Running sweeper for workflow {}", workflowId);
@@ -181,12 +203,7 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
             if (workflow == null) {
                 // couldn't get a lock
                 // Let's try again... with the lockTime timeout / 2
-                long backoffMillis = Math.max(1, properties.getLockLeaseTime().toMillis() / 2);
-                long backoffSeconds = Math.max(1, Duration.ofMillis(backoffMillis).toSeconds());
-                long maxPostponeSeconds = properties.getMaxPostponeDurationSeconds().getSeconds();
-                if (maxPostponeSeconds > 0 && backoffSeconds > maxPostponeSeconds) {
-                    backoffSeconds = maxPostponeSeconds;
-                }
+                long backoffSeconds = lockContentionBackoffSeconds();
                 log.info(
                         "can't get a lock on {}, will try after {} seconds",
                         workflowId,

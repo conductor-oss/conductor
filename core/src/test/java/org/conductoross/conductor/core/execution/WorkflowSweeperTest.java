@@ -33,6 +33,8 @@ import com.netflix.conductor.service.ExecutionLockService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
+
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -183,6 +185,69 @@ public class WorkflowSweeperTest {
         verify(executionDAO).updateTask(subWorkflowTask);
         verify(workflowExecutor, times(2)).decide(WORKFLOW_ID);
         verify(queueDAO, never()).push(anyString(), anyString(), anyLong());
+        verify(executionLockService).releaseLock(WORKFLOW_ID);
+    }
+
+    /*
+     * Reproduction of the CloudAware / Mikhail RegressWorkflow ~10-minute pause on his ACTUAL 3.30.2
+     * config: conductor.app.sweeper.enabled=true (this new sweeper), no legacy.sweeper.enabled,
+     * conductor.app.workflow-offset-timeout=0s, conductor.app.lockLeaseTime=60000ms, redis (redisson)
+     * workflow-execution lock. His RegressWorkflow has ~15 JOIN boundaries (14 FORK_JOIN_DYNAMIC + 1
+     * static) plus DO_WHILE / SUB_WORKFLOW / DYNAMIC.
+     *
+     * Stall mechanism: at a JOIN / post-completion boundary the workflow-execution lock is contended.
+     * sweep() needs that same lock; on a miss it logs "Couldn't acquire lock to sweep workflow" and
+     * BARE-RETURNS (WorkflowSweeper.java:162-165) - it does NOT decide(), does NOT re-queue, and
+     * (because the early return precedes the try/finally) does NOT release the lock. So this sweep
+     * pass does nothing to rescue the parked workflow; recovery waits on the lock lease / task-queue
+     * unack. The only 600s constant in his deployment is the task defs' responseTimeoutSeconds=600
+     * (the task-queue unack), which is where the ~10-minute duration comes from once the event-driven
+     * decide is missed; the sweeper simply fails to shorten it.
+     */
+    /*
+     * Regression test for the RegressWorkflow ~10-minute pause. Previously sweep() bare-returned on
+     * a lock miss (no decide, no re-queue), so a lock-contended workflow parked until its decider
+     * entry fired — which a polled task postpones out to responseTimeoutSeconds (600s). The fix
+     * re-queues the workflow with a bounded backoff (lockLeaseTime/2 = 30s here) so it is retried in
+     * seconds. Before the fix this assertion fails: no push happens on a lock miss.
+     */
+    @Test
+    public void sweepReQueuesOnLockMissWithBoundedBackoffInsteadOfParking() {
+        when(executionLockService.acquireLock(WORKFLOW_ID)).thenReturn(false);
+
+        workflowSweeper.sweep(WORKFLOW_ID);
+
+        // Re-queued for a near-term retry: lockLeaseTime(60000ms)/2 = 30s, capped by maxPostpone.
+        verify(queueDAO).push(DECIDER_QUEUE, WORKFLOW_ID, 0, 30L);
+        // Still no decide on a contended lock, and no lock to release (early return).
+        verify(workflowExecutor, never()).decide(WORKFLOW_ID);
+        verify(executionLockService, never()).releaseLock(WORKFLOW_ID);
+    }
+
+    /*
+     * When sweep() DOES hold the lock but decide() cannot (returns null), the new sweeper re-queues
+     * the workflow after lockLeaseTime/2. With Mikhail's lockLeaseTime=60000ms that is 30s - NOT 10
+     * minutes. This pins that the new sweeper's own recovery is ~30s, proving the observed ~10-min
+     * pause is NOT produced by the sweeper's backoff and must originate from the responseTimeout=600
+     * task-queue unack (see the reproduction note above).
+     */
+    @Test
+    public void sweepReQueuesWith30sBackoffWhenDecideCannotAcquireLock() {
+        WorkflowModel running =
+                newWorkflow(
+                        List.of(
+                                newTask(
+                                        "join",
+                                        TaskType.TASK_TYPE_JOIN,
+                                        TaskModel.Status.IN_PROGRESS)));
+        when(executionLockService.acquireLock(WORKFLOW_ID)).thenReturn(true);
+        when(workflowExecutor.getWorkflow(WORKFLOW_ID, true)).thenReturn(running);
+        when(workflowExecutor.decide(WORKFLOW_ID)).thenReturn(null); // decide couldn't get the lock
+
+        workflowSweeper.sweep(WORKFLOW_ID);
+
+        // lockLeaseTime(60000ms) / 2 = 30s backoff, capped by maxPostpone(3600s).
+        verify(queueDAO).push(DECIDER_QUEUE, WORKFLOW_ID, 0, 30L);
         verify(executionLockService).releaseLock(WORKFLOW_ID);
     }
 
