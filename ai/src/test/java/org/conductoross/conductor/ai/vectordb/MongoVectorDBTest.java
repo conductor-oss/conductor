@@ -22,7 +22,7 @@ import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
 import org.conductoross.conductor.ai.AIModelProvider;
 import org.conductoross.conductor.ai.LLMs;
-import org.conductoross.conductor.ai.models.StoreEmbeddingsInput;
+import org.conductoross.conductor.ai.model.StoreEmbeddingsInput;
 import org.conductoross.conductor.ai.tasks.worker.VectorDBWorkers;
 import org.conductoross.conductor.ai.vectordb.mongodb.MongoDBConfig;
 import org.conductoross.conductor.ai.vectordb.mongodb.MongoVectorDB;
@@ -109,7 +109,12 @@ public class MongoVectorDBTest {
         instance.setMongodb(mongoConfig);
         instanceConfig.setInstances(List.of(instance));
 
-        VectorDBProvider vectorDBProvider = new VectorDBProvider(instanceConfig);
+        @SuppressWarnings("unchecked")
+        org.springframework.beans.factory.ObjectProvider<VectorDB> noDefaults =
+                org.mockito.Mockito.mock(org.springframework.beans.factory.ObjectProvider.class);
+        org.mockito.Mockito.when(noDefaults.iterator())
+                .thenReturn(java.util.Collections.emptyIterator());
+        VectorDBProvider vectorDBProvider = new VectorDBProvider(instanceConfig, noDefaults);
         VectorDBs vectorDBs = new VectorDBs(vectorDBProvider);
         aiWorkers = new VectorDBWorkers(vectorDBs, llm);
     }
