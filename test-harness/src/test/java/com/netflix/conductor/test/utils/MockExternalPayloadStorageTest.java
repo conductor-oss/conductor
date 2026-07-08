@@ -19,29 +19,19 @@ import java.nio.charset.StandardCharsets;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
-
-import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
-@ContextConfiguration(classes = {TestObjectMapperConfiguration.class})
-@RunWith(SpringRunner.class)
 public class MockExternalPayloadStorageTest {
 
     private MockExternalPayloadStorage storage;
 
-    @Autowired private ObjectMapper objectMapper;
-
     @Before
     public void setup() throws IOException {
-        storage = new MockExternalPayloadStorage(objectMapper);
+        storage = new MockExternalPayloadStorage(new ObjectMapper());
     }
 
     @Test
