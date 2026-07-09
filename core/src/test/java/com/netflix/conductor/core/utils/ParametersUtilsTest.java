@@ -401,6 +401,24 @@ public class ParametersUtilsTest {
     }
 
     @Test
+    public void testWorkflowEnvResolvesJsonPath() {
+        EnvironmentDAO env = mock(EnvironmentDAO.class);
+        when(env.getEnvVariable("CONFIG"))
+                .thenReturn("{\"host\":\"db.example.com\",\"port\":5432}");
+        SecretsDAO secrets = mock(SecretsDAO.class);
+        ParametersUtils pu = new ParametersUtils(objectMapper, env, secrets);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("host", "${workflow.env.CONFIG.host}");
+
+        WorkflowModel wf = new WorkflowModel();
+        wf.setWorkflowDefinition(new WorkflowDef());
+        Map<String, Object> out = pu.getTaskInput(input, wf, null, "t1");
+
+        assertEquals("db.example.com", out.get("host"));
+    }
+
+    @Test
     public void testWorkflowSecretsLeftLiteralDuringNormalResolution() {
         EnvironmentDAO env = mock(EnvironmentDAO.class);
         SecretsDAO secrets = mock(SecretsDAO.class);
