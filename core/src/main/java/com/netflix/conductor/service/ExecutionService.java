@@ -197,10 +197,20 @@ public class ExecutionService {
                             "Task {} has externalized input; ${{workflow.secrets.*}} references are not resolved for external payload storage",
                             taskModel.getTaskId());
                 }
-                task.setInputData(parametersUtils.substituteSecrets(task.getInputData()));
-                if (taskDef != null) {
-                    task.setRuntimeMetadata(
-                            runtimeMetadataResolver.resolve(taskDef.getRuntimeMetadata()));
+                // Stopgap: keep a resolution error off the outer catch (which re-enqueues and, with
+                // the IN_PROGRESS write above, loops until responseTimeoutSeconds). Proper handling
+                // (FAILED vs. deliver-unresolved) is a follow-up.
+                try {
+                    task.setInputData(parametersUtils.substituteSecrets(task.getInputData()));
+                    if (taskDef != null) {
+                        task.setRuntimeMetadata(
+                                runtimeMetadataResolver.resolve(taskDef.getRuntimeMetadata()));
+                    }
+                } catch (Exception e) {
+                    LOGGER.error(
+                            "Failed to resolve secrets/runtimeMetadata for task {}; delivering task without resolved values",
+                            task.getTaskId(),
+                            e);
                 }
                 tasks.add(task);
             } catch (Exception e) {

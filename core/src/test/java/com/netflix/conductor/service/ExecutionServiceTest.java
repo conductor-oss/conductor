@@ -49,6 +49,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
@@ -401,5 +402,31 @@ public class ExecutionServiceTest {
         Task returnedTask = polled.get(0);
         assertEquals("token-value-123", returnedTask.getRuntimeMetadata().get("API_KEY"));
         verify(runtimeMetadataResolver).resolve(List.of("API_KEY"));
+    }
+
+    @Test
+    public void testPollDeliversTaskWhenResolutionThrows() {
+        String taskType = "t";
+        String taskId = "task-1";
+
+        TaskModel taskModel = new TaskModel();
+        taskModel.setTaskId(taskId);
+        taskModel.setTaskType(taskType);
+        taskModel.setStatus(TaskModel.Status.SCHEDULED);
+
+        when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(List.of(taskId));
+        when(executionDAOFacade.getTaskModel(taskId)).thenReturn(taskModel);
+        when(parametersUtils.substituteSecrets(any()))
+                .thenThrow(new RuntimeException("resolution failed"));
+
+        List<Task> polled = executionService.poll(taskType, "worker", null, 1, 100);
+
+        // The task is still delivered (resolution error is isolated) — not stranded in a
+        // re-enqueue loop, and its resolved values are simply absent.
+        assertEquals(1, polled.size());
+        assertEquals(taskId, polled.get(0).getTaskId());
+        assertNull(polled.get(0).getRuntimeMetadata().get("API_KEY"));
+        // the outer catch's re-enqueue (postpone) is NOT triggered
+        verify(queueDAO, times(0)).postpone(anyString(), eq(taskId), anyInt(), anyLong());
     }
 }
