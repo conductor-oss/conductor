@@ -15,6 +15,7 @@ package io.conductor.e2e.task;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -70,6 +71,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *         <li>{@link #OPENAI_CHAT_MODEL} — general-purpose, non-reasoning chat.
  *         <li>{@link #OPENAI_REASONING_MODEL} — reasoning model that honors {@code reasoningEffort}
  *             / {@code reasoningSummary} via the Responses API.
+ *       </ul>
+ *   <li><b>Cohere</b> (from <a
+ *       href="https://docs.cohere.com/docs/image-inputs">docs.cohere.com/docs/image-inputs</a>):
+ *       <ul>
+ *         <li>{@link #COHERE_VISION_MODEL} — vision-capable; exercises image media input ({@code
+ *             messages[].media}) through the Cohere adapter.
  *       </ul>
  * </ul>
  *
@@ -137,6 +144,22 @@ public class LLMChatCompleteTests {
      * use today.
      */
     private static final String OPENAI_REASONING_MODEL = "gpt-5-mini";
+
+    /**
+     * Cohere's GA vision model. Source: docs.cohere.com/docs/image-inputs ("Image inputs are
+     * supported on Command A Vision").
+     */
+    private static final String COHERE_VISION_MODEL = "command-a-vision-07-2025";
+
+    /**
+     * The (predominantly red) Conductor logo, pinned to an immutable commit SHA so the URL never
+     * drifts. Media is passed as a URL because that is the workflow-input media shape the server
+     * supports end-to-end: {@code LLMHelper} downloads it via {@code HttpDocumentLoader} and hands
+     * the bytes to the provider adapter.
+     */
+    private static final String RED_LOGO_IMAGE_URL =
+            "https://raw.githubusercontent.com/conductor-oss/conductor/"
+                    + "4275ae9210c8e94e9d9b28f90033a776c295c523/ui-next/public/conductorLogoSmall.png";
 
     private final WorkflowClient workflowClient = ApiUtil.WORKFLOW_CLIENT;
     private final MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
@@ -720,6 +743,54 @@ public class LLMChatCompleteTests {
     }
 
     // ====================================================================
+    // Cohere — vision model + image media input
+    // ====================================================================
+
+    @Test
+    @EnabledIfEnvironmentVariable(named = "COHERE_API_KEY", matches = ".+")
+    public void cohere_vision_imageMediaInMessages_modelSeesTheImage() {
+        // Regression lock for the Cohere media fix. Pre-fix, the adapter built the
+        // user message from text only and silently dropped ``media``, so the model
+        // never saw the image and this color question was unanswerable. The server
+        // downloads the URL and the adapter must forward the bytes as a Cohere v2
+        // ``image_url`` data-URI content part.
+        String wfName = "ai_e2e_cohere_vision_media";
+        registerMessagesWorkflow(wfName);
+
+        List<Map<String, Object>> messages =
+                List.of(
+                        Map.of(
+                                "role",
+                                "user",
+                                "message",
+                                "What is the dominant color of this image? Reply with just the"
+                                        + " color name, one word.",
+                                "media",
+                                List.of(RED_LOGO_IMAGE_URL),
+                                "mimeType",
+                                "image/png"));
+
+        Workflow wf =
+                runAndWait(
+                        wfName,
+                        Map.of(
+                                "llmProvider", "cohere",
+                                "model", COHERE_VISION_MODEL,
+                                "messages", messages),
+                        90);
+
+        Task chat = chatTasks(wf).get(0);
+        assertEquals(
+                Task.Status.COMPLETED,
+                chat.getStatus(),
+                "chat task must complete; reason: " + chat.getReasonForIncompletion());
+        String result = String.valueOf(chat.getOutputData().get("result"));
+        assertTrue(
+                result.toLowerCase(Locale.ROOT).contains("red"),
+                "the model must see the red logo and answer 'red'; got: " + result);
+    }
+
+    // ====================================================================
     // Workflow-def helpers
     // ====================================================================
 
@@ -1071,6 +1142,32 @@ public class LLMChatCompleteTests {
     // ====================================================================
     // Workflow execution + assertion helpers
     // ====================================================================
+
+    /**
+     * Workflow whose chat task takes the entire {@code messages} array from workflow input — for
+     * tests that need per-run message content (e.g. media attachments), unlike {@link
+     * #registerHistoryWorkflow} which pins a fixed conversation in the definition.
+     */
+    private void registerMessagesWorkflow(String name) {
+        ensureLLMChatCompleteTaskDef();
+
+        WorkflowTask chat = new WorkflowTask();
+        chat.setName("LLM_CHAT_COMPLETE");
+        chat.setTaskReferenceName("chat");
+        chat.setType("LLM_CHAT_COMPLETE");
+        Map<String, Object> inputParameters = new HashMap<>();
+        inputParameters.put("llmProvider", "${workflow.input.llmProvider}");
+        inputParameters.put("model", "${workflow.input.model}");
+        inputParameters.put("messages", "${workflow.input.messages}");
+        chat.setInputParameters(inputParameters);
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName(name);
+        def.setVersion(1);
+        def.setOwnerEmail("ai-e2e@conductor.test");
+        def.setTasks(List.of(chat));
+        metadataClient.updateWorkflowDefs(List.of(def));
+    }
 
     private Workflow runAndWait(String wfName, Map<String, Object> input, int maxSeconds) {
         StartWorkflowRequest req = new StartWorkflowRequest();

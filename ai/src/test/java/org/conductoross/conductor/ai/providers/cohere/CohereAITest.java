@@ -12,7 +12,12 @@
  */
 package org.conductoross.conductor.ai.providers.cohere;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.util.List;
+import java.util.Locale;
+
+import javax.imageio.ImageIO;
 
 import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
@@ -22,6 +27,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.Media;
+import org.springframework.util.MimeTypeUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -100,6 +107,48 @@ class CohereAITest {
             assertNotNull(response.getResult());
             assertNotNull(response.getResult().getOutput());
             assertFalse(response.getResult().getOutput().getText().isEmpty());
+        }
+
+        @Test
+        void testChatCompletionWithImageMedia() throws Exception {
+            // Live regression for the media fix: a vision model must actually see the
+            // image bytes, forwarded as an image_url data-URI content part. Pre-fix the
+            // media was dropped and the model could only guess the color.
+            BufferedImage img = new BufferedImage(64, 64, BufferedImage.TYPE_INT_RGB);
+            for (int x = 0; x < 64; x++) {
+                for (int y = 0; y < 64; y++) {
+                    img.setRGB(x, y, 0xFF0000);
+                }
+            }
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ImageIO.write(img, "png", out);
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("command-a-vision-07-2025");
+            input.setMaxTokens(50);
+
+            UserMessage userMsg =
+                    UserMessage.builder()
+                            .text(
+                                    "What is the dominant color of this image? Reply with just"
+                                            + " the color name, one word.")
+                            .media(
+                                    List.of(
+                                            Media.builder()
+                                                    .data(out.toByteArray())
+                                                    .mimeType(MimeTypeUtils.IMAGE_PNG)
+                                                    .build()))
+                            .build();
+
+            var response =
+                    cohereAI.getChatModel()
+                            .call(new Prompt(List.of(userMsg), cohereAI.getChatOptions(input)));
+
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertTrue(
+                    text.toLowerCase(Locale.ROOT).contains("red"),
+                    "vision model must see the solid red image and answer 'red'; got: " + text);
         }
 
         @Test
