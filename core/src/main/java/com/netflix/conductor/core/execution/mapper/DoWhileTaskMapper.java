@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.conductoross.conductor.core.utils.TaskMapperUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -86,9 +87,10 @@ public class DoWhileTaskMapper implements TaskMapper {
         doWhileTask.setTaskType(TaskType.TASK_TYPE_DO_WHILE);
         doWhileTask.setStatus(TaskModel.Status.IN_PROGRESS);
         doWhileTask.setStartTime(System.currentTimeMillis());
-        doWhileTask.setRateLimitPerFrequency(taskDefinition.getRateLimitPerFrequency());
-        doWhileTask.setRateLimitFrequencyInSeconds(taskDefinition.getRateLimitFrequencyInSeconds());
         doWhileTask.setRetryCount(taskMapperContext.getRetryCount());
+
+        // Apply static defaults or dynamic per-workflow overrides for rate limits
+        TaskMapperUtils.applyRateLimits(workflowModel, workflowTask, taskDefinition, doWhileTask);
 
         Map<String, Object> taskInput =
                 parametersUtils.getTaskInputV2(

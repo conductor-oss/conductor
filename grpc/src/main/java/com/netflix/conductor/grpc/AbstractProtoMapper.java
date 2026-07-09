@@ -668,6 +668,9 @@ public abstract class AbstractProtoMapper {
         if (from.getCreatedBy() != null) {
             to.setCreatedBy( from.getCreatedBy() );
         }
+        for (Map.Entry<String, StartWorkflowRequest.TaskRateLimitOverride> pair : from.getTaskRateLimitOverrides().entrySet()) {
+            to.putTaskRateLimitOverrides( pair.getKey(), toProto( pair.getValue() ) );
+        }
         return to.build();
     }
 
@@ -688,6 +691,35 @@ public abstract class AbstractProtoMapper {
         to.setExternalInputPayloadStoragePath( from.getExternalInputPayloadStoragePath() );
         to.setPriority( from.getPriority() );
         to.setCreatedBy( from.getCreatedBy() );
+        Map<String, StartWorkflowRequest.TaskRateLimitOverride> taskRateLimitOverridesMap = new HashMap<String, StartWorkflowRequest.TaskRateLimitOverride>();
+        for (Map.Entry<String, StartWorkflowRequestPb.StartWorkflowRequest.TaskRateLimitOverride> pair : from.getTaskRateLimitOverridesMap().entrySet()) {
+            taskRateLimitOverridesMap.put( pair.getKey(), fromProto( pair.getValue() ) );
+        }
+        to.setTaskRateLimitOverrides(taskRateLimitOverridesMap);
+        return to;
+    }
+
+    public StartWorkflowRequestPb.StartWorkflowRequest.TaskRateLimitOverride toProto(
+            StartWorkflowRequest.TaskRateLimitOverride from) {
+        StartWorkflowRequestPb.StartWorkflowRequest.TaskRateLimitOverride.Builder to = StartWorkflowRequestPb.StartWorkflowRequest.TaskRateLimitOverride.newBuilder();
+        if (from.getRateLimitPerFrequency() != null) {
+            to.setRateLimitPerFrequency( from.getRateLimitPerFrequency() );
+        }
+        if (from.getRateLimitFrequencyInSeconds() != null) {
+            to.setRateLimitFrequencyInSeconds( from.getRateLimitFrequencyInSeconds() );
+        }
+        return to.build();
+    }
+
+    public StartWorkflowRequest.TaskRateLimitOverride fromProto(
+            StartWorkflowRequestPb.StartWorkflowRequest.TaskRateLimitOverride from) {
+        StartWorkflowRequest.TaskRateLimitOverride to = new StartWorkflowRequest.TaskRateLimitOverride();
+        if (from.hasRateLimitPerFrequency()) {
+            to.setRateLimitPerFrequency( from.getRateLimitPerFrequency() );
+        }
+        if (from.hasRateLimitFrequencyInSeconds()) {
+            to.setRateLimitFrequencyInSeconds( from.getRateLimitFrequencyInSeconds() );
+        }
         return to;
     }
 

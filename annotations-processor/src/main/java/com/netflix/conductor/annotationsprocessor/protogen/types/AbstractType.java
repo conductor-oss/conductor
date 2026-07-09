@@ -98,4 +98,11 @@ public abstract class AbstractType {
     protected String protoMethodName(String m, String field) {
         return m + ProtoCase.convert(field);
     }
+
+    /**
+     * Public form of {@link #protoMethodName(String, String)} for callers outside the type tree.
+     */
+    public static String generatedProtoMethodName(String prefix, String field) {
+        return prefix + ProtoCase.convert(field);
+    }
 }

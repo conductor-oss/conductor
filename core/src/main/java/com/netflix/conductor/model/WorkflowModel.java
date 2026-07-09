@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 
+import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest.TaskRateLimitOverride;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.utils.Utils;
@@ -115,6 +116,13 @@ public class WorkflowModel {
     @JsonIgnore private Map<String, Object> inputPayload = new HashMap<>();
 
     @JsonIgnore private Map<String, Object> outputPayload = new HashMap<>();
+
+    /* ---------------------------------------------------------
+     * Dynamic task-rate-limit overrides (populated from StartWorkflowRequest)
+     * key   : referenceTaskName OR taskDefName
+     * value : override instance carrying per-frequency limits
+     * --------------------------------------------------------- */
+    private Map<String, TaskRateLimitOverride> taskRateLimitOverrides = new HashMap<>();
 
     public Status getPreviousStatus() {
         return previousStatus;
@@ -488,6 +496,19 @@ public class WorkflowModel {
     public void internalizeOutput(Map<String, Object> data) {
         this.output = new HashMap<>();
         this.outputPayload = data;
+    }
+
+    /* --------  Dynamic rate-limit override accessors  -------- */
+    public Map<String, TaskRateLimitOverride> getTaskRateLimitOverrides() {
+        return taskRateLimitOverrides;
+    }
+
+    public void setTaskRateLimitOverrides(
+            Map<String, TaskRateLimitOverride> taskRateLimitOverrides) {
+        if (taskRateLimitOverrides == null) {
+            taskRateLimitOverrides = new HashMap<>();
+        }
+        this.taskRateLimitOverrides = taskRateLimitOverrides;
     }
 
     @Override

@@ -86,8 +86,20 @@ public class Message extends AbstractMessage {
 
         for (Field field : this.fields) {
             if (field instanceof MessageField) {
-                AbstractType fieldType = ((MessageField) field).getAbstractType();
-                fieldType.mapFromProto(field.getName(), method);
+                MessageField mf = (MessageField) field;
+                AbstractType fieldType = mf.getAbstractType();
+                // For proto fields marked optional, guard the assignment with a has-check so
+                // the proto3 scalar default (0/0.0/false/"") is not confused with an explicit
+                // value. Without this, a missing rate_limit_per_frequency would deserialize to
+                // Integer(0) and be treated as an explicit override.
+                if (mf.isOptional()) {
+                    method.beginControlFlow(
+                            "if (from.$L())", mf.protoHasMethodName(field.getName()));
+                    fieldType.mapFromProto(field.getName(), method);
+                    method.endControlFlow();
+                } else {
+                    fieldType.mapFromProto(field.getName(), method);
+                }
             }
         }
 
@@ -97,9 +109,11 @@ public class Message extends AbstractMessage {
 
     public static class MessageField extends Field {
         protected AbstractType type;
+        protected final boolean optional;
 
         protected MessageField(int index, java.lang.reflect.Field field) {
             super(index, field);
+            this.optional = field.getAnnotation(ProtoField.class).optional();
         }
 
         public AbstractType getAbstractType() {
@@ -107,6 +121,14 @@ public class Message extends AbstractMessage {
                 type = TypeMapper.INSTANCE.get(field.getGenericType());
             }
             return type;
+        }
+
+        public boolean isOptional() {
+            return optional;
+        }
+
+        public String protoHasMethodName(String fieldName) {
+            return AbstractType.generatedProtoMethodName("has", fieldName);
         }
 
         private static Pattern CAMEL_CASE_RE = Pattern.compile("(?<=[a-z])[A-Z]");
@@ -123,9 +145,13 @@ public class Message extends AbstractMessage {
 
         @Override
         public String getProtoTypeDeclaration() {
+            String prefix = optional ? "optional " : "";
             return String.format(
-                    "%s %s = %d",
-                    getAbstractType().getProtoType(), toUnderscoreCase(getName()), getProtoIndex());
+                    "%s%s %s = %d",
+                    prefix,
+                    getAbstractType().getProtoType(),
+                    toUnderscoreCase(getName()),
+                    getProtoIndex());
         }
 
         @Override

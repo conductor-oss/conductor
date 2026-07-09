@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.conductoross.conductor.core.utils.TaskMapperUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -91,8 +92,9 @@ public class SimpleTaskMapper implements TaskMapper {
         simpleTask.setCallbackAfterSeconds(workflowTask.getStartDelay());
         simpleTask.setResponseTimeoutSeconds(taskDefinition.getResponseTimeoutSeconds());
         simpleTask.setRetriedTaskId(retriedTaskId);
-        simpleTask.setRateLimitPerFrequency(taskDefinition.getRateLimitPerFrequency());
-        simpleTask.setRateLimitFrequencyInSeconds(taskDefinition.getRateLimitFrequencyInSeconds());
+
+        // Apply dynamic or default rate limits in a common utility
+        TaskMapperUtils.applyRateLimits(workflowModel, workflowTask, taskDefinition, simpleTask);
         return List.of(simpleTask);
     }
 }

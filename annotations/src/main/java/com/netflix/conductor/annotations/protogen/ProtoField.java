@@ -33,4 +33,17 @@ public @interface ProtoField {
      * @return the numeric ID for the field
      */
     int id();
+
+    /**
+     * When {@code true}, the generated proto field is declared with the {@code optional} keyword,
+     * which makes presence trackable through the proto3-generated {@code hasXxx()} accessor. This
+     * is required for boxed scalar fields (e.g. {@link Integer}, {@link Long}) whose semantics
+     * distinguish a missing value from the proto3 scalar default (0, 0.0, false, ""). For example,
+     * a rate-limit override needs to tell "not overridden" from "limit is zero".
+     *
+     * <p>Wire format remains backwards compatible: callers that do not set the field continue to be
+     * interpreted as {@code null} on the receive side; old clients reading messages produced with
+     * this flag ignore the presence info and observe the default scalar.
+     */
+    boolean optional() default false;
 }

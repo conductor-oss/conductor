@@ -61,6 +61,15 @@ public class StartWorkflowRequest {
 
     private IdempotencyStrategy idempotencyStrategy;
 
+    /**
+     * Optional runtime overrides for task-level rate limits.
+     *
+     * <p>Key : task reference name OR task definition name Value : {@link TaskRateLimitOverride}
+     * containing per-frequency overrides.
+     */
+    @ProtoField(id = 10)
+    private Map<String, TaskRateLimitOverride> taskRateLimitOverrides = new HashMap<>();
+
     public String getIdempotencyKey() {
         return idempotencyKey;
     }
@@ -75,6 +84,81 @@ public class StartWorkflowRequest {
 
     public void setIdempotencyStrategy(IdempotencyStrategy idempotencyStrategy) {
         this.idempotencyStrategy = idempotencyStrategy;
+    }
+
+    /* -------------------------------------------------------
+     *  Dynamic rate-limit override accessors
+     * ------------------------------------------------------- */
+
+    public Map<String, TaskRateLimitOverride> getTaskRateLimitOverrides() {
+        return taskRateLimitOverrides;
+    }
+
+    public void setTaskRateLimitOverrides(
+            Map<String, TaskRateLimitOverride> taskRateLimitOverrides) {
+        if (taskRateLimitOverrides == null) {
+            taskRateLimitOverrides = new HashMap<>();
+        }
+        this.taskRateLimitOverrides = taskRateLimitOverrides;
+    }
+
+    public StartWorkflowRequest withTaskRateLimitOverrides(
+            Map<String, TaskRateLimitOverride> taskRateLimitOverrides) {
+        setTaskRateLimitOverrides(taskRateLimitOverrides);
+        return this;
+    }
+
+    /**
+     * Holder for per-task dynamic rate-limit configuration.
+     *
+     * <p>Both fields are nullable boxed Integers: {@code null} means "not overridden" and falls
+     * back to the static {@link com.netflix.conductor.common.metadata.tasks.TaskDef} value at task
+     * scheduling time. A non-null value (including zero) is treated as an explicit override.
+     */
+    @ProtoMessage
+    public static class TaskRateLimitOverride {
+
+        @ProtoField(id = 1, optional = true)
+        private Integer rateLimitPerFrequency;
+
+        @ProtoField(id = 2, optional = true)
+        private Integer rateLimitFrequencyInSeconds;
+
+        public Integer getRateLimitPerFrequency() {
+            return rateLimitPerFrequency;
+        }
+
+        public void setRateLimitPerFrequency(Integer rateLimitPerFrequency) {
+            if (rateLimitPerFrequency != null && rateLimitPerFrequency < 0) {
+                throw new IllegalArgumentException(
+                        "Rate limit per frequency cannot be negative: " + rateLimitPerFrequency);
+            }
+            this.rateLimitPerFrequency = rateLimitPerFrequency;
+        }
+
+        public TaskRateLimitOverride withRateLimitPerFrequency(Integer rateLimitPerFrequency) {
+            setRateLimitPerFrequency(rateLimitPerFrequency);
+            return this;
+        }
+
+        public Integer getRateLimitFrequencyInSeconds() {
+            return rateLimitFrequencyInSeconds;
+        }
+
+        public void setRateLimitFrequencyInSeconds(Integer rateLimitFrequencyInSeconds) {
+            if (rateLimitFrequencyInSeconds != null && rateLimitFrequencyInSeconds < 0) {
+                throw new IllegalArgumentException(
+                        "Rate limit frequency in seconds cannot be negative: "
+                                + rateLimitFrequencyInSeconds);
+            }
+            this.rateLimitFrequencyInSeconds = rateLimitFrequencyInSeconds;
+        }
+
+        public TaskRateLimitOverride withRateLimitFrequencyInSeconds(
+                Integer rateLimitFrequencyInSeconds) {
+            setRateLimitFrequencyInSeconds(rateLimitFrequencyInSeconds);
+            return this;
+        }
     }
 
     public String getName() {
