@@ -198,11 +198,10 @@ public class ExecutionService {
                             taskModel.getTaskId());
                 }
                 task.setInputData(parametersUtils.substituteSecrets(task.getInputData()));
-                taskModel
-                        .getTaskDefinition()
-                        .map(TaskDef::getRuntimeMetadata)
-                        .map(runtimeMetadataResolver::resolve)
-                        .ifPresent(task::setRuntimeMetadata);
+                if (taskDef != null) {
+                    task.setRuntimeMetadata(
+                            runtimeMetadataResolver.resolve(taskDef.getRuntimeMetadata()));
+                }
                 tasks.add(task);
             } catch (Exception e) {
                 // db operation failed for dequeued message, re-enqueue with a delay
