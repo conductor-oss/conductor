@@ -64,7 +64,7 @@ const singleAgentRun: AgentRunData = {
         mkEvent("e3", EventType.TOOL_RESULT, "5 results found", {
           detail: [
             {
-              title: "Agentspan Documentation",
+              title: "AgentSpan Documentation",
               url: "https://docs.agentspan.dev",
             },
             {
@@ -93,17 +93,17 @@ const singleAgentRun: AgentRunData = {
           "I found the documentation. Let me synthesize the key points...",
           {
             detail:
-              "Based on the search results, I can see that Agentspan is a platform for building and monitoring multi-agent systems. The key features include workflow visualization, agent execution tracking, and real-time monitoring.",
+              "Based on the search results, I can see that AgentSpan is a platform for building and monitoring multi-agent systems. The key features include workflow visualization, agent execution tracking, and real-time monitoring.",
             durationMs: 300,
           },
         ),
         mkEvent(
           "e6",
           EventType.MESSAGE,
-          "Based on my research, here's what I found about Agentspan: it's a comprehensive platform for building multi-agent AI systems with built-in observability...",
+          "Based on my research, here's what I found about AgentSpan: it's a comprehensive platform for building multi-agent AI systems with built-in observability...",
           {
             detail:
-              "Based on my research, here's what I found about Agentspan: it's a comprehensive platform for building multi-agent AI systems with built-in observability, workflow management, and execution tracking capabilities.",
+              "Based on my research, here's what I found about AgentSpan: it's a comprehensive platform for building multi-agent AI systems with built-in observability, workflow management, and execution tracking capabilities.",
             tokens: mkTokens(680, 150),
           },
         ),
@@ -148,10 +148,10 @@ const writerAgent: AgentRunData = {
         ),
         mkEvent("ew2", EventType.TOOL_CALL, 'write_file("report.md", ...)', {
           toolName: "write_file",
-          toolArgs: { path: "report.md", content: "# Agentspan Report\n..." },
+          toolArgs: { path: "report.md", content: "# AgentSpan Report\n..." },
           detail: {
             path: "report.md",
-            content: "# Agentspan Report\n\n## Overview\n...",
+            content: "# AgentSpan Report\n\n## Overview\n...",
           },
         }),
         mkEvent("ew3", EventType.TOOL_RESULT, "File written successfully", {
@@ -179,7 +179,7 @@ const writerAgent: AgentRunData = {
           "Report has been written and saved to report.md. The document covers...",
           {
             detail:
-              "Report has been written and saved to report.md. The document covers the overview, key features, installation guide, and use cases of Agentspan.",
+              "Report has been written and saved to report.md. The document covers the overview, key features, installation guide, and use cases of AgentSpan.",
             tokens: mkTokens(400, 90),
           },
         ),
@@ -224,7 +224,7 @@ const handoffAgentRun: AgentRunData = {
           toolArgs: { query: "agentspan docs" },
         }),
         mkEvent("h3", EventType.TOOL_RESULT, "5 results found", {
-          detail: [{ title: "Agentspan Documentation" }],
+          detail: [{ title: "AgentSpan Documentation" }],
           success: true,
         }),
         mkEvent("h4", EventType.GUARDRAIL_PASS, "content_filter ✓", {
@@ -254,7 +254,7 @@ const handoffAgentRun: AgentRunData = {
           detail: {
             target: "writer_agent",
             context: {
-              research_findings: "Agentspan is a comprehensive platform...",
+              research_findings: "AgentSpan is a comprehensive platform...",
             },
           },
         }),
