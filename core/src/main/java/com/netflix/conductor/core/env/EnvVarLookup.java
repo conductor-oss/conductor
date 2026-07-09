@@ -31,23 +31,25 @@ public final class EnvVarLookup {
 
     /**
      * Returns all env vars / system properties whose key starts with {@code prefix}, prefix
-     * stripped.
+     * stripped. System properties are added first and env vars second, so when the same key exists
+     * in both, the env var wins — matching the env-first precedence of {@link #lookup(String,
+     * String)}, so single-key and list reads agree.
      */
     public static Map<String, String> allWithPrefix(String prefix) {
         Map<String, String> out = new LinkedHashMap<>();
-        System.getenv()
-                .forEach(
-                        (k, v) -> {
-                            if (k.startsWith(prefix)) {
-                                out.put(k.substring(prefix.length()), v);
-                            }
-                        });
         System.getProperties()
                 .forEach(
                         (k, v) -> {
                             String ks = String.valueOf(k);
                             if (ks.startsWith(prefix)) {
                                 out.put(ks.substring(prefix.length()), String.valueOf(v));
+                            }
+                        });
+        System.getenv()
+                .forEach(
+                        (k, v) -> {
+                            if (k.startsWith(prefix)) {
+                                out.put(k.substring(prefix.length()), v);
                             }
                         });
         return out;
