@@ -50,6 +50,14 @@ public class TaskDef extends Auditable {
         LINEAR_BACKOFF
     }
 
+    /**
+     * Scope at which {@link #concurrentExecLimit} is counted: per task definition, or per domain.
+     */
+    public enum ConcurrencyLimitScope {
+        TASK_DEF,
+        DOMAIN
+    }
+
     public static final int ONE_HOUR = 60 * 60;
 
     /** Unique name identifying the task. The name is unique across */
@@ -145,6 +153,8 @@ public class TaskDef extends Auditable {
     private SchemaDef inputSchema;
     private SchemaDef outputSchema;
     private boolean enforceSchema;
+
+    private ConcurrencyLimitScope concurrencyLimitScope = ConcurrencyLimitScope.TASK_DEF;
 
     public TaskDef() {}
 
@@ -382,6 +392,17 @@ public class TaskDef extends Auditable {
         return concurrentExecLimit == null ? 0 : concurrentExecLimit;
     }
 
+    public ConcurrencyLimitScope getConcurrencyLimitScope() {
+        return concurrencyLimitScope;
+    }
+
+    public void setConcurrencyLimitScope(ConcurrencyLimitScope concurrencyLimitScope) {
+        this.concurrencyLimitScope =
+                concurrencyLimitScope == null
+                        ? ConcurrencyLimitScope.TASK_DEF
+                        : concurrencyLimitScope;
+    }
+
     /**
      * @param inputTemplate the inputTemplate to set
      */
@@ -561,7 +582,8 @@ public class TaskDef extends Auditable {
                 && Objects.equals(getOutputSchema(), taskDef.getOutputSchema())
                 && Objects.equals(getTotalTimeoutSeconds(), taskDef.getTotalTimeoutSeconds())
                 && getMaxRetryDelaySeconds() == taskDef.getMaxRetryDelaySeconds()
-                && getBackoffJitterMs() == taskDef.getBackoffJitterMs();
+                && getBackoffJitterMs() == taskDef.getBackoffJitterMs()
+                && getConcurrencyLimitScope() == taskDef.getConcurrencyLimitScope();
     }
 
     @Override
@@ -590,6 +612,7 @@ public class TaskDef extends Auditable {
                 getOutputSchema(),
                 getTotalTimeoutSeconds(),
                 getMaxRetryDelaySeconds(),
-                getBackoffJitterMs());
+                getBackoffJitterMs(),
+                getConcurrencyLimitScope());
     }
 }

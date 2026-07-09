@@ -196,7 +196,16 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
             return false;
         }
 
-        long current = getInProgressTaskCount(task.getTaskDefName());
+        // DOMAIN scope counts per (task_def_name, domain); TASK_DEF keeps the legacy per-name
+        // count.
+        boolean domainScoped =
+                taskDef.getConcurrencyLimitScope() == TaskDef.ConcurrencyLimitScope.DOMAIN;
+        String domain = domainScoped ? task.getDomain() : null;
+
+        long current =
+                domainScoped
+                        ? getInProgressTaskCount(task.getTaskDefName(), domain)
+                        : getInProgressTaskCount(task.getTaskDefName());
 
         if (current >= limit) {
             Monitors.recordTaskConcurrentExecutionLimited(task.getTaskDefName(), limit);
@@ -207,12 +216,14 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
                 "Task execution count for {}: limit={}, current={}",
                 task.getTaskDefName(),
                 limit,
-                getInProgressTaskCount(task.getTaskDefName()));
+                current);
 
         String taskId = task.getTaskId();
 
         List<String> tasksInProgressInOrderOfArrival =
-                findAllTasksInProgressInOrderOfArrival(task, limit);
+                domainScoped
+                        ? findAllTasksInProgressInOrderOfArrival(task, limit, domain)
+                        : findAllTasksInProgressInOrderOfArrival(task, limit);
 
         boolean rateLimited = !tasksInProgressInOrderOfArrival.contains(taskId);
 
@@ -221,7 +232,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
                     "Task execution count limited. {}, limit {}, current {}",
                     task.getTaskDefName(),
                     limit,
-                    getInProgressTaskCount(task.getTaskDefName()));
+                    current);
             Monitors.recordTaskConcurrentExecutionLimited(task.getTaskDefName(), limit);
         }
 
@@ -409,6 +420,16 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
 
         return queryWithTransaction(
                 GET_IN_PROGRESS_TASK_COUNT, q -> q.addParameter(taskDefName).executeCount());
+    }
+
+    // Domain-scoped count; <=> is MySQL's null-safe equality so a null domain matches only nulls.
+    private long getInProgressTaskCount(String taskDefName, String domain) {
+        String GET_IN_PROGRESS_TASK_COUNT_BY_DOMAIN =
+                "SELECT COUNT(*) FROM task_in_progress WHERE task_def_name = ? AND domain <=> ? AND in_progress_status = true";
+
+        return queryWithTransaction(
+                GET_IN_PROGRESS_TASK_COUNT_BY_DOMAIN,
+                q -> q.addParameter(taskDefName).addParameter(domain).executeCount());
     }
 
     @Override
@@ -884,7 +905,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
 
         if (!exists) {
             String INSERT_IN_PROGRESS_TASK =
-                    "INSERT INTO task_in_progress (task_def_name, task_id, workflow_id) VALUES (?, ?, ?)";
+                    "INSERT INTO task_in_progress (task_def_name, task_id, workflow_id, domain) VALUES (?, ?, ?, ?)";
 
             execute(
                     connection,
@@ -893,6 +914,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
                             q.addParameter(task.getTaskDefName())
                                     .addParameter(task.getTaskId())
                                     .addParameter(task.getWorkflowInstanceId())
+                                    .addParameter(task.getDomain())
                                     .executeUpdate());
         }
     }
@@ -1071,6 +1093,20 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
                 GET_IN_PROGRESS_TASKS_WITH_LIMIT,
                 q ->
                         q.addParameter(task.getTaskDefName())
+                                .addParameter(limit)
+                                .executeScalarList(String.class));
+    }
+
+    private List<String> findAllTasksInProgressInOrderOfArrival(
+            TaskModel task, int limit, String domain) {
+        String GET_IN_PROGRESS_TASKS_WITH_LIMIT_BY_DOMAIN =
+                "SELECT task_id FROM task_in_progress WHERE task_def_name = ? AND domain <=> ? ORDER BY created_on LIMIT ?";
+
+        return queryWithTransaction(
+                GET_IN_PROGRESS_TASKS_WITH_LIMIT_BY_DOMAIN,
+                q ->
+                        q.addParameter(task.getTaskDefName())
+                                .addParameter(domain)
                                 .addParameter(limit)
                                 .executeScalarList(String.class));
     }

@@ -201,8 +201,7 @@ public class RedisExecutionDAO extends BaseDynoDAO
         if (taskDefinition.isPresent() && taskDefinition.get().concurrencyLimit() > 0) {
 
             if (task.getStatus() != null && task.getStatus().equals(TaskModel.Status.IN_PROGRESS)) {
-                jedisProxy.sadd(
-                        nsKey(TASKS_IN_PROGRESS_STATUS, task.getTaskDefName()), task.getTaskId());
+                jedisProxy.sadd(concurrencyKey(TASKS_IN_PROGRESS_STATUS, task), task.getTaskId());
                 LOGGER.debug(
                         "Workflow Task added to TASKS_IN_PROGRESS_STATUS with tasksInProgressKey: {}, workflowId: {}, taskId: {}, taskType: {}, taskStatus: {} during updateTask",
                         nsKey(TASKS_IN_PROGRESS_STATUS, task.getTaskDefName(), task.getTaskId()),
@@ -211,8 +210,7 @@ public class RedisExecutionDAO extends BaseDynoDAO
                         task.getTaskType(),
                         task.getStatus().name());
             } else {
-                jedisProxy.srem(
-                        nsKey(TASKS_IN_PROGRESS_STATUS, task.getTaskDefName()), task.getTaskId());
+                jedisProxy.srem(concurrencyKey(TASKS_IN_PROGRESS_STATUS, task), task.getTaskId());
                 LOGGER.debug(
                         "Workflow Task removed from TASKS_IN_PROGRESS_STATUS with tasksInProgressKey: {}, workflowId: {}, taskId: {}, taskType: {}, taskStatus: {} during updateTask",
                         nsKey(TASKS_IN_PROGRESS_STATUS, task.getTaskDefName(), task.getTaskId()),
@@ -220,7 +218,7 @@ public class RedisExecutionDAO extends BaseDynoDAO
                         task.getTaskId(),
                         task.getTaskType(),
                         task.getStatus().name());
-                String key = nsKey(TASK_LIMIT_BUCKET, task.getTaskDefName());
+                String key = concurrencyKey(TASK_LIMIT_BUCKET, task);
                 jedisProxy.zrem(key, task.getTaskId());
                 LOGGER.debug(
                         "Workflow Task removed from TASK_LIMIT_BUCKET with taskLimitBucketKey: {}, workflowId: {}, taskId: {}, taskType: {}, taskStatus: {} during updateTask",
@@ -287,7 +285,7 @@ public class RedisExecutionDAO extends BaseDynoDAO
             return false;
         }
 
-        long current = getInProgressTaskCount(task.getTaskDefName());
+        long current = getInProgressTaskCount(task);
         if (current >= limit) {
             LOGGER.info(
                     "Task execution count limited. task - {}:{}, limit: {}, current: {}",
@@ -299,7 +297,7 @@ public class RedisExecutionDAO extends BaseDynoDAO
             return true;
         }
 
-        String rateLimitKey = nsKey(TASK_LIMIT_BUCKET, task.getTaskDefName());
+        String rateLimitKey = concurrencyKey(TASK_LIMIT_BUCKET, task);
         double score = System.currentTimeMillis();
         String taskId = task.getTaskId();
         jedisProxy.zaddnx(rateLimitKey, score, taskId);
@@ -314,7 +312,7 @@ public class RedisExecutionDAO extends BaseDynoDAO
                     task.getTaskDefName(),
                     limit,
                     current);
-            String inProgressKey = nsKey(TASKS_IN_PROGRESS_STATUS, task.getTaskDefName());
+            String inProgressKey = concurrencyKey(TASKS_IN_PROGRESS_STATUS, task);
             // Cleanup any items that are still present in the rate limit bucket but not in progress
             // anymore!
             ids.stream()
@@ -331,8 +329,8 @@ public class RedisExecutionDAO extends BaseDynoDAO
         jedisProxy.hdel(nsKey(SCHEDULED_TASKS, task.getWorkflowInstanceId()), taskKey);
         jedisProxy.srem(nsKey(IN_PROGRESS_TASKS, task.getTaskDefName()), task.getTaskId());
         jedisProxy.srem(nsKey(WORKFLOW_TO_TASKS, task.getWorkflowInstanceId()), task.getTaskId());
-        jedisProxy.srem(nsKey(TASKS_IN_PROGRESS_STATUS, task.getTaskDefName()), task.getTaskId());
-        jedisProxy.zrem(nsKey(TASK_LIMIT_BUCKET, task.getTaskDefName()), task.getTaskId());
+        jedisProxy.srem(concurrencyKey(TASKS_IN_PROGRESS_STATUS, task), task.getTaskId());
+        jedisProxy.zrem(concurrencyKey(TASK_LIMIT_BUCKET, task), task.getTaskId());
     }
 
     private void removeTaskMappingsWithExpiry(TaskModel task) {
@@ -340,8 +338,8 @@ public class RedisExecutionDAO extends BaseDynoDAO
 
         jedisProxy.hdel(nsKey(SCHEDULED_TASKS, task.getWorkflowInstanceId()), taskKey);
         jedisProxy.srem(nsKey(IN_PROGRESS_TASKS, task.getTaskDefName()), task.getTaskId());
-        jedisProxy.srem(nsKey(TASKS_IN_PROGRESS_STATUS, task.getTaskDefName()), task.getTaskId());
-        jedisProxy.zrem(nsKey(TASK_LIMIT_BUCKET, task.getTaskDefName()), task.getTaskId());
+        jedisProxy.srem(concurrencyKey(TASKS_IN_PROGRESS_STATUS, task), task.getTaskId());
+        jedisProxy.zrem(concurrencyKey(TASK_LIMIT_BUCKET, task), task.getTaskId());
     }
 
     @Override
@@ -672,6 +670,24 @@ public class RedisExecutionDAO extends BaseDynoDAO
     @Override
     public long getInProgressTaskCount(String taskDefName) {
         String inProgressKey = nsKey(TASKS_IN_PROGRESS_STATUS, taskDefName);
+        recordRedisDaoRequests("getInProgressTaskCount");
+        return jedisProxy.scard(inProgressKey);
+    }
+
+    // DOMAIN scope keeps a separate concurrency bucket per domain; TASK_DEF keeps the legacy
+    // per-task-name key so existing behavior is unchanged.
+    private String concurrencyKey(String prefix, TaskModel task) {
+        TaskDef taskDef = task.getTaskDefinition().orElse(null);
+        if (taskDef != null
+                && taskDef.getConcurrencyLimitScope() == TaskDef.ConcurrencyLimitScope.DOMAIN
+                && task.getDomain() != null) {
+            return nsKey(prefix, task.getTaskDefName(), task.getDomain());
+        }
+        return nsKey(prefix, task.getTaskDefName());
+    }
+
+    private long getInProgressTaskCount(TaskModel task) {
+        String inProgressKey = concurrencyKey(TASKS_IN_PROGRESS_STATUS, task);
         recordRedisDaoRequests("getInProgressTaskCount");
         return jedisProxy.scard(inProgressKey);
     }
