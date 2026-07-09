@@ -208,6 +208,9 @@ export default function AdvancedSearch({
       sort,
       query: queryFT.query,
       freeText: queryFT.freeText,
+      // Exclude AgentSpan-compiled agent executions — this page is for plain
+      // workflow executions; agent runs live on the dedicated Agents pages.
+      classifier: "workflow",
     },
     {},
     {
