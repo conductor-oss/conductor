@@ -61,8 +61,7 @@ public class MetadataResource {
         } else if (overwrite) {
             metadataService.updateWorkflowDef(workflowDef);
         } else {
-            throw new ConflictException(
-                    "Workflow with %s already exists!", workflowDef.key());
+            throw new ConflictException("Workflow with %s already exists!", workflowDef.key());
         }
     }
 
