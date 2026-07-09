@@ -392,7 +392,7 @@ public class ExecutionServiceTest {
 
         when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(List.of(taskId));
         when(executionDAOFacade.getTaskModel(taskId)).thenReturn(taskModel);
-        when(runtimeMetadataResolver.resolve(any()))
+        when(runtimeMetadataResolver.resolve(List.of("API_KEY")))
                 .thenReturn(Map.of("API_KEY", "token-value-123"));
 
         List<Task> polled = executionService.poll(taskType, "worker", null, 1, 100);
@@ -400,6 +400,6 @@ public class ExecutionServiceTest {
         assertEquals(1, polled.size());
         Task returnedTask = polled.get(0);
         assertEquals("token-value-123", returnedTask.getRuntimeMetadata().get("API_KEY"));
-        verify(runtimeMetadataResolver).resolve(any());
+        verify(runtimeMetadataResolver).resolve(List.of("API_KEY"));
     }
 }
