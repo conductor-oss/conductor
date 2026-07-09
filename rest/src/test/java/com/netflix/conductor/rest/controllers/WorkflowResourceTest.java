@@ -21,6 +21,7 @@ import org.conductoross.conductor.model.SignalResponse;
 import org.conductoross.conductor.model.TaskRun;
 import org.conductoross.conductor.model.WorkflowRun;
 import org.conductoross.conductor.model.WorkflowSignalReturnStrategy;
+import org.conductoross.conductor.model.WorkflowStatus;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -41,6 +42,7 @@ import reactor.test.StepVerifier;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -147,6 +149,47 @@ public class WorkflowResourceTest {
         when(mockWorkflowService.getExecutionStatus(anyString(), anyBoolean()))
                 .thenReturn(workflow);
         assertEquals(workflow, workflowResource.getExecutionStatus("w123", true));
+    }
+
+    @Test
+    public void testGetWorkflowStatusSummary() {
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowId("w123");
+        workflow.setCorrelationId("c123");
+        workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
+        Map<String, Object> output = new HashMap<>();
+        output.put("k", "v");
+        workflow.setOutput(output);
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("var", 1);
+        workflow.setVariables(variables);
+
+        when(mockWorkflowService.getExecutionStatus("w123", false)).thenReturn(workflow);
+
+        WorkflowStatus status = workflowResource.getWorkflowStatusSummary("w123", true, true);
+        assertEquals("w123", status.getWorkflowId());
+        assertEquals("c123", status.getCorrelationId());
+        assertEquals(Workflow.WorkflowStatus.RUNNING, status.getStatus());
+        assertEquals(output, status.getOutput());
+        assertEquals(variables, status.getVariables());
+    }
+
+    @Test
+    public void testGetWorkflowStatusSummaryExcludesOutputAndVariablesByDefault() {
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowId("w123");
+        workflow.setStatus(Workflow.WorkflowStatus.COMPLETED);
+        Map<String, Object> output = new HashMap<>();
+        output.put("k", "v");
+        workflow.setOutput(output);
+
+        when(mockWorkflowService.getExecutionStatus("w123", false)).thenReturn(workflow);
+
+        WorkflowStatus status = workflowResource.getWorkflowStatusSummary("w123", false, false);
+        assertEquals("w123", status.getWorkflowId());
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, status.getStatus());
+        assertNull(status.getOutput());
+        assertNull(status.getVariables());
     }
 
     @Test
