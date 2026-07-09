@@ -14,6 +14,7 @@ package com.netflix.conductor.rest.controllers;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,6 +31,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowClassifier;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.common.model.BulkResponse;
+import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.service.MetadataService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -52,7 +54,16 @@ public class MetadataResource {
             @RequestBody WorkflowDef workflowDef,
             @RequestParam(value = "overwrite", required = false, defaultValue = "false")
                     boolean overwrite) {
-        metadataService.registerWorkflowDef(workflowDef, overwrite);
+        Optional<WorkflowDef> existing =
+                metadataService.findWorkflowDef(workflowDef.getName(), workflowDef.getVersion());
+        if (existing.isEmpty()) {
+            metadataService.registerWorkflowDef(workflowDef);
+        } else if (overwrite) {
+            metadataService.updateWorkflowDef(workflowDef);
+        } else {
+            throw new ConflictException(
+                    "Workflow with %s already exists!", workflowDef.key());
+        }
     }
 
     @PostMapping("/workflow/validate")
