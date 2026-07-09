@@ -19,6 +19,10 @@ import { PromptDef } from "types/Prompts";
 import { ActorRef, State } from "xstate";
 import { MEDIA_TYPE_SUGGESTIONS } from "./constants/httpSuggestions";
 
+/** LLM text complete stores the prompt in promptName; chat complete uses instructions. */
+const selectedPromptNameFromTask = (task: Partial<TaskDef>) =>
+  task?.inputParameters?.promptName ?? task?.inputParameters?.instructions;
+
 export type FieldComponentType = FunctionComponent<{
   onChange: (t: Partial<TaskDef>) => void;
   actor: ActorRef<LLMFormFieldsEvents>;
@@ -77,7 +81,7 @@ const aiFieldTypes = {
     );
 
     // Filter options based on selected prompt's integrations
-    const selectedPromptName = task?.inputParameters?.promptName;
+    const selectedPromptName = selectedPromptNameFromTask(task);
     const selectedPrompt = promptNameOptions.find(
       (prompt: PromptDef) => prompt.name === selectedPromptName,
     );
@@ -137,7 +141,7 @@ const aiFieldTypes = {
     const selectedProvider = task?.inputParameters?.llmProvider;
 
     // Filter options based on selected prompt's integrations
-    const selectedPromptName = task?.inputParameters?.promptName;
+    const selectedPromptName = selectedPromptNameFromTask(task);
     const selectedPrompt = promptNameOptions.find(
       (prompt: PromptDef) => prompt.name === selectedPromptName,
     );
