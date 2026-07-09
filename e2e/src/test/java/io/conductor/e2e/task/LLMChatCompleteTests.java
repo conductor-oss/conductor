@@ -152,11 +152,30 @@ public class LLMChatCompleteTests {
     private static final String COHERE_VISION_MODEL = "command-a-vision-07-2025";
 
     /**
-     * Vision-test image embedding the machine-unguessable token below, pinned to the immutable
-     * commit SHA that added the asset (e2e/src/test/resources/assets/melon7391.png) so the URL
-     * never drifts. Media is passed as a URL because that is the workflow-input media shape the
-     * server supports end-to-end: {@code LLMHelper} downloads it via {@code HttpDocumentLoader} and
-     * hands the bytes to the provider adapter.
+     * Vision-test image embedding the machine-unguessable token below. The asset is committed in
+     * this repo (e2e/src/test/resources/assets/melon7391.png) and referenced at a raw URL pinned to
+     * the immutable commit SHA that added it, so the bytes can never drift and no third-party image
+     * host is involved — GitHub, which already hosts the code, is the only dependency.
+     *
+     * <p>A remote HTTPS URL is deliberate, not a convenience — the local alternatives cannot work
+     * or would test less:
+     *
+     * <ul>
+     *   <li><b>localhost / 127.0.0.1 URL:</b> the server's {@code DocumentAccessPolicy} rejects
+     *       loopback addresses outright (SSRF protection, {@code checkResolvedAddress}); a local
+     *       URL only works if that security check is disabled in the config under test, which would
+     *       make the e2e certify a configuration users don't run.
+     *   <li><b>Bare base64 or data URI in {@code media}:</b> never reaches any provider — {@code
+     *       FileSystemDocumentLoader.supports()} claims any string without {@code ://} and the
+     *       access policy rejects it as a disallowed file path.
+     *   <li><b>{@code file://} path:</b> requires the test and server to share a filesystem and the
+     *       path to sit under the server's allowed directories — breaks the dockerized e2e flow
+     *       where the server runs in a container.
+     * </ul>
+     *
+     * <p>A remote HTTPS URL is also the shape real workflow media takes in production, so the test
+     * covers the genuine path: {@code LLMHelper} downloads it via {@code HttpDocumentLoader}
+     * (through the access-policy checks) and hands the bytes to the provider adapter.
      */
     private static final String TOKEN_IMAGE_URL =
             "https://raw.githubusercontent.com/conductor-oss/conductor/"
