@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useLayoutEffect } from "react";
 import { Box, MenuItem, Select, Tooltip, Typography } from "@mui/material";
 import { AgentTurn, AgentStatus } from "./types";
 import { formatDuration } from "./agentExecutionUtils";
@@ -21,13 +21,10 @@ function turnColor(status: AgentStatus) {
 }
 
 export function TurnBar({ turns, selectedTurn, onSelectTurn }: TurnBarProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const selectedRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    const el = scrollRef.current?.querySelector(
-      `[data-turn="${selectedTurn}"]`,
-    ) as HTMLElement | null;
-    el?.scrollIntoView({
+  useLayoutEffect(() => {
+    selectedRef.current?.scrollIntoView({
       block: "nearest",
       inline: "center",
       behavior: "smooth",
@@ -39,7 +36,6 @@ export function TurnBar({ turns, selectedTurn, onSelectTurn }: TurnBarProps) {
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1, minHeight: 32 }}>
       <Box
-        ref={scrollRef}
         sx={{
           display: "flex",
           alignItems: "stretch",
@@ -82,7 +78,7 @@ export function TurnBar({ turns, selectedTurn, onSelectTurn }: TurnBarProps) {
             >
               <Box
                 component="button"
-                data-turn={turn.turnNumber}
+                ref={active ? selectedRef : undefined}
                 onClick={() => onSelectTurn(turn.turnNumber)}
                 sx={{
                   // Reset button styles
