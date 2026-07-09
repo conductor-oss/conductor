@@ -152,14 +152,28 @@ public class LLMChatCompleteTests {
     private static final String COHERE_VISION_MODEL = "command-a-vision-07-2025";
 
     /**
-     * The (predominantly red) Conductor logo, pinned to an immutable commit SHA so the URL never
-     * drifts. Media is passed as a URL because that is the workflow-input media shape the server
-     * supports end-to-end: {@code LLMHelper} downloads it via {@code HttpDocumentLoader} and hands
-     * the bytes to the provider adapter.
+     * Vision-test image embedding the machine-unguessable token below, pinned to the immutable
+     * commit SHA that added the asset (e2e/src/test/resources/assets/melon7391.png) so the URL
+     * never drifts. Media is passed as a URL because that is the workflow-input media shape the
+     * server supports end-to-end: {@code LLMHelper} downloads it via {@code HttpDocumentLoader} and
+     * hands the bytes to the provider adapter.
      */
-    private static final String RED_LOGO_IMAGE_URL =
+    private static final String TOKEN_IMAGE_URL =
             "https://raw.githubusercontent.com/conductor-oss/conductor/"
-                    + "4275ae9210c8e94e9d9b28f90033a776c295c523/ui-next/public/conductorLogoSmall.png";
+                    + "d8db275351294084203df3ed881c8435a38810af"
+                    + "/e2e/src/test/resources/assets/melon7391.png";
+
+    /**
+     * The token rendered inside {@link #TOKEN_IMAGE_URL}. Transcribing it proves the model saw the
+     * image: unlike a color question, the answer cannot be guessed — it appears nowhere in the
+     * prompt, so it can only come from the image itself.
+     */
+    private static final String IMAGE_SECRET_TOKEN = "MELON7391";
+
+    /** Shared transcription prompt for the vision media tests. */
+    private static final String TRANSCRIBE_PROMPT =
+            "Transcribe the exact text shown in the image. Reply with only that text and"
+                    + " nothing else.";
 
     private final WorkflowClient workflowClient = ApiUtil.WORKFLOW_CLIENT;
     private final MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
@@ -752,41 +766,49 @@ public class LLMChatCompleteTests {
         // Regression lock for the Anthropic media fix (PR #1238, merged): pre-fix the
         // adapter dropped ``media`` from user messages, so the model never saw the
         // image. The server downloads the URL and the adapter must forward the bytes
-        // as an Anthropic image content block.
+        // as an Anthropic image content block. The embedded token is unguessable, so
+        // a correct transcription can only come from the image (see the counterfactual
+        // test below for the negative control).
         String wfName = "ai_e2e_anthropic_vision_media";
         registerMessagesWorkflow(wfName);
-
-        List<Map<String, Object>> messages =
-                List.of(
-                        Map.of(
-                                "role",
-                                "user",
-                                "message",
-                                "What is the dominant color of this image? Reply with just the"
-                                        + " color name, one word.",
-                                "media",
-                                List.of(RED_LOGO_IMAGE_URL),
-                                "mimeType",
-                                "image/png"));
 
         Workflow wf =
                 runAndWait(
                         wfName,
                         Map.of(
-                                "llmProvider", "anthropic",
-                                "model", ANTHROPIC_HAIKU_MODEL,
-                                "messages", messages),
+                                "llmProvider",
+                                "anthropic",
+                                "model",
+                                ANTHROPIC_HAIKU_MODEL,
+                                "messages",
+                                transcribeMessages(true)),
                         90);
 
-        Task chat = chatTasks(wf).get(0);
-        assertEquals(
-                Task.Status.COMPLETED,
-                chat.getStatus(),
-                "chat task must complete; reason: " + chat.getReasonForIncompletion());
-        String result = String.valueOf(chat.getOutputData().get("result"));
-        assertTrue(
-                result.toLowerCase(Locale.ROOT).contains("red"),
-                "the model must see the red logo and answer 'red'; got: " + result);
+        assertTranscribed(wf, true);
+    }
+
+    @Test
+    @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
+    public void anthropic_haiku_vision_withoutMedia_tokenIsAbsent() {
+        // Counterfactual for the positive case above: the same prompt with NO media
+        // must complete without ever producing the token — proving the token cannot
+        // leak from the prompt and a passing positive case is real image reading.
+        String wfName = "ai_e2e_anthropic_vision_media_counterfactual";
+        registerMessagesWorkflow(wfName);
+
+        Workflow wf =
+                runAndWait(
+                        wfName,
+                        Map.of(
+                                "llmProvider",
+                                "anthropic",
+                                "model",
+                                ANTHROPIC_HAIKU_MODEL,
+                                "messages",
+                                transcribeMessages(false)),
+                        90);
+
+        assertTranscribed(wf, false);
     }
 
     // ====================================================================
@@ -798,43 +820,25 @@ public class LLMChatCompleteTests {
     public void cohere_vision_imageMediaInMessages_modelSeesTheImage() {
         // Regression lock for the Cohere media fix. Pre-fix, the adapter built the
         // user message from text only and silently dropped ``media``, so the model
-        // never saw the image and this color question was unanswerable. The server
-        // downloads the URL and the adapter must forward the bytes as a Cohere v2
-        // ``image_url`` data-URI content part.
+        // never saw the image and the token was untranscribable. The server downloads
+        // the URL and the adapter must forward the bytes as a Cohere v2 ``image_url``
+        // data-URI content part.
         String wfName = "ai_e2e_cohere_vision_media";
         registerMessagesWorkflow(wfName);
-
-        List<Map<String, Object>> messages =
-                List.of(
-                        Map.of(
-                                "role",
-                                "user",
-                                "message",
-                                "What is the dominant color of this image? Reply with just the"
-                                        + " color name, one word.",
-                                "media",
-                                List.of(RED_LOGO_IMAGE_URL),
-                                "mimeType",
-                                "image/png"));
 
         Workflow wf =
                 runAndWait(
                         wfName,
                         Map.of(
-                                "llmProvider", "cohere",
-                                "model", COHERE_VISION_MODEL,
-                                "messages", messages),
+                                "llmProvider",
+                                "cohere",
+                                "model",
+                                COHERE_VISION_MODEL,
+                                "messages",
+                                transcribeMessages(true)),
                         90);
 
-        Task chat = chatTasks(wf).get(0);
-        assertEquals(
-                Task.Status.COMPLETED,
-                chat.getStatus(),
-                "chat task must complete; reason: " + chat.getReasonForIncompletion());
-        String result = String.valueOf(chat.getOutputData().get("result"));
-        assertTrue(
-                result.toLowerCase(Locale.ROOT).contains("red"),
-                "the model must see the red logo and answer 'red'; got: " + result);
+        assertTranscribed(wf, true);
     }
 
     // ====================================================================
@@ -1214,6 +1218,51 @@ public class LLMChatCompleteTests {
         def.setOwnerEmail("ai-e2e@conductor.test");
         def.setTasks(List.of(chat));
         metadataClient.updateWorkflowDefs(List.of(def));
+    }
+
+    /** The transcription conversation, with or without the token image attached. */
+    private static List<Map<String, Object>> transcribeMessages(boolean withMedia) {
+        return List.of(
+                withMedia
+                        ? Map.of(
+                                "role",
+                                "user",
+                                "message",
+                                TRANSCRIBE_PROMPT,
+                                "media",
+                                List.of(TOKEN_IMAGE_URL),
+                                "mimeType",
+                                "image/png")
+                        : Map.of("role", "user", "message", TRANSCRIBE_PROMPT));
+    }
+
+    /**
+     * Asserts the chat task completed and, depending on whether the image was attached, that the
+     * embedded token was (or was not) transcribed. Normalizes case and punctuation so model
+     * formatting quirks don't flake the assertion.
+     */
+    private static void assertTranscribed(Workflow wf, boolean expectToken) {
+        Task chat = chatTasks(wf).get(0);
+        assertEquals(
+                Task.Status.COMPLETED,
+                chat.getStatus(),
+                "chat task must complete; reason: " + chat.getReasonForIncompletion());
+        String result = String.valueOf(chat.getOutputData().get("result"));
+        String normalized = result.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "");
+        if (expectToken) {
+            assertTrue(
+                    normalized.contains(IMAGE_SECRET_TOKEN),
+                    "the model must transcribe the embedded token '"
+                            + IMAGE_SECRET_TOKEN
+                            + "' from the image; got: "
+                            + result);
+        } else {
+            assertFalse(
+                    normalized.contains(IMAGE_SECRET_TOKEN),
+                    "without media the token must not appear — it can only come from the"
+                            + " image; got: "
+                            + result);
+        }
     }
 
     private Workflow runAndWait(String wfName, Map<String, Object> input, int maxSeconds) {

@@ -12,12 +12,9 @@
  */
 package org.conductoross.conductor.ai.providers.cohere;
 
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.Locale;
-
-import javax.imageio.ImageIO;
+import java.util.Objects;
 
 import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
@@ -112,16 +109,15 @@ class CohereAITest {
         @Test
         void testChatCompletionWithImageMedia() throws Exception {
             // Live regression for the media fix: a vision model must actually see the
-            // image bytes, forwarded as an image_url data-URI content part. Pre-fix the
-            // media was dropped and the model could only guess the color.
-            BufferedImage img = new BufferedImage(64, 64, BufferedImage.TYPE_INT_RGB);
-            for (int x = 0; x < 64; x++) {
-                for (int y = 0; y < 64; y++) {
-                    img.setRGB(x, y, 0xFF0000);
-                }
-            }
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            ImageIO.write(img, "png", out);
+            // image bytes, forwarded as an image_url data-URI content part. The image
+            // embeds a machine-unguessable token, so a correct transcription can only
+            // come from the image — pre-fix the media was dropped and the model could
+            // not produce it.
+            byte[] png =
+                    Objects.requireNonNull(
+                                    getClass().getResourceAsStream("/media/melon7391.png"),
+                                    "test asset /media/melon7391.png missing")
+                            .readAllBytes();
 
             ChatCompletion input = new ChatCompletion();
             input.setModel("command-a-vision-07-2025");
@@ -130,12 +126,12 @@ class CohereAITest {
             UserMessage userMsg =
                     UserMessage.builder()
                             .text(
-                                    "What is the dominant color of this image? Reply with just"
-                                            + " the color name, one word.")
+                                    "Transcribe the exact text shown in the image. Reply with"
+                                            + " only that text and nothing else.")
                             .media(
                                     List.of(
                                             Media.builder()
-                                                    .data(out.toByteArray())
+                                                    .data(png)
                                                     .mimeType(MimeTypeUtils.IMAGE_PNG)
                                                     .build()))
                             .build();
@@ -147,8 +143,8 @@ class CohereAITest {
             String text = response.getResult().getOutput().getText();
             assertNotNull(text);
             assertTrue(
-                    text.toLowerCase(Locale.ROOT).contains("red"),
-                    "vision model must see the solid red image and answer 'red'; got: " + text);
+                    text.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "").contains("MELON7391"),
+                    "vision model must transcribe the embedded token MELON7391; got: " + text);
         }
 
         @Test
