@@ -177,9 +177,13 @@ public class MetadataServiceImpl implements MetadataService {
         return metadataDAO.getAllWorkflowDefs();
     }
 
-    public void registerWorkflowDef(WorkflowDef workflowDef) {
+    public void registerWorkflowDef(WorkflowDef workflowDef, boolean overwrite) {
         workflowDef.setCreateTime(System.currentTimeMillis());
-        metadataDAO.createWorkflowDef(workflowDef);
+        if (overwrite) {
+            metadataDAO.updateWorkflowDef(workflowDef);
+        } else {
+            metadataDAO.createWorkflowDef(workflowDef);
+        }
         metadataChangeListener.onWorkflowDefRegistered(workflowDef);
     }
 

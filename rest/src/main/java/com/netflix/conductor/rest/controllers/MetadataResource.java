@@ -48,8 +48,11 @@ public class MetadataResource {
 
     @PostMapping("/workflow")
     @Operation(summary = "Create a new workflow definition")
-    public void create(@RequestBody WorkflowDef workflowDef) {
-        metadataService.registerWorkflowDef(workflowDef);
+    public void create(
+            @RequestBody WorkflowDef workflowDef,
+            @RequestParam(value = "overwrite", required = false, defaultValue = "false")
+                    boolean overwrite) {
+        metadataService.registerWorkflowDef(workflowDef, overwrite);
     }
 
     @PostMapping("/workflow/validate")

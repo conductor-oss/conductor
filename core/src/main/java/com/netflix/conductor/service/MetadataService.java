@@ -102,7 +102,13 @@ public interface MetadataService {
     Map<String, ? extends Iterable<WorkflowDefSummary>> getWorkflowNamesAndVersions();
 
     void registerWorkflowDef(
-            @NotNull(message = "WorkflowDef cannot be null") @Valid WorkflowDef workflowDef);
+            @NotNull(message = "WorkflowDef cannot be null") @Valid WorkflowDef workflowDef,
+            boolean overwrite);
+
+    default void registerWorkflowDef(
+            @NotNull(message = "WorkflowDef cannot be null") @Valid WorkflowDef workflowDef) {
+        registerWorkflowDef(workflowDef, false);
+    }
 
     /**
      * Validates a {@link WorkflowDef}.
