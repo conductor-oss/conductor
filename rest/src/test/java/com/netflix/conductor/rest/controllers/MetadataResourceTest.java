@@ -14,7 +14,9 @@ package com.netflix.conductor.rest.controllers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -90,7 +92,30 @@ public class MetadataResourceTest {
         listOfWorkflowDef.add(workflowDef);
 
         when(mockMetadataService.getWorkflowDefs()).thenReturn(listOfWorkflowDef);
-        assertEquals(listOfWorkflowDef, metadataResource.getAll());
+        assertEquals(listOfWorkflowDef, metadataResource.getAll(null));
+    }
+
+    @Test
+    public void testGetAllWorkflowDefFilteredByClassifier() {
+        WorkflowDef plainDef = new WorkflowDef();
+        plainDef.setName("plain");
+        plainDef.setVersion(1);
+
+        WorkflowDef agentDef = new WorkflowDef();
+        agentDef.setName("agentic");
+        agentDef.setVersion(1);
+        Map<String, Object> agentMetadata = new HashMap<>();
+        agentMetadata.put("agent_sdk", "python");
+        agentDef.setMetadata(agentMetadata);
+
+        List<WorkflowDef> listOfWorkflowDef = new ArrayList<>();
+        listOfWorkflowDef.add(plainDef);
+        listOfWorkflowDef.add(agentDef);
+
+        when(mockMetadataService.getWorkflowDefs()).thenReturn(listOfWorkflowDef);
+        assertEquals(List.of(agentDef), metadataResource.getAll("agent"));
+        assertEquals(List.of(plainDef), metadataResource.getAll("workflow"));
+        assertEquals(listOfWorkflowDef, metadataResource.getAll(" "));
     }
 
     @Test

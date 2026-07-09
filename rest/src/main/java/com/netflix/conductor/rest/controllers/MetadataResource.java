@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowClassifier;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.common.model.BulkResponse;
@@ -73,8 +74,19 @@ public class MetadataResource {
 
     @Operation(summary = "Retrieves all workflow definition along with blueprint")
     @GetMapping("/workflow")
-    public List<WorkflowDef> getAll() {
-        return metadataService.getWorkflowDefs();
+    public List<WorkflowDef> getAll(
+            @RequestParam(value = "classifier", required = false) String classifier) {
+        List<WorkflowDef> allWorkflows = metadataService.getWorkflowDefs();
+        // Optional classifier filter powering e.g. agent def vs workflow def views. The
+        // classifier is derived from each def's metadata map: "workflow" matches untagged
+        // (plain) defs; any other value matches the derived tag literally.
+        if (classifier == null || classifier.isBlank()) {
+            return allWorkflows;
+        }
+        String wanted = classifier.trim();
+        return allWorkflows.stream()
+                .filter(wd -> wanted.equalsIgnoreCase(WorkflowClassifier.classifierOf(wd)))
+                .toList();
     }
 
     @Operation(summary = "Returns workflow names and versions only (no definition bodies)")
