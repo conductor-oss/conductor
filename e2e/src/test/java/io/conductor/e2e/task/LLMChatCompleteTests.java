@@ -743,6 +743,53 @@ public class LLMChatCompleteTests {
     }
 
     // ====================================================================
+    // Anthropic — vision (image media input; regression for the #1238 media fix)
+    // ====================================================================
+
+    @Test
+    @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
+    public void anthropic_haiku_vision_imageMediaInMessages_modelSeesTheImage() {
+        // Regression lock for the Anthropic media fix (PR #1238, merged): pre-fix the
+        // adapter dropped ``media`` from user messages, so the model never saw the
+        // image. The server downloads the URL and the adapter must forward the bytes
+        // as an Anthropic image content block.
+        String wfName = "ai_e2e_anthropic_vision_media";
+        registerMessagesWorkflow(wfName);
+
+        List<Map<String, Object>> messages =
+                List.of(
+                        Map.of(
+                                "role",
+                                "user",
+                                "message",
+                                "What is the dominant color of this image? Reply with just the"
+                                        + " color name, one word.",
+                                "media",
+                                List.of(RED_LOGO_IMAGE_URL),
+                                "mimeType",
+                                "image/png"));
+
+        Workflow wf =
+                runAndWait(
+                        wfName,
+                        Map.of(
+                                "llmProvider", "anthropic",
+                                "model", ANTHROPIC_HAIKU_MODEL,
+                                "messages", messages),
+                        90);
+
+        Task chat = chatTasks(wf).get(0);
+        assertEquals(
+                Task.Status.COMPLETED,
+                chat.getStatus(),
+                "chat task must complete; reason: " + chat.getReasonForIncompletion());
+        String result = String.valueOf(chat.getOutputData().get("result"));
+        assertTrue(
+                result.toLowerCase(Locale.ROOT).contains("red"),
+                "the model must see the red logo and answer 'red'; got: " + result);
+    }
+
+    // ====================================================================
     // Cohere — vision model + image media input
     // ====================================================================
 
