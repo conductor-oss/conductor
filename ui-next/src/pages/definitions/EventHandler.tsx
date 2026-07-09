@@ -37,6 +37,7 @@ import { colors } from "theme/tokens/variables";
 import { ConductorEvent } from "types/Events";
 import { TagDto } from "types/Tag";
 import { createSearchableTags, logger } from "utils";
+import { parseErrorResponse } from "utils/helpers";
 import { ACTIVE_FILTER_QUERY_PARAM } from "utils/constants/common";
 import { EVENT_HANDLERS_URL } from "utils/constants/route";
 import useCustomPagination from "utils/hooks/useCustomPagination";
@@ -260,8 +261,21 @@ export default function EventDefinitionList() {
     onSuccess: () => {
       refetch();
     },
-    onError: (err: Error) => {
+    onError: async (err: Response) => {
       logger.error(err);
+      const errorMessage =
+        err.status === 403
+          ? "You do not have permission to delete this event handler."
+          : await parseErrorResponse({
+              response: err,
+              module: "event handler",
+              operation: "deleting",
+            });
+      setToast({
+        isOpen: true,
+        message: errorMessage,
+        status: "error",
+      });
       refetch();
     },
   });
@@ -308,12 +322,14 @@ export default function EventDefinitionList() {
         <SnackbarMessage
           autoHideDuration={3000}
           message={toast.message}
-          severity={toast.status === "paused" ? "warning" : "success"}
+          severity={
+            toast.status === "error"
+              ? "error"
+              : toast.status === "paused"
+                ? "warning"
+                : "success"
+          }
           onDismiss={() => setToast({ isOpen: false, message: "", status: "" })}
-          anchorOrigin={{
-            vertical: "bottom",
-            horizontal: "right",
-          }}
         />
       )}
 
