@@ -457,6 +457,23 @@ public class ParametersUtilsTest {
     }
 
     @Test
+    public void testSubstituteSecretsResolvesInsideList() {
+        EnvironmentDAO env = mock(EnvironmentDAO.class);
+        SecretsDAO secrets = mock(SecretsDAO.class);
+        when(secrets.getSecret("TOKEN")).thenReturn("tkn");
+        ParametersUtils pu = new ParametersUtils(objectMapper, env, secrets);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("headers", List.of("Bearer ${workflow.secrets.TOKEN}", "static"));
+
+        Map<String, Object> out = pu.substituteSecrets(input);
+
+        assertEquals(List.of("Bearer tkn", "static"), out.get("headers"));
+        // original input unmutated
+        assertEquals(List.of("Bearer ${workflow.secrets.TOKEN}", "static"), input.get("headers"));
+    }
+
+    @Test
     public void testSubstituteSecretsMalformedJsonResolvesToNull() {
         EnvironmentDAO env = mock(EnvironmentDAO.class);
         SecretsDAO secrets = mock(SecretsDAO.class);
