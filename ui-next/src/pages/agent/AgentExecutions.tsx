@@ -1,9 +1,10 @@
+import { FormControlLabel, Switch } from "@mui/material";
 import { DataTable, NavLink, Paper } from "components";
 import SectionHeader from "components/layout/SectionHeader";
 import Header from "components/ui/Header";
 import NoDataComponent from "components/ui/NoDataComponent";
 import SectionContainer from "components/ui/layout/SectionContainer";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
 import { useSearchParams } from "react-router-dom";
 import { AGENT_EXECUTIONS_URL } from "utils/constants/route";
@@ -17,10 +18,14 @@ No agents deployed yet? [Build one with the AgentSpan SDK](https://github.com/ag
 export default function AgentExecutions() {
   const [searchParams] = useSearchParams();
   const agentName = searchParams.get("agentName") || "";
+  const [hideSubAgents, setHideSubAgents] = useState(true);
 
-  const path = agentName
-    ? `/agent/executions?size=50&agentName=${encodeURIComponent(agentName)}`
-    : "/agent/executions?size=50";
+  // Sub-agent/sub-workflow filtering is done server-side: topLevelOnly restricts
+  // results to root executions (parentWorkflowId = ""). Off shows every execution.
+  const params = new URLSearchParams({ size: "50" });
+  if (agentName) params.set("agentName", agentName);
+  if (hideSubAgents) params.set("topLevelOnly", "true");
+  const path = `/agent/executions?${params.toString()}`;
   const { data, isFetching, refetch } =
     useFetch<AgentExecutionSearchResult>(path);
 
@@ -93,6 +98,17 @@ export default function AgentExecutions() {
         {/*@ts-ignore*/}
         <Paper variant="outlined">
           <Header loading={isFetching} />
+          <FormControlLabel
+            control={
+              <Switch
+                size="small"
+                checked={hideSubAgents}
+                onChange={(e) => setHideSubAgents(e.target.checked)}
+              />
+            }
+            label="Hide sub-agent executions"
+            sx={{ ml: 1, mb: 1 }}
+          />
           <DataTable
             localStorageKey="agentExecutionsTable"
             quickSearchEnabled
