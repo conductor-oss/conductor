@@ -9,6 +9,8 @@ dependencies {
     implementation project(':conductor-core')
     implementation project(':conductor-ai')
 
-    implementation "org.conductoross:conductor-agentspan:0.3.0"
+    // 0.4.2+ supports classifier-based agent filtering (pairs with WorkflowClassifier in
+    // conductor-common and the classifier search field in the index backends).
+    implementation "org.conductoross:conductor-agentspan:0.4.2"
 
 }
