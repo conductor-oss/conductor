@@ -230,6 +230,13 @@ export const AI_TASKS: BaseTaskMenuItem[] = [
     category: RichAddMenuTabs.AI_AGENTS_TAB,
   },
   {
+    name: "Get Document",
+    description:
+      "Retrieve the content of a document (URL or file path) for use in downstream AI tasks.",
+    type: TaskType.GET_DOCUMENT,
+    category: RichAddMenuTabs.AI_AGENTS_TAB,
+  },
+  {
     name: "LLM Index Document",
     description: "Index a document into a vector database for semantic search.",
     type: TaskType.LLM_INDEX_DOCUMENT,
@@ -239,6 +246,79 @@ export const AI_TASKS: BaseTaskMenuItem[] = [
     name: "LLM Search Index",
     description: "Search indexed documents using semantic similarity.",
     type: TaskType.LLM_SEARCH_INDEX,
+    category: RichAddMenuTabs.AI_AGENTS_TAB,
+  },
+  {
+    name: "Agent (A2A)",
+    description:
+      "Call a remote agent (agentType: a2a) with durable retry — poll, streaming, or push modes.",
+    type: TaskType.AGENT,
+    category: RichAddMenuTabs.AI_AGENTS_TAB,
+  },
+  {
+    name: "Get Agent Card (A2A)",
+    description: "Discover a remote A2A agent's skills and capabilities.",
+    type: TaskType.GET_AGENT_CARD,
+    category: RichAddMenuTabs.AI_AGENTS_TAB,
+  },
+  {
+    name: "Cancel Agent (A2A)",
+    description: "Cancel a running task on a remote A2A agent.",
+    type: TaskType.CANCEL_AGENT,
+    category: RichAddMenuTabs.AI_AGENTS_TAB,
+  },
+  {
+    name: "LLM Index Text",
+    description: "Index raw text into a vector database for semantic search.",
+    type: TaskType.LLM_INDEX_TEXT,
+    category: RichAddMenuTabs.AI_AGENTS_TAB,
+  },
+  {
+    name: "LLM Store Embeddings",
+    description: "Store pre-computed embeddings into a vector database.",
+    type: TaskType.LLM_STORE_EMBEDDINGS,
+    category: RichAddMenuTabs.AI_AGENTS_TAB,
+  },
+  {
+    name: "LLM Search Embeddings",
+    description: "Search a vector database using pre-computed embeddings.",
+    type: TaskType.LLM_SEARCH_EMBEDDINGS,
+    category: RichAddMenuTabs.AI_AGENTS_TAB,
+  },
+  {
+    name: "List MCP Tools",
+    description: "List the tools exposed by a Model Context Protocol server.",
+    type: TaskType.LIST_MCP_TOOLS,
+    category: RichAddMenuTabs.AI_AGENTS_TAB,
+  },
+  {
+    name: "Call MCP Tool",
+    description: "Invoke a tool on a Model Context Protocol server.",
+    type: TaskType.CALL_MCP_TOOL,
+    category: RichAddMenuTabs.AI_AGENTS_TAB,
+  },
+  {
+    name: "Generate Image",
+    description: "Generate images from a text prompt using an LLM provider.",
+    type: TaskType.GENERATE_IMAGE,
+    category: RichAddMenuTabs.AI_AGENTS_TAB,
+  },
+  {
+    name: "Generate Audio",
+    description: "Synthesize speech/audio from text using an LLM provider.",
+    type: TaskType.GENERATE_AUDIO,
+    category: RichAddMenuTabs.AI_AGENTS_TAB,
+  },
+  {
+    name: "Generate Video",
+    description: "Generate video from a prompt or image using an LLM provider.",
+    type: TaskType.GENERATE_VIDEO,
+    category: RichAddMenuTabs.AI_AGENTS_TAB,
+  },
+  {
+    name: "Generate PDF",
+    description: "Convert markdown content into a styled PDF document.",
+    type: TaskType.GENERATE_PDF,
     category: RichAddMenuTabs.AI_AGENTS_TAB,
   },
 ];

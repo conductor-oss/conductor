@@ -350,7 +350,7 @@ class YourVectorDBTest {
 ### Step 1: Create Request Model
 
 ```java
-package org.conductoross.conductor.ai.models;
+package org.conductoross.conductor.ai.model;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -370,7 +370,7 @@ public class YourTaskRequest extends LLMWorkerInput {
 package org.conductoross.conductor.ai.tasks.worker;
 
 import com.netflix.conductor.sdk.workflow.annotations.WorkerTask;
-import org.conductoross.conductor.ai.models.YourTaskRequest;
+import org.conductoross.conductor.ai.model.YourTaskRequest;
 
 @Component
 public class YourWorker {

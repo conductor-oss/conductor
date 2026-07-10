@@ -24,7 +24,7 @@ import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
 import org.bson.conversions.Bson;
-import org.conductoross.conductor.ai.models.IndexedDoc;
+import org.conductoross.conductor.ai.model.IndexedDoc;
 import org.conductoross.conductor.ai.vectordb.VectorDB;
 
 import com.google.common.cache.Cache;

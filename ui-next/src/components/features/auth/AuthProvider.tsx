@@ -48,7 +48,6 @@ function selectAuthProvider(): AuthProviderType {
   const pluginAuthProvider = pluginRegistry.getAuthProvider(authProviderType);
 
   if (pluginAuthProvider) {
-    logger.log(`Using ${authProviderType} as Auth Provider (from plugin)`);
     return pluginAuthProvider;
   }
 

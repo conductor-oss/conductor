@@ -18,13 +18,13 @@ import java.util.List;
 
 import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.http.AIHttpClients;
-import org.conductoross.conductor.ai.models.AudioGenRequest;
-import org.conductoross.conductor.ai.models.ChatCompletion;
-import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
-import org.conductoross.conductor.ai.models.LLMResponse;
-import org.conductoross.conductor.ai.models.Media;
-import org.conductoross.conductor.ai.models.ToolSpec;
-import org.conductoross.conductor.ai.models.VideoGenRequest;
+import org.conductoross.conductor.ai.model.AudioGenRequest;
+import org.conductoross.conductor.ai.model.ChatCompletion;
+import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
+import org.conductoross.conductor.ai.model.LLMResponse;
+import org.conductoross.conductor.ai.model.Media;
+import org.conductoross.conductor.ai.model.ToolSpec;
+import org.conductoross.conductor.ai.model.VideoGenRequest;
 import org.conductoross.conductor.ai.providers.openai.api.OpenAIEmbeddingsApi;
 import org.conductoross.conductor.ai.providers.openai.api.OpenAIImageGenApi;
 import org.conductoross.conductor.ai.providers.openai.api.OpenAIResponsesApi;
@@ -69,7 +69,11 @@ public class OpenAI implements AIModel {
 
     public OpenAI(OpenAIConfiguration config, OkHttpClient httpClient) {
         this.config = config;
-        String baseUrl = config.getBaseURL();
+        // Normalize the configured base URL so it always ends in "/v1". The embeddings/responses/
+        // image/speech APIs append paths like "/embeddings" and expect the "/v1" segment to be
+        // present, so a host-only base URL (e.g. "https://api.openai.com") would otherwise 404.
+        // This keeps the base URL backward compatible: host-only, ".../v1", or blank all work.
+        String baseUrl = ensureV1(config.getBaseURL());
         String baseUrlNoV1 = stripV1(baseUrl);
 
         this.responsesApi = new OpenAIResponsesApi(httpClient, config.getApiKey(), baseUrl, false);
@@ -264,5 +268,20 @@ public class OpenAI implements AIModel {
             return baseUrl.substring(0, baseUrl.length() - 3);
         }
         return baseUrl;
+    }
+
+    /**
+     * Ensures the base URL ends with "/v1" (idempotent). Strips a trailing slash first so both
+     * "https://api.openai.com" and "https://api.openai.com/" become "https://api.openai.com/v1",
+     * while an already-correct "https://api.openai.com/v1" is left unchanged. Returns {@code null}
+     * unchanged so callers fall back to their own default.
+     */
+    private static String ensureV1(String baseUrl) {
+        if (baseUrl == null || baseUrl.isBlank()) {
+            return baseUrl;
+        }
+        String trimmed =
+                baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        return trimmed.endsWith("/v1") ? trimmed : trimmed + "/v1";
     }
 }

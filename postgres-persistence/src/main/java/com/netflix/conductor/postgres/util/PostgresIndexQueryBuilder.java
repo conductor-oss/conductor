@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.netflix.conductor.common.metadata.workflow.WorkflowClassifier;
 import com.netflix.conductor.postgres.config.PostgresProperties;
 
 public class PostgresIndexQueryBuilder {
@@ -51,6 +52,7 @@ public class PostgresIndexQueryBuilder {
         "update_time",
         "json_data",
         "parent_workflow_id",
+        "classifier",
         "jsonb_to_tsvector('english', json_data, '[\"all\"]')"
     };
 
@@ -83,6 +85,9 @@ public class PostgresIndexQueryBuilder {
 
         public String getQueryFragment() {
             if (operator.equals("IN")) {
+                if (classifierMatchesUntagged()) {
+                    return "(" + attribute + " = ANY(?) OR " + attribute + " IS NULL)";
+                }
                 return attribute + " = ANY(?)";
             } else if (operator.equals("@@")) {
                 return attribute + " @@ to_tsquery(?)";
@@ -95,10 +100,24 @@ public class PostgresIndexQueryBuilder {
                         && values.size() == 1
                         && values.get(0).contains("*")) {
                     return attribute + " LIKE ?";
+                } else if (operator.equals("=") && classifierMatchesUntagged()) {
+                    return "(" + attribute + " = ? OR " + attribute + " IS NULL)";
                 } else {
                     return attribute + " " + operator + " ?";
                 }
             }
+        }
+
+        /**
+         * Rows indexed before the classifier column existed have a NULL classifier but are
+         * semantically untagged, i.e. plain workflows. When a filter asks for the untagged token
+         * ({@link WorkflowClassifier#WORKFLOW}), widen the predicate to also match those legacy
+         * NULL rows.
+         */
+        private boolean classifierMatchesUntagged() {
+            return "classifier".equals(attribute)
+                    && values != null
+                    && values.stream().anyMatch(WorkflowClassifier.WORKFLOW::equalsIgnoreCase);
         }
 
         private String getOperator(String op) {

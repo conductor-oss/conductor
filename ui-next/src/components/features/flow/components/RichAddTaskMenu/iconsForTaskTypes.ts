@@ -21,6 +21,10 @@ import {
   RowsIcon,
   FilesIcon,
   FileMagnifyingGlass,
+  ImageIcon,
+  SpeakerHighIcon,
+  VideoCameraIcon,
+  FilePdfIcon,
 } from "@phosphor-icons/react";
 import SendgridIcon from "../shapes/TaskCard/icons/Sendgrid";
 
@@ -94,4 +98,14 @@ export const iconForTaskTypeMap = {
   [TaskType.CHUNK_TEXT]: RowsIcon,
   [TaskType.LIST_FILES]: FilesIcon,
   [TaskType.PARSE_DOCUMENT]: FileMagnifyingGlass,
+  [TaskType.AGENT]: MCPIcon,
+  [TaskType.GET_AGENT_CARD]: MCPIcon,
+  [TaskType.CANCEL_AGENT]: X,
+  [TaskType.LLM_SEARCH_EMBEDDINGS]: LlmSearchIndex,
+  [TaskType.LIST_MCP_TOOLS]: MCPIcon,
+  [TaskType.CALL_MCP_TOOL]: MCPIcon,
+  [TaskType.GENERATE_IMAGE]: ImageIcon,
+  [TaskType.GENERATE_AUDIO]: SpeakerHighIcon,
+  [TaskType.GENERATE_VIDEO]: VideoCameraIcon,
+  [TaskType.GENERATE_PDF]: FilePdfIcon,
 } satisfies Record<FormTaskType, React.FC>;

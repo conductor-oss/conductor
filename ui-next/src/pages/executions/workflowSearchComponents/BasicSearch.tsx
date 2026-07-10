@@ -1,13 +1,4 @@
-import {
-  Box,
-  FormControl,
-  FormControlLabel,
-  Grid,
-  InputLabel,
-  Switch,
-  useMediaQuery,
-} from "@mui/material";
-import { Theme } from "@mui/material/styles";
+import { Box, FormControlLabel, Grid, Switch } from "@mui/material";
 import { Button, Paper } from "components";
 import { DEFAULT_ROWS_PER_PAGE } from "components/ui/DataTable/DataTable";
 import StatusBadge from "components/StatusBadge";
@@ -153,10 +144,6 @@ export default function BasicSearch({
     hasError: idempotencyKeyHasError,
   } = useAutoCompleteInputValidation();
 
-  const isMobile = useMediaQuery((theme: Theme) =>
-    theme.breakpoints.down("sm"),
-  );
-
   // For dropdown
   const workflowNames: string[] = useWorkflowNames();
 
@@ -290,6 +277,9 @@ export default function BasicSearch({
       sort,
       query: queryFT.query,
       freeText: queryFT.freeText,
+      // Exclude AgentSpan-compiled agent executions — this page is for plain
+      // workflow executions; agent runs live on the dedicated Agents pages.
+      classifier: "workflow",
     },
     {},
     {
@@ -428,7 +418,7 @@ export default function BasicSearch({
             sx={{ width: "100%" }}
             spacing={3}
             pt={2}
-            justifyContent="flex-end"
+            justifyContent="flex-start"
           >
             <Grid
               size={{
@@ -580,6 +570,22 @@ export default function BasicSearch({
               />
             </Grid>
             <Grid
+              size={{
+                xs: 12,
+                md: 6,
+                lg: 3,
+              }}
+              sx={{ order: { xs: 0, lg: 2 } }}
+            >
+              <ConductorInput
+                fullWidth
+                label="Free text search"
+                value={freeText}
+                onTextInputChange={setFreeText}
+                showClearButton
+              />
+            </Grid>
+            <Grid
               display="flex"
               alignItems="end"
               size={{
@@ -588,6 +594,7 @@ export default function BasicSearch({
                 md: 6,
                 lg: 6,
               }}
+              sx={{ order: { xs: 0, lg: 1 } }}
             >
               <DateControlComponent
                 startTime={startTimeFrom}
@@ -618,29 +625,16 @@ export default function BasicSearch({
               />
             </Grid>
             <Grid
-              size={{
-                xs: 12,
-                sm: 6,
-                md: 6,
-                lg: 2,
-              }}
-            >
-              <ConductorInput
-                fullWidth
-                label="Free text search"
-                value={freeText}
-                onTextInputChange={setFreeText}
-                showClearButton
-              />
-            </Grid>
-            <Grid
               display="flex"
-              alignItems="end"
+              alignItems="center"
               size={{
                 xs: 12,
                 sm: 6,
                 md: 3,
-                lg: 2,
+                lg: 3,
+              }}
+              sx={{
+                order: { xs: 0, lg: 3 },
               }}
             >
               <FormControlLabel
@@ -662,56 +656,42 @@ export default function BasicSearch({
             <Grid
               display="flex"
               justifyContent="end"
-              size={{
-                xs: 12,
-                sm: 6,
-                md: 3,
-                lg: 2,
-              }}
+              alignItems="center"
+              gap={1}
+              size={{ xs: 12 }}
+              sx={{ flexWrap: "nowrap", order: { xs: 0, lg: 4 } }}
             >
-              <Grid size={5}>
-                <FormControl>
-                  {!isMobile && <InputLabel>&nbsp;</InputLabel>}
-                  <Button
-                    id="reset-workflow-btn"
-                    variant="text"
-                    onClick={handleReset}
-                    style={{ width: "100%" }}
-                    startIcon={<ResetIcon />}
-                  >
-                    Reset
-                  </Button>
-                </FormControl>
-              </Grid>
-              <Grid>
-                <FormControl>
-                  {!isMobile && <InputLabel>&nbsp;</InputLabel>}
-
-                  <SplitButton
-                    id="search-workflow-btn"
-                    startIcon={<SearchIcon />}
-                    options={[
-                      {
-                        label: "Show as code",
-                        onClick: () => setShowCodeDialog("active"),
-                      },
-                    ]}
-                    primaryOnClick={() =>
-                      doSearch({
-                        resultObj,
-                        queryFT,
-                        buildQuery,
-                        setQueryFT,
-                        refetch,
-                        setPage,
-                        setRecentTaskSearch,
-                      })
-                    }
-                  >
-                    Search
-                  </SplitButton>
-                </FormControl>
-              </Grid>
+              <Button
+                id="reset-workflow-btn"
+                variant="text"
+                onClick={handleReset}
+                startIcon={<ResetIcon />}
+              >
+                Reset
+              </Button>
+              <SplitButton
+                id="search-workflow-btn"
+                startIcon={<SearchIcon />}
+                options={[
+                  {
+                    label: "Show as code",
+                    onClick: () => setShowCodeDialog("active"),
+                  },
+                ]}
+                primaryOnClick={() =>
+                  doSearch({
+                    resultObj,
+                    queryFT,
+                    buildQuery,
+                    setQueryFT,
+                    refetch,
+                    setPage,
+                    setRecentTaskSearch,
+                  })
+                }
+              >
+                Search
+              </SplitButton>
             </Grid>
           </Grid>
         </Box>
