@@ -54,8 +54,13 @@ public class MetadataResource {
             @RequestBody WorkflowDef workflowDef,
             @RequestParam(value = "overwrite", required = false, defaultValue = "false")
                     boolean overwrite) {
+        String name = workflowDef.getName();
+        if (name == null || name.isBlank()) {
+            metadataService.registerWorkflowDef(workflowDef);
+            return;
+        }
         Optional<WorkflowDef> existing =
-                metadataService.findWorkflowDef(workflowDef.getName(), workflowDef.getVersion());
+                metadataService.findWorkflowDef(name, workflowDef.getVersion());
         if (existing.isEmpty()) {
             metadataService.registerWorkflowDef(workflowDef);
         } else if (overwrite) {
