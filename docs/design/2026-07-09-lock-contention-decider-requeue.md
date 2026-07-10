@@ -64,7 +64,7 @@ sequenceDiagram
     ES->>Q: setUnackTimeoutIfShorter(wf, responseTimeout=600s)
     Note right of Q: decider entry now due in ~600s
 
-    Note over W,WE: Forked tasks complete; JOIN becomes ready and is executed
+    Note over W,WE: Forked tasks complete — JOIN becomes ready and is executed
     AST->>AST: JOIN.execute() → COMPLETED (no lock needed)
     AST->>WE: decide(workflowId) [schedule task after JOIN]
 
@@ -205,57 +205,91 @@ public void sweep(String workflowId) {
 
 ## Why orkes-conductor was never affected (comparison)
 
-`orkes-conductor/oss-core` is an **older engine snapshot**. Three concrete differences mean the park
-never forms there. (Links pinned to orkes-conductor `69b19299` — private repo.)
+orkes-conductor already does **exactly this fix**, and has for a long time — just in its own
+executor. Its active `WorkflowExecutor` bean is `OrkesWorkflowExecutor` (`@Component @Primary`, which
+overrides `oss-core`'s `WorkflowExecutorOps`), and its `decide(String)` re-queues on a lock miss with
+the **same `lockTimeToTry/2` backoff** this PR adds to conductor-oss.
 
-**(1) `decide()` has the *same* bare `return null`** — orkes did **not** fix it here either
-([`oss-core/.../WorkflowExecutorOps.java#L1037-L1042`](https://github.com/orkes-io/orkes-conductor/blob/69b19299a6c888f0a3d8f0c13e6cd0b952caeb6d/oss-core/src/main/java/com/netflix/conductor/core/execution/WorkflowExecutorOps.java#L1037-L1042)):
+> Correction to an earlier draft of this doc: the `oss-core` `WorkflowExecutorOps.decide()` bare
+> `return null` is real, but it is **not on the runtime path** in orkes — `@Primary`
+> `OrkesWorkflowExecutor` replaces it. The executor orkes actually runs re-queues.
 
-```java
-// orkes-conductor  oss-core/.../execution/WorkflowExecutorOps.java  (lines 1037-1042)
-public WorkflowModel decide(String workflowId) {
-    StopWatch watch = new StopWatch();
-    watch.start();
-    if (!executionLockService.acquireLock(workflowId)) {
-        return null;                 // identical to conductor-oss *before* the fix
-    }
+### Diagram 3 — orkes-conductor: the active executor re-queues on the lock miss (mirrors Diagram 2)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as completion event (updateTask / system task)
+    participant WE as OrkesWorkflowExecutor.decide (Primary)
+    participant L as ExecutionLockService
+    participant Q as QueueDAO (_deciderQueue)
+    participant SW as WorkflowReconciler + legacy sweeper
+    participant X as Other thread (lock holder)
+
+    C->>WE: decide(workflowId)
+    X-->>L: holds lock(workflowId)
+    WE->>L: acquireLock(workflowId)
+    L-->>WE: false (contended)
+    rect rgb(230, 245, 230)
+        Note right of WE: re-queue with lockTimeToTry/2 backoff (same mechanism as the conductor-oss fix)
+        WE->>Q: push(_deciderQueue, wf, FIFO priority, Duration.ofMillis(lockTimeToTry/2))
+        WE-->>C: return null
+    end
+    Note right of Q: entry due in ~250ms — never postponed to responseTimeout (no adjustDeciderQueuePostpone)
+
+    loop reconciler scheduled every sweep-frequency (default 500ms)
+        SW->>Q: pop(_deciderQueue, DUE only)
+        alt entry due
+            Q-->>SW: workflowId
+            SW->>WE: decide(workflowId)
+            alt lock free now
+                WE->>WE: acquire lock, schedule next task
+            else still contended
+                WE->>Q: push(_deciderQueue, wf, lockTimeToTry/2)
+            end
+        else not due yet
+            Q-->>SW: empty
+        end
+    end
+    Note over C,X: recovers in sub-second–seconds, same as the conductor-oss fix
 ```
 
-**(2) The legacy sweeper unconditionally re-queues at a flat `workflowOffsetTimeout` (~30s)** — on
-every sweep it falls through to `setUnackTimeout`, so a lock-missed (`null`) decide is still retried
-within ~30s
-([`oss-core/.../reconciliation/WorkflowSweeper.java#L66-L97`](https://github.com/orkes-io/orkes-conductor/blob/69b19299a6c888f0a3d8f0c13e6cd0b952caeb6d/oss-core/src/main/java/com/netflix/conductor/core/reconciliation/WorkflowSweeper.java#L66-L97)):
+**The active executor's re-queue** — `OrkesWorkflowExecutor.decide(String)`, `@Primary`
+([`OrkesWorkflowExecutor.java#L756-L762` @ `8c963075`](https://github.com/orkes-io/orkes-conductor/blob/8c963075a04aff9f75481e39ceef7536791f9c56/server/src/main/java/com/netflix/conductor/core/execution/OrkesWorkflowExecutor.java#L756-L762)):
 
 ```java
-// orkes-conductor  oss-core/.../reconciliation/WorkflowSweeper.java  (lines 66-97, abridged)
-public void sweep(String workflowId) {
-    try {
-        ...
-        WorkflowModel workflow = workflowExecutor.decide(workflowId);   // null on lock miss
-        if (workflow != null && workflow.getStatus().isTerminal()) {
-            queueDAO.remove(DECIDER_QUEUE, workflowId);
-            return;
-        }
-    } catch (ApplicationException e) { if (NOT_FOUND) { remove; return; } }
-      catch (Exception e) { ... }
-    // fall-through: ALWAYS re-queue, even after a decide() lock-miss (null)
-    queueDAO.setUnackTimeout(
-            DECIDER_QUEUE, workflowId, properties.getWorkflowOffsetTimeout().toMillis());
+// orkes-conductor  server/.../execution/OrkesWorkflowExecutor.java  (@Primary; L756-762 @ 8c963075)
+if (!executionLockService.acquireLock(workflowId)) {
+    // Let's try again... with the lockTime timeout / 2
+    int backoff = (int) (properties.getLockTimeToTry().toMillis() / 2);
+    log.debug("can't get a lock on {}, will try after {} ms with priority: {}",
+            workflowId, backoff, getWorkflowFIFOPriority(workflowId, 0));
+    queueDAO.push(DECIDER_QUEUE, workflowId, getWorkflowFIFOPriority(workflowId, 0), Duration.ofMillis(backoff));
+    return null;
 }
 ```
 
-**(3) It lacks the two newer conductor-oss additions entirely** (verified by grep in `oss-core/src/main`, orkes `69b19299`):
+This is the conductor-oss fix, essentially one-to-one:
 
-| Symbol | conductor-oss (`bb5c3da2a`) | orkes `oss-core` (`69b19299`) |
+| | conductor-oss fix (`WorkflowExecutorOps.decide()`) | orkes `OrkesWorkflowExecutor.decide()` (`@Primary`) |
 |---|---|---|
-| `adjustDeciderQueuePostpone` / `setUnackTimeoutIfShorter(responseTimeout)` | present — parks entry at 600s | **absent** — entry never pushed past `workflowOffsetTimeout` |
-| `AsyncSystemTaskExecutor` (JOIN-completion `decide()` caller) | present | **absent** |
-| sweeper re-sweep interval | due-based; `responseTimeout` on active tasks | flat `workflowOffsetTimeout` (~30s) |
+| re-queue on lock miss | yes | yes |
+| backoff | `lockTimeToTry/2` (floor 100ms) | `lockTimeToTry/2` |
+| queue offset | `Duration.ofMillis(...)` | `Duration.ofMillis(...)` |
+| priority arg | `0` | `getWorkflowFIFOPriority(workflowId, 0)` |
 
-**Conclusion:** the bug needs the due-based sweeper **and** the `responseTimeout` postpone to line up,
-which only happens on the newer conductor-oss engine. orkes' older `oss-core` recovers a contended
-workflow within `workflowOffsetTimeout` (~30s) regardless, so it never exhibits the ~10-minute pause.
-If/when orkes adopts the newer engine, it will inherit this bug and need the same `decide()` re-queue.
+**Secondary reasons orkes never parked long** (defense in depth; both verified by grep at `69b19299`):
+- No `adjustDeciderQueuePostpone` / `setUnackTimeoutIfShorter(responseTimeout)` — the decider entry is
+  never pushed out to `responseTimeout` in the first place.
+- The legacy `WorkflowSweeper.sweep()` also unconditionally re-queues at a flat `workflowOffsetTimeout`
+  (~30s) on every sweep
+  ([`oss-core/.../reconciliation/WorkflowSweeper.java#L66-L97`](https://github.com/orkes-io/orkes-conductor/blob/69b19299a6c888f0a3d8f0c13e6cd0b952caeb6d/oss-core/src/main/java/com/netflix/conductor/core/reconciliation/WorkflowSweeper.java#L66-L97)).
+
+**Conclusion:** orkes was never exposed because its `@Primary` executor already re-queues on the
+decide lock-miss — the very behavior this PR ports into conductor-oss's `WorkflowExecutorOps`. The
+conductor-oss bug arose only because its executor had a bare `return null` **and** the newer engine
+stopped unconditionally re-queuing in the sweeper while `adjustDeciderQueuePostpone` pushed the entry
+out to `responseTimeout`.
 
 ## Verification
 
