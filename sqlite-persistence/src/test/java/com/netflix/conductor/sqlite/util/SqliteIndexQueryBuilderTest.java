@@ -130,6 +130,69 @@ public class SqliteIndexQueryBuilderTest {
     }
 
     @Test
+    void shouldGenerateQueryForClassifier() throws SQLException {
+        String inputQuery = "classifier=\"agent\"";
+        SqliteIndexQueryBuilder builder =
+                new SqliteIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getQuery();
+        assertEquals(
+                "SELECT json_data FROM table_name WHERE classifier = ? LIMIT ? OFFSET ?",
+                generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter("agent");
+        inOrder.verify(mockQuery).addParameter(15);
+        inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldMatchLegacyNullRowsForUntaggedClassifier() throws SQLException {
+        // Rows indexed before the classifier column existed are untagged plain workflows;
+        // filtering for the "workflow" token must also match those NULL rows.
+        String inputQuery = "classifier=\"workflow\"";
+        SqliteIndexQueryBuilder builder =
+                new SqliteIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getQuery();
+        assertEquals(
+                "SELECT json_data FROM table_name WHERE (classifier = ? OR classifier IS NULL) LIMIT ? OFFSET ?",
+                generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter("workflow");
+        inOrder.verify(mockQuery).addParameter(15);
+        inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldMatchLegacyNullRowsForUntaggedClassifierInClause() throws SQLException {
+        String inputQuery = "classifier IN (agent,workflow)";
+        SqliteIndexQueryBuilder builder =
+                new SqliteIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getQuery();
+        assertEquals(
+                "SELECT json_data FROM table_name WHERE (classifier IN (?,?) OR classifier IS NULL) LIMIT ? OFFSET ?",
+                generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter("agent");
+        inOrder.verify(mockQuery).addParameter("workflow");
+        inOrder.verify(mockQuery).addParameter(15);
+        inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
     void shouldGenerateQueryForParentWorkflowId() throws SQLException {
         String inputQuery = "parentWorkflowId=\"\"";
         SqliteIndexQueryBuilder builder =
