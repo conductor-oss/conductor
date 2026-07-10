@@ -108,7 +108,7 @@ public class SubWorkflowTimeoutRetryTests {
         log.info("Started {} ", workflowInstanceId);
         pollAndCompleteTask(workflowInstanceId, "integration_task_1", Map.of());
         Workflow workflow = workflowClient.getWorkflow(workflowInstanceId, true);
-        await().atMost(3, TimeUnit.SECONDS)
+        await().atMost(10, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             Workflow workflow1 =

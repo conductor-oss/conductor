@@ -7,7 +7,5 @@ yarn build
 echo "Done building UI, copying the UI files to server"
 cd ..
 pwd
-rm -rf server-lite/src/main/resources/static/*
 rm -rf server/src/main/resources/static/*
-cp -r ui/build/ server-lite/src/main/resources/static
 cp -r ui/build/ server/src/main/resources/static

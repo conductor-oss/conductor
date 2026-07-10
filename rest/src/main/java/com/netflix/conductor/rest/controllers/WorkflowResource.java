@@ -14,6 +14,7 @@ package com.netflix.conductor.rest.controllers;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.model.SignalResponse;
 import org.conductoross.conductor.model.WorkflowSignalReturnStrategy;
+import org.conductoross.conductor.model.WorkflowStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -260,6 +262,18 @@ public class WorkflowResource {
         return workflowService.getExecutionStatus(workflowId, includeTasks);
     }
 
+    @GetMapping("/{workflowId}/status")
+    @Operation(summary = "Gets the workflow status summary by workflow (execution) id")
+    public WorkflowStatus getWorkflowStatusSummary(
+            @PathVariable("workflowId") String workflowId,
+            @RequestParam(value = "includeOutput", defaultValue = "false", required = false)
+                    boolean includeOutput,
+            @RequestParam(value = "includeVariables", defaultValue = "false", required = false)
+                    boolean includeVariables) {
+        Workflow workflow = workflowService.getExecutionStatus(workflowId, false);
+        return new WorkflowStatus(workflow, includeOutput, includeVariables);
+    }
+
     @DeleteMapping("/{workflowId}/remove")
     @Operation(summary = "Removes the workflow from the system")
     public void delete(
@@ -379,8 +393,10 @@ public class WorkflowResource {
             @RequestParam(value = "size", defaultValue = "100", required = false) int size,
             @RequestParam(value = "sort", required = false) String sort,
             @RequestParam(value = "freeText", defaultValue = "*", required = false) String freeText,
-            @RequestParam(value = "query", required = false) String query) {
-        return workflowService.searchWorkflows(start, size, sort, freeText, query);
+            @RequestParam(value = "query", required = false) String query,
+            @RequestParam(value = "classifier", required = false) String classifier) {
+        return workflowService.searchWorkflows(
+                start, size, sort, freeText, withClassifierFilter(query, classifier));
     }
 
     @Operation(
@@ -394,8 +410,32 @@ public class WorkflowResource {
             @RequestParam(value = "size", defaultValue = "100", required = false) int size,
             @RequestParam(value = "sort", required = false) String sort,
             @RequestParam(value = "freeText", defaultValue = "*", required = false) String freeText,
-            @RequestParam(value = "query", required = false) String query) {
-        return workflowService.searchWorkflowsV2(start, size, sort, freeText, query);
+            @RequestParam(value = "query", required = false) String query,
+            @RequestParam(value = "classifier", required = false) String classifier) {
+        return workflowService.searchWorkflowsV2(
+                start, size, sort, freeText, withClassifierFilter(query, classifier));
+    }
+
+    /**
+     * Folds an optional classifier filter (comma-separated values, e.g. {@code agent} or {@code
+     * agent,workflow}) into the structured search query as a {@code classifier IN (...)} clause.
+     * This keeps the IndexDAO contract unchanged: every index backend that understands the {@code
+     * classifier} field in a query string automatically supports the request parameter.
+     */
+    private static String withClassifierFilter(String query, String classifier) {
+        if (classifier == null || classifier.isBlank()) {
+            return query;
+        }
+        String values =
+                Arrays.stream(classifier.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .collect(Collectors.joining(","));
+        if (values.isEmpty()) {
+            return query;
+        }
+        String clause = "classifier IN (" + values + ")";
+        return (query == null || query.isBlank()) ? clause : query + " AND " + clause;
     }
 
     @Operation(

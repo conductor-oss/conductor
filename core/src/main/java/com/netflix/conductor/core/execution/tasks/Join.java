@@ -12,9 +12,12 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
@@ -34,6 +37,22 @@ public class Join extends WorkflowSystemTask {
 
     @VisibleForTesting static final double EVALUATION_OFFSET_BASE = 1.2;
 
+    /**
+     * Marker key present in an AgentSpan agent execution's workflow input/variables. When set, the
+     * embedded AgentSpan runtime owns the workflow and the JOIN output is kept compact (see {@link
+     * #AGENT_PROPAGATED_KEYS}).
+     */
+    private static final String AGENTSPAN_CTX = "__agentspan_ctx__";
+
+    /**
+     * Keys propagated from fork-branch outputs into the JOIN output for AgentSpan agent executions.
+     * Only these are copied so the JOIN payload stays small for multi-agent merges — full fork
+     * outputs are read directly from the individual tool tasks by the agent message builder, so
+     * duplicating them in JOIN is unnecessary. This mirrors AgentSpan's own JOIN task; for
+     * non-agent workflows the full fork output is copied as before.
+     */
+    private static final Set<String> AGENT_PROPAGATED_KEYS = Set.of("_state_updates", "state");
+
     private final ConductorProperties properties;
 
     public Join(ConductorProperties properties) {
@@ -47,6 +66,7 @@ public class Join extends WorkflowSystemTask {
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         StringBuilder failureReason = new StringBuilder();
         StringBuilder optionalTaskFailures = new StringBuilder();
+        boolean agentExecution = isAgentExecution(workflow);
         List<String> joinOn = (List<String>) task.getInputData().get("joinOn");
         if (task.isLoopOverTask()) {
             // If join is part of loop over task, wait for specific iteration to get complete
@@ -70,9 +90,18 @@ public class Join extends WorkflowSystemTask {
 
             TaskModel.Status taskStatus = forkedTask.getStatus();
 
-            // Only add to task output if it's not empty
+            // Only add to task output if it's not empty. For AgentSpan agent executions, copy
+            // only the agent merge keys (compact) to keep the JOIN payload small; otherwise copy
+            // the full fork output (default Conductor behavior).
             if (!forkedTask.getOutputData().isEmpty()) {
-                task.addOutput(joinOnRef, forkedTask.getOutputData());
+                if (agentExecution) {
+                    Map<String, Object> compact = compactAgentOutput(forkedTask.getOutputData());
+                    if (!compact.isEmpty()) {
+                        task.addOutput(joinOnRef, compact);
+                    }
+                } else {
+                    task.addOutput(joinOnRef, forkedTask.getOutputData());
+                }
             }
 
             // Determine if the join task fails immediately due to a non-optional, non-permissive
@@ -122,6 +151,29 @@ public class Join extends WorkflowSystemTask {
 
         // Task execution not complete, waiting on more tasks to reach terminal state.
         return false;
+    }
+
+    /**
+     * True when this workflow is an embedded AgentSpan agent execution, detected via the {@code
+     * __agentspan_ctx__} marker on the workflow input or variables. Inert for all other workflows.
+     */
+    private static boolean isAgentExecution(WorkflowModel workflow) {
+        return (workflow.getInput() != null && workflow.getInput().containsKey(AGENTSPAN_CTX))
+                || (workflow.getVariables() != null
+                        && workflow.getVariables().containsKey(AGENTSPAN_CTX));
+    }
+
+    /** Returns a copy of {@code output} containing only {@link #AGENT_PROPAGATED_KEYS}. */
+    private static Map<String, Object> compactAgentOutput(Map<String, Object> output) {
+        Map<String, Object> compact = new LinkedHashMap<>();
+        if (output != null) {
+            for (String key : AGENT_PROPAGATED_KEYS) {
+                if (output.containsKey(key)) {
+                    compact.put(key, output.get(key));
+                }
+            }
+        }
+        return compact;
     }
 
     @Override

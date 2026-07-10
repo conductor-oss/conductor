@@ -72,6 +72,7 @@ protobuf {
         all()*.plugins {
             grpc {}
         }
+        all()*.dependsOn(':conductor-common:protogen')
     }
 }
 

@@ -1,6 +1,6 @@
 # Conductor AI Module
 
-The Conductor AI module provides built-in integration with 12 popular LLM providers and vector databases, enabling AI-powered workflows through simple task definitions -- including chat, embeddings, image generation, audio synthesis, video generation, document generation, and tool calling.
+The Conductor AI module provides built-in integration with 13 popular LLM providers and vector databases, enabling AI-powered workflows through simple task definitions -- including chat, embeddings, image generation, audio synthesis, video generation, document generation, and tool calling.
 
 ## Table of Contents
 - [Supported Providers](#supported-providers)
@@ -29,6 +29,7 @@ The Conductor AI module provides built-in integration with 12 popular LLM provid
 | **Perplexity AI** | ✅ | ❌ | ❌ | ❌ | ❌ | Sonar, Sonar Pro |
 | **HuggingFace** | ✅ | ❌ | ❌ | ❌ | ❌ | Llama 3.x, Mistral 7B, Zephyr |
 | **Ollama** | ✅ | ✅ | ❌ | ❌ | ❌ | Llama 3.x, Mistral, Phi, nomic-embed-text (local deployment) |
+| **LiteLLM** | ✅ | ❌ | ❌ | ❌ | ❌ | 100+ models via [LiteLLM proxy](https://docs.litellm.ai/) (OpenAI, Anthropic, Azure, Bedrock, Vertex, etc.) |
 | **Stability AI** | ❌ | ❌ | ✅ | ❌ | ❌ | SD3.5 Large/Medium, Stable Image Core, Stable Image Ultra |
 
 ### Vector Database Providers
@@ -38,6 +39,7 @@ The Conductor AI module provides built-in integration with 12 popular LLM provid
 | **PostgreSQL (pgvector)** | ✅ | ✅ | Postgres with vector extension |
 | **Pinecone** | ✅ | ✅ | Managed vector database |
 | **MongoDB Atlas** | ✅ | ✅ | MongoDB vector search |
+| **SQLite (sqlite-vec)** | ✅ | ✅ | Embedded, zero-infra; native `vec0` extension bundled. Auto-registered as `default` when SQLite persistence + AI are enabled |
 
 > **Note**: Multiple named instances of these providers can be configured. See [Vector Database Configuration](VECTORDB_CONFIGURATION.md) for details.
 
@@ -590,6 +592,34 @@ conductor.ai.perplexity.base-url=https://api.perplexity.ai
 | `api-key` | ✅ | - | Perplexity API key |
 | `base-url` | ❌ | `https://api.perplexity.ai` | API base URL |
 
+#### LiteLLM (AI Gateway)
+
+[LiteLLM](https://docs.litellm.ai/) is an AI gateway/proxy that provides a unified OpenAI-compatible interface to 100+ LLM providers including OpenAI, Anthropic, Azure, AWS Bedrock, Google Vertex AI, Mistral, Cohere, and more. Run the LiteLLM proxy and point Conductor at it to access any supported model through a single configuration.
+
+```properties
+conductor.ai.litellm.base-url=${LITELLM_BASE_URL}
+conductor.ai.litellm.api-key=${LITELLM_API_KEY}
+```
+
+| Property | Required | Default | Description |
+|----------|:--------:|---------|-------------|
+| `base-url` | ✅ | - | LiteLLM proxy URL (e.g., `http://litellm-proxy:4000`, `https://my-gateway.example.com`) |
+| `api-key` | ❌ | - | LiteLLM proxy API key (master key or virtual key). Required only if your proxy has auth enabled |
+
+**Usage:**
+
+Set `llmProvider` to `litellm` in your workflow tasks and use any model supported by your LiteLLM proxy configuration:
+
+```json
+{
+  "llmProvider": "litellm",
+  "model": "gpt-4o",
+  "messages": [...]
+}
+```
+
+> **Note**: Set `drop_params: true` in your LiteLLM proxy config (`litellm_settings`) so provider-unsupported parameters (e.g. `frequency_penalty` for Anthropic) are silently dropped instead of causing 400 errors.
+
 #### HuggingFace
 
 ```properties
@@ -644,6 +674,8 @@ The AI module reads from standard environment variables automatically. Set the e
 | Grok / xAI | `XAI_API_KEY` | API key from [x.ai](https://x.ai/) |
 | Perplexity | `PERPLEXITY_API_KEY` | API key from [perplexity.ai](https://www.perplexity.ai/) |
 | HuggingFace | `HUGGINGFACE_API_KEY` | Token from [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) |
+| LiteLLM | `LITELLM_BASE_URL` | LiteLLM proxy URL (required - e.g., `http://litellm-proxy:4000`) |
+| LiteLLM | `LITELLM_API_KEY` | LiteLLM proxy API key (optional - only if proxy has auth enabled) |
 | Stability AI | `STABILITY_API_KEY` | API key from [platform.stability.ai](https://platform.stability.ai/) |
 | Azure OpenAI | `AZURE_OPENAI_API_KEY` | API key from Azure portal |
 | Azure OpenAI | `AZURE_OPENAI_ENDPOINT` | Endpoint URL (e.g., `https://your-resource.openai.azure.com`) |

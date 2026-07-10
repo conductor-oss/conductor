@@ -34,6 +34,7 @@ import {
   ErrorSeverity,
   ExecutionActionTypes,
   ExecutionMachineContext,
+  ExecutionTabs,
   ExecutionUpdatedEvent,
   ExpandDynamicTaskEvent,
   FetchForLogsEvent,
@@ -271,6 +272,16 @@ export const persistCurrentTab = assign<
   ChangeExecutionTabEvent
 >({
   currentTab: (_context, { tab }) => tab,
+});
+
+/**
+ * Keeps `context.currentTab` in sync when `initDiagram`'s `always`
+ * transitions land on the Agent Execution debugger tab as the *default*
+ * tab (no CHANGE_EXECUTION_TAB event involved, so `persistCurrentTab`
+ * — which reads `event.tab` — doesn't apply here).
+ */
+export const persistAgentExecutionTab = assign<ExecutionMachineContext, any>({
+  currentTab: () => ExecutionTabs.AGENT_EXECUTION_TAB,
 });
 
 export const updateExecutionDuration = assign<
