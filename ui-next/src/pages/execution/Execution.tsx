@@ -22,9 +22,9 @@ import TwoPanesDivider from "components/ui/TwoPanesDivider";
 import { CopyClipboardButton } from "components/ui/inputs/CopyClipboardButton";
 import { useAtom } from "jotai";
 import { WorkflowIntrospection } from "pages/execution/WorkflowIntrospection";
-import React, { useCallback, useContext, useMemo } from "react";
+import React, { useCallback, useContext, useEffect, useMemo } from "react";
 import { Helmet } from "react-helmet";
-import { useLocation } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { colors } from "theme/tokens/variables";
 import {
   ExecutionTask,
@@ -32,13 +32,19 @@ import {
   WorkflowExecutionStatus,
 } from "types/Execution";
 import { TaskStatus } from "types/TaskStatus";
+import {
+  AGENT_EXECUTIONS_URL,
+  WORKFLOW_EXECUTION_URL,
+} from "utils/constants/route";
 import { openInNewTab } from "utils/helpers";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { ActorRef } from "xstate";
 import ActionModule from "./ActionModule";
+import { AgentDefinitionView, AgentExecutionTab } from "./AgentExecution";
 import InputOutput from "./ExecutionInputOutput";
 import ExecutionJson from "./ExecutionJson";
 import ExecutionSummary from "./ExecutionSummary";
+import { isAgentWorkflowExecution } from "./helpers";
 import LeftPanelTabs from "./LeftPanelTabs";
 import { RightPanel } from "./RightPanel";
 import { TaskList } from "./TaskList/TaskList";
@@ -342,6 +348,29 @@ export default function Execution() {
     },
   ] = useExecutionMachine();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // Agent executions can be reached via a bookmarked/shared "/execution/:id"
+  // link (or any other pre-existing entry point) rather than the Agents
+  // section. Once we know the execution is agent-classified, swap the URL to
+  // "/agentExecutions/:id" so the sidebar highlights "Executions" under
+  // Agents instead of the plain Workflow item — without adding a back-button
+  // stop. Only ever runs on the plain "/execution" route; already being on
+  // "/agentExecutions/:id" is a no-op here.
+  useEffect(() => {
+    if (
+      isAgentWorkflowExecution(execution) &&
+      location.pathname.startsWith(`${WORKFLOW_EXECUTION_URL.BASE}/`)
+    ) {
+      navigate(
+        location.pathname.replace(
+          WORKFLOW_EXECUTION_URL.BASE,
+          AGENT_EXECUTIONS_URL.BASE,
+        ) + location.search,
+        { replace: true },
+      );
+    }
+  }, [execution, location.pathname, location.search, navigate]);
 
   executionAssistantBridge.closeRightPanel = closeRightPanel;
   executionAssistantBridge.isTaskPanelOpen = !!rightPanelActor;
@@ -400,6 +429,9 @@ export default function Execution() {
           }}
         >
           <>
+            {openedTab === ExecutionTabs.AGENT_EXECUTION_TAB && execution && (
+              <AgentExecutionTab execution={execution} />
+            )}
             {openedTab === ExecutionTabs.DIAGRAM_TAB &&
               execution &&
               flowActor && (
@@ -435,9 +467,16 @@ export default function Execution() {
                 selectTask={selectTask}
               />
             )}
-            {openedTab === ExecutionTabs.SUMMARY_TAB && (
-              <ExecutionSummary execution={execution} />
-            )}
+            {openedTab === ExecutionTabs.SUMMARY_TAB &&
+              (isAgentWorkflowExecution(execution) ? (
+                // Relabeled "Agent Definition" in LeftPanelTabs for agent
+                // executions — a graph of the agent's static structure
+                // (model/sub-agents/tools/guardrails), matching AgentSpan's
+                // own UI, instead of the plain Conductor execution summary.
+                <AgentDefinitionView execution={execution} />
+              ) : (
+                <ExecutionSummary execution={execution} />
+              ))}
             {openedTab === ExecutionTabs.WORKFLOW_INPUT_OUTPUT_TAB && (
               <InputOutput
                 execution={execution as unknown as Record<string, unknown>}

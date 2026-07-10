@@ -79,11 +79,12 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
     @Override
     public void indexWorkflow(WorkflowSummary workflow) {
         String INSERT_WORKFLOW_INDEX_SQL =
-                "INSERT INTO workflow_index (workflow_id, correlation_id, workflow_type, start_time, update_time, status, parent_workflow_id, json_data) "
-                        + " VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (workflow_id) "
+                "INSERT INTO workflow_index (workflow_id, correlation_id, workflow_type, start_time, update_time, status, parent_workflow_id, classifier, json_data) "
+                        + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (workflow_id) "
                         + " DO UPDATE SET correlation_id = excluded.correlation_id, workflow_type = excluded.workflow_type, "
                         + " start_time = excluded.start_time, status = excluded.status, json_data = excluded.json_data, "
-                        + " update_time = excluded.update_time, parent_workflow_id = excluded.parent_workflow_id "
+                        + " update_time = excluded.update_time, parent_workflow_id = excluded.parent_workflow_id, "
+                        + " classifier = excluded.classifier "
                         + " WHERE excluded.update_time >= workflow_index.update_time";
 
         if (onlyIndexOnStatusChange) {
@@ -110,6 +111,7 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
                                                 workflow.getParentWorkflowId() != null
                                                         ? workflow.getParentWorkflowId()
                                                         : "")
+                                        .addParameter(workflow.getClassifier())
                                         .addJsonParameter(workflow)
                                         .executeUpdate());
         logger.debug("Sqlite index workflow rows updated: {}", rowsUpdated);
