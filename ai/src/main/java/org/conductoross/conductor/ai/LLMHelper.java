@@ -29,15 +29,15 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.document.DocumentLoader;
 import org.conductoross.conductor.ai.http.AIHttpClients;
-import org.conductoross.conductor.ai.models.AudioGenRequest;
-import org.conductoross.conductor.ai.models.ChatCompletion;
-import org.conductoross.conductor.ai.models.ChatMessage;
-import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
-import org.conductoross.conductor.ai.models.ImageGenRequest;
-import org.conductoross.conductor.ai.models.LLMResponse;
-import org.conductoross.conductor.ai.models.ToolCall;
-import org.conductoross.conductor.ai.models.ToolSpec;
-import org.conductoross.conductor.ai.models.VideoGenRequest;
+import org.conductoross.conductor.ai.model.AudioGenRequest;
+import org.conductoross.conductor.ai.model.ChatCompletion;
+import org.conductoross.conductor.ai.model.ChatMessage;
+import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
+import org.conductoross.conductor.ai.model.ImageGenRequest;
+import org.conductoross.conductor.ai.model.LLMResponse;
+import org.conductoross.conductor.ai.model.ToolCall;
+import org.conductoross.conductor.ai.model.ToolSpec;
+import org.conductoross.conductor.ai.model.VideoGenRequest;
 import org.conductoross.conductor.common.JsonSchemaValidator;
 import org.conductoross.conductor.common.utils.StringTemplate;
 import org.springframework.ai.chat.client.ChatClient;
@@ -382,7 +382,7 @@ public class LLMHelper {
         List<ToolCall> tools = null;
         String finishReason = null;
         List<String> responses = new ArrayList<>();
-        List<org.conductoross.conductor.ai.models.Media> media = new ArrayList<>();
+        List<org.conductoross.conductor.ai.model.Media> media = new ArrayList<>();
         for (Generation result : chatResponse.getResults()) {
             if (result.getOutput().hasToolCalls()) {
                 List<AssistantMessage.ToolCall> toolCalls = result.getOutput().getToolCalls();
@@ -429,7 +429,7 @@ public class LLMHelper {
                         .forEach(
                                 m ->
                                         media.add(
-                                                org.conductoross.conductor.ai.models.Media.builder()
+                                                org.conductoross.conductor.ai.model.Media.builder()
                                                         .data(m.getDataAsByteArray())
                                                         .mimeType(m.getMimeType().toString())
                                                         .build()));
@@ -490,7 +490,7 @@ public class LLMHelper {
         ImagePrompt prompt = new ImagePrompt(List.of(imageMessage), options);
         ImageResponse response = imageModel.call(prompt);
         LLMResponse mediaGenResponse = new LLMResponse();
-        List<org.conductoross.conductor.ai.models.Media> mediaList = new ArrayList<>();
+        List<org.conductoross.conductor.ai.model.Media> mediaList = new ArrayList<>();
         for (ImageGeneration result : response.getResults()) {
             var image = result.getOutput();
             String url = image.getUrl();
@@ -506,7 +506,7 @@ public class LLMHelper {
             if (base64 != null) {
                 // Base64 data provided - decode and store
                 mediaList.add(
-                        org.conductoross.conductor.ai.models.Media.builder()
+                        org.conductoross.conductor.ai.model.Media.builder()
                                 .data(Base64.getDecoder().decode(base64))
                                 .mimeType(mimeType)
                                 .build());
@@ -518,7 +518,7 @@ public class LLMHelper {
                     // Detect mime type from URL extension if possible
                     String detectedMimeType = getMimeTypeFromUrl(url, mimeType);
                     mediaList.add(
-                            org.conductoross.conductor.ai.models.Media.builder()
+                            org.conductoross.conductor.ai.model.Media.builder()
                                     .data(imageBytes)
                                     .mimeType(detectedMimeType)
                                     .build());
@@ -527,7 +527,7 @@ public class LLMHelper {
                     // nothing)
                     log.warn("Failed to download image from URL, keeping external URL: {}", url);
                     mediaList.add(
-                            org.conductoross.conductor.ai.models.Media.builder()
+                            org.conductoross.conductor.ai.model.Media.builder()
                                     .location(url)
                                     .mimeType(mimeType)
                                     .build());
@@ -704,7 +704,7 @@ public class LLMHelper {
     }
 
     private void storeMedia(
-            String location, List<org.conductoross.conductor.ai.models.Media> media) {
+            String location, List<org.conductoross.conductor.ai.model.Media> media) {
 
         DocumentLoader documentLoader =
                 documentLoaders.stream()

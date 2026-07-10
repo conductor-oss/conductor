@@ -1,15 +1,16 @@
 name: UI v2 Integration CI
 
-# Runs after a PR is merged to main, or when a release is published.
-# Skipped on open PRs to avoid the expensive Docker build + Playwright run on every commit.
 on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "ui-next/**"
   push:
     branches:
       - main
-    paths-ignore:
-      - "conductor-clients/**"
-  release:
-    types: [published]
+    paths:
+      - "ui-next/**"
 
 permissions:
   contents: read

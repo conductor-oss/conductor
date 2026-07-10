@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.netflix.conductor.common.metadata.workflow.WorkflowClassifier;
 import com.netflix.conductor.sqlite.config.SqliteProperties;
 
 public class SqliteIndexQueryBuilder {
@@ -49,7 +50,8 @@ public class SqliteIndexQueryBuilder {
         "task_def_name",
         "update_time",
         "json_data",
-        "parent_workflow_id"
+        "parent_workflow_id",
+        "classifier"
     };
 
     private static final String[] VALID_SORT_ORDER = {"ASC", "DESC"};
@@ -82,10 +84,15 @@ public class SqliteIndexQueryBuilder {
         public String getQueryFragment() {
             if (operator.equals("IN")) {
                 // Create proper IN clause for SQLite
-                return attribute
-                        + " IN ("
-                        + String.join(",", Collections.nCopies(values.size(), "?"))
-                        + ")";
+                String inClause =
+                        attribute
+                                + " IN ("
+                                + String.join(",", Collections.nCopies(values.size(), "?"))
+                                + ")";
+                if (classifierMatchesUntagged()) {
+                    return "(" + inClause + " OR " + attribute + " IS NULL)";
+                }
+                return inClause;
             } else if (operator.equals("MATCH")) {
                 // SQLite FTS5 full-text search
                 return "json_data MATCH ?";
@@ -101,10 +108,24 @@ public class SqliteIndexQueryBuilder {
                         && values.size() == 1
                         && values.get(0).contains("*")) {
                     return "lower(" + attribute + ") LIKE lower(?)";
+                } else if (operator.equals("=") && classifierMatchesUntagged()) {
+                    return "(" + attribute + " = ? OR " + attribute + " IS NULL)";
                 } else {
                     return attribute + " " + operator + " ?";
                 }
             }
+        }
+
+        /**
+         * Rows indexed before the classifier column existed have a NULL classifier but are
+         * semantically untagged, i.e. plain workflows. When a filter asks for the untagged token
+         * ({@link WorkflowClassifier#WORKFLOW}), widen the predicate to also match those legacy
+         * NULL rows.
+         */
+        private boolean classifierMatchesUntagged() {
+            return "classifier".equals(attribute)
+                    && values != null
+                    && values.stream().anyMatch(WorkflowClassifier.WORKFLOW::equalsIgnoreCase);
         }
 
         private String getOperator(String op) {

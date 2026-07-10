@@ -92,6 +92,7 @@ ext {
     revJSonSchemaValidator  = '1.0.73'
     mongodb = '4.11.0'
     pgVector = '0.1.4'
+    sqliteJdbc = '3.49.0.0'
     revMCP = '0.13.0'
     revCommonsCompress = '1.26.1'
     pinecone = '3.0.0'

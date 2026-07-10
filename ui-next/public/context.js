@@ -17,6 +17,7 @@ window.conductor = {
   ENABLE_DARK_MODE_TOGGLE: true,
 
   // Enterprise Features - DISABLED for OSS
+  TAG_VISIBILITY: false,
   WORKFLOW_INTROSPECTION: false,
   WORKFLOW_SUMMARIZE: false,
   HUMAN_TASK: false,

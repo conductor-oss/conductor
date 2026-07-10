@@ -51,6 +51,13 @@ export interface SearchObj {
   freeText?: string;
   query?: string;
   queryId?: string;
+  /**
+   * Optional classifier filter (comma-separated, e.g. "workflow" or "agent").
+   * Passed through as a dedicated REST param (not folded into `query`) so it
+   * applies uniformly whether the caller built its query via dropdowns or
+   * hand-typed it in the Advanced search editor.
+   */
+  classifier?: string;
 }
 
 export interface TaskSearchObj extends Omit<SearchObj, "page"> {
@@ -252,7 +259,8 @@ export function useSearch<T = any>(
   return useQuery<T, FetchError>(
     [fetchContext.stack, pathRoot, searchObj],
     () => {
-      const { rowsPerPage, page, sort, freeText, query } = searchObj;
+      const { rowsPerPage, page, sort, freeText, query, classifier } =
+        searchObj;
       let params: IObject = {
         start: (page - 1) * rowsPerPage,
         size: rowsPerPage,
@@ -260,6 +268,9 @@ export function useSearch<T = any>(
         freeText: freeText,
         query: query,
       };
+      if (classifier) {
+        params = { ...params, classifier };
+      }
       if (searchObj.queryId) {
         params = { queryId: searchObj.queryId, ...params };
       }

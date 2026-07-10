@@ -14,8 +14,8 @@ package org.conductoross.conductor.ai.providers.bedrock;
 
 import java.util.List;
 
-import org.conductoross.conductor.ai.models.ChatCompletion;
-import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
+import org.conductoross.conductor.ai.model.ChatCompletion;
+import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

@@ -20,7 +20,7 @@ import java.util.Map;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
-import org.conductoross.conductor.ai.models.MarkdownToPdfRequest;
+import org.conductoross.conductor.ai.model.MarkdownToPdfRequest;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;

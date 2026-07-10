@@ -1,0 +1,28 @@
+{
+  "name": "a2a_cancel_agent",
+  "version": 1,
+  "schemaVersion": 2,
+  "description": "Starts work on a remote agent (AGENT) then cancels it (CANCEL_AGENT → A2A tasks/cancel), passing the remote task id from the first task's output. Illustrative — cancel is typically wired into fork/timeout or compensation flows.",
+  "ownerEmail": "a2a@example.com",
+  "tasks": [
+    {
+      "name": "start_agent_task",
+      "taskReferenceName": "start",
+      "type": "AGENT",
+      "inputParameters": {
+        "agentUrl": "http://localhost:9999",
+        "text": "begin a long-running job",
+        "maxDurationSeconds": 60
+      }
+    },
+    {
+      "name": "cancel_agent_task",
+      "taskReferenceName": "cancel",
+      "type": "CANCEL_AGENT",
+      "inputParameters": {
+        "agentUrl": "http://localhost:9999",
+        "taskId": "${start.output.taskId}"
+      }
+    }
+  ]
+}

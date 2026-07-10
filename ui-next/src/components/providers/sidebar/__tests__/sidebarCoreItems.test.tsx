@@ -42,7 +42,10 @@ vi.mock("utils/constants/route", () => ({
   },
   SCHEDULER_EXECUTION_URL: "/schedulerExecs",
   AGENT_DEFINITION_URL: { BASE: "/agents" },
-  AGENT_EXECUTIONS_URL: "/agentExecutions",
+  AGENT_EXECUTIONS_URL: {
+    BASE: "/agentExecutions",
+    ID_TASK_ID: "/agentExecutions/:id/:taskId?",
+  },
   AGENT_SECRETS_URL: "/agentSecrets",
   SKILLS_URL: { BASE: "/skills" },
   TASK_DEF_URL: { BASE: "/taskDef", NAME: "/taskDef/:name" },

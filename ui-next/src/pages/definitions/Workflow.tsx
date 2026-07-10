@@ -63,6 +63,7 @@ export default function WorkflowDefinitions() {
   const { isTrialExpired } = useAuth();
 
   const isPlayground = featureFlags.isEnabled(FEATURES.PLAYGROUND);
+  const tagsEnabled = featureFlags.isEnabled(FEATURES.TAG_VISIBILITY);
   const { data, isFetching, refetch }: UseQueryResult<WorkflowDef[]> =
     useWorkflowDefs();
   const [showAddTagDialog, setShowAddTagDialog] = useState(false);
@@ -141,18 +142,22 @@ export default function WorkflowDefinitions() {
         grow: 2,
         tooltip: "The description of the workflow",
       },
-      {
-        id: "workflow_tags",
-        name: "tags",
-        label: "Tags",
-        searchable: true,
-        searchableFunc: (tags: TagDto[]) => createSearchableTags(tags),
-        renderer: (tags: TagDto[], row: WorkflowDef) => (
-          <TagList tags={tags} name={row?.name} />
-        ),
-        grow: 2,
-        tooltip: "The tags associated with the workflow",
-      },
+      ...(tagsEnabled
+        ? ([
+            {
+              id: "workflow_tags",
+              name: "tags",
+              label: "Tags",
+              searchable: true,
+              searchableFunc: (tags: TagDto[]) => createSearchableTags(tags),
+              renderer: (tags: TagDto[], row: WorkflowDef) => (
+                <TagList tags={tags} name={row?.name} />
+              ),
+              grow: 2,
+              tooltip: "The tags associated with the workflow",
+            },
+          ] as LegacyColumn[])
+        : []),
       {
         id: "create_time",
         name: "createTime",
@@ -308,23 +313,25 @@ export default function WorkflowDefinitions() {
                   <CopyIcon size={20} />
                 </IconButton>
               </Tooltip>
-              <Tooltip title={"Add/Edit tags"}>
-                <IconButton
-                  id={`add-tags-${workflowRowData.name}-btn`}
-                  disabled={isTrialExpired}
-                  onClick={() => {
-                    setAddTagDialogData({
-                      tags: workflowRowData.tags || [],
-                      itemName: workflowRowData.name,
-                      itemType: "workflow",
-                    } as TagDialogProps);
-                    setShowAddTagDialog(true);
-                  }}
-                  size="small"
-                >
-                  <TagIcon size={20} />
-                </IconButton>
-              </Tooltip>
+              {tagsEnabled && (
+                <Tooltip title={"Add/Edit tags"}>
+                  <IconButton
+                    id={`add-tags-${workflowRowData.name}-btn`}
+                    disabled={isTrialExpired}
+                    onClick={() => {
+                      setAddTagDialogData({
+                        tags: workflowRowData.tags || [],
+                        itemName: workflowRowData.name,
+                        itemType: "workflow",
+                      } as TagDialogProps);
+                      setShowAddTagDialog(true);
+                    }}
+                    size="small"
+                  >
+                    <TagIcon size={20} />
+                  </IconButton>
+                </Tooltip>
+              )}
 
               <Tooltip title={"Delete workflow"}>
                 <IconButton
@@ -353,7 +360,7 @@ export default function WorkflowDefinitions() {
         },
       },
     ],
-    [data, navigate, isTrialExpired],
+    [data, navigate, isTrialExpired, tagsEnabled],
   );
 
   const handleFilterChange = useCallback(
@@ -410,21 +417,23 @@ export default function WorkflowDefinitions() {
           />
         )}
 
-      <AddTagDialog
-        open={showAddTagDialog && !!addTagDialogData}
-        tags={addTagDialogData?.tags || []}
-        itemType={addTagDialogData?.itemType}
-        itemName={addTagDialogData?.itemName}
-        onClose={() => {
-          setShowAddTagDialog(false);
-          setAddTagDialogData(null);
-        }}
-        onSuccess={() => {
-          setShowAddTagDialog(false);
-          setAddTagDialogData(null);
-          refetch();
-        }}
-      />
+      {tagsEnabled && (
+        <AddTagDialog
+          open={showAddTagDialog && !!addTagDialogData}
+          tags={addTagDialogData?.tags || []}
+          itemType={addTagDialogData?.itemType}
+          itemName={addTagDialogData?.itemName}
+          onClose={() => {
+            setShowAddTagDialog(false);
+            setAddTagDialogData(null);
+          }}
+          onSuccess={() => {
+            setShowAddTagDialog(false);
+            setAddTagDialogData(null);
+            refetch();
+          }}
+        />
+      )}
 
       {confirmDelete && (
         <ConfirmChoiceDialog
@@ -490,7 +499,7 @@ export default function WorkflowDefinitions() {
               defaultShowColumns={[
                 "workflow_name",
                 "workflow_description",
-                "workflow_tags",
+                ...(tagsEnabled ? ["workflow_tags"] : []),
                 "latest_version",
                 "create_time",
                 "owner_email",
@@ -502,7 +511,7 @@ export default function WorkflowDefinitions() {
               initialFilterObj={filterObj}
               data={workflows}
               columns={columns}
-              filterByTags
+              filterByTags={tagsEnabled}
               customActions={[
                 <Tooltip
                   title="Refresh workflow definitions"
