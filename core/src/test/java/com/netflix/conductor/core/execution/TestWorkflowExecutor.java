@@ -64,6 +64,7 @@ import com.netflix.conductor.service.ExecutionLockService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.*;
+import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 
 import static java.util.Comparator.comparingInt;
 import static java.util.stream.Collectors.groupingBy;
@@ -207,6 +208,7 @@ public class TestWorkflowExecutor {
         when(properties.getTaskExecutionPostponeDuration()).thenReturn(Duration.ofSeconds(60));
         when(properties.getWorkflowOffsetTimeout()).thenReturn(Duration.ofSeconds(30));
         when(properties.getLockLeaseTime()).thenReturn(Duration.ofSeconds(30));
+        when(properties.getLockTimeToTry()).thenReturn(Duration.ofMillis(500));
 
         workflowExecutor =
                 new WorkflowExecutorOps(
@@ -223,6 +225,23 @@ public class TestWorkflowExecutor {
                         parametersUtils,
                         idGenerator,
                         Optional.empty());
+    }
+
+    @Test
+    public void testDecideReQueuesWorkflowOnLockMiss() {
+        String workflowId = "contended-workflow-id";
+        when(executionLockService.acquireLock(workflowId)).thenReturn(false);
+
+        WorkflowModel result = workflowExecutor.decide(workflowId);
+
+        // decide() must not silently drop the wake-up on a lock miss: it re-queues the workflow for
+        // a
+        // prompt retry (lockTimeToTry(500ms)/2 = 250ms) so a missed decide from a completion event
+        // or
+        // the sweeper does not park until the responseTimeout-postponed decider entry fires.
+        assertNull(result);
+        verify(queueDAO).push(DECIDER_QUEUE, workflowId, 0, Duration.ofMillis(250));
+        verify(executionLockService, never()).releaseLock(workflowId);
     }
 
     @Test

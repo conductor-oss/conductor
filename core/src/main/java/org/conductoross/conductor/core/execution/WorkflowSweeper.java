@@ -159,30 +159,23 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
     }
 
     /**
-     * Backoff, in seconds, before re-evaluating a workflow whose lock is contended. Uses half the
-     * lock lease time (so a retry lands around when an orphaned lock would expire) and is capped by
-     * {@code maxPostponeDurationSeconds}. Never returns less than 1 second.
+     * Backoff before re-evaluating a workflow whose lock is contended. Lock contention is transient
+     * (millisecond-scale), so this uses half of {@code lockTimeToTry} with a 100ms floor to avoid a
+     * hot loop. It mirrors the re-queue that {@link WorkflowExecutor#decide(String)} performs on
+     * its own lock miss (which is the primary fix); this sweeper path is a backstop.
      */
-    private long lockContentionBackoffSeconds() {
-        long backoffMillis = Math.max(1, properties.getLockLeaseTime().toMillis() / 2);
-        long backoffSeconds = Math.max(1, Duration.ofMillis(backoffMillis).toSeconds());
-        long maxPostponeSeconds = properties.getMaxPostponeDurationSeconds().getSeconds();
-        if (maxPostponeSeconds > 0 && backoffSeconds > maxPostponeSeconds) {
-            backoffSeconds = maxPostponeSeconds;
-        }
-        return backoffSeconds;
+    private Duration lockContentionBackoff() {
+        return Duration.ofMillis(Math.max(properties.getLockTimeToTry().toMillis() / 2, 100));
     }
 
     public void sweep(String workflowId) {
         if (!executionLockService.acquireLock(workflowId)) {
-            // Another worker/node holds the lock, or it is briefly contended. A bare return here
-            // left the workflow to fall back to its decider-queue entry, which a polled task
-            // postpones out to responseTimeoutSeconds (e.g. 600s) — surfacing as a multi-minute
-            // pause. Re-queue with a bounded backoff so a lock-contended workflow is retried in
-            // seconds instead of parking.
-            long backoffSeconds = lockContentionBackoffSeconds();
+            // Backstop: another worker/node holds the lock. Re-queue for a prompt retry rather than
+            // bare-returning (which would leave the workflow parked on its far-future decider-queue
+            // entry). The primary re-queue on a contended decide lives in
+            // WorkflowExecutorOps.decide().
             log.error("Couldn't acquire lock to sweep workflow {}", workflowId);
-            queueDAO.push(DECIDER_QUEUE, workflowId, 0, backoffSeconds);
+            queueDAO.push(DECIDER_QUEUE, workflowId, 0, lockContentionBackoff());
             return;
         }
         log.info("Running sweeper for workflow {}", workflowId);
@@ -201,14 +194,8 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
                             .toString();
             workflow = workflowExecutor.decide(workflowId);
             if (workflow == null) {
-                // couldn't get a lock
-                // Let's try again... with the lockTime timeout / 2
-                long backoffSeconds = lockContentionBackoffSeconds();
-                log.info(
-                        "can't get a lock on {}, will try after {} seconds",
-                        workflowId,
-                        backoffSeconds);
-                queueDAO.push(DECIDER_QUEUE, workflowId, 0, backoffSeconds);
+                // decide() already re-queued with a short backoff on its own lock miss (and returns
+                // null without re-queue when the workflow no longer exists) — nothing to do here.
                 return;
             }
             if (workflow.getStatus().isTerminal()) {

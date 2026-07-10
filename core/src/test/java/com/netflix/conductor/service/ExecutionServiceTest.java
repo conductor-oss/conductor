@@ -334,35 +334,27 @@ public class ExecutionServiceTest {
     }
 
     /*
-     * Reproduction of the CloudAware / Mikhail RegressWorkflow ~10-minute pause on his ACTUAL 3.30.2
-     * config (new sweeper, conductor.app.workflow-offset-timeout=0s). This is the exact source of
-     * the "10 minutes": every task def carries responseTimeoutSeconds=600. When a worker POLLS a
-     * task (SCHEDULED -> IN_PROGRESS), ExecutionService.adjustDeciderQueuePostpone() pushes the
-     * workflow's DECIDER_QUEUE re-evaluation out to responseTimeoutSeconds * 1000 = 600_000 ms via
-     * setUnackTimeoutIfShorter().
-     *
-     * Normally the task completes fast and its completion fires an expedited decide, so the 600s
-     * postpone is harmless. But if that event-driven post-completion decide is missed (lock
-     * contention at one of his ~15 JOIN boundaries -> the sweeper bare-returns on lock miss, see
-     * WorkflowSweeperTest.sweepBareReturnsOnLockMissLeavesWorkflowUnrescued), the workflow's only
-     * remaining wake-up is this decider entry -> it sleeps ~10 minutes before the next decide. That
-     * is the observed, intermittent ("sometimes") pause. With workflow-offset-timeout=0 there is no
-     * shorter floor to pull it back in.
+     * When a worker polls a task (SCHEDULED -> IN_PROGRESS), adjustDeciderQueuePostpone() moves the
+     * workflow's DECIDER_QUEUE re-evaluation out to responseTimeoutSeconds via setUnackTimeoutIfShorter.
+     * This is normally harmless (task completion fires an expedited decide), but it is why a missed
+     * post-completion decide leaves the workflow parked for responseTimeoutSeconds — the multi-minute
+     * pause that the decide() re-queue fix addresses.
      */
     @Test
-    public void testPollSetsDeciderQueuePostponeToResponseTimeout_reproducesTenMinutePause() {
-        String taskType = "regress_simple_task";
+    public void testPollPostponesDeciderQueueToResponseTimeout() {
+        String taskType = "simple_task";
         String workerId = "worker1";
         String domain = null;
-        String taskId = "regress-task-123";
+        String taskId = "task-123";
         String queueName = taskType;
+        String workflowId = "wf-123";
 
         TaskModel taskModel = new TaskModel();
         taskModel.setTaskId(taskId);
         taskModel.setTaskType(taskType);
         taskModel.setStatus(TaskModel.Status.SCHEDULED);
-        taskModel.setWorkflowInstanceId("regress-wf-123");
-        taskModel.setResponseTimeoutSeconds(600); // Mikhail's task-def value
+        taskModel.setWorkflowInstanceId(workflowId);
+        taskModel.setResponseTimeoutSeconds(600);
 
         when(queueDAO.pop(eq(queueName), eq(1), anyInt()))
                 .thenReturn(Collections.singletonList(taskId));
@@ -372,8 +364,7 @@ public class ExecutionServiceTest {
 
         executionService.poll(taskType, workerId, domain, 1, 100);
 
-        // The decider queue for this workflow is postponed to exactly 10 minutes.
-        verify(queueDAO).setUnackTimeoutIfShorter(DECIDER_QUEUE, "regress-wf-123", 600L * 1000);
+        verify(queueDAO).setUnackTimeoutIfShorter(DECIDER_QUEUE, workflowId, 600L * 1000);
     }
 
     @Test
