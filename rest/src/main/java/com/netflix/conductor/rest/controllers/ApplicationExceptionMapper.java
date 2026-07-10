@@ -59,10 +59,10 @@ public class ApplicationExceptionMapper {
 
     @ExceptionHandler(Throwable.class)
     public ResponseEntity<ErrorResponse> handleAll(HttpServletRequest request, Throwable th) {
-        logException(request, th);
-
         HttpStatus status =
                 EXCEPTION_STATUS_MAP.getOrDefault(th.getClass(), HttpStatus.INTERNAL_SERVER_ERROR);
+
+        logException(request, th, status);
 
         ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setInstance(host);
@@ -76,11 +76,24 @@ public class ApplicationExceptionMapper {
         return new ResponseEntity<>(errorResponse, status);
     }
 
-    private void logException(HttpServletRequest request, Throwable exception) {
-        LOGGER.error(
-                "Error {} url: '{}'",
-                exception.getClass().getSimpleName(),
-                request.getRequestURI(),
-                exception);
+    private void logException(HttpServletRequest request, Throwable exception, HttpStatus status) {
+        // 4xx responses represent client-side errors that Conductor handled
+        // correctly (for example NotFoundException -> 404, ConflictException -> 409).
+        // Logging them at ERROR pollutes the server error logs and hides genuine
+        // 5xx server-side failures, so emit 4xx at WARN and reserve ERROR for 5xx
+        // and any unmapped exception (which falls back to 500).
+        if (status.is4xxClientError()) {
+            LOGGER.warn(
+                    "Error {} url: '{}'",
+                    exception.getClass().getSimpleName(),
+                    request.getRequestURI(),
+                    exception);
+        } else {
+            LOGGER.error(
+                    "Error {} url: '{}'",
+                    exception.getClass().getSimpleName(),
+                    request.getRequestURI(),
+                    exception);
+        }
     }
 }

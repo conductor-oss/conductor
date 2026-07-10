@@ -10,7 +10,10 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.providers.huggingface;
+package org.conductoross.conductor.ai.providers.litellm;
+
+import java.time.Duration;
+import java.util.Objects;
 
 import org.conductoross.conductor.ai.ModelConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,18 +25,17 @@ import lombok.NoArgsConstructor;
 import okhttp3.OkHttpClient;
 
 @Data
-@NoArgsConstructor
+@ConfigurationProperties(prefix = "conductor.ai.litellm")
 @Component
-@ConfigurationProperties(prefix = "conductor.ai.huggingface")
-public class HuggingFaceConfiguration implements ModelConfiguration<HuggingFace> {
-
+@NoArgsConstructor
+public class LiteLLMConfiguration implements ModelConfiguration<LiteLLM> {
     private String apiKey;
-
     private String baseURL;
+    private Duration timeout = Duration.ofSeconds(600);
 
     private OkHttpClient httpClient;
 
-    public HuggingFaceConfiguration(String apiKey, String baseURL, OkHttpClient httpClient) {
+    public LiteLLMConfiguration(String apiKey, String baseURL, OkHttpClient httpClient) {
         this.apiKey = apiKey;
         this.baseURL = baseURL;
         this.httpClient = httpClient;
@@ -46,12 +48,11 @@ public class HuggingFaceConfiguration implements ModelConfiguration<HuggingFace>
     }
 
     public String getBaseURL() {
-        // HuggingFace's OpenAI-compatible router (Responses API lives at /responses).
-        return baseURL == null ? "https://router.huggingface.co/v1" : baseURL;
+        return Objects.isNull(baseURL) ? "http://localhost:4000" : baseURL;
     }
 
     @Override
-    public HuggingFace get() {
-        return new HuggingFace(this, httpClient);
+    public LiteLLM get() {
+        return new LiteLLM(this, httpClient);
     }
 }
