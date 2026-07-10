@@ -56,6 +56,11 @@ public abstract class AbstractSchedulerAutoConfigurationSmokeTest {
         public RetryTemplate postgresRetryTemplate() {
             return new RetryTemplate();
         }
+
+        @Bean
+        public RetryTemplate mysqlRetryTemplate() {
+            return new RetryTemplate();
+        }
     }
 
     private ApplicationContextRunner baseRunner() {
