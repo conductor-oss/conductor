@@ -32,7 +32,7 @@ Key participants / source anchors (links pinned to the commits below):
 | `poll()` → `adjustDeciderQueuePostpone()` | [`ExecutionService.java#L190`, `#L255-L272`](https://github.com/conductor-oss/conductor/blob/bb5c3da2a1ac3cdedaa1c8ac1c0709228a2fa217/core/src/main/java/com/netflix/conductor/service/ExecutionService.java#L255-L272) |
 | `decide(String)` (lock acquire → re-queue → null) | [`WorkflowExecutorOps.java#L1209-L1223`](https://github.com/conductor-oss/conductor/blob/bb5c3da2a1ac3cdedaa1c8ac1c0709228a2fa217/core/src/main/java/com/netflix/conductor/core/execution/WorkflowExecutorOps.java#L1209-L1223) |
 | JOIN completion → `decide()` | [`AsyncSystemTaskExecutor.java`](https://github.com/conductor-oss/conductor/blob/bb5c3da2a1ac3cdedaa1c8ac1c0709228a2fa217/core/src/main/java/com/netflix/conductor/core/execution/AsyncSystemTaskExecutor.java) |
-| due-based sweep loop + backstop | [`WorkflowSweeper.java#L171-L180`](https://github.com/conductor-oss/conductor/blob/bb5c3da2a1ac3cdedaa1c8ac1c0709228a2fa217/core/src/main/java/org/conductoross/conductor/core/execution/WorkflowSweeper.java#L171-L180) |
+| due-based sweep loop (picks up the re-queued entry) | [`WorkflowSweeper.java#L171-L180`](https://github.com/conductor-oss/conductor/blob/bb5c3da2a1ac3cdedaa1c8ac1c0709228a2fa217/core/src/main/java/org/conductoross/conductor/core/execution/WorkflowSweeper.java#L171-L180) |
 | workflow lock | [`ExecutionLockService.java`](https://github.com/conductor-oss/conductor/blob/bb5c3da2a1ac3cdedaa1c8ac1c0709228a2fa217/core/src/main/java/com/netflix/conductor/service/ExecutionLockService.java) |
 
 **Pinned commits** (so the line numbers/links stay valid):
@@ -126,27 +126,25 @@ sequenceDiagram
     end
     Note right of Q: decider entry now due in ~250ms (not 600s)
 
-    Note over SW,Q: sweeper picks it up promptly and retries until the lock frees
-    loop until lock is free (~lockTimeToTry per attempt)
-        Q-->>SW: pop returns workflowId (due)
-        SW->>WE: decide(workflowId)
-        WE->>L: acquireLock(workflowId)
-        alt still contended
-            L-->>WE: false
-            WE->>Q: push(_deciderQueue, wf, ~250ms) [retry soon]
-            WE-->>SW: null
-        else lock free
-            X-->>L: releaseLock(workflowId)
-            L-->>WE: true
-            WE->>WE: schedule integration_task_4
-        end
-    end
+    Note over SW,Q: the entry is now due in ~250ms; the sweeper pops it once due
+    X-->>L: releaseLock(workflowId)
+    Q-->>SW: pop returns workflowId (due)
+    SW->>L: sweep() acquireLock(workflowId)
+    L-->>SW: true (lock free now)
+    SW->>WE: decide(workflowId) [reentrant — sweeper already holds the lock]
+    WE->>WE: schedule integration_task_4
     Note over W,X: recovery in sub-second–seconds, independent of responseTimeoutSeconds
 ```
 
-**Backstop:** `WorkflowSweeper.sweep()` also re-queues (same short backoff) if it can't acquire the
-lock at its own top level, instead of bare-returning. The primary re-queue lives in `decide()` so it
-covers every caller — `updateTask`, `AsyncSystemTaskExecutor`, and the sweeper.
+The single re-queue lives in `decide(String)`, so it covers every completion-event caller —
+`updateTask` and `AsyncSystemTaskExecutor`. Contention is transient (millisecond-scale), so by the
+time the re-queued entry is due (~`lockTimeToTry/2` later) the lock is free; the sweeper then acquires
+it and the nested `decide()` runs reentrantly. No change to `WorkflowSweeper` is required.
+
+> Note: `decide()` called *from the sweeper* never hits the lock-miss branch — `sweep()` already
+> holds the workflow lock at its top level and the lock is reentrant, so the nested `decide()`
+> re-acquire always succeeds. The re-queue therefore only ever fires from the completion-event
+> callers, which is exactly the path that was losing the wake-up.
 
 ---
 
@@ -189,19 +187,12 @@ private void adjustDeciderQueuePostpone(TaskModel taskModel, TaskDef taskDef) {
 }
 ```
 
-**The sweeper backstop** — `WorkflowSweeper.sweep()` re-queues (same short backoff) on its own
-top-level lock miss instead of bare-returning
-([`WorkflowSweeper.java#L171-L180`](https://github.com/conductor-oss/conductor/blob/bb5c3da2a1ac3cdedaa1c8ac1c0709228a2fa217/core/src/main/java/org/conductoross/conductor/core/execution/WorkflowSweeper.java#L171-L180)):
-
-```java
-// core/.../org/conductoross/.../WorkflowSweeper.java  (lines 171-180)
-public void sweep(String workflowId) {
-    if (!executionLockService.acquireLock(workflowId)) {
-        log.error("Couldn't acquire lock to sweep workflow {}", workflowId);
-        queueDAO.push(DECIDER_QUEUE, workflowId, 0, lockContentionBackoff());
-        return;
-    }
-```
+**`WorkflowSweeper` is unchanged.** The sweeper already pops **due** decider entries and calls
+`decide(String)`; once `decide()` re-queues the workflow at a short offset, the existing sweeper
+picks it up as soon as it is due. No sweeper-side change is needed for the reported bug, so this PR
+touches only `WorkflowExecutorOps.decide(String)`. (An earlier draft added a `sweep()`-side re-queue
+as a backstop; it was dropped after the end-to-end test confirmed recovery is driven entirely by the
+`decide()` re-queue — see Verification.)
 
 ## Why orkes-conductor was never affected (comparison)
 
@@ -301,3 +292,7 @@ out to `responseTimeout`.
   thread, JOIN run (post-completion decide misses the lock), lock released, then asserts
   `integration_task_4` is scheduled within seconds **via the real background sweeper** (no manual
   sweep). Times out without the fix; the no-contention control passes either way.
+- **Sweeper left unchanged, verified sufficient:** `DynamicForkJoinLockContentionSpec` was also run
+  with the `decide(String)` re-queue in place but `WorkflowSweeper` reverted to its pre-PR form —
+  both cases still pass. This confirms recovery is driven entirely by the `decide()` re-queue and the
+  existing due-based sweeper, so no sweeper-side change is included in this PR.

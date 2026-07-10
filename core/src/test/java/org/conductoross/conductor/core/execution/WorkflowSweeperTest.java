@@ -33,10 +33,6 @@ import com.netflix.conductor.service.ExecutionLockService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -75,7 +71,6 @@ public class WorkflowSweeperTest {
         when(properties.getWorkflowOffsetTimeout()).thenReturn(Duration.ofSeconds(30));
         when(properties.getMaxPostponeDurationSeconds()).thenReturn(Duration.ofSeconds(3600));
         when(properties.getLockLeaseTime()).thenReturn(Duration.ofSeconds(60));
-        when(properties.getLockTimeToTry()).thenReturn(Duration.ofMillis(500));
         when(properties.getSweeperThreadCount()).thenReturn(0);
 
         workflowSweeper =
@@ -188,50 +183,6 @@ public class WorkflowSweeperTest {
         verify(executionDAO).updateTask(subWorkflowTask);
         verify(workflowExecutor, times(2)).decide(WORKFLOW_ID);
         verify(queueDAO, never()).push(anyString(), anyString(), anyLong());
-        verify(executionLockService).releaseLock(WORKFLOW_ID);
-    }
-
-    /*
-     * Backstop for a lock-contended sweep: when sweep() cannot acquire the workflow lock it must NOT
-     * bare-return (which would leave the workflow parked on its far-future decider-queue entry) — it
-     * re-queues for a prompt retry at lockTimeToTry/2. The primary re-queue on a contended decide
-     * lives in WorkflowExecutorOps.decide(); this covers sweep()'s own top-level lock miss.
-     */
-    @Test
-    public void sweepReQueuesOnLockMissInsteadOfParking() {
-        when(executionLockService.acquireLock(WORKFLOW_ID)).thenReturn(false);
-
-        workflowSweeper.sweep(WORKFLOW_ID);
-
-        // lockTimeToTry(500ms)/2 = 250ms — contention-scale, not lock-lease-scale.
-        verify(queueDAO).push(DECIDER_QUEUE, WORKFLOW_ID, 0, Duration.ofMillis(250));
-        // No decide on a contended lock, and no lock to release (early return before try/finally).
-        verify(workflowExecutor, never()).decide(WORKFLOW_ID);
-        verify(executionLockService, never()).releaseLock(WORKFLOW_ID);
-    }
-
-    /*
-     * When sweep() holds the lock but decide() returns null (its own lock miss or the workflow no
-     * longer exists), the sweeper does NOT re-queue here — decide() already re-queues on a lock miss,
-     * and a missing workflow must not be re-queued forever.
-     */
-    @Test
-    public void sweepDoesNotReQueueWhenDecideReturnsNull() {
-        WorkflowModel running =
-                newWorkflow(
-                        List.of(
-                                newTask(
-                                        "join",
-                                        TaskType.TASK_TYPE_JOIN,
-                                        TaskModel.Status.IN_PROGRESS)));
-        when(executionLockService.acquireLock(WORKFLOW_ID)).thenReturn(true);
-        when(workflowExecutor.getWorkflow(WORKFLOW_ID, true)).thenReturn(running);
-        when(workflowExecutor.decide(WORKFLOW_ID)).thenReturn(null);
-
-        workflowSweeper.sweep(WORKFLOW_ID);
-
-        verify(queueDAO, never()).push(anyString(), anyString(), anyInt(), any(Duration.class));
-        verify(queueDAO, never()).push(anyString(), anyString(), anyInt(), anyLong());
         verify(executionLockService).releaseLock(WORKFLOW_ID);
     }
 
