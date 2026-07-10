@@ -41,7 +41,10 @@ export const SCHEDULER_EXECUTION_URL = "/schedulerExecs";
 export const AGENT_DEFINITION_URL = {
   BASE: "/agents",
 };
-export const AGENT_EXECUTIONS_URL = "/agentExecutions";
+export const AGENT_EXECUTIONS_URL = {
+  BASE: "/agentExecutions",
+  ID_TASK_ID: "/agentExecutions/:id/:taskId?",
+};
 export const SKILLS_URL = {
   BASE: "/skills",
 };
