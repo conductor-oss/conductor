@@ -103,7 +103,9 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
               label="Push backstop poll (seconds)"
               value={get("inputParameters.pushBackstopPollSeconds") as number}
               coerceTo="integer"
-              onChange={(v) => set("inputParameters.pushBackstopPollSeconds", v)}
+              onChange={(v) =>
+                set("inputParameters.pushBackstopPollSeconds", v)
+              }
             />
           </Grid>
         </Grid>
