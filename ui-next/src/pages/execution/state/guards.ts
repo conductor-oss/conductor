@@ -6,6 +6,7 @@ import {
 } from "./types";
 import { HttpStatusCode } from "utils/constants/httpStatusCode";
 import { DoneInvokeEvent } from "xstate";
+import { isAgentWorkflowExecution as isAgentWorkflowExecutionHelper } from "../helpers";
 
 const WOKFLOW_TERMINATED_STATUS = [
   "COMPLETED",
@@ -31,6 +32,17 @@ export const isExecutionPaused = (context: ExecutionMachineContext) =>
 
 export const isTaskListTab = ({ currentTab }: ExecutionMachineContext) =>
   currentTab === ExecutionTabs.TASK_LIST_TAB;
+
+export const isAgentExecutionTab = ({ currentTab }: ExecutionMachineContext) =>
+  currentTab === ExecutionTabs.AGENT_EXECUTION_TAB;
+
+/**
+ * Gate for the "Agent Execution" debugger tab — only agent-classified
+ * executions (AgentSpan-compiled workflows) get the tab/default-tab treatment;
+ * regular workflows keep Diagram as the default view.
+ */
+export const isAgentWorkflowExecution = (context: ExecutionMachineContext) =>
+  isAgentWorkflowExecutionHelper(context?.execution);
 
 export const isTimeLineTab = ({ currentTab }: ExecutionMachineContext) =>
   currentTab === ExecutionTabs.TIMELINE_TAB;

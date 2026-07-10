@@ -277,15 +277,36 @@ public class WorkflowResourceTest {
 
     @Test
     public void testSearch() {
-        workflowResource.search(0, 100, "asc", "*", "*");
+        workflowResource.search(0, 100, "asc", "*", "*", null);
         verify(mockWorkflowService, times(1))
                 .searchWorkflows(anyInt(), anyInt(), anyString(), anyString(), anyString());
     }
 
     @Test
     public void testSearchV2() {
-        workflowResource.searchV2(0, 100, "asc", "*", "*");
+        workflowResource.searchV2(0, 100, "asc", "*", "*", null);
         verify(mockWorkflowService).searchWorkflowsV2(0, 100, "asc", "*", "*");
+    }
+
+    @Test
+    public void testSearchWithClassifierAppendsToQuery() {
+        workflowResource.search(0, 100, "asc", "*", "status IN (RUNNING)", "agent");
+        verify(mockWorkflowService)
+                .searchWorkflows(
+                        0, 100, "asc", "*", "status IN (RUNNING) AND classifier IN (agent)");
+    }
+
+    @Test
+    public void testSearchWithClassifierOnly() {
+        workflowResource.search(0, 100, "asc", "*", null, "agent, workflow");
+        verify(mockWorkflowService)
+                .searchWorkflows(0, 100, "asc", "*", "classifier IN (agent,workflow)");
+    }
+
+    @Test
+    public void testSearchV2WithClassifierAppendsToQuery() {
+        workflowResource.searchV2(0, 100, "asc", "*", null, "agent");
+        verify(mockWorkflowService).searchWorkflowsV2(0, 100, "asc", "*", "classifier IN (agent)");
     }
 
     @Test

@@ -6,10 +6,13 @@ import SectionContainer from "components/ui/layout/SectionContainer";
 import { useMemo } from "react";
 import { Helmet } from "react-helmet";
 import { useSearchParams } from "react-router-dom";
+import { AGENT_EXECUTIONS_URL } from "utils/constants/route";
 import { useFetch } from "utils/query";
 import { AgentExecutionSearchResult, AgentExecutionSummary } from "./types";
 
-const INTRO_CONTENT = `**Agent executions** are AgentSpan agent runs, executed as native Conductor workflows. Click an execution to open it in the workflow viewer.`;
+const INTRO_CONTENT = `**Agent executions** are AgentSpan agent runs, executed as native Conductor workflows. Click an execution to open it in the workflow viewer.
+
+No agents deployed yet? [Build one with the AgentSpan SDK](https://github.com/agentspan-ai/agentspan).`;
 
 export default function AgentExecutions() {
   const [searchParams] = useSearchParams();
@@ -35,7 +38,9 @@ export default function AgentExecutions() {
         grow: 1.5,
         tooltip: "Conductor workflow execution id",
         renderer: (executionId: string) => (
-          <NavLink path={`/execution/${executionId}`}>{executionId}</NavLink>
+          <NavLink path={`${AGENT_EXECUTIONS_URL.BASE}/${executionId}`}>
+            {executionId}
+          </NavLink>
         ),
       },
       {
