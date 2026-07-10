@@ -13,12 +13,13 @@
 #
 
 # startup.sh - startup script for the server docker image
+if ! [ "$SERVER_ONLY" = "true" ];  then
+    echo "Running Nginx in background"
+    # Start nginx as daemon
+    nginx
+fi
 
 echo "Starting Conductor server"
-
-echo "Running Nginx in background"
-# Start nginx as daemon
-nginx
 
 # Start the server
 cd /app/libs
