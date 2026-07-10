@@ -65,7 +65,12 @@ export const useGetSchedulerDefinitionsWithPagination = (
         ...(searchParams.workflowName && {
           workflowName: searchParams.workflowName,
         }),
-        ...(searchParams.name && { freeText: searchParams.name }),
+        // Send both param names: OSS backend uses "scheduleName", enterprise uses "name".
+        // Each backend picks the one it understands and ignores the other.
+        ...(searchParams.name && {
+          scheduleName: searchParams.name,
+          name: searchParams.name,
+        }),
         ...(searchParams.paused !== undefined && {
           paused: searchParams.paused,
         }),

@@ -9,7 +9,11 @@ import {
 import ActionButton from "components/ui/buttons/ActionButton";
 import Button from "components/ui/buttons/MuiButton";
 import ReactHookFormInput from "components/ui/react-hook-form/ReactHookFormInput";
-import { useSaveSchedule } from "pages/scheduler/schedulerHooks";
+import {
+  useCheckScheduleExists,
+  useSaveSchedule,
+} from "pages/scheduler/schedulerHooks";
+import { useState } from "react";
 import { DefaultValues, SubmitHandler, useForm } from "react-hook-form";
 import { IScheduleDto } from "types/Schedulers";
 import {
@@ -21,17 +25,6 @@ import * as yup from "yup";
 
 interface DialogData {
   name: string;
-}
-
-async function readResponseMessage(response: Response): Promise<string> {
-  const isJSON = response.headers
-    .get("content-type")
-    ?.includes("application/json");
-  if (isJSON) {
-    const body = await response.json();
-    return body?.message ?? response.statusText;
-  }
-  return response.text();
 }
 
 export interface CloneScheduleDialogProps {
@@ -72,28 +65,40 @@ const CloneScheduleDialog = ({
     defaultValues,
   });
 
+  const checkScheduleExists = useCheckScheduleExists();
+
   const { mutate: saveSchedule, isLoading: isSavingSchedule } = useSaveSchedule(
     {
       onSuccess: () => {
         onSuccess();
       },
       onError: async (error: Response) => {
-        if (error.status === 409) {
-          const message = formatScheduleNameConflictMessage(
-            await readResponseMessage(error),
-          );
-          setError("name", { type: "server", message });
-          return;
-        }
         await onError?.(error);
       },
     },
   );
 
-  const onSubmit: SubmitHandler<DialogData> = (data) => {
-    saveSchedule({
-      body: JSON.stringify({ ...schedule, name: data.name }),
-    });
+  const [isChecking, setIsChecking] = useState(false);
+
+  const onSubmit: SubmitHandler<DialogData> = async (data) => {
+    setIsChecking(true);
+    try {
+      const exists = await checkScheduleExists(data.name);
+      if (exists) {
+        setError("name", {
+          type: "server",
+          message: formatScheduleNameConflictMessage(
+            `Schedule '${data.name}' already exists.`,
+          ),
+        });
+        return;
+      }
+    } catch {
+      // Network error — let the save attempt proceed; the server will handle it.
+    } finally {
+      setIsChecking(false);
+    }
+    saveSchedule({ body: JSON.stringify({ ...schedule, name: data.name }) });
   };
 
   return (
@@ -135,8 +140,8 @@ const CloneScheduleDialog = ({
             lineHeight: 1.5,
           }}
           onClick={() => handleSubmit(onSubmit)()}
-          disabled={!isValid}
-          progress={isSavingSchedule}
+          disabled={!isValid || isChecking || isSavingSchedule}
+          progress={isChecking || isSavingSchedule}
         >
           Clone
         </ActionButton>
