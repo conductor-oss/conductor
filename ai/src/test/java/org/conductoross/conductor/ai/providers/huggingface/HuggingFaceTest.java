@@ -76,6 +76,17 @@ class HuggingFaceTest {
             var chatModel = huggingFace.getChatModel();
             assertNotNull(chatModel);
         }
+
+        @Test
+        void testGetChatModel_isResponsesModel_notLegacyTextGeneration() {
+            // The router migration (conductor-oss#1244) replaced the legacy text-only
+            // HuggingFaceChatModel with the shared, media-capable Responses model, which
+            // forwards UserMessage media as input_image content parts.
+            assertInstanceOf(
+                    org.conductoross.conductor.ai.providers.openai.OpenAIResponsesChatModel.class,
+                    huggingFace.getChatModel(),
+                    "HuggingFace must use OpenAIResponsesChatModel (multimodal) after the router migration");
+        }
     }
 
     @Nested
