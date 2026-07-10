@@ -5,16 +5,16 @@ export const LOCAL_STORAGE_KEY = {
 };
 
 export const FORBIDDEN_DELETE_ERROR_MESSAGE =
-  "Deletion failed, it looks like you do not have permissions to delete this resource.";
+  "You don't have permission to delete this resource.";
 
 export const FORBIDDEN_PUT_ERROR_MESSAGE =
-  "Update failed, it looks like you do not have permissions to update this resource.";
+  "You don't have permission to update this resource.";
 
 export const FORBIDDEN_POST_ERROR_MESSAGE =
-  "Creation failed, it looks like you do not have permissions to create this resource.";
+  "You don't have permission to create this resource.";
 
 export const FORBIDDEN_GET_ERROR_MESSAGE =
-  "It looks like you do not have permissions to get this resource.";
+  "You don't have permission to view this resource.";
 
 export const generateForbiddenMessage = (method: HTTPMethods) => {
   switch (method) {
