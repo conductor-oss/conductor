@@ -15,7 +15,9 @@ package com.netflix.conductor.service;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -24,7 +26,9 @@ import org.mockito.Mock;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.Workflow;
@@ -35,6 +39,8 @@ import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.listener.TaskStatusListener;
+import com.netflix.conductor.core.secrets.RuntimeMetadataResolver;
+import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 
@@ -43,7 +49,9 @@ import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
@@ -60,6 +68,8 @@ public class ExecutionServiceTest {
     @Mock private ExternalPayloadStorage externalPayloadStorage;
     @Mock private SystemTaskRegistry systemTaskRegistry;
     @Mock private TaskStatusListener taskStatusListener;
+    @Mock private ParametersUtils parametersUtils;
+    @Mock private RuntimeMetadataResolver runtimeMetadataResolver;
 
     private ExecutionService executionService;
 
@@ -73,6 +83,7 @@ public class ExecutionServiceTest {
     public void setup() {
         when(conductorProperties.getTaskExecutionPostponeDuration())
                 .thenReturn(Duration.ofSeconds(60));
+        when(parametersUtils.substituteSecrets(any())).thenAnswer(inv -> inv.getArgument(0));
         executionService =
                 new ExecutionService(
                         workflowExecutor,
@@ -81,7 +92,9 @@ public class ExecutionServiceTest {
                         conductorProperties,
                         externalPayloadStorage,
                         systemTaskRegistry,
-                        taskStatusListener);
+                        taskStatusListener,
+                        parametersUtils,
+                        runtimeMetadataResolver);
         WorkflowDef workflowDef = new WorkflowDef();
         workflow1 = new Workflow();
         workflow1.setWorkflowId("wf1");
@@ -379,5 +392,86 @@ public class ExecutionServiceTest {
         // Assert: null returned, no ack called
         assertNull(result);
         verify(queueDAO, times(0)).ack(anyString(), anyString());
+    }
+
+    @Test
+    public void testPollSubstitutesSecretsOnOutgoingTask() {
+        String taskType = "t";
+        String taskId = "task-1";
+        TaskModel taskModel = new TaskModel();
+        taskModel.setTaskId(taskId);
+        taskModel.setTaskType(taskType);
+        taskModel.setStatus(TaskModel.Status.SCHEDULED);
+        Map<String, Object> literal = new HashMap<>();
+        literal.put("pwd", "${workflow.secrets.DB_PASSWORD}");
+        taskModel.setInputData(literal);
+
+        when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(List.of(taskId));
+        when(executionDAOFacade.getTaskModel(taskId)).thenReturn(taskModel);
+        Map<String, Object> resolved = new HashMap<>();
+        resolved.put("pwd", "s3cr3t");
+        when(parametersUtils.substituteSecrets(any())).thenReturn(resolved);
+
+        List<Task> polled = executionService.poll(taskType, "worker", null, 1, 100);
+
+        assertEquals(1, polled.size());
+        assertEquals("s3cr3t", polled.get(0).getInputData().get("pwd"));
+        // persisted model keeps the literal
+        assertEquals("${workflow.secrets.DB_PASSWORD}", taskModel.getInputData().get("pwd"));
+    }
+
+    @Test
+    public void testPollInjectsDeclaredValuesOntoOutgoingTask() {
+        String taskType = "t";
+        String taskId = "task-1";
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRuntimeMetadata(List.of("API_KEY"));
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setTaskDefinition(taskDef);
+
+        TaskModel taskModel = new TaskModel();
+        taskModel.setTaskId(taskId);
+        taskModel.setTaskType(taskType);
+        taskModel.setStatus(TaskModel.Status.SCHEDULED);
+        taskModel.setWorkflowTask(workflowTask);
+
+        when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(List.of(taskId));
+        when(executionDAOFacade.getTaskModel(taskId)).thenReturn(taskModel);
+        when(runtimeMetadataResolver.resolve(List.of("API_KEY")))
+                .thenReturn(Map.of("API_KEY", "token-value-123"));
+
+        List<Task> polled = executionService.poll(taskType, "worker", null, 1, 100);
+
+        assertEquals(1, polled.size());
+        Task returnedTask = polled.get(0);
+        assertEquals("token-value-123", returnedTask.getRuntimeMetadata().get("API_KEY"));
+        verify(runtimeMetadataResolver).resolve(List.of("API_KEY"));
+    }
+
+    @Test
+    public void testPollDeliversTaskWhenResolutionThrows() {
+        String taskType = "t";
+        String taskId = "task-1";
+
+        TaskModel taskModel = new TaskModel();
+        taskModel.setTaskId(taskId);
+        taskModel.setTaskType(taskType);
+        taskModel.setStatus(TaskModel.Status.SCHEDULED);
+
+        when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(List.of(taskId));
+        when(executionDAOFacade.getTaskModel(taskId)).thenReturn(taskModel);
+        when(parametersUtils.substituteSecrets(any()))
+                .thenThrow(new RuntimeException("resolution failed"));
+
+        List<Task> polled = executionService.poll(taskType, "worker", null, 1, 100);
+
+        // The task is still delivered (resolution error is isolated) — not stranded in a
+        // re-enqueue loop, and its resolved values are simply absent.
+        assertEquals(1, polled.size());
+        assertEquals(taskId, polled.get(0).getTaskId());
+        assertNull(polled.get(0).getRuntimeMetadata().get("API_KEY"));
+        // the outer catch's re-enqueue (postpone) is NOT triggered
+        verify(queueDAO, times(0)).postpone(anyString(), eq(taskId), anyInt(), anyLong());
     }
 }
