@@ -30,6 +30,15 @@ export const generateForbiddenMessage = (method: HTTPMethods) => {
   }
 };
 
+/** User-facing message when a schedule name is already taken (strips API overwrite hint). */
+export const formatScheduleNameConflictMessage = (message: string): string => {
+  const match = message.match(/^Schedule '([^']+)' already exists/);
+  if (match) {
+    return `Schedule '${match[1]}' already exists.`;
+  }
+  return message.replace(/\.\s*Set overwrite=true to update\.?$/, ".");
+};
+
 /**
  * output: Feb 21, 2023 12:19 AM
  */
