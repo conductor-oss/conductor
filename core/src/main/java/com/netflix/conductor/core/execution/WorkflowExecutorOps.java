@@ -1211,6 +1211,14 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         watch.start();
         boolean lockAcquired = executionLockService.acquireLock(workflowId);
         if (!lockAcquired) {
+            // Lock contention is transient (millisecond-scale). Re-queue the workflow for a prompt
+            // retry so that a missed decide — whether triggered by a completion event
+            // (updateTask / AsyncSystemTaskExecutor) or the sweeper — does not silently fall back
+            // to the workflow's decider-queue entry, which a polled task postpones out to
+            // responseTimeoutSeconds (the multi-minute pause). Backoff is lockTimeToTry-scale, not
+            // lockLeaseTime-scale (the latter is only appropriate for an orphaned lock).
+            long backoffMillis = Math.max(properties.getLockTimeToTry().toMillis() / 2, 100);
+            queueDAO.push(DECIDER_QUEUE, workflowId, 0, Duration.ofMillis(backoffMillis));
             return null;
         }
         try {
