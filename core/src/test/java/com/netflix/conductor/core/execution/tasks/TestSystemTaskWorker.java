@@ -653,6 +653,22 @@ public class TestSystemTaskWorker {
         assertTrue("Dedicated pool must be shut down", dedicatedPool.isShutdown());
     }
 
+    @Test
+    public void testTaskPolledDuringShutdownIsResetWithoutAcknowledgement() {
+        when(queueDAO.pop(anyString(), anyInt(), anyInt()))
+                .thenAnswer(
+                        invocation -> {
+                            systemTaskWorker.stop();
+                            return List.of("late-task");
+                        });
+
+        systemTaskWorker.pollAndExecute(new TestTask(), TEST_TASK);
+
+        verify(queueDAO).resetOffsetTime(TEST_TASK, "late-task");
+        verify(executionService, Mockito.never()).ackTaskReceived("late-task");
+        verify(asyncSystemTaskExecutor, Mockito.never()).execute(any(), eq("late-task"));
+    }
+
     // -----------------------------------------------------------------------
     // permitCount/threadCount oversubscription — degrades gracefully, does not fail startup
     // -----------------------------------------------------------------------

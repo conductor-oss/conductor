@@ -21,6 +21,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -59,6 +60,7 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
     private final ConductorProperties properties;
     private final ExecutionService executionService;
     private final int queuePopTimeout;
+    private final ReentrantReadWriteLock dispatchLock = new ReentrantReadWriteLock();
 
     ConcurrentHashMap<String, ExecutionConfig> queueExecutionConfigMap = new ConcurrentHashMap<>();
 
@@ -96,14 +98,21 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
                 .values()
                 .forEach(config -> executors.add(config.getExecutorService()));
 
-        long timeoutSeconds = properties.getSystemTaskWorkerCallbackDuration().getSeconds();
-        executors.forEach(ExecutorService::shutdown);
+        long deadline =
+                System.nanoTime() + properties.getSystemTaskWorkerCallbackDuration().toNanos();
+        dispatchLock.writeLock().lock();
+        try {
+            executors.forEach(ExecutorService::shutdown);
+        } finally {
+            dispatchLock.writeLock().unlock();
+        }
         for (ExecutorService executor : executors) {
+            long remainingNanos = deadline - System.nanoTime();
             try {
-                if (!executor.awaitTermination(timeoutSeconds, TimeUnit.SECONDS)) {
+                if (remainingNanos <= 0
+                        || !executor.awaitTermination(remainingNanos, TimeUnit.NANOSECONDS)) {
                     LOGGER.warn(
-                            "System task executor did not drain within {} seconds, forcing shutdown",
-                            timeoutSeconds);
+                            "System task executor did not drain before the shutdown deadline, forcing shutdown");
                     executor.shutdownNow();
                 }
             } catch (InterruptedException e) {
@@ -248,11 +257,21 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
                     queueName);
             Monitors.recordTaskPollCount(queueName, 1);
             try {
-                executionService.ackTaskReceived(taskId);
-                CompletableFuture.runAsync(
-                                () -> asyncSystemTaskExecutor.execute(systemTask, taskId),
-                                executorService)
-                        .whenComplete((r, e) -> semaphoreUtil.completeProcessing(1));
+                dispatchLock.readLock().lock();
+                try {
+                    if (!isRunning() || executorService.isShutdown()) {
+                        queueDAO.resetOffsetTime(queueName, taskId);
+                        permitsToRelease++;
+                        continue;
+                    }
+                    executionService.ackTaskReceived(taskId);
+                    CompletableFuture.runAsync(
+                                    () -> asyncSystemTaskExecutor.execute(systemTask, taskId),
+                                    executorService)
+                            .whenComplete((r, e) -> semaphoreUtil.completeProcessing(1));
+                } finally {
+                    dispatchLock.readLock().unlock();
+                }
             } catch (Throwable e) {
                 // Dispatch failed for this task — release its permit immediately.
                 permitsToRelease++;
