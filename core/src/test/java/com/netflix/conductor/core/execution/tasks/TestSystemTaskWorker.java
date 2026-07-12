@@ -18,7 +18,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.After;
 import org.junit.Before;
@@ -32,6 +34,7 @@ import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionService;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -40,6 +43,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -308,11 +312,10 @@ public class TestSystemTaskWorker {
 
         // Unblock tasks and wait for whenComplete to fire.
         release.countDown();
-        Thread.sleep(200);
-        assertEquals(
-                "All 3 permits restored after completion",
+        awaitAvailableSlots(
+                systemTaskWorker.getExecutionConfig(TEST_TASK).getSemaphoreUtil(),
                 permitsBefore,
-                systemTaskWorker.getExecutionConfig(TEST_TASK).getSemaphoreUtil().availableSlots());
+                "All 3 permits restored after completion");
     }
 
     @Test
@@ -360,13 +363,37 @@ public class TestSystemTaskWorker {
 
         int permitsBefore =
                 systemTaskWorker.getExecutionConfig(TEST_TASK).getSemaphoreUtil().availableSlots();
-        systemTaskWorker.pollAndExecute(new TestTask(), TEST_TASK);
+        boolean executed = systemTaskWorker.pollAndExecute(new TestTask(), TEST_TASK);
 
         // t1's permit released immediately on exception; t2's permit still held (async in-flight).
         assertEquals(
                 "t1 permit released immediately, t2 still in-flight",
                 permitsBefore - 1,
                 systemTaskWorker.getExecutionConfig(TEST_TASK).getSemaphoreUtil().availableSlots());
+        // A batch with at least one successful dispatch reports progress — the loop keeps polling.
+        assertTrue("Partial dispatch failure must still report progress", executed);
+    }
+
+    @Test
+    public void testAllDispatchFailuresReportNoProgress() {
+        // Queue store healthy (pop succeeds) but execution store down (every ack throws). The
+        // poll must report no progress so the loop sleeps pollInterval instead of hot-spinning
+        // through the backlog.
+        when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(List.of("t1", "t2"));
+        doThrow(new RuntimeException("execution store down"))
+                .when(executionService)
+                .ackTaskReceived(anyString());
+
+        int permitsBefore =
+                systemTaskWorker.getExecutionConfig(TEST_TASK).getSemaphoreUtil().availableSlots();
+        boolean executed = systemTaskWorker.pollAndExecute(new TestTask(), TEST_TASK);
+
+        assertFalse("An all-failed batch must report no progress", executed);
+        assertEquals(
+                "All permits must be released when every dispatch fails",
+                permitsBefore,
+                systemTaskWorker.getExecutionConfig(TEST_TASK).getSemaphoreUtil().availableSlots());
+        verify(asyncSystemTaskExecutor, Mockito.never()).execute(any(), anyString());
     }
 
     @Test
@@ -442,11 +469,10 @@ public class TestSystemTaskWorker {
                 isoDSemaphore.availableSlots());
 
         release.countDown();
-        Thread.sleep(200);
-        assertEquals(
-                "Isolated semaphore must be fully restored after completion",
+        awaitAvailableSlots(
+                isoDSemaphore,
                 permitsBefore,
-                isoDSemaphore.availableSlots());
+                "Isolated semaphore must be fully restored after completion");
     }
 
     // -----------------------------------------------------------------------
@@ -494,11 +520,10 @@ public class TestSystemTaskWorker {
 
         // Release tasks → permits restored.
         release.countDown();
-        Thread.sleep(200);
-        assertEquals(
-                "Configured permit count restored after tasks complete",
+        awaitAvailableSlots(
+                systemTaskWorker.getExecutionConfig(TEST_TASK).getSemaphoreUtil(),
                 2,
-                systemTaskWorker.getExecutionConfig(TEST_TASK).getSemaphoreUtil().availableSlots());
+                "Configured permit count restored after tasks complete");
     }
 
     @Test
@@ -550,6 +575,207 @@ public class TestSystemTaskWorker {
         verify(queueDAO).resetOffsetTime(TEST_TASK, "r2");
         // Nothing should have been dispatched.
         verify(asyncSystemTaskExecutor, Mockito.never()).execute(any(), anyString());
+    }
+
+    // -----------------------------------------------------------------------
+    // pollAndExecuteLoop must survive an exception escaping pollAndExecute()
+    // -----------------------------------------------------------------------
+
+    @Test
+    public void testPollAndExecuteLoopSurvivesUncaughtException() throws Exception {
+        // availableSlots() is called before any try/catch inside pollAndExecute — an exception
+        // there previously escaped pollAndExecute entirely. It must not kill the poller loop.
+        when(properties.getSystemTaskWorkerPollInterval()).thenReturn(Duration.ofMillis(10));
+        systemTaskWorker =
+                new SystemTaskWorker(
+                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+        systemTaskWorker.start();
+
+        SemaphoreUtil flakySemaphore = mock(SemaphoreUtil.class);
+        when(flakySemaphore.availableSlots())
+                .thenThrow(new RuntimeException("boom"))
+                .thenReturn(10);
+        ExecutionConfig flakyConfig =
+                new ExecutionConfig(
+                        systemTaskWorker.getExecutionConfig(TEST_TASK).getExecutorService(),
+                        flakySemaphore);
+        systemTaskWorker.queueExecutionConfigMap.put(TEST_TASK, flakyConfig);
+
+        CountDownLatch poppedAfterFailure = new CountDownLatch(1);
+        when(queueDAO.pop(anyString(), anyInt(), anyInt()))
+                .thenAnswer(
+                        invocation -> {
+                            poppedAfterFailure.countDown();
+                            return Collections.emptyList();
+                        });
+
+        Thread loopThread =
+                new Thread(() -> systemTaskWorker.pollAndExecuteLoop(new TestTask(), TEST_TASK));
+        loopThread.setDaemon(true);
+        loopThread.start();
+
+        // The first iteration throws; the loop must recover and keep polling on the next one.
+        assertTrue(
+                "Loop must keep polling after an uncaught exception",
+                poppedAfterFailure.await(5, TimeUnit.SECONDS));
+    }
+
+    // -----------------------------------------------------------------------
+    // doStop() must drain in-flight work instead of leaving it to be hard-killed
+    // -----------------------------------------------------------------------
+
+    @Test
+    public void testDoStopShutsDownSharedAndDedicatedPools() {
+        ConductorProperties.TaskWorkerConfig httpConfig =
+                new ConductorProperties.TaskWorkerConfig();
+        httpConfig.setThreadCount(2);
+        Map<String, ConductorProperties.TaskWorkerConfig> configs = new HashMap<>();
+        configs.put("HTTP", httpConfig);
+        when(properties.getTaskWorkerConfigs()).thenReturn(configs);
+        when(properties.getSystemTaskWorkerCallbackDuration()).thenReturn(Duration.ofSeconds(5));
+        systemTaskWorker =
+                new SystemTaskWorker(
+                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+        systemTaskWorker.start();
+
+        ExecutorService sharedPool =
+                systemTaskWorker.getExecutionConfig(TEST_TASK).getExecutorService();
+        ExecutorService dedicatedPool =
+                systemTaskWorker.getExecutionConfig("HTTP").getExecutorService();
+        assertNotSame(
+                "HTTP override must use a pool distinct from the shared pool",
+                sharedPool,
+                dedicatedPool);
+
+        systemTaskWorker.doStop();
+
+        assertTrue("Shared pool must be shut down", sharedPool.isShutdown());
+        assertTrue("Dedicated pool must be shut down", dedicatedPool.isShutdown());
+    }
+
+    // -----------------------------------------------------------------------
+    // permitCount/threadCount oversubscription — degrades gracefully, does not fail startup
+    // -----------------------------------------------------------------------
+
+    @Test
+    public void testOversubscribedPermitCountIsHonoredNotClamped() {
+        // permitCount=8 against a dedicated pool of only threadCount=2. This is an operator
+        // misconfiguration (warned about at startup), but must not fail construction — the
+        // semaphore is still sized to the configured permitCount; excess work simply queues in
+        // the pool instead of running concurrently.
+        ConductorProperties.TaskWorkerConfig httpConfig =
+                new ConductorProperties.TaskWorkerConfig();
+        httpConfig.setThreadCount(2);
+        httpConfig.setPermitCount(8);
+        Map<String, ConductorProperties.TaskWorkerConfig> configs = new HashMap<>();
+        configs.put("HTTP", httpConfig);
+        when(properties.getTaskWorkerConfigs()).thenReturn(configs);
+        systemTaskWorker =
+                new SystemTaskWorker(
+                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+
+        ExecutionConfig httpExecConfig = systemTaskWorker.getExecutionConfig("HTTP");
+
+        assertEquals(8, httpExecConfig.getSemaphoreUtil().availableSlots());
+    }
+
+    // -----------------------------------------------------------------------
+    // Poller lifecycle — loop must tolerate not-yet-started and stop()/start()
+    // -----------------------------------------------------------------------
+
+    @Test
+    public void testPollerStartedBeforeLifecycleStartWaitsForStart() throws Exception {
+        when(properties.getSystemTaskWorkerPollInterval()).thenReturn(Duration.ofMillis(10));
+        systemTaskWorker =
+                new SystemTaskWorker(
+                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+        // NOT started — simulates IsolatedTaskQueueProducer registering a queue during context
+        // refresh, before SmartLifecycle.start() has run.
+
+        when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(List.of("taskId"));
+        CountDownLatch executed = new CountDownLatch(1);
+        doAnswer(
+                        invocation -> {
+                            executed.countDown();
+                            return null;
+                        })
+                .when(asyncSystemTaskExecutor)
+                .execute(any(), anyString());
+
+        systemTaskWorker.startPolling(new TestTask(), TEST_TASK);
+
+        // While the worker is not running, the poller must idle — no pops, no executions.
+        Thread.sleep(200);
+        verify(queueDAO, Mockito.never()).pop(anyString(), anyInt(), anyInt());
+
+        systemTaskWorker.start();
+        assertTrue(
+                "Poller must begin executing once the worker starts",
+                executed.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testPollingLoopResumesAfterStopStartCycle() throws Exception {
+        // stop() now drains and shuts down the executor pools (doStop()), matching real Spring
+        // shutdown semantics — SmartLifecycle.stop() fires once, right before process exit, so a
+        // genuine restart with the SAME pools accepting new work isn't a supported scenario. What
+        // must still hold is narrower: the poller loop itself never dies permanently when
+        // isRunning() flips back to false-then-true — it keeps calling pollAndExecute() rather
+        // than getting stuck in the idle branch forever.
+        when(properties.getSystemTaskWorkerPollInterval()).thenReturn(Duration.ofMillis(10));
+        systemTaskWorker =
+                new SystemTaskWorker(
+                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+        systemTaskWorker.start();
+
+        AtomicReference<CountDownLatch> poppedRef = new AtomicReference<>(new CountDownLatch(1));
+        when(queueDAO.pop(anyString(), anyInt(), anyInt()))
+                .thenAnswer(
+                        invocation -> {
+                            poppedRef.get().countDown();
+                            return Collections.emptyList();
+                        });
+
+        systemTaskWorker.startPolling(new TestTask(), TEST_TASK);
+        assertTrue("Poller must poll while running", poppedRef.get().await(5, TimeUnit.SECONDS));
+
+        systemTaskWorker.stop();
+        Thread.sleep(100); // let the loop observe the stop and park
+
+        poppedRef.set(new CountDownLatch(1));
+        systemTaskWorker.start();
+        assertTrue(
+                "Poller loop must resume calling pollAndExecute after stop()/start(), even though"
+                        + " stop() has shut down the executor pools",
+                poppedRef.get().await(5, TimeUnit.SECONDS));
+    }
+
+    // -----------------------------------------------------------------------
+    // systemTaskMaxPollCount backwards compatibility
+    // -----------------------------------------------------------------------
+
+    @Test
+    public void testMaxPollCountBelowOneDoesNotStallPolling() {
+        // Historically systemTaskMaxPollCount < 1 meant "no explicit cap" (fall back to thread
+        // count). Such configs must keep polling, capped by available permits — not silently
+        // stall.
+        when(properties.getSystemTaskMaxPollCount()).thenReturn(0);
+        when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(Collections.emptyList());
+
+        systemTaskWorker.pollAndExecute(new TestTask(), TEST_TASK);
+
+        // Batch size falls back to available permits (10 = systemTaskWorkerThreadCount).
+        verify(queueDAO).pop(eq(TEST_TASK), eq(10), anyInt());
+    }
+
+    /** Permits are released asynchronously (whenComplete) — poll instead of a fixed sleep. */
+    private static void awaitAvailableSlots(SemaphoreUtil semaphore, int expected, String message)
+            throws InterruptedException {
+        long deadline = System.currentTimeMillis() + 5000;
+        while (semaphore.availableSlots() != expected && System.currentTimeMillis() < deadline) {
+            Thread.sleep(10);
+        }
+        assertEquals(message, expected, semaphore.availableSlots());
     }
 
     static class TestTask extends WorkflowSystemTask {

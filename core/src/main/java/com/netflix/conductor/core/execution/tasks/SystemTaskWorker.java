@@ -13,12 +13,14 @@
 package com.netflix.conductor.core.execution.tasks;
 
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -81,6 +83,36 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
         LOGGER.info("SystemTaskWorker initialized with {} threads", threadCount);
     }
 
+    @Override
+    public void doStop() {
+        // Pool worker threads are not daemon threads (BasicThreadFactory falls back to
+        // Executors.defaultThreadFactory() when .daemon() isn't set), but that does NOT keep the
+        // JVM alive on SIGTERM: Runtime.exit() runs shutdown hooks then calls halt(), which does
+        // not wait for ordinary threads. Without draining here, every in-flight task is truncated
+        // instantly on every restart/deploy instead of being given a chance to finish.
+        Set<ExecutorService> executors = new HashSet<>();
+        executors.add(sharedExecutorService);
+        queueExecutionConfigMap
+                .values()
+                .forEach(config -> executors.add(config.getExecutorService()));
+
+        long timeoutSeconds = properties.getSystemTaskWorkerCallbackDuration().getSeconds();
+        executors.forEach(ExecutorService::shutdown);
+        for (ExecutorService executor : executors) {
+            try {
+                if (!executor.awaitTermination(timeoutSeconds, TimeUnit.SECONDS)) {
+                    LOGGER.warn(
+                            "System task executor did not drain within {} seconds, forcing shutdown",
+                            timeoutSeconds);
+                    executor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
     public void startPolling(WorkflowSystemTask systemTask) {
         startPolling(systemTask, systemTask.getTaskType());
     }
@@ -104,13 +136,36 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
                     permits,
                     pollInterval);
         }
-        Executors.newSingleThreadExecutor()
-                .execute(() -> this.pollAndExecuteLoop(systemTask, queueName));
+        Thread poller =
+                new Thread(
+                        () -> this.pollAndExecuteLoop(systemTask, queueName),
+                        "system-task-poller-" + queueName);
+        poller.setDaemon(true);
+        poller.start();
     }
 
-    private void pollAndExecuteLoop(WorkflowSystemTask systemTask, String queueName) {
-        while (isRunning()) {
-            boolean executed = pollAndExecute(systemTask, queueName);
+    @VisibleForTesting
+    void pollAndExecuteLoop(WorkflowSystemTask systemTask, String queueName) {
+        while (true) {
+            if (!isRunning()) {
+                // Not started yet (startPolling can be called before SmartLifecycle.start(), e.g.
+                // by IsolatedTaskQueueProducer during context refresh) or stopped. Idle and
+                // re-check so pollers survive stop()/start() cycles instead of exiting for good.
+                Uninterruptibles.sleepUninterruptibly(Duration.ofMillis(pollInterval));
+                continue;
+            }
+            boolean executed;
+            try {
+                executed = pollAndExecute(systemTask, queueName);
+            } catch (Throwable t) {
+                // No exception raised from pollAndExecute should ever be able to kill this loop —
+                // there is no Thread.UncaughtExceptionHandler in this codebase, so an escaped
+                // exception here would silently and permanently stop this queue's poller.
+                Monitors.recordTaskPollError(
+                        QueueUtils.getTaskType(queueName), t.getClass().getSimpleName());
+                LOGGER.error("Uncaught error polling/executing queue:{}", queueName, t);
+                executed = false;
+            }
             if (!executed) {
                 Uninterruptibles.sleepUninterruptibly(Duration.ofMillis(pollInterval));
             }
@@ -125,9 +180,13 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
         String taskName = QueueUtils.getTaskType(queueName);
 
         // Use available permits as a backpressure hint: never request more tasks than we can
-        // immediately dispatch. Cap at systemTaskMaxPollCount (the batch size knob).
-        int batchSize =
-                Math.min(semaphoreUtil.availableSlots(), properties.getSystemTaskMaxPollCount());
+        // immediately dispatch. Cap at systemTaskMaxPollCount (the batch size knob); values < 1
+        // historically mean "no explicit cap" — do not stall polling for such configs.
+        int maxPollCount = properties.getSystemTaskMaxPollCount();
+        int batchSize = semaphoreUtil.availableSlots();
+        if (maxPollCount > 0) {
+            batchSize = Math.min(batchSize, maxPollCount);
+        }
         if (batchSize <= 0) {
             Monitors.recordSystemTaskWorkerPollingLimited(queueName);
             return false;
@@ -159,9 +218,9 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
         // Acquire exactly as many permits as tasks received. Since this is the only thread that
         // decrements this queue's semaphore and taskCount <= batchSize <= availableSlots at the
         // time of the check above, tryAcquire should always succeed. If it doesn't (e.g. due to a
-        // bug or future code change violating the single-poller invariant), reset the tasks back to
-        // score=now so they are immediately re-deliverable — do NOT leave them invisible for the
-        // full 30-second unack timeout.
+        // bug or future code change violating the single-poller invariant), reset the tasks so
+        // they become re-deliverable as soon as the queue implementation allows (some impls only
+        // redeliver popped messages after the unack sweep), instead of silently dropping them.
         if (!semaphoreUtil.acquireSlots(taskCount)) {
             LOGGER.warn(
                     "Could not acquire {} permits for queue {} — resetting tasks for immediate retry",
@@ -204,7 +263,11 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
         if (permitsToRelease > 0) {
             semaphoreUtil.completeProcessing(permitsToRelease);
         }
-        return true;
+        // Report progress only if at least one task was dispatched. When the whole batch failed
+        // (e.g. the execution store is down while the queue store is healthy), returning false
+        // makes the poll loop sleep pollInterval instead of hot-spinning through the backlog,
+        // churning messages invisible and flooding logs/metrics at pop-latency speed.
+        return permitsToRelease < taskCount;
     }
 
     @VisibleForTesting
@@ -225,6 +288,7 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
             // Dedicated pool: this task type gets its own threads, isolated from everything else.
             int threads = override.getThreadCount();
             int permits = override.getPermitCount() > 0 ? override.getPermitCount() : threads;
+            warnIfOversubscribed(taskType, permits, threads);
             LOGGER.info(
                     "Task type {} using dedicated pool: threads={}, permits={}",
                     taskType,
@@ -241,9 +305,22 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
                         ? override.getPermitCount()
                         : systemTaskWorkerThreadCount;
         if (override != null) {
+            warnIfOversubscribed(taskType, permits, systemTaskWorkerThreadCount);
             LOGGER.info("Task type {} using shared pool with permits={}", taskType, permits);
         }
         return new ExecutionConfig(sharedExecutorService, permits);
+    }
+
+    private void warnIfOversubscribed(String taskType, int permits, int poolSize) {
+        if (permits > poolSize) {
+            LOGGER.warn(
+                    "Task type {} taskWorkerConfigs.permitCount={} exceeds its pool size of {} "
+                            + "threads; the excess will queue instead of running concurrently. "
+                            + "Consider raising threadCount or lowering permitCount.",
+                    taskType,
+                    permits,
+                    poolSize);
+        }
     }
 
     private ConductorProperties.TaskWorkerConfig findTaskWorkerConfig(String taskType) {

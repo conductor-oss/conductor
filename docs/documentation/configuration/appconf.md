@@ -39,6 +39,7 @@ All of these parameters are grouped under the `conductor.app` namespace.
 | systemTaskWorkerPollInterval                | Duration | The interval at which system task queues will be polled by system task workers. Example: `50ms`                                                                                 | Default is 50 milliseconds                              |
 | systemTaskWorkerExecutionNamespace          | String   | The namespace for the system task workers to provide instance-level isolation. Example: `namespace1`, `namespace2`                                                              | Default is an empty string                              |
 | isolatedSystemTaskWorkerThreadCount         | int      | The number of threads to be used within the threadpool for system task workers in each isolation group. Example: `4`                                                            | Default is 1                                            |
+| taskWorkerConfigs                           | Map      | Per-task-type worker overrides, keyed by task type. `<TYPE>.threadCount` > 0 gives the type a dedicated thread pool (otherwise it shares the common pool); `<TYPE>.permitCount` caps how many tasks of the type may be in flight at once (defaults to the effective thread count). Example: `taskWorkerConfigs.HTTP.threadCount=20` | Default is empty (all types share the common pool)      |
 | asyncUpdateShortRunningWorkflowDuration     | Duration | The duration of workflow execution qualifying as short-running when async indexing to Elasticsearch is enabled. Example: `30s`                                                  | Default is 30 seconds                                   |
 | asyncUpdateDelay                            | Duration | The delay with which short-running workflows will be updated in Elasticsearch when async indexing is enabled. Example: `60s`                                                    | Default is 60 seconds                                   |
 | ownerEmailMandatory                         | boolean  | Whether to validate the owner email field as mandatory within workflow and task definitions. Example: `true` or `false`                                                         | Default is true                                         |
@@ -132,6 +133,11 @@ conductor.app.systemTaskWorkerExecutionNamespace=
 
 # The number of threads to be used within the threadpool for system task workers in each isolation group. Example: 4
 conductor.app.isolatedSystemTaskWorkerThreadCount=4
+
+# Per-task-type system task worker overrides. threadCount > 0 gives the task type its own
+# dedicated thread pool; permitCount caps in-flight tasks of the type (default: effective thread count)
+#conductor.app.taskWorkerConfigs.HTTP.threadCount=20
+#conductor.app.taskWorkerConfigs.LLM_TEXT_COMPLETE.permitCount=4
 
 # The duration of workflow execution qualifying as short-running when async indexing to Elasticsearch is enabled. Example: 30s
 conductor.app.asyncUpdateShortRunningWorkflowDuration=30s
