@@ -246,6 +246,33 @@ public class TaskTest {
     }
 
     @Test
+    public void testExecutionMetadataHelperGettersNotSerialized() throws Exception {
+        Task task = new Task();
+        task.setTaskId("task-1");
+
+        ExecutionMetadata executionMetadata = new ExecutionMetadata();
+        executionMetadata.setServerSendTime(1000L);
+        executionMetadata.setClientReceiveTime(2000L);
+        task.setExecutionMetadata(executionMetadata);
+
+        String json = objectMapper.writeValueAsString(task);
+
+        // The convenience/helper getters must NOT leak as JSON properties.
+        assertFalse(json.contains("orCreateExecutionMetadata"));
+        assertFalse(json.contains("executionMetadataIfHasData"));
+
+        // The real executionMetadata property is still serialized and round-trips.
+        assertTrue(json.contains("\"executionMetadata\""));
+        assertTrue(json.contains("\"serverSendTime\""));
+
+        Task deserialized = objectMapper.readValue(json, Task.class);
+        assertNotNull(deserialized.getExecutionMetadata());
+        assertEquals(Long.valueOf(1000L), deserialized.getExecutionMetadata().getServerSendTime());
+        assertEquals(
+                Long.valueOf(2000L), deserialized.getExecutionMetadata().getClientReceiveTime());
+    }
+
+    @Test
     public void testRuntimeMetadataExcludedFromCopy() {
         Task task = new Task();
         task.setTaskId("task-1");
