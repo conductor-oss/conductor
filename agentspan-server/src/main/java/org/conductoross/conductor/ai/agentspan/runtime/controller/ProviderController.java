@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.conductoross.conductor.ai.agentspan.runtime.ai.AgentspanAIModelProvider;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -53,6 +54,7 @@ import okhttp3.Response;
 @RestController
 @RequestMapping("/api/providers")
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "agentspan.embedded", havingValue = "true")
 public class ProviderController {
 
     /** Providers surfaced in status, aligned with the docs' provider list. */

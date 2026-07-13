@@ -23,6 +23,7 @@ import org.conductoross.conductor.ai.agentspan.runtime.model.skill.SkillFileCont
 import org.conductoross.conductor.ai.agentspan.runtime.model.skill.SkillSummary;
 import org.conductoross.conductor.ai.agentspan.runtime.service.AgentService;
 import org.conductoross.conductor.ai.agentspan.runtime.service.SkillRegistryService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -38,6 +39,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/skills")
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "agentspan.embedded", havingValue = "true")
 public class SkillController {
 
     private final SkillRegistryService skillRegistryService;

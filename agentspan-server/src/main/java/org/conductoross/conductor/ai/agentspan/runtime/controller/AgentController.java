@@ -30,6 +30,7 @@ import org.conductoross.conductor.ai.agentspan.runtime.model.TaskListResponse;
 import org.conductoross.conductor.ai.agentspan.runtime.service.AgentDagService;
 import org.conductoross.conductor.ai.agentspan.runtime.service.AgentService;
 import org.conductoross.conductor.ai.agentspan.runtime.service.PlanAndCompileTask;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -50,6 +51,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping({"/api/agent"})
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "agentspan.embedded", havingValue = "true")
 public class AgentController {
 
     private final AgentService agentService;

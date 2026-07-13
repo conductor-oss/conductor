@@ -46,6 +46,7 @@ import org.conductoross.conductor.ai.agentspan.runtime.spi.SkillPackageStore;
 import org.conductoross.conductor.ai.agentspan.runtime.spi.StoredSkillPackage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import org.yaml.snakeyaml.LoaderOptions;
@@ -56,6 +57,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
+@ConditionalOnProperty(name = "agentspan.embedded", havingValue = "true")
 public class SkillRegistryService {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
