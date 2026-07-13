@@ -24,7 +24,6 @@ import SectionContainer from "components/ui/layout/SectionContainer";
 import { colors } from "theme/tokens/variables";
 import { IObject } from "types/common";
 import { DOC_LINK_URL } from "utils/constants/docLink";
-import { formatScheduleNameConflictMessage } from "utils/constants/common";
 import { SCHEDULER_DEFINITION_URL } from "utils/constants/route";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { getErrors } from "utils/index";
@@ -176,8 +175,6 @@ export function Schedule() {
           setErrorMessage(
             `Error - You don't have permissions to schedule the selected workflow.`,
           );
-        } else if (response.status === 409 && errors.message) {
-          setErrorMessage(formatScheduleNameConflictMessage(errors.message));
         } else {
           if (errors.message) {
             setErrorMessage(`Error - ${response.status} - ${errors.message}`);
@@ -304,6 +301,7 @@ export function Schedule() {
     }
 
     const body = JSON.stringify({
+      id: schedule?.id,
       paused: scheduleState.paused,
       runCatchupScheduleInstances: scheduleState.runCatchupScheduleInstances,
       name: scheduleState.name,
@@ -327,14 +325,8 @@ export function Schedule() {
       zoneId: scheduleState.zoneId,
     });
 
-    saveSchedule({ body, overwrite: !isNewScheduleDef });
-  }, [
-    scheduleState,
-    clearErrors,
-    setErrorMessage,
-    saveSchedule,
-    isNewScheduleDef,
-  ]);
+    saveSchedule({ body } as any);
+  }, [scheduleState, schedule, clearErrors, setErrorMessage, saveSchedule]);
 
   const clearScheduleForm = useCallback(() => {
     if (schedule) {
@@ -413,6 +405,7 @@ export function Schedule() {
 
       const body = JSON.stringify(
         {
+          id: schedule?.id,
           paused: scheduleState.paused,
           runCatchupScheduleInstances:
             scheduleState.runCatchupScheduleInstances,
@@ -440,7 +433,13 @@ export function Schedule() {
       );
       setNewData(body);
     }
-  }, [interimString, scheduleState, setErrorMessage, setScheduleState]);
+  }, [
+    interimString,
+    scheduleState,
+    schedule,
+    setErrorMessage,
+    setScheduleState,
+  ]);
 
   const cancelConfirmSave = useCallback(() => {
     const body = JSON.parse(newData);

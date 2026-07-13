@@ -6,58 +6,48 @@ import {
   DialogTitle,
   Grid,
 } from "@mui/material";
+import { DefaultValues, SubmitHandler, useForm } from "react-hook-form";
+import * as yup from "yup";
+
 import ActionButton from "components/ui/buttons/ActionButton";
 import Button from "components/ui/buttons/MuiButton";
 import ReactHookFormInput from "components/ui/react-hook-form/ReactHookFormInput";
-import {
-  useCheckScheduleExists,
-  useSaveSchedule,
-} from "pages/scheduler/schedulerHooks";
-import { useState } from "react";
-import { DefaultValues, SubmitHandler, useForm } from "react-hook-form";
-import { IScheduleDto } from "types/Schedulers";
-import {
-  formatScheduleNameConflictMessage,
-  WORKFLOW_NAME_ERROR_MESSAGE,
-} from "utils/constants/common";
+import { WORKFLOW_NAME_ERROR_MESSAGE } from "utils/constants/common";
 import { WORKFLOW_NAME_REGEX } from "utils/constants/regex";
-import * as yup from "yup";
 
 interface DialogData {
   name: string;
 }
-
 export interface CloneScheduleDialogProps {
-  schedule: IScheduleDto;
-  defaultName: string;
+  name: string;
+  scheduleNames: string[];
   onClose: () => void;
-  onSuccess: () => void;
-  onError?: (error: Response) => void | Promise<void>;
+  onSuccess: (data: DialogData) => void;
+  isFetching?: boolean;
 }
 
 const CloneScheduleDialog = ({
-  schedule,
-  defaultName,
+  name,
+  scheduleNames,
   onClose,
   onSuccess,
-  onError,
+  isFetching,
 }: CloneScheduleDialogProps) => {
   const formSchema = yup.object().shape({
     name: yup
       .string()
       .required("Name cannot be blank.")
-      .matches(WORKFLOW_NAME_REGEX, WORKFLOW_NAME_ERROR_MESSAGE),
+      .matches(WORKFLOW_NAME_REGEX, WORKFLOW_NAME_ERROR_MESSAGE)
+      .notOneOf(scheduleNames, "This name is existing."),
   });
 
   const defaultValues: DefaultValues<DialogData> = {
-    name: defaultName,
+    name: name,
   };
 
   const {
     control,
     handleSubmit,
-    setError,
-    clearErrors,
     formState: { errors: formErrors, isValid },
   } = useForm<DialogData>({
     mode: "onChange",
@@ -65,40 +55,8 @@ const CloneScheduleDialog = ({
     defaultValues,
   });
 
-  const checkScheduleExists = useCheckScheduleExists();
-
-  const { mutate: saveSchedule, isLoading: isSavingSchedule } = useSaveSchedule(
-    {
-      onSuccess: () => {
-        onSuccess();
-      },
-      onError: async (error: Response) => {
-        await onError?.(error);
-      },
-    },
-  );
-
-  const [isChecking, setIsChecking] = useState(false);
-
-  const onSubmit: SubmitHandler<DialogData> = async (data) => {
-    setIsChecking(true);
-    try {
-      const exists = await checkScheduleExists(data.name);
-      if (exists) {
-        setError("name", {
-          type: "server",
-          message: formatScheduleNameConflictMessage(
-            `Schedule '${data.name}' already exists.`,
-          ),
-        });
-        return;
-      }
-    } catch {
-      // Network error — let the save attempt proceed; the server will handle it.
-    } finally {
-      setIsChecking(false);
-    }
-    saveSchedule({ body: JSON.stringify({ ...schedule, name: data.name }) });
+  const onSubmit: SubmitHandler<DialogData> = (data) => {
+    onSuccess(data);
   };
 
   return (
@@ -117,7 +75,6 @@ const CloneScheduleDialog = ({
               error={!!formErrors?.name?.message}
               helperText={formErrors?.name?.message}
               spellCheck={false}
-              onChangeCallback={() => clearErrors("name")}
             />
           </Grid>
         </Grid>
@@ -140,8 +97,8 @@ const CloneScheduleDialog = ({
             lineHeight: 1.5,
           }}
           onClick={() => handleSubmit(onSubmit)()}
-          disabled={!isValid || isChecking || isSavingSchedule}
-          progress={isChecking || isSavingSchedule}
+          disabled={!isValid}
+          progress={isFetching}
         >
           Clone
         </ActionButton>
