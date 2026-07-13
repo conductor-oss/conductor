@@ -9,9 +9,7 @@ dependencies {
     implementation project(':conductor-core')
     implementation project(':conductor-ai')
 
-    // 0.4.2+ supports classifier-based agent filtering (pairs with WorkflowClassifier in
-    // conductor-common and the classifier search field in the index backends).
-    implementation "org.conductoross:conductor-agentspan:0.4.4.rc2"
+    implementation "org.conductoross:conductor-agentspan:0.4.4"
 
     // Exercise the adapters against a real persisted backend rather than mocked DAOs.
     testImplementation project(':conductor-sqlite-persistence')
