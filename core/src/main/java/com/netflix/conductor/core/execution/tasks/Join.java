@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.annotations.VisibleForTesting;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.config.ConductorProperties;
@@ -38,9 +39,11 @@ public class Join extends WorkflowSystemTask {
     @VisibleForTesting static final double EVALUATION_OFFSET_BASE = 1.2;
 
     /**
-     * Marker key present in an AgentSpan agent execution's workflow input/variables. When set, the
-     * embedded AgentSpan runtime owns the workflow and the JOIN output is kept compact (see {@link
-     * #AGENT_PROPAGATED_KEYS}).
+     * Marker key present in an AgentSpan agent execution's workflow input/variables. Kept as a
+     * fallback signal alongside {@link WorkflowDef#isAgent()} — the workflow def's {@code
+     * agentDef}/{@code agent_sdk} metadata stamp is the primary, reliable signal since it is set at
+     * compile time by AgentSpan's compiler, but dynamically-assembled sub-workflows (e.g. a
+     * PLAN_EXECUTE plan built at runtime) may carry this marker without a stamped def.
      */
     private static final String AGENTSPAN_CTX = "__agentspan_ctx__";
 
@@ -154,11 +157,14 @@ public class Join extends WorkflowSystemTask {
     }
 
     /**
-     * True when this workflow is an embedded AgentSpan agent execution, detected via the {@code
-     * __agentspan_ctx__} marker on the workflow input or variables. Inert for all other workflows.
+     * True when this workflow is an embedded AgentSpan agent execution: either the workflow def is
+     * stamped {@code agent} (see {@link WorkflowDef#isAgent()}), or the {@code __agentspan_ctx__}
+     * marker is present on the workflow input/variables. Inert for all other workflows.
      */
     private static boolean isAgentExecution(WorkflowModel workflow) {
-        return (workflow.getInput() != null && workflow.getInput().containsKey(AGENTSPAN_CTX))
+        WorkflowDef def = workflow.getWorkflowDefinition();
+        return (def != null && def.isAgent())
+                || (workflow.getInput() != null && workflow.getInput().containsKey(AGENTSPAN_CTX))
                 || (workflow.getVariables() != null
                         && workflow.getVariables().containsKey(AGENTSPAN_CTX));
     }

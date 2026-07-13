@@ -15,10 +15,9 @@ package com.netflix.conductor.core.secrets;
 import java.util.Collections;
 import java.util.List;
 
+import org.conductoross.conductor.dao.SecretsDAO;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
-
-import com.netflix.conductor.dao.SecretsDAO;
 
 @Component
 @ConditionalOnProperty(name = "conductor.secrets.type", havingValue = "noop")
