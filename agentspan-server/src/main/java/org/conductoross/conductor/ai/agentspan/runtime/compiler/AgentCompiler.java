@@ -1468,32 +1468,52 @@ public class AgentCompiler {
             inputs.put("temperature", 0);
         }
 
+        // Thinking config: extended reasoning. ChatCompletion's wire key is
+        // ``thinkingTokenLimit`` (an int) — there is NO ``thinkingConfig`` property on it, and
+        // the task-input ObjectMapper ignores unknown keys, so emitting a
+        // ``thinkingConfig: {enabled, budgetTokens}`` map here would be silently dropped and
+        // thinking would never activate (that was a live bug). A positive limit turns thinking on
+        // for both Anthropic (thinking block / adaptive) and Gemini (thinkingConfig.budget).
+        boolean thinkingEnabled =
+                config.getThinkingConfig() != null && config.getThinkingConfig().isEnabled();
+        if (thinkingEnabled) {
+            Integer budget = config.getThinkingConfig().getBudgetTokens();
+            // enabled without an explicit budget → sensible default (Anthropic minimum is 1024;
+            // must stay below the 16384 maxTokens default above).
+            inputs.put(
+                    "thinkingTokenLimit", budget != null && budget > 0 ? budget : DEFAULT_THINKING_BUDGET_TOKENS);
+        }
+
         // Reasoning effort — forwarded to ChatCompletion.reasoningEffort via
         // Jackson's convertValue in AgentChatCompleteTaskMapper. OpenAI
         // reasoning models (o1, gpt-5-codex) accept minimal|low|medium|high;
-        // non-reasoning models ignore it. Targets the failure mode where
+        // non-reasoning OpenAI models ignore it. Targets the failure mode where
         // codex spends all completion tokens on internal reasoning and emits
         // finishReason=STOP with empty content.
+        //
+        // Anthropic is NOT a silent no-op: AnthropicChatModel forwards it as
+        // ``output_config.effort``, which modulates thinking on adaptive models (Opus 4.7+,
+        // Fable). To keep the agent-level invariant "thinking is used ONLY when thinkingConfig
+        // is set", effort is forwarded to Anthropic only when thinking is enabled.
         if (config.getReasoningEffort() != null && !config.getReasoningEffort().isBlank()) {
-            inputs.put("reasoningEffort", config.getReasoningEffort());
-            // OpenAI's Responses API only emits chain-of-thought summary text
-            // on ``reasoning`` output items when ``reasoning.summary`` is set
-            // on the request. Without it, the model burns reasoning tokens
-            // but the summary blocks come back empty and conductor's
-            // OpenAIResponsesChatModel has nothing to surface. Default to
-            // ``auto`` so reasoning-effort callers get visible reasoning
-            // output by default. Non-reasoning models silently ignore it.
-            inputs.put("reasoningSummary", "auto");
-        }
-
-        // Thinking config: extended reasoning
-        if (config.getThinkingConfig() != null && config.getThinkingConfig().isEnabled()) {
-            Map<String, Object> thinking = new LinkedHashMap<>();
-            thinking.put("enabled", true);
-            if (config.getThinkingConfig().getBudgetTokens() != null) {
-                thinking.put("budgetTokens", config.getThinkingConfig().getBudgetTokens());
+            boolean anthropic = "anthropic".equalsIgnoreCase(parsed.getProvider());
+            if (!anthropic || thinkingEnabled) {
+                inputs.put("reasoningEffort", config.getReasoningEffort());
+                // OpenAI's Responses API only emits chain-of-thought summary text
+                // on ``reasoning`` output items when ``reasoning.summary`` is set
+                // on the request. Without it, the model burns reasoning tokens
+                // but the summary blocks come back empty and conductor's
+                // OpenAIResponsesChatModel has nothing to surface. Default to
+                // ``auto`` so reasoning-effort callers get visible reasoning
+                // output by default. Non-reasoning models silently ignore it.
+                inputs.put("reasoningSummary", "auto");
+            } else {
+                log.debug(
+                        "Dropping reasoningEffort for agent '{}': provider is anthropic and "
+                                + "thinkingConfig is not enabled (effort would modulate thinking "
+                                + "on adaptive models)",
+                        config.getName());
             }
-            inputs.put("thinkingConfig", thinking);
         }
 
         // Forward execution token so per-user credential resolution works in worker threads
