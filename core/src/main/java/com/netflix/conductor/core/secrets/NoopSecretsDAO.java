@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.conductoross.conductor.dao.SecretsDAO;
+import org.conductoross.conductor.model.secret.CredentialMeta;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -46,5 +47,10 @@ public class NoopSecretsDAO implements SecretsDAO {
     @Override
     public void deleteSecret(String name) {
         throw new UnsupportedOperationException("secrets are disabled");
+    }
+
+    @Override
+    public List<CredentialMeta> listWithMeta() {
+        return List.of();
     }
 }

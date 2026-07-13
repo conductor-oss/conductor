@@ -12,6 +12,8 @@
  */
 package org.conductoross.conductor.ai.agentspan;
 
+import org.conductoross.conductor.ai.agentspan.runtime.spi.SkillMetadataDAO;
+import org.conductoross.conductor.ai.agentspan.runtime.spi.SkillPackageStore;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.conductoross.conductor.dao.SkillPackageDAO;
 import org.springframework.context.annotation.Bean;
@@ -32,15 +34,14 @@ public class ConductorAgentSpanConfiguration {
      * Bridges AgentSpan's skill-metadata SPI to Conductor's per-backend {@code SkillMetadataDAO}.
      */
     @Bean
-    public dev.agentspan.runtime.spi.SkillMetadataDAO agentSpanSkillMetadataDAO(
+    public SkillMetadataDAO agentSpanSkillMetadataDAO(
             org.conductoross.conductor.dao.SkillMetadataDAO skillMetadataDAO) {
         return new SkillMetadataDaoAdapter(skillMetadataDAO, objectMapper);
     }
 
     /** Bridges AgentSpan's skill-package SPI to Conductor's per-backend {@code SkillPackageDAO}. */
     @Bean
-    public dev.agentspan.runtime.spi.SkillPackageStore agentSpanSkillPackageStore(
-            SkillPackageDAO skillPackageDAO) {
+    public SkillPackageStore agentSpanSkillPackageStore(SkillPackageDAO skillPackageDAO) {
         return new SkillPackageStoreAdapter(skillPackageDAO);
     }
 }

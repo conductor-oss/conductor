@@ -12,10 +12,9 @@
  */
 package org.conductoross.conductor.ai.agentspan;
 
+import org.conductoross.conductor.ai.agentspan.runtime.spi.SkillPackageStore;
+import org.conductoross.conductor.ai.agentspan.runtime.spi.StoredSkillPackage;
 import org.conductoross.conductor.dao.SkillPackageDAO;
-
-import dev.agentspan.runtime.spi.SkillPackageStore;
-import dev.agentspan.runtime.spi.StoredSkillPackage;
 
 /**
  * Bridges AgentSpan's {@link SkillPackageStore} SPI onto Conductor's backend-agnostic {@link

@@ -12,6 +12,8 @@
  */
 package org.conductoross.conductor.ai.agentspan.listener;
 
+import org.conductoross.conductor.ai.agentspan.runtime.service.AgentEventListener;
+import org.conductoross.conductor.ai.agentspan.runtime.service.AgentStreamRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -22,8 +24,6 @@ import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
-import dev.agentspan.runtime.service.AgentEventListener;
-import dev.agentspan.runtime.service.AgentStreamRegistry;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
