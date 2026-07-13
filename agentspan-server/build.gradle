@@ -11,6 +11,11 @@ dependencies {
 
     // 0.4.2+ supports classifier-based agent filtering (pairs with WorkflowClassifier in
     // conductor-common and the classifier search field in the index backends).
-    implementation "org.conductoross:conductor-agentspan:0.4.2"
+    implementation "org.conductoross:conductor-agentspan:0.4.4.rc2"
+
+    // Exercise the adapters against a real persisted backend rather than mocked DAOs.
+    testImplementation project(':conductor-sqlite-persistence')
+    // AgentSpan's real event listener depends on its SSE registry at test runtime.
+    testImplementation 'org.springframework:spring-webmvc'
 
 }

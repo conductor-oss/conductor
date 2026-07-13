@@ -34,6 +34,9 @@ import jakarta.validation.constraints.NotNull;
 @TaskReferenceNameUniqueConstraint
 public class WorkflowDef extends Auditable {
 
+    private static final String META_AGENT_SDK = "agent_sdk";
+    private static final String META_AGENT_DEF = "agentDef";
+
     @NotEmpty(message = "WorkflowDef name cannot be null or empty")
     @ProtoField(id = 1)
     @ValidNameConstraint
@@ -469,6 +472,11 @@ public class WorkflowDef extends Auditable {
             tasks.addAll(workflowTask.collectTasks());
         }
         return tasks;
+    }
+
+    public boolean isAgent() {
+        return metadata != null
+                && (metadata.get(META_AGENT_SDK) != null || metadata.get(META_AGENT_DEF) != null);
     }
 
     @Override
