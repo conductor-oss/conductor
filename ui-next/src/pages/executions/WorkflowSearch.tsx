@@ -58,6 +58,11 @@ export interface WorkflowSearchProps {
   title?: string;
   /** Header actions; pass `null` to render none. Defaults to workflow actions. */
   headerActions?: ReactNode;
+  /**
+   * When set, the basic search renders a toggle with this label that excludes
+   * sub-executions (those with a parentWorkflowId) — e.g. "Exclude sub-agents".
+   */
+  excludeSubLabel?: string;
 }
 
 export default function WorkflowPanel({
@@ -65,6 +70,7 @@ export default function WorkflowPanel({
   agentName,
   title = "Workflow Executions",
   headerActions,
+  excludeSubLabel,
 }: WorkflowSearchProps = {}) {
   const [asQuery, setAsQuery] = useQueryState("asQuery", false);
   const [freeText, setFreeText] = useQueryState("freeText", "");
@@ -222,6 +228,7 @@ export default function WorkflowPanel({
           <BasicSearch
             classifier={classifier}
             agentName={agentName}
+            excludeSubLabel={excludeSubLabel}
             doSearch={doSearch}
             SwitchComponent={
               <SwitchComponent asQuery={asQuery} setAsQuery={setAsQuery} />

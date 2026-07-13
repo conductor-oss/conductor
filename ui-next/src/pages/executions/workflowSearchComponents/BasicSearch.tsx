@@ -1,4 +1,4 @@
-import { Box, Grid } from "@mui/material";
+import { Box, FormControlLabel, Grid, Switch } from "@mui/material";
 import { Button, Paper } from "components";
 import { DEFAULT_ROWS_PER_PAGE } from "components/ui/DataTable/DataTable";
 import StatusBadge from "components/StatusBadge";
@@ -9,7 +9,14 @@ import SplitButton from "components/ui/buttons/ConductorSplitButton";
 import ResetIcon from "components/icons/ResetIcon";
 import SearchIcon from "components/icons/SearchIcon";
 import _isEmpty from "lodash/isEmpty";
-import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { Navigate } from "react-router";
 import { useQueryState } from "react-router-use-location-state";
@@ -73,6 +80,11 @@ export interface BasicSearchProps {
   classifier?: string;
   /** When set, results are scoped to this agent (adds a workflowType clause). */
   agentName?: string;
+  /**
+   * When set, renders a toggle with this label that excludes sub-executions
+   * (those with a parentWorkflowId) — e.g. "Exclude sub-agents".
+   */
+  excludeSubLabel?: string;
 }
 
 export default function BasicSearch({
@@ -108,6 +120,7 @@ export default function BasicSearch({
   recentSearches,
   classifier = "workflow",
   agentName,
+  excludeSubLabel,
 }: BasicSearchProps) {
   const [page, setPage] = useQueryState("page", 1);
   const [workflowType, setWorkflowType] = useQueryState<string[]>(
@@ -122,6 +135,10 @@ export default function BasicSearch({
   const [idempotencyKey, setIdempotencyKey] = useQueryState<string[]>(
     "idempotencyKey",
     [],
+  );
+  const [excludeSubExecutions, setExcludeSubExecutions] = useQueryState(
+    "excludeSubExecutions",
+    false,
   );
 
   const [modifiedFrom, setModifiedFrom] = useQueryState("modifiedFrom", "");
@@ -175,6 +192,7 @@ export default function BasicSearch({
     setModifiedTo("");
     setEndTimeFrom("");
     setEndTimeTo("");
+    setExcludeSubExecutions(false);
     setToDisplayTime("Now");
     setFromDisplayTime("Last 72 Hours");
   };
@@ -245,6 +263,10 @@ export default function BasicSearch({
       clauses.push(`workflowType='${agentName}'`);
     }
 
+    if (excludeSubLabel && excludeSubExecutions) {
+      clauses.push(`parentWorkflowId=""`);
+    }
+
     return {
       query: clauses.join(" AND "),
       freeText: _isEmpty(freeText) ? "*" : freeText,
@@ -263,6 +285,8 @@ export default function BasicSearch({
     endTimeFrom,
     endTimeTo,
     agentName,
+    excludeSubLabel,
+    excludeSubExecutions,
   ]);
 
   const [queryFT, setQueryFT] = useState(buildQuery);
@@ -362,6 +386,21 @@ export default function BasicSearch({
     }
     // eslint-disable-next-line
   }, []);
+
+  // The exclude-sub toggle reads as an instant filter (unlike the text inputs,
+  // which are applied on Search). Re-run the search as soon as it flips so the
+  // results reflect it without a separate Search click. Skip the initial mount.
+  const excludeSubInitialized = useRef(false);
+  useEffect(() => {
+    if (!excludeSubLabel) return;
+    if (!excludeSubInitialized.current) {
+      excludeSubInitialized.current = true;
+      return;
+    }
+    setPage(1);
+    setQueryFT(buildQuery());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [excludeSubExecutions]);
 
   // @ts-ignore
   if (error?.status === 401) {
@@ -625,6 +664,39 @@ export default function BasicSearch({
                 endTimeLabel="Execution End Time"
               />
             </Grid>
+            {excludeSubLabel && (
+              <Grid
+                display="flex"
+                alignItems="center"
+                size={{
+                  xs: 12,
+                  sm: 6,
+                  md: 3,
+                  lg: 3,
+                }}
+                sx={{
+                  order: { xs: 0, lg: 3 },
+                }}
+              >
+                <FormControlLabel
+                  sx={{ whiteSpace: "nowrap", mb: 0.5 }}
+                  control={
+                    <Switch
+                      color="primary"
+                      checked={excludeSubExecutions}
+                      onChange={(e) =>
+                        setExcludeSubExecutions(e.target.checked)
+                      }
+                      size="small"
+                    />
+                  }
+                  label={excludeSubLabel}
+                  slotProps={{
+                    typography: { variant: "body2" },
+                  }}
+                />
+              </Grid>
+            )}
             <Grid
               display="flex"
               justifyContent="end"

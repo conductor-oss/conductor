@@ -826,6 +826,145 @@ public class JavaScriptBuilder {
                 + "]: ' + r; })()";
     }
 
+    /**
+     * Swarm-aware concat script. Unlike {@link #concatScript}, a turn that ended on tool calls
+     * (result {@code []}/{@code {}}/empty) contributes nothing instead of polluting the transcript
+     * with {@code [agent]: []}, and a handoff is annotated as {@code [agent -> target]: <transfer
+     * message>} so the receiving agent sees the delegation intent, not just the routing.
+     *
+     * <p>Input: {@code prev} → conversation so far, {@code response} → agent result, {@code
+     * is_transfer}/{@code transfer_to}/{@code transfer_message} → the agent sub-workflow's transfer
+     * outputs. Output: the updated conversation string.
+     */
+    public static String swarmConcatScript(String agentName) {
+        return "(function() { var r = $.response; "
+                + "r = (r == null || r === undefined) ? '' : (typeof r === 'object' ? JSON.stringify(r) : String(r)); "
+                + "if (r === '[]' || r === '{}') r = ''; "
+                + "var out = $.prev; "
+                + "if (r !== '') out = out + '\\n\\n["
+                + agentName
+                + "]: ' + r; "
+                + "var isT = ($.is_transfer === true || $.is_transfer === 'true'); "
+                + "var t = ($.transfer_to == null) ? '' : String($.transfer_to); "
+                + "if (isT && t !== '') { "
+                + "var m = ($.transfer_message == null) ? '' : String($.transfer_message); "
+                + "out = out + '\\n\\n["
+                + agentName
+                + " -> ' + t + ']' + (m !== '' ? ': ' + m : ''); } "
+                + "return out; })()";
+    }
+
+    /**
+     * Normalize a coordinator/router decision to a canonical agent name or {@code DONE}.
+     *
+     * <p>Routers (LLM or user worker) are prompted to answer with a single agent name or DONE, but
+     * real outputs arrive wrapped ({@code **backend_dev**}, quoted, trailing period), in the wrong
+     * case, embedded in prose ("route to backend_dev"), or hallucinated (an agent that doesn't
+     * exist). Before this normalizer, any unrecognized output silently fell into the SWITCH default
+     * case and ran the FIRST agent while the conversation annotation recorded the bogus name — fuel
+     * for infinite delegation loops.
+     *
+     * <p>Algorithm (deterministic, no LLM): coerce to string; strip wrapping non-word characters
+     * from both ends; case-insensitive exact match against agent names → canonical name;
+     * case-insensitive {@code done} → {@code DONE}; otherwise a word-boundary substring scan,
+     * longest name first with matched spans blanked (so a name that is a substring of another —
+     * {@code dev} vs {@code backend_dev} — can't double-match); exactly one distinct agent matched
+     * → that agent; anything else → {@code DONE} (terminating gracefully beats ghost work).
+     * Matching uses manual boundary checks, never a regex built from agent names (metacharacter
+     * injection).
+     *
+     * <p>MUST return a plain string: Conductor INLINE output lands under {@code output.result}, and
+     * the DO_WHILE term condition compares {@code $.<norm>['result'] != 'DONE'}. A map-shaped
+     * return would make that comparison always true and recreate the infinite loop. The raw router
+     * output remains visible as this task's {@code raw} input in the execution UI.
+     *
+     * <p>Input: {@code raw} → the router task's {@code output.result}. Output: canonical agent name
+     * or {@code DONE}.
+     */
+    public static String normalizeRouterDecisionScript(List<String> agentNames) {
+        return iife(
+                "var agents = "
+                        + toJson(agentNames)
+                        + ";"
+                        + "var raw = $.raw;"
+                        + "if (raw == null) return 'DONE';"
+                        + "var s = String(raw).trim();"
+                        + "var isWord = function(c) {"
+                        + "  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')"
+                        + "      || (c >= '0' && c <= '9') || c === '_';"
+                        + "};"
+                        // Strip wrapping non-word chars from BOTH ends (markdown, quotes, punct).
+                        + "var start = 0, end = s.length;"
+                        + "while (start < end && !isWord(s.charAt(start))) start++;"
+                        + "while (end > start && !isWord(s.charAt(end - 1))) end--;"
+                        + "s = s.substring(start, end);"
+                        + "if (s === '') return 'DONE';"
+                        + "var lower = s.toLowerCase();"
+                        // Exact match first — also lets an agent named 'done_checker' route
+                        // before the DONE check below.
+                        + "for (var i = 0; i < agents.length; i++) {"
+                        + "  if (lower === String(agents[i]).toLowerCase()) return agents[i];"
+                        + "}"
+                        + "if (lower === 'done') return 'DONE';"
+                        // Word-boundary substring scan, longest name first; blank matched spans
+                        // so shorter names can't re-match inside a longer match.
+                        + "var sorted = agents.slice().sort(function(a, b) {"
+                        + "  return String(b).length - String(a).length;"
+                        + "});"
+                        + "var scan = lower;"
+                        + "var matched = [];"
+                        + "for (var j = 0; j < sorted.length; j++) {"
+                        + "  var name = String(sorted[j]);"
+                        + "  var nl = name.toLowerCase();"
+                        + "  var from = 0; var found = false;"
+                        + "  while (true) {"
+                        + "    var idx = scan.indexOf(nl, from);"
+                        + "    if (idx < 0) break;"
+                        + "    var beforeOk = idx === 0 || !isWord(scan.charAt(idx - 1));"
+                        + "    var afterIdx = idx + nl.length;"
+                        + "    var afterOk = afterIdx >= scan.length || !isWord(scan.charAt(afterIdx));"
+                        + "    if (beforeOk && afterOk) {"
+                        + "      found = true;"
+                        + "      scan = scan.substring(0, idx)"
+                        + "          + Array(nl.length + 1).join('#') + scan.substring(afterIdx);"
+                        + "      from = afterIdx;"
+                        + "    } else {"
+                        + "      from = idx + 1;"
+                        + "    }"
+                        + "  }"
+                        + "  if (found) matched.push(name);"
+                        + "}"
+                        + "if (matched.length === 1) return matched[0];"
+                        + "return 'DONE';");
+    }
+
+    /**
+     * Extract the {@code message} argument from the first {@code _transfer_to_} tool call in an
+     * LLM's {@code toolCalls} output. Mirrors the SDK check_transfer worker's first-wins selection
+     * so the extracted message always belongs to the transfer that actually happens.
+     *
+     * <p>Input: {@code tool_calls} → {@code <llm>.output.toolCalls}. Output: the transfer message
+     * string, or {@code ''} when there is no transfer call or it carries no message.
+     */
+    public static String extractTransferMessageScript() {
+        // Java interop: tool call entries are Java Maps — use .get(k) with property fallback,
+        // matching flatMergeContextScript.
+        return iife(
+                "var calls = $.tool_calls;"
+                        + "if (calls == null) return '';"
+                        + "for (var i = 0; i < calls.length; i++) {"
+                        + "  var c = calls[i]; if (c == null) continue;"
+                        + "  var name = (c.get ? c.get('name') : c.name);"
+                        + "  name = (name == null) ? '' : String(name);"
+                        + "  if (name.indexOf('_transfer_to_') < 0) continue;"
+                        + "  var params = (c.get ? c.get('inputParameters') : c.inputParameters);"
+                        + "  if (params == null) return '';"
+                        + "  var m = (params.get ? params.get('message') : params.message);"
+                        + "  return (m == null) ? '' : String(m);"
+                        + "}"
+                        + "return '';");
+    }
+
     /** Build human task validation script for guardrails. */
     public static String humanValidateScript() {
         return iife(

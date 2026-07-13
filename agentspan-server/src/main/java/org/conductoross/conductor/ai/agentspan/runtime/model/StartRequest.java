@@ -15,7 +15,10 @@ package org.conductoross.conductor.ai.agentspan.runtime.model;
 import java.util.List;
 import java.util.Map;
 
+import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -74,6 +77,6 @@ public class StartRequest {
      * priority) and discards whatever the planner LLM emitted. Lets callers replay a recorded plan
      * or run a fully deterministic pipeline without an LLM planner.
      */
-    @com.fasterxml.jackson.annotation.JsonProperty("static_plan")
+    @JsonProperty("static_plan")
     private Map<String, Object> staticPlan;
 }

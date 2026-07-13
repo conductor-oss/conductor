@@ -16,6 +16,7 @@ export default function AgentExecutions() {
       title="Agent Executions"
       agentName={agentName}
       headerActions={null}
+      excludeSubLabel="Exclude sub-agents"
     />
   );
 }

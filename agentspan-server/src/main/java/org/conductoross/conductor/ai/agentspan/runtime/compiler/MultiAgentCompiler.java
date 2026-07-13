@@ -255,6 +255,7 @@ public class MultiAgentCompiler {
                 resolveInstructionsPlan(config, toRef(config.getName()) + "_instructions");
         String instructions = instructionsPlan.getText();
         List<AgentConfig> agents = config.getAgents();
+        rejectReservedAgentNames(config, agents);
         List<String> agentNames = agents.stream().map(AgentConfig::getName).toList();
         int maxTurns = config.getMaxTurns() > 0 ? config.getMaxTurns() : 25;
         String loopRef = toRef(config.getName()) + "_loop";
@@ -299,25 +300,14 @@ public class MultiAgentCompiler {
 
         // 2. Router LLM — reads conversation, picks agent or says DONE
         String systemPrompt =
-                (instructions.isEmpty() ? "" : instructions + "\n\n")
-                        + "You are a coordinator that delegates tasks to specialized agents.\n\n"
-                        + "Available agents:\n"
-                        + agentsInfo
-                        + "\nBased on the conversation so far, decide the next action:\n"
-                        + "- Carefully analyze the user's COMPLETE request. It may contain MULTIPLE parts "
-                        + "that require DIFFERENT agents.\n"
-                        + "- If ANY part of the user's request has NOT yet been addressed by an appropriate agent, "
-                        + "respond with ONLY the name of the agent that should handle the unaddressed part (one of: "
-                        + String.join(", ", agentNames)
-                        + ")\n"
-                        + "- ONLY if ALL parts of the user's request have been fully addressed, respond with "
-                        + "ONLY the word DONE\n\n"
-                        + "Important: Review the full conversation to check which parts have been handled. "
-                        + "Do NOT say DONE until every distinct part of the request has received a response "
-                        + "from a suitable agent.\n\n"
-                        + "Respond with a single word — either an agent name or DONE. No other text.";
+                buildCoordinatorPrompt(config.getName(), instructions, agentsInfo, agentNames);
 
         WorkflowTask routerLlm = buildIterativeRouterLlm(routerRef, parsed, systemPrompt);
+
+        // 2a. Normalize the raw router output to a canonical agent name or DONE — the SWITCH,
+        // the conversation annotation, and the loop condition all read the normalized value.
+        String normRef = toRef(config.getName()) + "_route_norm";
+        WorkflowTask routeNorm = buildRouteNormalizer(normRef, routerRef, agentNames);
 
         // 2b. Record routing decision in conversation so the router sees its own history
         String routeAnnotateRef = toRef(config.getName()) + "_route_annotate";
@@ -331,7 +321,7 @@ public class MultiAgentCompiler {
                 "(function() { var d = $.decision; if (d === 'DONE') return $.prev; "
                         + "return $.prev + '\\n\\n[coordinator -> ' + d + ']'; })()");
         annotateInputs.put("prev", "${workflow.variables.conversation}");
-        annotateInputs.put("decision", ref(routerRef + ".output.result"));
+        annotateInputs.put("decision", ref(normRef + ".output.result"));
         routeAnnotate.setInputParameters(annotateInputs);
 
         WorkflowTask routeAnnotateSet = new WorkflowTask();
@@ -340,13 +330,13 @@ public class MultiAgentCompiler {
         routeAnnotateSet.setInputParameters(
                 Map.of("conversation", ref(routeAnnotateRef + ".output.result")));
 
-        // 3. Switch on router output
+        // 3. Switch on the normalized router output
         WorkflowTask switchTask = new WorkflowTask();
         switchTask.setType("SWITCH");
         switchTask.setTaskReferenceName(toRef(config.getName()) + "_switch");
         switchTask.setEvaluatorType("value-param");
         switchTask.setExpression("switchCaseValue");
-        switchTask.setInputParameters(Map.of("switchCaseValue", ref(routerRef + ".output.result")));
+        switchTask.setInputParameters(Map.of("switchCaseValue", ref(normRef + ".output.result")));
 
         Map<String, List<WorkflowTask>> cases = new LinkedHashMap<>();
         for (int i = 0; i < agents.size(); i++) {
@@ -375,19 +365,19 @@ public class MultiAgentCompiler {
             switchTask.setDefaultCase(defaultTasks);
         }
 
-        // 4. DoWhile loop: continue while iteration < max_turns AND router != DONE
+        // 4. DoWhile loop: continue while iteration < max_turns AND normalized decision != DONE
         String termCondition =
                 String.format(
                         "if ( $.%s['iteration'] < %d && $.%s['result'] != 'DONE' ) { true; } else { false; }",
-                        loopRef, maxTurns, routerRef);
+                        loopRef, maxTurns, normRef);
         Map<String, Object> loopInputs = new LinkedHashMap<>();
         loopInputs.put(loopRef, "${" + loopRef + "}");
-        loopInputs.put(routerRef, "${" + routerRef + "}");
+        loopInputs.put(normRef, "${" + normRef + "}");
         WorkflowTask loop =
                 agentCompiler.buildDoWhile(
                         loopRef,
                         termCondition,
-                        List.of(routerLlm, routeAnnotate, routeAnnotateSet, switchTask),
+                        List.of(routerLlm, routeNorm, routeAnnotate, routeAnnotateSet, switchTask),
                         loopInputs);
 
         // 5. Final answer LLM: synthesize from accumulated conversation
@@ -838,6 +828,7 @@ public class MultiAgentCompiler {
         List<WorkflowTask> preTasks = new ArrayList<>(parentInstructions.getPreTasks());
 
         List<AgentConfig> agents = config.getAgents();
+        rejectReservedAgentNames(config, agents);
         List<String> agentNames = agents.stream().map(AgentConfig::getName).toList();
         int maxTurns = config.getMaxTurns() > 0 ? config.getMaxTurns() : 25;
         String loopRef = toRef(config.getName()) + "_loop";
@@ -921,25 +912,14 @@ public class MultiAgentCompiler {
                 routerInstr = parentInstructions.getText();
             }
             String systemPrompt =
-                    (routerInstr.isEmpty() ? "" : routerInstr + "\n\n")
-                            + "You are a coordinator that delegates tasks to specialized agents.\n\n"
-                            + "Available agents:\n"
-                            + agentsInfo
-                            + "\nBased on the conversation so far, decide the next action:\n"
-                            + "- Carefully analyze the user's COMPLETE request. It may contain MULTIPLE parts "
-                            + "that require DIFFERENT agents.\n"
-                            + "- If ANY part of the user's request has NOT yet been addressed by an appropriate agent, "
-                            + "respond with ONLY the name of the agent that should handle the unaddressed part (one of: "
-                            + String.join(", ", agentNames)
-                            + ")\n"
-                            + "- ONLY if ALL parts of the user's request have been fully addressed, respond with "
-                            + "ONLY the word DONE\n\n"
-                            + "Important: Review the full conversation to check which parts have been handled. "
-                            + "Do NOT say DONE until every distinct part of the request has received a response "
-                            + "from a suitable agent.\n\n"
-                            + "Respond with a single word — either an agent name or DONE. No other text.";
+                    buildCoordinatorPrompt(config.getName(), routerInstr, agentsInfo, agentNames);
             routerTask = buildIterativeRouterLlm(routerRef, routerParsed, systemPrompt);
         }
+
+        // 2a. Normalize the raw router output (LLM or user worker) to a canonical agent name
+        // or DONE — the SWITCH, the annotation, and the loop condition read the normalized value.
+        String normRef = toRef(config.getName()) + "_route_norm";
+        WorkflowTask routeNorm = buildRouteNormalizer(normRef, routerRef, agentNames);
 
         // 2b. Record routing decision in conversation
         String routeAnnotateRef = toRef(config.getName()) + "_route_annotate";
@@ -953,7 +933,7 @@ public class MultiAgentCompiler {
                 "(function() { var d = $.decision; if (d === 'DONE') return $.prev; "
                         + "return $.prev + '\\n\\n[coordinator -> ' + d + ']'; })()");
         annotateInputs.put("prev", "${workflow.variables.conversation}");
-        annotateInputs.put("decision", ref(routerRef + ".output.result"));
+        annotateInputs.put("decision", ref(normRef + ".output.result"));
         routeAnnotate.setInputParameters(annotateInputs);
 
         WorkflowTask routeAnnotateSet = new WorkflowTask();
@@ -962,13 +942,13 @@ public class MultiAgentCompiler {
         routeAnnotateSet.setInputParameters(
                 Map.of("conversation", ref(routeAnnotateRef + ".output.result")));
 
-        // 3. Switch on router output
+        // 3. Switch on the normalized router output
         WorkflowTask switchTask = new WorkflowTask();
         switchTask.setType("SWITCH");
         switchTask.setTaskReferenceName(toRef(config.getName()) + "_switch");
         switchTask.setEvaluatorType("value-param");
         switchTask.setExpression("switchCaseValue");
-        switchTask.setInputParameters(Map.of("switchCaseValue", ref(routerRef + ".output.result")));
+        switchTask.setInputParameters(Map.of("switchCaseValue", ref(normRef + ".output.result")));
 
         Map<String, List<WorkflowTask>> cases = new LinkedHashMap<>();
         for (int i = 0; i < agents.size(); i++) {
@@ -997,19 +977,19 @@ public class MultiAgentCompiler {
             switchTask.setDefaultCase(defaultTasks);
         }
 
-        // 4. DoWhile loop
+        // 4. DoWhile loop: continue while iteration < max_turns AND normalized decision != DONE
         String termCondition =
                 String.format(
                         "if ( $.%s['iteration'] < %d && $.%s['result'] != 'DONE' ) { true; } else { false; }",
-                        loopRef, maxTurns, routerRef);
+                        loopRef, maxTurns, normRef);
         Map<String, Object> loopInputs = new LinkedHashMap<>();
         loopInputs.put(loopRef, "${" + loopRef + "}");
-        loopInputs.put(routerRef, "${" + routerRef + "}");
+        loopInputs.put(normRef, "${" + normRef + "}");
         WorkflowTask loop =
                 agentCompiler.buildDoWhile(
                         loopRef,
                         termCondition,
-                        List.of(routerTask, routeAnnotate, routeAnnotateSet, switchTask),
+                        List.of(routerTask, routeNorm, routeAnnotate, routeAnnotateSet, switchTask),
                         loopInputs);
 
         // 5. Final answer LLM
@@ -1384,15 +1364,24 @@ public class MultiAgentCompiler {
                                     "Transfer the conversation to "
                                             + peer.getName()
                                             + ". "
-                                            + peerDesc)
+                                            + peerDesc
+                                            + " Call at most ONE transfer tool per turn.")
                             .inputSchema(
                                     Map.of(
                                             "type",
                                             "object",
                                             "properties",
-                                            Map.of(),
+                                            Map.of(
+                                                    "message",
+                                                    Map.of(
+                                                            "type",
+                                                            "string",
+                                                            "description",
+                                                            "Hand-off note for "
+                                                                    + peer.getName()
+                                                                    + ": what they should do next and any context they need.")),
                                             "required",
-                                            List.of()))
+                                            List.of("message")))
                             .toolType("worker")
                             .build();
             transferTools.add(transferTool);
@@ -1490,23 +1479,53 @@ public class MultiAgentCompiler {
                         List.of(llmTask, toolRouter, checkTransferTask),
                         loopInputs);
 
-        // Initialize _agent_state for ToolContext.state
+        // Initialize _agent_state for ToolContext.state from the caller-provided context
+        // (the swarm parent passes ${workflow.variables._agent_state}) — null-coalesced so a
+        // standalone run without context still starts from {}.
+        String ctxResolveRef = agent.getName() + "_ctx_resolve";
+        WorkflowTask ctxResolve = new WorkflowTask();
+        ctxResolve.setType("INLINE");
+        ctxResolve.setTaskReferenceName(ctxResolveRef);
+        ctxResolve.setInputParameters(
+                Map.of(
+                        "evaluatorType", "graaljs",
+                        "ctx", "${workflow.input.context}",
+                        "expression", JavaScriptBuilder.nullCoalesceScript()));
+
         WorkflowTask initState = new WorkflowTask();
         initState.setType("SET_VARIABLE");
         initState.setTaskReferenceName(agent.getName() + "_init_state");
-        initState.setInputParameters(Map.of("_agent_state", new LinkedHashMap<>()));
+        initState.setInputParameters(
+                Map.of("_agent_state", "${" + ctxResolveRef + ".output.result}"));
+
+        // Extract the transfer message from the last LLM turn's tool calls so the parent can
+        // record the delegation intent in the conversation (the check_transfer worker only
+        // returns {is_transfer, transfer_to}).
+        String transferMsgRef = agent.getName() + "_transfer_msg";
+        WorkflowTask transferMsg = new WorkflowTask();
+        transferMsg.setType("INLINE");
+        transferMsg.setTaskReferenceName(transferMsgRef);
+        transferMsg.setInputParameters(
+                Map.of(
+                        "evaluatorType", "graaljs",
+                        "tool_calls", ref(llmRef + ".output.toolCalls"),
+                        "expression", JavaScriptBuilder.extractTransferMessageScript()));
 
         // Build the sub-workflow
         WorkflowDef subWf = agentCompiler.createWorkflow(agent);
         subWf.setName(agent.getName() + "_swarm_wf");
         subWf.setDescription("Swarm agent: " + agent.getName());
-        subWf.setTasks(List.of(initState, loop));
-        subWf.setOutputParameters(
-                Map.of(
-                        "result", ref(llmRef + ".output.result"),
-                        "finishReason", ref(llmRef + ".output.finishReason"),
-                        "is_transfer", ref(checkTransferRef + ".output.is_transfer"),
-                        "transfer_to", ref(checkTransferRef + ".output.transfer_to")));
+        subWf.setTasks(List.of(ctxResolve, initState, loop, transferMsg));
+        Map<String, Object> swarmAgentOutputs = new LinkedHashMap<>();
+        swarmAgentOutputs.put("result", ref(llmRef + ".output.result"));
+        swarmAgentOutputs.put("finishReason", ref(llmRef + ".output.finishReason"));
+        swarmAgentOutputs.put("is_transfer", ref(checkTransferRef + ".output.is_transfer"));
+        swarmAgentOutputs.put("transfer_to", ref(checkTransferRef + ".output.transfer_to"));
+        swarmAgentOutputs.put("transfer_message", ref(transferMsgRef + ".output.result"));
+        // Round-trip structured state: tools merge into _agent_state during the loop, and the
+        // swarm parent merges this back into its own _agent_state after each turn.
+        swarmAgentOutputs.put("context", "${workflow.variables._agent_state}");
+        subWf.setOutputParameters(swarmAgentOutputs);
         // Backfill task.name on system tasks (SET_VARIABLE, DO_WHILE, INLINE)
         // so Conductor's WorkflowSweeper doesn't trip on "TaskDef name cannot
         // be null" when the SUB_WORKFLOW executes — the outer compile-pass
@@ -1544,6 +1563,9 @@ public class MultiAgentCompiler {
         innerInputs.put("prompt", "${workflow.input.prompt}");
         innerInputs.put("media", "${workflow.input.media}");
         innerInputs.put("session_id", "${workflow.input.session_id}");
+        // Forward the swarm's accumulated _agent_state so the inner strategy is not stateless
+        // across swarm turns.
+        innerInputs.put("context", "${workflow.input.context}");
         innerTask.setInputParameters(innerInputs);
 
         // 2. Coerce inner result to string (may be array/null when last turn was tool calls)
@@ -1567,7 +1589,9 @@ public class MultiAgentCompiler {
         String transferPrompt =
                 "You have just completed your task. Your result is shown above.\n\n"
                         + "If another agent should handle a different part of the request, call the appropriate "
-                        + "transfer tool. Otherwise, do NOT call any tool — just respond with a brief acknowledgment.";
+                        + "transfer tool — at most ONE — and use its `message` argument to tell the receiving "
+                        + "agent exactly what to do next. Otherwise, do NOT call any tool — just respond with "
+                        + "a brief acknowledgment.";
         llmInputs.put(
                 "messages",
                 List.of(
@@ -1588,17 +1612,33 @@ public class MultiAgentCompiler {
         ctInputs.put("tool_calls", ref(transferLlmRef + ".output.toolCalls"));
         checkTransferTask.setInputParameters(ctInputs);
 
+        // 5. Extract the transfer message from the transfer LLM's tool calls so the parent can
+        // record the delegation intent in the conversation.
+        String transferMsgRef = agent.getName() + "_transfer_msg";
+        WorkflowTask transferMsg = new WorkflowTask();
+        transferMsg.setType("INLINE");
+        transferMsg.setTaskReferenceName(transferMsgRef);
+        transferMsg.setInputParameters(
+                Map.of(
+                        "evaluatorType", "graaljs",
+                        "tool_calls", ref(transferLlmRef + ".output.toolCalls"),
+                        "expression", JavaScriptBuilder.extractTransferMessageScript()));
+
         // Build the wrapper sub-workflow
         WorkflowDef subWf = agentCompiler.createWorkflow(agent);
         subWf.setName(agent.getName() + "_swarm_wf");
         subWf.setDescription("Swarm hierarchical agent: " + agent.getName());
-        subWf.setTasks(List.of(innerTask, coerceTask, transferLlm, checkTransferTask));
-        subWf.setOutputParameters(
-                Map.of(
-                        "result", ref(innerRef + ".output.result"),
-                        "finishReason", "stop",
-                        "is_transfer", ref(checkTransferRef + ".output.is_transfer"),
-                        "transfer_to", ref(checkTransferRef + ".output.transfer_to")));
+        subWf.setTasks(List.of(innerTask, coerceTask, transferLlm, checkTransferTask, transferMsg));
+        Map<String, Object> hierOutputs = new LinkedHashMap<>();
+        hierOutputs.put("result", ref(innerRef + ".output.result"));
+        hierOutputs.put("finishReason", "stop");
+        hierOutputs.put("is_transfer", ref(checkTransferRef + ".output.is_transfer"));
+        hierOutputs.put("transfer_to", ref(checkTransferRef + ".output.transfer_to"));
+        hierOutputs.put("transfer_message", ref(transferMsgRef + ".output.result"));
+        // Round-trip structured state: every inner strategy outputs `context`; without this the
+        // swarm parent's _agent_state merge always sees null and state never accumulates.
+        hierOutputs.put("context", ref(innerRef + ".output.context"));
+        subWf.setOutputParameters(hierOutputs);
         // See compileSwarmAgentWorkflow above — backfill task names so the
         // embedded SUB_WORKFLOW passes Conductor's null-name validation.
         WorkflowTaskUtils.ensureAllTaskNames(subWf);
@@ -1903,16 +1943,20 @@ public class MultiAgentCompiler {
         task.setInputParameters(subInputs);
         caseTasks.add(task);
 
-        // Concat response to conversation
+        // Concat response to conversation — swarm-aware: tool-call-only turns ([]/{}) add
+        // nothing, and handoffs are annotated as [agent -> target]: <transfer message>.
         String responseRef = ref(subRef + ".output.result");
         WorkflowTask concatTask = new WorkflowTask();
         concatTask.setType("INLINE");
         concatTask.setTaskReferenceName(parent.getName() + "_concat_" + idx);
         Map<String, Object> concatInputs = new LinkedHashMap<>();
         concatInputs.put("evaluatorType", "graaljs");
-        concatInputs.put("expression", JavaScriptBuilder.concatScript(sub.getName()));
+        concatInputs.put("expression", JavaScriptBuilder.swarmConcatScript(sub.getName()));
         concatInputs.put("prev", "${workflow.variables.conversation}");
         concatInputs.put("response", responseRef);
+        concatInputs.put("is_transfer", ref(subRef + ".output.is_transfer"));
+        concatInputs.put("transfer_to", ref(subRef + ".output.transfer_to"));
+        concatInputs.put("transfer_message", ref(subRef + ".output.transfer_message"));
         concatTask.setInputParameters(concatInputs);
         caseTasks.add(concatTask);
 
@@ -1950,23 +1994,92 @@ public class MultiAgentCompiler {
         return caseTasks;
     }
 
-    private WorkflowTask buildRouterLlm(String taskRef, ParsedModel parsed, String systemPrompt) {
-        WorkflowTask llm = new WorkflowTask();
-        llm.setName("LLM_CHAT_COMPLETE");
-        llm.setTaskReferenceName(taskRef);
-        llm.setType("LLM_CHAT_COMPLETE");
+    /**
+     * Reject sub-agent names that collide with the coordinator's reserved {@code DONE} decision. An
+     * agent named "done" (any case) would clobber the DONE switch case and make the coordinator's
+     * completion signal unreachable by construction.
+     */
+    private void rejectReservedAgentNames(AgentConfig config, List<AgentConfig> agents) {
+        for (AgentConfig a : agents) {
+            if ("done".equalsIgnoreCase(a.getName())) {
+                throw new IllegalArgumentException(
+                        "Sub-agent name '"
+                                + a.getName()
+                                + "' in '"
+                                + config.getName()
+                                + "' is reserved: the coordinator uses DONE as its completion "
+                                + "signal. Rename the agent.");
+            }
+        }
+    }
+
+    /**
+     * Build the coordinator routing system prompt shared by the handoff and router strategies.
+     *
+     * <p>Scope-awareness matters when the team is nested (e.g. a handoff team inside a swarm): the
+     * conversation seeded into the team contains the FULL original request, but the team may have
+     * been delegated only a slice of it (recorded as a {@code [<sender> -> <teamName>]: <note>}
+     * line by the swarm/handoff concat scripts). Without the scope rules below, a part of the
+     * request that no team member can handle makes DONE unreachable — the coordinator is forced to
+     * keep delegating forever (observed live: an engineering team re-delegating a finished API
+     * design because the request also asked for a marketing campaign it had no agent for).
+     */
+    private String buildCoordinatorPrompt(
+            String teamName,
+            String instructions,
+            StringBuilder agentsInfo,
+            List<String> agentNames) {
+        return (instructions.isEmpty() ? "" : instructions + "\n\n")
+                + "You are a coordinator that delegates tasks to specialized agents.\n\n"
+                + "Available agents:\n"
+                + agentsInfo
+                + "\nScope of your responsibility:\n"
+                + "- You may have been delegated only PART of a larger request. If the conversation "
+                + "contains a delegation note addressed to your team '"
+                + teamName
+                + "' — a line like '[<sender> -> "
+                + teamName
+                + "]: <instructions>' — judge completion against the MOST RECENT such note's "
+                + "instructions, not the entire original request.\n"
+                + "- If the most recent note addressed to you carries no instructions, complete the "
+                + "parts of the request your agents can handle, then respond DONE.\n"
+                + "- A part of the request is OUT OF SCOPE only if NONE of your available agents "
+                + "could plausibly handle it. Out-of-scope parts are NOT your responsibility: never "
+                + "delegate them, and do NOT withhold DONE because of them. When in doubt, delegate "
+                + "to the closest-matching agent.\n"
+                + "\nBased on the conversation so far, decide the next action:\n"
+                + "- Carefully analyze the user's COMPLETE request. It may contain MULTIPLE parts "
+                + "that require DIFFERENT agents.\n"
+                + "- If ANY in-scope part of the request has NOT yet been addressed by an appropriate "
+                + "agent, respond with ONLY the name of the agent that should handle the unaddressed "
+                + "part (one of: "
+                + String.join(", ", agentNames)
+                + ")\n"
+                + "- ONLY if ALL parts of the request that are in scope have been fully addressed, "
+                + "respond with ONLY the word DONE\n\n"
+                + "Important: Review the full conversation to check which parts have been handled. "
+                + "Do NOT say DONE until every distinct in-scope part of the request has received a "
+                + "response from a suitable agent.\n\n"
+                + "Respond with a single word — either an agent name or DONE. No other text.";
+    }
+
+    /**
+     * Build the INLINE task that normalizes the raw router output (LLM or user worker) to a
+     * canonical agent name or {@code DONE}. See {@link
+     * JavaScriptBuilder#normalizeRouterDecisionScript} for the algorithm and the plain-string
+     * return contract the loop condition depends on.
+     */
+    private WorkflowTask buildRouteNormalizer(
+            String normRef, String routerRef, List<String> agentNames) {
+        WorkflowTask norm = new WorkflowTask();
+        norm.setType("INLINE");
+        norm.setTaskReferenceName(normRef);
         Map<String, Object> inputs = new LinkedHashMap<>();
-        inputs.put("llmProvider", parsed.getProvider());
-        inputs.put("model", parsed.getModel());
-        inputs.put("maxTokens", 4096);
-        inputs.put(
-                "messages",
-                List.of(
-                        Map.of("role", "system", "message", systemPrompt),
-                        Map.of("role", "user", "message", "${workflow.input.prompt}")));
-        inputs.put("temperature", 0);
-        llm.setInputParameters(inputs);
-        return llm;
+        inputs.put("evaluatorType", "graaljs");
+        inputs.put("raw", ref(routerRef + ".output.result"));
+        inputs.put("expression", JavaScriptBuilder.normalizeRouterDecisionScript(agentNames));
+        norm.setInputParameters(inputs);
+        return norm;
     }
 
     private String buildSelectScript(

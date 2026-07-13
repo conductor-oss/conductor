@@ -317,12 +317,18 @@ class MultiAgentCompilerTest {
             assertThat(subWfTask.getSubWorkflowParam()).isNotNull();
             assertThat(subWfTask.getSubWorkflowParam().getWorkflowDef()).isNotNull();
             WorkflowDef inlineWf = subWfTask.getSubWorkflowParam().getWorkflowDef();
-            // Inline workflow should have init_state + DO_WHILE
-            assertThat(inlineWf.getTasks()).hasSize(2);
-            assertThat(inlineWf.getTasks().get(0).getType()).isEqualTo("SET_VARIABLE");
-            assertThat(inlineWf.getTasks().get(1).getType()).isEqualTo("DO_WHILE");
+            // Inline workflow should have ctx_resolve + init_state + DO_WHILE + transfer_msg
+            assertThat(inlineWf.getTasks()).hasSize(4);
+            assertThat(inlineWf.getTasks().get(0).getType()).isEqualTo("INLINE"); // ctx_resolve
+            assertThat(inlineWf.getTasks().get(1).getType()).isEqualTo("SET_VARIABLE");
+            assertThat(inlineWf.getTasks().get(2).getType()).isEqualTo("DO_WHILE");
+            assertThat(inlineWf.getTasks().get(3).getType()).isEqualTo("INLINE"); // transfer_msg
+            // init_state should seed _agent_state from the caller-provided context
+            assertThat(inlineWf.getTasks().get(1).getInputParameters().get("_agent_state"))
+                    .asString()
+                    .contains("_ctx_resolve.output.result");
             // DO_WHILE should contain check_transfer
-            WorkflowTask innerLoop = inlineWf.getTasks().get(1);
+            WorkflowTask innerLoop = inlineWf.getTasks().get(2);
             boolean hasCheckTransfer =
                     innerLoop.getLoopOver().stream()
                             .anyMatch(
@@ -330,9 +336,12 @@ class MultiAgentCompilerTest {
                                             t.getName() != null
                                                     && t.getName().contains("check_transfer"));
             assertThat(hasCheckTransfer).isTrue();
-            // Output should include is_transfer and transfer_to
+            // Output should include transfer fields and round-trip the structured context
             assertThat(inlineWf.getOutputParameters()).containsKey("is_transfer");
             assertThat(inlineWf.getOutputParameters()).containsKey("transfer_to");
+            assertThat(inlineWf.getOutputParameters()).containsKey("transfer_message");
+            assertThat(inlineWf.getOutputParameters())
+                    .containsEntry("context", "${workflow.variables._agent_state}");
         }
 
         // Handoff check inputs should include is_transfer and transfer_to
@@ -820,8 +829,9 @@ class MultiAgentCompilerTest {
 
         // The inline workflow should use the hierarchical path:
         // inner SUB_WORKFLOW (handoff strategy) + coerce result + transfer LLM + check_transfer
+        // + transfer_msg extraction
         WorkflowDef engInlineWf = engSubWf.getSubWorkflowParam().getWorkflowDef();
-        assertThat(engInlineWf.getTasks()).hasSize(4);
+        assertThat(engInlineWf.getTasks()).hasSize(5);
         assertThat(engInlineWf.getTasks().get(0).getType())
                 .isEqualTo("SUB_WORKFLOW"); // inner handoff
         assertThat(engInlineWf.getTasks().get(1).getType())
@@ -829,6 +839,15 @@ class MultiAgentCompilerTest {
         assertThat(engInlineWf.getTasks().get(2).getType())
                 .isEqualTo("LLM_CHAT_COMPLETE"); // transfer decision
         assertThat(engInlineWf.getTasks().get(3).getType()).isEqualTo("SIMPLE"); // check_transfer
+        assertThat(engInlineWf.getTasks().get(4).getType()).isEqualTo("INLINE"); // transfer_msg
+
+        // Inner strategy receives the swarm's accumulated context and its context is exposed
+        // back to the swarm parent for the _agent_state merge
+        assertThat(engInlineWf.getTasks().get(0).getInputParameters())
+                .containsEntry("context", "${workflow.input.context}");
+        assertThat(engInlineWf.getOutputParameters())
+                .containsEntry("context", "${engineering_lead_inner.output.context}");
+        assertThat(engInlineWf.getOutputParameters()).containsKey("transfer_message");
 
         // The inner SUB_WORKFLOW should contain the handoff strategy (ctx_resolve + init + loop +
         // final)
@@ -855,10 +874,13 @@ class MultiAgentCompilerTest {
         assertThat(mktCase).isNotEmpty();
         WorkflowTask mktSubWf = mktCase.get(0);
         WorkflowDef mktInlineWf = mktSubWf.getSubWorkflowParam().getWorkflowDef();
-        // Flat path: init_state + DO_WHILE(llm, tool_router, check_transfer)
-        assertThat(mktInlineWf.getTasks()).hasSize(2);
-        assertThat(mktInlineWf.getTasks().get(0).getType()).isEqualTo("SET_VARIABLE");
-        assertThat(mktInlineWf.getTasks().get(1).getType()).isEqualTo("DO_WHILE");
+        // Flat path: ctx_resolve + init_state + DO_WHILE(llm, tool_router, check_transfer)
+        // + transfer_msg
+        assertThat(mktInlineWf.getTasks()).hasSize(4);
+        assertThat(mktInlineWf.getTasks().get(0).getType()).isEqualTo("INLINE");
+        assertThat(mktInlineWf.getTasks().get(1).getType()).isEqualTo("SET_VARIABLE");
+        assertThat(mktInlineWf.getTasks().get(2).getType()).isEqualTo("DO_WHILE");
+        assertThat(mktInlineWf.getTasks().get(3).getType()).isEqualTo("INLINE");
     }
 
     @Test
@@ -895,6 +917,171 @@ class MultiAgentCompilerTest {
         // Should NOT contain the old early-termination language
         assertThat(systemMsg)
                 .doesNotContain("Once an agent has responded, you should typically respond DONE");
+        assertScopeAwareCoordinatorPrompt(systemMsg, "team");
+    }
+
+    /**
+     * Scope-awareness contract of the coordinator prompt: a nested team delegated only a slice of a
+     * larger request must judge completion against its delegation note / roster capabilities, not
+     * the entire original request — otherwise DONE is unreachable and the loop spins to maxTurns
+     * (observed live).
+     */
+    private static void assertScopeAwareCoordinatorPrompt(String systemMsg, String teamName) {
+        // Delegation-note scoping, addressed to THIS team by name
+        assertThat(systemMsg).contains("delegation note addressed to your team '" + teamName + "'");
+        assertThat(systemMsg).contains("[<sender> -> " + teamName + "]");
+        assertThat(systemMsg).contains("MOST RECENT");
+        // Out-of-scope escape hatch (conservative wording)
+        assertThat(systemMsg).contains("OUT OF SCOPE");
+        assertThat(systemMsg).contains("do NOT withhold DONE");
+        assertThat(systemMsg).contains("When in doubt, delegate to the closest-matching agent");
+        // Completion criterion is scoped
+        assertThat(systemMsg).contains("every distinct in-scope part");
+    }
+
+    @Test
+    void testRouterFallbackLlmPromptIsScopeAware() {
+        // Router strategy WITHOUT an explicit router config — exercises the fallback
+        // LLM-router path (parent model + parent instructions), previously untested.
+        AgentConfig config =
+                AgentConfig.builder()
+                        .name("team")
+                        .model("openai/gpt-4o")
+                        .instructions("Route to the best agent.")
+                        .strategy("router")
+                        .agents(
+                                List.of(
+                                        simpleSubAgent("agent_a", "Handle A tasks"),
+                                        simpleSubAgent("agent_b", "Handle B tasks")))
+                        .build();
+
+        WorkflowDef wf = compiler.compile(config);
+
+        WorkflowTask loop = wf.getTasks().get(2);
+        WorkflowTask routerSubWf = loop.getLoopOver().get(0);
+        WorkflowTask innerLlm =
+                routerSubWf.getSubWorkflowParam().getWorkflowDef().getTasks().get(0);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> messages =
+                (List<Map<String, Object>>) innerLlm.getInputParameters().get("messages");
+        String systemMsg = (String) messages.get(0).get("message");
+
+        assertThat(systemMsg).contains("ALL parts");
+        assertThat(systemMsg).contains("MULTIPLE parts");
+        assertThat(systemMsg).contains("COMPLETE request");
+        assertScopeAwareCoordinatorPrompt(systemMsg, "team");
+    }
+
+    /**
+     * The normalizer rewiring contract, per strategy: norm INLINE at loop index 1 reading the
+     * router's raw result; annotation + SWITCH + loop condition all read the NORMALIZED value — so
+     * an unrecognized router output can never silently ghost-run the first agent again.
+     */
+    private static void assertRouteNormalizerWiring(WorkflowTask loop, String teamRef) {
+        String normRef = teamRef + "_route_norm";
+
+        // Norm task at index 1, right after the router
+        WorkflowTask norm = loop.getLoopOver().get(1);
+        assertThat(norm.getTaskReferenceName()).isEqualTo(normRef);
+        assertThat(norm.getType()).isEqualTo("INLINE");
+        assertThat(norm.getInputParameters().get("raw"))
+                .isEqualTo("${" + teamRef + "_router.output.result}");
+
+        // Loop condition + inputs read the normalized decision
+        assertThat(loop.getLoopCondition()).contains("$." + normRef + "['result'] != 'DONE'");
+        assertThat(loop.getInputParameters()).containsKey(normRef);
+
+        // Annotation and SWITCH read the normalized decision
+        WorkflowTask annotate = loop.getLoopOver().get(2);
+        assertThat(annotate.getInputParameters().get("decision"))
+                .isEqualTo("${" + normRef + ".output.result}");
+        WorkflowTask switchTask =
+                loop.getLoopOver().stream()
+                        .filter(t -> "SWITCH".equals(t.getType()))
+                        .findFirst()
+                        .orElseThrow();
+        assertThat(switchTask.getInputParameters().get("switchCaseValue"))
+                .isEqualTo("${" + normRef + ".output.result}");
+    }
+
+    @Test
+    void testHandoffRouteNormalizerWiring() {
+        AgentConfig config =
+                AgentConfig.builder()
+                        .name("team")
+                        .model("openai/gpt-4o")
+                        .instructions("Route tasks.")
+                        .strategy("handoff")
+                        .agents(
+                                List.of(
+                                        simpleSubAgent("agent_a", "Handle A"),
+                                        simpleSubAgent("agent_b", "Handle B")))
+                        .build();
+
+        WorkflowDef wf = compiler.compile(config);
+        assertRouteNormalizerWiring(wf.getTasks().get(2), "team");
+    }
+
+    @Test
+    void testRouterRouteNormalizerWiring_LlmBranch() {
+        AgentConfig config =
+                AgentConfig.builder()
+                        .name("team")
+                        .model("openai/gpt-4o")
+                        .instructions("Route tasks.")
+                        .strategy("router")
+                        .agents(
+                                List.of(
+                                        simpleSubAgent("agent_a", "Handle A"),
+                                        simpleSubAgent("agent_b", "Handle B")))
+                        .build();
+
+        WorkflowDef wf = compiler.compile(config);
+        assertRouteNormalizerWiring(wf.getTasks().get(2), "team");
+    }
+
+    @Test
+    void testRouterRouteNormalizerWiring_WorkerRefBranch() {
+        // Worker-based routers are normalized too: a worker returning an unknown value now
+        // exits the loop via DONE instead of silently running the first agent (default case).
+        AgentConfig config =
+                AgentConfig.builder()
+                        .name("team")
+                        .model("openai/gpt-4o")
+                        .instructions("Route tasks.")
+                        .strategy("router")
+                        .router(WorkerRef.builder().taskName("my_router_fn").build())
+                        .agents(
+                                List.of(
+                                        simpleSubAgent("agent_a", "Handle A"),
+                                        simpleSubAgent("agent_b", "Handle B")))
+                        .build();
+
+        WorkflowDef wf = compiler.compile(config);
+        WorkflowTask loop = wf.getTasks().get(2);
+        // Router is a SIMPLE worker task in this branch
+        assertThat(loop.getLoopOver().get(0).getType()).isEqualTo("SIMPLE");
+        assertRouteNormalizerWiring(loop, "team");
+    }
+
+    @Test
+    void testAgentNamedDoneIsRejected() {
+        for (String strategy : List.of("handoff", "router")) {
+            AgentConfig config =
+                    AgentConfig.builder()
+                            .name("team")
+                            .model("openai/gpt-4o")
+                            .instructions("Route tasks.")
+                            .strategy(strategy)
+                            .agents(
+                                    List.of(
+                                            simpleSubAgent("agent_a", "Handle A"),
+                                            simpleSubAgent("Done", "Collides with DONE")))
+                            .build();
+            assertThatThrownBy(() -> compiler.compile(config))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("reserved");
+        }
     }
 
     // ── Timeout tests ──────────────────────────────────────────────────

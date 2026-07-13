@@ -29,7 +29,7 @@ import lombok.NoArgsConstructor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ThinkingConfig {
 
-    @Builder.Default private boolean enabled = true;
+    @Builder.Default private boolean enabled = false;
 
     /** Maximum number of tokens the LLM can use for thinking. */
     private Integer budgetTokens;
