@@ -1761,6 +1761,103 @@ class AgentCompilerTest {
                 .isEqualTo("auto");
     }
 
+    // ── Thinking config: ChatCompletion's wire key is ``thinkingTokenLimit`` — emitting a
+    // ``thinkingConfig`` map is silently dropped by the task-input ObjectMapper (unknown key)
+    // and thinking never activates. These tests pin the working wire contract.
+    @Test
+    void testThinkingConfigEmitsThinkingTokenLimit() {
+        AgentConfig config =
+                AgentConfig.builder()
+                        .name("thinking_agent")
+                        .model("anthropic/claude-sonnet-4-6")
+                        .instructions("Think deeply.")
+                        .thinkingConfig(
+                                ThinkingConfig.builder().enabled(true).budgetTokens(4096).build())
+                        .build();
+
+        WorkflowTask llmTask = findLlmTask(compiler.compile(config));
+
+        assertThat(llmTask.getInputParameters().get("thinkingTokenLimit")).isEqualTo(4096);
+        assertThat(llmTask.getInputParameters())
+                .as("the dead thinkingConfig map key must no longer be emitted")
+                .doesNotContainKey("thinkingConfig");
+    }
+
+    @Test
+    void testThinkingConfigEnabledWithoutBudgetGetsDefault() {
+        AgentConfig config =
+                AgentConfig.builder()
+                        .name("thinking_agent")
+                        .model("anthropic/claude-sonnet-4-6")
+                        .instructions("Think deeply.")
+                        .thinkingConfig(ThinkingConfig.builder().enabled(true).build())
+                        .build();
+
+        WorkflowTask llmTask = findLlmTask(compiler.compile(config));
+
+        assertThat(llmTask.getInputParameters().get("thinkingTokenLimit"))
+                .isEqualTo(AgentCompiler.DEFAULT_THINKING_BUDGET_TOKENS);
+    }
+
+    @Test
+    void testNoThinkingConfigEmitsNoThinkingTokenLimit() {
+        AgentConfig plain =
+                AgentConfig.builder()
+                        .name("plain_agent")
+                        .model("anthropic/claude-sonnet-4-6")
+                        .instructions("Answer.")
+                        .build();
+        assertThat(findLlmTask(compiler.compile(plain)).getInputParameters())
+                .doesNotContainKey("thinkingTokenLimit");
+
+        AgentConfig disabled =
+                AgentConfig.builder()
+                        .name("disabled_agent")
+                        .model("anthropic/claude-sonnet-4-6")
+                        .instructions("Answer.")
+                        .thinkingConfig(ThinkingConfig.builder().enabled(false).build())
+                        .build();
+        assertThat(findLlmTask(compiler.compile(disabled)).getInputParameters())
+                .doesNotContainKey("thinkingTokenLimit");
+    }
+
+    // ── Invariant: thinking is used ONLY when thinkingConfig is set. Anthropic forwards
+    // reasoningEffort as ``output_config.effort``, which modulates thinking on adaptive models
+    // (Opus 4.7+/Fable) — so effort must not reach Anthropic without thinkingConfig.
+    @Test
+    void testReasoningEffortDroppedForAnthropicWithoutThinking() {
+        AgentConfig config =
+                AgentConfig.builder()
+                        .name("effort_agent")
+                        .model("anthropic/claude-opus-4-8")
+                        .instructions("Answer.")
+                        .reasoningEffort("high")
+                        .build();
+
+        WorkflowTask llmTask = findLlmTask(compiler.compile(config));
+
+        assertThat(llmTask.getInputParameters()).doesNotContainKey("reasoningEffort");
+        assertThat(llmTask.getInputParameters()).doesNotContainKey("reasoningSummary");
+    }
+
+    @Test
+    void testReasoningEffortForwardedForAnthropicWithThinking() {
+        AgentConfig config =
+                AgentConfig.builder()
+                        .name("effort_agent")
+                        .model("anthropic/claude-opus-4-8")
+                        .instructions("Answer.")
+                        .reasoningEffort("high")
+                        .thinkingConfig(
+                                ThinkingConfig.builder().enabled(true).budgetTokens(2048).build())
+                        .build();
+
+        WorkflowTask llmTask = findLlmTask(compiler.compile(config));
+
+        assertThat(llmTask.getInputParameters().get("reasoningEffort")).isEqualTo("high");
+        assertThat(llmTask.getInputParameters().get("thinkingTokenLimit")).isEqualTo(2048);
+    }
+
     // ── Prefill isolation: tools declared ONLY in prefillTools must not be
     // advertised in the LLM's callable tool set. The LLM may only call tools
     // explicitly listed in ``tools``. Prefill workers still need to be

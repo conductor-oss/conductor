@@ -41,6 +41,13 @@ public class AgentCompiler {
     private static final Logger log = LoggerFactory.getLogger(AgentCompiler.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
+    /**
+     * Default extended-thinking budget when {@code thinkingConfig.enabled} is set without an
+     * explicit {@code budgetTokens}. Anthropic's minimum is 1024; must stay below the 16384 default
+     * maxTokens emitted by {@link #buildLlmTask}.
+     */
+    static final int DEFAULT_THINKING_BUDGET_TOKENS = 8192;
+
     private static final List<String> WORKFLOW_INPUTS =
             List.of("prompt", "session_id", "media", "cwd");
     private static final Map<String, Object> USER_MESSAGE =
@@ -1481,7 +1488,8 @@ public class AgentCompiler {
             // enabled without an explicit budget → sensible default (Anthropic minimum is 1024;
             // must stay below the 16384 maxTokens default above).
             inputs.put(
-                    "thinkingTokenLimit", budget != null && budget > 0 ? budget : DEFAULT_THINKING_BUDGET_TOKENS);
+                    "thinkingTokenLimit",
+                    budget != null && budget > 0 ? budget : DEFAULT_THINKING_BUDGET_TOKENS);
         }
 
         // Reasoning effort — forwarded to ChatCompletion.reasoningEffort via
