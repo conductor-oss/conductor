@@ -129,6 +129,36 @@ jobs:
   unit-test:
     needs: detect-changes
     runs-on: ubuntu-latest
+    # Sharded across runners: measured test time is dominated by a few
+    # container-bound modules (http-task ~2m20s; postgres/redis suites), while
+    # the rest is compilation. Explicit shards isolate the container-heavy
+    # modules; the "remainder" shard excludes them and automatically picks up
+    # any NEW module, so nothing silently drops out of CI.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: containers-db
+            tasks: >-
+              :conductor-http-task:test
+              :conductor-postgres-persistence:test
+              :conductor-postgres-external-storage:test
+              :conductor-scheduler-postgres-persistence:test
+          - shard: containers-messaging
+            tasks: >-
+              :conductor-redis-persistence:test
+              :conductor-scheduler-redis-persistence:test
+              :conductor-redis-configuration:test
+              :conductor-redis-lock:test
+              :conductor-redis-concurrency-limit:test
+              :conductor-kafka:test
+              :conductor-kafka-event-queue:test
+              :conductor-amqp:test
+              :conductor-nats:test
+              :conductor-awssqs-event-queue:test
+              :conductor-azureblob-storage:test
+          - shard: remainder
+            tasks: ""
     steps:
       - uses: actions/checkout@v7
         with:
@@ -154,20 +184,45 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle-
       - name: Force Docker API Version
         run: echo 'api.version=1.44' > ~/.docker-java.properties
-      - name: Run unit tests
+      - name: Run unit tests (${{ matrix.shard }})
         run: |
-          # On main (post-merge): run everything
+          # Explicit shards: run exactly their module test tasks.
+          if [ -n "${{ matrix.tasks }}" ]; then
+            ./gradlew --parallel ${{ matrix.tasks }}
+            exit 0
+          fi
+          # Remainder shard: everything not covered by an explicit shard.
+          # Keep this exclusion list in sync with the shard task lists above.
+          SHARDED_EXCLUDES="
+            -x :conductor-http-task:test
+            -x :conductor-postgres-persistence:test
+            -x :conductor-postgres-external-storage:test
+            -x :conductor-scheduler-postgres-persistence:test
+            -x :conductor-redis-persistence:test
+            -x :conductor-scheduler-redis-persistence:test
+            -x :conductor-redis-configuration:test
+            -x :conductor-redis-lock:test
+            -x :conductor-redis-concurrency-limit:test
+            -x :conductor-kafka:test
+            -x :conductor-kafka-event-queue:test
+            -x :conductor-amqp:test
+            -x :conductor-nats:test
+            -x :conductor-awssqs-event-queue:test
+            -x :conductor-azureblob-storage:test
+          "
+          # On main (post-merge): run everything (incl. heavy persistence)
           if [ "${{ github.event_name }}" != "pull_request" ]; then
-            ./gradlew test -x :conductor-test-harness:test
+            ./gradlew --parallel test -x :conductor-test-harness:test $SHARDED_EXCLUDES
             exit 0
           fi
           # On PRs: skip heavy container tests (cassandra, es, mysql, opensearch)
           # unless their code changed. Redis, postgres, sqlite always run.
           if [ "${{ needs.detect-changes.outputs.heavy-persistence }}" == "true" ]; then
-            ./gradlew test -x :conductor-test-harness:test
+            ./gradlew --parallel test -x :conductor-test-harness:test $SHARDED_EXCLUDES
           else
-            ./gradlew test \
+            ./gradlew --parallel test \
               -x :conductor-test-harness:test \
+              $SHARDED_EXCLUDES \
               -x :conductor-cassandra-persistence:test \
               -x :conductor-scheduler-cassandra-persistence:test \
               -x :conductor-es6-persistence:test \
@@ -184,12 +239,12 @@ jobs:
         if: always()
         with:
           report_paths: "**/build/test-results/test/TEST-*.xml"
-          check_name: Unit Test Report
+          check_name: Unit Test Report (${{ matrix.shard }})
       - name: Upload unit-test reports
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: unit-test-reports
+          name: unit-test-reports-${{ matrix.shard }}
           path: "**/build/reports/tests"
   test-harness:
     runs-on: ubuntu-latest
@@ -372,48 +427,61 @@ jobs:
           path: "e2e/build/reports"
 
   build-ui:
+    # ui-next is the default UI: it is what docker/server/Dockerfile bundles
+    # into the conductor:server image, so it is what CI builds and tests.
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ui
+        working-directory: ui-next
     steps:
       - uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: ui-next/package.json
 
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
           node-version: "22"
-          cache: "yarn"
-          cache-dependency-path: ui/yarn.lock
+          cache: "pnpm"
+          cache-dependency-path: ui-next/pnpm-lock.yaml
 
       - name: Install Dependencies
-        run: yarn install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests (vitest)
+        run: pnpm test
 
       - name: Build UI
-        run: yarn run build
+        run: NODE_OPTIONS=--max-old-space-size=4096 pnpm build
 
       - name: Cache Playwright browsers
         uses: actions/cache@v5
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ hashFiles('ui/yarn.lock') }}
+          key: playwright-chromium-${{ hashFiles('ui-next/pnpm-lock.yaml') }}
 
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: Install Playwright browser deps (cached)
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+        run: pnpm exec playwright install-deps chromium
 
       - name: Run Playwright E2E Tests
-        run: yarn test:e2e
+        run: pnpm test:e2e
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report
-          path: ui/playwright-report
+          path: ui-next/playwright-report
           retention-days: 7
