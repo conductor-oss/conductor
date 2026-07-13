@@ -258,7 +258,10 @@ public class MultiAgentCompiler {
         List<String> agentNames = agents.stream().map(AgentConfig::getName).toList();
         // Default: each agent runs at most once, plus one final DONE-check turn.
         // Prevents the router from re-delegating to agents that already responded.
-        int maxTurns = config.getMaxTurns() > 0 ? config.getMaxTurns() : agents.size() + 1;
+        int maxTurns =
+                (config.getMaxTurns() != null && config.getMaxTurns() > 0)
+                        ? config.getMaxTurns()
+                        : agents.size() + 1;
         String loopRef = toRef(config.getName()) + "_loop";
         String routerRef = toRef(config.getName()) + "_router";
 
@@ -840,7 +843,7 @@ public class MultiAgentCompiler {
 
         List<AgentConfig> agents = config.getAgents();
         List<String> agentNames = agents.stream().map(AgentConfig::getName).toList();
-        int maxTurns = config.getMaxTurns() > 0 ? config.getMaxTurns() : 25;
+        int maxTurns = (config.getMaxTurns() != null && config.getMaxTurns() > 0) ? config.getMaxTurns() : 25;
         String loopRef = toRef(config.getName()) + "_loop";
         String routerRef = toRef(config.getName()) + "_router";
 
@@ -1064,7 +1067,7 @@ public class MultiAgentCompiler {
 
         int numAgents = config.getAgents().size();
         String loopRef = toRef(config.getName()) + "_loop";
-        int maxTurns = config.getMaxTurns() > 0 ? config.getMaxTurns() : 25;
+        int maxTurns = (config.getMaxTurns() != null && config.getMaxTurns() > 0) ? config.getMaxTurns() : 25;
 
         // 0. Context resolve: INLINE → null-coalesce input.context
         String rotCtxResolveRef = toRef(config.getName()) + "_ctx_resolve";
@@ -1185,7 +1188,7 @@ public class MultiAgentCompiler {
 
         int numAgents = config.getAgents().size();
         String loopRef = toRef(config.getName()) + "_loop";
-        int maxTurns = config.getMaxTurns() > 0 ? config.getMaxTurns() : 25;
+        int maxTurns = (config.getMaxTurns() != null && config.getMaxTurns() > 0) ? config.getMaxTurns() : 25;
 
         // Build allSwarmAgents list (parent + sub-agents) for transfer tool generation
         AgentConfig parentAsAgent =
@@ -1469,7 +1472,7 @@ public class MultiAgentCompiler {
 
         // DoWhile loop: continue while tool calls present and no transfer
         String loopRef = agent.getName() + "_loop";
-        int maxTurns = agent.getMaxTurns() > 0 ? agent.getMaxTurns() : 100;
+        int maxTurns = (agent.getMaxTurns() != null && agent.getMaxTurns() > 0) ? agent.getMaxTurns() : 100;
         String hasToolCalls =
                 String.format(
                         "($.%s['toolCalls'] != null && $.%s['toolCalls'].length > 0)",
@@ -1614,7 +1617,7 @@ public class MultiAgentCompiler {
 
         int numAgents = config.getAgents().size();
         String loopRef = toRef(config.getName()) + "_loop";
-        int maxTurns = config.getMaxTurns() > 0 ? config.getMaxTurns() : 25;
+        int maxTurns = (config.getMaxTurns() != null && config.getMaxTurns() > 0) ? config.getMaxTurns() : 25;
 
         // 0. Context resolve: INLINE → null-coalesce input.context
         String manCtxResolveRef = toRef(config.getName()) + "_ctx_resolve";
@@ -1801,7 +1804,7 @@ public class MultiAgentCompiler {
         }
 
         String guardrailContinue = agentCompiler.buildGuardrailContinue(guardrailRefs);
-        int maxTurns = config.getMaxTurns() > 0 ? config.getMaxTurns() : 25;
+        int maxTurns = (config.getMaxTurns() != null && config.getMaxTurns() > 0) ? config.getMaxTurns() : 25;
         String loopCondition =
                 String.format(
                         "if ( $.%s_guardrail_loop['iteration'] < %d && (%s) ) { true; } else { false; }",

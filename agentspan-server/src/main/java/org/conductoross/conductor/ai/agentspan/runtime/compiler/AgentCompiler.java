@@ -290,7 +290,7 @@ public class AgentCompiler {
         // Guarded path: LLM + guardrails in DoWhile loop
         String contentRef = ref(llmRef + ".output.result");
         String loopRef = toRef(config.getName()) + "_loop";
-        int maxTurns = config.getMaxTurns() > 0 ? config.getMaxTurns() : 25;
+        int maxTurns = (config.getMaxTurns() != null && config.getMaxTurns() > 0) ? config.getMaxTurns() : 25;
 
         List<WorkflowTask> loopTasks = new ArrayList<>();
         loopTasks.add(llmTask);
@@ -630,7 +630,7 @@ public class AgentCompiler {
 
         // DoWhile loop
         String loopRef = toRef(config.getName()) + "_loop";
-        int maxTurns = config.getMaxTurns() > 0 ? config.getMaxTurns() : 25;
+        int maxTurns = (config.getMaxTurns() != null && config.getMaxTurns() > 0) ? config.getMaxTurns() : 25;
 
         String hasToolCalls =
                 String.format(
@@ -1008,7 +1008,7 @@ public class AgentCompiler {
 
         // DoWhile loop
         String loopRef = toRef(config.getName()) + "_loop";
-        int maxTurns = config.getMaxTurns() > 0 ? config.getMaxTurns() : 25;
+        int maxTurns = (config.getMaxTurns() != null && config.getMaxTurns() > 0) ? config.getMaxTurns() : 25;
 
         String hasToolCalls =
                 String.format(

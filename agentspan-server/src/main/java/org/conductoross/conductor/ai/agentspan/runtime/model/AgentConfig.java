@@ -59,7 +59,7 @@ public class AgentConfig {
     private List<GuardrailConfig> guardrails;
     private MemoryConfig memory;
 
-    @Builder.Default private int maxTurns = 0;
+    private Integer maxTurns;
 
     private Integer maxTokens;
 
