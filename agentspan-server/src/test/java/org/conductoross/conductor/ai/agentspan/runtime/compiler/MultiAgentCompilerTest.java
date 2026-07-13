@@ -104,6 +104,88 @@ class MultiAgentCompilerTest {
 
     @SuppressWarnings("unchecked")
     @Test
+    void testHandoffDefaultMaxTurnsIsNumAgentsPlusOne() {
+        // 3 sub-agents → default maxTurns should be 4 (3 + 1), not 25.
+        // This prevents the router from re-routing to an agent that already responded.
+        AgentConfig config =
+                AgentConfig.builder()
+                        .name("team")
+                        .model("openai/gpt-4o")
+                        .strategy("handoff")
+                        .agents(
+                                List.of(
+                                        simpleSubAgent("agent_a", "Handle A"),
+                                        simpleSubAgent("agent_b", "Handle B"),
+                                        simpleSubAgent("agent_c", "Handle C")))
+                        .build();
+
+        WorkflowDef wf = compiler.compile(config);
+
+        WorkflowTask loop = wf.getTasks().get(2); // DO_WHILE
+        // Loop condition encodes maxTurns as a literal integer.
+        // With 3 agents: expected maxTurns = 4 (agents.size() + 1).
+        assertThat(loop.getLoopCondition()).contains("< 4");
+        assertThat(loop.getLoopCondition()).doesNotContain("< 25");
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void testHandoffExplicitMaxTurnsIsRespected() {
+        // Explicit maxTurns overrides the default.
+        AgentConfig config =
+                AgentConfig.builder()
+                        .name("team")
+                        .model("openai/gpt-4o")
+                        .strategy("handoff")
+                        .maxTurns(10)
+                        .agents(
+                                List.of(
+                                        simpleSubAgent("agent_a", "Handle A"),
+                                        simpleSubAgent("agent_b", "Handle B")))
+                        .build();
+
+        WorkflowDef wf = compiler.compile(config);
+
+        WorkflowTask loop = wf.getTasks().get(2); // DO_WHILE
+        assertThat(loop.getLoopCondition()).contains("< 10");
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void testHandoffRouterPromptPreventsReDelegation() {
+        // Router prompt must tell the LLM not to re-route to an agent
+        // that has already responded (identified by "[agent_name]:" in the conversation).
+        AgentConfig config =
+                AgentConfig.builder()
+                        .name("team")
+                        .model("openai/gpt-4o")
+                        .instructions("Route to the best agent.")
+                        .strategy("handoff")
+                        .agents(
+                                List.of(
+                                        simpleSubAgent("agent_a", "Handle A tasks"),
+                                        simpleSubAgent("agent_b", "Handle B tasks")))
+                        .build();
+
+        WorkflowDef wf = compiler.compile(config);
+        WorkflowTask loop = wf.getTasks().get(2); // DO_WHILE
+
+        // Router LLM is the first task inside the loop (wrapped in a SUB_WORKFLOW)
+        WorkflowTask routerSubWf = loop.getLoopOver().get(0);
+        WorkflowTask routerLlm =
+                routerSubWf.getSubWorkflowParam().getWorkflowDef().getTasks().get(0);
+        List<Map<String, Object>> messages =
+                (List<Map<String, Object>>) routerLlm.getInputParameters().get("messages");
+        String systemPrompt = (String) messages.get(0).get("message");
+
+        // Must tell the router that an agent that has already responded should not be called again.
+        assertThat(systemPrompt).containsIgnoringCase("at most once");
+        // Must reference the conversation marker pattern so the LLM can recognise responded agents.
+        assertThat(systemPrompt).contains("[agent_name]:");
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
     void testHandoffWithDynamicInstructionsAddsInstructionTasks() {
         AgentConfig config =
                 AgentConfig.builder()
@@ -888,10 +970,11 @@ class MultiAgentCompilerTest {
                 (List<Map<String, Object>>) innerLlm.getInputParameters().get("messages");
         String systemMsg = (String) messages.get(0).get("message");
 
-        // Should contain multi-part awareness language
-        assertThat(systemMsg).contains("ALL parts");
-        assertThat(systemMsg).contains("MULTIPLE parts");
-        assertThat(systemMsg).contains("COMPLETE request");
+        // Should assign a coordinator role and handle multi-part requests
+        assertThat(systemMsg).contains("coordinator that delegates");
+        assertThat(systemMsg).contains("NOT yet been addressed");
+        // Should enforce single-word output (agent name or DONE)
+        assertThat(systemMsg).contains("single word");
         // Should NOT contain the old early-termination language
         assertThat(systemMsg)
                 .doesNotContain("Once an agent has responded, you should typically respond DONE");

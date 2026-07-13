@@ -256,7 +256,9 @@ public class MultiAgentCompiler {
         String instructions = instructionsPlan.getText();
         List<AgentConfig> agents = config.getAgents();
         List<String> agentNames = agents.stream().map(AgentConfig::getName).toList();
-        int maxTurns = config.getMaxTurns() > 0 ? config.getMaxTurns() : 25;
+        // Default: each agent runs at most once, plus one final DONE-check turn.
+        // Prevents the router from re-delegating to agents that already responded.
+        int maxTurns = config.getMaxTurns() > 0 ? config.getMaxTurns() : agents.size() + 1;
         String loopRef = toRef(config.getName()) + "_loop";
         String routerRef = toRef(config.getName()) + "_router";
 
@@ -304,17 +306,16 @@ public class MultiAgentCompiler {
                         + "Available agents:\n"
                         + agentsInfo
                         + "\nBased on the conversation so far, decide the next action:\n"
-                        + "- Carefully analyze the user's COMPLETE request. It may contain MULTIPLE parts "
-                        + "that require DIFFERENT agents.\n"
-                        + "- If ANY part of the user's request has NOT yet been addressed by an appropriate agent, "
-                        + "respond with ONLY the name of the agent that should handle the unaddressed part (one of: "
+                        + "- Each agent must be called AT MOST ONCE. If you see \"[agent_name]:\" in the "
+                        + "conversation, that agent has already responded — do NOT route to them again.\n"
+                        + "- If there is a part of the user's request that has NOT yet been addressed "
+                        + "by an appropriate agent, respond with ONLY the name of that agent (one of: "
                         + String.join(", ", agentNames)
                         + ")\n"
-                        + "- ONLY if ALL parts of the user's request have been fully addressed, respond with "
-                        + "ONLY the word DONE\n\n"
-                        + "Important: Review the full conversation to check which parts have been handled. "
-                        + "Do NOT say DONE until every distinct part of the request has received a response "
-                        + "from a suitable agent.\n\n"
+                        + "- If all needed agents have already responded, respond with ONLY the word DONE\n\n"
+                        + "Important: Each agent responds exactly once. Once they have responded (you can "
+                        + "see their name followed by \":\" in the conversation), say DONE — never call "
+                        + "the same agent twice.\n\n"
                         + "Respond with a single word — either an agent name or DONE. No other text.";
 
         WorkflowTask routerLlm = buildIterativeRouterLlm(routerRef, parsed, systemPrompt);
