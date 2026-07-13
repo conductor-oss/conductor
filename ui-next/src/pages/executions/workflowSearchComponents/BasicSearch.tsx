@@ -9,7 +9,14 @@ import SplitButton from "components/ui/buttons/ConductorSplitButton";
 import ResetIcon from "components/icons/ResetIcon";
 import SearchIcon from "components/icons/SearchIcon";
 import _isEmpty from "lodash/isEmpty";
-import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { Navigate } from "react-router";
 import { useQueryState } from "react-router-use-location-state";
@@ -68,9 +75,16 @@ export interface BasicSearchProps {
   setStartOpenDatePicker: (val: boolean) => void;
   openEndDatePicker: boolean;
   setEndOpenDatePicker: (val: boolean) => void;
-  excludeSubWorkflows: boolean;
-  setExcludeSubWorkflows: (val: boolean) => void;
   recentSearches: { start: string; end: string };
+  /** Classifier filter passed to /workflow/search (e.g. "workflow" or "agent"). */
+  classifier?: string;
+  /** When set, results are scoped to this agent (adds a workflowType clause). */
+  agentName?: string;
+  /**
+   * When set, renders a toggle with this label that excludes sub-executions
+   * (those with a parentWorkflowId) — e.g. "Exclude sub-agents".
+   */
+  excludeSubLabel?: string;
 }
 
 export default function BasicSearch({
@@ -103,9 +117,10 @@ export default function BasicSearch({
   setStartOpenDatePicker,
   openEndDatePicker,
   setEndOpenDatePicker,
-  excludeSubWorkflows,
-  setExcludeSubWorkflows,
   recentSearches,
+  classifier = "workflow",
+  agentName,
+  excludeSubLabel,
 }: BasicSearchProps) {
   const [page, setPage] = useQueryState("page", 1);
   const [workflowType, setWorkflowType] = useQueryState<string[]>(
@@ -120,6 +135,10 @@ export default function BasicSearch({
   const [idempotencyKey, setIdempotencyKey] = useQueryState<string[]>(
     "idempotencyKey",
     [],
+  );
+  const [excludeSubExecutions, setExcludeSubExecutions] = useQueryState(
+    "excludeSubExecutions",
+    false,
   );
 
   const [modifiedFrom, setModifiedFrom] = useQueryState("modifiedFrom", "");
@@ -173,7 +192,7 @@ export default function BasicSearch({
     setModifiedTo("");
     setEndTimeFrom("");
     setEndTimeTo("");
-    setExcludeSubWorkflows(false);
+    setExcludeSubExecutions(false);
     setToDisplayTime("Now");
     setFromDisplayTime("Last 72 Hours");
   };
@@ -240,7 +259,11 @@ export default function BasicSearch({
       clauses.push(`idempotencyKey IN (${idempotencyKey.join(",")})`);
     }
 
-    if (excludeSubWorkflows) {
+    if (!_isEmpty(agentName)) {
+      clauses.push(`workflowType='${agentName}'`);
+    }
+
+    if (excludeSubLabel && excludeSubExecutions) {
       clauses.push(`parentWorkflowId=""`);
     }
 
@@ -261,7 +284,9 @@ export default function BasicSearch({
     idempotencyKey,
     endTimeFrom,
     endTimeTo,
-    excludeSubWorkflows,
+    agentName,
+    excludeSubLabel,
+    excludeSubExecutions,
   ]);
 
   const [queryFT, setQueryFT] = useState(buildQuery);
@@ -277,9 +302,9 @@ export default function BasicSearch({
       sort,
       query: queryFT.query,
       freeText: queryFT.freeText,
-      // Exclude AgentSpan-compiled agent executions — this page is for plain
-      // workflow executions; agent runs live on the dedicated Agents pages.
-      classifier: "workflow",
+      // Scope results to a single classifier: "workflow" for plain workflow
+      // executions, "agent" for AgentSpan agent runs on the Agents pages.
+      classifier,
     },
     {},
     {
@@ -361,6 +386,21 @@ export default function BasicSearch({
     }
     // eslint-disable-next-line
   }, []);
+
+  // The exclude-sub toggle reads as an instant filter (unlike the text inputs,
+  // which are applied on Search). Re-run the search as soon as it flips so the
+  // results reflect it without a separate Search click. Skip the initial mount.
+  const excludeSubInitialized = useRef(false);
+  useEffect(() => {
+    if (!excludeSubLabel) return;
+    if (!excludeSubInitialized.current) {
+      excludeSubInitialized.current = true;
+      return;
+    }
+    setPage(1);
+    setQueryFT(buildQuery());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [excludeSubExecutions]);
 
   // @ts-ignore
   if (error?.status === 401) {
@@ -624,35 +664,39 @@ export default function BasicSearch({
                 endTimeLabel="Execution End Time"
               />
             </Grid>
-            <Grid
-              display="flex"
-              alignItems="center"
-              size={{
-                xs: 12,
-                sm: 6,
-                md: 3,
-                lg: 3,
-              }}
-              sx={{
-                order: { xs: 0, lg: 3 },
-              }}
-            >
-              <FormControlLabel
-                sx={{ whiteSpace: "nowrap", mb: 0.5 }}
-                control={
-                  <Switch
-                    color="primary"
-                    checked={excludeSubWorkflows}
-                    onChange={(e) => setExcludeSubWorkflows(e.target.checked)}
-                    size="small"
-                  />
-                }
-                label="Exclude sub-workflows"
-                slotProps={{
-                  typography: { variant: "body2" },
+            {excludeSubLabel && (
+              <Grid
+                display="flex"
+                alignItems="center"
+                size={{
+                  xs: 12,
+                  sm: 6,
+                  md: 3,
+                  lg: 3,
                 }}
-              />
-            </Grid>
+                sx={{
+                  order: { xs: 0, lg: 3 },
+                }}
+              >
+                <FormControlLabel
+                  sx={{ whiteSpace: "nowrap", mb: 0.5 }}
+                  control={
+                    <Switch
+                      color="primary"
+                      checked={excludeSubExecutions}
+                      onChange={(e) =>
+                        setExcludeSubExecutions(e.target.checked)
+                      }
+                      size="small"
+                    />
+                  }
+                  label={excludeSubLabel}
+                  slotProps={{
+                    typography: { variant: "body2" },
+                  }}
+                />
+              </Grid>
+            )}
             <Grid
               display="flex"
               justifyContent="end"

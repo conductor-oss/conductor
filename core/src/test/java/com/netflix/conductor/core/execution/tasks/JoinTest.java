@@ -177,7 +177,8 @@ public class JoinTest {
         @SuppressWarnings("unchecked")
         Map<String, Object> compact = (Map<String, Object>) joinTask.getOutputData().get("t1");
         assertEquals("state", "some-state", compact.get("state"));
-        assertFalse("full tool output must not leak into JOIN output for agent executions",
+        assertFalse(
+                "full tool output must not leak into JOIN output for agent executions",
                 compact.containsKey("toolResult"));
     }
 
@@ -206,8 +207,10 @@ public class JoinTest {
         assertEquals(TaskModel.Status.COMPLETED, joinTask.getStatus());
         @SuppressWarnings("unchecked")
         Map<String, Object> full = (Map<String, Object>) joinTask.getOutputData().get("t1");
-        assertEquals("plain FORK/JOIN must keep copying the full fork output (stock Conductor behavior)",
-                forkOutput, full);
+        assertEquals(
+                "plain FORK/JOIN must keep copying the full fork output (stock Conductor behavior)",
+                forkOutput,
+                full);
     }
 
     @Test

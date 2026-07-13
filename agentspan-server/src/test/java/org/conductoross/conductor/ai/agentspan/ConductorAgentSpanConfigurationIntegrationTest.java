@@ -21,6 +21,9 @@ import java.util.Map;
 
 import javax.sql.DataSource;
 
+import org.conductoross.conductor.ai.agentspan.runtime.model.skill.SkillDetail;
+import org.conductoross.conductor.ai.agentspan.runtime.spi.SkillPackageStore;
+import org.conductoross.conductor.ai.agentspan.runtime.spi.StoredSkillPackage;
 import org.conductoross.conductor.dao.SkillMetadataDAO;
 import org.conductoross.conductor.dao.SkillPackageDAO;
 import org.conductoross.conductor.sqlite.dao.SqliteSkillMetadataDAO;
@@ -35,9 +38,6 @@ import org.sqlite.SQLiteDataSource;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.agentspan.runtime.model.skill.SkillDetail;
-import dev.agentspan.runtime.spi.SkillPackageStore;
-import dev.agentspan.runtime.spi.StoredSkillPackage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -75,12 +75,15 @@ class ConductorAgentSpanConfigurationIntegrationTest {
                         context -> {
                             assertThat(context)
                                     .hasSingleBean(
-                                            dev.agentspan.runtime.spi.SkillMetadataDAO.class);
+                                            org.conductoross.conductor.ai.agentspan.runtime.spi
+                                                    .SkillMetadataDAO.class);
                             assertThat(context).hasSingleBean(SkillPackageStore.class);
 
-                            dev.agentspan.runtime.spi.SkillMetadataDAO metadataStore =
-                                    context.getBean(
-                                            dev.agentspan.runtime.spi.SkillMetadataDAO.class);
+                            org.conductoross.conductor.ai.agentspan.runtime.spi.SkillMetadataDAO
+                                    metadataStore =
+                                            context.getBean(
+                                                    org.conductoross.conductor.ai.agentspan.runtime
+                                                            .spi.SkillMetadataDAO.class);
                             SkillPackageStore packageStore =
                                     context.getBean(SkillPackageStore.class);
 
@@ -140,7 +143,8 @@ class ConductorAgentSpanConfigurationIntegrationTest {
                         context -> {
                             assertThat(context)
                                     .doesNotHaveBean(
-                                            dev.agentspan.runtime.spi.SkillMetadataDAO.class);
+                                            org.conductoross.conductor.ai.agentspan.runtime.spi
+                                                    .SkillMetadataDAO.class);
                             assertThat(context).doesNotHaveBean(SkillPackageStore.class);
                         });
     }
@@ -152,9 +156,11 @@ class ConductorAgentSpanConfigurationIntegrationTest {
         contextRunner(true)
                 .run(
                         context -> {
-                            dev.agentspan.runtime.spi.SkillMetadataDAO metadataStore =
-                                    context.getBean(
-                                            dev.agentspan.runtime.spi.SkillMetadataDAO.class);
+                            org.conductoross.conductor.ai.agentspan.runtime.spi.SkillMetadataDAO
+                                    metadataStore =
+                                            context.getBean(
+                                                    org.conductoross.conductor.ai.agentspan.runtime
+                                                            .spi.SkillMetadataDAO.class);
 
                             assertThatIllegalStateException()
                                     .isThrownBy(() -> metadataStore.find("broken", "1"))
@@ -172,9 +178,11 @@ class ConductorAgentSpanConfigurationIntegrationTest {
         contextRunner(true)
                 .run(
                         context -> {
-                            dev.agentspan.runtime.spi.SkillMetadataDAO metadataStore =
-                                    context.getBean(
-                                            dev.agentspan.runtime.spi.SkillMetadataDAO.class);
+                            org.conductoross.conductor.ai.agentspan.runtime.spi.SkillMetadataDAO
+                                    metadataStore =
+                                            context.getBean(
+                                                    org.conductoross.conductor.ai.agentspan.runtime
+                                                            .spi.SkillMetadataDAO.class);
 
                             assertThatIllegalStateException()
                                     .isThrownBy(() -> metadataStore.save(invalid, true))

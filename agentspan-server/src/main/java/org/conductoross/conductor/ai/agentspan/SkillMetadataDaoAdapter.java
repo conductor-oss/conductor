@@ -15,20 +15,22 @@ package org.conductoross.conductor.ai.agentspan;
 import java.util.List;
 import java.util.Optional;
 
+import org.conductoross.conductor.ai.agentspan.runtime.model.skill.SkillDetail;
+import org.conductoross.conductor.ai.agentspan.runtime.spi.SkillMetadataDAO;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.agentspan.runtime.model.skill.SkillDetail;
 
 /**
- * Bridges AgentSpan's {@link dev.agentspan.runtime.spi.SkillMetadataDAO} SPI onto Conductor's
- * backend-agnostic {@link org.conductoross.conductor.dao.SkillMetadataDAO}. The {@link SkillDetail}
- * manifest is serialized to JSON for storage so the persistence layer carries no dependency on
- * AgentSpan model types; it is rehydrated on read.
+ * Bridges AgentSpan's {@link SkillMetadataDAO} SPI onto Conductor's backend-agnostic {@link
+ * org.conductoross.conductor.dao.SkillMetadataDAO}. The {@link SkillDetail} manifest is serialized
+ * to JSON for storage so the persistence layer carries no dependency on AgentSpan model types; it
+ * is rehydrated on read.
  *
  * <p>OSS Conductor is single-tenant, so skills share one global namespace and neither side of the
  * adapter is owner-scoped.
  */
-public class SkillMetadataDaoAdapter implements dev.agentspan.runtime.spi.SkillMetadataDAO {
+public class SkillMetadataDaoAdapter implements SkillMetadataDAO {
 
     private final org.conductoross.conductor.dao.SkillMetadataDAO delegate;
     private final ObjectMapper objectMapper;

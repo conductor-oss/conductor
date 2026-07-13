@@ -674,10 +674,11 @@ public class LLMHelper {
     private Message getMessage(ChatMessage msg) {
         List<String> rawMedia = msg.getMedia();
         List<Media> media =
-                (rawMedia == null ? List.<String>of() : rawMedia).stream()
-                        .map(m -> getMedia(msg.getMimeType(), m))
-                        .filter(Objects::nonNull)
-                        .toList();
+                (rawMedia == null ? List.<String>of() : rawMedia)
+                        .stream()
+                                .map(m -> getMedia(msg.getMimeType(), m))
+                                .filter(Objects::nonNull)
+                                .toList();
         return UserMessage.builder().text(msg.getMessage()).media(media).build();
     }
 
