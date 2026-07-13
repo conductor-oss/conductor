@@ -62,8 +62,7 @@ public class SkillController {
     }
 
     @GetMapping("/{name}/versions/{version}")
-    public SkillDetail getSkill(
-            @PathVariable("name") String name, @PathVariable("version") String version) {
+    public SkillDetail getSkill(@PathVariable("name") String name, @PathVariable("version") String version) {
         return skillRegistryService.get(name, version);
     }
 

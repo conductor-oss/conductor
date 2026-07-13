@@ -129,8 +129,7 @@ public class AgentController {
      */
     @PostMapping("/{executionId}/respond")
     public void respondToAgent(
-            @PathVariable("executionId") String executionId,
-            @RequestBody Map<String, Object> output) {
+            @PathVariable("executionId") String executionId, @RequestBody Map<String, Object> output) {
         agentService.respond(executionId, output);
     }
 
@@ -140,8 +139,7 @@ public class AgentController {
      */
     @PostMapping("/events/{executionId}")
     public void pushFrameworkEvent(
-            @PathVariable("executionId") String executionId,
-            @RequestBody Map<String, Object> event) {
+            @PathVariable("executionId") String executionId, @RequestBody Map<String, Object> event) {
         agentService.pushFrameworkEvent(executionId, event);
     }
 
@@ -188,8 +186,7 @@ public class AgentController {
 
     /** Get detailed execution status for a single agent execution. */
     @GetMapping("/executions/{executionId}")
-    public AgentExecutionDetail getExecutionDetail(
-            @PathVariable("executionId") String executionId) {
+    public AgentExecutionDetail getExecutionDetail(@PathVariable("executionId") String executionId) {
         return agentService.getExecutionDetail(executionId);
     }
 
@@ -222,8 +219,7 @@ public class AgentController {
     /** Inject a persistent signal into a running agent's context. */
     @PostMapping("/{executionId}/signal")
     public void signalAgent(
-            @PathVariable("executionId") String executionId,
-            @RequestBody Map<String, Object> body) {
+            @PathVariable("executionId") String executionId, @RequestBody Map<String, Object> body) {
         String message = body != null ? (String) body.getOrDefault("message", "") : "";
         agentService.signalAgent(executionId, message);
     }
@@ -305,8 +301,7 @@ public class AgentController {
     /** Rerun execution from a specific task. */
     @PostMapping("/executions/{executionId}/rerun")
     public String rerunExecution(
-            @PathVariable("executionId") String executionId,
-            @RequestBody RerunWorkflowRequest request) {
+            @PathVariable("executionId") String executionId, @RequestBody RerunWorkflowRequest request) {
         return agentService.rerunExecution(executionId, request);
     }
 
