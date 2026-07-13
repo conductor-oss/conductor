@@ -21,6 +21,7 @@ import org.conductoross.conductor.ai.agentspan.runtime.model.AgentSSEEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
@@ -40,6 +41,7 @@ import io.micrometer.core.instrument.MeterRegistry;
  */
 @Component
 @Primary
+@ConditionalOnProperty(name = "agentspan.embedded", havingValue = "true")
 public class AgentEventListener implements TaskStatusListener, WorkflowStatusListener {
 
     private static final Logger logger = LoggerFactory.getLogger(AgentEventListener.class);
