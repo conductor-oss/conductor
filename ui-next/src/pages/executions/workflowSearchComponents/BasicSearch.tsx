@@ -1,4 +1,4 @@
-import { Box, FormControlLabel, Grid, Switch } from "@mui/material";
+import { Box, Grid } from "@mui/material";
 import { Button, Paper } from "components";
 import { DEFAULT_ROWS_PER_PAGE } from "components/ui/DataTable/DataTable";
 import StatusBadge from "components/StatusBadge";
@@ -68,9 +68,11 @@ export interface BasicSearchProps {
   setStartOpenDatePicker: (val: boolean) => void;
   openEndDatePicker: boolean;
   setEndOpenDatePicker: (val: boolean) => void;
-  excludeSubWorkflows: boolean;
-  setExcludeSubWorkflows: (val: boolean) => void;
   recentSearches: { start: string; end: string };
+  /** Classifier filter passed to /workflow/search (e.g. "workflow" or "agent"). */
+  classifier?: string;
+  /** When set, results are scoped to this agent (adds a workflowType clause). */
+  agentName?: string;
 }
 
 export default function BasicSearch({
@@ -103,9 +105,9 @@ export default function BasicSearch({
   setStartOpenDatePicker,
   openEndDatePicker,
   setEndOpenDatePicker,
-  excludeSubWorkflows,
-  setExcludeSubWorkflows,
   recentSearches,
+  classifier = "workflow",
+  agentName,
 }: BasicSearchProps) {
   const [page, setPage] = useQueryState("page", 1);
   const [workflowType, setWorkflowType] = useQueryState<string[]>(
@@ -173,7 +175,6 @@ export default function BasicSearch({
     setModifiedTo("");
     setEndTimeFrom("");
     setEndTimeTo("");
-    setExcludeSubWorkflows(false);
     setToDisplayTime("Now");
     setFromDisplayTime("Last 72 Hours");
   };
@@ -240,8 +241,8 @@ export default function BasicSearch({
       clauses.push(`idempotencyKey IN (${idempotencyKey.join(",")})`);
     }
 
-    if (excludeSubWorkflows) {
-      clauses.push(`parentWorkflowId=""`);
+    if (!_isEmpty(agentName)) {
+      clauses.push(`workflowType='${agentName}'`);
     }
 
     return {
@@ -261,7 +262,7 @@ export default function BasicSearch({
     idempotencyKey,
     endTimeFrom,
     endTimeTo,
-    excludeSubWorkflows,
+    agentName,
   ]);
 
   const [queryFT, setQueryFT] = useState(buildQuery);
@@ -277,9 +278,9 @@ export default function BasicSearch({
       sort,
       query: queryFT.query,
       freeText: queryFT.freeText,
-      // Exclude AgentSpan-compiled agent executions — this page is for plain
-      // workflow executions; agent runs live on the dedicated Agents pages.
-      classifier: "workflow",
+      // Scope results to a single classifier: "workflow" for plain workflow
+      // executions, "agent" for AgentSpan agent runs on the Agents pages.
+      classifier,
     },
     {},
     {
@@ -622,35 +623,6 @@ export default function BasicSearch({
                 endDialogHelpText="Select a date range within which the Workflow Execution has ended."
                 startTimeLabel="Execution Start Time"
                 endTimeLabel="Execution End Time"
-              />
-            </Grid>
-            <Grid
-              display="flex"
-              alignItems="center"
-              size={{
-                xs: 12,
-                sm: 6,
-                md: 3,
-                lg: 3,
-              }}
-              sx={{
-                order: { xs: 0, lg: 3 },
-              }}
-            >
-              <FormControlLabel
-                sx={{ whiteSpace: "nowrap", mb: 0.5 }}
-                control={
-                  <Switch
-                    color="primary"
-                    checked={excludeSubWorkflows}
-                    onChange={(e) => setExcludeSubWorkflows(e.target.checked)}
-                    size="small"
-                  />
-                }
-                label="Exclude sub-workflows"
-                slotProps={{
-                  typography: { variant: "body2" },
-                }}
               />
             </Grid>
             <Grid
