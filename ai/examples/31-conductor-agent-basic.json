@@ -1,0 +1,23 @@
+{
+  "name": "conductor_agent_basic",
+  "version": 1,
+  "schemaVersion": 2,
+  "description": "Minimal single-task run against the embedded agentspan runtime: an AGENT (conductor) task runs the registered 'planner' agent to completion (poll mode) and the workflow surfaces its text, output, and state.",
+  "tasks": [
+    {
+      "name": "run_agent",
+      "taskReferenceName": "run_agent_ref",
+      "type": "AGENT",
+      "inputParameters": {
+        "agentType": "conductor",
+        "agentName": "planner",
+        "text": "${workflow.input.prompt}"
+      }
+    }
+  ],
+  "outputParameters": {
+    "text": "${run_agent_ref.output.text}",
+    "output": "${run_agent_ref.output.output}",
+    "state": "${run_agent_ref.output.state}"
+  }
+}
