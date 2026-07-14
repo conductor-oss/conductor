@@ -31,12 +31,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * End-to-end lifecycle test for the {@code AGENT} (conductor) branch, driven through the real {@link
- * AgentTask} system-task entry points against an in-process {@link FakeConductorAgentRuntime} — the
- * conductor-branch analogue of {@code A2AEndToEndTest} (no mock frameworks, no socket).
+ * End-to-end lifecycle test for the {@code AGENT} (conductor) branch, driven through the real
+ * {@link AgentTask} system-task entry points against an in-process {@link
+ * FakeConductorAgentRuntime} — the conductor-branch analogue of {@code A2AEndToEndTest} (no mock
+ * frameworks, no socket).
  *
- * <p>Covers start&rarr;poll&rarr;complete, plus the {@code WAITING}&rarr;resume flow, per test-plan.md
- * §4.1.
+ * <p>Covers start&rarr;poll&rarr;complete, plus the {@code WAITING}&rarr;resume flow, per
+ * test-plan.md §4.1.
  */
 class ConductorAgentEndToEndTest {
 
@@ -116,7 +117,8 @@ class ConductorAgentEndToEndTest {
         assertEquals(startedAt, task.getOutputData().get(ConductorAgentResults.KEY_STARTED_AT));
     }
 
-    // WAITING on start -> task COMPLETES surfacing the pending request; a second AGENT call carrying
+    // WAITING on start -> task COMPLETES surfacing the pending request; a second AGENT call
+    // carrying
     // the executionId resumes via respond() and routes the resumed run to COMPLETED.
     @Test
     void waiting_thenResumeRoutesToCompleted() {
@@ -154,8 +156,7 @@ class ConductorAgentEndToEndTest {
     @Test
     void getEvaluationOffset_usesPollCadence() {
         assertEquals(
-                Optional.of(5L),
-                agentTask.getEvaluationOffset(taskModel(conductorInput()), 30));
+                Optional.of(5L), agentTask.getEvaluationOffset(taskModel(conductorInput()), 30));
 
         Map<String, Object> input = conductorInput();
         input.put("pollIntervalSeconds", 9);

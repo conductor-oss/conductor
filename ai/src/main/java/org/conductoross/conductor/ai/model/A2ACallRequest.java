@@ -70,7 +70,9 @@ public class A2ACallRequest extends LLMWorkerInput {
      */
     private String executionId;
 
-    /** Additional context values passed to the Conductor agent run (agentType {@code "conductor"}). */
+    /**
+     * Additional context values passed to the Conductor agent run (agentType {@code "conductor"}).
+     */
     private Map<String, Object> context;
 
     /** Convenience: a single text part to send. */

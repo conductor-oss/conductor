@@ -19,10 +19,10 @@ import java.util.Map;
  * Abstraction over the embedded Conductor-agent runtime (agentspan).
  *
  * <p>Implemented by the {@code agentspan-server} module and injected into the {@code AGENT} task's
- * {@code conductor} branch as an {@code Optional}: when the embedded runtime is not on the classpath
- * / not enabled, the {@code AGENT} (conductor) task fails terminally. Keeping this as an interface
- * in the {@code ai} module preserves Conductor's pluggable, interface-first design without a compile
- * dependency on the runtime implementation.
+ * {@code conductor} branch as an {@code Optional}: when the embedded runtime is not on the
+ * classpath / not enabled, the {@code AGENT} (conductor) task fails terminally. Keeping this as an
+ * interface in the {@code ai} module preserves Conductor's pluggable, interface-first design
+ * without a compile dependency on the runtime implementation.
  */
 public interface ConductorAgentRuntime {
 

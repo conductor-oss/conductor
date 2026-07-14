@@ -47,7 +47,9 @@ public class ConductorAgentExecution {
     /** Latest text emitted by the agent (partial while running, final when complete). */
     private String text;
 
-    /** When {@link #state} is {@link ConductorAgentState#WAITING}: the pending tool/human request. */
+    /**
+     * When {@link #state} is {@link ConductorAgentState#WAITING}: the pending tool/human request.
+     */
     private Map<String, Object> pendingTool;
 
     /** Failure/cancel explanation for terminal non-completed states. */

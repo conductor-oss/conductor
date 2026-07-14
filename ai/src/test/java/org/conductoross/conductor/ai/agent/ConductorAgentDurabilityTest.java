@@ -31,8 +31,8 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Durability/guard coverage for the {@code AGENT} (conductor) branch, driven through the real {@link
- * AgentTask} entry points against an in-process {@link FakeConductorAgentRuntime} — the
+ * Durability/guard coverage for the {@code AGENT} (conductor) branch, driven through the real
+ * {@link AgentTask} entry points against an in-process {@link FakeConductorAgentRuntime} — the
  * conductor-branch analogue of {@code A2ADurabilityTest} (no mock frameworks). Proves the
  * idempotency key shape, the two liveness guards, runtime-absent failure, and cancel propagation
  * (test-plan.md §4.2).
@@ -71,7 +71,8 @@ class ConductorAgentDurabilityTest {
         return input;
     }
 
-    // Idempotency (invariant 5): the key is byte-for-byte "conductor-agent-<wf>:<ref>:<iter>" and is
+    // Idempotency (invariant 5): the key is byte-for-byte "conductor-agent-<wf>:<ref>:<iter>" and
+    // is
     // stable across two starts on the same identity; changing the iteration changes the key.
     @Test
     void idempotencyKey_isStableAcrossRetriesAndIterationSensitive() {
@@ -98,7 +99,8 @@ class ConductorAgentDurabilityTest {
         assertNotEquals(first, otherIteration);
     }
 
-    // Guard 1 (absolute deadline): a back-dated agentStartedAt past a small maxDurationSeconds fails
+    // Guard 1 (absolute deadline): a back-dated agentStartedAt past a small maxDurationSeconds
+    // fails
     // the task terminally on the next poll.
     @Test
     void guard1_deadlineExceeded_failsTerminally() {
@@ -110,8 +112,7 @@ class ConductorAgentDurabilityTest {
         input.put("maxDurationSeconds", 1);
         TaskModel model = taskModel(input, 0);
         model.addOutput(ConductorAgentResults.KEY_EXECUTION_ID, "exec-1");
-        model.addOutput(
-                ConductorAgentResults.KEY_STARTED_AT, System.currentTimeMillis() - 10_000L);
+        model.addOutput(ConductorAgentResults.KEY_STARTED_AT, System.currentTimeMillis() - 10_000L);
 
         boolean changed = task.execute(null, model, null);
 

@@ -32,9 +32,9 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Drives the {@code AGENT} (conductor) task branch against the embedded {@link
  * ConductorAgentRuntime}. Non-blocking, mirroring {@link
- * org.conductoross.conductor.ai.a2a.AgentTask}'s A2A branch: a fresh call starts (or, when an {@code
- * executionId} is supplied, resumes) an execution; while the run is not terminal the task stays
- * {@code IN_PROGRESS} and is re-polled at the task's evaluation cadence.
+ * org.conductoross.conductor.ai.a2a.AgentTask}'s A2A branch: a fresh call starts (or, when an
+ * {@code executionId} is supplied, resumes) an execution; while the run is not terminal the task
+ * stays {@code IN_PROGRESS} and is re-polled at the task's evaluation cadence.
  *
  * <p>Two liveness guards prevent a stuck run from polling forever:
  *

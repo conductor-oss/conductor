@@ -193,8 +193,7 @@ class ConductorAgentDelegateTest {
         TaskModel task = taskModel(input);
         task.addOutput(ConductorAgentResults.KEY_EXECUTION_ID, "exec-1");
         // Started well beyond the 1s deadline.
-        task.addOutput(
-                ConductorAgentResults.KEY_STARTED_AT, System.currentTimeMillis() - 10_000L);
+        task.addOutput(ConductorAgentResults.KEY_STARTED_AT, System.currentTimeMillis() - 10_000L);
 
         boolean changed = delegate.execute(task);
 
@@ -243,8 +242,7 @@ class ConductorAgentDelegateTest {
         delegate.start(task);
 
         assertEquals(
-                "conductor-agent-wf-1:agent_ref:3",
-                runtime.lastStartRequest.getIdempotencyKey());
+                "conductor-agent-wf-1:agent_ref:3", runtime.lastStartRequest.getIdempotencyKey());
         assertEquals("planner", runtime.lastStartRequest.getAgentName());
         assertEquals("plan my trip", runtime.lastStartRequest.getPrompt());
     }
@@ -288,7 +286,9 @@ class ConductorAgentDelegateTest {
     // via the prompt the delegate hands the runtime (lastStartRequest.getPrompt()).
     // ---------------------------------------------------------------------------------------------
 
-    /** Builds the fresh-start input, adding whatever prompt sources the case under test supplies. */
+    /**
+     * Builds the fresh-start input, adding whatever prompt sources the case under test supplies.
+     */
     private static Map<String, Object> promptInput() {
         Map<String, Object> input = new HashMap<>();
         input.put("agentType", "conductor");

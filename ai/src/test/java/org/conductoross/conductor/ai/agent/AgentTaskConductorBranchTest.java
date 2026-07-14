@@ -31,9 +31,9 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
- * Dispatch coverage for {@link AgentTask}'s {@code agentType} branch selection — the conductor-branch
- * analogue of {@code AgentTaskTest}. Proves that {@code agentType: "conductor"} routes
- * start/execute/cancel to {@link ConductorAgentDelegate} (observed through {@link
+ * Dispatch coverage for {@link AgentTask}'s {@code agentType} branch selection — the
+ * conductor-branch analogue of {@code AgentTaskTest}. Proves that {@code agentType: "conductor"}
+ * routes start/execute/cancel to {@link ConductorAgentDelegate} (observed through {@link
  * FakeConductorAgentRuntime}'s recorded calls) while {@code "a2a"}/blank/null do not, and that
  * {@code getEvaluationOffset} uses the poll cadence on the conductor branch (test-plan.md §4.3).
  */
@@ -154,7 +154,8 @@ class AgentTaskConductorBranchTest {
         assertEquals(TaskModel.Status.CANCELED, model.getStatus());
     }
 
-    // getEvaluationOffset: conductor branch re-polls at pollIntervalSeconds (default 5), no backstop.
+    // getEvaluationOffset: conductor branch re-polls at pollIntervalSeconds (default 5), no
+    // backstop.
     @Test
     void getEvaluationOffset_conductor_usesPollCadence() {
         assertEquals(
