@@ -43,7 +43,8 @@ import { customFilterOptions, VARIABLE_REGEX } from "./formOptions";
 type CohercesToNumber = "integer" | "double";
 
 type TypeCohersionNumber = {
-  onChange: (change: number) => void;
+  /** null when clearEmptyNumberAsNull and the field is cleared */
+  onChange: (change: number | null) => void;
   coerceTo: CohercesToNumber;
 };
 type TypeCohersionString = {
@@ -81,6 +82,11 @@ export type ConductorAutocompleteVariablesProps = {
   disabled?: boolean;
   onInputChange?: (val: any) => void;
   onBlur?: (val: string) => void;
+  /**
+   * When true, clearing a numeric field emits null instead of coercing "" → 0.
+   * Opt-in — default preserves historical behavior for non-LLM forms.
+   */
+  clearEmptyNumberAsNull?: boolean;
   renderOption?: (
     props: HTMLAttributes<HTMLLIElement>,
     option: string | number,
@@ -136,6 +142,7 @@ const ConductorAutocompleteVariablesNoContext = ({
   disabled,
   onInputChange,
   onBlur,
+  clearEmptyNumberAsNull = false,
   renderOption,
   getOptionLabel: customGetOptionLabel,
 }: ConductorAutocompleteVariablesProps) => {
@@ -303,6 +310,13 @@ const ConductorAutocompleteVariablesNoContext = ({
               onChange(b);
             }
           }
+        } else if (
+          clearEmptyNumberAsNull &&
+          assertOnChangeNumber(onChange, coerceTo) &&
+          (_isNil(b) || b === "") &&
+          b !== value
+        ) {
+          (onChange as (val: number | null) => void)(null);
         }
       }}
       onInputChange={(event: any, o) => {
@@ -311,8 +325,12 @@ const ConductorAutocompleteVariablesNoContext = ({
           return;
         }
         if (o !== value) {
-          if (assertOnChangeNumber(onChange, coerceTo) && !isNaN(o as any)) {
-            onChange(Number(o));
+          if (assertOnChangeNumber(onChange, coerceTo)) {
+            if (clearEmptyNumberAsNull && (o === "" || o == null)) {
+              (onChange as (val: number | null) => void)(null);
+            } else if (!isNaN(o as any)) {
+              onChange(Number(o));
+            }
           } else if (assertOnChangeString(onChange, coerceTo)) {
             onChange(String(o));
           } else {
