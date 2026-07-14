@@ -208,7 +208,11 @@ const getCoreAuthenticatedRoutes = () => [
   ...(featureFlags.isEnabled(FEATURES.AGENTSPAN_ENABLED)
     ? [
         { path: AGENT_DEFINITION_URL.BASE, element: <AgentDefinitions /> },
-        { path: AGENT_EXECUTIONS_URL, element: <AgentExecutionsPage /> },
+        { path: AGENT_EXECUTIONS_URL.BASE, element: <AgentExecutionsPage /> },
+        // Same Execution page/component as "/execution/:id/:taskId?" — just
+        // reached from the Agents section, so the sidebar keeps "Executions"
+        // (under Agents) highlighted instead of the plain Workflow item.
+        { path: AGENT_EXECUTIONS_URL.ID_TASK_ID, element: <Execution /> },
         { path: SKILLS_URL.BASE, element: <SkillsPage /> },
         { path: AGENT_SECRETS_URL, element: <AgentSecretsPage /> },
       ]
