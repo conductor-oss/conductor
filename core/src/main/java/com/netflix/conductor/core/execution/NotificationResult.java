@@ -15,6 +15,7 @@ package com.netflix.conductor.core.execution;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.conductoross.conductor.model.OutputOnlyRun;
 import org.conductoross.conductor.model.SignalResponse;
 import org.conductoross.conductor.model.TaskRun;
 import org.conductoross.conductor.model.WorkflowRun;
@@ -46,12 +47,16 @@ public class NotificationResult {
             return switch (returnStrategy) {
                 case TARGET_WORKFLOW, BLOCKING_WORKFLOW ->
                         getWorkflowRun(this.targetWorkflow, requestId, returnStrategy);
+                case TARGET_WORKFLOW_OUTPUT ->
+                        getOutputOnlyRun(this.targetWorkflow, requestId, returnStrategy);
                 default -> null;
             };
         }
 
         return switch (returnStrategy) {
             case TARGET_WORKFLOW -> getWorkflowRun(this.targetWorkflow, requestId, returnStrategy);
+            case TARGET_WORKFLOW_OUTPUT ->
+                    getOutputOnlyRun(this.targetWorkflow, requestId, returnStrategy);
             case BLOCKING_WORKFLOW ->
                     getWorkflowRun(this.blockingWorkflow, requestId, returnStrategy);
             case BLOCKING_TASK, BLOCKING_TASK_INPUT ->
@@ -66,6 +71,16 @@ public class NotificationResult {
         workflowRun.setTargetWorkflowStatus(this.targetWorkflow.getStatus().toString());
         workflowRun.setResponseType(returnStrategy);
         return workflowRun;
+    }
+
+    private OutputOnlyRun getOutputOnlyRun(
+            WorkflowModel workflow, String requestId, WorkflowSignalReturnStrategy returnStrategy) {
+        OutputOnlyRun run = new OutputOnlyRun();
+        run.setTargetWorkflowStatus(this.targetWorkflow.getStatus().toString());
+        run.setWorkflowId(workflow.getWorkflowId());
+        run.setCorrelationId(workflow.getCorrelationId());
+        run.setOutput(workflow.getOutput());
+        return run;
     }
 
     private static WorkflowRun toWorkflowRun(WorkflowModel workflow, String requestId) {
