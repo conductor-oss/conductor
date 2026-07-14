@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.conductoross.conductor.ai.a2a.A2AService;
 import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.model.TaskModel;
@@ -32,54 +33,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * FakeConductorAgentRuntime} — no mock frameworks.
  */
 class ConductorAgentDelegateTest {
-
-    /**
-     * A real, scriptable {@link ConductorAgentRuntime}. Returns pre-set snapshots and can be told to
-     * throw from {@link #getStatus} to drive the transient-failure guard.
-     */
-    static final class FakeConductorAgentRuntime implements ConductorAgentRuntime {
-
-        ConductorAgentExecution startResult;
-        ConductorAgentExecution statusResult;
-        boolean throwOnStatus;
-
-        ConductorAgentStartRequest lastStartRequest;
-        String lastRespondExecutionId;
-        Map<String, Object> lastRespondMessage;
-        String lastCancelExecutionId;
-        String lastCancelReason;
-
-        @Override
-        public ConductorAgentExecution start(ConductorAgentStartRequest request) {
-            this.lastStartRequest = request;
-            return startResult;
-        }
-
-        @Override
-        public ConductorAgentExecution getStatus(String executionId) {
-            if (throwOnStatus) {
-                throw new RuntimeException("runtime unreachable");
-            }
-            return statusResult != null ? statusResult : startResult;
-        }
-
-        @Override
-        public void respond(String executionId, Map<String, Object> message) {
-            this.lastRespondExecutionId = executionId;
-            this.lastRespondMessage = message;
-        }
-
-        @Override
-        public void cancel(String executionId, String reason) {
-            this.lastCancelExecutionId = executionId;
-            this.lastCancelReason = reason;
-        }
-
-        @Override
-        public List<ConductorAgentSummary> listAgents() {
-            return List.of();
-        }
-    }
 
     private static ConductorAgentExecution execution(ConductorAgentState state) {
         return ConductorAgentExecution.builder()
@@ -327,5 +280,116 @@ class ConductorAgentDelegateTest {
         assertEquals(
                 "Conductor agents require the embedded agentspan runtime (agentspan.embedded=true)",
                 task.getReasonForIncompletion());
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Prompt-resolution precedence (architecture.md §4.4): first non-blank of message-parts, then
+    // parts, then text, then prompt. resolvePrompt() is private, so it is asserted through start()
+    // via the prompt the delegate hands the runtime (lastStartRequest.getPrompt()).
+    // ---------------------------------------------------------------------------------------------
+
+    /** Builds the fresh-start input, adding whatever prompt sources the case under test supplies. */
+    private static Map<String, Object> promptInput() {
+        Map<String, Object> input = new HashMap<>();
+        input.put("agentType", "conductor");
+        input.put("agentName", "planner");
+        return input;
+    }
+
+    private static List<Map<String, Object>> textParts(String text) {
+        return List.of(Map.of("kind", "text", "text", text));
+    }
+
+    private static String startedPrompt(Map<String, Object> input) {
+        FakeConductorAgentRuntime runtime = new FakeConductorAgentRuntime();
+        runtime.startResult = execution(ConductorAgentState.RUNNING);
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
+        delegate.start(taskModel(input));
+        return runtime.lastStartRequest.getPrompt();
+    }
+
+    // 12a. message-parts win over parts, text, and prompt.
+    @Test
+    void resolvePrompt_messageWinsOverEverything() {
+        Map<String, Object> input = promptInput();
+        input.put("message", Map.of("parts", textParts("from-message")));
+        input.put("parts", textParts("from-parts"));
+        input.put("text", "from-text");
+        input.put("prompt", "from-prompt");
+
+        assertEquals("from-message", startedPrompt(input));
+    }
+
+    // 12b. parts win over text and prompt when there is no message.
+    @Test
+    void resolvePrompt_partsWinOverTextAndPrompt() {
+        Map<String, Object> input = promptInput();
+        input.put("parts", textParts("from-parts"));
+        input.put("text", "from-text");
+        input.put("prompt", "from-prompt");
+
+        assertEquals("from-parts", startedPrompt(input));
+    }
+
+    // 12c. text wins over prompt when there is no message/parts.
+    @Test
+    void resolvePrompt_textWinsOverPrompt() {
+        Map<String, Object> input = promptInput();
+        input.put("text", "from-text");
+        input.put("prompt", "from-prompt");
+
+        assertEquals("from-text", startedPrompt(input));
+    }
+
+    // 12d. prompt is the last resort.
+    @Test
+    void resolvePrompt_promptIsLastResort() {
+        Map<String, Object> input = promptInput();
+        input.put("prompt", "from-prompt");
+
+        assertEquals("from-prompt", startedPrompt(input));
+    }
+
+    // 12e. All prompt sources blank/absent -> fresh start fails terminally, runtime never called.
+    @Test
+    void resolvePrompt_allBlank_failsTerminally() {
+        FakeConductorAgentRuntime runtime = new FakeConductorAgentRuntime();
+        runtime.startResult = execution(ConductorAgentState.RUNNING);
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
+
+        TaskModel task = taskModel(promptInput());
+        delegate.start(task);
+
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertEquals(
+                "AGENT (conductor) requires 'text' or 'prompt'", task.getReasonForIncompletion());
+        assertNull(runtime.lastStartRequest);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Dispatch predicates (architecture.md §4.1). These are the keys AgentTask branches on; assert
+    // the shared A2AService contract directly so the dispatch can't silently drift.
+    // ---------------------------------------------------------------------------------------------
+
+    // 13. isConductorAgentType is true only for "conductor" (case-insensitive).
+    @Test
+    void isConductorAgentType_contract() {
+        assertTrue(A2AService.isConductorAgentType("conductor"));
+        assertTrue(A2AService.isConductorAgentType("CONDUCTOR"));
+        assertFalse(A2AService.isConductorAgentType(null));
+        assertFalse(A2AService.isConductorAgentType(""));
+        assertFalse(A2AService.isConductorAgentType("  "));
+        assertFalse(A2AService.isConductorAgentType("a2a"));
+    }
+
+    // 14. isA2aAgentType defaults null/blank to a2a, and matches "a2a" case-insensitively.
+    @Test
+    void isA2aAgentType_contract() {
+        assertTrue(A2AService.isA2aAgentType(null));
+        assertTrue(A2AService.isA2aAgentType(""));
+        assertTrue(A2AService.isA2aAgentType("  "));
+        assertTrue(A2AService.isA2aAgentType("a2a"));
+        assertTrue(A2AService.isA2aAgentType("A2A"));
+        assertFalse(A2AService.isA2aAgentType("conductor"));
     }
 }
