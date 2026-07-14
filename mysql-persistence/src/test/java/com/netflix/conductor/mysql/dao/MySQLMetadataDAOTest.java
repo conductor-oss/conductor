@@ -37,6 +37,8 @@ import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.exception.NonTransientException;
+import com.netflix.conductor.dao.TaskMetricInfo;
+import com.netflix.conductor.dao.WorkflowMetricInfo;
 import com.netflix.conductor.mysql.config.MySQLConfiguration;
 
 import static org.junit.Assert.assertEquals;
@@ -318,5 +320,57 @@ public class MySQLMetadataDAOTest {
         assertEquals(1, allMap.get("test1").getVersion());
         assertEquals(2, allMap.get("test2").getVersion());
         assertEquals(3, allMap.get("test3").getVersion());
+    }
+
+    @Test
+    public void testGetWorkflowMetricInfo() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("metricWf");
+        def.setVersion(1);
+        def.setOwnerApp("ownerV1");
+        metadataDAO.createWorkflowDef(def);
+
+        def.setVersion(2);
+        def.setOwnerApp("ownerV2");
+        metadataDAO.createWorkflowDef(def);
+
+        Map<String, WorkflowMetricInfo> byName =
+                metadataDAO.getWorkflowMetricInfo().stream()
+                        .collect(Collectors.toMap(WorkflowMetricInfo::name, Function.identity()));
+
+        // Only the latest version is projected, carrying its ownerApp.
+        assertTrue(byName.containsKey("metricWf"));
+        assertEquals("ownerV2", byName.get("metricWf").ownerApp());
+
+        // Clean up: the suite shares one DB across tests and several assert on total counts.
+        metadataDAO.removeWorkflowDef("metricWf", 2);
+        metadataDAO.removeWorkflowDef("metricWf", 1);
+    }
+
+    @Test
+    public void testGetTaskMetricInfo() {
+        TaskDef limited = new TaskDef();
+        limited.setName("limitedTask");
+        limited.setOwnerApp("taskOwner");
+        limited.setConcurrentExecLimit(7);
+        metadataDAO.createTaskDef(limited);
+
+        TaskDef unlimited = new TaskDef();
+        unlimited.setName("unlimitedTask");
+        unlimited.setOwnerApp("taskOwner");
+        metadataDAO.createTaskDef(unlimited);
+
+        Map<String, TaskMetricInfo> byName =
+                metadataDAO.getTaskMetricInfo().stream()
+                        .collect(Collectors.toMap(TaskMetricInfo::name, Function.identity()));
+
+        assertEquals("taskOwner", byName.get("limitedTask").ownerApp());
+        assertEquals(7, byName.get("limitedTask").concurrencyLimit());
+        // Missing concurrentExecLimit projects to 0.
+        assertEquals(0, byName.get("unlimitedTask").concurrencyLimit());
+
+        // Clean up: the suite shares one DB across tests and several assert on total counts.
+        metadataDAO.removeTaskDef("limitedTask");
+        metadataDAO.removeTaskDef("unlimitedTask");
     }
 }
