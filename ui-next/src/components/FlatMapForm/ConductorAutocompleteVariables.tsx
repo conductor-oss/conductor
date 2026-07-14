@@ -291,32 +291,41 @@ const ConductorAutocompleteVariablesNoContext = ({
       }}
       openOnFocus={openOnFocus}
       autoComplete
-      onChange={(a, b) => {
-        if (!_isNil(b) && b !== value) {
-          if (assertOnChangeNumber(onChange, coerceTo) && !isNaN(b as any)) {
-            onChange(Number(b));
-          } else if (assertOnChangeString(onChange, coerceTo)) {
-            if (typeof b === "string") {
-              const newValue = b as string;
-              const currentValue = value.toString();
-              if (currentValue.endsWith("$")) {
-                onChange(replaceLastrDolarWithValue(currentValue, newValue));
-              } else if (VARIABLE_REGEX.test(currentValue)) {
-                onChange(currentValue.replace(VARIABLE_REGEX, newValue));
-              } else {
-                onChange(newValue);
-              }
-            } else {
-              onChange(b);
-            }
-          }
-        } else if (
+      onChange={(_event, selectedValue) => {
+        if (selectedValue === value) return;
+
+        // Must run before numeric coercion: "" is not nil and Number("") === 0.
+        if (
           clearEmptyNumberAsNull &&
           assertOnChangeNumber(onChange, coerceTo) &&
-          (_isNil(b) || b === "") &&
-          b !== value
+          (_isNil(selectedValue) || selectedValue === "")
         ) {
           (onChange as (val: number | null) => void)(null);
+          return;
+        }
+
+        if (!_isNil(selectedValue)) {
+          if (
+            assertOnChangeNumber(onChange, coerceTo) &&
+            !isNaN(selectedValue as any)
+          ) {
+            onChange(Number(selectedValue));
+          } else if (assertOnChangeString(onChange, coerceTo)) {
+            if (typeof selectedValue === "string") {
+              const currentValue = value.toString();
+              if (currentValue.endsWith("$")) {
+                onChange(
+                  replaceLastrDolarWithValue(currentValue, selectedValue),
+                );
+              } else if (VARIABLE_REGEX.test(currentValue)) {
+                onChange(currentValue.replace(VARIABLE_REGEX, selectedValue));
+              } else {
+                onChange(selectedValue);
+              }
+            } else {
+              onChange(selectedValue);
+            }
+          }
         }
       }}
       onInputChange={(event: any, o) => {
