@@ -120,6 +120,7 @@ export function CollapsibleIterationList<T>({
     <Box sx={{ display: "flex", alignItems: "center", gap: 3, width: "100%" }}>
       {/* Trigger — styled to match MUI Select (small) */}
       <Box
+        id="iteration-dropdown-btn"
         onClick={(e) => setAnchorEl(e.currentTarget)}
         sx={{
           flex: 1,
@@ -232,6 +233,7 @@ export function CollapsibleIterationList<T>({
                 return (
                   <Box
                     key={getItemValue(item)}
+                    role="menuitem"
                     onClick={() => handleSelect(item, index)}
                     sx={{
                       position: "absolute",

@@ -113,6 +113,16 @@ export const InlineTaskIterations = ({
     ? `Iteration ${effectiveIteration ?? ""}`
     : `Attempt #${selectedTask.retryCount ?? 0}`;
 
+  const getItemIndex = (task: AugmentedExecutionTask): number =>
+    typeof task.iteration === "number" && task.iteration > 0
+      ? task.iteration
+      : (task.retryCount ?? 0);
+
+  const getItemLabel = (task: AugmentedExecutionTask): string =>
+    typeof task.iteration === "number" && task.iteration > 0
+      ? `Iteration ${task.iteration}`
+      : `Attempt #${task.retryCount ?? 0}`;
+
   return (
     <>
       <CollapsibleIterationList
@@ -132,15 +142,18 @@ export const InlineTaskIterations = ({
           ) : undefined
         }
         totalItems={resolvedOptions.length}
-        getItemValue={(item) => item.iteration ?? 0}
-        onJumpTo={(iterationNum) => {
+        getItemValue={(item) => getItemIndex(item as AugmentedExecutionTask)}
+        onJumpTo={(value) => {
           const match = resolvedOptions.find(
-            (opt) => opt.iteration === iterationNum,
+            (opt) => getItemIndex(opt as AugmentedExecutionTask) === value,
           );
           if (match) handleSelectTask(match as ExecutionTask);
         }}
         onSelect={(option) => handleSelectTask(option as ExecutionTask)}
-        isItemSelected={(option) => option.iteration === selectedTask.iteration}
+        isItemSelected={(option) =>
+          getItemIndex(option as AugmentedExecutionTask) ===
+          getItemIndex(selectedTask)
+        }
         renderItem={(option) => {
           const task = option as AugmentedExecutionTask;
           const showSummarized = task._summarized === true;
@@ -156,7 +169,7 @@ export const InlineTaskIterations = ({
                   size={13}
                 />
               </Box>
-              <Box component="span">Iteration {task.iteration}</Box>
+              <Box component="span">{getItemLabel(task)}</Box>
               {!showSummarized && task.taskId && (
                 <Typography
                   component="span"

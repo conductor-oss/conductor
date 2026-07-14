@@ -1,10 +1,28 @@
-import { ExecutionTask } from "types/Execution";
+import { ExecutionTask, WorkflowExecution } from "types/Execution";
 import _nth from "lodash/nth";
 import { StatusMap } from "./state/StatusMapTypes";
 type SeqResult = {
   seqNumber: number;
   idx: number;
 };
+
+/**
+ * Whether a workflow execution is an AgentSpan-compiled agent run (carries
+ * the `agentDef`/`agent_sdk` metadata stamp on its workflow definition), as
+ * opposed to a plain Conductor workflow. Drives: which tab the execution page
+ * defaults to, which sidebar nav item stays highlighted, and which route
+ * (/execution/:id vs /agentExecutions/:id) an execution's detail view lives at.
+ */
+export function isAgentWorkflowExecution(
+  execution: Pick<WorkflowExecution, "workflowDefinition"> | undefined | null,
+): boolean {
+  const metadata = execution?.workflowDefinition?.metadata as
+    | Record<string, unknown>
+    | undefined;
+  return (
+    !!metadata && (metadata.agentDef != null || metadata.agent_sdk != null)
+  );
+}
 
 export const taskWithLatestIteration = (
   tasksList: ExecutionTask[] = [],
@@ -47,6 +65,9 @@ export function findTaskFromExecutionStatusMapById(
 
   for (const key of keys) {
     const item = mapObject[key];
+    if (item?.taskId === id) {
+      return item;
+    }
     const found = item?.loopOver?.find((loopItem) => loopItem?.taskId === id);
     if (found) {
       return found;

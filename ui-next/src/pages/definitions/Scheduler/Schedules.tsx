@@ -28,7 +28,7 @@ import TagList from "components/ui/TagList";
 import AddIcon from "components/icons/AddIcon";
 import PlayIcon from "components/icons/PlayIcon";
 import cronstrue from "cronstrue";
-import { useSaveSchedule } from "pages/scheduler/schedulerHooks";
+import _debounce from "lodash/debounce";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
 import { useQueryState } from "react-router-use-location-state";
@@ -48,12 +48,12 @@ import {
 } from "utils/constants/common";
 import { SCHEDULER_DEFINITION_URL } from "utils/constants/route";
 import {
-  useGetSchedulerDefinitions,
   useGetSchedulerDefinitionsWithPagination,
   SchedulerSearchParams,
 } from "utils/hooks/useGetSchedulerDefinitions";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { useActionWithPath } from "utils/query";
+import { featureFlags, FEATURES } from "utils/flags";
 import { createSearchableTags } from "utils/utils";
 import CloneScheduleDialog from "../dialog/CloneScheduleDialog";
 import {
@@ -284,9 +284,11 @@ export default function ScheduleDefinitions() {
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(15);
   const [sort, setSort] = useState<string | undefined>(undefined);
+  const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
   const { isTrialExpired } = useAuth();
+  const tagsEnabled = featureFlags.isEnabled(FEATURES.TAG_VISIBILITY);
   const [toast, setToast] = useState({
     isOpen: false,
     message: "",
@@ -341,13 +343,16 @@ export default function ScheduleDefinitions() {
     refetch,
   } = useGetSchedulerDefinitionsWithPagination(searchParams);
 
-  // For backward compatibility with clone dialog (fetch all schedule names)
-  const { data: allSchedulesData } = useGetSchedulerDefinitions();
-
-  useEffect(() => {
+  const resetSelectedRows = useCallback(() => {
     setSelectedRows([]);
     setToggleCleared((t) => !t);
-  }, [paginatedData]);
+  }, []);
+
+  // Reload the table and drop any stale row selection.
+  const refetchAndResetSelection = useCallback(() => {
+    resetSelectedRows();
+    return refetch();
+  }, [refetch, resetSelectedRows]);
 
   const handleFetchError = async (error: Response, method: HTTPMethods) => {
     logger.error("[Schedules.tsx][handleFetchError] Error:", error);
@@ -369,29 +374,14 @@ export default function ScheduleDefinitions() {
       }
     }
 
-    refetch();
+    refetchAndResetSelection();
   };
 
   const pushHistory = usePushHistory();
 
-  const { mutate: saveSchedule, isLoading: isSavingSchedule } = useSaveSchedule(
-    {
-      onSuccess: () => {
-        refetch();
-        setSelectedSchedule(null);
-        setToastMessage({
-          text: "Schedule cloned successfully",
-          severity: "success",
-        });
-      },
-
-      onError: (error: Response) => handleFetchError(error, HTTPMethods.POST),
-    },
-  );
-
   const deleteScheduleAction = useActionWithPath({
     onSuccess: () => {
-      refetch();
+      refetchAndResetSelection();
     },
     onError: (error: Response) => handleFetchError(error, HTTPMethods.DELETE),
   });
@@ -412,19 +402,11 @@ export default function ScheduleDefinitions() {
     return [];
   }, [paginatedData]);
 
-  const scheduleNames: string[] = useMemo(
-    () =>
-      allSchedulesData
-        ? allSchedulesData.map((schedule: IScheduleDto) => schedule.name)
-        : [],
-    [allSchedulesData],
-  );
-
   const totalCount = paginatedData?.totalHits ?? 0;
 
   const pauseScheduleAction = useActionWithPath({
     onSuccess: () => {
-      refetch();
+      refetchAndResetSelection();
     },
     onError: (error: Response) => handleFetchError(error, HTTPMethods.GET),
   });
@@ -492,7 +474,7 @@ export default function ScheduleDefinitions() {
 
   const renderColumns = useMemo(
     () => [
-      ...columns,
+      ...columns.filter((col) => col.id !== "tags" || tagsEnabled),
       {
         id: "actions",
         name: "name",
@@ -511,6 +493,10 @@ export default function ScheduleDefinitions() {
                   onClick={() => handlePauseSchedule(name)}
                   color="primary"
                   disabled={isTrialExpired}
+                  size="small"
+                  sx={{
+                    whiteSpace: "nowrap",
+                  }}
                 >
                   <PauseIcon size={22} />
                 </IconButton>
@@ -523,6 +509,10 @@ export default function ScheduleDefinitions() {
                   onClick={() => handleResumeSchedule(name)}
                   color="primary"
                   disabled={isTrialExpired}
+                  size="small"
+                  sx={{
+                    whiteSpace: "nowrap",
+                  }}
                 >
                   <PlayIcon size={22} />
                 </IconButton>
@@ -542,23 +532,32 @@ export default function ScheduleDefinitions() {
               </IconButton>
             </Tooltip>
 
-            <Tooltip title={"Add/Edit tags"}>
-              <IconButton
-                disabled={isTrialExpired}
-                onClick={() => {
-                  setAddTagDialogData(row);
-                  setShowAddTagDialog(true);
-                }}
-                size="small"
-              >
-                <TagIcon />
-              </IconButton>
-            </Tooltip>
+            {tagsEnabled && (
+              <Tooltip title={"Add/Edit tags"}>
+                <IconButton
+                  disabled={isTrialExpired}
+                  onClick={() => {
+                    setAddTagDialogData(row);
+                    setShowAddTagDialog(true);
+                  }}
+                  size="small"
+                  sx={{
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <TagIcon size={20} />
+                </IconButton>
+              </Tooltip>
+            )}
 
             <Tooltip title={"Delete schedule"}>
               <IconButton
                 disabled={isTrialExpired}
                 onClick={() => deleteSchedule(name)}
+                size="small"
+                sx={{
+                  whiteSpace: "nowrap",
+                }}
               >
                 <DeleteIcon size={20} />
               </IconButton>
@@ -567,7 +566,7 @@ export default function ScheduleDefinitions() {
         ),
       },
     ],
-    [handlePauseSchedule, handleResumeSchedule, isTrialExpired],
+    [handlePauseSchedule, handleResumeSchedule, isTrialExpired, tagsEnabled],
   );
 
   const handleClickDefineSchedule = () => {
@@ -581,11 +580,13 @@ export default function ScheduleDefinitions() {
   // Pagination handlers
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
+    resetSelectedRows();
   };
 
   const handleRowsPerPageChange = (newRowsPerPage: number) => {
     setRowsPerPage(newRowsPerPage);
     setPage(1); // Reset to first page when changing rows per page
+    resetSelectedRows();
   };
 
   const handleSort = (column: any, sortDirection: string) => {
@@ -594,18 +595,36 @@ export default function ScheduleDefinitions() {
       const sortParam = `${column.id}:${sortDirection.toUpperCase()}`;
       setSort(sortParam);
       setPage(1); // Reset to first page when sorting
+      resetSelectedRows();
     }
   };
 
+  const debouncedSetSearchTerm = useMemo(
+    () =>
+      _debounce((value: string) => {
+        setSearchTerm(value);
+        setPage(1); // Reset to first page when searching
+        resetSelectedRows();
+      }, 250),
+    [resetSelectedRows],
+  );
+
+  useEffect(() => {
+    return () => {
+      debouncedSetSearchTerm.cancel();
+    };
+  }, [debouncedSetSearchTerm]);
+
   const handleSearchTermChange = (value: string) => {
-    setSearchTerm(value);
-    setPage(1); // Reset to first page when searching
+    setSearchInput(value);
+    debouncedSetSearchTerm(value);
   };
 
-  // Reset page when active filter changes
-  useEffect(() => {
-    setPage(1);
-  }, [activeFilterParam]);
+  const handleActiveFilterChange = (value: string) => {
+    setActiveFilterParam(value);
+    setPage(1); // Reset to first page when the filter changes
+    resetSelectedRows();
+  };
 
   return (
     <>
@@ -655,37 +674,44 @@ export default function ScheduleDefinitions() {
         />
       )}
 
-      <AddTagDialog
-        open={showAddTagDialog && !!addTagDialogData}
-        tags={addTagDialogData?.tags || []}
-        itemName={addTagDialogData?.name}
-        onClose={() => {
-          setShowAddTagDialog(false);
-        }}
-        onSuccess={() => {
-          setShowAddTagDialog(false);
-          refetch();
-        }}
-        apiPath={`/scheduler/schedules/${addTagDialogData?.name}/tags`}
-      />
+      {tagsEnabled && (
+        <AddTagDialog
+          open={showAddTagDialog && !!addTagDialogData}
+          tags={addTagDialogData?.tags || []}
+          itemName={addTagDialogData?.name}
+          onClose={() => {
+            setShowAddTagDialog(false);
+          }}
+          onSuccess={() => {
+            setShowAddTagDialog(false);
+            refetchAndResetSelection();
+          }}
+          apiPath={`/scheduler/schedules/${addTagDialogData?.name}/tags`}
+        />
+      )}
 
       {selectedSchedule && (
         <CloneScheduleDialog
-          name={
+          schedule={selectedSchedule}
+          defaultName={
             getSequentiallySuffix({
               name: selectedSchedule.name,
-              refNames: scheduleNames,
+              refNames: schedules.map((schedule) => schedule.name),
             }).name
           }
           onClose={() => setSelectedSchedule(null)}
-          onSuccess={({ name }) => {
-            // @ts-ignore
-            saveSchedule({
-              body: JSON.stringify({ ...selectedSchedule, name }),
+          onSuccess={() => {
+            refetchAndResetSelection();
+            setSelectedSchedule(null);
+            setToastMessage({
+              text: "Schedule cloned successfully",
+              severity: "success",
             });
           }}
-          scheduleNames={scheduleNames}
-          isFetching={isSavingSchedule}
+          onError={async (error) => {
+            await handleFetchError(error, HTTPMethods.POST);
+            setSelectedSchedule(null);
+          }}
         />
       )}
       <SectionHeader
@@ -719,7 +745,7 @@ export default function ScheduleDefinitions() {
                   label="Quick search"
                   placeholder="Search scheduler definitions"
                   showClearButton
-                  value={searchTerm}
+                  value={searchInput}
                   onTextInputChange={handleSearchTermChange}
                   autoFocus
                 />
@@ -749,7 +775,7 @@ export default function ScheduleDefinitions() {
                             name="activeRadioGroup"
                             value={activeFilterParam}
                             onChange={(e) =>
-                              setActiveFilterParam(e.target.value)
+                              handleActiveFilterChange(e.target.value)
                             }
                             sx={{ marginLeft: 2 }}
                           >
@@ -790,7 +816,7 @@ export default function ScheduleDefinitions() {
                   "nextRunTime",
                   "workflowExecutionsLink",
                   "schedulerExecutionsLink",
-                  "tags",
+                  ...(tagsEnabled ? ["tags"] : []),
                   "cronTabExpression",
                   "startWorkflowRequest",
                   "createTime",
@@ -812,7 +838,7 @@ export default function ScheduleDefinitions() {
                       size="small"
                       startIcon={<RefreshIcon />}
                       key="refresh"
-                      onClick={() => refetch()}
+                      onClick={() => refetchAndResetSelection()}
                       sx={{
                         color: (theme) =>
                           theme.palette.mode === "dark"
@@ -839,7 +865,7 @@ export default function ScheduleDefinitions() {
                 contextComponent={
                   <BulkActionModule
                     selectedRows={selectedRows}
-                    refetchExecution={refetch}
+                    refetchExecution={refetchAndResetSelection}
                     handleError={handleError}
                   />
                 }

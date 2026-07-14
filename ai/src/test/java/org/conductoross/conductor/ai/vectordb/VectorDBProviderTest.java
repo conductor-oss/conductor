@@ -14,9 +14,11 @@ package org.conductoross.conductor.ai.vectordb;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
 
 import com.netflix.conductor.sdk.workflow.executor.task.TaskContext;
 
@@ -25,12 +27,29 @@ import static org.mockito.Mockito.*;
 
 class VectorDBProviderTest {
 
+    /** An ObjectProvider that iterates over the given default instances (empty by default). */
+    @SuppressWarnings("unchecked")
+    private static ObjectProvider<VectorDB> defaults(VectorDB... instances) {
+        ObjectProvider<VectorDB> provider = mock(ObjectProvider.class);
+        // VectorDBProvider consumes defaults via forEach; stub it directly since Mockito does not
+        // run the real Iterable#forEach default method on a mock.
+        doAnswer(
+                        inv -> {
+                            java.util.function.Consumer<VectorDB> consumer = inv.getArgument(0);
+                            List.of(instances).forEach(consumer);
+                            return null;
+                        })
+                .when(provider)
+                .forEach(any());
+        return provider;
+    }
+
     @Test
     void testEmptyConfigList() {
         VectorDBInstanceConfig instanceConfig = mock(VectorDBInstanceConfig.class);
         when(instanceConfig.getVectorDBInstances()).thenReturn(Collections.emptyMap());
 
-        VectorDBProvider provider = new VectorDBProvider(instanceConfig);
+        VectorDBProvider provider = new VectorDBProvider(instanceConfig, defaults());
 
         TaskContext mockContext = mock(TaskContext.class);
         VectorDB result = provider.get("postgres-prod", mockContext);
@@ -50,7 +69,7 @@ class VectorDBProviderTest {
         VectorDBInstanceConfig instanceConfig = mock(VectorDBInstanceConfig.class);
         when(instanceConfig.getVectorDBInstances()).thenReturn(instances);
 
-        VectorDBProvider provider = new VectorDBProvider(instanceConfig);
+        VectorDBProvider provider = new VectorDBProvider(instanceConfig, defaults());
 
         TaskContext mockContext = mock(TaskContext.class);
         VectorDB result = provider.get("postgres-prod", mockContext);
@@ -72,7 +91,7 @@ class VectorDBProviderTest {
         VectorDBInstanceConfig instanceConfig = mock(VectorDBInstanceConfig.class);
         when(instanceConfig.getVectorDBInstances()).thenReturn(instances);
 
-        VectorDBProvider provider = new VectorDBProvider(instanceConfig);
+        VectorDBProvider provider = new VectorDBProvider(instanceConfig, defaults());
 
         TaskContext mockContext = mock(TaskContext.class);
         VectorDB result = provider.get("unknown", mockContext);
@@ -97,7 +116,7 @@ class VectorDBProviderTest {
         VectorDBInstanceConfig instanceConfig = mock(VectorDBInstanceConfig.class);
         when(instanceConfig.getVectorDBInstances()).thenReturn(instances);
 
-        VectorDBProvider provider = new VectorDBProvider(instanceConfig);
+        VectorDBProvider provider = new VectorDBProvider(instanceConfig, defaults());
 
         TaskContext mockContext = mock(TaskContext.class);
 
@@ -117,7 +136,7 @@ class VectorDBProviderTest {
         VectorDBInstanceConfig instanceConfig = mock(VectorDBInstanceConfig.class);
         when(instanceConfig.getVectorDBInstances()).thenReturn(instances);
 
-        VectorDBProvider provider = new VectorDBProvider(instanceConfig);
+        VectorDBProvider provider = new VectorDBProvider(instanceConfig, defaults());
 
         // Should not throw even with null context
         VectorDB result = provider.get("postgres-prod", null);
@@ -141,7 +160,7 @@ class VectorDBProviderTest {
         VectorDBInstanceConfig instanceConfig = mock(VectorDBInstanceConfig.class);
         when(instanceConfig.getVectorDBInstances()).thenReturn(instances);
 
-        VectorDBProvider provider = new VectorDBProvider(instanceConfig);
+        VectorDBProvider provider = new VectorDBProvider(instanceConfig, defaults());
 
         TaskContext mockContext = mock(TaskContext.class);
 
@@ -155,5 +174,43 @@ class VectorDBProviderTest {
         assertEquals("postgres-dev", devDb.getName());
         assertEquals("postgres", prodDb.getType());
         assertEquals("postgres", devDb.getType());
+    }
+
+    @Test
+    void testDefaultInstanceIsMerged() {
+        VectorDB defaultSqlite = mock(VectorDB.class);
+        when(defaultSqlite.getName()).thenReturn("default");
+        when(defaultSqlite.getType()).thenReturn("sqlite");
+
+        VectorDBInstanceConfig instanceConfig = mock(VectorDBInstanceConfig.class);
+        when(instanceConfig.getVectorDBInstances()).thenReturn(Collections.emptyMap());
+
+        VectorDBProvider provider = new VectorDBProvider(instanceConfig, defaults(defaultSqlite));
+
+        VectorDB result = provider.get("default", mock(TaskContext.class));
+        assertNotNull(result);
+        assertEquals("sqlite", result.getType());
+    }
+
+    @Test
+    void testExplicitInstanceTakesPrecedenceOverDefault() {
+        VectorDB explicit = mock(VectorDB.class);
+        when(explicit.getName()).thenReturn("default");
+        when(explicit.getType()).thenReturn("postgres");
+
+        VectorDB defaultSqlite = mock(VectorDB.class);
+        when(defaultSqlite.getName()).thenReturn("default");
+        when(defaultSqlite.getType()).thenReturn("sqlite");
+
+        Map<String, VectorDB> instances = new HashMap<>();
+        instances.put("default", explicit);
+
+        VectorDBInstanceConfig instanceConfig = mock(VectorDBInstanceConfig.class);
+        when(instanceConfig.getVectorDBInstances()).thenReturn(instances);
+
+        VectorDBProvider provider = new VectorDBProvider(instanceConfig, defaults(defaultSqlite));
+
+        // The explicitly configured instance wins; putIfAbsent does not overwrite it.
+        assertEquals("postgres", provider.get("default", mock(TaskContext.class)).getType());
     }
 }

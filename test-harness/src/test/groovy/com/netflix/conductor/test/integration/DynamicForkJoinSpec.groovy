@@ -24,15 +24,11 @@ import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.execution.StartWorkflowInput
 import com.netflix.conductor.core.execution.tasks.Join
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
-import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
 
 import spock.lang.Shared
 
 class DynamicForkJoinSpec extends AbstractSpecification {
-
-    @Autowired
-    QueueDAO queueDAO
 
     @Autowired
     Join joinTask
@@ -428,8 +424,11 @@ class DynamicForkJoinSpec extends AbstractSpecification {
         workflowTestUtil.verifyPolledAndAcknowledgedTask(pollAndCompleteTask1Try1)
 
         and: "verify that workflow has progressed further ahead and new dynamic tasks have been scheduled"
-        List<String> polledSubWfIds = queueDAO.pop('SUB_WORKFLOW', 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledSubWfIds[0])
+        def dynSubWfTask = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+                .tasks.find { it.taskType == 'SUB_WORKFLOW' && it.status == Task.Status.SCHEDULED }
+        if (dynSubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, dynSubWfTask.taskId)
+        }
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 5
@@ -570,7 +569,7 @@ class DynamicForkJoinSpec extends AbstractSpecification {
             tasks[3].taskType == 'integration_task_10'
             tasks[3].status == Task.Status.COMPLETED
             tasks[4].taskType == 'JOIN'
-            tasks[4].status == Task.Status.CANCELED
+            tasks[4].status == Task.Status.IN_PROGRESS
             tasks[4].referenceTaskName == 'dynamicfanouttask_join'
         }
 

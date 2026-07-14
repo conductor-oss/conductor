@@ -19,7 +19,7 @@ import java.util.Map;
 
 import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.AIModelProvider;
-import org.conductoross.conductor.ai.models.LLMWorkerInput;
+import org.conductoross.conductor.ai.model.LLMWorkerInput;
 import org.conductoross.conductor.ai.tasks.mapper.ChatCompleteTaskMapper;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -227,8 +227,8 @@ class AIModelTaskMapperPreviousResponseIdTest {
         // at this point — the mapper translates inputData → ChatCompletion →
         // ChatMessage list and writes it back.
         @SuppressWarnings("unchecked")
-        List<org.conductoross.conductor.ai.models.ChatMessage> messages =
-                (List<org.conductoross.conductor.ai.models.ChatMessage>)
+        List<org.conductoross.conductor.ai.model.ChatMessage> messages =
+                (List<org.conductoross.conductor.ai.model.ChatMessage>)
                         mapped.get(0).getInputData().get("messages");
         assertTrue(
                 messages != null && !messages.isEmpty(), "participant message must be preserved");
@@ -269,8 +269,8 @@ class AIModelTaskMapperPreviousResponseIdTest {
         List<TaskModel> mapped = mapper.getMappedTasks(ctx);
 
         @SuppressWarnings("unchecked")
-        List<org.conductoross.conductor.ai.models.ChatMessage> messages =
-                (List<org.conductoross.conductor.ai.models.ChatMessage>)
+        List<org.conductoross.conductor.ai.model.ChatMessage> messages =
+                (List<org.conductoross.conductor.ai.model.ChatMessage>)
                         mapped.get(0).getInputData().get("messages");
         assertTrue(
                 messages == null || messages.isEmpty(),
@@ -299,8 +299,8 @@ class AIModelTaskMapperPreviousResponseIdTest {
         List<TaskModel> mapped = mapper.getMappedTasks(ctx);
 
         @SuppressWarnings("unchecked")
-        List<org.conductoross.conductor.ai.models.ChatMessage> messages =
-                (List<org.conductoross.conductor.ai.models.ChatMessage>)
+        List<org.conductoross.conductor.ai.model.ChatMessage> messages =
+                (List<org.conductoross.conductor.ai.model.ChatMessage>)
                         mapped.get(0).getInputData().get("messages");
         boolean sawAssistantLoopIteration =
                 messages != null
@@ -351,8 +351,8 @@ class AIModelTaskMapperPreviousResponseIdTest {
         List<TaskModel> mapped = mapper.getMappedTasks(ctx);
 
         @SuppressWarnings("unchecked")
-        List<org.conductoross.conductor.ai.models.ChatMessage> messages =
-                (List<org.conductoross.conductor.ai.models.ChatMessage>)
+        List<org.conductoross.conductor.ai.model.ChatMessage> messages =
+                (List<org.conductoross.conductor.ai.model.ChatMessage>)
                         mapped.get(0).getInputData().get("messages");
         assertTrue(
                 messages != null && !messages.isEmpty(),

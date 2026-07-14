@@ -103,7 +103,7 @@ export default function DropdownButton({
         role={undefined}
         transition
         disablePortal
-        sx={{ maxHeight: "90vh", zIndex: 1 }}
+        sx={{ maxHeight: "90vh" }}
       >
         {({ TransitionProps, placement }) => (
           <Grow

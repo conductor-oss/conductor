@@ -126,7 +126,6 @@ export const mockPageComponents = () => {
     "enterprise/pages/getStarted/GetStarted": "get-started",
     "enterprise/pages/metrics": "metrics-page",
     "enterprise/pages/secrets/Secrets": "secrets",
-    "enterprise/pages/workflowExplorer/Explorer": "explorer",
 
     // Remote services
     "enterprise/pages/remoteServices/edit/ServiceEdit": "service-edit",
