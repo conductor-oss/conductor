@@ -1,12 +1,13 @@
 import { queryClient } from "queryClient";
 import { fetchWithContext, fetchContextNonHook } from "plugins/fetch";
-import { QueueMonitorMachineContext } from "./types";
+import { PollData, QueueMonitorMachineContext } from "./types";
 import { logger } from "utils/logger";
-import { hasNoQueryParams, filterOptionToQueryParams } from "../helpers";
+import { createQueueMonitorResponse } from "../helpers";
 
 const fetchContext = fetchContextNonHook();
 
 const queuePollDataPath = `/tasks/queue/polldata/all`;
+const queueSizesPath = `/tasks/queue/all`;
 
 const LOCAL_STORAGE_KEY = "queueMonitorRefreshSeconds";
 
@@ -14,17 +15,26 @@ export const fetchForPollData = async ({
   authHeaders: headers,
   filterOptions,
 }: QueueMonitorMachineContext) => {
-  const url = hasNoQueryParams(filterOptions)
-    ? queuePollDataPath
-    : `${queuePollDataPath}?${filterOptionToQueryParams(filterOptions)}`;
-
-  logger.info("Will hit path to fetch for tasks ", url, filterOptions);
+  logger.info("Fetching task queue sizes and poll data", filterOptions);
   try {
-    const response = await queryClient.fetchQuery(
-      [fetchContext.stack, url],
-      () => fetchWithContext(url, fetchContext, { headers }),
-    );
-    return response;
+    const [pollData, queueSizes] = await Promise.all([
+      queryClient.fetchQuery<PollData[]>(
+        [fetchContext.stack, queuePollDataPath],
+        () =>
+          fetchWithContext(queuePollDataPath, fetchContext, {
+            headers,
+          }),
+      ),
+      queryClient.fetchQuery<Record<string, number>>(
+        [fetchContext.stack, queueSizesPath],
+        () =>
+          fetchWithContext(queueSizesPath, fetchContext, {
+            headers,
+          }),
+      ),
+    ]);
+
+    return createQueueMonitorResponse(queueSizes, pollData, filterOptions);
   } catch (error: any) {
     logger.error("Fetching task list page", error);
     return Promise.reject({
