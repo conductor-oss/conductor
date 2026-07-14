@@ -24,6 +24,7 @@ import com.netflix.conductor.common.metadata.Auditable;
 import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -474,6 +475,7 @@ public class WorkflowDef extends Auditable {
         return tasks;
     }
 
+    @JsonIgnore
     public boolean isAgent() {
         return metadata != null
                 && (metadata.get(META_AGENT_SDK) != null || metadata.get(META_AGENT_DEF) != null);

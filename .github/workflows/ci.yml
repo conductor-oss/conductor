@@ -372,48 +372,61 @@ jobs:
           path: "e2e/build/reports"
 
   build-ui:
+    # ui-next is the default UI: it is what docker/server/Dockerfile bundles
+    # into the conductor:server image, so it is what CI builds and tests.
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ui
+        working-directory: ui-next
     steps:
       - uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: ui-next/package.json
 
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
           node-version: "22"
-          cache: "yarn"
-          cache-dependency-path: ui/yarn.lock
+          cache: "pnpm"
+          cache-dependency-path: ui-next/pnpm-lock.yaml
 
       - name: Install Dependencies
-        run: yarn install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests (vitest)
+        run: pnpm test
 
       - name: Build UI
-        run: yarn run build
+        run: NODE_OPTIONS=--max-old-space-size=4096 pnpm build
 
       - name: Cache Playwright browsers
         uses: actions/cache@v5
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ hashFiles('ui/yarn.lock') }}
+          key: playwright-chromium-${{ hashFiles('ui-next/pnpm-lock.yaml') }}
 
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: Install Playwright browser deps (cached)
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+        run: pnpm exec playwright install-deps chromium
 
       - name: Run Playwright E2E Tests
-        run: yarn test:e2e
+        run: pnpm test:e2e
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report
-          path: ui/playwright-report
+          path: ui-next/playwright-report
           retention-days: 7

@@ -39,15 +39,6 @@ public class Join extends WorkflowSystemTask {
     @VisibleForTesting static final double EVALUATION_OFFSET_BASE = 1.2;
 
     /**
-     * Marker key present in an AgentSpan agent execution's workflow input/variables. Kept as a
-     * fallback signal alongside {@link WorkflowDef#isAgent()} — the workflow def's {@code
-     * agentDef}/{@code agent_sdk} metadata stamp is the primary, reliable signal since it is set at
-     * compile time by AgentSpan's compiler, but dynamically-assembled sub-workflows (e.g. a
-     * PLAN_EXECUTE plan built at runtime) may carry this marker without a stamped def.
-     */
-    private static final String AGENTSPAN_CTX = "__agentspan_ctx__";
-
-    /**
      * Keys propagated from fork-branch outputs into the JOIN output for AgentSpan agent executions.
      * Only these are copied so the JOIN payload stays small for multi-agent merges — full fork
      * outputs are read directly from the individual tool tasks by the agent message builder, so
@@ -156,17 +147,9 @@ public class Join extends WorkflowSystemTask {
         return false;
     }
 
-    /**
-     * True when this workflow is an embedded AgentSpan agent execution: either the workflow def is
-     * stamped {@code agent} (see {@link WorkflowDef#isAgent()}), or the {@code __agentspan_ctx__}
-     * marker is present on the workflow input/variables. Inert for all other workflows.
-     */
     private static boolean isAgentExecution(WorkflowModel workflow) {
         WorkflowDef def = workflow.getWorkflowDefinition();
-        return (def != null && def.isAgent())
-                || (workflow.getInput() != null && workflow.getInput().containsKey(AGENTSPAN_CTX))
-                || (workflow.getVariables() != null
-                        && workflow.getVariables().containsKey(AGENTSPAN_CTX));
+        return def != null && def.isAgent();
     }
 
     /** Returns a copy of {@code output} containing only {@link #AGENT_PROPAGATED_KEYS}. */

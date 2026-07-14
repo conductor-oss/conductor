@@ -14,6 +14,8 @@ package org.conductoross.conductor.dao;
 
 import java.util.List;
 
+import org.conductoross.conductor.model.secret.CredentialMeta;
+
 public interface SecretsDAO {
     String getSecret(String name);
 
@@ -24,4 +26,6 @@ public interface SecretsDAO {
     void putSecret(String name, String value);
 
     void deleteSecret(String name);
+
+    List<CredentialMeta> listWithMeta();
 }
