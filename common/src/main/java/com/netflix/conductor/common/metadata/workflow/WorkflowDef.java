@@ -24,6 +24,7 @@ import com.netflix.conductor.common.metadata.Auditable;
 import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -33,6 +34,9 @@ import jakarta.validation.constraints.NotNull;
 @ProtoMessage
 @TaskReferenceNameUniqueConstraint
 public class WorkflowDef extends Auditable {
+
+    private static final String META_AGENT_SDK = "agent_sdk";
+    private static final String META_AGENT_DEF = "agentDef";
 
     @NotEmpty(message = "WorkflowDef name cannot be null or empty")
     @ProtoField(id = 1)
@@ -469,6 +473,12 @@ public class WorkflowDef extends Auditable {
             tasks.addAll(workflowTask.collectTasks());
         }
         return tasks;
+    }
+
+    @JsonIgnore
+    public boolean isAgent() {
+        return metadata != null
+                && (metadata.get(META_AGENT_SDK) != null || metadata.get(META_AGENT_DEF) != null);
     }
 
     @Override
