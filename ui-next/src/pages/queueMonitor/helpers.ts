@@ -3,7 +3,7 @@ import _groupBy from "lodash/groupBy";
 import _isNil from "lodash/isNil";
 import _isUndefined from "lodash/isUndefined";
 import { Entries } from "types/helperTypes";
-import { getDifferenceInSeconds, humanizeDuration } from "utils/date";
+import { formatRelativeDuration } from "utils/date";
 import {
   FilterOption,
   FilterOptions,
@@ -181,13 +181,7 @@ export const hasNoQueryParams = (filterOptions: FilterOptions) =>
   Object.values(filterOptions).every(_isUndefined);
 
 export const lastPollTimeColumnRenderer = (lastPollTime: number) => {
-  if (lastPollTime) {
-    const now = Date.now();
-    const durationInMillis = now - lastPollTime;
-    const secondsDiff = getDifferenceInSeconds(now, lastPollTime);
-    return secondsDiff > 0
-      ? humanizeDuration(lastPollTime, now)
-      : `${Math.abs(durationInMillis)} millis`;
-  }
-  return "N/A";
+  return lastPollTime
+    ? formatRelativeDuration(lastPollTime, Date.now())
+    : "N/A";
 };

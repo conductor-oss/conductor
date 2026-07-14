@@ -1,4 +1,8 @@
-import { createQueueMonitorResponse, createQueueSummaries } from "./helpers";
+import {
+  createQueueMonitorResponse,
+  createQueueSummaries,
+  lastPollTimeColumnRenderer,
+} from "./helpers";
 import { PollData, RangeOptions } from "./state";
 
 describe("createQueueSummaries", () => {
@@ -91,5 +95,25 @@ describe("createQueueMonitorResponse", () => {
         { ...pollData[1], queueName: "production:send_email" },
       ],
     });
+  });
+});
+
+describe("lastPollTimeColumnRenderer", () => {
+  beforeEach(() => {
+    vi.spyOn(Date, "now").mockReturnValue(1_000_000);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it.each([
+    [999_750, "250 ms ago"],
+    [990_000, "10 seconds ago"],
+    [865_667, "2 minutes ago"],
+    [1_010_000, "in 10 seconds"],
+    [0, "N/A"],
+  ])("formats %i as %s", (lastPollTime, expected) => {
+    expect(lastPollTimeColumnRenderer(lastPollTime)).toBe(expected);
   });
 });

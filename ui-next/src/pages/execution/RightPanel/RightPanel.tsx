@@ -43,6 +43,7 @@ import { useRightPanelActor } from "./state/hook";
 import { SummaryTask } from "./SummaryTask";
 import { dropdownIcon } from "./dropdownIcon";
 import { SecondaryActions } from "./SecondaryActions";
+import { getTaskOutputForDisplay } from "./taskOutput";
 
 const executionTaskHeaderContainerQuery = {
   small: { maxWidth: 699 },
@@ -80,7 +81,6 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
       errorMessage,
       currentTab,
       maybeSiblings,
-      isReRunFromTaskInProgress,
       executionId,
       authHeaders,
     },
@@ -385,7 +385,7 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
               prunedNotice
             ) : (
               <ReactJson
-                src={isReRunFromTaskInProgress ? {} : selectedTask.outputData}
+                src={getTaskOutputForDisplay(selectedTask)}
                 title="Task output"
                 overflowY="auto"
                 overflowX="hidden"
