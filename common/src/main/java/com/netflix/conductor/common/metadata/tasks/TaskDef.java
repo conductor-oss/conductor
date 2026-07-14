@@ -82,6 +82,11 @@ public class TaskDef extends Auditable {
     @ProtoField(id = 6)
     private List<String> outputKeys = new ArrayList<>();
 
+    /**
+     * Names of secrets/environment variables this task needs resolved and injected at poll time.
+     */
+    private List<String> runtimeMetadata = new ArrayList<>();
+
     @ProtoField(id = 7)
     private TimeoutPolicy timeoutPolicy = TimeoutPolicy.TIME_OUT_WF;
 
@@ -271,6 +276,21 @@ public class TaskDef extends Auditable {
      */
     public void setOutputKeys(List<String> outputKeys) {
         this.outputKeys = outputKeys;
+    }
+
+    /**
+     * @return Returns the declared secret/environment variable names this task needs
+     */
+    public List<String> getRuntimeMetadata() {
+        return runtimeMetadata;
+    }
+
+    /**
+     * @param runtimeMetadata Names of secrets/environment variables that the task needs resolved
+     *     and injected at poll time
+     */
+    public void setRuntimeMetadata(List<String> runtimeMetadata) {
+        this.runtimeMetadata = runtimeMetadata;
     }
 
     /**
@@ -569,6 +589,7 @@ public class TaskDef extends Auditable {
                 && Objects.equals(getDescription(), taskDef.getDescription())
                 && Objects.equals(getInputKeys(), taskDef.getInputKeys())
                 && Objects.equals(getOutputKeys(), taskDef.getOutputKeys())
+                && Objects.equals(getRuntimeMetadata(), taskDef.getRuntimeMetadata())
                 && getTimeoutPolicy() == taskDef.getTimeoutPolicy()
                 && getRetryLogic() == taskDef.getRetryLogic()
                 && Objects.equals(getConcurrentExecLimit(), taskDef.getConcurrentExecLimit())
@@ -596,6 +617,7 @@ public class TaskDef extends Auditable {
                 getTimeoutSeconds(),
                 getInputKeys(),
                 getOutputKeys(),
+                getRuntimeMetadata(),
                 getTimeoutPolicy(),
                 getRetryLogic(),
                 getRetryDelaySeconds(),

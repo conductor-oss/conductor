@@ -29,7 +29,6 @@ import AddIcon from "components/icons/AddIcon";
 import PlayIcon from "components/icons/PlayIcon";
 import cronstrue from "cronstrue";
 import _debounce from "lodash/debounce";
-import { useSaveSchedule } from "pages/scheduler/schedulerHooks";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
 import { useQueryState } from "react-router-use-location-state";
@@ -49,7 +48,6 @@ import {
 } from "utils/constants/common";
 import { SCHEDULER_DEFINITION_URL } from "utils/constants/route";
 import {
-  useGetSchedulerDefinitions,
   useGetSchedulerDefinitionsWithPagination,
   SchedulerSearchParams,
 } from "utils/hooks/useGetSchedulerDefinitions";
@@ -345,9 +343,6 @@ export default function ScheduleDefinitions() {
     refetch,
   } = useGetSchedulerDefinitionsWithPagination(searchParams);
 
-  // For backward compatibility with clone dialog (fetch all schedule names)
-  const { data: allSchedulesData } = useGetSchedulerDefinitions();
-
   const resetSelectedRows = useCallback(() => {
     setSelectedRows([]);
     setToggleCleared((t) => !t);
@@ -384,21 +379,6 @@ export default function ScheduleDefinitions() {
 
   const pushHistory = usePushHistory();
 
-  const { mutate: saveSchedule, isLoading: isSavingSchedule } = useSaveSchedule(
-    {
-      onSuccess: () => {
-        refetchAndResetSelection();
-        setSelectedSchedule(null);
-        setToastMessage({
-          text: "Schedule cloned successfully",
-          severity: "success",
-        });
-      },
-
-      onError: (error: Response) => handleFetchError(error, HTTPMethods.POST),
-    },
-  );
-
   const deleteScheduleAction = useActionWithPath({
     onSuccess: () => {
       refetchAndResetSelection();
@@ -421,14 +401,6 @@ export default function ScheduleDefinitions() {
     }
     return [];
   }, [paginatedData]);
-
-  const scheduleNames: string[] = useMemo(
-    () =>
-      allSchedulesData
-        ? allSchedulesData.map((schedule: IScheduleDto) => schedule.name)
-        : [],
-    [allSchedulesData],
-  );
 
   const totalCount = paginatedData?.totalHits ?? 0;
 
@@ -720,21 +692,26 @@ export default function ScheduleDefinitions() {
 
       {selectedSchedule && (
         <CloneScheduleDialog
-          name={
+          schedule={selectedSchedule}
+          defaultName={
             getSequentiallySuffix({
               name: selectedSchedule.name,
-              refNames: scheduleNames,
+              refNames: schedules.map((schedule) => schedule.name),
             }).name
           }
           onClose={() => setSelectedSchedule(null)}
-          onSuccess={({ name }) => {
-            // @ts-ignore
-            saveSchedule({
-              body: JSON.stringify({ ...selectedSchedule, name }),
+          onSuccess={() => {
+            refetchAndResetSelection();
+            setSelectedSchedule(null);
+            setToastMessage({
+              text: "Schedule cloned successfully",
+              severity: "success",
             });
           }}
-          scheduleNames={scheduleNames}
-          isFetching={isSavingSchedule}
+          onError={async (error) => {
+            await handleFetchError(error, HTTPMethods.POST);
+            setSelectedSchedule(null);
+          }}
         />
       )}
       <SectionHeader

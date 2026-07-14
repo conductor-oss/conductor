@@ -9,6 +9,13 @@ dependencies {
     implementation project(':conductor-core')
     implementation project(':conductor-ai')
 
-    implementation "org.conductoross:conductor-agentspan:0.3.0"
+    // Exercise the adapters against a real persisted backend rather than mocked DAOs.
+    testImplementation project(':conductor-sqlite-persistence')
+
+    // AgentSpan's real event listener depends on its SSE registry at test runtime.
+    testImplementation 'org.springframework:spring-webmvc'
+
+    testImplementation 'org.graalvm.polyglot:polyglot:25.0.2'
+    testImplementation 'org.graalvm.js:js:25.0.2'
 
 }

@@ -15,17 +15,22 @@ package org.conductoross.conductor.ai.agentspan;
 import java.util.List;
 import java.util.Optional;
 
+import org.conductoross.conductor.ai.agentspan.runtime.model.skill.SkillDetail;
+import org.conductoross.conductor.ai.agentspan.runtime.spi.SkillMetadataDAO;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.agentspan.runtime.model.skill.SkillDetail;
 
 /**
- * Bridges AgentSpan's {@link dev.agentspan.runtime.spi.SkillMetadataDAO} SPI onto Conductor's
- * backend-agnostic {@link org.conductoross.conductor.dao.SkillMetadataDAO}. The {@link SkillDetail}
- * manifest is serialized to JSON for storage so the persistence layer carries no dependency on
- * AgentSpan model types; it is rehydrated on read.
+ * Bridges AgentSpan's {@link SkillMetadataDAO} SPI onto Conductor's backend-agnostic {@link
+ * org.conductoross.conductor.dao.SkillMetadataDAO}. The {@link SkillDetail} manifest is serialized
+ * to JSON for storage so the persistence layer carries no dependency on AgentSpan model types; it
+ * is rehydrated on read.
+ *
+ * <p>OSS Conductor is single-tenant, so skills share one global namespace and neither side of the
+ * adapter is owner-scoped.
  */
-public class SkillMetadataDaoAdapter implements dev.agentspan.runtime.spi.SkillMetadataDAO {
+public class SkillMetadataDaoAdapter implements SkillMetadataDAO {
 
     private final org.conductoross.conductor.dao.SkillMetadataDAO delegate;
     private final ObjectMapper objectMapper;
@@ -39,7 +44,6 @@ public class SkillMetadataDaoAdapter implements dev.agentspan.runtime.spi.SkillM
     @Override
     public void save(SkillDetail detail, boolean makeLatest) {
         delegate.save(
-                detail.getOwnerId(),
                 detail.getName(),
                 detail.getVersion(),
                 makeLatest,
@@ -49,28 +53,28 @@ public class SkillMetadataDaoAdapter implements dev.agentspan.runtime.spi.SkillM
     }
 
     @Override
-    public Optional<SkillDetail> find(String ownerId, String name, String version) {
-        return delegate.find(ownerId, name, version).map(this::fromJson);
+    public Optional<SkillDetail> find(String name, String version) {
+        return delegate.find(name, version).map(this::fromJson);
     }
 
     @Override
-    public Optional<String> latestVersion(String ownerId, String name) {
-        return delegate.latestVersion(ownerId, name);
+    public Optional<String> latestVersion(String name) {
+        return delegate.latestVersion(name);
     }
 
     @Override
-    public List<SkillDetail> listVersions(String ownerId, String name) {
-        return delegate.listVersions(ownerId, name).stream().map(this::fromJson).toList();
+    public List<SkillDetail> listVersions(String name) {
+        return delegate.listVersions(name).stream().map(this::fromJson).toList();
     }
 
     @Override
-    public List<SkillDetail> list(String ownerId, boolean allVersions) {
-        return delegate.list(ownerId, allVersions).stream().map(this::fromJson).toList();
+    public List<SkillDetail> list(boolean allVersions) {
+        return delegate.list(allVersions).stream().map(this::fromJson).toList();
     }
 
     @Override
-    public void delete(String ownerId, String name, String version) {
-        delegate.delete(ownerId, name, version);
+    public void delete(String name, String version) {
+        delegate.delete(name, version);
     }
 
     private String toJson(SkillDetail detail) {

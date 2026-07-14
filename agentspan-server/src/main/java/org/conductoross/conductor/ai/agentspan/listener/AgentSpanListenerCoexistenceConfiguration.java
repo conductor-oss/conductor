@@ -37,8 +37,8 @@ import com.netflix.conductor.core.listener.WorkflowStatusListener;
  * conductor.integrations.ai.enabled} defaults to {@code true}, so this would affect default
  * servers.
  *
- * <p>Active only in embedded mode ({@code agentspan.embedded=true}, set by {@link
- * org.conductoross.conductor.ai.agentspan.AgentSpanEmbeddedEnvironmentPostProcessor}), this
+ * <p>Active only in embedded mode ({@code agentspan.embedded=true}, which {@code
+ * application.properties} derives from {@code conductor.integrations.ai.enabled}), this
  * configuration:
  *
  * <ol>
@@ -63,11 +63,10 @@ public class AgentSpanListenerCoexistenceConfiguration {
 
     /**
      * Fully-qualified name of the agentspan listener. Matched by name rather than imported type to
-     * avoid coupling to a library-internal class and to keep the post-processor free of side
-     * effects (no premature class loading).
+     * keep the post-processor free of side effects (no premature class loading).
      */
     private static final String AGENT_EVENT_LISTENER_CLASS =
-            "dev.agentspan.runtime.service.AgentEventListener";
+            "org.conductoross.conductor.ai.agentspan.runtime.service.AgentEventListener";
 
     /**
      * Demotes agentspan's {@code @Primary AgentEventListener} to an ordinary candidate so the
