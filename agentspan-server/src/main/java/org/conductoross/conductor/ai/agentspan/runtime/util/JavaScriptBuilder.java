@@ -2143,4 +2143,76 @@ public class JavaScriptBuilder {
                         // Nothing found
                         + "return {plan_json: null, markdown_plan: text};");
     }
+
+    // ── Long-term (OCG) memory helpers ──────────────────────────────────
+
+    /**
+     * Format OCG search hits into a system-message text block for injection into the agent's
+     * prompt. Reads {@code $.memories} (the {@code response.body.memories} array from the search
+     * HTTP task) and folds the human good/bad signal into each line — mirroring the Python {@code
+     * _with_signal}. Returns {@code ""} when there are no hits, so the injected system message is
+     * harmless when memory is empty.
+     */
+    public static String formatMemorySearchScript() {
+        return iife(
+                "  var mems = $.memories;"
+                        + "  if (mems == null || !Array.isArray(mems) || mems.length === 0) { return ''; }"
+                        + "  var lines = ['Relevant context from memory:'];"
+                        + "  for (var i = 0; i < mems.length; i++) {"
+                        + "    var m = mems[i] || {};"
+                        + "    var content = m.value_preview || '';"
+                        + "    var good = parseInt(m.good_count || 0, 10) || 0;"
+                        + "    var bad = parseInt(m.bad_count || 0, 10) || 0;"
+                        + "    if (good || bad) {"
+                        + "      content += '  [good ' + good + ' / bad ' + bad + ']';"
+                        + "      var notes = m.feedback_notes || [];"
+                        + "      for (var j = 0; j < notes.length; j++) {"
+                        + "        var n = notes[j] || {};"
+                        + "        if (n.verdict === 'bad' && n.reason) {"
+                        + "          content += ' (bad: \"' + n.reason + '\")';"
+                        + "        }"
+                        + "      }"
+                        + "    }"
+                        + "    lines.push('  ' + (i + 1) + '. ' + content);"
+                        + "  }"
+                        + "  return lines.join('\\n');");
+    }
+
+    /**
+     * Parse the distiller LLM's JSON output and build the durable memory ``value`` string. The
+     * {@code LLM_CHAT_COMPLETE} task exposes its result as a JSON <em>string</em> at {@code
+     * output.result} (``jsonOutput`` only nudges the model to emit JSON; the server does not parse
+     * it), so this reads the raw string {@code $.distilled}, strips any prose/code-fence around the
+     * object, and {@code JSON.parse}s it. Mirrors the Python post-run save which appends a
+     * ``Facts:`` block. Returns {@code {value, description, summary, facts, tags}} so the save HTTP
+     * body and the feedback_sink task can read the parsed fields from this one task (the
+     * distiller's {@code output.result.summary} would never resolve — it is a string). Resilient:
+     * malformed JSON falls back to using the raw text as the summary.
+     */
+    public static String buildMemoryValueScript() {
+        return iife(
+                "  var raw = $.distilled;"
+                        + "  var obj = {};"
+                        + "  if (raw != null && typeof raw === 'object') { obj = raw; }"
+                        + "  else if (typeof raw === 'string' && raw.length > 0) {"
+                        + "    var s = raw.trim();"
+                        + "    var f = s.indexOf('{'); var l = s.lastIndexOf('}');"
+                        + "    if (f >= 0 && l > f) { s = s.substring(f, l + 1); }"
+                        + "    try { obj = JSON.parse(s); } catch (e) { obj = {summary: raw}; }"
+                        + "  }"
+                        + "  var summary = obj.summary;"
+                        + "  if (summary == null) { summary = ''; }"
+                        + "  if (typeof summary !== 'string') { summary = String(summary); }"
+                        + "  var facts = Array.isArray(obj.facts) ? obj.facts : [];"
+                        + "  var tags = Array.isArray(obj.tags) ? obj.tags : [];"
+                        + "  var value = summary;"
+                        + "  if (facts.length > 0) {"
+                        + "    value += '\\n\\nFacts:\\n';"
+                        + "    var fl = [];"
+                        + "    for (var i = 0; i < facts.length; i++) { fl.push('- ' + facts[i]); }"
+                        + "    value += fl.join('\\n');"
+                        + "  }"
+                        + "  return {value: value, description: value.substring(0, 200),"
+                        + "          summary: summary, facts: facts, tags: tags};");
+    }
 }
