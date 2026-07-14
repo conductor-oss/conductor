@@ -42,6 +42,11 @@ conductor.integrations.ai.enabled=true
 
 Each task takes an **`agentType`** input that selects the agent runtime. It defaults to `"a2a"` (Agent2Agent — the only runtime in OSS today); native runtimes such as LangGraph and OpenAI are planned, and the field is the extension point for them. An unrecognized `agentType` fails the task with a clear error.
 
+**Choosing a runtime.** `agentType` picks where the agent runs:
+
+- `agentType: "a2a"` (default) — call a **remote** Agent2Agent endpoint (`agentUrl`). This page.
+- `agentType: "conductor"` — run an agent on the **embedded agentspan runtime** (`agentName`). See [Conductor agents (embedded runtime)](conductor-agents.md).
+
 ### AGENT — send a message to an agent
 
 Sends an A2A `message/send` and works the resulting agent task to a terminal state. Non-blocking: a fast reply completes immediately; long-running work moves to `IN_PROGRESS` and is polled at a cadence (no worker thread is held).
