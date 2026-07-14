@@ -75,11 +75,19 @@ public class A2AService {
      */
     public static final String AGENT_TYPE_A2A = "a2a";
 
+    /** Selects the embedded Conductor-agent (agentspan) runtime. */
+    public static final String AGENT_TYPE_CONDUCTOR = "conductor";
+
     /** Whether {@code agentType} selects the A2A runtime — null/blank defaults to A2A. */
     public static boolean isA2aAgentType(String agentType) {
         return agentType == null
                 || agentType.isBlank()
                 || AGENT_TYPE_A2A.equalsIgnoreCase(agentType);
+    }
+
+    /** Whether {@code agentType} selects the embedded Conductor-agent runtime. */
+    public static boolean isConductorAgentType(String agentType) {
+        return AGENT_TYPE_CONDUCTOR.equalsIgnoreCase(agentType);
     }
 
     /** JSON-RPC / A2A error codes that are not worth retrying. */

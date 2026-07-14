@@ -26,8 +26,11 @@ import org.conductoross.conductor.ai.a2a.model.A2ATask;
 import org.conductoross.conductor.ai.a2a.model.Part;
 import org.conductoross.conductor.ai.a2a.model.PushNotificationConfig;
 import org.conductoross.conductor.ai.a2a.model.TaskState;
+import org.conductoross.conductor.ai.agent.ConductorAgentDelegate;
+import org.conductoross.conductor.ai.agent.ConductorAgentRuntime;
 import org.conductoross.conductor.ai.model.A2ACallRequest;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -87,16 +90,33 @@ public class AgentTask extends WorkflowSystemTask {
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
     private final A2AService a2aService;
     private final Environment environment;
+    private final ConductorAgentDelegate conductorAgentDelegate;
 
+    /** Convenience constructor (tests / A2A-only deployments) — no embedded Conductor runtime. */
     public AgentTask(A2AService a2aService, Environment environment) {
+        this(a2aService, environment, Optional.empty());
+    }
+
+    @Autowired
+    public AgentTask(
+            A2AService a2aService,
+            Environment environment,
+            Optional<ConductorAgentRuntime> conductorAgentRuntime) {
         super(TASK_TYPE);
         this.a2aService = a2aService;
         this.environment = environment;
+        this.conductorAgentDelegate = new ConductorAgentDelegate(conductorAgentRuntime);
         log.info("{} initialized", TASK_TYPE);
     }
 
     @Override
     public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
+        // Conductor-agent branch (embedded agentspan runtime) — dispatched before the A2A logging
+        // scope/metrics, which are specific to remote A2A calls.
+        if (A2AService.isConductorAgentType(parseRequest(task).getAgentType())) {
+            conductorAgentDelegate.start(task);
+            return;
+        }
         try (A2ALogging.Scope scope =
                 A2ALogging.of(
                         A2ALogging.WORKFLOW_ID, task.getWorkflowInstanceId(),
@@ -108,7 +128,7 @@ public class AgentTask extends WorkflowSystemTask {
                         task,
                         "Unsupported agentType '"
                                 + request.getAgentType()
-                                + "' (only 'a2a' is supported)",
+                                + "' (supported: 'a2a', 'conductor')",
                         true);
                 return;
             }
@@ -160,6 +180,9 @@ public class AgentTask extends WorkflowSystemTask {
 
     @Override
     public boolean execute(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
+        if (A2AService.isConductorAgentType(parseRequest(task).getAgentType())) {
+            return conductorAgentDelegate.execute(task);
+        }
         String agentTaskId = asString(task.getOutputData().get(A2AResults.KEY_TASK_ID));
         try (A2ALogging.Scope scope =
                 A2ALogging.of(
@@ -231,6 +254,10 @@ public class AgentTask extends WorkflowSystemTask {
 
     @Override
     public void cancel(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
+        if (A2AService.isConductorAgentType(parseRequest(task).getAgentType())) {
+            conductorAgentDelegate.cancel(task, "workflow canceled");
+            return;
+        }
         String agentTaskId = asString(task.getOutputData().get(A2AResults.KEY_TASK_ID));
         try {
             A2ACallRequest request = parseRequest(task);
@@ -248,6 +275,10 @@ public class AgentTask extends WorkflowSystemTask {
 
     @Override
     public Optional<Long> getEvaluationOffset(TaskModel task, long maxOffset) {
+        // Conductor-agent branch polls the embedded runtime at the normal cadence (no push mode).
+        if (A2AService.isConductorAgentType(parseRequest(task).getAgentType())) {
+            return Optional.of(pollInterval(task));
+        }
         // In push mode the agent's webhook completes the task quickly; we still poll at a slow
         // backstop interval so a lost/never-delivered webhook can't hang the task forever
         // (durability over a marginal efficiency gain). Otherwise poll at the normal cadence.
