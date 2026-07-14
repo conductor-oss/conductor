@@ -57,8 +57,28 @@ public class AgentHumanTask extends WorkflowSystemTask {
     @Override
     public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         task.setStatus(TaskModel.Status.IN_PROGRESS);
+        emitWaiting(streamRegistry, workflow, task);
+    }
 
-        // Emit WAITING event immediately
+    /**
+     * Emit the agent-HITL {@code WAITING} SSE event for a HUMAN task, with the {@code pendingTool}
+     * payload built from the task input: {@code tool_name}/{@code parameters}, the normalised
+     * {@code toolCalls} batch (see {@link #extractToolCalls}), and the optional {@code
+     * response_schema}/{@code response_ui_schema} form hints.
+     *
+     * <p>This is the single source of truth for the WAITING payload. Embedding hosts that register
+     * their own {@code HUMAN} system task (e.g. orkes-conductor's {@code OrkesHuman}, which layers
+     * agent HITL onto its human-task subsystem) should delegate here rather than rebuild the
+     * payload, so the event shape cannot drift between hosts.
+     *
+     * <p>Null-safe on {@code streamRegistry} (absent when AgentSpan is not embedded) and never
+     * throws: a streaming failure must not fail the HUMAN task.
+     */
+    public static void emitWaiting(
+            AgentStreamRegistry streamRegistry, WorkflowModel workflow, TaskModel task) {
+        if (streamRegistry == null) {
+            return;
+        }
         String wfId = workflow.getWorkflowId();
         String taskRef = task.getReferenceTaskName();
         Map<String, Object> pendingTool = new HashMap<>();

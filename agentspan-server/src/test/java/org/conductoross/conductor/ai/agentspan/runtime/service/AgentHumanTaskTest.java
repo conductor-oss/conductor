@@ -182,4 +182,57 @@ class AgentHumanTaskTest {
 
         assertThat(task.getStatus()).isEqualTo(TaskModel.Status.CANCELED);
     }
+
+    /**
+     * {@code emitWaiting} is the shared entry point for embedding hosts (e.g. orkes-conductor's
+     * {@code OrkesHuman}) that autowire the registry with {@code required = false} — a null
+     * registry must be a silent no-op, not an NPE.
+     */
+    @Test
+    void emitWaitingIsNoOpWithNullRegistry() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("wf-null-reg");
+        TaskModel task = new TaskModel();
+        task.setReferenceTaskName("hitl");
+
+        assertThatCode(() -> AgentHumanTask.emitWaiting(null, workflow, task))
+                .doesNotThrowAnyException();
+    }
+
+    /**
+     * Hosts delegating to {@code emitWaiting} directly must get the same payload {@code start()}
+     * produces — including the {@code toolCalls} batch, whose omission was exactly the drift this
+     * shared method exists to prevent.
+     */
+    @Test
+    void emitWaitingBuildsFullPendingToolPayload() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("wf-shared");
+
+        TaskModel task = new TaskModel();
+        task.setReferenceTaskName("agent_approval_human");
+        task.setInputData(
+                Map.of(
+                        "tool_calls",
+                        List.of(
+                                Map.of(
+                                        "name",
+                                        "publish_article",
+                                        "inputParameters",
+                                        Map.of("title", "Test"))),
+                        "response_schema",
+                        Map.of("type", "object")));
+
+        AgentHumanTask.emitWaiting(streamRegistry, workflow, task);
+
+        ArgumentCaptor<AgentSSEEvent> captor = ArgumentCaptor.forClass(AgentSSEEvent.class);
+        verify(streamRegistry).send(eq("wf-shared"), captor.capture());
+        Map<String, Object> pendingTool = captor.getValue().getPendingTool();
+        assertThat(pendingTool).containsEntry("taskRefName", "agent_approval_human");
+        assertThat(pendingTool).containsEntry("response_schema", Map.of("type", "object"));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> calls = (List<Map<String, Object>>) pendingTool.get("toolCalls");
+        assertThat(calls).hasSize(1);
+        assertThat(calls.get(0)).containsEntry("name", "publish_article");
+    }
 }
