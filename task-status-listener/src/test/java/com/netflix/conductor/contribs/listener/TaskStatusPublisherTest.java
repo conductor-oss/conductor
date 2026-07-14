@@ -69,7 +69,9 @@ public class TaskStatusPublisherTest {
     public void testOnTaskScheduled_WithoutScheduledInSubscribedList() throws Exception {
         TaskStatusPublisher publisher =
                 new TaskStatusPublisher(
-                        restClientManager, executionDAOFacade, Collections.singletonList("COMPLETED"));
+                        restClientManager,
+                        executionDAOFacade,
+                        Collections.singletonList("COMPLETED"));
 
         publisher.onTaskScheduled(createTask("my_task", TaskModel.Status.SCHEDULED));
 
@@ -134,8 +136,8 @@ public class TaskStatusPublisherTest {
                         any());
     }
 
-    private static void setBlockingQueue(TaskStatusPublisher publisher, BlockingQueue<TaskModel> queue)
-            throws Exception {
+    private static void setBlockingQueue(
+            TaskStatusPublisher publisher, BlockingQueue<TaskModel> queue) throws Exception {
         Field queueField = TaskStatusPublisher.class.getDeclaredField("blockingQueue");
         queueField.setAccessible(true);
         queueField.set(publisher, queue);
