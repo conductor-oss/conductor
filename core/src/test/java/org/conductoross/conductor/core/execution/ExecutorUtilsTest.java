@@ -254,8 +254,7 @@ public class ExecutorUtilsTest {
                 ExecutorUtils.computePostpone(
                         workflow,
                         Duration.ofSeconds(30),
-                        Duration.ofSeconds(3600),
-                        registryWith("AGENT_TEST", /* async= */ false, /* offsetSeconds= */ 5L));
+                        Duration.ofSeconds(3600));
 
         assertEquals(5, result.getSeconds());
     }
@@ -271,8 +270,7 @@ public class ExecutorUtilsTest {
                 ExecutorUtils.computePostpone(
                         workflow,
                         Duration.ofSeconds(30),
-                        Duration.ofSeconds(3600),
-                        registryWith("ASYNC_TEST", /* async= */ true, /* offsetSeconds= */ 5L));
+                        Duration.ofSeconds(3600));
 
         assertEquals(30, result.getSeconds());
     }
@@ -289,8 +287,7 @@ public class ExecutorUtilsTest {
                 ExecutorUtils.computePostpone(
                         workflow,
                         Duration.ofSeconds(30),
-                        Duration.ofSeconds(3600),
-                        registryWith("AGENT_TEST", /* async= */ false, /* offsetSeconds= */ 5L));
+                        Duration.ofSeconds(3600));
 
         assertEquals(5, result.getSeconds());
     }
