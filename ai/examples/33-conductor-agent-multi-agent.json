@@ -16,8 +16,8 @@
             "type": "AGENT",
             "inputParameters": {
               "agentType": "conductor",
-              "agentName": "planner",
-              "text": "${workflow.input.prompt}"
+              "name": "planner",
+              "prompt": "${workflow.input.prompt}"
             }
           }
         ],
@@ -28,8 +28,8 @@
             "type": "AGENT",
             "inputParameters": {
               "agentType": "conductor",
-              "agentName": "researcher",
-              "text": "${workflow.input.prompt}"
+              "name": "researcher",
+              "prompt": "${workflow.input.prompt}"
             }
           }
         ]

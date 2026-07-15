@@ -22,7 +22,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.env.StandardEnvironment;
 
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 import okhttp3.OkHttpClient;
 
@@ -32,38 +34,35 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * End-to-end lifecycle test for the {@code AGENT} (conductor) branch, driven through the real
- * {@link AgentTask} system-task entry points against an in-process {@link
- * FakeConductorAgentRuntime} — the conductor-branch analogue of {@code A2AEndToEndTest} (no mock
- * frameworks, no socket).
+ * {@link AgentTask} system-task entry points against an in-process {@link FakeWorkflowExecutor} —
+ * the conductor-branch analogue of {@code A2AEndToEndTest} (no mock frameworks, no socket).
  *
  * <p>Covers start&rarr;poll&rarr;complete, plus the {@code WAITING}&rarr;resume flow, per
  * test-plan.md §4.1.
  */
 class ConductorAgentEndToEndTest {
 
-    private FakeConductorAgentRuntime runtime;
+    private FakeWorkflowExecutor executor;
     private AgentTask agentTask;
 
     @BeforeEach
     void setUp() {
-        runtime = new FakeConductorAgentRuntime();
+        executor = new FakeWorkflowExecutor();
         // A real A2AService/Environment: the conductor branch never touches either (it dispatches
         // on the static agentType predicate and delegates to the injected runtime), so no HTTP or
         // property lookup happens on this path.
-        agentTask =
-                new AgentTask(
-                        new A2AService(new OkHttpClient()),
-                        new StandardEnvironment(),
-                        Optional.of(runtime));
+        agentTask = new AgentTask(new A2AService(new OkHttpClient()), new StandardEnvironment());
     }
 
-    private static ConductorAgentExecution execution(ConductorAgentState state) {
-        return ConductorAgentExecution.builder()
-                .executionId("exec-1")
-                .agentName("planner")
-                .sessionId("sess-1")
-                .state(state)
-                .build();
+    private static WorkflowModel workflow(WorkflowModel.Status status) {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("exec-1");
+        WorkflowDef definition = new WorkflowDef();
+        definition.setName("planner");
+        workflow.setWorkflowDefinition(definition);
+        workflow.setStatus(status);
+        workflow.setInput(Map.of("session_id", "sess-1"));
+        return workflow;
     }
 
     private static TaskModel taskModel(Map<String, Object> input) {
@@ -79,39 +78,40 @@ class ConductorAgentEndToEndTest {
     private static Map<String, Object> conductorInput() {
         Map<String, Object> input = new HashMap<>();
         input.put("agentType", "conductor");
-        input.put("agentName", "planner");
-        input.put("text", "plan my trip");
+        input.put("name", "planner");
+        input.put("sessionId", "sess-1");
+        input.put("prompt", "plan my trip");
         return input;
     }
 
     // Full lifecycle: RUNNING on start -> IN_PROGRESS, then a COMPLETED poll -> COMPLETED.
     @Test
     void lifecycle_runningThenCompleted() {
-        runtime.startResult = execution(ConductorAgentState.RUNNING);
-
         TaskModel task = taskModel(conductorInput());
-        agentTask.start(null, task, null);
+        agentTask.start(null, task, executor);
 
         assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
         assertEquals("exec-1", task.getOutputData().get(ConductorAgentResults.KEY_EXECUTION_ID));
         assertEquals("planner", task.getOutputData().get(ConductorAgentResults.KEY_AGENT_NAME));
-        assertEquals("sess-1", task.getOutputData().get(ConductorAgentResults.KEY_SESSION_ID));
+        assertEquals(
+                "exec-1",
+                task.getSubWorkflowId(),
+                "the AGENT task must expose subWorkflowId like SUB_WORKFLOW so the UI can open it");
         assertEquals("RUNNING", task.getOutputData().get(ConductorAgentResults.KEY_STATE));
         Object startedAt = task.getOutputData().get(ConductorAgentResults.KEY_STARTED_AT);
         assertNotNull(startedAt, "agentStartedAt must be anchored on start");
 
         // Advance the run and poll: execute() settles the task.
-        ConductorAgentExecution completed = execution(ConductorAgentState.COMPLETED);
-        completed.setOutput(Map.of("answer", 42));
-        completed.setText("all done");
-        runtime.statusResult = completed;
+        executor.workflow = workflow(WorkflowModel.Status.COMPLETED);
+        executor.workflow.setOutput(Map.of("answer", 42, "text", "all done"));
 
-        boolean changed = agentTask.execute(null, task, null);
+        boolean changed = agentTask.execute(null, task, executor);
 
         assertTrue(changed);
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
         assertEquals(
-                Map.of("answer", 42), task.getOutputData().get(ConductorAgentResults.KEY_OUTPUT));
+                Map.of("answer", 42, "text", "all done"),
+                task.getOutputData().get(ConductorAgentResults.KEY_OUTPUT));
         assertEquals("all done", task.getOutputData().get(ConductorAgentResults.KEY_TEXT));
         // agentStartedAt is anchored once and never rewritten by execute().
         assertEquals(startedAt, task.getOutputData().get(ConductorAgentResults.KEY_STARTED_AT));
@@ -122,33 +122,38 @@ class ConductorAgentEndToEndTest {
     // the executionId resumes via respond() and routes the resumed run to COMPLETED.
     @Test
     void waiting_thenResumeRoutesToCompleted() {
-        ConductorAgentExecution waiting = execution(ConductorAgentState.WAITING);
-        waiting.setPendingTool(Map.of("type", "human", "question", "Which city?"));
-        waiting.setText("Which city?");
-        runtime.startResult = waiting;
-
         TaskModel first = taskModel(conductorInput());
-        agentTask.start(null, first, null);
+        agentTask.start(null, first, executor);
+        executor.workflow = workflow(WorkflowModel.Status.RUNNING);
+        TaskModel human = new TaskModel();
+        human.setTaskId("human-1");
+        human.setTaskType("HUMAN");
+        human.setReferenceTaskName("approval");
+        human.setStatus(TaskModel.Status.IN_PROGRESS);
+        human.setInputData(Map.of("tool_name", "choose_city", "parameters", Map.of()));
+        executor.workflow.setTasks(java.util.List.of(human));
+        assertTrue(agentTask.execute(null, first, executor));
 
         assertEquals(TaskModel.Status.COMPLETED, first.getStatus());
         assertEquals(Boolean.TRUE, first.getOutputData().get(ConductorAgentResults.KEY_WAITING));
         assertEquals(
-                Map.of("type", "human", "question", "Which city?"),
-                first.getOutputData().get(ConductorAgentResults.KEY_PENDING_TOOL));
+                "choose_city",
+                ((Map<?, ?>) first.getOutputData().get(ConductorAgentResults.KEY_PENDING_TOOL))
+                        .get("tool_name"));
         assertEquals("WAITING", first.getOutputData().get(ConductorAgentResults.KEY_STATE));
 
         // Resume: a fresh AGENT call carrying the executionId + the human's answer.
-        runtime.statusResult = execution(ConductorAgentState.COMPLETED);
+        executor.workflowAfterUpdate = workflow(WorkflowModel.Status.COMPLETED);
         Map<String, Object> resumeInput = new HashMap<>();
         resumeInput.put("agentType", "conductor");
         resumeInput.put("executionId", "exec-1");
-        resumeInput.put("text", "New York");
+        resumeInput.put("prompt", "New York");
         TaskModel second = taskModel(resumeInput);
 
-        agentTask.start(null, second, null);
+        agentTask.start(null, second, executor);
 
-        assertEquals("exec-1", runtime.lastRespondExecutionId);
-        assertEquals(Map.of("result", "New York"), runtime.lastRespondMessage);
+        assertEquals("human-1", executor.lastTaskResult.getTaskId());
+        assertEquals(Map.of("result", "New York"), executor.lastTaskResult.getOutputData());
         assertEquals(TaskModel.Status.COMPLETED, second.getStatus());
     }
 

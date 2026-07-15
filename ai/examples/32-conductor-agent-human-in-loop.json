@@ -10,8 +10,8 @@
       "type": "AGENT",
       "inputParameters": {
         "agentType": "conductor",
-        "agentName": "planner",
-        "text": "${workflow.input.prompt}"
+        "name": "planner",
+        "prompt": "${workflow.input.prompt}"
       }
     },
     {
@@ -34,9 +34,9 @@
             "type": "AGENT",
             "inputParameters": {
               "agentType": "conductor",
-              "agentName": "planner",
+              "name": "planner",
               "executionId": "${run_agent_ref.output.executionId}",
-              "text": "${collect_answer_ref.output.answer}"
+              "prompt": "${collect_answer_ref.output.answer}"
             }
           }
         ]

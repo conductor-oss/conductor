@@ -20,14 +20,11 @@ import com.netflix.conductor.model.TaskModel;
  */
 public final class ConductorAgentResults {
 
-    /** Runtime-assigned execution id (used to poll/respond/cancel across retries). */
+    /** Child workflow execution id (used to poll/respond/cancel across retries). */
     public static final String KEY_EXECUTION_ID = "executionId";
 
     /** Name of the executed agent. */
     public static final String KEY_AGENT_NAME = "agentName";
-
-    /** Session id the execution belongs to. */
-    public static final String KEY_SESSION_ID = "sessionId";
 
     /** Normalized execution state. */
     public static final String KEY_STATE = "state";
@@ -53,7 +50,7 @@ public final class ConductorAgentResults {
     private ConductorAgentResults() {}
 
     /**
-     * Writes the output of a completed execution: the runtime's structured {@code output} map is
+     * Writes the output of a completed execution: the workflow's structured {@code output} map is
      * surfaced verbatim under {@link #KEY_OUTPUT} and the final text under {@link #KEY_TEXT}.
      */
     public static void writeCompleted(TaskModel task, ConductorAgentExecution execution) {

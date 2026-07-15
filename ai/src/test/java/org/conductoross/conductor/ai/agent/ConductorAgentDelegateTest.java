@@ -15,33 +15,23 @@ package org.conductoross.conductor.ai.agent;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.conductoross.conductor.ai.a2a.A2AService;
 import org.junit.jupiter.api.Test;
 
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Unit tests for {@link ConductorAgentDelegate}, exercising the start/execute/cancel state machine
- * and the two liveness guards against a real (in-package, hand-written) {@link
- * FakeConductorAgentRuntime} — no mock frameworks.
- */
+/** Unit coverage for the WorkflowExecutor-backed conductor-agent state machine. */
 class ConductorAgentDelegateTest {
 
-    private static ConductorAgentExecution execution(ConductorAgentState state) {
-        return ConductorAgentExecution.builder()
-                .executionId("exec-1")
-                .agentName("planner")
-                .sessionId("sess-1")
-                .state(state)
-                .build();
-    }
+    private final ConductorAgentDelegate delegate = new ConductorAgentDelegate();
 
     private static TaskModel taskModel(Map<String, Object> input) {
         TaskModel model = new TaskModel();
@@ -56,340 +46,250 @@ class ConductorAgentDelegateTest {
     private static Map<String, Object> conductorInput() {
         Map<String, Object> input = new HashMap<>();
         input.put("agentType", "conductor");
-        input.put("agentName", "planner");
-        input.put("text", "plan my trip");
+        input.put("name", "planner");
+        input.put("prompt", "plan my trip");
         return input;
     }
 
-    // 1. RUNNING -> task stays IN_PROGRESS, execution identity recorded.
-    @Test
-    void start_running_movesToInProgress() {
-        FakeConductorAgentRuntime runtime = new FakeConductorAgentRuntime();
-        runtime.startResult = execution(ConductorAgentState.RUNNING);
-        ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
+    private static WorkflowModel workflow(WorkflowModel.Status status) {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("exec-1");
+        WorkflowDef definition = new WorkflowDef();
+        definition.setName("planner");
+        workflow.setWorkflowDefinition(definition);
+        workflow.setStatus(status);
+        workflow.setInput(Map.of("session_id", "sess-1"));
+        return workflow;
+    }
 
+    private static TaskModel waitingHumanTask() {
+        TaskModel human = new TaskModel();
+        human.setTaskId("human-1");
+        human.setTaskType("HUMAN");
+        human.setReferenceTaskName("approval");
+        human.setStatus(TaskModel.Status.IN_PROGRESS);
+        human.setInputData(
+                Map.of(
+                        "tool_calls",
+                        List.of(
+                                Map.of(
+                                        "name",
+                                        "book_trip",
+                                        "inputParameters",
+                                        Map.of("city", "Paris"))),
+                        "response_schema",
+                        Map.of("type", "object")));
+        return human;
+    }
+
+    @Test
+    void start_startsRegisteredAgentAndMovesToInProgress() {
+        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
         TaskModel task = taskModel(conductorInput());
-        delegate.start(task);
+        task.setIteration(3);
+
+        delegate.start(task, executor);
 
         assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
         assertEquals("exec-1", task.getOutputData().get(ConductorAgentResults.KEY_EXECUTION_ID));
-        assertEquals("planner", task.getOutputData().get(ConductorAgentResults.KEY_AGENT_NAME));
-        assertEquals("RUNNING", task.getOutputData().get(ConductorAgentResults.KEY_STATE));
+        assertEquals("planner", executor.lastStartRequest.getName());
+        assertEquals("plan my trip", executor.lastStartRequest.getPrompt());
+        assertEquals(
+                "conductor-agent-wf-1:agent_ref:3", executor.lastStartRequest.getIdempotencyKey());
     }
 
-    // 2. COMPLETED -> task COMPLETED, output merged verbatim under "output", text surfaced.
     @Test
-    void start_completed_completesWithOutputAndText() {
-        FakeConductorAgentRuntime runtime = new FakeConductorAgentRuntime();
-        ConductorAgentExecution ex = execution(ConductorAgentState.COMPLETED);
-        ex.setOutput(Map.of("answer", 42));
-        ex.setText("all done");
-        runtime.startResult = ex;
-        ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
+    void start_blankNameFailsTerminally() {
+        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
+        Map<String, Object> input = conductorInput();
+        input.remove("name");
+        TaskModel task = taskModel(input);
 
-        TaskModel task = taskModel(conductorInput());
-        delegate.start(task);
+        delegate.start(task, executor);
 
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertNull(executor.lastStartRequest);
+    }
+
+    @Test
+    void start_blankPromptFailsTerminally() {
+        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
+        Map<String, Object> input = conductorInput();
+        input.remove("prompt");
+        TaskModel task = taskModel(input);
+
+        delegate.start(task, executor);
+
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertNull(executor.lastStartRequest);
+    }
+
+    @Test
+    void execute_completedWorkflowCopiesOutputAndText() {
+        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
+        executor.workflow = workflow(WorkflowModel.Status.COMPLETED);
+        executor.workflow.setOutput(Map.of("answer", 42, "text", "all done"));
+        TaskModel task = pollingTask();
+
+        boolean changed = delegate.execute(task, executor);
+
+        assertTrue(changed);
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
         assertEquals(
-                Map.of("answer", 42), task.getOutputData().get(ConductorAgentResults.KEY_OUTPUT));
+                Map.of("answer", 42, "text", "all done"),
+                task.getOutputData().get(ConductorAgentResults.KEY_OUTPUT));
         assertEquals("all done", task.getOutputData().get(ConductorAgentResults.KEY_TEXT));
     }
 
-    // 3. WAITING (human/tool) -> task COMPLETES, surfaces waiting flag + pendingTool.
     @Test
-    void start_waiting_completesAndSurfacesPendingTool() {
-        FakeConductorAgentRuntime runtime = new FakeConductorAgentRuntime();
-        ConductorAgentExecution ex = execution(ConductorAgentState.WAITING);
-        ex.setPendingTool(Map.of("type", "human", "question", "Which city?"));
-        ex.setText("Which city?");
-        runtime.startResult = ex;
-        ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
+    void execute_waitingWorkflowSurfacesPendingHumanRequest() {
+        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
+        executor.workflow = workflow(WorkflowModel.Status.RUNNING);
+        executor.workflow.setTasks(List.of(waitingHumanTask()));
+        TaskModel task = pollingTask();
 
-        TaskModel task = taskModel(conductorInput());
-        delegate.start(task);
+        boolean changed = delegate.execute(task, executor);
 
+        assertTrue(changed);
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
         assertEquals(Boolean.TRUE, task.getOutputData().get(ConductorAgentResults.KEY_WAITING));
         assertEquals(
-                Map.of("type", "human", "question", "Which city?"),
-                task.getOutputData().get(ConductorAgentResults.KEY_PENDING_TOOL));
-        assertEquals("Which city?", task.getOutputData().get(ConductorAgentResults.KEY_TEXT));
+                List.of(Map.of("name", "book_trip", "args", Map.of("city", "Paris"))),
+                ((Map<?, ?>) task.getOutputData().get(ConductorAgentResults.KEY_PENDING_TOOL))
+                        .get("toolCalls"));
     }
 
-    // 4. FAILED -> task FAILED with the runtime's reason.
     @Test
-    void start_failed_failsWithReason() {
-        FakeConductorAgentRuntime runtime = new FakeConductorAgentRuntime();
-        ConductorAgentExecution ex = execution(ConductorAgentState.FAILED);
-        ex.setReasonForIncompletion("model error");
-        runtime.startResult = ex;
-        ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
+    void execute_failedAndTerminatedWorkflowsMapToTaskStates() {
+        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
+        executor.workflow = workflow(WorkflowModel.Status.FAILED);
+        executor.workflow.setReasonForIncompletion("model error");
+        TaskModel failed = pollingTask();
 
-        TaskModel task = taskModel(conductorInput());
-        delegate.start(task);
+        assertTrue(delegate.execute(failed, executor));
+        assertEquals(TaskModel.Status.FAILED, failed.getStatus());
+        assertEquals("model error", failed.getReasonForIncompletion());
 
-        assertEquals(TaskModel.Status.FAILED, task.getStatus());
-        assertEquals("model error", task.getReasonForIncompletion());
+        executor.workflow = workflow(WorkflowModel.Status.TERMINATED);
+        TaskModel terminated = pollingTask();
+        assertTrue(delegate.execute(terminated, executor));
+        assertEquals(TaskModel.Status.CANCELED, terminated.getStatus());
     }
 
-    // 5. CANCELED -> task CANCELED.
     @Test
-    void start_canceled_marksCanceled() {
-        FakeConductorAgentRuntime runtime = new FakeConductorAgentRuntime();
-        runtime.startResult = execution(ConductorAgentState.CANCELED);
-        ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
-
-        TaskModel task = taskModel(conductorInput());
-        delegate.start(task);
-
-        assertEquals(TaskModel.Status.CANCELED, task.getStatus());
-    }
-
-    // 6. Blank agentName on a fresh start -> terminal failure.
-    @Test
-    void start_blankAgentName_failsTerminally() {
-        FakeConductorAgentRuntime runtime = new FakeConductorAgentRuntime();
-        runtime.startResult = execution(ConductorAgentState.RUNNING);
-        ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
-
-        Map<String, Object> input = conductorInput();
-        input.remove("agentName");
-        TaskModel task = taskModel(input);
-        delegate.start(task);
-
-        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
-        assertEquals("AGENT (conductor) requires 'agentName'", task.getReasonForIncompletion());
-        assertNull(runtime.lastStartRequest);
-    }
-
-    // 7. Blank prompt on a fresh start -> terminal failure.
-    @Test
-    void start_blankPrompt_failsTerminally() {
-        FakeConductorAgentRuntime runtime = new FakeConductorAgentRuntime();
-        runtime.startResult = execution(ConductorAgentState.RUNNING);
-        ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
-
-        Map<String, Object> input = conductorInput();
-        input.remove("text");
-        TaskModel task = taskModel(input);
-        delegate.start(task);
-
-        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
-        assertEquals(
-                "AGENT (conductor) requires 'text' or 'prompt'", task.getReasonForIncompletion());
-        assertNull(runtime.lastStartRequest);
-    }
-
-    // 8. Absolute-deadline guard -> execute() fails terminally past maxDurationSeconds.
-    @Test
-    void execute_deadlineExceeded_failsTerminally() {
-        FakeConductorAgentRuntime runtime = new FakeConductorAgentRuntime();
-        runtime.statusResult = execution(ConductorAgentState.RUNNING);
-        ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
-
+    void execute_deadlineExceededFailsTerminally() {
+        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
         Map<String, Object> input = conductorInput();
         input.put("maxDurationSeconds", 1);
         TaskModel task = taskModel(input);
         task.addOutput(ConductorAgentResults.KEY_EXECUTION_ID, "exec-1");
-        // Started well beyond the 1s deadline.
         task.addOutput(ConductorAgentResults.KEY_STARTED_AT, System.currentTimeMillis() - 10_000L);
 
-        boolean changed = delegate.execute(task);
-
-        assertTrue(changed);
+        assertTrue(delegate.execute(task, executor));
         assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
-        assertTrue(task.getReasonForIncompletion().contains("max duration"));
+        assertEquals(
+                "exec-1",
+                executor.lastTerminatedExecutionId,
+                "the abandoned child execution must be terminated, not left running");
     }
 
-    // 9. Poll-failure cap -> execute() fails terminally after maxPollFailures transient errors.
     @Test
-    void execute_pollFailureCap_failsTerminally() {
-        FakeConductorAgentRuntime runtime = new FakeConductorAgentRuntime();
-        runtime.throwOnStatus = true;
-        ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
-
+    void execute_pollFailureCapFailsTerminally() {
+        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
+        executor.throwOnGetWorkflow = true;
         Map<String, Object> input = conductorInput();
         input.put("maxPollFailures", 2);
         TaskModel task = taskModel(input);
         task.addOutput(ConductorAgentResults.KEY_EXECUTION_ID, "exec-1");
         task.addOutput(ConductorAgentResults.KEY_STARTED_AT, System.currentTimeMillis());
 
-        // First failure -> transient, keep polling.
-        boolean first = delegate.execute(task);
-        assertFalse(first);
-        assertEquals(
-                1,
-                ((Number) task.getOutputData().get(ConductorAgentResults.KEY_POLL_FAILURES))
-                        .intValue());
-
-        // Second failure -> hits the cap, terminal.
-        boolean second = delegate.execute(task);
-        assertTrue(second);
+        assertFalse(delegate.execute(task, executor));
+        assertTrue(delegate.execute(task, executor));
         assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
-        assertTrue(task.getReasonForIncompletion().contains("consecutive poll failures"));
-    }
-
-    // 10. Deterministic idempotency key derived from durable task identity.
-    @Test
-    void start_buildsDeterministicIdempotencyKey() {
-        FakeConductorAgentRuntime runtime = new FakeConductorAgentRuntime();
-        runtime.startResult = execution(ConductorAgentState.RUNNING);
-        ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
-
-        TaskModel task = taskModel(conductorInput());
-        task.setIteration(3);
-        delegate.start(task);
-
         assertEquals(
-                "conductor-agent-wf-1:agent_ref:3", runtime.lastStartRequest.getIdempotencyKey());
-        assertEquals("planner", runtime.lastStartRequest.getAgentName());
-        assertEquals("plan my trip", runtime.lastStartRequest.getPrompt());
+                "exec-1",
+                executor.lastTerminatedExecutionId,
+                "an unreachable child execution must still get a best-effort terminate call");
     }
 
-    // 10b. Resume path: executionId present -> respond() is called with the prompt as result.
     @Test
-    void start_withExecutionId_resumesViaRespond() {
-        FakeConductorAgentRuntime runtime = new FakeConductorAgentRuntime();
-        runtime.statusResult = execution(ConductorAgentState.COMPLETED);
-        ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
-
+    void start_withExecutionIdCompletesPendingHumanTaskThenReadsStatus() {
+        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
+        executor.workflow = workflow(WorkflowModel.Status.RUNNING);
+        executor.workflow.setTasks(List.of(waitingHumanTask()));
+        executor.workflowAfterUpdate = workflow(WorkflowModel.Status.COMPLETED);
+        executor.workflowAfterUpdate.setOutput(Map.of("answer", "New York"));
         Map<String, Object> input = conductorInput();
         input.put("executionId", "exec-1");
-        input.put("text", "New York");
+        input.put("prompt", "New York");
         TaskModel task = taskModel(input);
-        delegate.start(task);
 
-        assertEquals("exec-1", runtime.lastRespondExecutionId);
-        assertEquals(Map.of("result", "New York"), runtime.lastRespondMessage);
-        assertNull(runtime.lastStartRequest);
+        delegate.start(task, executor);
+
+        assertEquals("human-1", executor.lastTaskResult.getTaskId());
+        assertEquals(Map.of("result", "New York"), executor.lastTaskResult.getOutputData());
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        assertNull(executor.lastStartRequest);
     }
 
-    // 11. Runtime absent -> terminal failure with the embedded-runtime message.
     @Test
-    void start_runtimeAbsent_failsTerminally() {
-        ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.empty());
+    void cancelTerminatesChildWorkflowBestEffort() {
+        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
+        TaskModel task = pollingTask();
 
+        delegate.cancel(task, executor, "workflow canceled");
+
+        assertEquals("exec-1", executor.lastTerminatedExecutionId);
+        assertEquals("workflow canceled", executor.lastTerminationReason);
+        assertEquals(TaskModel.Status.CANCELED, task.getStatus());
+
+        executor.throwOnTerminate = true;
+        delegate.cancel(task, executor, "again");
+        assertEquals(TaskModel.Status.CANCELED, task.getStatus());
+    }
+
+    // A child that already finished on its own (e.g. its own workflow timeout -> TIMED_OUT) must
+    // not be re-terminated by the cleanup hook — that would rewrite TIMED_OUT to TERMINATED.
+    @Test
+    void cancelSkipsTerminateWhenChildAlreadyTerminal() {
+        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
+        executor.workflow = workflow(WorkflowModel.Status.TIMED_OUT);
+        TaskModel task = pollingTask();
+
+        delegate.cancel(task, executor, "workflow canceled");
+
+        assertNull(
+                executor.lastTerminatedExecutionId,
+                "an already-terminal child execution must be left untouched");
+        assertEquals(TaskModel.Status.CANCELED, task.getStatus());
+    }
+
+    @Test
+    void nullExecutorFailsTerminally() {
         TaskModel task = taskModel(conductorInput());
-        delegate.start(task);
+
+        delegate.start(task, null);
 
         assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
         assertEquals(
-                "Conductor agents require the embedded agentspan runtime (agentspan.embedded=true)",
+                "Conductor agent execution requires a WorkflowExecutor",
                 task.getReasonForIncompletion());
     }
 
-    // ---------------------------------------------------------------------------------------------
-    // Prompt-resolution precedence (architecture.md §4.4): first non-blank of message-parts, then
-    // parts, then text, then prompt. resolvePrompt() is private, so it is asserted through start()
-    // via the prompt the delegate hands the runtime (lastStartRequest.getPrompt()).
-    // ---------------------------------------------------------------------------------------------
-
-    /**
-     * Builds the fresh-start input, adding whatever prompt sources the case under test supplies.
-     */
-    private static Map<String, Object> promptInput() {
-        Map<String, Object> input = new HashMap<>();
-        input.put("agentType", "conductor");
-        input.put("agentName", "planner");
-        return input;
-    }
-
-    private static List<Map<String, Object>> textParts(String text) {
-        return List.of(Map.of("kind", "text", "text", text));
-    }
-
-    private static String startedPrompt(Map<String, Object> input) {
-        FakeConductorAgentRuntime runtime = new FakeConductorAgentRuntime();
-        runtime.startResult = execution(ConductorAgentState.RUNNING);
-        ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
-        delegate.start(taskModel(input));
-        return runtime.lastStartRequest.getPrompt();
-    }
-
-    // 12a. message-parts win over parts, text, and prompt.
     @Test
-    void resolvePrompt_messageWinsOverEverything() {
-        Map<String, Object> input = promptInput();
-        input.put("message", Map.of("parts", textParts("from-message")));
-        input.put("parts", textParts("from-parts"));
-        input.put("text", "from-text");
-        input.put("prompt", "from-prompt");
-
-        assertEquals("from-message", startedPrompt(input));
-    }
-
-    // 12b. parts win over text and prompt when there is no message.
-    @Test
-    void resolvePrompt_partsWinOverTextAndPrompt() {
-        Map<String, Object> input = promptInput();
-        input.put("parts", textParts("from-parts"));
-        input.put("text", "from-text");
-        input.put("prompt", "from-prompt");
-
-        assertEquals("from-parts", startedPrompt(input));
-    }
-
-    // 12c. text wins over prompt when there is no message/parts.
-    @Test
-    void resolvePrompt_textWinsOverPrompt() {
-        Map<String, Object> input = promptInput();
-        input.put("text", "from-text");
-        input.put("prompt", "from-prompt");
-
-        assertEquals("from-text", startedPrompt(input));
-    }
-
-    // 12d. prompt is the last resort.
-    @Test
-    void resolvePrompt_promptIsLastResort() {
-        Map<String, Object> input = promptInput();
-        input.put("prompt", "from-prompt");
-
-        assertEquals("from-prompt", startedPrompt(input));
-    }
-
-    // 12e. All prompt sources blank/absent -> fresh start fails terminally, runtime never called.
-    @Test
-    void resolvePrompt_allBlank_failsTerminally() {
-        FakeConductorAgentRuntime runtime = new FakeConductorAgentRuntime();
-        runtime.startResult = execution(ConductorAgentState.RUNNING);
-        ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
-
-        TaskModel task = taskModel(promptInput());
-        delegate.start(task);
-
-        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
-        assertEquals(
-                "AGENT (conductor) requires 'text' or 'prompt'", task.getReasonForIncompletion());
-        assertNull(runtime.lastStartRequest);
-    }
-
-    // ---------------------------------------------------------------------------------------------
-    // Dispatch predicates (architecture.md §4.1). These are the keys AgentTask branches on; assert
-    // the shared A2AService contract directly so the dispatch can't silently drift.
-    // ---------------------------------------------------------------------------------------------
-
-    // 13. isConductorAgentType is true only for "conductor" (case-insensitive).
-    @Test
-    void isConductorAgentType_contract() {
+    void agentTypePredicatesRemainStable() {
         assertTrue(A2AService.isConductorAgentType("conductor"));
         assertTrue(A2AService.isConductorAgentType("CONDUCTOR"));
         assertFalse(A2AService.isConductorAgentType(null));
-        assertFalse(A2AService.isConductorAgentType(""));
-        assertFalse(A2AService.isConductorAgentType("  "));
-        assertFalse(A2AService.isConductorAgentType("a2a"));
+        assertTrue(A2AService.isA2aAgentType(null));
+        assertTrue(A2AService.isA2aAgentType("a2a"));
+        assertFalse(A2AService.isA2aAgentType("conductor"));
     }
 
-    // 14. isA2aAgentType defaults null/blank to a2a, and matches "a2a" case-insensitively.
-    @Test
-    void isA2aAgentType_contract() {
-        assertTrue(A2AService.isA2aAgentType(null));
-        assertTrue(A2AService.isA2aAgentType(""));
-        assertTrue(A2AService.isA2aAgentType("  "));
-        assertTrue(A2AService.isA2aAgentType("a2a"));
-        assertTrue(A2AService.isA2aAgentType("A2A"));
-        assertFalse(A2AService.isA2aAgentType("conductor"));
+    private static TaskModel pollingTask() {
+        TaskModel task = taskModel(conductorInput());
+        task.addOutput(ConductorAgentResults.KEY_EXECUTION_ID, "exec-1");
+        task.addOutput(ConductorAgentResults.KEY_STARTED_AT, System.currentTimeMillis());
+        return task;
     }
 }

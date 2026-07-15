@@ -18,7 +18,7 @@ import lombok.Builder;
 import lombok.Data;
 
 /**
- * An immutable snapshot of a Conductor-agent execution returned by {@link ConductorAgentRuntime}.
+ * A snapshot of a Conductor-agent workflow execution used by {@link ConductorAgentDelegate}.
  *
  * <p>{@link #state} drives how {@link ConductorAgentDelegate} routes the owning Conductor task:
  * running snapshots keep it polling, {@link ConductorAgentState#WAITING} snapshots complete it and
@@ -29,14 +29,11 @@ import lombok.Data;
 @Builder
 public class ConductorAgentExecution {
 
-    /** Runtime-assigned execution id, used for polling/responding/cancelling. */
+    /** Child workflow execution id, used for polling/responding/cancelling. */
     private String executionId;
 
     /** Name of the agent being executed. */
     private String agentName;
-
-    /** Session id this execution belongs to. */
-    private String sessionId;
 
     /** Current lifecycle state. */
     private ConductorAgentState state;
