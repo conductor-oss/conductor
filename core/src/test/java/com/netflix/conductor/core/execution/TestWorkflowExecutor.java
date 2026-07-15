@@ -17,6 +17,8 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
+import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,6 +40,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
@@ -863,6 +866,102 @@ public class TestWorkflowExecutor {
         verify(queueDAO, never()).push(anyString(), anyString(), anyInt(), anyLong());
         verify(queueDAO, never()).postpone(anyString(), anyString(), anyInt(), anyLong());
         verify(executionLockService).releaseLock("existing-workflow-id");
+    }
+
+    @Test
+    public void testStartAgentExecutionLoadsRegisteredVersionAndReusesIdempotentExecution() {
+        WorkflowTask workerTask = new WorkflowTask();
+        workerTask.setName("static_worker");
+        workerTask.setTaskReferenceName("static_worker_ref");
+        workerTask.setType(TaskType.TASK_TYPE_SIMPLE);
+
+        WorkflowDef agentDef = new WorkflowDef();
+        agentDef.setName("registered-agent");
+        agentDef.setVersion(3);
+        agentDef.setTasks(List.of(workerTask));
+        agentDef.setMetadata(
+                Map.of(
+                        "agent_sdk",
+                        "openai",
+                        "agentDef",
+                        Map.of("name", "raw-framework-agent", "frameworkOnly", true),
+                        "normalizedAgentDef",
+                        Map.of(
+                                "name",
+                                "registered-agent",
+                                "strategy",
+                                "swarm",
+                                "agents",
+                                List.of(Map.of("name", "peer")))));
+
+        Workflow existing = new Workflow();
+        existing.setWorkflowId("existing-agent-execution");
+        when(metadataDAO.getWorkflowDef("registered-agent", 3)).thenReturn(Optional.of(agentDef));
+        when(executionDAOFacade.getWorkflowsByCorrelationId(
+                        "registered-agent", "agent-request-1", false))
+                .thenReturn(List.of(existing));
+
+        AgentStartResponse response =
+                workflowExecutor.startAgentExecution(
+                        AgentStartRequest.builder()
+                                .name("registered-agent")
+                                .version(3)
+                                .prompt("do the work")
+                                .idempotencyKey("agent-request-1")
+                                .build());
+
+        assertEquals("existing-agent-execution", response.getExecutionId());
+        assertEquals("registered-agent", response.getAgentName());
+        assertEquals(
+                Set.of(
+                        "static_worker",
+                        "registered-agent_transfer_to_peer",
+                        "peer_transfer_to_registered-agent"),
+                new HashSet<>(response.getRequiredWorkers()));
+        verify(metadataDAO, never()).getLatestWorkflowDef(anyString());
+        verify(executionDAOFacade, never()).createWorkflow(any());
+    }
+
+    @Test
+    public void testApplyModelOverrideRewritesOnlyLlmChatCompleteTasks() {
+        WorkflowTask llmTask = new WorkflowTask();
+        llmTask.setName("LLM_CHAT_COMPLETE");
+        llmTask.setTaskReferenceName("llm_ref");
+        llmTask.setType("LLM_CHAT_COMPLETE");
+        llmTask.setInputParameters(
+                new HashMap<>(Map.of("llmProvider", "anthropic", "model", "claude-3-opus")));
+
+        WorkflowTask workerTask = new WorkflowTask();
+        workerTask.setName("static_worker");
+        workerTask.setTaskReferenceName("static_worker_ref");
+        workerTask.setType(TaskType.TASK_TYPE_SIMPLE);
+        workerTask.setInputParameters(new HashMap<>(Map.of("model", "should-not-change")));
+
+        WorkflowTask fork = new WorkflowTask();
+        fork.setName("fork");
+        fork.setTaskReferenceName("fork_ref");
+        fork.setType("FORK_JOIN");
+        WorkflowTask nestedLlmTask = new WorkflowTask();
+        nestedLlmTask.setName("LLM_CHAT_COMPLETE");
+        nestedLlmTask.setTaskReferenceName("nested_llm_ref");
+        nestedLlmTask.setType("LLM_CHAT_COMPLETE");
+        nestedLlmTask.setInputParameters(
+                new HashMap<>(Map.of("llmProvider", "openai", "model", "gpt-4o")));
+        fork.setForkTasks(List.of(List.of(nestedLlmTask)));
+
+        WorkflowDef def = new WorkflowDef();
+        def.setTasks(List.of(llmTask, workerTask, fork));
+
+        WorkflowExecutorOps.applyModelOverride(def, "openai/gpt-5");
+
+        assertEquals("openai", llmTask.getInputParameters().get("llmProvider"));
+        assertEquals("gpt-5", llmTask.getInputParameters().get("model"));
+        assertEquals("openai", nestedLlmTask.getInputParameters().get("llmProvider"));
+        assertEquals("gpt-5", nestedLlmTask.getInputParameters().get("model"));
+        assertEquals(
+                "a non-LLM task's own 'model' input parameter must be left untouched",
+                "should-not-change",
+                workerTask.getInputParameters().get("model"));
     }
 
     @Test(expected = NonTransientException.class)

@@ -276,7 +276,9 @@ const ConductorAutocompleteVariablesNoContext = ({
       disabled={disabled}
       onFocus={() => {
         onFocus?.();
-        if (!multiline) {
+        // Numeric fields never hold multi-line content — expanding them into a
+        // textarea on focus only produces unwanted empty vertical space.
+        if (!multiline && coerceTo !== "integer" && coerceTo !== "double") {
           setExpandField(true);
         }
       }}

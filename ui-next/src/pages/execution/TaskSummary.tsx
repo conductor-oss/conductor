@@ -161,6 +161,25 @@ export default function TaskSummary({ taskResult }: TaskSummaryProps) {
   }
 
   if (
+    taskResult.workflowTask.type === TaskType.AGENT &&
+    taskResult.inputData?.agentType === "conductor" &&
+    taskResult.outputData?.executionId
+  ) {
+    data.push({
+      label: "Agent execution id",
+      value: (
+        <Link
+          href={`${window.location.origin}/execution/${taskResult.outputData?.executionId}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          {taskResult.outputData?.executionId}
+        </Link>
+      ),
+    });
+  }
+
+  if (
     taskResult.workflowTask.type === TaskType.START_WORKFLOW &&
     taskResult.outputData?.workflowId
   ) {
