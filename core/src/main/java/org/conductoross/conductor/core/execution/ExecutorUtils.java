@@ -16,6 +16,8 @@ import java.time.Duration;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
+import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
+import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -68,6 +70,11 @@ public class ExecutorUtils {
      *                   {@code responseTimeoutSeconds - elapsedSeconds + 1}, floored at 0 (the +1
      *                   gives a one-second buffer past the deadline before re-evaluating).
      *               <li>Otherwise: candidate = {@code workflowOffsetTimeout}.
+     *               <li>If the task is a <b>synchronous</b> system task advertising a poll cadence
+     *                   via {@code getEvaluationOffset} (e.g. the {@code AGENT} task polling a
+     *                   child execution), that offset is taken as the minimum against the candidate
+     *                   above, so the decider re-sweeps at the task's advertised cadence. Async
+     *                   system tasks are driven by their own queue and are NOT considered.
      *             </ul>
      *         <li><b>Any other status</b> (COMPLETED, FAILED, …): skipped — no candidate produced.
      *       </ul>
@@ -89,6 +96,19 @@ public class ExecutorUtils {
             WorkflowModel workflowModel,
             Duration workflowOffsetTimeout,
             Duration maxPostponeDuration) {
+        return computePostpone(workflowModel, workflowOffsetTimeout, maxPostponeDuration, null);
+    }
+
+    /**
+     * Registry-aware variant: additionally consults {@code systemTaskRegistry} so a synchronous
+     * system task's {@code getEvaluationOffset} can drive the sweep cadence (see the class-level
+     * algorithm notes). A {@code null} registry behaves exactly like the three-argument overload.
+     */
+    public static Duration computePostpone(
+            WorkflowModel workflowModel,
+            Duration workflowOffsetTimeout,
+            Duration maxPostponeDuration,
+            SystemTaskRegistry systemTaskRegistry) {
         long currentTimeMillis = System.currentTimeMillis();
         long workflowOffsetTimeoutSeconds = workflowOffsetTimeout.getSeconds();
         long maxPostponeSeconds = maxPostponeDuration.getSeconds();
@@ -126,6 +146,15 @@ public class ExecutorUtils {
                         candidateSeconds = Math.max(0, remainingSeconds);
                     } else {
                         candidateSeconds = workflowOffsetTimeoutSeconds;
+                    }
+                    // A synchronous system task (e.g. AGENT) may advertise its own poll cadence;
+                    // take it as the minimum so the decider re-sweeps at that cadence.
+                    Long evaluationOffsetSeconds =
+                            syncSystemTaskEvaluationOffset(
+                                    taskModel, systemTaskRegistry, maxPostponeSeconds);
+                    if (evaluationOffsetSeconds != null
+                            && evaluationOffsetSeconds < candidateSeconds) {
+                        candidateSeconds = evaluationOffsetSeconds;
                     }
                 }
             } else if (taskModel.getStatus() == TaskModel.Status.SCHEDULED) {
@@ -175,6 +204,25 @@ public class ExecutorUtils {
                 workflowOffsetTimeoutSeconds,
                 workflowModel.getWorkflowId());
         return Duration.ofSeconds(Math.max(0, unackSeconds));
+    }
+
+    /**
+     * The poll cadence a <b>synchronous</b> system task advertises via {@code getEvaluationOffset},
+     * or {@code null} when the registry is absent, the task is not a system task, the system task
+     * is asynchronous (its cadence is owned by the async executor queue, not the decider sweep), or
+     * no offset is advertised.
+     */
+    private static Long syncSystemTaskEvaluationOffset(
+            TaskModel taskModel, SystemTaskRegistry systemTaskRegistry, long maxOffsetSeconds) {
+        if (systemTaskRegistry == null
+                || !systemTaskRegistry.isSystemTask(taskModel.getTaskType())) {
+            return null;
+        }
+        WorkflowSystemTask systemTask = systemTaskRegistry.get(taskModel.getTaskType());
+        if (systemTask.isAsync()) {
+            return null;
+        }
+        return systemTask.getEvaluationOffset(taskModel, maxOffsetSeconds).orElse(null);
     }
 
     /**
