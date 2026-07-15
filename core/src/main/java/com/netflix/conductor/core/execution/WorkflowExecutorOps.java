@@ -19,17 +19,20 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.conductoross.conductor.common.metadata.agent.AgentConfig;
+import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
+import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
+import org.conductoross.conductor.common.metadata.agent.ModelParser;
+import org.conductoross.conductor.common.metadata.agent.ModelParser.ParsedModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.annotations.VisibleForTesting;
+import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.*;
-import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
-import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
-import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.metadata.workflow.*;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.WorkflowContext;
@@ -55,6 +58,7 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.ExecutionLockService;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
@@ -77,6 +81,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             UNSUCCESSFUL_TERMINAL_TASK.and(t -> TaskType.TASK_TYPE_JOIN.equals(t.getTaskType()));
     private static final Predicate<TaskModel> NON_TERMINAL_TASK =
             task -> !task.getStatus().isTerminal();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapperProvider().getObjectMapper();
     private final MetadataDAO metadataDAO;
     private final QueueDAO queueDAO;
     private final DeciderService deciderService;
@@ -1672,6 +1677,172 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     @Override
     public WorkflowModel getWorkflow(String workflowId, boolean includeTasks) {
         return executionDAOFacade.getWorkflowModel(workflowId, includeTasks);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public AgentStartResponse startAgentExecution(AgentStartRequest request) {
+        Preconditions.checkArgument(request != null, "AgentStartRequest must not be null");
+        Preconditions.checkArgument(
+                StringUtils.isNotBlank(request.getName()), "Agent name must not be blank");
+
+        WorkflowDef registeredDef =
+                request.getVersion() != null
+                        ? metadataDAO
+                                .getWorkflowDef(request.getName(), request.getVersion())
+                                .orElseThrow(
+                                        () ->
+                                                new NotFoundException(
+                                                        "Agent not found: %s v%s",
+                                                        request.getName(), request.getVersion()))
+                        : metadataDAO
+                                .getLatestWorkflowDef(request.getName())
+                                .orElseThrow(
+                                        () ->
+                                                new NotFoundException(
+                                                        "Agent not found: %s", request.getName()));
+        if (!registeredDef.isAgent()) {
+            throw new NotFoundException("Agent not found: %s", request.getName());
+        }
+
+        Map<String, Object> metadata = registeredDef.getMetadata();
+        if (metadata == null || !(metadata.get("agentDef") instanceof Map<?, ?> rawAgentDef)) {
+            throw new IllegalStateException(
+                    "Registered agent definition is missing metadata.agentDef: "
+                            + registeredDef.getName()
+                            + " v"
+                            + registeredDef.getVersion());
+        }
+        Map<String, Object> executionConfig = (Map<String, Object>) rawAgentDef;
+        Object normalizedAgentDef = metadata.get("normalizedAgentDef");
+        Map<String, Object> configSource =
+                normalizedAgentDef instanceof Map<?, ?> normalized
+                        ? (Map<String, Object>) normalized
+                        : executionConfig;
+        AgentConfig config = OBJECT_MAPPER.convertValue(configSource, AgentConfig.class);
+
+        // Metadata DAOs may return cached instances. Clone before applying a per-execution
+        // timeout/model override — the registered definition itself is never mutated.
+        WorkflowDef executionDef = OBJECT_MAPPER.convertValue(registeredDef, WorkflowDef.class);
+        if (request.getTimeoutSeconds() != null && request.getTimeoutSeconds() > 0) {
+            executionDef.setTimeoutSeconds(request.getTimeoutSeconds());
+        }
+        if (StringUtils.isNotBlank(request.getModel())) {
+            applyModelOverride(executionDef, request.getModel());
+        }
+        return startAgentExecution(request, config, executionDef, executionConfig);
+    }
+
+    /**
+     * Overrides the model on every compiled {@code LLM_CHAT_COMPLETE} task in the agent's own
+     * definition (not any separately-registered sub-agent, which is a distinct {@link WorkflowDef}
+     * this recursion never reaches). This patches the already-compiled task inputs directly rather
+     * than recompiling the {@code AgentConfig} — the {@code AgentCompiler} that would do that lives
+     * in a higher-level module this one can't depend on — so it applies uniformly to every
+     * registered agent, including ones compiled before this override existed.
+     */
+    static void applyModelOverride(WorkflowDef executionDef, String modelOverride) {
+        ParsedModel parsed = ModelParser.parse(modelOverride);
+        for (WorkflowTask task : executionDef.collectTasks()) {
+            if (!"LLM_CHAT_COMPLETE".equals(task.getType())) {
+                continue;
+            }
+            Map<String, Object> inputParameters = task.getInputParameters();
+            if (inputParameters == null) {
+                continue;
+            }
+            inputParameters.put("llmProvider", parsed.getProvider());
+            inputParameters.put("model", parsed.getModel());
+        }
+    }
+
+    @Override
+    public AgentStartResponse startAgentExecution(
+            AgentStartRequest request,
+            AgentConfig config,
+            WorkflowDef def,
+            Map<String, Object> executionConfig) {
+        StartWorkflowRequest startReq = new StartWorkflowRequest();
+        startReq.setName(def.getName());
+        startReq.setVersion(def.getVersion());
+        startReq.setWorkflowDef(def);
+
+        Map<String, Object> input = new LinkedHashMap<>();
+        input.put("prompt", request.getPrompt());
+        input.put("media", request.getMedia() != null ? request.getMedia() : List.of());
+        input.put("context", request.getContext() != null ? request.getContext() : Map.of());
+        input.put("session_id", request.getSessionId() != null ? request.getSessionId() : "");
+        // Static plan for PLAN_EXECUTE: SDK forwards Plan dict here; PAC's
+        // extract_json INLINE reads ${workflow.input.static_plan} as Case-0.
+        if (request.getStaticPlan() != null) {
+            input.put("static_plan", request.getStaticPlan());
+        }
+        // Extract cwd from the inline or stored framework config when present.
+        String cwd = ".";
+        if (executionConfig != null && executionConfig.get("cwd") instanceof String rawCwd) {
+            cwd = rawCwd;
+        }
+        input.put("cwd", cwd);
+        startReq.setInput(input);
+
+        Set<String> startWorkerNames = def.collectSimpleTaskNames();
+        config.collectDynamicTransferNames(startWorkerNames);
+        List<String> requiredWorkers = new ArrayList<>(startWorkerNames);
+
+        // Domain-based task routing for stateful agents.
+        // Route only Python worker tasks to the run-specific domain.
+        // We cannot use "*" because that would also route system tasks like
+        // LLM_CHAT_COMPLETE to the domain, where no worker polls them.
+        // startWorkerNames has static SIMPLE tasks; we also add worker tool
+        // names from the config since they are dispatched dynamically via
+        // FORK_JOIN_DYNAMIC and are absent from the compiled WorkflowDef.
+        if (request.getRunId() != null && !request.getRunId().isEmpty()) {
+            Map<String, String> taskToDomain = new HashMap<>();
+            for (String taskName : startWorkerNames) {
+                taskToDomain.put(taskName, request.getRunId());
+            }
+            config.collectWorkerToolNames(taskToDomain, request.getRunId());
+            if (!taskToDomain.isEmpty()) {
+                startReq.setTaskToDomain(taskToDomain);
+                LOGGER.debug(
+                        "Stateful agent '{}': routing {} worker task(s) to domain '{}'",
+                        config.getName(),
+                        taskToDomain.size(),
+                        request.getRunId());
+            }
+        }
+
+        // Idempotency: use the key as correlationId and check for existing executions
+        if (request.getIdempotencyKey() != null && !request.getIdempotencyKey().isEmpty()) {
+            startReq.setCorrelationId(request.getIdempotencyKey());
+            startReq.setIdempotencyKey(request.getIdempotencyKey());
+            String existing = findExistingExecution(def.getName(), request.getIdempotencyKey());
+            if (existing != null) {
+                LOGGER.info(
+                        "Idempotent hit: returning existing workflow {} for key '{}'",
+                        existing,
+                        request.getIdempotencyKey());
+                return AgentStartResponse.builder()
+                        .executionId(existing)
+                        .agentName(def.getName())
+                        .requiredWorkers(requiredWorkers)
+                        .build();
+            }
+        }
+        String executionId = startWorkflow(new StartWorkflowInput(startReq));
+        LOGGER.debug("Started agent workflow: {} (id={})", def.getName(), executionId);
+
+        return AgentStartResponse.builder()
+                .executionId(executionId)
+                .agentName(def.getName())
+                .requiredWorkers(requiredWorkers)
+                .build();
+    }
+
+    private String findExistingExecution(String workflowName, String idempotencyKey) {
+        List<Workflow> existing =
+                executionDAOFacade.getWorkflowsByCorrelationId(workflowName, idempotencyKey, false);
+        return existing.stream().findFirst().map(Workflow::getWorkflowId).orElse(null);
     }
 
     private void addTaskToQueue(TaskModel task) {
