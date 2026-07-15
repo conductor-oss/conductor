@@ -109,6 +109,8 @@ export const SECRETS_URL = {
 
 export const RUN_WORKFLOW_URL = "/runWorkflow";
 
+export const RUN_AGENT_URL = "/runAgent";
+
 export const HUMAN_TASK_URL = {
   BASE: "/human",
   LIST: "/human/tasks",
