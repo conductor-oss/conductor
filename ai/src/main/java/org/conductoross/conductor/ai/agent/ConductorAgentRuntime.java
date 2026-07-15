@@ -23,6 +23,14 @@ import java.util.Map;
  * classpath / not enabled, the {@code AGENT} (conductor) task fails terminally. Keeping this as an
  * interface in the {@code ai} module preserves Conductor's pluggable, interface-first design
  * without a compile dependency on the runtime implementation.
+ *
+ * <p><b>Retryability contract.</b> A method throws {@link NonRetryableAgentException} to signal a
+ * <em>permanent</em> failure — one that retrying cannot fix, such as an unknown agent, a malformed
+ * request, or a resume against an execution with nothing pending. The delegate maps that to a
+ * terminal task failure. Any other exception is treated as <em>transient</em> (e.g. the runtime is
+ * momentarily unreachable): the delegate retries the call rather than failing terminally.
+ * Implementations must translate their own permanent-failure signals into {@link
+ * NonRetryableAgentException} so callers never see them as retryable.
  */
 public interface ConductorAgentRuntime {
 

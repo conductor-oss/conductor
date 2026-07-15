@@ -66,14 +66,16 @@ public class ConductorAgentDelegate {
         this.runtime = runtime;
     }
 
-    /** Handles {@code start}: fresh-start or resume, then routes the resulting snapshot. */
-    public void start(TaskModel task) {
+    /**
+     * Handles {@code start}: fresh-start or resume, then routes the resulting snapshot. The parsed
+     * request is supplied by the caller ({@code AgentTask}) so it is parsed exactly once per call.
+     */
+    public void start(TaskModel task, A2ACallRequest request) {
         if (runtime.isEmpty()) {
             fail(task, RUNTIME_ABSENT_MESSAGE, true);
             return;
         }
         ConductorAgentRuntime rt = runtime.get();
-        A2ACallRequest request = parseRequest(task);
 
         // Record the start time once so execute() can enforce the absolute deadline across
         // restarts and retries (survives in the persisted task output).
@@ -87,7 +89,13 @@ public class ConductorAgentDelegate {
             ConductorAgentExecution execution;
             if (executionId != null) {
                 // Resume path: feed the caller's message back into a waiting execution as the
-                // pending tool/human result, then re-read the resulting snapshot.
+                // pending tool/human result, then re-read the resulting snapshot. A blank prompt
+                // is a permanent bad input — fail terminally rather than letting Map.of() NPE and
+                // get misclassified as a retryable failure.
+                if (StringUtils.isBlank(prompt)) {
+                    fail(task, "AGENT (conductor) requires 'text' or 'prompt'", true);
+                    return;
+                }
                 rt.respond(executionId, Map.of("result", prompt));
                 execution = rt.getStatus(executionId);
             } else {
@@ -113,23 +121,31 @@ public class ConductorAgentDelegate {
                 execution = rt.start(startRequest);
             }
             applyExecution(task, execution);
-        } catch (NonRetryableException e) {
+        } catch (NonRetryableAgentException | NonRetryableException e) {
+            // Permanent runtime error (unknown agent, malformed request, nothing pending to resume)
+            // — retrying cannot fix it, so fail terminally rather than retryable.
             fail(task, e.getMessage(), true);
         } catch (Exception e) {
-            // Runtime call failures are transient — let the task retry (with the same
-            // deterministic idempotency key, so the runtime dedupes a re-issued start).
+            // Runtime call failures are transient — let the task retry. The retry reuses the same
+            // deterministic idempotency key, from which the runtime derives a deterministic
+            // workflow
+            // id; because that id is the execution store's primary key, a re-issued start resolves
+            // to
+            // the same execution instead of duplicating the agent run.
             fail(task, "Conductor agent call failed: " + e.getMessage(), false);
         }
     }
 
-    /** Handles {@code execute}: polls the run and applies the snapshot. */
-    public boolean execute(TaskModel task) {
+    /**
+     * Handles {@code execute}: polls the run and applies the snapshot. The parsed request is
+     * supplied by the caller ({@code AgentTask}) so it is parsed exactly once per call.
+     */
+    public boolean execute(TaskModel task, A2ACallRequest request) {
         if (runtime.isEmpty()) {
             fail(task, RUNTIME_ABSENT_MESSAGE, true);
             return true;
         }
         ConductorAgentRuntime rt = runtime.get();
-        A2ACallRequest request = parseRequest(task);
         String executionId =
                 asString(task.getOutputData().get(ConductorAgentResults.KEY_EXECUTION_ID));
         if (StringUtils.isBlank(executionId)) {
@@ -152,7 +168,8 @@ public class ConductorAgentDelegate {
             applyExecution(task, execution);
             // Still working -> stay IN_PROGRESS so the engine re-polls.
             return task.getStatus() != TaskModel.Status.IN_PROGRESS;
-        } catch (NonRetryableException e) {
+        } catch (NonRetryableAgentException | NonRetryableException e) {
+            // Permanent runtime error — do not count against the transient poll-failure cap.
             fail(task, e.getMessage(), true);
             return true;
         } catch (Exception e) {
@@ -206,9 +223,12 @@ public class ConductorAgentDelegate {
 
     /** Routes an execution snapshot onto this Conductor task's status/output. */
     private void applyExecution(TaskModel task, ConductorAgentExecution execution) {
-        task.addOutput(ConductorAgentResults.KEY_EXECUTION_ID, execution.getExecutionId());
-        task.addOutput(ConductorAgentResults.KEY_AGENT_NAME, execution.getAgentName());
-        task.addOutput(ConductorAgentResults.KEY_SESSION_ID, execution.getSessionId());
+        // Identity fields are captured at start(); a later poll snapshot may not repopulate them
+        // (the runtime adapter's getStatus() cannot always resurface agentName/sessionId). Never
+        // overwrite an already-recorded value with null.
+        putIfPresent(task, ConductorAgentResults.KEY_EXECUTION_ID, execution.getExecutionId());
+        putIfPresent(task, ConductorAgentResults.KEY_AGENT_NAME, execution.getAgentName());
+        putIfPresent(task, ConductorAgentResults.KEY_SESSION_ID, execution.getSessionId());
         ConductorAgentState state =
                 execution.getState() != null ? execution.getState() : ConductorAgentState.RUNNING;
         task.addOutput(ConductorAgentResults.KEY_STATE, state.name());
@@ -331,10 +351,6 @@ public class ConductorAgentDelegate {
                 : DEFAULT_MAX_POLL_FAILURES;
     }
 
-    private A2ACallRequest parseRequest(TaskModel task) {
-        return objectMapper.convertValue(task.getInputData(), A2ACallRequest.class);
-    }
-
     private void fail(TaskModel task, String reason, boolean nonRetryable) {
         task.setStatus(
                 nonRetryable
@@ -353,5 +369,12 @@ public class ConductorAgentDelegate {
 
     private static String asString(Object value) {
         return value == null ? null : value.toString();
+    }
+
+    /** Writes an output value only when non-null, so a poll snapshot can't erase a recorded one. */
+    private static void putIfPresent(TaskModel task, String key, Object value) {
+        if (value != null) {
+            task.addOutput(key, value);
+        }
     }
 }

@@ -29,6 +29,7 @@ import org.conductoross.conductor.ai.agentspan.runtime.util.ProviderValidator;
 import org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowClassifiers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -41,6 +42,7 @@ import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.model.WorkflowMessage;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
@@ -50,6 +52,7 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
@@ -78,6 +81,16 @@ public class AgentService {
     private final SkillRegistryService skillRegistryService;
     private final IDGenerator idGenerator;
     private final MetadataService metadataService;
+
+    /**
+     * Delivery channel for {@code PULL_WORKFLOW_MESSAGES} waits. Optional (field-injected, not part
+     * of the constructor) because it only exists when the Workflow Message Queue feature is enabled
+     * ({@code conductor.workflow-message-queue.enabled=true}); otherwise it is {@code null}. Kept
+     * off the {@link RequiredArgsConstructor} so the constructor signature — and the test harnesses
+     * that call it — stay stable. See {@link #respond(String, Map)}.
+     */
+    @Autowired(required = false)
+    WorkflowMessageQueueDAO workflowMessageQueueDAO;
 
     /**
      * Compile an agent config into a WorkflowDef and return it. Supports both native AgentConfig
@@ -326,15 +339,30 @@ public class AgentService {
             }
         }
 
-        // Idempotency: use the key as correlationId and check for existing executions
-        if (request.getIdempotencyKey() != null && !request.getIdempotencyKey().isEmpty()) {
-            startReq.setCorrelationId(request.getIdempotencyKey());
-            String existing = findExistingExecution(def.getName(), request.getIdempotencyKey());
+        // Idempotency: when a key is present, derive a DETERMINISTIC workflow id from it so a
+        // re-issued start targets the SAME execution. Because the workflow id is the execution
+        // store's primary key, this makes dedup exact and index-independent: a duplicate start
+        // either finds the already-created run (source-of-truth lookup below) or loses the insert
+        // race (caught after startWorkflow), never a duplicate agent run. The
+        // search-by-correlationId
+        // path is kept only as a back-compat fall-back for runs created before deterministic-id
+        // derivation existed. Deterministic derivation intentionally forgoes the time-ordered id
+        // from
+        // idGenerator (see the note above); createTime is set from wall-clock by the core, and the
+        // time-ordering is traded away only when the caller opts in with an idempotency key.
+        String idempotencyKey = request.getIdempotencyKey();
+        boolean idempotent = idempotencyKey != null && !idempotencyKey.isEmpty();
+        if (idempotent) {
+            startReq.setCorrelationId(idempotencyKey);
+            preallocatedExecutionId = deriveWorkflowId(idempotencyKey);
+            String existing =
+                    findExistingExecutionByKey(
+                            def.getName(), idempotencyKey, preallocatedExecutionId);
             if (existing != null) {
                 log.info(
                         "Idempotent hit: returning existing workflow {} for key '{}'",
                         existing,
-                        request.getIdempotencyKey());
+                        idempotencyKey);
                 return StartResponse.builder()
                         .executionId(existing)
                         .agentName(def.getName())
@@ -348,7 +376,30 @@ public class AgentService {
         // workflow Conductor actually creates. If unset, Conductor would mint
         // a fresh UUID and the token binding would never line up.
         startInput.setWorkflowId(preallocatedExecutionId);
-        String executionId = workflowExecutor.startWorkflow(startInput);
+        String executionId;
+        try {
+            executionId = workflowExecutor.startWorkflow(startInput);
+        } catch (Exception e) {
+            // Concurrent re-issue of the same idempotency key: two starts derived the same id and
+            // raced. The execution store's primary key (workflow_id) rejects the duplicate insert;
+            // re-check the source of truth and, if the run now exists, return it as a successful
+            // dedup rather than surfacing the insert failure.
+            if (idempotent) {
+                WorkflowModel raced = existingWorkflowById(preallocatedExecutionId);
+                if (raced != null) {
+                    log.info(
+                            "Idempotent race resolved: returning existing workflow {} for key '{}'",
+                            raced.getWorkflowId(),
+                            idempotencyKey);
+                    return StartResponse.builder()
+                            .executionId(raced.getWorkflowId())
+                            .agentName(def.getName())
+                            .requiredWorkers(requiredWorkers)
+                            .build();
+                }
+            }
+            throw e;
+        }
         log.info("Started workflow: {} (id={})", def.getName(), executionId);
 
         // Validate provider AFTER start — workflow is captured for replay
@@ -854,10 +905,53 @@ public class AgentService {
     }
 
     /**
-     * Search for an existing workflow with the given correlationId (idempotency key). Returns the
-     * execution ID if a RUNNING or COMPLETED execution exists, null otherwise.
+     * Derive a deterministic workflow id from an idempotency key. Same key in, same id out — this
+     * is the basis of the exact, index-independent idempotency guarantee: the derived id is the
+     * execution store's primary key, so a re-issued start with the same key targets the SAME
+     * workflow row. Uses a name-based (type 3) UUID, which is a valid workflow id.
+     *
+     * <p>Pure and side-effect free (unit-tested in isolation). Callers must only use this when an
+     * idempotency key is present: when absent, the host's time-based ID generator is used instead
+     * so createTime can be derived from the id (see {@link #start}).
      */
-    private String findExistingExecution(String workflowName, String idempotencyKey) {
+    static String deriveWorkflowId(String idempotencyKey) {
+        return UUID.nameUUIDFromBytes(idempotencyKey.getBytes(StandardCharsets.UTF_8)).toString();
+    }
+
+    /**
+     * Resolve an existing execution for an idempotency key, source-of-truth first: the derived
+     * workflow id is the execution store's primary key, so an exact hit needs no (async, laggy)
+     * search index. Only when there is no id match do we fall back to the legacy correlationId
+     * search, which covers runs created before deterministic-id derivation existed.
+     *
+     * @return the existing execution id, or {@code null} if this key has no run yet
+     */
+    String findExistingExecutionByKey(
+            String workflowName, String idempotencyKey, String derivedWorkflowId) {
+        WorkflowModel existing = existingWorkflowById(derivedWorkflowId);
+        if (existing != null) {
+            return existing.getWorkflowId();
+        }
+        return findExistingExecution(workflowName, idempotencyKey);
+    }
+
+    /**
+     * Source-of-truth lookup by workflow id, reading the execution store directly (never the search
+     * index, so no indexing lag). Returns {@code null} when no such run exists. Package-visible
+     * seam so tests can simulate store contents without a mocking framework.
+     */
+    WorkflowModel existingWorkflowById(String workflowId) {
+        return executionDAO.getWorkflow(workflowId, false);
+    }
+
+    /**
+     * Best-effort search for an existing workflow with the given correlationId (idempotency key).
+     * Returns the execution id if a RUNNING or COMPLETED execution is found in the search index,
+     * null otherwise. Back-compat only: this is index-backed (subject to indexing lag and swallowed
+     * search failures) and is a fall-back behind {@link #existingWorkflowById}, not the dedup
+     * guarantee.
+     */
+    String findExistingExecution(String workflowName, String idempotencyKey) {
         try {
             String query =
                     "workflowType = '" + workflowName + "' AND status IN ('RUNNING', 'COMPLETED')";
@@ -1218,26 +1312,65 @@ public class AgentService {
         return streamRegistry.register(executionId, lastEventId);
     }
 
-    /** Respond to a pending HITL task in an agent execution. */
+    /**
+     * Respond to a pending wait in an agent execution.
+     *
+     * <p>Mirrors the WAITING surface reported by {@link #getStatus(String)}, which flags either a
+     * {@code HUMAN} or a {@code PULL_WORKFLOW_MESSAGES} task as {@code isWaiting}. The two task
+     * types consume input through different channels, so each is satisfied through its own:
+     *
+     * <ul>
+     *   <li>{@code HUMAN} — a HITL task completed directly by writing the response onto its output
+     *       via {@code updateTask}.
+     *   <li>{@code PULL_WORKFLOW_MESSAGES} — a system task that stays {@code IN_PROGRESS} until a
+     *       message is pushed onto the workflow's message queue and then pops it (see {@code
+     *       com.netflix.conductor.core.execution.tasks.PullWorkflowMessages}). It must NOT be
+     *       force-completed with {@code updateTask}; the response is delivered as a queue message
+     *       so the task pops it and completes through its normal path — identical to what {@code
+     *       POST /api/workflow/{workflowId}/messages} does.
+     * </ul>
+     *
+     * <p>Keeping both channels here makes the AGENT-task resume contract symmetric with the WAITING
+     * surface: any wait {@code getStatus} advertises can be resolved by a {@code respond} call.
+     */
     public void respond(String executionId, Map<String, Object> output) {
         log.info("Responding to execution {}: {}", executionId, output);
 
-        // Find the pending task (HUMAN type, IN_PROGRESS status)
+        // Find the pending wait. Prefer a HUMAN task; fall back to a
+        // PULL_WORKFLOW_MESSAGES task — the two waits getStatus() advertises.
         Workflow workflow = executionService.getExecutionStatus(executionId, true);
-        Task pendingTask = null;
+        Task pendingHuman = null;
+        Task pendingPull = null;
         for (Task task : workflow.getTasks()) {
-            if ("HUMAN".equals(task.getTaskType()) && task.getStatus() == Task.Status.IN_PROGRESS) {
-                pendingTask = task;
+            if (task.getStatus() != Task.Status.IN_PROGRESS) {
+                continue;
+            }
+            if ("HUMAN".equals(task.getTaskType())) {
+                pendingHuman = task;
                 break;
+            }
+            if (pendingPull == null && "PULL_WORKFLOW_MESSAGES".equals(task.getTaskType())) {
+                pendingPull = task;
             }
         }
 
-        if (pendingTask == null) {
-            throw new IllegalStateException(
-                    "No pending HUMAN task found in execution " + executionId);
+        if (pendingHuman != null) {
+            completeHumanTask(executionId, pendingHuman, output);
+            return;
+        }
+        if (pendingPull != null) {
+            deliverWorkflowMessage(executionId, pendingPull, output);
+            return;
         }
 
-        // Update the task with the human's response
+        throw new IllegalStateException(
+                "No pending HUMAN or PULL_WORKFLOW_MESSAGES task found in execution "
+                        + executionId);
+    }
+
+    /** Complete a pending HITL (HUMAN) task by writing the response onto its output. */
+    private void completeHumanTask(
+            String executionId, Task pendingTask, Map<String, Object> output) {
         TaskResult taskResult = new TaskResult();
         taskResult.setTaskId(pendingTask.getTaskId());
         taskResult.setWorkflowInstanceId(executionId);
@@ -1256,11 +1389,65 @@ public class AgentService {
                 executionId);
     }
 
+    /**
+     * Satisfy a pending PULL_WORKFLOW_MESSAGES wait by pushing the response onto the workflow's
+     * message queue — the task's genuine input channel — then nudging the workflow to evaluate so
+     * the waiting task pops the message immediately instead of on the next poll cycle.
+     */
+    private void deliverWorkflowMessage(
+            String executionId, Task pendingTask, Map<String, Object> output) {
+        if (workflowMessageQueueDAO == null) {
+            throw new IllegalStateException(
+                    "Execution "
+                            + executionId
+                            + " is waiting on a PULL_WORKFLOW_MESSAGES task, but the workflow message"
+                            + " queue is not enabled (set conductor.workflow-message-queue.enabled=true)."
+                            + " Send the response as a queue message via POST"
+                            + " /api/workflow/{workflowId}/messages instead.");
+        }
+
+        String messageId = UUID.randomUUID().toString();
+        WorkflowMessage message =
+                new WorkflowMessage(messageId, executionId, output, Instant.now().toString());
+        workflowMessageQueueDAO.push(executionId, message);
+
+        // Trigger an immediate evaluation so the waiting PULL_WORKFLOW_MESSAGES task pops the
+        // message now rather than waiting for the next poll. Mirrors WorkflowMessageQueueResource.
+        try {
+            workflowExecutor.decide(executionId);
+        } catch (Exception e) {
+            log.warn(
+                    "Failed to trigger decide() for execution {} after pushing message; the sweeper"
+                            + " will pick it up",
+                    executionId,
+                    e);
+        }
+        log.info(
+                "Delivered response to PULL_WORKFLOW_MESSAGES task {} in execution {} via message"
+                        + " queue (messageId={})",
+                pendingTask.getReferenceTaskName(),
+                executionId,
+                messageId);
+    }
+
     /** Get the current status of an agent execution. */
     public Map<String, Object> getStatus(String executionId) {
         Workflow workflow = executionService.getExecutionStatus(executionId, true);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("executionId", executionId);
+        // Surface the run's identity so pollers (e.g. the AGENT conductor task) don't lose the
+        // agentName/sessionId they recorded at start. The agent name is the workflow name; the
+        // session id is echoed into the workflow input at start() (see start()).
+        // getWorkflowName() throws when the execution was loaded without its embedded definition,
+        // so only surface it when the definition is present.
+        if (workflow.getWorkflowDefinition() != null) {
+            result.put("agentName", workflow.getWorkflowName());
+        }
+        Object sessionId =
+                workflow.getInput() != null ? workflow.getInput().get("session_id") : null;
+        if (sessionId instanceof String s && !s.isBlank()) {
+            result.put("sessionId", s);
+        }
         result.put("status", workflow.getStatus().name());
 
         boolean isComplete = workflow.getStatus().isTerminal();

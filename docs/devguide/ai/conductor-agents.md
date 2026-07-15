@@ -62,7 +62,7 @@ The task writes these keys to its output (`ConductorAgentResults`):
 | `state` | Normalized execution state (uppercase): `RUNNING`, `WAITING`, `COMPLETED`, `FAILED`, `CANCELED`. |
 | `waiting` | `true` when the run paused for external input (human answer / tool result). |
 | `pendingTool` | The pending tool/human request surfaced while waiting. |
-| `text` | Latest / final text emitted by the agent. |
+| `text` | Latest / final text emitted by the agent (the run's `output.result` when it is textual). A schema-typed (structured) result appears in `output` only. |
 | `output` | Structured output of a completed run. |
 
 The agent's execution state maps onto the Conductor task status as follows:
@@ -71,7 +71,7 @@ The agent's execution state maps onto the Conductor task status as follows:
 |---|---|---|
 | `RUNNING` | `IN_PROGRESS` | Keep polling at the evaluation cadence. |
 | `WAITING` | `COMPLETED` | Sets `waiting=true` and surfaces `pendingTool` / `text`. Resume with a new `AGENT` call carrying `executionId`. |
-| `COMPLETED` | `COMPLETED` | Surfaces `output` + `text`. |
+| `COMPLETED` | `COMPLETED` | Surfaces `output` (and `text` when the final result is textual). |
 | `FAILED` | `FAILED` | Sets `reasonForIncompletion`. |
 | `CANCELED` | `CANCELED` | Sets `reasonForIncompletion` when present. |
 

@@ -87,6 +87,59 @@ class AgentTaskConductorBranchTest {
         return input;
     }
 
+    /**
+     * Structurally-invalid input: {@code agentVersion} is an Integer field, so the string "abc"
+     * cannot be coerced and {@code objectMapper.convertValue} throws IllegalArgumentException.
+     * Before the fix this escaped every system-task entry point; the entry points must now fail the
+     * task cleanly instead.
+     */
+    private static Map<String, Object> malformedInput() {
+        Map<String, Object> input = conductorInput();
+        input.put("agentVersion", "abc"); // not an Integer -> convertValue throws
+        return input;
+    }
+
+    // start: malformed input must not escape the entry point; the task fails terminally
+    // (permanent).
+    @Test
+    void start_malformedInput_failsTerminallyWithoutThrowing() {
+        TaskModel model = taskModel(malformedInput());
+
+        agentTask.start(null, model, null); // must not throw
+
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, model.getStatus());
+        assertNull(runtime.lastStartRequest, "malformed input must not reach the delegate");
+    }
+
+    // execute: malformed input must not escape the entry point; the task fails terminally.
+    @Test
+    void execute_malformedInput_failsTerminallyWithoutThrowing() {
+        TaskModel model = taskModel(malformedInput());
+
+        boolean changed = agentTask.execute(null, model, null); // must not throw
+
+        assertEquals(true, changed);
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, model.getStatus());
+    }
+
+    // getEvaluationOffset: the engine's cadence hook must never throw; fall back to the default.
+    @Test
+    void getEvaluationOffset_malformedInput_returnsDefaultWithoutThrowing() {
+        assertEquals(
+                Optional.of(5L), agentTask.getEvaluationOffset(taskModel(malformedInput()), 30));
+    }
+
+    // cancel: must not throw on malformed input and must still mark the task CANCELED.
+    @Test
+    void cancel_malformedInput_marksCanceledWithoutThrowing() {
+        TaskModel model = taskModel(malformedInput());
+
+        agentTask.cancel(null, model, null); // must not throw
+
+        assertEquals(TaskModel.Status.CANCELED, model.getStatus());
+        assertNull(runtime.lastCancelExecutionId, "malformed input must not reach the delegate");
+    }
+
     // start: conductor -> delegate.start (the fake records the start request).
     @Test
     void start_conductor_routesToDelegate() {

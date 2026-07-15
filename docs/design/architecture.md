@@ -62,8 +62,12 @@ design surface.
   `ConductorAgentDelegate`; A2A logic stays in `AgentTask`.
 - **Non-blocking.** No worker thread is held while an agent runs. `IN_PROGRESS` + re-poll at the
   evaluation cadence.
-- **Idempotent at-least-once.** Retries reuse a deterministic idempotency key so the runtime
-  dedupes re-issued starts.
+- **Idempotent at-least-once.** Retries reuse a deterministic idempotency key, from which the
+  runtime derives a deterministic workflow id (§4.6). Because that id is the execution store's
+  primary key, a re-issued start resolves to the same execution — the guarantee is a source-of-truth
+  lookup by id (plus insert-race handling), not the async, best-effort search index. A legacy
+  correlationId search is retained only as a back-compat fall-back for runs created before
+  deterministic-id derivation.
 - **No mocks in tests.** Tests use a hand-written `FakeConductorAgentRuntime` implementing the real
   interface (this is the pattern the review's linked a2a suite follows).
 
@@ -204,6 +208,14 @@ Helper predicates on the enum: `isTerminal()` (COMPLETED/FAILED/CANCELED), `isIn
 ```
 
 Built from retry-stable identity — **not** `taskId` (which changes per retry attempt).
+
+When a key is present the runtime derives a deterministic workflow id from it
+(`UUID.nameUUIDFromBytes(key)` in `AgentService.deriveWorkflowId`) and starts the run under that id.
+Since the workflow id is the execution store's primary key, a re-issued start with the same key
+either finds the existing run via a source-of-truth lookup by id (`existingWorkflowById`, which reads
+the execution store directly, not the search index) or loses the duplicate-insert race and is then
+resolved to the existing run. The index-backed correlationId search is a best-effort back-compat
+fall-back only.
 
 ### 4.7 Liveness guards (verbatim)
 

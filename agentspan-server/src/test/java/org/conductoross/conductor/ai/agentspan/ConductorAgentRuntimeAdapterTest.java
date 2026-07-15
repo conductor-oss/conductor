@@ -17,13 +17,16 @@ import java.util.List;
 import java.util.Map;
 
 import org.conductoross.conductor.ai.agent.ConductorAgentExecution;
+import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentState;
 import org.conductoross.conductor.ai.agent.ConductorAgentSummary;
+import org.conductoross.conductor.ai.agent.NonRetryableAgentException;
 import org.conductoross.conductor.ai.agentspan.runtime.model.AgentSummary;
 import org.conductoross.conductor.ai.agentspan.runtime.service.AgentService;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Unit tests for {@link ConductorAgentRuntimeAdapter}. Uses a hand-written {@link AgentService}
@@ -33,13 +36,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ConductorAgentRuntimeAdapterTest {
 
     /**
-     * Hand-written {@link AgentService} stand-in. The real {@code AgentService} constructor requires
-     * twelve collaborators; we pass nulls since these tests only drive the methods overridden below.
+     * Hand-written {@link AgentService} stand-in. The real {@code AgentService} constructor
+     * requires twelve collaborators; we pass nulls since these tests only drive the methods
+     * overridden below.
      */
     private static final class RecordingAgentService extends AgentService {
 
         private Map<String, Object> statusToReturn;
         private List<AgentSummary> agentsToReturn;
+
+        // When set, the corresponding method throws this instead of returning — lets a test drive
+        // the adapter's translation of AgentService errors into the runtime contract exception.
+        private RuntimeException getAgentDefException;
+        private RuntimeException statusException;
+        private RuntimeException respondException;
 
         private String respondedExecutionId;
         private Map<String, Object> respondedMessage;
@@ -51,7 +61,18 @@ class ConductorAgentRuntimeAdapterTest {
         }
 
         @Override
+        public Map<String, Object> getAgentDef(String name, Integer version) {
+            if (getAgentDefException != null) {
+                throw getAgentDefException;
+            }
+            return Map.of();
+        }
+
+        @Override
         public Map<String, Object> getStatus(String executionId) {
+            if (statusException != null) {
+                throw statusException;
+            }
             return statusToReturn;
         }
 
@@ -64,6 +85,9 @@ class ConductorAgentRuntimeAdapterTest {
         public void respond(String executionId, Map<String, Object> output) {
             this.respondedExecutionId = executionId;
             this.respondedMessage = output;
+            if (respondException != null) {
+                throw respondException;
+            }
         }
 
         @Override
@@ -116,6 +140,48 @@ class ConductorAgentRuntimeAdapterTest {
     }
 
     @Test
+    void getStatusSurfacesFinalTextFromCompletedOutput() {
+        RecordingAgentService service = new RecordingAgentService();
+        Map<String, Object> status = status("e10", "COMPLETED");
+        status.put("isComplete", true);
+        // The compiled agent WorkflowDef emits a canonical "result" output parameter (the LLM's
+        // output.result); for an unstructured run it resolves to the agent's final text string.
+        Map<String, Object> output = new LinkedHashMap<>();
+        output.put("result", "The weather is sunny.");
+        output.put("finishReason", "STOP");
+        status.put("output", output);
+        service.statusToReturn = status;
+
+        ConductorAgentExecution execution =
+                new ConductorAgentRuntimeAdapter(service).getStatus("e10");
+
+        assertThat(execution.getState()).isEqualTo(ConductorAgentState.COMPLETED);
+        assertThat(execution.getOutput()).isEqualTo(output);
+        assertThat(execution.getText()).isEqualTo("The weather is sunny.");
+    }
+
+    @Test
+    void getStatusLeavesTextNullForStructuredResult() {
+        RecordingAgentService service = new RecordingAgentService();
+        Map<String, Object> status = status("e11", "COMPLETED");
+        status.put("isComplete", true);
+        // A schema-typed run resolves "result" to a structured map, not a text string; it stays in
+        // output only and text is left null.
+        Map<String, Object> structured = Map.of("temperature", 72, "condition", "sunny");
+        Map<String, Object> output = new LinkedHashMap<>();
+        output.put("result", structured);
+        status.put("output", output);
+        service.statusToReturn = status;
+
+        ConductorAgentExecution execution =
+                new ConductorAgentRuntimeAdapter(service).getStatus("e11");
+
+        assertThat(execution.getState()).isEqualTo(ConductorAgentState.COMPLETED);
+        assertThat(execution.getOutput()).isEqualTo(output);
+        assertThat(execution.getText()).isNull();
+    }
+
+    @Test
     void getStatusMapsFailedAndTimedOut() {
         RecordingAgentService service = new RecordingAgentService();
 
@@ -147,6 +213,33 @@ class ConductorAgentRuntimeAdapterTest {
     }
 
     @Test
+    void getStatusCarriesAgentNameAndSessionId() {
+        RecordingAgentService service = new RecordingAgentService();
+        Map<String, Object> status = status("e10", "RUNNING");
+        status.put("agentName", "planner");
+        status.put("sessionId", "sess-1");
+        service.statusToReturn = status;
+
+        ConductorAgentExecution execution =
+                new ConductorAgentRuntimeAdapter(service).getStatus("e10");
+
+        assertThat(execution.getAgentName()).isEqualTo("planner");
+        assertThat(execution.getSessionId()).isEqualTo("sess-1");
+    }
+
+    @Test
+    void getStatusLeavesIdentityNullWhenAbsent() {
+        RecordingAgentService service = new RecordingAgentService();
+        service.statusToReturn = status("e11", "RUNNING");
+
+        ConductorAgentExecution execution =
+                new ConductorAgentRuntimeAdapter(service).getStatus("e11");
+
+        assertThat(execution.getAgentName()).isNull();
+        assertThat(execution.getSessionId()).isNull();
+    }
+
+    @Test
     void getStatusDefaultsToRunning() {
         RecordingAgentService service = new RecordingAgentService();
         service.statusToReturn = status("e7", "RUNNING");
@@ -174,8 +267,7 @@ class ConductorAgentRuntimeAdapterTest {
                                 .checksum("abc123")
                                 .build());
 
-        List<ConductorAgentSummary> agents =
-                new ConductorAgentRuntimeAdapter(service).listAgents();
+        List<ConductorAgentSummary> agents = new ConductorAgentRuntimeAdapter(service).listAgents();
 
         assertThat(agents).hasSize(1);
         ConductorAgentSummary agent = agents.get(0);
@@ -198,6 +290,49 @@ class ConductorAgentRuntimeAdapterTest {
 
         assertThat(service.respondedExecutionId).isEqualTo("e8");
         assertThat(service.respondedMessage).isEqualTo(message);
+    }
+
+    // Finding 1: AgentService signals a permanent misconfiguration (unknown agent) with an
+    // IllegalArgumentException; the adapter must translate it into the non-retryable runtime
+    // contract exception so the AGENT task fails terminally instead of retrying forever.
+    @Test
+    void startTranslatesIllegalArgumentToNonRetryable() {
+        RecordingAgentService service = new RecordingAgentService();
+        service.getAgentDefException = new IllegalArgumentException("Agent not found: typo");
+
+        ConductorAgentStartRequest request =
+                ConductorAgentStartRequest.builder().agentName("typo").prompt("hi").build();
+
+        assertThatThrownBy(() -> new ConductorAgentRuntimeAdapter(service).start(request))
+                .isInstanceOf(NonRetryableAgentException.class)
+                .hasMessage("Agent not found: typo");
+    }
+
+    // Finding 1: a resume against an execution with nothing pending surfaces as an
+    // IllegalStateException from respond(); the adapter must translate it too.
+    @Test
+    void respondTranslatesIllegalStateToNonRetryable() {
+        RecordingAgentService service = new RecordingAgentService();
+        service.respondException =
+                new IllegalStateException("No pending HUMAN task found for execution e1");
+
+        assertThatThrownBy(
+                        () ->
+                                new ConductorAgentRuntimeAdapter(service)
+                                        .respond("e1", Map.of("result", "x")))
+                .isInstanceOf(NonRetryableAgentException.class)
+                .hasMessage("No pending HUMAN task found for execution e1");
+    }
+
+    // Finding 1: an unknown execution id surfaced from getStatus() is likewise permanent.
+    @Test
+    void getStatusTranslatesIllegalArgumentToNonRetryable() {
+        RecordingAgentService service = new RecordingAgentService();
+        service.statusException = new IllegalArgumentException("Unknown execution: e1");
+
+        assertThatThrownBy(() -> new ConductorAgentRuntimeAdapter(service).getStatus("e1"))
+                .isInstanceOf(NonRetryableAgentException.class)
+                .hasMessage("Unknown execution: e1");
     }
 
     @Test

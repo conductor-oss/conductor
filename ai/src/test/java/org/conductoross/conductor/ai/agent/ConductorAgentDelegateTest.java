@@ -18,8 +18,10 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.conductoross.conductor.ai.a2a.A2AService;
+import org.conductoross.conductor.ai.model.A2ACallRequest;
 import org.junit.jupiter.api.Test;
 
+import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.model.TaskModel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,6 +63,16 @@ class ConductorAgentDelegateTest {
         return input;
     }
 
+    /**
+     * Parses the request the way {@code AgentTask} does before dispatching, so these direct
+     * delegate calls thread in the already-parsed request (the delegate no longer re-parses).
+     */
+    private static A2ACallRequest request(TaskModel task) {
+        return new ObjectMapperProvider()
+                .getObjectMapper()
+                .convertValue(task.getInputData(), A2ACallRequest.class);
+    }
+
     // 1. RUNNING -> task stays IN_PROGRESS, execution identity recorded.
     @Test
     void start_running_movesToInProgress() {
@@ -69,7 +81,7 @@ class ConductorAgentDelegateTest {
         ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
 
         TaskModel task = taskModel(conductorInput());
-        delegate.start(task);
+        delegate.start(task, request(task));
 
         assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
         assertEquals("exec-1", task.getOutputData().get(ConductorAgentResults.KEY_EXECUTION_ID));
@@ -88,7 +100,7 @@ class ConductorAgentDelegateTest {
         ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
 
         TaskModel task = taskModel(conductorInput());
-        delegate.start(task);
+        delegate.start(task, request(task));
 
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
         assertEquals(
@@ -107,7 +119,7 @@ class ConductorAgentDelegateTest {
         ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
 
         TaskModel task = taskModel(conductorInput());
-        delegate.start(task);
+        delegate.start(task, request(task));
 
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
         assertEquals(Boolean.TRUE, task.getOutputData().get(ConductorAgentResults.KEY_WAITING));
@@ -127,7 +139,7 @@ class ConductorAgentDelegateTest {
         ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
 
         TaskModel task = taskModel(conductorInput());
-        delegate.start(task);
+        delegate.start(task, request(task));
 
         assertEquals(TaskModel.Status.FAILED, task.getStatus());
         assertEquals("model error", task.getReasonForIncompletion());
@@ -141,7 +153,7 @@ class ConductorAgentDelegateTest {
         ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
 
         TaskModel task = taskModel(conductorInput());
-        delegate.start(task);
+        delegate.start(task, request(task));
 
         assertEquals(TaskModel.Status.CANCELED, task.getStatus());
     }
@@ -156,7 +168,7 @@ class ConductorAgentDelegateTest {
         Map<String, Object> input = conductorInput();
         input.remove("agentName");
         TaskModel task = taskModel(input);
-        delegate.start(task);
+        delegate.start(task, request(task));
 
         assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
         assertEquals("AGENT (conductor) requires 'agentName'", task.getReasonForIncompletion());
@@ -173,7 +185,7 @@ class ConductorAgentDelegateTest {
         Map<String, Object> input = conductorInput();
         input.remove("text");
         TaskModel task = taskModel(input);
-        delegate.start(task);
+        delegate.start(task, request(task));
 
         assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
         assertEquals(
@@ -195,7 +207,7 @@ class ConductorAgentDelegateTest {
         // Started well beyond the 1s deadline.
         task.addOutput(ConductorAgentResults.KEY_STARTED_AT, System.currentTimeMillis() - 10_000L);
 
-        boolean changed = delegate.execute(task);
+        boolean changed = delegate.execute(task, request(task));
 
         assertTrue(changed);
         assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
@@ -216,7 +228,7 @@ class ConductorAgentDelegateTest {
         task.addOutput(ConductorAgentResults.KEY_STARTED_AT, System.currentTimeMillis());
 
         // First failure -> transient, keep polling.
-        boolean first = delegate.execute(task);
+        boolean first = delegate.execute(task, request(task));
         assertFalse(first);
         assertEquals(
                 1,
@@ -224,7 +236,7 @@ class ConductorAgentDelegateTest {
                         .intValue());
 
         // Second failure -> hits the cap, terminal.
-        boolean second = delegate.execute(task);
+        boolean second = delegate.execute(task, request(task));
         assertTrue(second);
         assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
         assertTrue(task.getReasonForIncompletion().contains("consecutive poll failures"));
@@ -239,7 +251,7 @@ class ConductorAgentDelegateTest {
 
         TaskModel task = taskModel(conductorInput());
         task.setIteration(3);
-        delegate.start(task);
+        delegate.start(task, request(task));
 
         assertEquals(
                 "conductor-agent-wf-1:agent_ref:3", runtime.lastStartRequest.getIdempotencyKey());
@@ -258,12 +270,119 @@ class ConductorAgentDelegateTest {
         input.put("executionId", "exec-1");
         input.put("text", "New York");
         TaskModel task = taskModel(input);
-        delegate.start(task);
+        delegate.start(task, request(task));
 
         assertEquals("exec-1", runtime.lastRespondExecutionId);
         assertEquals(Map.of("result", "New York"), runtime.lastRespondMessage);
         assertNull(runtime.lastStartRequest);
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+    }
+
+    // 10c. Resume path with a blank prompt -> terminal failure, respond() never called.
+    @Test
+    void start_withExecutionId_blankPrompt_failsTerminally() {
+        FakeConductorAgentRuntime runtime = new FakeConductorAgentRuntime();
+        runtime.statusResult = execution(ConductorAgentState.COMPLETED);
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("agentType", "conductor");
+        input.put("executionId", "exec-1");
+        TaskModel task = taskModel(input);
+        delegate.start(task, request(task));
+
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertEquals(
+                "AGENT (conductor) requires 'text' or 'prompt'", task.getReasonForIncompletion());
+        assertNull(runtime.lastRespondExecutionId);
+        assertNull(runtime.lastRespondMessage);
+    }
+
+    // 10d. Non-retryable runtime error on fresh start (e.g. "Agent not found") -> terminal, not
+    // retried. Demonstrates finding 1: today the delegate's generic catch treats this as retryable.
+    @Test
+    void start_nonRetryableRuntimeError_failsTerminally() {
+        FakeConductorAgentRuntime runtime = new FakeConductorAgentRuntime();
+        runtime.startException = new NonRetryableAgentException("Agent not found: typo");
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
+
+        TaskModel task = taskModel(conductorInput());
+        delegate.start(task, request(task));
+
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertEquals("Agent not found: typo", task.getReasonForIncompletion());
+    }
+
+    // 10e. Non-retryable runtime error on resume (e.g. "No pending HUMAN task") -> terminal.
+    @Test
+    void start_resume_nonRetryableRuntimeError_failsTerminally() {
+        FakeConductorAgentRuntime runtime = new FakeConductorAgentRuntime();
+        runtime.respondException =
+                new NonRetryableAgentException("No pending HUMAN task found for execution exec-1");
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
+
+        Map<String, Object> input = conductorInput();
+        input.put("executionId", "exec-1");
+        input.put("text", "New York");
+        TaskModel task = taskModel(input);
+        delegate.start(task, request(task));
+
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertEquals(
+                "No pending HUMAN task found for execution exec-1",
+                task.getReasonForIncompletion());
+    }
+
+    // 10f. Non-retryable runtime error while polling in execute() -> terminal, not counted against
+    // the transient poll-failure cap.
+    @Test
+    void execute_nonRetryableRuntimeError_failsTerminally() {
+        FakeConductorAgentRuntime runtime = new FakeConductorAgentRuntime();
+        runtime.statusException = new NonRetryableAgentException("Agent not found: typo");
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
+
+        TaskModel task = taskModel(conductorInput());
+        task.addOutput(ConductorAgentResults.KEY_EXECUTION_ID, "exec-1");
+        task.addOutput(ConductorAgentResults.KEY_STARTED_AT, System.currentTimeMillis());
+
+        boolean changed = delegate.execute(task, request(task));
+
+        assertTrue(changed);
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertEquals("Agent not found: typo", task.getReasonForIncompletion());
+    }
+
+    // 10g. Polling must not clobber start()'s recorded agentName/sessionId with nulls. The real
+    // adapter's getStatus() does not repopulate identity fields, so a poll snapshot carries nulls
+    // for them; the values captured at start() must survive.
+    @Test
+    void execute_nullIdentityFromPoll_preservesStartValues() {
+        FakeConductorAgentRuntime runtime = new FakeConductorAgentRuntime();
+        // start() records agentName="planner"/sessionId="sess-1" from a fully-populated snapshot.
+        runtime.startResult = execution(ConductorAgentState.RUNNING);
+        // A subsequent poll returns a terminal snapshot whose identity fields are null (mimicking
+        // the real ConductorAgentRuntimeAdapter#getStatus()).
+        runtime.statusResult =
+                ConductorAgentExecution.builder()
+                        .executionId("exec-1")
+                        .agentName(null)
+                        .sessionId(null)
+                        .state(ConductorAgentState.COMPLETED)
+                        .build();
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
+
+        TaskModel task = taskModel(conductorInput());
+        delegate.start(task, request(task));
+        assertEquals("planner", task.getOutputData().get(ConductorAgentResults.KEY_AGENT_NAME));
+        assertEquals("sess-1", task.getOutputData().get(ConductorAgentResults.KEY_SESSION_ID));
+
+        boolean changed = delegate.execute(task, request(task));
+
+        assertTrue(changed);
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        assertEquals("exec-1", task.getOutputData().get(ConductorAgentResults.KEY_EXECUTION_ID));
+        assertEquals("planner", task.getOutputData().get(ConductorAgentResults.KEY_AGENT_NAME));
+        assertEquals("sess-1", task.getOutputData().get(ConductorAgentResults.KEY_SESSION_ID));
     }
 
     // 11. Runtime absent -> terminal failure with the embedded-runtime message.
@@ -272,7 +391,7 @@ class ConductorAgentDelegateTest {
         ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.empty());
 
         TaskModel task = taskModel(conductorInput());
-        delegate.start(task);
+        delegate.start(task, request(task));
 
         assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
         assertEquals(
@@ -304,7 +423,8 @@ class ConductorAgentDelegateTest {
         FakeConductorAgentRuntime runtime = new FakeConductorAgentRuntime();
         runtime.startResult = execution(ConductorAgentState.RUNNING);
         ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
-        delegate.start(taskModel(input));
+        TaskModel task = taskModel(input);
+        delegate.start(task, request(task));
         return runtime.lastStartRequest.getPrompt();
     }
 
@@ -358,7 +478,7 @@ class ConductorAgentDelegateTest {
         ConductorAgentDelegate delegate = new ConductorAgentDelegate(Optional.of(runtime));
 
         TaskModel task = taskModel(promptInput());
-        delegate.start(task);
+        delegate.start(task, request(task));
 
         assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
         assertEquals(

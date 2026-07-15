@@ -21,6 +21,7 @@ import org.conductoross.conductor.ai.agent.ConductorAgentRuntime;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentState;
 import org.conductoross.conductor.ai.agent.ConductorAgentSummary;
+import org.conductoross.conductor.ai.agent.NonRetryableAgentException;
 import org.conductoross.conductor.ai.agentspan.runtime.model.AgentConfig;
 import org.conductoross.conductor.ai.agentspan.runtime.model.AgentSummary;
 import org.conductoross.conductor.ai.agentspan.runtime.model.StartRequest;
@@ -46,6 +47,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * <p>Registered as a Spring bean only when the embedded runtime is enabled ({@code
  * agentspan.embedded=true}); otherwise the {@code AGENT} (conductor) task receives an empty {@code
  * Optional<ConductorAgentRuntime>} and fails terminally.
+ *
+ * <p>Per the {@link ConductorAgentRuntime} retryability contract, this adapter translates {@code
+ * AgentService}'s permanent-failure signals — {@link IllegalArgumentException} (e.g. unknown agent
+ * or execution) and {@link IllegalStateException} (e.g. nothing pending to resume) — into {@link
+ * NonRetryableAgentException} so the {@code AGENT} task fails terminally instead of retrying a
+ * misconfiguration forever. Other exceptions propagate as-is and are treated as transient.
  */
 public class ConductorAgentRuntimeAdapter implements ConductorAgentRuntime {
 
@@ -58,36 +65,45 @@ public class ConductorAgentRuntimeAdapter implements ConductorAgentRuntime {
 
     @Override
     public ConductorAgentExecution start(ConductorAgentStartRequest request) {
-        // Resolve the registered agent definition (the AgentSpan config stamped into the
-        // WorkflowDef metadata) and rehydrate it into an AgentConfig the runtime can recompile.
-        Map<String, Object> agentDef =
-                agentService.getAgentDef(request.getAgentName(), request.getAgentVersion());
-        AgentConfig agentConfig = objectMapper.convertValue(agentDef, AgentConfig.class);
+        try {
+            // Resolve the registered agent definition (the AgentSpan config stamped into the
+            // WorkflowDef metadata) and rehydrate it into an AgentConfig the runtime can recompile.
+            Map<String, Object> agentDef =
+                    agentService.getAgentDef(request.getAgentName(), request.getAgentVersion());
+            AgentConfig agentConfig = objectMapper.convertValue(agentDef, AgentConfig.class);
 
-        StartRequest startRequest =
-                StartRequest.builder()
-                        .agentConfig(agentConfig)
-                        .prompt(request.getPrompt())
-                        .sessionId(request.getSessionId())
-                        .context(request.getContext())
-                        .runId(request.getRunId())
-                        .idempotencyKey(request.getIdempotencyKey())
-                        .build();
+            StartRequest startRequest =
+                    StartRequest.builder()
+                            .agentConfig(agentConfig)
+                            .prompt(request.getPrompt())
+                            .sessionId(request.getSessionId())
+                            .context(request.getContext())
+                            .runId(request.getRunId())
+                            .idempotencyKey(request.getIdempotencyKey())
+                            .build();
 
-        StartResponse response = agentService.start(startRequest);
+            StartResponse response = agentService.start(startRequest);
 
-        return ConductorAgentExecution.builder()
-                .executionId(response.getExecutionId())
-                .agentName(response.getAgentName())
-                .sessionId(request.getSessionId())
-                .state(ConductorAgentState.RUNNING)
-                .build();
+            return ConductorAgentExecution.builder()
+                    .executionId(response.getExecutionId())
+                    .agentName(response.getAgentName())
+                    .sessionId(request.getSessionId())
+                    .state(ConductorAgentState.RUNNING)
+                    .build();
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            throw nonRetryable(e);
+        }
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public ConductorAgentExecution getStatus(String executionId) {
-        Map<String, Object> status = agentService.getStatus(executionId);
+        Map<String, Object> status;
+        try {
+            status = agentService.getStatus(executionId);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            throw nonRetryable(e);
+        }
 
         String statusName = asString(status.get("status"));
         boolean isComplete = asBoolean(status.get("isComplete"));
@@ -98,13 +114,37 @@ public class ConductorAgentRuntimeAdapter implements ConductorAgentRuntime {
         Object output = status.get("output");
         Object pendingTool = status.get("pendingTool");
 
+        Map<String, Object> outputMap = output instanceof Map ? (Map<String, Object>) output : null;
+
         return ConductorAgentExecution.builder()
                 .executionId(asString(status.get("executionId")))
+                .agentName(asString(status.get("agentName")))
+                .sessionId(asString(status.get("sessionId")))
                 .state(state)
-                .output(output instanceof Map ? (Map<String, Object>) output : null)
+                .output(outputMap)
+                .text(extractText(outputMap))
                 .pendingTool(pendingTool instanceof Map ? (Map<String, Object>) pendingTool : null)
                 .reasonForIncompletion(asString(status.get("reasonForIncompletion")))
                 .build();
+    }
+
+    /**
+     * Surface the agent's final text from a completed run's output map. The compiled agent
+     * WorkflowDef (see {@code AgentCompiler}) emits a canonical {@code result} output parameter —
+     * the LLM's {@code output.result} — as the run's final output. When that resolved to a plain
+     * string it is the agent's final text; schema-typed (structured) results stay a {@code Map} and
+     * are left in {@link ConductorAgentExecution#getOutput()} only. An explicit {@code text} key,
+     * if a snapshot ever carries one, takes precedence.
+     */
+    private static String extractText(Map<String, Object> output) {
+        if (output == null) {
+            return null;
+        }
+        Object text = output.get("text");
+        if (!(text instanceof String)) {
+            text = output.get("result");
+        }
+        return text instanceof String ? (String) text : null;
     }
 
     /**
@@ -132,17 +172,32 @@ public class ConductorAgentRuntimeAdapter implements ConductorAgentRuntime {
 
     @Override
     public void respond(String executionId, Map<String, Object> message) {
-        agentService.respond(executionId, message);
+        try {
+            agentService.respond(executionId, message);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            throw nonRetryable(e);
+        }
     }
 
     @Override
     public void cancel(String executionId, String reason) {
-        agentService.cancelAgent(executionId, reason);
+        // Cancel is best-effort (the delegate swallows failures), but translate for contract
+        // consistency so any caller that does inspect the failure sees the retryability signal.
+        try {
+            agentService.cancelAgent(executionId, reason);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            throw nonRetryable(e);
+        }
     }
 
     @Override
     public List<ConductorAgentSummary> listAgents() {
-        List<AgentSummary> summaries = agentService.listAgents();
+        List<AgentSummary> summaries;
+        try {
+            summaries = agentService.listAgents();
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            throw nonRetryable(e);
+        }
         List<ConductorAgentSummary> result = new ArrayList<>(summaries.size());
         for (AgentSummary summary : summaries) {
             result.add(
@@ -158,6 +213,14 @@ public class ConductorAgentRuntimeAdapter implements ConductorAgentRuntime {
                             .build());
         }
         return result;
+    }
+
+    /**
+     * Translates a permanent {@code AgentService} failure into the {@link ConductorAgentRuntime}
+     * non-retryable contract exception, preserving the original message and cause.
+     */
+    private static NonRetryableAgentException nonRetryable(RuntimeException e) {
+        return new NonRetryableAgentException(e.getMessage(), e);
     }
 
     private static String asString(Object value) {

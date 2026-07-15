@@ -40,6 +40,12 @@ class FakeConductorAgentRuntime implements ConductorAgentRuntime {
     ConductorAgentExecution statusResult;
     boolean throwOnStatus;
 
+    // When set, the corresponding method throws this instead of returning — lets a test drive both
+    // the transient (any RuntimeException) and non-retryable (NonRetryableAgentException) branches.
+    RuntimeException startException;
+    RuntimeException statusException;
+    RuntimeException respondException;
+
     ConductorAgentStartRequest lastStartRequest;
     String lastRespondExecutionId;
     Map<String, Object> lastRespondMessage;
@@ -49,11 +55,17 @@ class FakeConductorAgentRuntime implements ConductorAgentRuntime {
     @Override
     public ConductorAgentExecution start(ConductorAgentStartRequest request) {
         this.lastStartRequest = request;
+        if (startException != null) {
+            throw startException;
+        }
         return startResult;
     }
 
     @Override
     public ConductorAgentExecution getStatus(String executionId) {
+        if (statusException != null) {
+            throw statusException;
+        }
         if (throwOnStatus) {
             throw new RuntimeException("runtime unreachable");
         }
@@ -64,6 +76,9 @@ class FakeConductorAgentRuntime implements ConductorAgentRuntime {
     public void respond(String executionId, Map<String, Object> message) {
         this.lastRespondExecutionId = executionId;
         this.lastRespondMessage = message;
+        if (respondException != null) {
+            throw respondException;
+        }
     }
 
     @Override
