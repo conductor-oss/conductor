@@ -55,6 +55,8 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.ExecutionLockService;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
@@ -85,6 +87,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     private final ExecutionDAOFacade executionDAOFacade;
     private final ParametersUtils parametersUtils;
     private final IDGenerator idGenerator;
+    private final ObjectMapper objectMapper;
     private final WorkflowStatusListener workflowStatusListener;
     private final TaskStatusListener taskStatusListener;
     private final SystemTaskRegistry systemTaskRegistry;
@@ -110,6 +113,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             SystemTaskRegistry systemTaskRegistry,
             ParametersUtils parametersUtils,
             IDGenerator idGenerator,
+            ObjectMapper objectMapper,
             Optional<WorkflowMessageQueueDAO> workflowMessageQueueDAO) {
         this.deciderService = deciderService;
         this.metadataDAO = metadataDAO;
@@ -123,6 +127,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         this.executionLockService = executionLockService;
         this.parametersUtils = parametersUtils;
         this.idGenerator = idGenerator;
+        this.objectMapper = objectMapper;
         this.systemTaskRegistry = systemTaskRegistry;
         this.workflowMessageQueueDAO = workflowMessageQueueDAO;
     }
@@ -836,7 +841,13 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 if (workflow.getFailedTaskId() != null) {
                     input.put("failureTaskId", workflow.getFailedTaskId());
                 }
-                input.put("failedWorkflow", workflow);
+                // Convert to a Map: the JsonPath provider used by ParametersUtils cannot traverse
+                // POJOs, so a raw WorkflowModel makes nested references like
+                // ${workflow.input.failedWorkflow.workflowId} silently resolve to null (#1164).
+                input.put(
+                        "failedWorkflow",
+                        objectMapper.convertValue(
+                                workflow, new TypeReference<Map<String, Object>>() {}));
 
                 try {
                     String failureWFId = idGenerator.generate();
