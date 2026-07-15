@@ -16,12 +16,10 @@ import executionsStyles from "./executionsStyles";
 import StatusBadge from "components/StatusBadge";
 import { calculateTimeFromMillis, totalPages } from "utils/utils";
 import { SnackbarMessage } from "components/ui/SnackbarMessage";
-import {
-  ColumnCustomType,
-  LegacyColumn,
-} from "components/ui/DataTable/types";
+import { ColumnCustomType, LegacyColumn } from "components/ui/DataTable/types";
 import NoDataComponent from "components/ui/NoDataComponent";
 import { colors } from "theme/tokens/variables";
+import { AGENT_EXECUTIONS_URL } from "utils/constants/route";
 
 const LinearIndeterminate = () => {
   return (
@@ -47,7 +45,9 @@ const executionFields: LegacyColumn[] = [
     label: "Execution Id",
     grow: 2,
     renderer: (workflowId) => (
-      <NavLink path={`/agent-execution/${workflowId}`}>{workflowId}</NavLink>
+      <NavLink path={`${AGENT_EXECUTIONS_URL.BASE}/${workflowId}`}>
+        {workflowId}
+      </NavLink>
     ),
     sortable: true,
     tooltip: "The unique identifier for the execution.",
@@ -378,7 +378,9 @@ export default function ResultsTable({
                         └
                       </TableCell>
                       <TableCell>
-                        <NavLink path={`/agent-execution/${sub.subWorkflowId}`}>
+                        <NavLink
+                          path={`${AGENT_EXECUTIONS_URL.BASE}/${sub.subWorkflowId}`}
+                        >
                           {name}
                         </NavLink>
                       </TableCell>
