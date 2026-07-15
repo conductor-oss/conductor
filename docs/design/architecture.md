@@ -16,11 +16,11 @@ the three new e2e classes. The two agree on one class list; if they diverge, tes
 
 The `AGENT` system task (`org.conductoross.conductor.ai.a2a.AgentTask`) already drives remote
 Agent2Agent (A2A) calls. This change adds a second branch, selected by the request field
-`agentType`, that runs an agent on an **embedded Conductor-agent (agentspan) runtime** instead of
-a remote HTTP endpoint:
+`agentType`, that starts a registered agent workflow through Conductor's core
+`WorkflowExecutor` instead of a remote HTTP endpoint:
 
 - `agentType: "a2a"` (default) — remote A2A agent, existing behaviour.
-- `agentType: "conductor"` — embedded agentspan runtime, the new branch.
+- `agentType: "conductor"` — registered Conductor agent workflow, the new branch.
 
 The new branch is **non-blocking** and mirrors the A2A branch's state machine (start → poll while
 running → complete/interrupt/fail), so a single `AGENT` task type serves both runtimes with one
@@ -45,7 +45,7 @@ design surface.
 |---|---|
 | Language / build | Java 21, Gradle (`:ai` module) |
 | Task framework | `WorkflowSystemTask` (async, `isAsync() == true`) |
-| Runtime abstraction | `ConductorAgentRuntime` interface (in `:ai`), implemented by `agentspan-server` |
+| Execution API | Core `WorkflowExecutor`, supplied to every `WorkflowSystemTask` lifecycle call |
 | JSON | Jackson via `com.netflix.conductor.common.config.ObjectMapperProvider` |
 | Models | Lombok `@Data`/`@Builder` |
 | Tests | JUnit 5, **no mock frameworks** — hand-written in-package fakes (per AGENTS.md) |
@@ -54,9 +54,9 @@ design surface.
 
 ## 2. Design principles (reused by every doc)
 
-- **Interface-first / pluggable.** The `:ai` module never compile-depends on `agentspan-server`.
-  It depends only on the `ConductorAgentRuntime` interface and its model types, injected as an
-  `Optional<ConductorAgentRuntime>`. When the runtime is absent, the branch fails terminally.
+- **Core execution path.** The `:ai` module never compile-depends on `agentspan-server`.
+  `AgentTask` passes its lifecycle `WorkflowExecutor` into `ConductorAgentDelegate`, which starts,
+  polls, responds to, and terminates the child agent workflow directly.
 - **One task, two branches.** `AgentTask` dispatches on `agentType` at the top of
   `start`/`execute`/`cancel`/`getEvaluationOffset`. Conductor-agent logic lives entirely in
   `ConductorAgentDelegate`; A2A logic stays in `AgentTask`.
@@ -64,8 +64,8 @@ design surface.
   evaluation cadence.
 - **Idempotent at-least-once.** Retries reuse a deterministic idempotency key so the runtime
   dedupes re-issued starts.
-- **No mocks in tests.** Tests use a hand-written `FakeConductorAgentRuntime` implementing the real
-  interface (this is the pattern the review's linked a2a suite follows).
+- **No mocks in tests.** Tests use a hand-written `FakeWorkflowExecutor` implementing the real
+  core interface (this is the pattern the review's linked a2a suite follows).
 
 ## 3. Complete module / file layout
 
@@ -75,12 +75,9 @@ All under `ai/src/main/java/org/conductoross/conductor/ai/`:
 
 | File | Responsibility |
 |---|---|
-| `agent/ConductorAgentRuntime.java` | Interface: `start`, `getStatus`, `respond`, `cancel`, `listAgents`. |
-| `agent/ConductorAgentStartRequest.java` | `@Builder` start request handed to the runtime. |
-| `agent/ConductorAgentExecution.java` | Immutable execution snapshot returned by the runtime. |
+| `agent/ConductorAgentExecution.java` | Execution snapshot derived from the child workflow. |
 | `agent/ConductorAgentState.java` | Enum `RUNNING, WAITING, COMPLETED, FAILED, CANCELED`. |
 | `agent/ConductorAgentResults.java` | Output-key constants + `writeCompleted`. |
-| `agent/ConductorAgentSummary.java` | Descriptor returned by `listAgents()`. |
 | `agent/ConductorAgentDelegate.java` | The branch state machine (start/execute/cancel). |
 | `a2a/AgentTask.java` | System task; dispatches on `agentType`. |
 | `a2a/A2AService.java` | Holds `AGENT_TYPE_A2A`/`AGENT_TYPE_CONDUCTOR` + type predicates. |
@@ -92,14 +89,14 @@ All under `ai/src/main/java/org/conductoross/conductor/ai/`:
 
 | File | Responsibility |
 |---|---|
-| `ConductorAgentDelegateTest.java` | *Exists.* Unit-level state-machine + guard coverage, with a nested `FakeConductorAgentRuntime`. |
-| `FakeConductorAgentRuntime.java` | **New.** The nested fake promoted to a package-visible top-level helper (real, scriptable `ConductorAgentRuntime`) so the e2e tests share one fake. |
-| `ConductorAgentEndToEndTest.java` | **New.** Full `AgentTask` start→poll→complete against `FakeConductorAgentRuntime`, with the `WAITING`→resume flow folded in. Mirrors `A2AEndToEndTest`. |
-| `ConductorAgentDurabilityTest.java` | **New.** Idempotency-key stability across retries; deadline + poll-failure guards; cancel propagation; runtime-absent failure. Mirrors `A2ADurabilityTest`. |
+| `ConductorAgentDelegateTest.java` | Unit-level state-machine + guard coverage. |
+| `FakeWorkflowExecutor.java` | Package-visible, scriptable implementation of the core execution interface. |
+| `ConductorAgentEndToEndTest.java` | Full `AgentTask` start→poll→complete against `FakeWorkflowExecutor`, including `WAITING`→resume. |
+| `ConductorAgentDurabilityTest.java` | Idempotency-key stability, deadline/poll-failure guards, and cancel propagation. |
 | `AgentTaskConductorBranchTest.java` | **New.** `agentType` dispatch: `conductor` routes to the delegate, `a2a`/blank does not; `getEvaluationOffset` uses the poll cadence. Mirrors `AgentTaskTest`. |
 
 The e2e tests drive the real `AgentTask` entry points (`start`/`execute`/`cancel`) against the
-promoted `FakeConductorAgentRuntime`, exercising the `agentType` dispatch and the delegate together.
+shared `FakeWorkflowExecutor`, exercising the `agentType` dispatch and the delegate together.
 No mock frameworks are used. See [testing.md](./testing.md).
 
 **Examples** — `ai/examples/`:
@@ -217,23 +214,22 @@ Built from retry-stable identity — **not** `taskId` (which changes per retry a
 
 `ConductorAgentDelegate.fail(task, reason, nonRetryable)`:
 
-- `nonRetryable == true` → `FAILED_WITH_TERMINAL_ERROR` (bad input, runtime absent, deadline,
+- `nonRetryable == true` → `FAILED_WITH_TERMINAL_ERROR` (bad input, missing executor, deadline,
   poll-failure cap, `NonRetryableException`).
 - `nonRetryable == false` → `FAILED` (transient runtime call error; the engine retries).
 
-Runtime-absent message (verbatim):
-`"Conductor agents require the embedded agentspan runtime (agentspan.embedded=true)"`.
+Missing-executor message (verbatim):
+`"Conductor agent execution requires a WorkflowExecutor"`.
 
 ### 4.9 Enablement
 
-The runtime bean is provided by `agentspan-server` when `agentspan.embedded=true`. On a deployment
-without it, `Optional<ConductorAgentRuntime>` is empty and any `agentType: "conductor"` task fails
-terminally with the §4.8 message. This is the single enablement fact repeated in docs and examples.
+The conductor branch uses the core executor already supplied to system tasks. The target agent must
+have been deployed as a registered workflow definition before the `AGENT` task starts it.
 
 ## 5. Naming conventions
 
 - Test classes: `ConductorAgentEndToEndTest`, `ConductorAgentDurabilityTest`, and
-  `AgentTaskConductorBranchTest`, plus the promoted `FakeConductorAgentRuntime`, in package
+  `AgentTaskConductorBranchTest`, plus `FakeWorkflowExecutor`, in package
   `org.conductoross.conductor.ai.agent`, mirroring `conductor.ai.a2a`.
 - Example files: `NN-conductor-agent-<slug>.json`, continuing the `ai/examples/` numbering after 30.
 - Doc file: `docs/devguide/ai/conductor-agents.md` (plural, sibling to `a2a-integration.md`).

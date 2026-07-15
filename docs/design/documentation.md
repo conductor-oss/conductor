@@ -8,10 +8,8 @@ source per `CLAUDE.md`/`AGENTS.md`; field names and the `agentType` selector com
 
 A sibling to the existing `docs/devguide/ai/a2a-integration.md`. Structure:
 
-1. **What it is** — the `AGENT` task's `conductor` branch runs an agent on the embedded
-   agentspan runtime, in contrast to the `a2a` branch that calls a remote agent. Requires
-   `agentspan.embedded=true`; without it the task fails terminally with the message in
-   `architecture.md` §4.8.
+1. **What it is** — the `AGENT` task's `conductor` branch starts a registered agent workflow
+   through Conductor's core executor, in contrast to the `a2a` branch that calls a remote agent.
 2. **Task input** — table of the `conductor`-branch fields from `A2ACallRequest`
    (`architecture.md` §4.2). Include the prompt-resolution order (`message` → `parts` →
    `text` → `prompt`).
@@ -34,7 +32,7 @@ The `AGENT` task now has two runtimes. Add a short **"Choosing a runtime"** note
 `agentType` is first introduced:
 
 - `agentType: "a2a"` (default) — call a remote Agent2Agent endpoint (`agentUrl`).
-- `agentType: "conductor"` — run an agent on the embedded agentspan runtime (`agentName`);
+- `agentType: "conductor"` — run a registered Conductor agent workflow (`agentName`);
   see [conductor-agents.md](./conductor-agents.md).
 
 Only add the cross-reference and the two-value clarification; do not rewrite existing A2A
@@ -50,7 +48,8 @@ format.
 
 - `agentType` values and field names match `A2ACallRequest` / `A2AService.AGENT_TYPE_CONDUCTOR`.
 - Output keys match `ConductorAgentResults`.
-- The enablement property is written exactly as `agentspan.embedded=true` everywhere.
+- The registered-agent requirement is stated consistently: the named agent definition must already
+  exist in Conductor before an `AGENT` task can start it.
 - The execute endpoint in any curl example is `POST /api/workflow/{name}` (as used in the
   existing examples README) — no invented routes.
 - If a live server is unavailable to confirm output blocks, mark them
