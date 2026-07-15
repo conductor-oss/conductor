@@ -6,24 +6,23 @@ examples and docs render from — do not introduce a field that is not listed he
 
 ## 1. Java types (existing production code)
 
-### 1.1 `ConductorAgentRuntime` (interface, `agent/` package)
+### 1.1 Core `WorkflowExecutor`
 
 ```java
-public interface ConductorAgentRuntime {
-    ConductorAgentExecution start(ConductorAgentStartRequest request);
-    ConductorAgentExecution getStatus(String executionId);
-    void respond(String executionId, Map<String, Object> message);
-    void cancel(String executionId, String reason);
-    List<ConductorAgentSummary> listAgents();
+public interface WorkflowExecutor {
+    AgentStartResponse startAgentExecution(AgentStartRequest request);
+    WorkflowModel getWorkflow(String workflowId, boolean includeTasks);
+    TaskModel updateTask(TaskResult taskResult);
+    void terminateWorkflow(String workflowId, String reason);
 }
 ```
 
-### 1.2 `ConductorAgentStartRequest` (`@Data @Builder`)
+### 1.2 `AgentStartRequest` (`common.metadata.agent`)
 
 | Field | Type | Source (`A2ACallRequest` → start request) |
 |---|---|---|
-| `agentName` | `String` | `agentName` |
-| `agentVersion` | `Integer` | `agentVersion` |
+| `name` | `String` | `agentName` |
+| `version` | `Integer` | `agentVersion` |
 | `prompt` | `String` | resolved per [architecture.md §4.2](./architecture.md) |
 | `context` | `Map<String,Object>` | `context` |
 | `sessionId` | `String` | `sessionId` |
@@ -49,11 +48,6 @@ Convenience: `isComplete()`, `isRunning()`, `isWaiting()`.
 
 `RUNNING`, `WAITING`, `COMPLETED`, `FAILED`, `CANCELED`.
 `isTerminal()` → COMPLETED/FAILED/CANCELED; `isInterrupted()` → WAITING.
-
-### 1.5 `ConductorAgentSummary` (`@Data @Builder`) — from `listAgents()`
-
-`name` (String), `version` (int), `type` (String), `tags` (List<String>), `createTime` (Long),
-`updateTime` (Long), `description` (String), `checksum` (String).
 
 ## 2. Task input JSON (`inputParameters`)
 

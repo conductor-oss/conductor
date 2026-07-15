@@ -39,6 +39,7 @@ export interface ExecutionTask<
   };
   outputData?: {
     subWorkflowId?: string;
+    executionId?: string;
     caseOutput?: string[];
     [key: string]: unknown;
   };

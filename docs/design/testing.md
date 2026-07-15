@@ -10,8 +10,8 @@ and [data-model.md](./data-model.md).
 The `conductor.ai.a2a` suite pairs a hand-written, in-package fake with focused one-concern
 tests (`A2AEndToEndTest`, `A2ADurabilityTest`, `AgentTaskTest`) — **no mock frameworks**
 (AGENTS.md). The conductor branch is exercised through the same `WorkflowSystemTask` entry
-points on `AgentTask` (`start` / `execute` / `cancel` / `getEvaluationOffset`) against a real
-`ConductorAgentRuntime` fake.
+points on `AgentTask` (`start` / `execute` / `cancel` / `getEvaluationOffset`) against a
+hand-written `WorkflowExecutor` implementation.
 
 ## 1a. Coverage mapping to the `conductor.ai.a2a` suite
 
@@ -22,33 +22,27 @@ cover everything the a2a suite covers?"
 
 | `conductor.ai.a2a` artifact | Concern | Conductor-branch counterpart |
 |---|---|---|
-| `EmbeddedA2AAgent` | In-process real agent to test against | `FakeConductorAgentRuntime` (§2) |
+| `EmbeddedA2AAgent` | In-process real agent to test against | `FakeWorkflowExecutor` (§2) |
 | `A2AEndToEndTest` | Full start→poll→complete lifecycle | `ConductorAgentEndToEndTest` (§3.1) |
 | `A2ADurabilityTest` | Idempotency, deadline, retries, cancel | `ConductorAgentDurabilityTest` (§3.2) |
 | `AgentTaskTest` | `agentType` dispatch + eval offset | `AgentTaskConductorBranchTest` (§3.3) |
 | `A2AServiceTest` | Predicate/helper coverage | Folded into `AgentTaskConductorBranchTest` (dispatch asserts `isConductorAgentType`); the shared `A2AService` predicates are already covered by `A2AServiceTest`, so they are not re-tested. |
 | `A2ACallbackResourceTest` | Push-notification callback HTTP resource | **Omitted** — the conductor branch is poll-only; it has no callback resource. |
-| `A2ASdkInteropTest` | Wire-compat with the A2A client SDK | **Omitted** — no external protocol; the branch calls the in-process `ConductorAgentRuntime` interface. |
+| `A2ASdkInteropTest` | Wire-compat with the A2A client SDK | **Omitted** — no external protocol; the branch calls the core executor. |
 | `A2AObservabilityTest` | `A2AMetrics`/`A2ALogging` emission | **Omitted for now** — the branch adds no metrics/logging component of its own; add an analog only if `ConductorAgent*` observability is introduced. Called out as a known gap in the PR description. |
-| `A2ARealAgentIntegrationTest` | Live remote agent (opt-in) | **Out of scope** — requires a live agentspan runtime; covered by the manual `agentspan.embedded=true` verification in §4, not an automated test. |
+| `A2ARealAgentIntegrationTest` | Live remote agent (opt-in) | **Out of scope** — requires a live Conductor server with a deployed agent definition; cover it with an opt-in integration test when that environment is available. |
 
 The three mirrored classes plus the existing `ConductorAgentDelegateTest` give the branch the same
 lifecycle/durability/dispatch coverage the a2a suite has, without inventing tests for machinery this
 branch does not have.
 
-## 2. Shared test fake — `FakeConductorAgentRuntime`
+## 2. Shared test fake — `FakeWorkflowExecutor`
 
-`FakeConductorAgentRuntime` already exists as a nested class inside `ConductorAgentDelegateTest`.
-Promote it to a package-visible top-level helper so the new classes share one fake
-(architecture.md §3.2):
+The conductor tests share one package-visible executor implementation:
 
-- **File:** `ai/src/test/java/org/conductoross/conductor/ai/agent/FakeConductorAgentRuntime.java`
-- **Behavior (unchanged from the nested version):** a real `ConductorAgentRuntime` returning
-  pre-set `startResult` / `statusResult` snapshots; can throw from `getStatus`
-  (`throwOnStatus`) to drive Guard 2; records `lastStartRequest`, `lastRespondExecutionId`,
-  `lastRespondMessage`, `lastCancelExecutionId`, `lastCancelReason`.
-- `ConductorAgentDelegateTest` is updated to reference the promoted helper instead of its inner
-  copy; its assertions are unchanged.
+- **File:** `ai/src/test/java/org/conductoross/conductor/ai/agent/FakeWorkflowExecutor.java`
+- **Behavior:** returns scripted `AgentStartResponse` and `WorkflowModel` values, can throw from
+  `getWorkflow` to drive Guard 2, and records starts, task updates, and termination calls.
 
 Snapshots are built with `ConductorAgentExecution.builder()` (data-model.md §1.3) using the
 `ConductorAgentState` values from data-model.md §1.4.
@@ -59,7 +53,7 @@ All under `ai/src/test/java/org/conductoross/conductor/ai/agent/` (architecture.
 
 ### 3.1 `ConductorAgentEndToEndTest` (mirrors `A2AEndToEndTest`)
 
-Full lifecycle through `AgentTask` built with `Optional.of(fakeRuntime)`:
+Full lifecycle through `AgentTask`, passing the fake executor to each lifecycle method:
 
 1. Input map `{ "agentType": "conductor", "agentName": "planner", "text": "..." }`.
 2. `start(...)` with a `RUNNING` snapshot → task `IN_PROGRESS`; assert outputs `executionId`,
@@ -82,8 +76,8 @@ Full lifecycle through `AgentTask` built with `Optional.of(fakeRuntime)`:
 - **Guard 2 (poll-failure cap):** `throwOnStatus=true` + low `maxPollFailures` →
   `agentPollFailures` increments, terminal failure at the cap; a subsequent success resets the
   counter to `0`.
-- **Runtime-absent:** `AgentTask` built with `Optional.empty()` fails terminally with the exact
-  message in architecture.md §4.8.
+- **Missing executor:** a conductor lifecycle call with a null executor fails terminally with the
+  exact message in architecture.md §4.8.
 - **Cancel:** `cancel(...)` propagates the reason to the fake and sets task `CANCELED`.
 
 ### 3.3 `AgentTaskConductorBranchTest` (mirrors `AgentTaskTest`)
@@ -114,12 +108,12 @@ ConductorAgentDelegateTest     PASSED
 BUILD SUCCESSFUL
 ```
 
-No external service is needed — `FakeConductorAgentRuntime` runs in-process. If any manual step
+No external service is needed — `FakeWorkflowExecutor` runs in-process. If any manual step
 can't be verified live, mark it `<!-- TODO: verify against live server -->` per AGENTS.md and
 note it in the PR.
 
 ## 5. Conventions honored
 
-- No mock frameworks; the fake is a real `ConductorAgentRuntime`.
+- No mock frameworks; the fake implements the real core `WorkflowExecutor` interface.
 - Assertions verify observable task status/output, not re-implemented logic (data-model.md §4).
 - One concern per class, matching the `conductor.ai.a2a` package.

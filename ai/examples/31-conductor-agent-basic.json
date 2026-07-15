@@ -10,8 +10,8 @@
       "type": "AGENT",
       "inputParameters": {
         "agentType": "conductor",
-        "agentName": "planner",
-        "text": "${workflow.input.prompt}"
+        "name": "planner",
+        "prompt": "${workflow.input.prompt}"
       }
     }
   ],

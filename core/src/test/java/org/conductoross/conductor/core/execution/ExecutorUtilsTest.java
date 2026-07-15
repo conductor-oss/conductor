@@ -15,6 +15,8 @@ package org.conductoross.conductor.core.execution;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import org.junit.Test;
 
@@ -22,6 +24,8 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
+import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -234,6 +238,77 @@ public class ExecutorUtilsTest {
         assertTrue(
                 "Result should be ~120s remaining; got " + result.getSeconds(),
                 result.getSeconds() <= 121);
+    }
+
+    /**
+     * A synchronous system task advertising a poll cadence via getEvaluationOffset drives the sweep
+     * cadence: 5s poll wins over the 30s workflow offset.
+     */
+    @Test
+    public void computePostponeUsesSyncSystemTaskEvaluationOffset() {
+        TaskModel agent = newTask("AGENT_TEST", TaskModel.Status.IN_PROGRESS);
+        agent.setStartTime(System.currentTimeMillis());
+        WorkflowModel workflow = newWorkflow(Arrays.asList(agent), 0);
+
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow,
+                        Duration.ofSeconds(30),
+                        Duration.ofSeconds(3600),
+                        registryWith("AGENT_TEST", /* async= */ false, /* offsetSeconds= */ 5L));
+
+        assertEquals(5, result.getSeconds());
+    }
+
+    /** An async system task's getEvaluationOffset must NOT influence the workflow sweep cadence. */
+    @Test
+    public void computePostponeIgnoresAsyncSystemTaskEvaluationOffset() {
+        TaskModel task = newTask("ASYNC_TEST", TaskModel.Status.IN_PROGRESS);
+        task.setStartTime(System.currentTimeMillis());
+        WorkflowModel workflow = newWorkflow(Arrays.asList(task), 0);
+
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow,
+                        Duration.ofSeconds(30),
+                        Duration.ofSeconds(3600),
+                        registryWith("ASYNC_TEST", /* async= */ true, /* offsetSeconds= */ 5L));
+
+        assertEquals(30, result.getSeconds());
+    }
+
+    /** The sync poll offset is taken as the minimum against any response-timeout candidate. */
+    @Test
+    public void computePostponeSyncOffsetTakesMinWithResponseTimeout() {
+        TaskModel agent = newTask("AGENT_TEST", TaskModel.Status.IN_PROGRESS);
+        agent.setResponseTimeoutSeconds(100);
+        agent.setStartTime(System.currentTimeMillis());
+        WorkflowModel workflow = newWorkflow(Arrays.asList(agent), 0);
+
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow,
+                        Duration.ofSeconds(30),
+                        Duration.ofSeconds(3600),
+                        registryWith("AGENT_TEST", /* async= */ false, /* offsetSeconds= */ 5L));
+
+        assertEquals(5, result.getSeconds());
+    }
+
+    private static SystemTaskRegistry registryWith(String type, boolean async, Long offsetSeconds) {
+        WorkflowSystemTask stub =
+                new WorkflowSystemTask(type) {
+                    @Override
+                    public boolean isAsync() {
+                        return async;
+                    }
+
+                    @Override
+                    public Optional<Long> getEvaluationOffset(TaskModel taskModel, long maxOffset) {
+                        return Optional.ofNullable(offsetSeconds);
+                    }
+                };
+        return new SystemTaskRegistry(Set.of(stub));
     }
 
     private WorkflowModel newWorkflow(List<TaskModel> tasks, long timeoutSeconds) {

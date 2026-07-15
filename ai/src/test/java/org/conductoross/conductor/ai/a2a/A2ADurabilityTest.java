@@ -230,6 +230,10 @@ class A2ADurabilityTest {
                 model.getStatus(),
                 "a dead agent must drive the task terminal, not poll forever");
         assertTrue(guard <= 5, "should give up near the failure cap, not loop the guard");
+        assertEquals(
+                1,
+                agent.cancelCalls(),
+                "hitting the poll-failure cap must still attempt a best-effort remote cancel");
     }
 
     @Test
@@ -248,6 +252,37 @@ class A2ADurabilityTest {
         assertTrue(
                 model.getReasonForIncompletion().contains("max duration"),
                 model.getReasonForIncompletion());
+        assertEquals(
+                1,
+                agent.cancelCalls(),
+                "exceeding the deadline must still attempt a best-effort remote cancel");
+    }
+
+    @Test
+    void t4c_streamingHang_boundedByMaxDurationSeconds() {
+        // Alive but stuck: sends keepalives (which reset the client's per-read timeout) but never
+        // the terminal event. Only an overall call deadline can bound this.
+        agent.hangStream(true);
+
+        TaskModel model =
+                taskModel(
+                        "t4c",
+                        "wf-1",
+                        "agent",
+                        0,
+                        Map.of("streaming", true, "maxDurationSeconds", 2));
+
+        long startedAt = System.currentTimeMillis();
+        newTask(newService()).start(null, model, null);
+        long elapsedMs = System.currentTimeMillis() - startedAt;
+
+        assertEquals(TaskModel.Status.FAILED, model.getStatus());
+        assertTrue(
+                elapsedMs < 5000,
+                "a hung-but-alive stream must be bounded by maxDurationSeconds (2s), not run to"
+                        + " the agent's full keepalive window (5s): took "
+                        + elapsedMs
+                        + "ms");
     }
 
     // ---- T5: durable push — backstop poll completes even with no webhook ----------------------

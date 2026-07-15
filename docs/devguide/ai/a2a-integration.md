@@ -45,7 +45,7 @@ Each task takes an **`agentType`** input that selects the agent runtime. It defa
 **Choosing a runtime.** `agentType` picks where the agent runs:
 
 - `agentType: "a2a"` (default) — call a **remote** Agent2Agent endpoint (`agentUrl`). This page.
-- `agentType: "conductor"` — run an agent on the **embedded agentspan runtime** (`agentName`). See [Conductor agents (embedded runtime)](conductor-agents.md).
+- `agentType: "conductor"` — run an agent on the **embedded agentspan runtime** (`name`). See [Conductor agents (embedded runtime)](conductor-agents.md).
 
 ### AGENT — send a message to an agent
 
@@ -123,7 +123,7 @@ Downstream tasks read these with `${agent.output.text}`, `${agent.output.taskId}
 #### Three execution modes
 
 - **Poll** (default) — the task is `IN_PROGRESS` and polled via `tasks/get` at `pollIntervalSeconds`. No thread is held between polls; the call survives restarts.
-- **Streaming** (`streaming: true`) — consumes the agent's SSE stream and aggregates events. Requires `capabilities.streaming=true` on the agent card. Holds a thread for the stream's duration.
+- **Streaming** (`streaming: true`) — consumes the agent's SSE stream and aggregates events. Requires `capabilities.streaming=true` on the agent card. Holds a thread for the stream's duration — best for interactive/short streams; for long-running work prefer poll or push. Bounded by `maxDurationSeconds` (default 86400) as an absolute call deadline, so a connection an agent keeps alive (via data or keepalives) without ever finishing can't hold the thread indefinitely.
 - **Push** (`pushNotification: true`) — the agent calls Conductor's webhook when the task finishes, so nothing polls in the meantime. Requires `conductor.a2a.callback.url`. A slow **backstop poll** still runs (`pushBackstopPollSeconds`, default 300) so a lost webhook can't hang the task.
 
 #### Push notifications — end to end
@@ -212,6 +212,21 @@ Resolves the agent card from `/.well-known/agent-card.json` (falling back to the
   "inputParameters": {
     "agentUrl": "https://currency-agent.example.com",
     "taskId": "${agent.output.taskId}"
+  }
+}
+```
+
+`agentType: "conductor"` terminates a conductor agent execution instead — same idea as [Conductor agents](conductor-agents.md), but as a one-shot task rather than the `AGENT` task's own cancel lifecycle:
+
+```json
+{
+  "name": "cancel_agent_task",
+  "taskReferenceName": "cancel",
+  "type": "CANCEL_AGENT",
+  "inputParameters": {
+    "agentType": "conductor",
+    "executionId": "${agent.output.executionId}",
+    "reason": "No longer needed"
   }
 }
 ```

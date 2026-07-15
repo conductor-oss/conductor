@@ -13,7 +13,7 @@
 package org.conductoross.conductor.ai.agent;
 
 /**
- * Lifecycle state of a Conductor-agent execution, as reported by the embedded runtime.
+ * Lifecycle state derived from the Conductor agent's child workflow execution.
  *
  * <p>Mirrors the coarse states the {@code AGENT} (conductor) task branch routes on: an execution is
  * either still {@link #RUNNING}, paused {@link #WAITING} for external input (human answer or tool

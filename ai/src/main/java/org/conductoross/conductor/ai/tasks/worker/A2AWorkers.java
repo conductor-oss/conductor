@@ -14,10 +14,8 @@ package org.conductoross.conductor.ai.tasks.worker;
 
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.a2a.A2AService;
-import org.conductoross.conductor.ai.a2a.model.A2ATask;
 import org.conductoross.conductor.ai.a2a.model.AgentCard;
 import org.conductoross.conductor.ai.model.A2AAgentCardRequest;
-import org.conductoross.conductor.ai.model.A2ACancelRequest;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.conductoross.conductor.core.execution.tasks.AnnotatedSystemTaskWorker;
 import org.springframework.context.annotation.Conditional;
@@ -30,10 +28,14 @@ import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Synchronous worker tasks for interacting with remote A2A agents — discovery and cancellation.
+ * Synchronous worker tasks for interacting with remote A2A agents — discovery.
  *
- * <p>These are quick request/response calls, so (like {@code MCPWorkers}) they run as annotated
- * system tasks. The long-running {@code AGENT} operation instead uses {@link
+ * <p>This is a quick request/response call, so (like {@code MCPWorkers}) it runs as an annotated
+ * system task. {@code CANCEL_AGENT} is a plain {@link
+ * com.netflix.conductor.core.execution.tasks.WorkflowSystemTask} ({@link
+ * org.conductoross.conductor.ai.a2a.CancelAgentTask}) instead, since it needs the {@link
+ * com.netflix.conductor.core.execution.WorkflowExecutor} the engine hands to system tasks rather
+ * than one injected as a bean. The long-running {@code AGENT} operation instead uses {@link
  * org.conductoross.conductor.ai.a2a.AgentTask} for non-blocking polling.
  */
 @Slf4j
@@ -63,26 +65,6 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker {
         }
         log.debug("Fetching agent card from {}", request.getAgentUrl());
         return a2aService.getAgentCard(request.getAgentUrl(), request.getHeaders());
-    }
-
-    /**
-     * Requests cancellation of a remote agent task ({@code tasks/cancel}).
-     *
-     * @param request the agent URL, the remote task id, and optional headers
-     * @return the updated remote {@link A2ATask}
-     */
-    @WorkerTask("CANCEL_AGENT")
-    public @OutputParam("task") A2ATask cancelAgentTask(A2ACancelRequest request) {
-        requireA2a(request.getAgentType());
-        if (StringUtils.isBlank(request.getAgentUrl())) {
-            throw new NonRetryableException("CANCEL_AGENT requires 'agentUrl'");
-        }
-        if (StringUtils.isBlank(request.getTaskId())) {
-            throw new NonRetryableException("CANCEL_AGENT requires 'taskId'");
-        }
-        log.debug("Canceling A2A task {} on {}", request.getTaskId(), request.getAgentUrl());
-        return a2aService.cancelTask(
-                request.getAgentUrl(), request.getTaskId(), request.getHeaders());
     }
 
     private static void requireA2a(String agentType) {

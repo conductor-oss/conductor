@@ -10,12 +10,12 @@ Four new files in `ai/examples/`, continuing the numbering after `30` (architect
 
 | File | Workflow `name` | Demonstrates | Requirements |
 |---|---|---|---|
-| `31-conductor-agent-basic.json` | `conductor_agent_basic` | Minimal single-task run to completion (poll mode) | `agentspan.embedded=true`, a registered agent |
-| `32-conductor-agent-human-in-loop.json` | `conductor_agent_human_in_loop` | `WAITING` → `HUMAN` task → resume with `executionId` | `agentspan.embedded=true` |
-| `33-conductor-agent-multi-agent.json` | `conductor_agent_multi_agent` | Two `AGENT` (conductor) branches via `FORK_JOIN` → `JOIN` | `agentspan.embedded=true`, two registered agents |
-| `34-conductor-agent-cancel.json` | `conductor_agent_cancel` | Start an agent run, then cancel it | `agentspan.embedded=true` |
+| `31-conductor-agent-basic.json` | `conductor_agent_basic` | Minimal single-task run to completion (poll mode) | A registered agent |
+| `32-conductor-agent-human-in-loop.json` | `conductor_agent_human_in_loop` | `WAITING` → `HUMAN` task → resume with `executionId` | A registered agent |
+| `33-conductor-agent-multi-agent.json` | `conductor_agent_multi_agent` | Two `AGENT` (conductor) branches via `FORK_JOIN` → `JOIN` | Two registered agents |
+| `34-conductor-agent-cancel.json` | `conductor_agent_cancel` | Start an agent run, then cancel it | A registered agent |
 
-`README.md` in `ai/examples/` gets a new **"Conductor agent (embedded runtime) examples"**
+`README.md` in `ai/examples/` gets a new **"Conductor agent workflow examples"**
 section after the A2A table with these four rows, plus a `## Example Commands` entry per file
 using the existing register/execute curl pattern.
 
@@ -65,7 +65,7 @@ two runs poll concurrently without blocking a worker thread (architecture.md §2
 ### 34 — `conductor-agent-cancel`
 An `AGENT` (conductor) task started with a long `maxDurationSeconds`, followed by a control path
 that terminates the run; documents the `CANCELED` → task `CANCELED` mapping (architecture.md §4.5)
-and how `cancel` reaches the runtime.
+and how `cancel` terminates the child workflow.
 
 ## 4. README curl blocks
 
@@ -88,7 +88,6 @@ README — kept identical so the doc stays consistent and verifiable.
 
 ## 5. Prerequisites note
 
-Add a short prerequisite to the README's new section: these examples require the server to run
-with the embedded agentspan runtime enabled (`agentspan.embedded=true`) and at least one agent
-registered with it (example 33 needs two). If unavailable at authoring time, mark the section
+Add a short prerequisite to the README's new section: these examples require at least one agent
+registered with the server (example 33 needs two). If unavailable at authoring time, mark the section
 `<!-- TODO: verify against live server -->` per AGENTS.md.

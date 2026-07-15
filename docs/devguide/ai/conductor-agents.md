@@ -31,23 +31,29 @@ Conductor agents require the embedded agentspan runtime (agentspan.embedded=true
 
 ## Task input
 
-The conductor branch reads these fields from the `AGENT` task input (`A2ACallRequest`). Fields specific to the A2A branch (`agentUrl`, `streaming`, `pushNotification`, `headers`, `contextId`, `taskId`, …) are ignored here.
+The conductor branch parses its task input as a `ConductorAgentRequest` — an `AgentStartRequest` (the same DTO `POST /api/agent/start` takes) plus four AGENT-task-only orchestration fields for resuming a run and bounding how long it polls. Fields specific to the A2A branch (`agentUrl`, `streaming`, `pushNotification`, `headers`, `contextId`, `taskId`, `parts`, `message`, …) don't exist on this contract and are ignored here.
 
 | Field | Type | Meaning |
 |---|---|---|
 | `agentType` | String | Must be `"conductor"` to select this branch. |
-| `agentName` | String | **Required** on a fresh start. The registered agent to run. |
-| `agentVersion` | Integer | Optional. When null, the runtime uses the latest registered version. |
+| `name` | String | **Required** on a fresh start. Name of a previously deployed agent definition. |
+| `version` | Integer | Optional deployed agent version. The latest version is used when omitted. |
+| `prompt` | String | **Required** on a fresh start. The single prompt field — no fallback chain. |
 | `sessionId` | String | Optional. Associates the run with an existing conversation/session. |
-| `runId` | String | Optional caller-supplied run id. |
-| `executionId` | String | When set, **resume** an in-flight run instead of starting a new one (see [Human-in-the-loop](#human-in-the-loop--resume)). |
+| `runId` | String | Per-execution isolation key for stateful agents. When set, every worker tool task is routed to this domain so concurrent instances of the same agent don't cross-talk. |
 | `context` | Map | Extra context values passed to the run. |
-| `text` / `prompt` / `parts` / `message` | — | Prompt source (see resolution order below). |
+| `media` | List\<String\> | Media references attached to the prompt. |
+| `agentConfig` | AgentConfig | Inline agent construction details. Mutually exclusive with identifying the agent by `name`/`version`. |
+| `framework` | String | Framework identifier for foreign agents (e.g. `"openai"`, `"google_adk"`). Null for native agents. |
+| `rawConfig` | Map | Raw framework-specific agent config. Used when `framework` is non-null. |
+| `skillRef` | Map | Reference to a server-registered skill package. Used with `framework="skill"` when the caller wants the server to resolve the raw skill config from the skill registry instead of sending it inline. |
+| `timeoutSeconds` | Integer | Per-call timeout override (seconds). Applied server-side to the workflow definition. |
+| `idempotencyKey` | String | Client-supplied idempotency key. If omitted on a fresh start, the conductor branch fills in a deterministic, restart-stable key itself (see [Durability](#durability)). |
+| `static_plan` | Map | Optional deterministic plan for `Strategy.PLAN_EXECUTE` harnesses — replays a recorded plan instead of running an LLM planner. Note the wire key is `static_plan` (snake_case), not `staticPlan`. |
+| `executionId` | String | When set, **resume** an in-flight run instead of starting a new one (see [Human-in-the-loop](#human-in-the-loop--resume)). |
 | `pollIntervalSeconds` | Integer | Poll cadence while the run is not terminal. Default 5. |
-| `maxDurationSeconds` | Integer | Absolute deadline. Default 86400 (24h). |
-| `maxPollFailures` | Integer | Consecutive transient poll failures tolerated before failing terminally. Default 30. |
-
-**Prompt resolution.** The prompt is the first non-blank of, in order: text extracted from `message` (its parts) → text extracted from `parts` → `text` → `prompt`.
+| `maxDurationSeconds` | Integer | Absolute deadline (seconds) for the run to reach a terminal state. Default 86400 (24h). |
+| `maxPollFailures` | Integer | Consecutive transient poll failures (executor unreachable) tolerated before failing terminally. Default 30. |
 
 
 ## Task output
@@ -94,8 +100,8 @@ A single `AGENT` task that runs an embedded agent to completion:
       "type": "AGENT",
       "inputParameters": {
         "agentType": "conductor",
-        "agentName": "${workflow.input.agentName}",
-        "text": "${workflow.input.prompt}",
+        "name": "${workflow.input.name}",
+        "prompt": "${workflow.input.prompt}",
         "pollIntervalSeconds": 5
       }
     }
@@ -114,7 +120,7 @@ curl -X POST 'http://localhost:8080/api/metadata/workflow' \
 # run
 curl -X POST 'http://localhost:8080/api/workflow/conductor_agent_basic' \
   -H 'Content-Type: application/json' \
-  -d '{"agentName":"my-agent","prompt":"Summarize the latest release notes"}'
+  -d '{"name":"my-agent","prompt":"Summarize the latest release notes"}'
 ```
 
 
@@ -132,12 +138,12 @@ The workflow branches on that state and resumes by issuing a **second `AGENT` ta
   "inputParameters": {
     "agentType": "conductor",
     "executionId": "${agent.output.executionId}",
-    "text": "${workflow.input.answer}"
+    "prompt": "${workflow.input.answer}"
   }
 }
 ```
 
-`agentName` is not required on a resume — the `executionId` identifies the in-flight run. Full example: `ai/examples/32-conductor-agent-human-in-loop.json`.
+`name` is not required on a resume — the `executionId` identifies the in-flight run. Full example: `ai/examples/32-conductor-agent-human-in-loop.json`.
 
 
 ## Durability
@@ -151,8 +157,10 @@ The conductor branch mirrors the A2A branch's guards; the run's state lives in t
     ```
 
     It is built from retry-stable identity — **not** `taskId`, which changes per retry attempt.
-- **Absolute deadline.** Anchored once at start; the task fails terminally after `maxDurationSeconds` (default 86400) if the run never reaches a terminal state.
-- **Poll-failure cap.** Consecutive transient poll failures are counted and reset to 0 on any success; the task fails terminally at `maxPollFailures` (default 30).
+- **Absolute deadline.** Anchored once at start; the task fails terminally after `maxDurationSeconds` (default 86400) if the run never reaches a terminal state. The abandoned child execution is also given a best-effort `terminateWorkflow` call so it doesn't keep running orphaned.
+- **Poll-failure cap.** Consecutive transient poll failures are counted and reset to 0 on any success; the task fails terminally at `maxPollFailures` (default 30), with the same best-effort child termination.
+
+`maxDurationSeconds`/`maxPollFailures` are this branch's own liveness guards, independent of the Conductor engine's standard task-level timeout (`taskDefinition.timeoutSeconds`/`responseTimeoutSeconds`/`timeoutPolicy`, set inline on the `AGENT` `WorkflowTask` — not as an `inputParameters` field). Note: as of this writing, the engine does not invoke a system task's `cancel()` hook when the task's *own* `TaskDef` timeout fires (it only does so for still-running sibling tasks once the whole workflow becomes terminal) — a general gap that also affects `SUB_WORKFLOW`. Until that's addressed at the engine level, `maxDurationSeconds` is the reliable way to guarantee the child agent execution is cleaned up.
 
 
 ## Examples
@@ -163,3 +171,5 @@ Runnable workflow definitions live in [`ai/examples/`](https://github.com/conduc
 |---|---|
 | `31-conductor-agent-basic.json` | Run an embedded agent to completion (poll mode) |
 | `32-conductor-agent-human-in-loop.json` | `WAITING` → resume with the same `executionId` |
+| `33-conductor-agent-multi-agent.json` | `FORK_JOIN` running two independent AGENT (conductor) tasks concurrently |
+| `34-conductor-agent-cancel.json` | Canceling an in-flight run via `TERMINATE` maps to `CANCELED` on the AGENT task |

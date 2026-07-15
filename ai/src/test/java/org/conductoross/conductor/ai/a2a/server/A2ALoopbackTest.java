@@ -181,7 +181,7 @@ class A2ALoopbackTest {
         message.setKind("message");
 
         // Real client message/stream against the real server's SSE endpoint, over HTTP.
-        SendResult result = service.streamMessage(agentUrl(), message, null, null);
+        SendResult result = service.streamMessage(agentUrl(), message, null, null, 30);
 
         assertTrue(result.isTask());
         assertEquals(TaskState.COMPLETED, result.getTask().getStatus().getState());

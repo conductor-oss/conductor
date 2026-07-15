@@ -22,6 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.conductoross.conductor.ai.a2a.model.A2AMessage;
@@ -43,6 +44,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import okhttp3.Call;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -236,12 +238,19 @@ public class A2AService {
      *
      * <p>The connection is held open until the agent signals the final status event, so this is
      * best for interactive/short streams; for very long-running work prefer send+poll or push.
+     *
+     * @param maxDurationSeconds absolute cap on the whole call ({@link Call#timeout()}, not
+     *     OkHttp's per-read timeout). A live SSE connection resets the client's read timeout on
+     *     every event/keepalive, so without this an agent that keeps the stream open — legitimately
+     *     slow, or hung — would hold this thread indefinitely; this bounds it to the same deadline
+     *     the poll-based liveness guard uses ({@code maxDurationSeconds}).
      */
     public SendResult streamMessage(
             String endpoint,
             A2AMessage message,
             Map<String, Object> configuration,
-            Map<String, String> headers) {
+            Map<String, String> headers,
+            long maxDurationSeconds) {
         validateAgentUrl(endpoint); // SSRF guard — must run on the streaming path too
         try {
             ObjectNode params = objectMapper.createObjectNode();
@@ -265,7 +274,9 @@ public class A2AService {
                             .header("Accept", "text/event-stream");
             addHeaders(rb, headers);
 
-            try (Response response = httpClient.newCall(rb.build()).execute()) {
+            Call call = httpClient.newCall(rb.build());
+            call.timeout().timeout(Math.max(1, maxDurationSeconds), TimeUnit.SECONDS);
+            try (Response response = call.execute()) {
                 if (!response.isSuccessful()) {
                     String body = response.body() != null ? response.body().string() : "";
                     throw httpError(endpoint, "message/stream", response.code(), body);

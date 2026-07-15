@@ -13,28 +13,29 @@
 package org.conductoross.conductor.ai.agent;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
-import org.conductoross.conductor.ai.a2a.model.A2AMessage;
-import org.conductoross.conductor.ai.a2a.model.Part;
-import org.conductoross.conductor.ai.model.A2ACallRequest;
+import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Drives the {@code AGENT} (conductor) task branch against the embedded {@link
- * ConductorAgentRuntime}. Non-blocking, mirroring {@link
- * org.conductoross.conductor.ai.a2a.AgentTask}'s A2A branch: a fresh call starts (or, when an
- * {@code executionId} is supplied, resumes) an execution; while the run is not terminal the task
- * stays {@code IN_PROGRESS} and is re-polled at the task's evaluation cadence.
+ * Drives the {@code AGENT} (conductor) task branch directly through Conductor's {@link
+ * WorkflowExecutor}. Non-blocking, mirroring {@link org.conductoross.conductor.ai.a2a.AgentTask}'s
+ * A2A branch: a fresh call starts (or, when an {@code executionId} is supplied, resumes) an
+ * execution; while the run is not terminal the task stays {@code IN_PROGRESS} and is re-polled at
+ * the task's evaluation cadence.
  *
  * <p>Two liveness guards prevent a stuck run from polling forever:
  *
@@ -47,8 +48,8 @@ import lombok.extern.slf4j.Slf4j;
  *       (default 30) the task fails terminally.
  * </ul>
  *
- * <p>When the embedded runtime is absent the branch fails terminally: Conductor agents can only run
- * when the agentspan runtime is embedded ({@code agentspan.embedded=true}).
+ * <p>Agent executions are ordinary Conductor workflows. Keeping the translation here avoids a
+ * dependency from the {@code AGENT} system task back into AgentSpan's service layer.
  */
 @Slf4j
 public class ConductorAgentDelegate {
@@ -56,26 +57,15 @@ public class ConductorAgentDelegate {
     private static final long DEFAULT_MAX_DURATION_SECONDS = 24L * 60 * 60;
     private static final int DEFAULT_MAX_POLL_FAILURES = 30;
 
-    private static final String RUNTIME_ABSENT_MESSAGE =
-            "Conductor agents require the embedded agentspan runtime (agentspan.embedded=true)";
-
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
-    private final Optional<ConductorAgentRuntime> runtime;
 
-    public ConductorAgentDelegate(Optional<ConductorAgentRuntime> runtime) {
-        this.runtime = runtime;
-    }
-
-    /**
-     * Handles {@code start}: fresh-start or resume, then routes the resulting snapshot. The parsed
-     * request is supplied by the caller ({@code AgentTask}) so it is parsed exactly once per call.
-     */
-    public void start(TaskModel task, A2ACallRequest request) {
-        if (runtime.isEmpty()) {
-            fail(task, RUNTIME_ABSENT_MESSAGE, true);
+    /** Handles {@code start}: fresh-start or resume, then routes the resulting snapshot. */
+    public void start(TaskModel task, WorkflowExecutor executor) {
+        if (executor == null) {
+            fail(task, "Conductor agent execution requires a WorkflowExecutor", true);
             return;
         }
-        ConductorAgentRuntime rt = runtime.get();
+        ConductorAgentRequest request = parseRequest(task);
 
         // Record the start time once so execute() can enforce the absolute deadline across
         // restarts and retries (survives in the persisted task output).
@@ -83,69 +73,55 @@ public class ConductorAgentDelegate {
             task.addOutput(ConductorAgentResults.KEY_STARTED_AT, System.currentTimeMillis());
         }
 
-        String prompt = resolvePrompt(request);
         String executionId = StringUtils.trimToNull(request.getExecutionId());
         try {
             ConductorAgentExecution execution;
             if (executionId != null) {
                 // Resume path: feed the caller's message back into a waiting execution as the
-                // pending tool/human result, then re-read the resulting snapshot. A blank prompt
-                // is a permanent bad input — fail terminally rather than letting Map.of() NPE and
-                // get misclassified as a retryable failure.
-                if (StringUtils.isBlank(prompt)) {
-                    fail(task, "AGENT (conductor) requires 'text' or 'prompt'", true);
-                    return;
-                }
-                rt.respond(executionId, Map.of("result", prompt));
-                execution = rt.getStatus(executionId);
+                // pending tool/human result, then re-read the resulting snapshot.
+                respond(executor, executionId, Map.of("result", request.getPrompt()));
+                execution = getStatus(executor, executionId);
             } else {
-                // Fresh start: agentName and a prompt are both required.
-                if (StringUtils.isBlank(request.getAgentName())) {
-                    fail(task, "AGENT (conductor) requires 'agentName'", true);
+                // Fresh start: name and a prompt are both required.
+                if (StringUtils.isBlank(request.getName())) {
+                    fail(task, "AGENT (conductor) requires 'name'", true);
                     return;
                 }
-                if (StringUtils.isBlank(prompt)) {
-                    fail(task, "AGENT (conductor) requires 'text' or 'prompt'", true);
+                if (StringUtils.isBlank(request.getPrompt())) {
+                    fail(task, "AGENT (conductor) requires 'prompt'", true);
                     return;
                 }
-                ConductorAgentStartRequest startRequest =
-                        ConductorAgentStartRequest.builder()
-                                .agentName(request.getAgentName())
-                                .agentVersion(request.getAgentVersion())
-                                .prompt(prompt)
-                                .context(request.getContext())
-                                .sessionId(request.getSessionId())
-                                .runId(request.getRunId())
-                                .idempotencyKey(idempotencyKey(task))
+                // request IS an AgentStartRequest — forward it as-is (agentConfig, media,
+                // framework, rawConfig, skillRef, timeoutSeconds, staticPlan, ... all carry
+                // through); only the idempotency key may need the deterministic fallback.
+                request.setIdempotencyKey(
+                        StringUtils.firstNonBlank(
+                                request.getIdempotencyKey(), idempotencyKey(task)));
+                AgentStartResponse response = executor.startAgentExecution(request);
+                execution =
+                        ConductorAgentExecution.builder()
+                                .executionId(response.getExecutionId())
+                                .agentName(response.getAgentName())
+                                .state(ConductorAgentState.RUNNING)
                                 .build();
-                execution = rt.start(startRequest);
             }
             applyExecution(task, execution);
-        } catch (NonRetryableAgentException | NonRetryableException e) {
-            // Permanent runtime error (unknown agent, malformed request, nothing pending to resume)
-            // — retrying cannot fix it, so fail terminally rather than retryable.
+        } catch (NonRetryableException e) {
             fail(task, e.getMessage(), true);
         } catch (Exception e) {
-            // Runtime call failures are transient — let the task retry. The retry reuses the same
-            // deterministic idempotency key, from which the runtime derives a deterministic
-            // workflow
-            // id; because that id is the execution store's primary key, a re-issued start resolves
-            // to
-            // the same execution instead of duplicating the agent run.
+            // Executor call failures are transient — let the task retry with the same
+            // deterministic idempotency key so a re-issued start is deduplicated.
             fail(task, "Conductor agent call failed: " + e.getMessage(), false);
         }
     }
 
-    /**
-     * Handles {@code execute}: polls the run and applies the snapshot. The parsed request is
-     * supplied by the caller ({@code AgentTask}) so it is parsed exactly once per call.
-     */
-    public boolean execute(TaskModel task, A2ACallRequest request) {
-        if (runtime.isEmpty()) {
-            fail(task, RUNTIME_ABSENT_MESSAGE, true);
+    /** Handles {@code execute}: polls the run and applies the snapshot. */
+    public boolean execute(TaskModel task, WorkflowExecutor executor) {
+        if (executor == null) {
+            fail(task, "Conductor agent execution requires a WorkflowExecutor", true);
             return true;
         }
-        ConductorAgentRuntime rt = runtime.get();
+        ConductorAgentRequest request = parseRequest(task);
         String executionId =
                 asString(task.getOutputData().get(ConductorAgentResults.KEY_EXECUTION_ID));
         if (StringUtils.isBlank(executionId)) {
@@ -154,6 +130,7 @@ public class ConductorAgentDelegate {
         }
         // Liveness guard 1: absolute deadline.
         if (deadlineExceeded(task, request)) {
+            terminateChildBestEffort(executor, executionId, "AGENT exceeded max duration");
             fail(
                     task,
                     "AGENT exceeded max duration of "
@@ -163,17 +140,16 @@ public class ConductorAgentDelegate {
             return true;
         }
         try {
-            ConductorAgentExecution execution = rt.getStatus(executionId);
+            ConductorAgentExecution execution = getStatus(executor, executionId);
             task.addOutput(ConductorAgentResults.KEY_POLL_FAILURES, 0); // reset on success
             applyExecution(task, execution);
             // Still working -> stay IN_PROGRESS so the engine re-polls.
             return task.getStatus() != TaskModel.Status.IN_PROGRESS;
-        } catch (NonRetryableAgentException | NonRetryableException e) {
-            // Permanent runtime error — do not count against the transient poll-failure cap.
+        } catch (NonRetryableException e) {
             fail(task, e.getMessage(), true);
             return true;
         } catch (Exception e) {
-            // Liveness guard 2: bound consecutive transient failures so an unreachable runtime
+            // Liveness guard 2: bound consecutive transient failures so an unavailable executor
             // doesn't keep us polling indefinitely (until the deadline).
             int failures =
                     (int)
@@ -185,6 +161,7 @@ public class ConductorAgentDelegate {
             task.addOutput(ConductorAgentResults.KEY_POLL_FAILURES, failures);
             int max = maxPollFailures(request);
             if (failures >= max) {
+                terminateChildBestEffort(executor, executionId, "Conductor agent unreachable");
                 fail(
                         task,
                         "Conductor agent unreachable after "
@@ -204,31 +181,190 @@ public class ConductorAgentDelegate {
         }
     }
 
-    /** Handles {@code cancel}: best-effort propagation to the runtime, then marks CANCELED. */
-    public void cancel(TaskModel task, String reason) {
+    /**
+     * Handles {@code cancel}: best-effort termination of the child execution. Preserves an
+     * already-terminal task status (e.g. {@code TIMED_OUT} set by the decider) — this is a cleanup
+     * hook, not a status transition; only a still-running task becomes {@code CANCELED}.
+     */
+    public void cancel(TaskModel task, WorkflowExecutor executor, String reason) {
         String executionId =
                 asString(task.getOutputData().get(ConductorAgentResults.KEY_EXECUTION_ID));
-        if (runtime.isPresent() && !StringUtils.isBlank(executionId)) {
-            try {
-                runtime.get().cancel(executionId, reason);
-            } catch (Exception e) {
-                log.warn(
-                        "Failed to propagate cancel to conductor agent execution {}: {}",
-                        executionId,
-                        e.getMessage());
+        terminateChildBestEffort(
+                executor, executionId, reason != null ? reason : "Cancelled by user");
+        if (task.getStatus() == null || !task.getStatus().isTerminal()) {
+            task.setStatus(TaskModel.Status.CANCELED);
+        }
+    }
+
+    /**
+     * Best-effort propagation of a cancel/liveness-guard failure to the child conductor agent
+     * execution, so an abandoned Conductor task doesn't leave the agent's own workflow running
+     * indefinitely. Never throws — a failure here is logged and otherwise ignored, since the caller
+     * proceeds to fail/cancel the Conductor task regardless.
+     */
+    private void terminateChildBestEffort(
+            WorkflowExecutor executor, String executionId, String reason) {
+        if (executor == null || StringUtils.isBlank(executionId)) {
+            return;
+        }
+        // Cancel is a cleanup hook and may fire after the child already finished on its own
+        // (e.g. the child hit its own workflow timeout -> TIMED_OUT). Re-terminating would
+        // rewrite that terminal status to TERMINATED; leave finished executions untouched.
+        // The probe is itself best-effort: an unreachable child still gets the terminate call.
+        try {
+            WorkflowModel child = executor.getWorkflow(executionId, false);
+            if (child != null && child.getStatus() != null && child.getStatus().isTerminal()) {
+                return;
+            }
+        } catch (Exception ignored) {
+            // fall through to the terminate attempt
+        }
+        try {
+            executor.terminateWorkflow(executionId, reason);
+        } catch (Exception e) {
+            log.warn(
+                    "Failed to propagate {} to conductor agent execution {}: {}",
+                    reason,
+                    executionId,
+                    e.getMessage());
+        }
+    }
+
+    /** Reads a workflow execution and maps it onto the state exposed by the AGENT task. */
+    private ConductorAgentExecution getStatus(WorkflowExecutor executor, String executionId) {
+        WorkflowModel workflow = executor.getWorkflow(executionId, true);
+        TaskModel waitingTask = findWaitingTask(workflow);
+        ConductorAgentState state = deriveState(workflow.getStatus(), waitingTask != null);
+        Map<String, Object> output =
+                workflow.getStatus().isTerminal() ? workflow.getOutput() : null;
+
+        return ConductorAgentExecution.builder()
+                .executionId(workflow.getWorkflowId())
+                .agentName(workflow.getWorkflowName())
+                .state(state)
+                .output(output)
+                .text(output != null ? asString(output.get("text")) : null)
+                .pendingTool(waitingTask != null ? pendingTool(waitingTask) : null)
+                .reasonForIncompletion(workflow.getReasonForIncompletion())
+                .build();
+    }
+
+    private static ConductorAgentState deriveState(
+            WorkflowModel.Status status, boolean waitingForInput) {
+        if (waitingForInput) {
+            return ConductorAgentState.WAITING;
+        }
+        return switch (status) {
+            case COMPLETED -> ConductorAgentState.COMPLETED;
+            case FAILED, TIMED_OUT -> ConductorAgentState.FAILED;
+            case TERMINATED -> ConductorAgentState.CANCELED;
+            case RUNNING, PAUSED -> ConductorAgentState.RUNNING;
+        };
+    }
+
+    private static TaskModel findWaitingTask(WorkflowModel workflow) {
+        if (workflow.getTasks() == null) {
+            return null;
+        }
+        for (TaskModel candidate : workflow.getTasks()) {
+            if (("HUMAN".equals(candidate.getTaskType())
+                            || "PULL_WORKFLOW_MESSAGES".equals(candidate.getTaskType()))
+                    && candidate.getStatus() == TaskModel.Status.IN_PROGRESS) {
+                return candidate;
             }
         }
-        task.setStatus(TaskModel.Status.CANCELED);
+        return null;
+    }
+
+    private static Map<String, Object> pendingTool(TaskModel waitingTask) {
+        Map<String, Object> pending = new LinkedHashMap<>();
+        pending.put("taskRefName", waitingTask.getReferenceTaskName());
+        Map<String, Object> input = waitingTask.getInputData();
+        if (input != null) {
+            pending.put("tool_name", input.get("tool_name"));
+            pending.put("parameters", input.get("parameters"));
+            List<Map<String, Object>> toolCalls = extractToolCalls(input.get("tool_calls"));
+            if (toolCalls != null) {
+                pending.put("toolCalls", toolCalls);
+            }
+            if (input.get("response_schema") != null) {
+                pending.put("response_schema", input.get("response_schema"));
+            }
+            if (input.get("response_ui_schema") != null) {
+                pending.put("response_ui_schema", input.get("response_ui_schema"));
+            }
+        }
+        return pending;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> extractToolCalls(Object raw) {
+        if (!(raw instanceof List<?> list) || list.isEmpty()) {
+            return null;
+        }
+        List<Map<String, Object>> calls = new ArrayList<>(list.size());
+        for (Object entry : list) {
+            if (!(entry instanceof Map<?, ?> map)) {
+                continue;
+            }
+            Map<String, Object> call = (Map<String, Object>) map;
+            Object name = call.get("name");
+            Object args =
+                    call.containsKey("inputParameters")
+                            ? call.get("inputParameters")
+                            : call.get("input");
+            Map<String, Object> normalized = new LinkedHashMap<>();
+            if (name != null) {
+                normalized.put("name", name);
+            }
+            if (args != null) {
+                normalized.put("args", args);
+            }
+            if (!normalized.isEmpty()) {
+                calls.add(normalized);
+            }
+        }
+        return calls.isEmpty() ? null : calls;
+    }
+
+    /** Completes the pending HUMAN task with the caller's response. */
+    private static void respond(
+            WorkflowExecutor executor, String executionId, Map<String, Object> output) {
+        WorkflowModel workflow = executor.getWorkflow(executionId, true);
+        TaskModel pendingTask = null;
+        for (TaskModel candidate : workflow.getTasks()) {
+            if ("HUMAN".equals(candidate.getTaskType())
+                    && candidate.getStatus() == TaskModel.Status.IN_PROGRESS) {
+                pendingTask = candidate;
+                break;
+            }
+        }
+        if (pendingTask == null) {
+            throw new IllegalStateException(
+                    "No pending HUMAN task found in execution " + executionId);
+        }
+
+        TaskResult taskResult = new TaskResult();
+        taskResult.setTaskId(pendingTask.getTaskId());
+        taskResult.setWorkflowInstanceId(executionId);
+        taskResult.setStatus(TaskResult.Status.COMPLETED);
+        Map<String, Object> outputData = new LinkedHashMap<>();
+        if (pendingTask.getOutputData() != null) {
+            outputData.putAll(pendingTask.getOutputData());
+        }
+        outputData.putAll(output);
+        taskResult.setOutputData(outputData);
+        executor.updateTask(taskResult);
     }
 
     /** Routes an execution snapshot onto this Conductor task's status/output. */
     private void applyExecution(TaskModel task, ConductorAgentExecution execution) {
-        // Identity fields are captured at start(); a later poll snapshot may not repopulate them
-        // (the runtime adapter's getStatus() cannot always resurface agentName/sessionId). Never
-        // overwrite an already-recorded value with null.
-        putIfPresent(task, ConductorAgentResults.KEY_EXECUTION_ID, execution.getExecutionId());
-        putIfPresent(task, ConductorAgentResults.KEY_AGENT_NAME, execution.getAgentName());
-        putIfPresent(task, ConductorAgentResults.KEY_SESSION_ID, execution.getSessionId());
+        task.addOutput(ConductorAgentResults.KEY_EXECUTION_ID, execution.getExecutionId());
+        task.addOutput(ConductorAgentResults.KEY_AGENT_NAME, execution.getAgentName());
+        // A conductor agent execution is an ordinary child workflow; expose it the same way
+        // SUB_WORKFLOW does so the UI's existing "open sub-workflow" affordance also opens the
+        // agent's execution.
+        task.setSubWorkflowId(execution.getExecutionId());
         ConductorAgentState state =
                 execution.getState() != null ? execution.getState() : ConductorAgentState.RUNNING;
         task.addOutput(ConductorAgentResults.KEY_STATE, state.name());
@@ -271,53 +407,6 @@ public class ConductorAgentDelegate {
     }
 
     /**
-     * Resolves the prompt from the same precedence the A2A branch uses: text carried in an explicit
-     * {@code message}/{@code parts} first, then the convenience {@code text}, then {@code prompt}.
-     */
-    private String resolvePrompt(A2ACallRequest request) {
-        String fromMessage = textFromMessage(request.getMessage());
-        if (StringUtils.isBlank(fromMessage)) {
-            fromMessage = textFromParts(request.getParts());
-        }
-        return StringUtils.firstNonBlank(fromMessage, request.getText(), request.getPrompt());
-    }
-
-    private String textFromMessage(Map<String, Object> message) {
-        if (message == null || message.isEmpty()) {
-            return null;
-        }
-        A2AMessage converted = objectMapper.convertValue(message, A2AMessage.class);
-        return partsText(converted.getParts());
-    }
-
-    private String textFromParts(List<Map<String, Object>> parts) {
-        if (parts == null || parts.isEmpty()) {
-            return null;
-        }
-        List<Part> converted = new ArrayList<>();
-        for (Map<String, Object> raw : parts) {
-            converted.add(objectMapper.convertValue(raw, Part.class));
-        }
-        return partsText(converted);
-    }
-
-    private static String partsText(List<Part> parts) {
-        if (parts == null) {
-            return null;
-        }
-        StringBuilder sb = new StringBuilder();
-        for (Part part : parts) {
-            if (part != null && part.getText() != null) {
-                if (sb.length() > 0) {
-                    sb.append("\n");
-                }
-                sb.append(part.getText());
-            }
-        }
-        return sb.length() == 0 ? null : sb.toString();
-    }
-
-    /**
      * Deterministic, restart-stable idempotency key. Built from identity Conductor preserves across
      * task retries ({@code workflowInstanceId} + {@code referenceTaskName} + {@code iteration}) —
      * NOT {@code taskId}, which changes per retry attempt.
@@ -331,7 +420,7 @@ public class ConductorAgentDelegate {
                 + task.getIteration();
     }
 
-    private boolean deadlineExceeded(TaskModel task, A2ACallRequest request) {
+    private boolean deadlineExceeded(TaskModel task, ConductorAgentRequest request) {
         long startedAt =
                 asLong(
                         task.getOutputData().get(ConductorAgentResults.KEY_STARTED_AT),
@@ -339,16 +428,20 @@ public class ConductorAgentDelegate {
         return System.currentTimeMillis() - startedAt > maxDurationSeconds(request) * 1000L;
     }
 
-    private long maxDurationSeconds(A2ACallRequest request) {
+    private long maxDurationSeconds(ConductorAgentRequest request) {
         return request.getMaxDurationSeconds() != null
                 ? Math.max(1, request.getMaxDurationSeconds())
                 : DEFAULT_MAX_DURATION_SECONDS;
     }
 
-    private int maxPollFailures(A2ACallRequest request) {
+    private int maxPollFailures(ConductorAgentRequest request) {
         return request.getMaxPollFailures() != null
                 ? Math.max(1, request.getMaxPollFailures())
                 : DEFAULT_MAX_POLL_FAILURES;
+    }
+
+    private ConductorAgentRequest parseRequest(TaskModel task) {
+        return objectMapper.convertValue(task.getInputData(), ConductorAgentRequest.class);
     }
 
     private void fail(TaskModel task, String reason, boolean nonRetryable) {
@@ -369,12 +462,5 @@ public class ConductorAgentDelegate {
 
     private static String asString(Object value) {
         return value == null ? null : value.toString();
-    }
-
-    /** Writes an output value only when non-null, so a poll snapshot can't erase a recorded one. */
-    private static void putIfPresent(TaskModel task, String key, Object value) {
-        if (value != null) {
-            task.addOutput(key, value);
-        }
     }
 }
