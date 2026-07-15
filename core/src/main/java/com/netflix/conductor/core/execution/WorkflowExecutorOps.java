@@ -1845,6 +1845,20 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     }
                     startedSystemTasks = true;
                     executionDAOFacade.updateTask(task);
+                    // Synchronous system tasks (e.g. HUMAN) transition their own status inside
+                    // start(...) here in the decide loop, and never reach the
+                    // updateTask(TaskResult)
+                    // hand-off path that notifies the listener. Notify explicitly so status changes
+                    // such as IN_PROGRESS are not silently dropped. See issue #1176.
+                    try {
+                        notifyTaskStatusListener(task);
+                    } catch (Exception e) {
+                        String errorMsg =
+                                String.format(
+                                        "Error while notifying TaskStatusListener: %s for workflow: %s",
+                                        task.getTaskId(), workflow.getWorkflowId());
+                        LOGGER.error(errorMsg, e);
+                    }
                 } else {
                     tasksToBeQueued.add(task);
                 }
@@ -1893,6 +1907,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             WorkflowSystemTask systemTask, WorkflowModel workflow, TaskModel task) {
         Map<String, Object> literalInput = task.getInputData();
         try {
+            task.setInputData(parametersUtils.substituteSecrets(literalInput));
             task.setInputData(parametersUtils.substituteSecrets(literalInput));
             systemTask.start(workflow, task, this);
         } finally {
