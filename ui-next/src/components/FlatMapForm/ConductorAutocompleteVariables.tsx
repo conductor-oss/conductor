@@ -43,7 +43,8 @@ import { customFilterOptions, VARIABLE_REGEX } from "./formOptions";
 type CohercesToNumber = "integer" | "double";
 
 type TypeCohersionNumber = {
-  onChange: (change: number) => void;
+  /** null when clearEmptyNumberAsNull and the field is cleared */
+  onChange: (change: number | null) => void;
   coerceTo: CohercesToNumber;
 };
 type TypeCohersionString = {
@@ -81,6 +82,11 @@ export type ConductorAutocompleteVariablesProps = {
   disabled?: boolean;
   onInputChange?: (val: any) => void;
   onBlur?: (val: string) => void;
+  /**
+   * When true, clearing a numeric field emits null instead of coercing "" → 0.
+   * Opt-in — default preserves historical behavior for non-LLM forms.
+   */
+  clearEmptyNumberAsNull?: boolean;
   renderOption?: (
     props: HTMLAttributes<HTMLLIElement>,
     option: string | number,
@@ -136,6 +142,7 @@ const ConductorAutocompleteVariablesNoContext = ({
   disabled,
   onInputChange,
   onBlur,
+  clearEmptyNumberAsNull = false,
   renderOption,
   getOptionLabel: customGetOptionLabel,
 }: ConductorAutocompleteVariablesProps) => {
@@ -284,23 +291,39 @@ const ConductorAutocompleteVariablesNoContext = ({
       }}
       openOnFocus={openOnFocus}
       autoComplete
-      onChange={(a, b) => {
-        if (!_isNil(b) && b !== value) {
-          if (assertOnChangeNumber(onChange, coerceTo) && !isNaN(b as any)) {
-            onChange(Number(b));
+      onChange={(_event, selectedValue) => {
+        if (selectedValue === value) return;
+
+        // Must run before numeric coercion: "" is not nil and Number("") === 0.
+        if (
+          clearEmptyNumberAsNull &&
+          assertOnChangeNumber(onChange, coerceTo) &&
+          (_isNil(selectedValue) || selectedValue === "")
+        ) {
+          (onChange as (val: number | null) => void)(null);
+          return;
+        }
+
+        if (!_isNil(selectedValue)) {
+          if (
+            assertOnChangeNumber(onChange, coerceTo) &&
+            !isNaN(selectedValue as any)
+          ) {
+            onChange(Number(selectedValue));
           } else if (assertOnChangeString(onChange, coerceTo)) {
-            if (typeof b === "string") {
-              const newValue = b as string;
+            if (typeof selectedValue === "string") {
               const currentValue = value.toString();
               if (currentValue.endsWith("$")) {
-                onChange(replaceLastrDolarWithValue(currentValue, newValue));
+                onChange(
+                  replaceLastrDolarWithValue(currentValue, selectedValue),
+                );
               } else if (VARIABLE_REGEX.test(currentValue)) {
-                onChange(currentValue.replace(VARIABLE_REGEX, newValue));
+                onChange(currentValue.replace(VARIABLE_REGEX, selectedValue));
               } else {
-                onChange(newValue);
+                onChange(selectedValue);
               }
             } else {
-              onChange(b);
+              onChange(selectedValue);
             }
           }
         }
@@ -311,8 +334,12 @@ const ConductorAutocompleteVariablesNoContext = ({
           return;
         }
         if (o !== value) {
-          if (assertOnChangeNumber(onChange, coerceTo) && !isNaN(o as any)) {
-            onChange(Number(o));
+          if (assertOnChangeNumber(onChange, coerceTo)) {
+            if (clearEmptyNumberAsNull && (o === "" || o == null)) {
+              (onChange as (val: number | null) => void)(null);
+            } else if (!isNaN(o as any)) {
+              onChange(Number(o));
+            }
           } else if (assertOnChangeString(onChange, coerceTo)) {
             onChange(String(o));
           } else {
