@@ -29,6 +29,7 @@ import org.conductoross.conductor.ai.a2a.model.TaskState;
 import org.conductoross.conductor.ai.agent.ConductorAgentDelegate;
 import org.conductoross.conductor.ai.model.A2ACallRequest;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -36,6 +37,7 @@ import org.springframework.stereotype.Component;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
+import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
@@ -81,6 +83,7 @@ public class AgentTask extends WorkflowSystemTask {
     private static final long DEFAULT_MAX_DURATION_SECONDS = 24L * 60 * 60;
     private static final int DEFAULT_MAX_POLL_FAILURES = 30;
     private static final String PUSH_INPUT = "pushNotification";
+    private static final String AGENT_TYPE_INPUT = "agentType";
 
     /** Push tokens expire after 24 h. Tasks running longer must use polling instead of push. */
     static final long PUSH_TOKEN_TTL_MS = 24L * 60 * 60 * 1000;
@@ -90,19 +93,38 @@ public class AgentTask extends WorkflowSystemTask {
     private final Environment environment;
     private final ConductorAgentDelegate conductorAgentDelegate;
 
+    /** Convenience constructor (tests / deployments without a workflow message queue). */
     public AgentTask(A2AService a2aService, Environment environment) {
+        this(a2aService, environment, Optional.empty());
+    }
+
+    @Autowired
+    public AgentTask(
+            A2AService a2aService,
+            Environment environment,
+            Optional<WorkflowMessageQueueDAO> workflowMessageQueueDAO) {
         super(TASK_TYPE);
         this.a2aService = a2aService;
         this.environment = environment;
-        this.conductorAgentDelegate = new ConductorAgentDelegate();
+        this.conductorAgentDelegate = new ConductorAgentDelegate(workflowMessageQueueDAO);
         log.info("{} initialized", TASK_TYPE);
     }
 
     @Override
     public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
+        // Parse the input exactly once, inside error handling, then branch on the result: a
+        // malformed input (e.g. a non-numeric agentVersion) is a permanent error and must fail the
+        // task cleanly rather than escaping this system-task entry point.
+        A2ACallRequest request;
+        try {
+            request = parseRequest(task);
+        } catch (Exception e) {
+            fail(task, "Malformed AGENT input: " + e.getMessage(), true);
+            return;
+        }
         // Conductor-agent branch (registered child workflow) — dispatched before the A2A logging
         // scope/metrics, which are specific to remote A2A calls.
-        if (A2AService.isConductorAgentType(parseRequest(task).getAgentType())) {
+        if (A2AService.isConductorAgentType(request.getAgentType())) {
             conductorAgentDelegate.start(task, executor);
             return;
         }
@@ -111,7 +133,6 @@ public class AgentTask extends WorkflowSystemTask {
                         A2ALogging.WORKFLOW_ID, task.getWorkflowInstanceId(),
                         A2ALogging.TASK_ID, task.getTaskId(),
                         A2ALogging.REF, task.getReferenceTaskName())) {
-            A2ACallRequest request = parseRequest(task);
             if (!A2AService.isA2aAgentType(request.getAgentType())) {
                 fail(
                         task,
@@ -174,7 +195,16 @@ public class AgentTask extends WorkflowSystemTask {
         // async executor's pollCount bookkeeping doesn't apply — track it here so operators can see
         // how many times the run has been polled (mirrors the async system-task contract).
         task.incrementPollCount();
-        if (A2AService.isConductorAgentType(parseRequest(task).getAgentType())) {
+        // Single guarded parse, mirroring start(): malformed input fails terminally, not by an
+        // exception escaping the decider's execute() call.
+        A2ACallRequest request;
+        try {
+            request = parseRequest(task);
+        } catch (Exception e) {
+            fail(task, "Malformed AGENT input: " + e.getMessage(), true);
+            return true;
+        }
+        if (A2AService.isConductorAgentType(request.getAgentType())) {
             return conductorAgentDelegate.execute(task, executor);
         }
         String agentTaskId = asString(task.getOutputData().get(A2AResults.KEY_TASK_ID));
@@ -184,7 +214,6 @@ public class AgentTask extends WorkflowSystemTask {
                         A2ALogging.TASK_ID, task.getTaskId(),
                         A2ALogging.REF, task.getReferenceTaskName())) {
             scope.add(A2ALogging.REMOTE_TASK_ID, agentTaskId);
-            A2ACallRequest request = parseRequest(task);
             if (StringUtils.isBlank(agentTaskId) || StringUtils.isBlank(request.getAgentUrl())) {
                 fail(task, "No remote A2A task to poll", true);
                 return true;
@@ -250,12 +279,27 @@ public class AgentTask extends WorkflowSystemTask {
 
     @Override
     public void cancel(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
-        if (A2AService.isConductorAgentType(parseRequest(task).getAgentType())) {
+        // cancel() is a cleanup hook and must never throw — a malformed input still results in a
+        // canceled task; there is just no parsed request to propagate a remote cancel with.
+        A2ACallRequest request;
+        try {
+            request = parseRequest(task);
+        } catch (Exception e) {
+            log.warn(
+                    "Malformed AGENT input on cancel of task {}: {}",
+                    task.getTaskId(),
+                    e.getMessage());
+            if (task.getStatus() == null || !task.getStatus().isTerminal()) {
+                task.setStatus(TaskModel.Status.CANCELED);
+            }
+            return;
+        }
+        if (A2AService.isConductorAgentType(request.getAgentType())) {
             conductorAgentDelegate.cancel(task, executor, cancelReason(task));
             return;
         }
         String agentTaskId = asString(task.getOutputData().get(A2AResults.KEY_TASK_ID));
-        cancelRemoteBestEffort(parseRequest(task), agentTaskId, cancelReason(task));
+        cancelRemoteBestEffort(request, agentTaskId, cancelReason(task));
         // Preserve an already-terminal status (e.g. TIMED_OUT from the decider) — cancel() here is
         // a cleanup hook, not a status transition. Only a still-running task becomes CANCELED.
         if (task.getStatus() == null || !task.getStatus().isTerminal()) {
@@ -301,17 +345,26 @@ public class AgentTask extends WorkflowSystemTask {
      */
     @Override
     public Optional<Long> getEvaluationOffset(TaskModel task, long maxOffset) {
-        // Conductor-agent branch polls the child workflow at the normal cadence (no push mode).
-        if (A2AService.isConductorAgentType(parseRequest(task).getAgentType())) {
+        // This is the engine's cadence hook, invoked on every decider sweep: it must never throw
+        // and must not pay a full Jackson conversion just to branch. The agentType dispatch reads
+        // the raw input key directly; any parse failure inside the interval helpers falls back to
+        // the default cadence (the entry points surface the malformed input as a task failure).
+        try {
+            // Conductor-agent branch polls the child workflow at the normal cadence (no push mode).
+            Object agentType = task.getInputData().get(AGENT_TYPE_INPUT);
+            if (A2AService.isConductorAgentType(agentType != null ? agentType.toString() : null)) {
+                return Optional.of(pollInterval(task));
+            }
+            // In push mode the agent's webhook completes the task quickly; we still poll at a slow
+            // backstop interval so a lost/never-delivered webhook can't hang the task forever
+            // (durability over a marginal efficiency gain). Otherwise poll at the normal cadence.
+            if (pushEnabled(task)) {
+                return Optional.of(pushBackstopSeconds(task));
+            }
             return Optional.of(pollInterval(task));
+        } catch (Exception e) {
+            return Optional.of(DEFAULT_POLL_SECONDS);
         }
-        // In push mode the agent's webhook completes the task quickly; we still poll at a slow
-        // backstop interval so a lost/never-delivered webhook can't hang the task forever
-        // (durability over a marginal efficiency gain). Otherwise poll at the normal cadence.
-        if (pushEnabled(task)) {
-            return Optional.of(pushBackstopSeconds(task));
-        }
-        return Optional.of(pollInterval(task));
     }
 
     /**

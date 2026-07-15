@@ -15,11 +15,15 @@ package org.conductoross.conductor.ai.agent;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.conductoross.conductor.ai.a2a.A2AService;
 import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.model.WorkflowMessage;
+import com.netflix.conductor.core.exception.NotFoundException;
+import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -284,6 +288,176 @@ class ConductorAgentDelegateTest {
         assertTrue(A2AService.isA2aAgentType(null));
         assertTrue(A2AService.isA2aAgentType("a2a"));
         assertFalse(A2AService.isA2aAgentType("conductor"));
+    }
+
+    // ── Review-fix regression coverage ─────────────────────────────────────────────
+
+    // Resume with a blank prompt must fail terminally before respond() is attempted — a null
+    // prompt would otherwise NPE inside Map.of and be misclassified as a retryable failure.
+    @Test
+    void start_withExecutionIdBlankPromptFailsTerminally() {
+        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
+        Map<String, Object> input = new HashMap<>();
+        input.put("agentType", "conductor");
+        input.put("executionId", "exec-1");
+        TaskModel task = taskModel(input);
+
+        delegate.start(task, executor);
+
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertEquals("AGENT (conductor) requires 'prompt'", task.getReasonForIncompletion());
+        assertNull(executor.lastTaskResult, "respond() must never be reached");
+    }
+
+    // An unknown agent (NotFoundException from startAgentExecution) is permanent, not retried.
+    @Test
+    void start_unknownAgentFailsTerminally() {
+        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
+        executor.startException = new NotFoundException("Agent not found: typo");
+        TaskModel task = taskModel(conductorInput());
+
+        delegate.start(task, executor);
+
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertEquals("Agent not found: typo", task.getReasonForIncompletion());
+    }
+
+    // Resuming an execution with nothing pending is permanent, not retried.
+    @Test
+    void start_resumeWithNothingPendingFailsTerminally() {
+        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
+        executor.workflow = workflow(WorkflowModel.Status.RUNNING); // no pending wait task
+        Map<String, Object> input = conductorInput();
+        input.put("executionId", "exec-1");
+        TaskModel task = taskModel(input);
+
+        delegate.start(task, executor);
+
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertTrue(task.getReasonForIncompletion().contains("No pending"));
+    }
+
+    // A purged/unknown execution during polling is permanent — don't burn the poll-failure budget.
+    @Test
+    void execute_missingExecutionFailsTerminally() {
+        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
+        executor.getWorkflowException =
+                new NotFoundException("No such workflow found by id: exec-1");
+        TaskModel task = pollingTask();
+
+        boolean changed = delegate.execute(task, executor);
+
+        assertTrue(changed);
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+    }
+
+    // The agent compiler emits the canonical "result" output key — text must surface from it.
+    @Test
+    void execute_completedTextFallsBackToResultKey() {
+        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
+        executor.workflow = workflow(WorkflowModel.Status.COMPLETED);
+        executor.workflow.setOutput(Map.of("result", "The weather is sunny."));
+        TaskModel task = pollingTask();
+
+        boolean changed = delegate.execute(task, executor);
+
+        assertTrue(changed);
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        assertEquals(
+                "The weather is sunny.", task.getOutputData().get(ConductorAgentResults.KEY_TEXT));
+    }
+
+    // Schema-typed (Map) results stay in output only — no bogus text.
+    @Test
+    void execute_completedStructuredResultLeavesTextUnset() {
+        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
+        executor.workflow = workflow(WorkflowModel.Status.COMPLETED);
+        executor.workflow.setOutput(Map.of("result", Map.of("score", 7)));
+        TaskModel task = pollingTask();
+
+        delegate.execute(task, executor);
+
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        assertNull(task.getOutputData().get(ConductorAgentResults.KEY_TEXT));
+    }
+
+    // Resuming a PULL_WORKFLOW_MESSAGES wait delivers through the workflow message queue and
+    // re-decides — it must not force-complete the task via updateTask.
+    @Test
+    void start_resumePullWaitDeliversViaMessageQueue() {
+        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
+        WorkflowModel waiting = workflow(WorkflowModel.Status.RUNNING);
+        waiting.getTasks().add(waitingPullTask());
+        executor.workflow = waiting;
+
+        RecordingMessageQueue queue = new RecordingMessageQueue();
+        ConductorAgentDelegate wmqDelegate = new ConductorAgentDelegate(Optional.of(queue));
+
+        Map<String, Object> input = conductorInput();
+        input.put("executionId", "exec-1");
+        TaskModel task = taskModel(input);
+
+        wmqDelegate.start(task, executor);
+
+        assertEquals("exec-1", queue.lastWorkflowId);
+        assertEquals(Map.of("result", "plan my trip"), queue.lastMessage.getPayload());
+        assertEquals("exec-1", executor.lastDecidedWorkflowId);
+        assertNull(executor.lastTaskResult, "a pull wait must not be completed via updateTask");
+        // The re-read snapshot still shows the wait -> the task completes with waiting=true.
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        assertEquals(Boolean.TRUE, task.getOutputData().get(ConductorAgentResults.KEY_WAITING));
+    }
+
+    // Without the message queue, a pull wait fails terminally with a pointer to the queue API.
+    @Test
+    void start_resumePullWaitWithoutQueueFailsTerminally() {
+        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
+        WorkflowModel waiting = workflow(WorkflowModel.Status.RUNNING);
+        waiting.getTasks().add(waitingPullTask());
+        executor.workflow = waiting;
+
+        Map<String, Object> input = conductorInput();
+        input.put("executionId", "exec-1");
+        TaskModel task = taskModel(input);
+
+        delegate.start(task, executor); // default delegate: no queue configured
+
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertTrue(task.getReasonForIncompletion().contains("workflow message queue"));
+    }
+
+    private static TaskModel waitingPullTask() {
+        TaskModel pull = new TaskModel();
+        pull.setTaskId("pull-1");
+        pull.setTaskType("PULL_WORKFLOW_MESSAGES");
+        pull.setReferenceTaskName("wait_for_message");
+        pull.setStatus(TaskModel.Status.IN_PROGRESS);
+        return pull;
+    }
+
+    /** Hand-written recording queue — the conductor-agent analogue of FakeWorkflowExecutor. */
+    private static final class RecordingMessageQueue implements WorkflowMessageQueueDAO {
+        String lastWorkflowId;
+        WorkflowMessage lastMessage;
+
+        @Override
+        public void push(String workflowId, WorkflowMessage message) {
+            this.lastWorkflowId = workflowId;
+            this.lastMessage = message;
+        }
+
+        @Override
+        public List<WorkflowMessage> pop(String workflowId, int maxCount) {
+            return List.of();
+        }
+
+        @Override
+        public long size(String workflowId) {
+            return 0;
+        }
+
+        @Override
+        public void delete(String workflowId) {}
     }
 
     private static TaskModel pollingTask() {

@@ -26,6 +26,7 @@ import org.conductoross.conductor.ai.agentspan.runtime.compiler.MultiAgentCompil
 import org.conductoross.conductor.ai.agentspan.runtime.normalizer.NormalizerRegistry;
 import org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowClassifiers;
 import org.conductoross.conductor.common.metadata.agent.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -37,6 +38,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.model.WorkflowMessage;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
@@ -44,6 +46,7 @@ import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.MetadataService;
 import com.netflix.conductor.service.TaskService;
@@ -73,6 +76,15 @@ public class AgentService {
     private final AgentStreamRegistry streamRegistry;
     private final SkillRegistryService skillRegistryService;
     private final MetadataService metadataService;
+
+    /**
+     * Delivery channel for answering a PULL_WORKFLOW_MESSAGES wait via {@link #respond}. Optional
+     * ({@code required=false}) because the workflow message queue is a conditionally-enabled
+     * feature; kept out of the required-args constructor so existing construction sites and test
+     * harnesses are unaffected. Package-private for tests.
+     */
+    @Autowired(required = false)
+    WorkflowMessageQueueDAO workflowMessageQueueDAO;
 
     /**
      * Compile an agent config into a WorkflowDef and return it. Supports both native AgentConfig
@@ -1186,11 +1198,14 @@ public class AgentService {
     public void respond(String executionId, Map<String, Object> output) {
         log.info("Responding to execution {}: {}", executionId, output);
 
-        // Find the pending task (HUMAN type, IN_PROGRESS status)
+        // Find the pending wait (HUMAN or PULL_WORKFLOW_MESSAGES, IN_PROGRESS) — the same task
+        // types getStatus() reports isWaiting=true for, so every reported wait is answerable.
         Workflow workflow = workflowService.getExecutionStatus(executionId, true);
         Task pendingTask = null;
         for (Task task : workflow.getTasks()) {
-            if ("HUMAN".equals(task.getTaskType()) && task.getStatus() == Task.Status.IN_PROGRESS) {
+            if (("HUMAN".equals(task.getTaskType())
+                            || "PULL_WORKFLOW_MESSAGES".equals(task.getTaskType()))
+                    && task.getStatus() == Task.Status.IN_PROGRESS) {
                 pendingTask = task;
                 break;
             }
@@ -1198,7 +1213,35 @@ public class AgentService {
 
         if (pendingTask == null) {
             throw new IllegalStateException(
-                    "No pending HUMAN task found in execution " + executionId);
+                    "No pending HUMAN or PULL_WORKFLOW_MESSAGES task found in execution "
+                            + executionId);
+        }
+
+        // A PULL_WORKFLOW_MESSAGES wait pops its input from the workflow message queue — deliver
+        // there (mirroring WorkflowMessageQueueResource) and re-decide to wake the waiting task.
+        if ("PULL_WORKFLOW_MESSAGES".equals(pendingTask.getTaskType())) {
+            if (workflowMessageQueueDAO == null) {
+                throw new IllegalStateException(
+                        "Execution "
+                                + executionId
+                                + " is waiting on PULL_WORKFLOW_MESSAGES, but the workflow message"
+                                + " queue is not enabled — deliver the message via POST"
+                                + " /api/workflow/{workflowId}/messages on a deployment with"
+                                + " conductor.workflow-message-queue.enabled=true");
+            }
+            workflowMessageQueueDAO.push(
+                    executionId,
+                    new WorkflowMessage(
+                            UUID.randomUUID().toString(),
+                            executionId,
+                            output,
+                            Instant.now().toString()));
+            workflowExecutor.decide(executionId);
+            log.info(
+                    "Delivered message to PULL_WORKFLOW_MESSAGES task {} in execution {}",
+                    pendingTask.getReferenceTaskName(),
+                    executionId);
+            return;
         }
 
         // Update the task with the human's response

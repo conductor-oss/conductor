@@ -16,13 +16,18 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.model.WorkflowMessage;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
@@ -59,13 +64,36 @@ public class ConductorAgentDelegate {
 
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
 
+    /**
+     * Delivery channel for answering a {@code PULL_WORKFLOW_MESSAGES} wait. Optional because the
+     * workflow message queue is a conditionally-enabled feature; when absent, resuming a
+     * message-pull wait fails terminally with a pointer to the queue API.
+     */
+    private final Optional<WorkflowMessageQueueDAO> workflowMessageQueueDAO;
+
+    public ConductorAgentDelegate() {
+        this(Optional.empty());
+    }
+
+    public ConductorAgentDelegate(Optional<WorkflowMessageQueueDAO> workflowMessageQueueDAO) {
+        this.workflowMessageQueueDAO = workflowMessageQueueDAO;
+    }
+
     /** Handles {@code start}: fresh-start or resume, then routes the resulting snapshot. */
     public void start(TaskModel task, WorkflowExecutor executor) {
         if (executor == null) {
             fail(task, "Conductor agent execution requires a WorkflowExecutor", true);
             return;
         }
-        ConductorAgentRequest request = parseRequest(task);
+        // Guarded parse: ConductorAgentRequest has fields A2ACallRequest does not, so input that
+        // passed AgentTask's dispatch parse can still fail here — a permanent error either way.
+        ConductorAgentRequest request;
+        try {
+            request = parseRequest(task);
+        } catch (Exception e) {
+            fail(task, "Malformed AGENT input: " + e.getMessage(), true);
+            return;
+        }
 
         // Record the start time once so execute() can enforce the absolute deadline across
         // restarts and retries (survives in the persisted task output).
@@ -78,7 +106,13 @@ public class ConductorAgentDelegate {
             ConductorAgentExecution execution;
             if (executionId != null) {
                 // Resume path: feed the caller's message back into a waiting execution as the
-                // pending tool/human result, then re-read the resulting snapshot.
+                // pending tool/human result, then re-read the resulting snapshot. A blank prompt
+                // is a permanent bad input — fail terminally rather than letting Map.of() NPE and
+                // get misclassified as a retryable failure.
+                if (StringUtils.isBlank(request.getPrompt())) {
+                    fail(task, "AGENT (conductor) requires 'prompt'", true);
+                    return;
+                }
                 respond(executor, executionId, Map.of("result", request.getPrompt()));
                 execution = getStatus(executor, executionId);
             } else {
@@ -106,7 +140,13 @@ public class ConductorAgentDelegate {
                                 .build();
             }
             applyExecution(task, execution);
-        } catch (NonRetryableException e) {
+        } catch (NonRetryableException
+                | NotFoundException
+                | IllegalStateException
+                | IllegalArgumentException e) {
+            // Permanent errors: unknown agent (NotFoundException from startAgentExecution),
+            // invalid request (IllegalArgumentException), or nothing pending to resume
+            // (IllegalStateException). Retrying cannot fix any of these — fail terminally.
             fail(task, e.getMessage(), true);
         } catch (Exception e) {
             // Executor call failures are transient — let the task retry with the same
@@ -121,7 +161,13 @@ public class ConductorAgentDelegate {
             fail(task, "Conductor agent execution requires a WorkflowExecutor", true);
             return true;
         }
-        ConductorAgentRequest request = parseRequest(task);
+        ConductorAgentRequest request;
+        try {
+            request = parseRequest(task);
+        } catch (Exception e) {
+            fail(task, "Malformed AGENT input: " + e.getMessage(), true);
+            return true;
+        }
         String executionId =
                 asString(task.getOutputData().get(ConductorAgentResults.KEY_EXECUTION_ID));
         if (StringUtils.isBlank(executionId)) {
@@ -145,7 +191,12 @@ public class ConductorAgentDelegate {
             applyExecution(task, execution);
             // Still working -> stay IN_PROGRESS so the engine re-polls.
             return task.getStatus() != TaskModel.Status.IN_PROGRESS;
-        } catch (NonRetryableException e) {
+        } catch (NonRetryableException
+                | NotFoundException
+                | IllegalStateException
+                | IllegalArgumentException e) {
+            // Permanent: the execution no longer exists (purged/wrong id) or the request is
+            // invalid — burning the poll-failure budget on retries cannot fix it.
             fail(task, e.getMessage(), true);
             return true;
         } catch (Exception e) {
@@ -243,10 +294,25 @@ public class ConductorAgentDelegate {
                 .agentName(workflow.getWorkflowName())
                 .state(state)
                 .output(output)
-                .text(output != null ? asString(output.get("text")) : null)
+                .text(output != null ? extractText(output) : null)
                 .pendingTool(waitingTask != null ? pendingTool(waitingTask) : null)
                 .reasonForIncompletion(workflow.getReasonForIncompletion())
                 .build();
+    }
+
+    /**
+     * Final text of a completed run. The agent compiler emits the canonical {@code result} output
+     * key (the LLM's final answer — a String for textual runs, a Map for schema-typed ones); an
+     * explicit {@code text} key wins if a definition ever provides one. Structured results stay in
+     * {@code output} only.
+     */
+    private static String extractText(Map<String, Object> output) {
+        Object text = output.get("text");
+        if (text instanceof String s && !s.isBlank()) {
+            return s;
+        }
+        Object result = output.get("result");
+        return result instanceof String s ? s : null;
     }
 
     private static ConductorAgentState deriveState(
@@ -327,13 +393,20 @@ public class ConductorAgentDelegate {
         return calls.isEmpty() ? null : calls;
     }
 
-    /** Completes the pending HUMAN task with the caller's response. */
-    private static void respond(
+    /**
+     * Answers the execution's pending wait through the channel that wait actually consumes: a HUMAN
+     * task is completed directly ({@code updateTask}), while a PULL_WORKFLOW_MESSAGES task pops its
+     * input from the workflow message queue — so the response is pushed there and the workflow is
+     * re-decided to wake the waiting task. This mirrors {@code getStatus()}, which reports {@code
+     * WAITING} for both task types.
+     */
+    private void respond(
             WorkflowExecutor executor, String executionId, Map<String, Object> output) {
         WorkflowModel workflow = executor.getWorkflow(executionId, true);
         TaskModel pendingTask = null;
         for (TaskModel candidate : workflow.getTasks()) {
-            if ("HUMAN".equals(candidate.getTaskType())
+            if (("HUMAN".equals(candidate.getTaskType())
+                            || "PULL_WORKFLOW_MESSAGES".equals(candidate.getTaskType()))
                     && candidate.getStatus() == TaskModel.Status.IN_PROGRESS) {
                 pendingTask = candidate;
                 break;
@@ -341,7 +414,13 @@ public class ConductorAgentDelegate {
         }
         if (pendingTask == null) {
             throw new IllegalStateException(
-                    "No pending HUMAN task found in execution " + executionId);
+                    "No pending HUMAN or PULL_WORKFLOW_MESSAGES task found in execution "
+                            + executionId);
+        }
+
+        if ("PULL_WORKFLOW_MESSAGES".equals(pendingTask.getTaskType())) {
+            deliverWorkflowMessage(executor, executionId, output);
+            return;
         }
 
         TaskResult taskResult = new TaskResult();
@@ -355,6 +434,35 @@ public class ConductorAgentDelegate {
         outputData.putAll(output);
         taskResult.setOutputData(outputData);
         executor.updateTask(taskResult);
+    }
+
+    /**
+     * Delivers the response to a PULL_WORKFLOW_MESSAGES wait via the workflow message queue
+     * (mirroring {@code WorkflowMessageQueueResource}), then re-decides the workflow so the waiting
+     * task pops the message immediately instead of on its next poll.
+     */
+    private void deliverWorkflowMessage(
+            WorkflowExecutor executor, String executionId, Map<String, Object> payload) {
+        WorkflowMessageQueueDAO queue =
+                workflowMessageQueueDAO.orElseThrow(
+                        () ->
+                                new IllegalStateException(
+                                        "Execution "
+                                                + executionId
+                                                + " is waiting on PULL_WORKFLOW_MESSAGES, but the"
+                                                + " workflow message queue is not enabled — deliver"
+                                                + " the message via POST"
+                                                + " /api/workflow/{workflowId}/messages on a"
+                                                + " deployment with"
+                                                + " conductor.workflow-message-queue.enabled=true"));
+        queue.push(
+                executionId,
+                new WorkflowMessage(
+                        UUID.randomUUID().toString(),
+                        executionId,
+                        payload,
+                        java.time.Instant.now().toString()));
+        executor.decide(executionId);
     }
 
     /** Routes an execution snapshot onto this Conductor task's status/output. */

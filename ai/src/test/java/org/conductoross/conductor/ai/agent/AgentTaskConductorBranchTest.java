@@ -105,10 +105,10 @@ class AgentTaskConductorBranchTest {
     void start_malformedInput_failsTerminallyWithoutThrowing() {
         TaskModel model = taskModel(malformedInput());
 
-        agentTask.start(null, model, null); // must not throw
+        agentTask.start(null, model, executor); // must not throw
 
         assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, model.getStatus());
-        assertNull(runtime.lastStartRequest, "malformed input must not reach the delegate");
+        assertNull(executor.lastStartRequest, "malformed input must not reach the delegate");
     }
 
     // execute: malformed input must not escape the entry point; the task fails terminally.
@@ -134,10 +134,11 @@ class AgentTaskConductorBranchTest {
     void cancel_malformedInput_marksCanceledWithoutThrowing() {
         TaskModel model = taskModel(malformedInput());
 
-        agentTask.cancel(null, model, null); // must not throw
+        agentTask.cancel(null, model, executor); // must not throw
 
         assertEquals(TaskModel.Status.CANCELED, model.getStatus());
-        assertNull(runtime.lastCancelExecutionId, "malformed input must not reach the delegate");
+        assertNull(
+                executor.lastTerminatedExecutionId, "malformed input must not reach the delegate");
     }
 
     // start: conductor -> delegate.start (the fake records the start request).

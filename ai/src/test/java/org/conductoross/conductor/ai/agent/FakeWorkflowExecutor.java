@@ -38,20 +38,29 @@ class FakeWorkflowExecutor implements WorkflowExecutor {
     WorkflowModel workflowAfterUpdate;
     boolean throwOnGetWorkflow;
     boolean throwOnTerminate;
+    RuntimeException startException;
+    RuntimeException getWorkflowException;
 
     AgentStartRequest lastStartRequest;
     TaskResult lastTaskResult;
     String lastTerminatedExecutionId;
     String lastTerminationReason;
+    String lastDecidedWorkflowId;
 
     @Override
     public AgentStartResponse startAgentExecution(AgentStartRequest request) {
+        if (startException != null) {
+            throw startException;
+        }
         lastStartRequest = request;
         return startResponse;
     }
 
     @Override
     public WorkflowModel getWorkflow(String workflowId, boolean includeTasks) {
+        if (getWorkflowException != null) {
+            throw getWorkflowException;
+        }
         if (throwOnGetWorkflow) {
             throw new RuntimeException("executor unreachable");
         }
@@ -122,7 +131,8 @@ class FakeWorkflowExecutor implements WorkflowExecutor {
 
     @Override
     public WorkflowModel decide(String workflowId) {
-        throw unsupported();
+        lastDecidedWorkflowId = workflowId;
+        return workflow;
     }
 
     @Override
