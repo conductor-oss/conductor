@@ -27,12 +27,14 @@ import org.slf4j.LoggerFactory;
 import com.netflix.conductor.contribs.listener.RestClientManager;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
+import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.WorkflowModel;
 
 @Singleton
 public class StatusChangePublisher implements WorkflowStatusListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StatusChangePublisher.class);
+    private static final String NOTIFICATION_TYPE = "WORKFLOW";
     private static final Integer QDEPTH =
             Integer.parseInt(
                     System.getenv().getOrDefault("ENV_WORKFLOW_NOTIFICATION_QUEUE_SIZE", "50"));
@@ -72,6 +74,10 @@ public class StatusChangePublisher implements WorkflowStatusListener {
                     LOGGER.debug(
                             "Workflow {} publish is successful.",
                             statusChangeNotification.getWorkflowId());
+                    Monitors.recordWebhookPublishSuccess(
+                            NOTIFICATION_TYPE,
+                            workflow.getWorkflowName(),
+                            workflow.getStatus().name());
                     Thread.sleep(5);
                 } catch (Exception e) {
                     if (statusChangeNotification != null) {
@@ -85,6 +91,12 @@ public class StatusChangePublisher implements WorkflowStatusListener {
                         LOGGER.error("Failed to publish workflow: Workflow is NULL");
                     }
                     LOGGER.error("Error on publishing workflow", e);
+                    if (workflow != null) {
+                        Monitors.recordWebhookPublishFailure(
+                                NOTIFICATION_TYPE,
+                                workflow.getWorkflowName(),
+                                e.getClass().getSimpleName());
+                    }
                 }
             }
         }
@@ -102,6 +114,7 @@ public class StatusChangePublisher implements WorkflowStatusListener {
                 (subscribedWorkflowStatuses != null && !subscribedWorkflowStatuses.isEmpty())
                         ? subscribedWorkflowStatuses
                         : Arrays.asList("COMPLETED", "TERMINATED");
+        Monitors.registerWebhookQueueDepthGauge(blockingQueue, NOTIFICATION_TYPE);
         ConsumerThread consumerThread = new ConsumerThread();
         consumerThread.start();
     }
@@ -194,15 +207,14 @@ public class StatusChangePublisher implements WorkflowStatusListener {
                 workflow.getWorkflowId(),
                 workflow.getWorkflowName(),
                 workflow.getStatus());
-        try {
-            blockingQueue.put(workflow);
-        } catch (Exception e) {
-            LOGGER.error(
-                    "Failed to enqueue workflow: Id {} Name {}",
-                    workflow.getWorkflowId(),
-                    workflow.getWorkflowName());
-            LOGGER.error(e.getMessage());
+        if (blockingQueue.offer(workflow)) {
+            return;
         }
+        LOGGER.warn(
+                "Webhook notification queue full, dropping WORKFLOW notification for {} ({})",
+                workflow.getWorkflowId(),
+                workflow.getWorkflowName());
+        Monitors.recordWebhookEnqueueFailure(NOTIFICATION_TYPE, workflow.getWorkflowName());
     }
 
     private void publishStatusChangeNotification(StatusChangeNotification statusChangeNotification)
