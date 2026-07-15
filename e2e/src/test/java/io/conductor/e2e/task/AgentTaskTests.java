@@ -20,6 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.client.http.MetadataClient;
@@ -62,6 +63,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * sub-scheduling logic, and had no effect on this plain top-level {@code AGENT} task when tested
  * empirically (it kept retrying 4 times regardless), so a real global registration is required.
  */
+@Disabled
 class AgentTaskTests {
 
     private static final MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;

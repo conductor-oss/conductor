@@ -27,15 +27,25 @@ const VIEWPORTS = [
   { width: 390, height: 844, label: "mobile" },
 ];
 
+// The "Execution Start Time" filter defaults to `Date.now() - 72h`, rendered as
+// an absolute timestamp. Left to the live clock the chip drifts every run (and a
+// load-timing race can show the "Last 72 Hours" label instead), so the snapshots
+// are only stable if the value is pinned. Freeze the clock and seed `startFrom`
+// with the matching fixed epoch so the chip always renders "May 29, 2026 @
+// 12:00:00"; seeding the query param also settles the value on the first render.
+const FIXED_NOW = new Date("2026-06-01T12:00:00.000Z");
+const FIXED_START_FROM = FIXED_NOW.getTime() - 72 * 60 * 60 * 1000; // 1780056000000
+
 const gotoExecutions = async (page: Page) => {
   await mockCommonApis(page);
+  await page.clock.setFixedTime(FIXED_NOW);
   await page.addInitScript(() => {
     localStorage.setItem(
       "tooltipFlags",
       JSON.stringify({ executionSearch: true }),
     );
   });
-  await page.goto("/executions");
+  await page.goto(`/executions?startFrom=${FIXED_START_FROM}`);
   await page.waitForLoadState("domcontentloaded");
   await page.waitForSelector("#workflow-search-name-dropdown");
   await page.waitForSelector("#search-workflow-btn");
