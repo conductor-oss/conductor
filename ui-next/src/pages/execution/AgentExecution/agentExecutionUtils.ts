@@ -133,11 +133,40 @@ function toMs(value: string | number | undefined | null): number {
   return typeof value === "number" ? value : parseInt(value, 10) || 0;
 }
 
+/** Task statuses Conductor considers terminal failures (no further progress). */
+const FAILED_TASK_STATUSES = new Set([
+  "FAILED",
+  "FAILED_WITH_TERMINAL_ERROR",
+  "TIMED_OUT",
+  "CANCELED",
+]);
+
+/** Task statuses that are still actively progressing (caller shows a spinner). */
+const IN_PROGRESS_TASK_STATUSES = new Set([
+  "IN_PROGRESS",
+  "SCHEDULED",
+  "PENDING",
+]);
+
+/**
+ * Whether a task status represents a terminal failure. Use this instead of
+ * comparing against the literal "FAILED" — Conductor has several terminal
+ * failure statuses (FAILED_WITH_TERMINAL_ERROR, TIMED_OUT, CANCELED) and
+ * treating only "FAILED" as failed leaves the others rendering as running.
+ */
+export function isFailedTaskStatus(status: string): boolean {
+  return FAILED_TASK_STATUSES.has(status);
+}
+
 /** Maps task status to a tri-state success flag: true=completed, false=failed, undefined=in-progress */
-function taskSuccess(status: string): boolean | undefined {
+export function taskSuccess(status: string): boolean | undefined {
   if (status === "COMPLETED") return true;
-  if (status === "FAILED" || status === "TIMED_OUT") return false;
-  return undefined; // IN_PROGRESS → caller shows spinner
+  if (FAILED_TASK_STATUSES.has(status)) return false;
+  if (IN_PROGRESS_TASK_STATUSES.has(status)) return undefined; // caller shows spinner
+  // Any other terminal status (SKIPPED, COMPLETED_WITH_ERRORS, NULL, or an
+  // unknown future status) is treated as not-in-progress so the UI never shows
+  // a perpetual spinner for a task the backend has already finished.
+  return false;
 }
 
 /**
@@ -195,16 +224,24 @@ function buildAllAttempts(
   );
 }
 
-function mapTaskStatus(status: string): AgentStatus {
+export function mapTaskStatus(status: string): AgentStatus {
   switch (status) {
     case "COMPLETED":
       return AgentStatus.COMPLETED;
     case "FAILED":
+    case "FAILED_WITH_TERMINAL_ERROR":
+    case "TIMED_OUT":
+    case "CANCELED":
       return AgentStatus.FAILED;
     case "IN_PROGRESS":
+    case "SCHEDULED":
+    case "PENDING":
       return AgentStatus.RUNNING;
     default:
-      return AgentStatus.RUNNING;
+      // Unknown/other terminal statuses (e.g. SKIPPED, COMPLETED_WITH_ERRORS)
+      // must not fall through to RUNNING — that renders a perpetual "running"
+      // chip + spinner for a task the backend has already finished (issue #4260).
+      return AgentStatus.FAILED;
   }
 }
 
@@ -815,7 +852,7 @@ export function transformWorkflowExecutionToAgentRun(
         const idData = (toolTask.inputData ?? {}) as Record<string, unknown>;
         const od = (toolTask.outputData ?? {}) as Record<string, unknown>;
         const toolName = toolTask.taskType;
-        const failed = toolTask.status === "FAILED";
+        const failed = isFailedTaskStatus(toolTask.status);
         const toolDuration =
           toolTask.endTime && toolTask.startTime
             ? toolTask.endTime - toolTask.startTime
@@ -1038,7 +1075,7 @@ export function transformWorkflowExecutionToAgentRun(
         iterTasks.some((t) => t.status === "IN_PROGRESS");
       const anyFailed =
         subStatuses.includes(AgentStatus.FAILED) ||
-        iterTasks.some((t) => t.status === "FAILED");
+        iterTasks.some((t) => isFailedTaskStatus(t.status));
       const turnStatus = anyRunning
         ? AgentStatus.RUNNING
         : anyFailed
@@ -1257,7 +1294,7 @@ export function transformWorkflowExecutionToAgentRun(
         // Root-level tool worker task (no DO_WHILE iteration suffix)
         const od = (task.outputData ?? {}) as Record<string, unknown>;
         const idData = (task.inputData ?? {}) as Record<string, unknown>;
-        const failed = task.status === "FAILED";
+        const failed = isFailedTaskStatus(task.status);
         const dur =
           task.endTime && task.startTime ? task.endTime - task.startTime : 0;
         const cleanInput = Object.fromEntries(
