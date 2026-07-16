@@ -394,9 +394,15 @@ public class WorkflowResource {
             @RequestParam(value = "sort", required = false) String sort,
             @RequestParam(value = "freeText", defaultValue = "*", required = false) String freeText,
             @RequestParam(value = "query", required = false) String query,
-            @RequestParam(value = "classifier", required = false) String classifier) {
+            @RequestParam(value = "classifier", required = false) String classifier,
+            @RequestParam(value = "topLevelOnly", defaultValue = "false", required = false)
+                    boolean topLevelOnly) {
         return workflowService.searchWorkflows(
-                start, size, sort, freeText, withClassifierFilter(query, classifier));
+                start,
+                size,
+                sort,
+                freeText,
+                withTopLevelFilter(withClassifierFilter(query, classifier), topLevelOnly));
     }
 
     @Operation(
@@ -411,9 +417,15 @@ public class WorkflowResource {
             @RequestParam(value = "sort", required = false) String sort,
             @RequestParam(value = "freeText", defaultValue = "*", required = false) String freeText,
             @RequestParam(value = "query", required = false) String query,
-            @RequestParam(value = "classifier", required = false) String classifier) {
+            @RequestParam(value = "classifier", required = false) String classifier,
+            @RequestParam(value = "topLevelOnly", defaultValue = "false", required = false)
+                    boolean topLevelOnly) {
         return workflowService.searchWorkflowsV2(
-                start, size, sort, freeText, withClassifierFilter(query, classifier));
+                start,
+                size,
+                sort,
+                freeText,
+                withTopLevelFilter(withClassifierFilter(query, classifier), topLevelOnly));
     }
 
     /**
@@ -435,6 +447,20 @@ public class WorkflowResource {
             return query;
         }
         String clause = "classifier IN (" + values + ")";
+        return (query == null || query.isBlank()) ? clause : query + " AND " + clause;
+    }
+
+    /**
+     * Folds the {@code topLevelOnly} request parameter into the structured search query as a {@code
+     * parentWorkflowId = ""} clause, restricting results to executions that were not spawned by
+     * another workflow (sub-workflows and sub-agents index their parent's id). Like the classifier
+     * filter, this keeps the IndexDAO contract unchanged.
+     */
+    private static String withTopLevelFilter(String query, boolean topLevelOnly) {
+        if (!topLevelOnly) {
+            return query;
+        }
+        String clause = "parentWorkflowId=\"\"";
         return (query == null || query.isBlank()) ? clause : query + " AND " + clause;
     }
 

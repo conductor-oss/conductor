@@ -1,0 +1,47 @@
+{
+  "name": "conductor_agent_human_in_loop",
+  "version": 1,
+  "schemaVersion": 2,
+  "description": "Human-in-the-loop resume: an AGENT (conductor) task pauses (WAITING -> COMPLETED with waiting=true and a pendingTool question). A SWITCH on that waiting flag routes to a HUMAN task that collects the answer, then a second AGENT (conductor) task resumes the same run by carrying its executionId.",
+  "tasks": [
+    {
+      "name": "run_agent",
+      "taskReferenceName": "run_agent_ref",
+      "type": "AGENT",
+      "inputParameters": {
+        "agentType": "conductor",
+        "name": "planner",
+        "prompt": "${workflow.input.prompt}"
+      }
+    },
+    {
+      "name": "check_waiting",
+      "taskReferenceName": "check_waiting_ref",
+      "type": "SWITCH",
+      "evaluatorType": "value-param",
+      "expression": "waiting",
+      "inputParameters": { "waiting": "${run_agent_ref.output.waiting}" },
+      "decisionCases": {
+        "true": [
+          {
+            "name": "collect_answer",
+            "taskReferenceName": "collect_answer_ref",
+            "type": "HUMAN"
+          },
+          {
+            "name": "resume_agent",
+            "taskReferenceName": "resume_agent_ref",
+            "type": "AGENT",
+            "inputParameters": {
+              "agentType": "conductor",
+              "name": "planner",
+              "executionId": "${run_agent_ref.output.executionId}",
+              "prompt": "${collect_answer_ref.output.answer}"
+            }
+          }
+        ]
+      },
+      "defaultCase": []
+    }
+  ]
+}

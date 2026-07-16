@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -223,7 +224,7 @@ class AgentTaskTest {
 
     @Test
     void start_streaming_usesStreamAndCompletes() {
-        when(service.streamMessage(anyString(), any(), any(), any()))
+        when(service.streamMessage(anyString(), any(), any(), any(), anyLong()))
                 .thenReturn(SendResult.ofTask(agentTask(TaskState.COMPLETED, "streamed")));
 
         TaskModel model =
@@ -232,11 +233,13 @@ class AgentTaskTest {
 
         assertEquals(TaskModel.Status.COMPLETED, model.getStatus());
         assertEquals("streamed", model.getOutputData().get("text"));
-        verify(service).streamMessage(anyString(), any(), any(), any());
+        verify(service).streamMessage(anyString(), any(), any(), any(), anyLong());
     }
 
     @Test
-    void isAsync_isTrue() {
-        assertTrue(task.isAsync());
+    void isAsync_isFalse() {
+        // AGENT is synchronous: start() kicks off the run and returns; the decider re-invokes
+        // execute() to poll on each sweep at the getEvaluationOffset cadence.
+        assertFalse(task.isAsync());
     }
 }

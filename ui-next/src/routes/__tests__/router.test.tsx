@@ -64,7 +64,11 @@ vi.mock("utils/constants/route", () => ({
   },
   SCHEMAS_URL: { BASE: "/schemas", EDIT: "/schemas/:id/edit" },
   SECRETS_URL: { BASE: "/secrets" },
-  AGENT_DEFINITION_URL: { BASE: "/agents" },
+  AGENT_DEFINITION_URL: {
+    BASE: "/agents",
+    NEW: "/agents/new",
+    NAME_VERSION: "/agents/:name/:version?",
+  },
   AGENT_EXECUTIONS_URL: {
     BASE: "/agentExecutions",
     ID_TASK_ID: "/agentExecutions/:id/:taskId?",
@@ -140,7 +144,9 @@ vi.mock("pages/tags/TagsDashboard", () => ({
   default: () => ({ type: "TagsDashboard" }),
 }));
 vi.mock("pages/agent", () => ({
+  AgentDefinition: () => ({ type: "AgentDefinition" }),
   AgentDefinitions: () => ({ type: "AgentDefinitions" }),
+  CreateAgentGuide: () => ({ type: "CreateAgentGuide" }),
   AgentExecutions: () => ({ type: "AgentExecutions" }),
   Skills: () => ({ type: "Skills" }),
   Secrets: () => ({ type: "Secrets" }),
@@ -239,6 +245,8 @@ describe("router (OSS)", () => {
   describe("AgentSpan gating (AGENTSPAN_ENABLED)", () => {
     const AGENT_PATHS = [
       "/agents",
+      "/agents/new",
+      "/agents/:name/:version?",
       "/agentExecutions",
       "/skills",
       "/agentSecrets",
@@ -256,6 +264,17 @@ describe("router (OSS)", () => {
       );
       const paths = collectPaths(getRoutes());
       AGENT_PATHS.forEach((p) => expect(paths).toContain(p));
+    });
+
+    it("registers the create-agent route before the agent detail route", () => {
+      mockFeatureFlags.isEnabled.mockImplementation(
+        (feature: string) => feature === "AGENTSPAN_ENABLED",
+      );
+      const paths = collectPaths(getRoutes());
+
+      expect(paths.indexOf("/agents/new")).toBeLessThan(
+        paths.indexOf("/agents/:name/:version?"),
+      );
     });
   });
 
