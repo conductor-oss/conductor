@@ -104,6 +104,10 @@ public interface MetadataService {
     void registerWorkflowDef(
             @NotNull(message = "WorkflowDef cannot be null") @Valid WorkflowDef workflowDef);
 
+    Optional<WorkflowDef> findWorkflowDef(
+            @NotEmpty(message = "Workflow name cannot be null or empty") String name,
+            @NotNull(message = "Version cannot be null") Integer version);
+
     /**
      * Validates a {@link WorkflowDef}.
      *

@@ -32,7 +32,7 @@ window.conductor = {
 
   // Embedded AgentSpan agent UI. Default off here; the Conductor server overrides
   // /context.js at runtime with the value of conductor.integrations.ai.enabled.
-  AGENTSPAN_ENABLED: false,
+  AGENTSPAN_ENABLED: true,
 
   // UI Configuration
   PLAYGROUND: false,

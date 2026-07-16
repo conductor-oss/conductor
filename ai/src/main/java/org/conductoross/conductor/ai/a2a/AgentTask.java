@@ -26,6 +26,7 @@ import org.conductoross.conductor.ai.a2a.model.A2ATask;
 import org.conductoross.conductor.ai.a2a.model.Part;
 import org.conductoross.conductor.ai.a2a.model.PushNotificationConfig;
 import org.conductoross.conductor.ai.a2a.model.TaskState;
+import org.conductoross.conductor.ai.agent.ConductorAgentDelegate;
 import org.conductoross.conductor.ai.model.A2ACallRequest;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.springframework.context.annotation.Conditional;
@@ -87,16 +88,24 @@ public class AgentTask extends WorkflowSystemTask {
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
     private final A2AService a2aService;
     private final Environment environment;
+    private final ConductorAgentDelegate conductorAgentDelegate;
 
     public AgentTask(A2AService a2aService, Environment environment) {
         super(TASK_TYPE);
         this.a2aService = a2aService;
         this.environment = environment;
+        this.conductorAgentDelegate = new ConductorAgentDelegate();
         log.info("{} initialized", TASK_TYPE);
     }
 
     @Override
     public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
+        // Conductor-agent branch (registered child workflow) — dispatched before the A2A logging
+        // scope/metrics, which are specific to remote A2A calls.
+        if (A2AService.isConductorAgentType(parseRequest(task).getAgentType())) {
+            conductorAgentDelegate.start(task, executor);
+            return;
+        }
         try (A2ALogging.Scope scope =
                 A2ALogging.of(
                         A2ALogging.WORKFLOW_ID, task.getWorkflowInstanceId(),
@@ -108,7 +117,7 @@ public class AgentTask extends WorkflowSystemTask {
                         task,
                         "Unsupported agentType '"
                                 + request.getAgentType()
-                                + "' (only 'a2a' is supported)",
+                                + "' (supported: 'a2a', 'conductor')",
                         true);
                 return;
             }
@@ -130,7 +139,8 @@ public class AgentTask extends WorkflowSystemTask {
                                     request.getAgentUrl(),
                                     message,
                                     buildConfiguration(request, task, false),
-                                    request.getHeaders());
+                                    request.getHeaders(),
+                                    maxDurationSeconds(request));
                     // A dropped/empty stream must not be reported as a successful completion —
                     // treat it as transient so the task retries (with the same messageId).
                     if (!result.isTask() && isEmptyMessage(result.getMessage())) {
@@ -160,6 +170,13 @@ public class AgentTask extends WorkflowSystemTask {
 
     @Override
     public boolean execute(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
+        // Each decider-driven poll counts as a poll. AGENT is a synchronous system task, so the
+        // async executor's pollCount bookkeeping doesn't apply — track it here so operators can see
+        // how many times the run has been polled (mirrors the async system-task contract).
+        task.incrementPollCount();
+        if (A2AService.isConductorAgentType(parseRequest(task).getAgentType())) {
+            return conductorAgentDelegate.execute(task, executor);
+        }
         String agentTaskId = asString(task.getOutputData().get(A2AResults.KEY_TASK_ID));
         try (A2ALogging.Scope scope =
                 A2ALogging.of(
@@ -175,6 +192,7 @@ public class AgentTask extends WorkflowSystemTask {
             // Liveness guard 1: absolute deadline. Without this a task could poll (or, in push
             // mode, backstop-poll) forever against an agent that never reaches a terminal state.
             if (deadlineExceeded(task, request)) {
+                cancelRemoteBestEffort(request, agentTaskId, "AGENT exceeded max duration");
                 fail(
                         task,
                         "AGENT exceeded max duration of "
@@ -206,6 +224,7 @@ public class AgentTask extends WorkflowSystemTask {
                 task.addOutput(A2AResults.KEY_POLL_FAILURES, failures);
                 int max = maxPollFailures(request);
                 if (failures >= max) {
+                    cancelRemoteBestEffort(request, agentTaskId, "A2A agent unreachable");
                     fail(
                             task,
                             "A2A agent unreachable after "
@@ -231,23 +250,61 @@ public class AgentTask extends WorkflowSystemTask {
 
     @Override
     public void cancel(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
+        if (A2AService.isConductorAgentType(parseRequest(task).getAgentType())) {
+            conductorAgentDelegate.cancel(task, executor, cancelReason(task));
+            return;
+        }
         String agentTaskId = asString(task.getOutputData().get(A2AResults.KEY_TASK_ID));
+        cancelRemoteBestEffort(parseRequest(task), agentTaskId, cancelReason(task));
+        // Preserve an already-terminal status (e.g. TIMED_OUT from the decider) — cancel() here is
+        // a cleanup hook, not a status transition. Only a still-running task becomes CANCELED.
+        if (task.getStatus() == null || !task.getStatus().isTerminal()) {
+            task.setStatus(TaskModel.Status.CANCELED);
+        }
+    }
+
+    /** "timed out" when the engine cancels a terminal task on timeout; otherwise a plain cancel. */
+    private static String cancelReason(TaskModel task) {
+        return task.getStatus() == TaskModel.Status.TIMED_OUT
+                ? "agent task timed out"
+                : "workflow canceled";
+    }
+
+    /**
+     * Best-effort propagation of a cancel/liveness-guard failure to the remote A2A task, so an
+     * abandoned Conductor task doesn't leave the remote agent running indefinitely. Never throws —
+     * a failure here is logged and otherwise ignored, since the caller proceeds to fail/cancel the
+     * Conductor task regardless.
+     */
+    private void cancelRemoteBestEffort(A2ACallRequest request, String agentTaskId, String reason) {
+        if (StringUtils.isBlank(request.getAgentUrl()) || StringUtils.isBlank(agentTaskId)) {
+            return;
+        }
         try {
-            A2ACallRequest request = parseRequest(task);
-            if (!StringUtils.isBlank(request.getAgentUrl()) && !StringUtils.isBlank(agentTaskId)) {
-                a2aService.cancelTask(request.getAgentUrl(), agentTaskId, request.getHeaders());
-            }
+            a2aService.cancelTask(request.getAgentUrl(), agentTaskId, request.getHeaders());
         } catch (Exception e) {
             log.warn(
-                    "Failed to propagate cancel to remote A2A task {}: {}",
+                    "Failed to propagate {} to remote A2A task {}: {}",
+                    reason,
                     agentTaskId,
                     e.getMessage());
         }
-        task.setStatus(TaskModel.Status.CANCELED);
     }
 
+    /**
+     * The interval at which the workflow should be re-swept so this task's {@link #execute} runs
+     * again. Because AGENT is synchronous ({@link #isAsync} is {@code false}), this is consumed by
+     * the decider's {@code ExecutorUtils.computePostpone} to set the DECIDER_QUEUE re-visit delay —
+     * NOT by {@code AsyncSystemTaskExecutor}. {@code start()} kicks off the run and returns
+     * immediately; each subsequent sweep re-invokes {@code execute()} to poll, no thread held
+     * between polls.
+     */
     @Override
     public Optional<Long> getEvaluationOffset(TaskModel task, long maxOffset) {
+        // Conductor-agent branch polls the child workflow at the normal cadence (no push mode).
+        if (A2AService.isConductorAgentType(parseRequest(task).getAgentType())) {
+            return Optional.of(pollInterval(task));
+        }
         // In push mode the agent's webhook completes the task quickly; we still poll at a slow
         // backstop interval so a lost/never-delivered webhook can't hang the task forever
         // (durability over a marginal efficiency gain). Otherwise poll at the normal cadence.
@@ -257,9 +314,16 @@ public class AgentTask extends WorkflowSystemTask {
         return Optional.of(pollInterval(task));
     }
 
+    /**
+     * Synchronous. {@code start()} only kicks off the agent run (like starting a workflow) and
+     * returns without blocking; the decider re-invokes {@code execute()} to poll on each sweep, at
+     * the cadence advertised by {@link #getEvaluationOffset}. This keeps the task off the async
+     * system-task queue while remaining fully non-blocking and crash-safe (state lives in the
+     * persisted task output).
+     */
     @Override
     public boolean isAsync() {
-        return true;
+        return false;
     }
 
     private void applyResult(TaskModel task, SendResult result) {

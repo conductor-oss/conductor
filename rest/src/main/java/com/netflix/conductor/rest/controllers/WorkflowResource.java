@@ -13,6 +13,7 @@
 package com.netflix.conductor.rest.controllers;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -340,8 +341,16 @@ public class WorkflowResource {
             @RequestParam(value = "size", defaultValue = "100", required = false) int size,
             @RequestParam(value = "sort", required = false) String sort,
             @RequestParam(value = "freeText", defaultValue = "*", required = false) String freeText,
-            @RequestParam(value = "query", required = false) String query) {
-        return workflowService.searchWorkflows(start, size, sort, freeText, query);
+            @RequestParam(value = "query", required = false) String query,
+            @RequestParam(value = "classifier", required = false) String classifier,
+            @RequestParam(value = "topLevelOnly", defaultValue = "false", required = false)
+                    boolean topLevelOnly) {
+        return workflowService.searchWorkflows(
+                start,
+                size,
+                sort,
+                freeText,
+                withTopLevelFilter(withClassifierFilter(query, classifier), topLevelOnly));
     }
 
     @Operation(
@@ -355,8 +364,52 @@ public class WorkflowResource {
             @RequestParam(value = "size", defaultValue = "100", required = false) int size,
             @RequestParam(value = "sort", required = false) String sort,
             @RequestParam(value = "freeText", defaultValue = "*", required = false) String freeText,
-            @RequestParam(value = "query", required = false) String query) {
-        return workflowService.searchWorkflowsV2(start, size, sort, freeText, query);
+            @RequestParam(value = "query", required = false) String query,
+            @RequestParam(value = "classifier", required = false) String classifier,
+            @RequestParam(value = "topLevelOnly", defaultValue = "false", required = false)
+                    boolean topLevelOnly) {
+        return workflowService.searchWorkflowsV2(
+                start,
+                size,
+                sort,
+                freeText,
+                withTopLevelFilter(withClassifierFilter(query, classifier), topLevelOnly));
+    }
+
+    /**
+     * Folds an optional classifier filter (comma-separated values, e.g. {@code agent} or {@code
+     * agent,workflow}) into the structured search query as a {@code classifier IN (...)} clause.
+     * This keeps the IndexDAO contract unchanged: every index backend that understands the {@code
+     * classifier} field in a query string automatically supports the request parameter.
+     */
+    private static String withClassifierFilter(String query, String classifier) {
+        if (classifier == null || classifier.isBlank()) {
+            return query;
+        }
+        String values =
+                Arrays.stream(classifier.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .collect(Collectors.joining(","));
+        if (values.isEmpty()) {
+            return query;
+        }
+        String clause = "classifier IN (" + values + ")";
+        return (query == null || query.isBlank()) ? clause : query + " AND " + clause;
+    }
+
+    /**
+     * Folds the {@code topLevelOnly} request parameter into the structured search query as a {@code
+     * parentWorkflowId = ""} clause, restricting results to executions that were not spawned by
+     * another workflow (sub-workflows and sub-agents index their parent's id). Like the classifier
+     * filter, this keeps the IndexDAO contract unchanged.
+     */
+    private static String withTopLevelFilter(String query, boolean topLevelOnly) {
+        if (!topLevelOnly) {
+            return query;
+        }
+        String clause = "parentWorkflowId=\"\"";
+        return (query == null || query.isBlank()) ? clause : query + " AND " + clause;
     }
 
     @Operation(

@@ -13,6 +13,8 @@
 package org.conductoross.conductor.ai.providers.cohere;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 
 import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
@@ -22,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.Media;
+import org.springframework.util.MimeTypeUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -100,6 +104,47 @@ class CohereAITest {
             assertNotNull(response.getResult());
             assertNotNull(response.getResult().getOutput());
             assertFalse(response.getResult().getOutput().getText().isEmpty());
+        }
+
+        @Test
+        void testChatCompletionWithImageMedia() throws Exception {
+            // Live regression for the media fix: a vision model must actually see the
+            // image bytes, forwarded as an image_url data-URI content part. The image
+            // embeds a machine-unguessable token, so a correct transcription can only
+            // come from the image — pre-fix the media was dropped and the model could
+            // not produce it.
+            byte[] png =
+                    Objects.requireNonNull(
+                                    getClass().getResourceAsStream("/media/melon7391.png"),
+                                    "test asset /media/melon7391.png missing")
+                            .readAllBytes();
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("command-a-vision-07-2025");
+            input.setMaxTokens(50);
+
+            UserMessage userMsg =
+                    UserMessage.builder()
+                            .text(
+                                    "Transcribe the exact text shown in the image. Reply with"
+                                            + " only that text and nothing else.")
+                            .media(
+                                    List.of(
+                                            Media.builder()
+                                                    .data(png)
+                                                    .mimeType(MimeTypeUtils.IMAGE_PNG)
+                                                    .build()))
+                            .build();
+
+            var response =
+                    cohereAI.getChatModel()
+                            .call(new Prompt(List.of(userMsg), cohereAI.getChatOptions(input)));
+
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertTrue(
+                    text.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "").contains("MELON7391"),
+                    "vision model must transcribe the embedded token MELON7391; got: " + text);
         }
 
         @Test
