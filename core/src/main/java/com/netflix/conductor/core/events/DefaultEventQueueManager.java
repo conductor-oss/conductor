@@ -19,15 +19,16 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.Lifecycle;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.core.LifecycleAwareComponent;
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.queue.DefaultEventQueueProcessor;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
+import com.netflix.conductor.core.events.scheduler.AdaptiveEventScheduler;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel.Status;
@@ -58,16 +59,31 @@ public class DefaultEventQueueManager extends LifecycleAwareComponent implements
     private final DefaultEventProcessor defaultEventProcessor;
     private final Map<String, ObservableQueue> eventToQueueMap = new ConcurrentHashMap<>();
     private final Map<Status, ObservableQueue> defaultQueues;
+    private final boolean adaptiveSchedulerEnabled;
+    private final AdaptiveEventScheduler adaptiveScheduler;
 
     public DefaultEventQueueManager(
             Map<Status, ObservableQueue> defaultQueues,
             EventHandlerDAO eventHandlerDAO,
             EventQueues eventQueues,
-            DefaultEventProcessor defaultEventProcessor) {
+            DefaultEventProcessor defaultEventProcessor,
+            ConductorProperties properties) {
         this.defaultQueues = defaultQueues;
         this.eventHandlerDAO = eventHandlerDAO;
         this.eventQueues = eventQueues;
         this.defaultEventProcessor = defaultEventProcessor;
+        this.adaptiveSchedulerEnabled = properties.isAdaptiveSchedulerEnabled();
+        if (adaptiveSchedulerEnabled) {
+            // Adaptive path: scheduler owns polling and dispatch; the processor only executes
+            // handler logic on each message handed to it by the worker pool.
+            this.adaptiveScheduler =
+                    new AdaptiveEventScheduler(
+                            AdaptiveEventScheduler.newWorkerExecutor(),
+                            defaultEventProcessor::handle);
+            LOGGER.info("Adaptive event scheduler ENABLED");
+        } else {
+            this.adaptiveScheduler = null;
+        }
     }
 
     /**
@@ -107,10 +123,16 @@ public class DefaultEventQueueManager extends LifecycleAwareComponent implements
                             status);
                     queue.start();
                 });
+        if (adaptiveSchedulerEnabled) {
+            adaptiveScheduler.start();
+        }
     }
 
     @Override
     public void doStop() {
+        if (adaptiveSchedulerEnabled) {
+            adaptiveScheduler.stop();
+        }
         eventToQueueMap.forEach(
                 (event, queue) -> {
                     LOGGER.info("Stop listening for events: {}", event);
@@ -135,28 +157,40 @@ public class DefaultEventQueueManager extends LifecycleAwareComponent implements
                             .map(EventHandler::getEvent)
                             .collect(Collectors.toSet());
 
-            List<ObservableQueue> createdQueues = new LinkedList<>();
+            Map<String, ObservableQueue> createdLanes = new HashMap<>();
             events.forEach(
                     event ->
                             eventToQueueMap.computeIfAbsent(
                                     event,
                                     s -> {
                                         ObservableQueue q = eventQueues.getQueue(event);
-                                        createdQueues.add(q);
+                                        if (q != null) {
+                                            createdLanes.put(event, q);
+                                        }
                                         return q;
                                     }));
 
-            // start listening on all of the created queues
-            createdQueues.stream()
-                    .filter(Objects::nonNull)
-                    .peek(Lifecycle::start)
-                    .forEach(this::listen);
+            // Start the queue lifecycle, then either subscribe (legacy) or register a lane on the
+            // adaptive scheduler. The two paths are mutually exclusive — the scheduler drives
+            // poll/dispatch itself when enabled, so we must not also call observe().subscribe().
+            createdLanes.forEach(
+                    (event, queue) -> {
+                        queue.start();
+                        if (adaptiveSchedulerEnabled) {
+                            adaptiveScheduler.registerLane(event, queue);
+                        } else {
+                            listen(queue);
+                        }
+                    });
 
             Set<String> removed = new HashSet<>(eventToQueueMap.keySet());
             removed.removeAll(events);
             removed.forEach(
                     key -> {
                         ObservableQueue queue = eventToQueueMap.remove(key);
+                        if (adaptiveSchedulerEnabled) {
+                            adaptiveScheduler.deregisterLane(key);
+                        }
                         try {
                             queue.stop();
                         } catch (Exception e) {
