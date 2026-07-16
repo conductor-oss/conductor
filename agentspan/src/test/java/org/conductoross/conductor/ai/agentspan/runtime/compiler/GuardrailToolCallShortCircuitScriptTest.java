@@ -70,7 +70,11 @@ class GuardrailToolCallShortCircuitScriptTest {
     /** Evaluate the guardrail script with the given {@code $} input JSON, return the result Map. */
     private Map<?, ?> evaluate(String inputJson) {
         String wrapped =
-                "var $ = " + inputJson + "; var __r = " + regexGuardrailScript() + "; JSON.stringify(__r);";
+                "var $ = "
+                        + inputJson
+                        + "; var __r = "
+                        + regexGuardrailScript()
+                        + "; JSON.stringify(__r);";
         Value v = graalCtx.eval("js", wrapped);
         try {
             return MAPPER.readValue(v.asString(), Map.class);
@@ -97,7 +101,8 @@ class GuardrailToolCallShortCircuitScriptTest {
         // Genuine final turn with no tool calls and empty content -> guardrail fails as before.
         Map<?, ?> result = evaluate("{\"content\": \"\", \"iteration\": 1, \"toolCalls\": []}");
         assertThat(result.get("passed"))
-                .as("empty final reply with no tool calls must still fail the allow-pattern guardrail")
+                .as(
+                        "empty final reply with no tool calls must still fail the allow-pattern guardrail")
                 .isEqualTo(Boolean.FALSE);
     }
 }

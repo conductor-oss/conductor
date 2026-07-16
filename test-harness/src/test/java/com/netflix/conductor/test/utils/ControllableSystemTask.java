@@ -61,6 +61,7 @@ public class ControllableSystemTask extends WorkflowSystemTask {
 
     /** Wall-clock time at which each attempt's {@link #start} set the task terminal. */
     public volatile long attempt1EndTime;
+
     public volatile long attempt2EndTime;
 
     public ControllableSystemTask() {

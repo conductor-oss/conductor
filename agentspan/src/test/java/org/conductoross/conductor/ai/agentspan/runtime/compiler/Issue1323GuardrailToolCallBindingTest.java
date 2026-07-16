@@ -42,7 +42,8 @@ class Issue1323GuardrailToolCallBindingTest {
 
     @Test
     void compiledOutputGuardrailBindsToolCallsFromLlmOutput() {
-        // The exact guardrail from the incident: non-empty-content ("allow" + \w) with onFail retry.
+        // The exact guardrail from the incident: non-empty-content ("allow" + \w) with onFail
+        // retry.
         GuardrailConfig g =
                 GuardrailConfig.builder()
                         .name("non_empty_output")

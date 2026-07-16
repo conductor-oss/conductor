@@ -31,9 +31,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   <li><b>Turn 1 (tool-call turn):</b> the LLM returns tool calls, so {@code
  *       ${<agent>_llm.output.result}} is {@code []} (empty) while {@code output.toolCalls} is a
  *       non-empty array. A non-empty-content regex guardrail (mode {@code allow}, pattern {@code
- *       \w}, onFail {@code retry}) must NOT fail here - the model is legitimately mid-tool-use.</li>
+ *       \w}, onFail {@code retry}) must NOT fail here - the model is legitimately mid-tool-use.
  *   <li><b>Turn 2 (final turn):</b> the LLM returns real text and no tool calls; the guardrail must
- *       evaluate the content normally.</li>
+ *       evaluate the content normally.
  * </ul>
  *
  * <p>Fix contract asserted here: output guardrails bind {@code toolCalls} from the LLM task output
@@ -105,8 +105,7 @@ class Issue1323GuardrailToolCallMisfireTest {
     @Test
     void finalTurn_withRealContent_guardrailEvaluatesContentNormally_andPasses() {
         // Turn 2: final answer, no tool calls. Content has word chars -> allow guardrail passes.
-        Value result =
-                evaluate("{content: 'The answer is 42.', iteration: 1, toolCalls: []}");
+        Value result = evaluate("{content: 'The answer is 42.', iteration: 1, toolCalls: []}");
 
         assertThat(result.getMember("passed").asBoolean())
                 .as("genuine non-empty final content still passes the allow guardrail")
