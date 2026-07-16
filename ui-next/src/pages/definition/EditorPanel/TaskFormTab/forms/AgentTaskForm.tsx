@@ -75,7 +75,7 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
           </Grid>
           {isConductor ? (
             <>
-              <Grid size={{ xs: 12, md: 9 }}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <ConductorAutocompleteVariables
                   label="Agent name"
                   value={get("inputParameters.name") as string}
@@ -85,13 +85,22 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
                   openOnFocus
                 />
               </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <ConductorAutocompleteVariables
+                  label="Version (optional)"
+                  value={get("inputParameters.version") as number}
+                  coerceTo="integer"
+                  onChange={(v) => set("inputParameters.version", v)}
+                  placeholder="Latest"
+                />
+              </Grid>
               <Grid
-                size={{ xs: 12, md: 3 }}
-                sx={{ display: "flex", alignItems: "center" }}
+                size={{ xs: 12, md: "auto" }}
+                alignSelf="center"
               >
                 <Button
-                  fullWidth
                   disabled={!agentName || agentName.includes("${")}
+                  sx={{ fontSize: "12px" }}
                   onClick={() =>
                     window.open(
                       `${WORKFLOW_DEFINITION_URL.BASE}/${encodeURIComponent(agentName ?? "")}`,
@@ -100,17 +109,8 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
                     )
                   }
                 >
-                  Open agent definition
+                  Open
                 </Button>
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <ConductorAutocompleteVariables
-                  label="Version (optional)"
-                  value={get("inputParameters.version") as number}
-                  coerceTo="integer"
-                  onChange={(v) => set("inputParameters.version", v)}
-                  placeholder="Latest"
-                />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
                 <ConductorAutocompleteVariables
