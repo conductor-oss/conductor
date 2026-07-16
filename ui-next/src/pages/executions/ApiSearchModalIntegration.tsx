@@ -2,6 +2,7 @@ import { ApiSearchModal } from "components/ApiSearchModal";
 import { toCodeT, useParamsToSdk } from "shared/CodeModal/hook";
 import { SupportedDisplayTypes } from "shared/CodeModal/types";
 import { curlHeaders } from "shared/CodeModal/curlHeader";
+import { buildWorkflowSearchCli } from "./cliSearch";
 
 export type BuildQueryOutput = {
   query: string;
@@ -75,6 +76,7 @@ async function searchExecution(
 
 const toCodeMap: toCodeT<BuildQueryOutput> = {
   curl: buildCurlCode,
+  cli: buildWorkflowSearchCli,
   javascript: buildJsCode,
 };
 

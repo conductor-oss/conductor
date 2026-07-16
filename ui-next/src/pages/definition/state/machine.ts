@@ -860,11 +860,15 @@ export const workflowDefinitionMachine = createMachine<
                     {
                       cond: "isSaveAndRunRequest",
                       target: ".saveRunRequest",
-                      actions: ["changeToCodeTab"],
+                      actions: ["changeToCodeTab", "validateWorkflow"],
                     },
                     {
                       target: ".saveRequest",
-                      actions: ["changeToCodeTab", "gtagEventLogger"],
+                      actions: [
+                        "changeToCodeTab",
+                        "validateWorkflow",
+                        "gtagEventLogger",
+                      ],
                     },
                   ],
                   [DefinitionMachineEventTypes.HANDLE_SAVE_AND_RUN]: {

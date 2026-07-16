@@ -67,20 +67,28 @@ const LLMFormFieldsWrapper = ({
             taskWithVariables,
           );
 
-          // Auto-populate temperature if available in the prompt
+          // Auto-populate sampling params when defined on the prompt.
+          // Claude rejects temperature + top_p together — prefer temperature and clear the other.
           if (maybeAvailablePromptName.temperature != null) {
             taskWithSelectedPromptName = updateField(
               `inputParameters.${UiIntegrationsFieldType.TEMPERATURE}`,
               maybeAvailablePromptName.temperature,
               taskWithSelectedPromptName,
             );
-          }
-
-          // Auto-populate topP if available in the prompt
-          if (maybeAvailablePromptName.topP != null) {
+            taskWithSelectedPromptName = updateField(
+              `inputParameters.${UiIntegrationsFieldType.TOP_P}`,
+              null,
+              taskWithSelectedPromptName,
+            );
+          } else if (maybeAvailablePromptName.topP != null) {
             taskWithSelectedPromptName = updateField(
               `inputParameters.${UiIntegrationsFieldType.TOP_P}`,
               maybeAvailablePromptName.topP,
+              taskWithSelectedPromptName,
+            );
+            taskWithSelectedPromptName = updateField(
+              `inputParameters.${UiIntegrationsFieldType.TEMPERATURE}`,
+              null,
               taskWithSelectedPromptName,
             );
           }
@@ -136,20 +144,28 @@ const LLMFormFieldsWrapper = ({
             taskWithVariables,
           );
 
-          // Auto-populate temperature if available in the prompt
+          // Auto-populate sampling params when defined on the prompt.
+          // Claude rejects temperature + top_p together — prefer temperature and clear the other.
           if (maybeAvailablePromptName.temperature != null) {
             taskWithSelectedPromptName = updateField(
               `inputParameters.${UiIntegrationsFieldType.TEMPERATURE}`,
               maybeAvailablePromptName.temperature,
               taskWithSelectedPromptName,
             );
-          }
-
-          // Auto-populate topP if available in the prompt
-          if (maybeAvailablePromptName.topP != null) {
+            taskWithSelectedPromptName = updateField(
+              `inputParameters.${UiIntegrationsFieldType.TOP_P}`,
+              null,
+              taskWithSelectedPromptName,
+            );
+          } else if (maybeAvailablePromptName.topP != null) {
             taskWithSelectedPromptName = updateField(
               `inputParameters.${UiIntegrationsFieldType.TOP_P}`,
               maybeAvailablePromptName.topP,
+              taskWithSelectedPromptName,
+            );
+            taskWithSelectedPromptName = updateField(
+              `inputParameters.${UiIntegrationsFieldType.TEMPERATURE}`,
+              null,
               taskWithSelectedPromptName,
             );
           }

@@ -20,6 +20,8 @@ import java.util.Optional;
 import javax.sql.DataSource;
 
 import org.conductoross.conductor.sqlite.dao.SqliteFileMetadataDAO;
+import org.conductoross.conductor.sqlite.dao.SqliteSkillMetadataDAO;
+import org.conductoross.conductor.sqlite.dao.SqliteSkillPackageDAO;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -205,6 +207,24 @@ public class SqliteConfiguration {
             @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper) {
         return new SqliteFileMetadataDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn({"flywayForPrimaryDb"})
+    @ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
+    public SqliteSkillMetadataDAO sqliteSkillMetadataDAO(
+            @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        return new SqliteSkillMetadataDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn({"flywayForPrimaryDb"})
+    @ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
+    public SqliteSkillPackageDAO sqliteSkillPackageDAO(
+            @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        return new SqliteSkillPackageDAO(retryTemplate, objectMapper, dataSource);
     }
 
     public static class CustomRetryPolicy extends SimpleRetryPolicy {

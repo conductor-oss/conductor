@@ -14,6 +14,7 @@ dependencies {
     testImplementation project(':conductor-http-task')
     testImplementation project(':conductor-scheduler-core')
     testImplementation project(':conductor-ai')
+    testImplementation project(':conductor-agentspan')
 
     testImplementation "org.conductoross:conductor-client:${revConductorClient}"
 
