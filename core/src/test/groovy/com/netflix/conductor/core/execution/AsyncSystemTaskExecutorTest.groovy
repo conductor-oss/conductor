@@ -15,6 +15,7 @@ package com.netflix.conductor.core.execution
 import java.time.Duration
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask
 import com.netflix.conductor.core.config.ConductorProperties
 import com.netflix.conductor.core.dal.ExecutionDAOFacade
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
@@ -159,8 +160,11 @@ class AsyncSystemTaskExecutorTest extends Specification {
         executor.execute(workflowSystemTask, taskId)
 
         then:
-        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        // second load is the late-update guard re-reading the stored task before
+        // persisting a terminal result; stored copy is still non-terminal here
+        2 * executionDAOFacade.getTaskModel(taskId) >>> [task, new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId)]
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        1 * executionDAOFacade.updateTask(task)
         1 * queueDAO.remove(queueName, taskId)
 
         task.status == TaskModel.Status.CANCELED
@@ -275,7 +279,10 @@ class AsyncSystemTaskExecutorTest extends Specification {
         executor.execute(workflowSystemTask, taskId)
 
         then:
-        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        // second load is the late-update guard re-reading the stored task before
+        // persisting the terminal result; stored copy is still non-terminal for
+        // the winning attempt, so the update persists
+        2 * executionDAOFacade.getTaskModel(taskId) >>> [task, new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId)]
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         1 * executionDAOFacade.updateTask(task)
 
@@ -396,6 +403,115 @@ class AsyncSystemTaskExecutorTest extends Specification {
         task.status == TaskModel.Status.IN_PROGRESS
         task.endTime == 0 // verify that endTime is not set
         task.pollCount == 1 // verify that poll count is NOT incremented
+    }
+
+    // ── Issue #1321: extend queue unack window to cover a blocking system task ──
+    //
+    // AsyncSystemTaskExecutor runs systemTask.start() synchronously while the
+    // task row stays SCHEDULED and the queue message's visibility is never
+    // extended. If start() blocks longer than the QueueDAO's unack/redelivery
+    // window, the message is redelivered and a second worker executes the same
+    // task in parallel (duplicate paid LLM_CHAT_COMPLETE calls). The fix must
+    // call queueDAO.setUnackTimeout(queueName, taskId, 1000L * responseTimeoutSeconds)
+    // BEFORE start() when the TaskDef has responseTimeoutSeconds > 0.
+
+    def "SCHEDULED system task with responseTimeoutSeconds > 0 extends queue unack window before start"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        long responseTimeoutSeconds = 60L
+
+        // TaskDef carrying the response timeout; surfaced both via the task's own
+        // WorkflowTask.taskDefinition (task.getTaskDefinition()) and via metadataDAO
+        // so the assertion holds regardless of which source the fix reads from.
+        TaskDef taskDef = new TaskDef()
+        taskDef.setName("taskDefName")
+        taskDef.setResponseTimeoutSeconds(responseTimeoutSeconds)
+        WorkflowTask workflowTask = new WorkflowTask()
+        workflowTask.setName("taskDefName")
+        workflowTask.setTaskDefinition(taskDef)
+
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10)
+        task.setWorkflowTask(workflowTask)
+
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        String queueName = QueueUtils.getQueueName(task)
+        workflowSystemTask.getEvaluationOffset(_, _) >> Optional.empty()
+        metadataDAO.getTaskDef("taskDefName") >> taskDef
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then: "task and workflow are loaded and the unack window is extended before start"
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        1 * queueDAO.setUnackTimeout(queueName, taskId, 1000L * responseTimeoutSeconds)
+
+        then: "only after the unack extension is the (blocking) start invoked"
+        1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.IN_PROGRESS }
+        1 * executionDAOFacade.updateTask(task)
+    }
+
+    def "SCHEDULED system task without a task def does not extend the queue unack window"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        // No WorkflowTask/TaskDef set and metadataDAO returns null -> no responseTimeoutSeconds.
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        String queueName = QueueUtils.getQueueName(task)
+        workflowSystemTask.getEvaluationOffset(_, _) >> Optional.empty()
+        metadataDAO.getTaskDef("taskDefName") >> null
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.IN_PROGRESS }
+        1 * executionDAOFacade.updateTask(task)
+
+        // Behavior unchanged when there is no task def / responseTimeoutSeconds == 0
+        0 * queueDAO.setUnackTimeout(*_)
+    }
+
+    // ── Issue #1322: a late duplicate attempt must not overwrite a terminal task ──
+    //
+    // When a duplicate attempt (queue redelivery during a long-running start(),
+    // worker pause, GC stall) finishes after another attempt already completed the
+    // task, its update would overwrite the outputData/endTime the workflow already
+    // consumed. Before persisting a terminal result, the executor re-reads the
+    // stored task and drops this attempt's update if the stored record is already
+    // terminal.
+
+    def "late completion of a duplicate attempt does not overwrite an already terminal task"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10)
+        // what the winning attempt already persisted while this attempt was still executing
+        TaskModel storedTerminal = new TaskModel(taskType: "type1", status: TaskModel.Status.COMPLETED, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        String queueName = QueueUtils.getQueueName(task)
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        2 * executionDAOFacade.getTaskModel(taskId) >>> [task, storedTerminal]
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.COMPLETED }
+
+        // the late terminal update is dropped: nothing persisted, no re-decide
+        0 * executionDAOFacade.updateTask(_)
+        0 * workflowExecutor.decide(_)
+        // the stale queue message is still cleaned up
+        1 * queueDAO.remove(queueName, taskId)
     }
 
     def "secrets are substituted for execution then input restored"() {

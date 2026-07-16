@@ -428,6 +428,60 @@ public class ExecutionDAOFacadeTest {
         verify(indexDAO, times(1)).asyncAddEventExecution(any());
     }
 
+    // ── Issue #1322 ────────────────────────────────────────────────────
+    //
+    // The late-duplicate terminal-update guard lives in AsyncSystemTaskExecutor
+    // (the only path where duplicate attempts race), NOT here: legitimate engine
+    // flows update terminal tasks with new terminal statuses through this facade
+    // (optional FAILED -> COMPLETED_WITH_ERRORS, sub-workflow retry syncing the
+    // parent task FAILED -> COMPLETED). The tests below pin that this facade
+    // stays last-write-wins for those flows.
+
+    @Test
+    public void testUpdateTaskPersistsWhenStoredTaskIsNonTerminal() {
+        String taskId = UUID.randomUUID().toString();
+
+        TaskModel stored = new TaskModel();
+        stored.setTaskId(taskId);
+        stored.setTaskDefName("task1");
+        stored.setStatus(TaskModel.Status.IN_PROGRESS);
+        when(executionDAO.getTask(taskId)).thenReturn(stored);
+
+        TaskModel update = new TaskModel();
+        update.setTaskId(taskId);
+        update.setTaskDefName("task1");
+        update.setStatus(TaskModel.Status.COMPLETED);
+        update.getOutputData().put("answer", "final");
+
+        executionDAOFacade.updateTask(update);
+
+        // Stored task is non-terminal -> the completing update is persisted.
+        verify(executionDAO, times(1)).updateTask(update);
+    }
+
+    @Test
+    public void testUpdateTaskPersistsRerunResetOfTerminalTask() {
+        String taskId = UUID.randomUUID().toString();
+
+        TaskModel stored = new TaskModel();
+        stored.setTaskId(taskId);
+        stored.setTaskDefName("task1");
+        stored.setStatus(TaskModel.Status.COMPLETED);
+        stored.setEndTime(1000L);
+        when(executionDAO.getTask(taskId)).thenReturn(stored);
+
+        // A rerun resets a terminal task back to a non-terminal status.
+        TaskModel rerun = new TaskModel();
+        rerun.setTaskId(taskId);
+        rerun.setTaskDefName("task1");
+        rerun.setStatus(TaskModel.Status.SCHEDULED);
+
+        executionDAOFacade.updateTask(rerun);
+
+        // Incoming status is non-terminal -> update proceeds as today.
+        verify(executionDAO, times(1)).updateTask(rerun);
+    }
+
     @Test(expected = TerminateWorkflowException.class)
     public void testUpdateTaskThrowsTerminateWorkflowException() {
         TaskModel task = new TaskModel();
