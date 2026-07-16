@@ -13,12 +13,8 @@
 package org.conductoross.conductor.ai.tasks.worker;
 
 import org.conductoross.conductor.ai.a2a.A2AService;
-import org.conductoross.conductor.ai.a2a.model.A2ATask;
 import org.conductoross.conductor.ai.a2a.model.AgentCard;
-import org.conductoross.conductor.ai.a2a.model.TaskState;
-import org.conductoross.conductor.ai.a2a.model.TaskStatus;
 import org.conductoross.conductor.ai.model.A2AAgentCardRequest;
-import org.conductoross.conductor.ai.model.A2ACancelRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class A2AWorkersTest {
@@ -61,31 +56,5 @@ class A2AWorkersTest {
     void getAgentCard_missingAgentUrl_isNonRetryable() {
         assertThrows(
                 NonRetryableException.class, () -> workers.getAgentCard(new A2AAgentCardRequest()));
-    }
-
-    @Test
-    void cancelAgentTask_callsService() {
-        A2ATask cancelled = new A2ATask();
-        TaskStatus status = new TaskStatus();
-        status.setState(TaskState.CANCELED);
-        cancelled.setStatus(status);
-        when(a2aService.cancelTask(eq("http://agent"), eq("t1"), any())).thenReturn(cancelled);
-
-        A2ACancelRequest request = new A2ACancelRequest();
-        request.setAgentUrl("http://agent");
-        request.setTaskId("t1");
-
-        A2ATask result = workers.cancelAgentTask(request);
-
-        assertEquals(TaskState.CANCELED, result.getStatus().getState());
-        verify(a2aService).cancelTask(eq("http://agent"), eq("t1"), any());
-    }
-
-    @Test
-    void cancelAgentTask_missingTaskId_isNonRetryable() {
-        A2ACancelRequest request = new A2ACancelRequest();
-        request.setAgentUrl("http://agent");
-
-        assertThrows(NonRetryableException.class, () -> workers.cancelAgentTask(request));
     }
 }

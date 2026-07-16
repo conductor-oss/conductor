@@ -106,6 +106,23 @@ by registering them with `metadata.a2a.enabled=true` and `conductor.a2a.server.e
 | `28-a2a-llm-pick-skill.json` | Discover an agent, let an LLM pick the prompt, then call it | A2A agent, OpenAI/Anthropic |
 | `29-a2a-client-multi-turn.json` | Client multi-turn: branch on input-required, re-call with the same context | A2A agent |
 
+### Conductor agent (embedded runtime) examples
+
+<!-- TODO: verify against live server -->
+
+Conductor running an agent on its **embedded agentspan runtime** via the `AGENT` task with
+`agentType: "conductor"`. These require the server to run with the embedded agentspan runtime
+enabled (`agentspan.embedded=true`) and at least one agent registered with it (example 33 needs
+two: `planner` and `researcher`). The `AGENT` task is non-blocking — it starts the run and polls
+until it reaches a terminal (or `WAITING`) state.
+
+| File | Workflow name | Description | Requirements |
+|------|---------------|-------------|--------------|
+| `31-conductor-agent-basic.json` | `conductor_agent_basic` | Single agent run to completion (poll mode) | `agentspan.embedded=true`, a registered agent |
+| `32-conductor-agent-human-in-loop.json` | `conductor_agent_human_in_loop` | Waiting run resumed via a `HUMAN` task and `executionId` | `agentspan.embedded=true`, a registered agent |
+| `33-conductor-agent-multi-agent.json` | `conductor_agent_multi_agent` | Two agent branches via `FORK_JOIN` -> `JOIN` | `agentspan.embedded=true`, two registered agents |
+| `34-conductor-agent-cancel.json` | `conductor_agent_cancel` | Start a long agent run, then cancel it (`CANCELED` mapping) | `agentspan.embedded=true`, a registered agent |
+
 ---
 
 ## Quick Start
@@ -477,6 +494,76 @@ curl -X POST 'http://localhost:8080/api/metadata/workflow' \
 curl -X POST 'http://localhost:8080/api/workflow/multi_turn_chain' \
   -H 'Content-Type: application/json' \
   -d '{"topic": "Real-time collaborative document editor"}'
+```
+
+### 31. Conductor Agent (Basic)
+
+```bash
+# Requires agentspan.embedded=true and a registered 'planner' agent
+
+# Register
+curl -X POST 'http://localhost:8080/api/metadata/workflow' \
+  -H 'Content-Type: application/json' \
+  -d @31-conductor-agent-basic.json
+
+# Execute — runs the agent to completion and surfaces text/output/state
+curl -X POST 'http://localhost:8080/api/workflow/conductor_agent_basic' \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt": "Draft a project plan for a mobile app launch"}'
+```
+
+Tune the run with the optional `pollIntervalSeconds` (poll cadence, default 5),
+`maxDurationSeconds` (absolute deadline, default 86400), and `maxPollFailures` (consecutive
+transient poll-failure cap, default 30) input parameters on the `AGENT` task.
+
+### 32. Conductor Agent (Human-in-the-Loop)
+
+```bash
+# Requires agentspan.embedded=true and a registered 'planner' agent
+
+# Register
+curl -X POST 'http://localhost:8080/api/metadata/workflow' \
+  -H 'Content-Type: application/json' \
+  -d @32-conductor-agent-human-in-loop.json
+
+# Execute — when the run pauses (waiting=true), a HUMAN task collects the answer and a second
+# AGENT call resumes the run using its executionId
+curl -X POST 'http://localhost:8080/api/workflow/conductor_agent_human_in_loop' \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt": "Book a meeting; ask me for the preferred time if unclear"}'
+```
+
+### 33. Conductor Agent (Multi-Agent)
+
+```bash
+# Requires agentspan.embedded=true and two registered agents: 'planner' and 'researcher'
+
+# Register
+curl -X POST 'http://localhost:8080/api/metadata/workflow' \
+  -H 'Content-Type: application/json' \
+  -d @33-conductor-agent-multi-agent.json
+
+# Execute — fans out to both agents in parallel (FORK_JOIN), then JOINs their results
+curl -X POST 'http://localhost:8080/api/workflow/conductor_agent_multi_agent' \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt": "Assess the market for an AI note-taking app"}'
+```
+
+### 34. Conductor Agent (Cancel)
+
+```bash
+# Requires agentspan.embedded=true and a registered 'planner' agent
+
+# Register
+curl -X POST 'http://localhost:8080/api/metadata/workflow' \
+  -H 'Content-Type: application/json' \
+  -d @34-conductor-agent-cancel.json
+
+# Execute — starts a long-running agent run, then TERMINATEs the workflow, cancelling the
+# in-flight agent task (CANCELED mapping)
+curl -X POST 'http://localhost:8080/api/workflow/conductor_agent_cancel' \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt": "Begin a long-running research job"}'
 ```
 
 ---
