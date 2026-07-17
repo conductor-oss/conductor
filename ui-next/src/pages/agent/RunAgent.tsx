@@ -51,17 +51,19 @@ export default function RunAgent() {
     onSuccess: (response) => {
       setStarted(response);
       setError("");
-      setAgentHistory([
-        {
-          id: uuidv4(),
-          agentName,
-          model,
-          prompt,
-          executionId: response.executionId,
-          executionTime: Date.now(),
-        },
-        ...(agentHistory || []),
-      ].slice(0, 20));
+      setAgentHistory(
+        [
+          {
+            id: uuidv4(),
+            agentName,
+            model,
+            prompt,
+            executionId: response.executionId,
+            executionTime: Date.now(),
+          },
+          ...(agentHistory || []),
+        ].slice(0, 20),
+      );
     },
     onError: async (response) => {
       try {
@@ -153,9 +155,15 @@ export default function RunAgent() {
           </Alert>
         )}
         {started && (
-          <Alert sx={{ mb: 3 }} severity="success" onClose={() => setStarted(undefined)}>
+          <Alert
+            sx={{ mb: 3 }}
+            severity="success"
+            onClose={() => setStarted(undefined)}
+          >
             Agent execution started:&nbsp;
-            <NavLink path={`${AGENT_EXECUTIONS_URL.BASE}/${started.executionId}`}>
+            <NavLink
+              path={`${AGENT_EXECUTIONS_URL.BASE}/${started.executionId}`}
+            >
               {started.executionId}
             </NavLink>
           </Alert>
@@ -210,11 +218,7 @@ export default function RunAgent() {
               <DataTable
                 title="Agent run history"
                 pagination={false}
-                defaultShowColumns={[
-                  "agentName",
-                  "executionTime",
-                  "restore",
-                ]}
+                defaultShowColumns={["agentName", "executionTime", "restore"]}
                 defaultSortFieldId="executionTime"
                 defaultSortAsc={false}
                 noDataComponent={<Box sx={{ p: 4 }}>History is empty</Box>}
