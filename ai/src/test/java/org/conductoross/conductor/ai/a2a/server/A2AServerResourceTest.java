@@ -20,6 +20,7 @@ import org.conductoross.conductor.ai.a2a.model.TaskStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
@@ -28,6 +29,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -97,6 +100,63 @@ class A2AServerResourceTest {
     }
 
     @Test
+    void tasksSend_alias_dispatchesToSendMessage() {
+        when(agent.sendMessage(eq("order_pizza"), any(A2AMessage.class)))
+                .thenReturn(task("wf-1", TaskState.WORKING));
+
+        JsonNode request =
+                rpc(
+                        "tasks/send",
+                        "{\"message\":{\"role\":\"user\",\"kind\":\"message\",\"messageId\":\"m1\",\"parts\":[{\"kind\":\"text\",\"text\":\"hi\"}]}}");
+        ResponseEntity<JsonNode> response = call("order_pizza", request);
+
+        assertEquals("wf-1", response.getBody().get("result").get("id").asText());
+        verify(agent).sendMessage(eq("order_pizza"), any(A2AMessage.class));
+    }
+
+    @Test
+    void tasksSendSubscribe_alias_returnsSseEmitter() {
+        when(agent.isExposed("order_pizza")).thenReturn(true);
+
+        JsonNode request =
+                rpc(
+                        "tasks/sendSubscribe",
+                        "{\"message\":{\"role\":\"user\",\"kind\":\"message\",\"messageId\":\"m1\",\"parts\":[{\"kind\":\"text\",\"text\":\"hi\"}]}}");
+        Object response = resource.jsonRpc("order_pizza", request);
+
+        assertInstanceOf(SseEmitter.class, response);
+    }
+
+    @Test
+    void tasksSend_alias_dispatchesToSendMessage() {
+        when(agent.sendMessage(eq("order_pizza"), any(A2AMessage.class)))
+                .thenReturn(task("wf-1", TaskState.WORKING));
+
+        JsonNode request =
+                rpc(
+                        "tasks/send",
+                        "{\"message\":{\"role\":\"user\",\"kind\":\"message\",\"messageId\":\"m1\",\"parts\":[{\"kind\":\"text\",\"text\":\"hi\"}]}}");
+        ResponseEntity<JsonNode> response = call("order_pizza", request);
+
+        assertEquals("wf-1", response.getBody().get("result").get("id").asText());
+        verify(agent).sendMessage(eq("order_pizza"), any(A2AMessage.class));
+    }
+
+    @Test
+    void tasksSendSubscribe_alias_returnsSseEmitter() {
+        when(agent.isExposed("order_pizza")).thenReturn(true);
+
+        JsonNode request =
+                rpc(
+                        "tasks/sendSubscribe",
+                        "{\"message\":{\"role\":\"user\",\"kind\":\"message\",\"messageId\":\"m1\",\"parts\":[{\"kind\":\"text\",\"text\":\"hi\"}]}}");
+        Object response = resource.jsonRpc("order_pizza", request);
+
+        assertTrue(response instanceof SseEmitter);
+        assertInstanceOf(SseEmitter.class, response);
+    }
+
+    @Test
     void tasksGet_dispatches() {
         when(agent.getTask("order_pizza", "wf-1")).thenReturn(task("wf-1", TaskState.COMPLETED));
 
@@ -162,5 +222,35 @@ class A2AServerResourceTest {
 
         assertEquals(200, response.getStatusCode().value());
         assertEquals("order_pizza", ((AgentCard) response.getBody()).getName());
+    }
+
+    @Test
+    void tasksSend_alias_dispatchesToSendMessage() {
+        when(agent.sendMessage(eq("order_pizza"), any(A2AMessage.class)))
+                .thenReturn(task("wf-1", TaskState.WORKING));
+
+        JsonNode request =
+                rpc(
+                        "tasks/send",
+                        "{\"message\":{\"role\":\"user\",\"kind\":\"message\",\"messageId\":\"m1\",\"parts\":[{\"kind\":\"text\",\"text\":\"hi\"}]}}");
+        ResponseEntity<JsonNode> response = call("order_pizza", request);
+
+        assertEquals("wf-1", response.getBody().get("result").get("id").asText());
+        verify(agent).sendMessage(eq("order_pizza"), any(A2AMessage.class));
+    }
+
+    @Test
+    void tasksSendSubscribe_alias_returnsSseEmitter() {
+        when(agent.isExposed("order_pizza")).thenReturn(true);
+
+        JsonNode request =
+                rpc(
+                        "tasks/sendSubscribe",
+                        "{\"message\":{\"role\":\"user\",\"kind\":\"message\",\"messageId\":\"m1\",\"parts\":[{\"kind\":\"text\",\"text\":\"hi\"}]}}");
+        // tasks/sendSubscribe routes to the streaming handler, which returns an SseEmitter
+        // directly rather than a ResponseEntity, so the call(...) cast helper is not used here.
+        Object result = resource.jsonRpc("order_pizza", request);
+
+        assertInstanceOf(SseEmitter.class, result);
     }
 }
