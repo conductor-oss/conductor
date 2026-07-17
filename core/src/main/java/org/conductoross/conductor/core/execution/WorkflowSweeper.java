@@ -105,6 +105,16 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
                 if (systemTaskRegistry.isSystemTask(task.getTaskType())) { // If system task
                     WorkflowSystemTask workflowSystemTask =
                             systemTaskRegistry.get(task.getTaskType());
+                    // The queue message is acked before the task executes, and the task row is
+                    // only moved past SCHEDULED after execution finishes. A persisted startTime
+                    // within the grace window therefore means the task is in flight on some
+                    // worker; repushing its message now would execute it a second time.
+                    long graceMillis = sweeperProperties.getStartedTaskRepairGraceMillis();
+                    if (graceMillis > 0
+                            && task.getStartTime() > 0
+                            && clock.millis() - task.getStartTime() < graceMillis) {
+                        return false;
+                    }
                     return workflowSystemTask.isAsync()
                             && (!workflowSystemTask.isAsyncComplete(task)
                                     || (workflowSystemTask.isAsyncComplete(task)

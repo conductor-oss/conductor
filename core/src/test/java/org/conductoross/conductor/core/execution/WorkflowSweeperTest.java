@@ -151,6 +151,78 @@ public class WorkflowSweeperTest {
     }
 
     @Test
+    public void sweepDoesNotRepushSystemTaskWithinStartedGracePeriod() {
+        TaskModel httpTask = newTask("http-task", "HTTP", TaskModel.Status.SCHEDULED);
+        httpTask.setStartTime(System.currentTimeMillis() - 5_000);
+        WorkflowModel workflow = newWorkflow(List.of(httpTask));
+
+        WorkflowSystemTask workflowSystemTask = mock(WorkflowSystemTask.class);
+        when(executionLockService.acquireLock(WORKFLOW_ID)).thenReturn(true);
+        when(workflowExecutor.getWorkflow(WORKFLOW_ID, true)).thenReturn(workflow);
+        when(workflowExecutor.decide(WORKFLOW_ID)).thenReturn(workflow);
+        when(systemTaskRegistry.isSystemTask("HTTP")).thenReturn(true);
+        when(systemTaskRegistry.get("HTTP")).thenReturn(workflowSystemTask);
+        when(workflowSystemTask.isAsync()).thenReturn(true);
+        when(workflowSystemTask.isAsyncComplete(httpTask)).thenReturn(false);
+        when(sweeperProperties.getStartedTaskRepairGraceMillis()).thenReturn(60_000L);
+
+        workflowSweeper.sweep(WORKFLOW_ID);
+
+        verify(queueDAO, never()).push(anyString(), anyString(), anyLong());
+        verify(executionLockService).releaseLock(WORKFLOW_ID);
+    }
+
+    @Test
+    public void sweepRepushesSystemTaskStartedBeyondGracePeriod() {
+        TaskModel httpTask = newTask("http-task", "HTTP", TaskModel.Status.SCHEDULED);
+        httpTask.setStartTime(System.currentTimeMillis() - 120_000);
+        httpTask.setCallbackAfterSeconds(3L);
+        WorkflowModel workflow = newWorkflow(List.of(httpTask));
+
+        WorkflowSystemTask workflowSystemTask = mock(WorkflowSystemTask.class);
+        when(executionLockService.acquireLock(WORKFLOW_ID)).thenReturn(true);
+        when(workflowExecutor.getWorkflow(WORKFLOW_ID, true)).thenReturn(workflow);
+        when(workflowExecutor.decide(WORKFLOW_ID)).thenReturn(workflow);
+        when(systemTaskRegistry.isSystemTask("HTTP")).thenReturn(true);
+        when(systemTaskRegistry.get("HTTP")).thenReturn(workflowSystemTask);
+        when(workflowSystemTask.isAsync()).thenReturn(true);
+        when(workflowSystemTask.isAsyncComplete(httpTask)).thenReturn(false);
+        when(sweeperProperties.getStartedTaskRepairGraceMillis()).thenReturn(60_000L);
+        when(queueDAO.containsMessage("HTTP", httpTask.getTaskId())).thenReturn(false);
+
+        workflowSweeper.sweep(WORKFLOW_ID);
+
+        verify(queueDAO, times(1))
+                .push("HTTP", httpTask.getTaskId(), httpTask.getCallbackAfterSeconds());
+        verify(executionLockService).releaseLock(WORKFLOW_ID);
+    }
+
+    @Test
+    public void sweepRepushesRecentlyStartedSystemTaskWhenGraceDisabled() {
+        TaskModel httpTask = newTask("http-task", "HTTP", TaskModel.Status.SCHEDULED);
+        httpTask.setStartTime(System.currentTimeMillis() - 5_000);
+        httpTask.setCallbackAfterSeconds(3L);
+        WorkflowModel workflow = newWorkflow(List.of(httpTask));
+
+        WorkflowSystemTask workflowSystemTask = mock(WorkflowSystemTask.class);
+        when(executionLockService.acquireLock(WORKFLOW_ID)).thenReturn(true);
+        when(workflowExecutor.getWorkflow(WORKFLOW_ID, true)).thenReturn(workflow);
+        when(workflowExecutor.decide(WORKFLOW_ID)).thenReturn(workflow);
+        when(systemTaskRegistry.isSystemTask("HTTP")).thenReturn(true);
+        when(systemTaskRegistry.get("HTTP")).thenReturn(workflowSystemTask);
+        when(workflowSystemTask.isAsync()).thenReturn(true);
+        when(workflowSystemTask.isAsyncComplete(httpTask)).thenReturn(false);
+        when(sweeperProperties.getStartedTaskRepairGraceMillis()).thenReturn(0L);
+        when(queueDAO.containsMessage("HTTP", httpTask.getTaskId())).thenReturn(false);
+
+        workflowSweeper.sweep(WORKFLOW_ID);
+
+        verify(queueDAO, times(1))
+                .push("HTTP", httpTask.getTaskId(), httpTask.getCallbackAfterSeconds());
+        verify(executionLockService).releaseLock(WORKFLOW_ID);
+    }
+
+    @Test
     public void sweepRepairsSubWorkflowTaskWhenSubWorkflowIsTerminal() {
         TaskModel subWorkflowTask =
                 newTask(

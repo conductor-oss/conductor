@@ -249,7 +249,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
-        1 * executionDAOFacade.updateTask(task)
+        2 * executionDAOFacade.updateTask(task) // 1st call persists the start marker, 2nd the result
         1 * queueDAO.postpone(queueName, taskId, task.workflowPriority, properties.systemTaskWorkerCallbackDuration.seconds)
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.IN_PROGRESS }
 
@@ -277,7 +277,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
-        1 * executionDAOFacade.updateTask(task)
+        2 * executionDAOFacade.updateTask(task) // 1st call persists the start marker, 2nd the result
 
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.COMPLETED }
         1 * queueDAO.remove(queueName, taskId)
@@ -303,7 +303,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
-        1 * executionDAOFacade.updateTask(task)
+        2 * executionDAOFacade.updateTask(task) // 1st call persists the start marker, 2nd the result
 
         // simulating a "start" failure that happens after the Task object is modified
         // the modification will be persisted
@@ -335,7 +335,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
-        1 * executionDAOFacade.updateTask(task) // 1st call for pollCount, 2nd call for status update
+        2 * executionDAOFacade.updateTask(task) // 1st call persists the start marker, 2nd the result
 
         1 * workflowSystemTask.isAsyncComplete(task) >> true
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.IN_PROGRESS }
@@ -434,6 +434,60 @@ class AsyncSystemTaskExecutorTest extends Specification {
         seenDuringStart == resolved
         // ...and afterwards the literal is restored for persistence
         task.getInputData() == literal
+    }
+
+    def "start marker is persisted before the system task starts and with literal input"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        def literal = [pwd: '${workflow.secrets.DB_PASSWORD}'] as Map
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId,
+                workflowInstanceId: workflowId, taskDefName: "taskDefName", workflowPriority: 10)
+        task.setInputData(literal)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        workflowSystemTask.getEvaluationOffset(task, 1) >> Optional.empty()
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+
+        then: // the start marker write: before start(), still SCHEDULED, unsubstituted input
+        1 * executionDAOFacade.updateTask(task) >> { TaskModel t ->
+            assert t.status == TaskModel.Status.SCHEDULED
+            assert t.startTime != 0
+            assert t.pollCount == 1
+            assert t.getInputData() == literal
+        }
+
+        then:
+        1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.IN_PROGRESS }
+
+        then: // the result write
+        1 * executionDAOFacade.updateTask(task)
+    }
+
+    def "start marker persistence failure does not prevent the system task from running"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId,
+                workflowInstanceId: workflowId, taskDefName: "taskDefName", workflowPriority: 10)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        workflowSystemTask.getEvaluationOffset(task, 1) >> Optional.empty()
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        2 * executionDAOFacade.updateTask(task) >> { throw new RuntimeException("db down") } >> null
+        1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.IN_PROGRESS }
+
+        task.status == TaskModel.Status.IN_PROGRESS
     }
 
 }

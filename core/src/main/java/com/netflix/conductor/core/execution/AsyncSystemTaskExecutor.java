@@ -152,6 +152,16 @@ public class AsyncSystemTaskExecutor {
                 task.incrementPollCount();
             }
 
+            if (task.getStatus() == TaskModel.Status.SCHEDULED) {
+                task.setStartTime(System.currentTimeMillis());
+                Monitors.recordQueueWaitTime(task.getTaskType(), task.getQueueWaitTime());
+                // Persist the start marker before running the task. The queue message is already
+                // acked, so until this write the task is indistinguishable from an orphaned one;
+                // the sweeper would repush it mid-execution and the task would run twice. Must
+                // happen before secrets substitution so resolved secrets are never persisted.
+                persistStartMarkerQuietly(task);
+            }
+
             if (task.getStatus() == TaskModel.Status.SCHEDULED
                     || task.getStatus() == TaskModel.Status.IN_PROGRESS) {
                 Map<String, Object> literalInput = task.getInputData();
@@ -166,8 +176,6 @@ public class AsyncSystemTaskExecutor {
                 task.setInputData(parametersUtils.substituteSecrets(literalInput));
                 try {
                     if (task.getStatus() == TaskModel.Status.SCHEDULED) {
-                        task.setStartTime(System.currentTimeMillis());
-                        Monitors.recordQueueWaitTime(task.getTaskType(), task.getQueueWaitTime());
                         systemTask.start(workflow, task, workflowExecutor);
                     } else {
                         systemTask.execute(workflow, task, workflowExecutor);
@@ -219,6 +227,19 @@ public class AsyncSystemTaskExecutor {
             if (hasTaskExecutionCompleted) {
                 workflowExecutor.decide(workflowId);
             }
+        }
+    }
+
+    private void persistStartMarkerQuietly(TaskModel task) {
+        try {
+            executionDAOFacade.updateTask(task);
+        } catch (Exception e) {
+            // A failed marker write must not block execution; the worst case is the legacy
+            // behavior (sweeper may repush the task while it runs).
+            LOGGER.warn(
+                    "Could not persist start marker for task: {} before execution",
+                    task.getTaskId(),
+                    e);
         }
     }
 
