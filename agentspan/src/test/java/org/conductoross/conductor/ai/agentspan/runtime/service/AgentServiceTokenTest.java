@@ -74,6 +74,7 @@ class AgentServiceTokenTest {
                         normalizerRegistry,
                         executionDAO,
                         metadataDAO,
+                        mock(com.netflix.conductor.dao.IndexDAO.class),
                         workflowService,
                         taskService,
                         workflowExecutor,

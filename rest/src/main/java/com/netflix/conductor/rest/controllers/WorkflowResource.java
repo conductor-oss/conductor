@@ -348,7 +348,7 @@ public class WorkflowResource {
         return workflowService.searchWorkflows(
                 start,
                 size,
-                sort,
+                withAgentHierarchySort(sort, classifier, topLevelOnly),
                 freeText,
                 withTopLevelFilter(withClassifierFilter(query, classifier), topLevelOnly));
     }
@@ -371,7 +371,7 @@ public class WorkflowResource {
         return workflowService.searchWorkflowsV2(
                 start,
                 size,
-                sort,
+                withAgentHierarchySort(sort, classifier, topLevelOnly),
                 freeText,
                 withTopLevelFilter(withClassifierFilter(query, classifier), topLevelOnly));
     }
@@ -410,6 +410,22 @@ public class WorkflowResource {
         }
         String clause = "parentWorkflowId=\"\"";
         return (query == null || query.isBlank()) ? clause : query + " AND " + clause;
+    }
+
+    /**
+     * Keeps agent executions grouped with their direct sub-agent executions. The index DAOs
+     * understand the internal {@code agentHierarchy} sort key and order each parent before its
+     * children, while retaining the caller's requested sort within a group. Top-level-only searches
+     * do not need this ordering because they exclude sub-agents altogether.
+     */
+    private static String withAgentHierarchySort(
+            String sort, String classifier, boolean topLevelOnly) {
+        if (topLevelOnly || classifier == null || !"agent".equalsIgnoreCase(classifier.trim())) {
+            return sort;
+        }
+        return (sort == null || sort.isBlank())
+                ? "agentHierarchy:DESC"
+                : "agentHierarchy:DESC|" + sort;
     }
 
     @Operation(

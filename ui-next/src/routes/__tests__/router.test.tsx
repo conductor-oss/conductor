@@ -57,6 +57,7 @@ vi.mock("utils/constants/route", () => ({
     EDIT: "/remote-services/:id/edit",
   },
   RUN_WORKFLOW_URL: "/runWorkflow",
+  RUN_AGENT_URL: "/runAgent",
   SCHEDULER_DEFINITION_URL: {
     BASE: "/scheduleDef",
     NAME: "/scheduleDef/:name",
@@ -148,6 +149,7 @@ vi.mock("pages/agent", () => ({
   AgentDefinitions: () => ({ type: "AgentDefinitions" }),
   CreateAgentGuide: () => ({ type: "CreateAgentGuide" }),
   AgentExecutions: () => ({ type: "AgentExecutions" }),
+  RunAgent: () => ({ type: "RunAgent" }),
   Skills: () => ({ type: "Skills" }),
   Secrets: () => ({ type: "Secrets" }),
 }));
@@ -248,6 +250,7 @@ describe("router (OSS)", () => {
       "/agents/new",
       "/agents/:name/:version?",
       "/agentExecutions",
+      "/runAgent",
       "/skills",
       "/agentSecrets",
     ];

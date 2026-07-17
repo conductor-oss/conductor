@@ -1535,6 +1535,7 @@ public class MultiAgentCompiler {
         // doesn't recurse into SubWorkflowParam.workflowDefinition, so each
         // embedding compiler owns that pass for its own sub-workflows.
         WorkflowTaskUtils.ensureAllTaskNames(subWf);
+        agentCompiler.stampAgentMetadata(subWf, agent);
         return subWf;
     }
 
@@ -1645,6 +1646,7 @@ public class MultiAgentCompiler {
         // See compileSwarmAgentWorkflow above — backfill task names so the
         // embedded SUB_WORKFLOW passes Conductor's null-name validation.
         WorkflowTaskUtils.ensureAllTaskNames(subWf);
+        agentCompiler.stampAgentMetadata(subWf, agent);
         return subWf;
     }
 

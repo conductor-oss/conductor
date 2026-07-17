@@ -13,6 +13,7 @@
 package org.conductoross.conductor.ai.a2a.model;
 
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
@@ -29,4 +30,5 @@ public class AgentSkill {
     private List<String> examples;
     private List<String> inputModes;
     private List<String> outputModes;
+    private List<Map<String, Object>> securityRequirements;
 }

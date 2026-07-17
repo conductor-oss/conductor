@@ -27,6 +27,8 @@ import org.conductoross.conductor.ai.agentspan.runtime.normalizer.NormalizerRegi
 import org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowClassifiers;
 import org.conductoross.conductor.common.metadata.agent.*;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -43,6 +45,7 @@ import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.ExecutionDAO;
+import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.MetadataService;
@@ -60,11 +63,15 @@ import lombok.extern.slf4j.Slf4j;
 public class AgentService {
 
     private static final ObjectMapper MAPPER = new ObjectMapperProvider().getObjectMapper();
+    private static final String AGENT_CLASSIFIER_BACKFILL_VERSION =
+            "agent_classifier_backfill_version";
 
     private final AgentCompiler agentCompiler;
     private final NormalizerRegistry normalizerRegistry;
     private final ExecutionDAO executionDAO;
     private final MetadataDAO metadataDAO;
+
+    private final IndexDAO indexDAO;
 
     private final WorkflowService workflowService;
     private final TaskService taskService;
@@ -73,6 +80,67 @@ public class AgentService {
     private final AgentStreamRegistry streamRegistry;
     private final SkillRegistryService skillRegistryService;
     private final MetadataService metadataService;
+
+    /**
+     * Agent definitions created before execution classifiers were introduced still advertise their
+     * agent metadata, but their historic index rows say {@code workflow}. Re-index every registered
+     * agent's existing execution tree once. Descendants are traversed through {@code
+     * parentWorkflowId}, so inline and nested sub-agents inherit the agent classifier too.
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    void backfillLegacyAgentExecutionClassifiers() {
+        Set<String> agentNamesToReindex = new HashSet<>();
+        for (WorkflowDef definition : metadataDAO.getAllWorkflowDefs()) {
+            Map<String, Object> metadata = definition.getMetadata();
+            if (!WorkflowClassifiers.isAgent(metadata)
+                    || "1"
+                            .equals(
+                                    String.valueOf(
+                                            metadata.get(AGENT_CLASSIFIER_BACKFILL_VERSION)))) {
+                continue;
+            }
+
+            Map<String, Object> upgradedMetadata = new LinkedHashMap<>(metadata);
+            upgradedMetadata.put("classifier", WorkflowClassifiers.AGENT);
+            upgradedMetadata.put(AGENT_CLASSIFIER_BACKFILL_VERSION, 1);
+            definition.setMetadata(upgradedMetadata);
+            metadataDAO.updateWorkflowDef(definition);
+            agentNamesToReindex.add(definition.getName());
+        }
+
+        for (String agentName : agentNamesToReindex) {
+            for (WorkflowModel workflow : executionDAO.getWorkflowsByType(agentName, null, null)) {
+                reindexAgentExecutionTree(workflow, new HashSet<>());
+            }
+        }
+        if (!agentNamesToReindex.isEmpty()) {
+            log.info(
+                    "Backfilled agent execution classifiers for {} agent definitions",
+                    agentNamesToReindex.size());
+        }
+    }
+
+    private void reindexAgentExecutionTree(WorkflowModel workflow, Set<String> visitedWorkflowIds) {
+        if (workflow == null || !visitedWorkflowIds.add(workflow.getWorkflowId())) {
+            return;
+        }
+
+        WorkflowSummary summary = new WorkflowSummary(workflow.toWorkflow());
+        summary.setClassifier(WorkflowClassifiers.AGENT);
+        indexDAO.indexWorkflow(summary);
+
+        SearchResult<WorkflowSummary> children =
+                indexDAO.searchWorkflowSummary(
+                        "parentWorkflowId=" + workflow.getWorkflowId(),
+                        "*",
+                        0,
+                        Integer.MAX_VALUE,
+                        Collections.emptyList());
+        for (WorkflowSummary child : children.getResults()) {
+            reindexAgentExecutionTree(
+                    executionDAO.getWorkflow(child.getWorkflowId()), visitedWorkflowIds);
+        }
+    }
 
     /**
      * Compile an agent config into a WorkflowDef and return it. Supports both native AgentConfig
@@ -1221,31 +1289,18 @@ public class AgentService {
     }
 
     /** Get the current status of an agent execution. */
-    public Map<String, Object> getStatus(String executionId) {
+    public AgentStatusResponse getStatus(String executionId) {
         Workflow workflow = workflowService.getExecutionStatus(executionId, true);
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("executionId", executionId);
-        result.put("status", workflow.getStatus().name());
-
         boolean isComplete = workflow.getStatus().isTerminal();
-        result.put("isComplete", isComplete);
-        result.put("isRunning", workflow.getStatus() == Workflow.WorkflowStatus.RUNNING);
-
-        if (isComplete) {
-            result.put("output", workflow.getOutput());
-        }
-
-        String reason = workflow.getReasonForIncompletion();
-        if (reason != null && !reason.isBlank()) {
-            result.put("reasonForIncompletion", reason);
-        }
+        Map<String, Object> pendingTool = null;
+        boolean waiting = false;
 
         // Find pending HUMAN or PULL_WORKFLOW_MESSAGES task
         for (Task task : workflow.getTasks()) {
             if (("HUMAN".equals(task.getTaskType())
                             || "PULL_WORKFLOW_MESSAGES".equals(task.getTaskType()))
                     && task.getStatus() == Task.Status.IN_PROGRESS) {
-                Map<String, Object> pendingTool = new LinkedHashMap<>();
+                pendingTool = new LinkedHashMap<>();
                 pendingTool.put("taskRefName", task.getReferenceTaskName());
                 if (task.getInputData() != null) {
                     pendingTool.put("tool_name", task.getInputData().get("tool_name"));
@@ -1265,13 +1320,23 @@ public class AgentService {
                                 task.getInputData().get("response_ui_schema"));
                     }
                 }
-                result.put("pendingTool", pendingTool);
-                result.put("isWaiting", true);
+                waiting = true;
                 break;
             }
         }
 
-        return result;
+        return AgentStatusResponse.builder()
+                .executionId(executionId)
+                .status(workflow.getStatus().name())
+                .complete(isComplete)
+                .running(workflow.getStatus() == Workflow.WorkflowStatus.RUNNING)
+                .waiting(waiting)
+                .output(isComplete ? workflow.getOutput() : null)
+                .reasonForIncompletion(workflow.getReasonForIncompletion())
+                .pendingTool(pendingTool)
+                .startTime(workflow.getStartTime())
+                .endTime(workflow.getEndTime() > 0 ? workflow.getEndTime() : null)
+                .build();
     }
 
     // ── Framework event push ─────────────────────────────────────────

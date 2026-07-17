@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
  * Input for the {@code AGENT} task's {@code conductor} branch: an {@link AgentStartRequest} (the
  * same DTO {@code POST /api/agent/start} takes) plus the handful of AGENT-task-only orchestration
  * knobs that don't belong on that REST contract — resuming an in-flight run and the durability
- * guards ({@link org.conductoross.conductor.ai.a2a.AgentTask} mirrors these for its A2A branch).
+ * guards used by the portable annotated AGENT worker.
  *
  * <p>Deliberately does NOT carry any A2A-shaped fields ({@code agentUrl}, {@code message}, {@code
  * parts}, {@code text}, {@code headers}, {@code streaming}, ...) — those belong to {@link
