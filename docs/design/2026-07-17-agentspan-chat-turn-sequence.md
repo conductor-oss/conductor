@@ -88,7 +88,7 @@ sequenceDiagram
     SW->>EX: execute(systemTask, taskId)
     EX->>EX: load task, terminal and limit checks
 
-    rect rgb(220, 240, 220)
+    rect
         Note over EX,AT: the fix - before invoking the task
         EX->>AT: getExecutionLease(task)
         AT-->>EX: Optional.of(responseTimeoutSeconds)<br/>from the embedded task def
