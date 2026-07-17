@@ -13,11 +13,13 @@
 package com.netflix.conductor.tasks.http;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -212,6 +214,42 @@ public class HttpTask extends WorkflowSystemTask {
         } catch (IOException jpe) {
             LOGGER.error("Error extracting response body", jpe);
             return responseBody;
+        }
+    }
+
+    /**
+     * Calls shorter than this need no lease: every queue implementation's redelivery window is
+     * comfortably longer (the tightest, redis, makes a popped message visible again 30s after pop;
+     * the SQL stores ~60s), and declaring a lease costs a queue write per execution. Only calls
+     * configured to run long enough to approach a redelivery window pay for that write.
+     */
+    private static final long EXECUTION_LEASE_THRESHOLD_MS = 20_000;
+
+    /**
+     * The HTTP call runs synchronously inside {@link #start} with the task still SCHEDULED, so an
+     * invocation configured (via {@code connectionTimeOut}/{@code readTimeOut} on the request
+     * input) to run longer than the queue's redelivery window would be redelivered and executed a
+     * second time. Declare the configured worst-case call duration as the execution lease when it
+     * is long enough to matter.
+     */
+    @Override
+    public Optional<Duration> getExecutionLease(TaskModel task) {
+        Object request = task.getInputData().get(requestParameter);
+        if (request == null) {
+            request = task.getInputData();
+        }
+        try {
+            Input input = objectMapper.convertValue(request, Input.class);
+            long connectMs =
+                    input.getConnectionTimeOut() != null ? input.getConnectionTimeOut() : 0;
+            long readMs = input.getReadTimeOut() != null ? input.getReadTimeOut() : 0;
+            long totalMs = connectMs + readMs;
+            return totalMs > EXECUTION_LEASE_THRESHOLD_MS
+                    ? Optional.of(Duration.ofMillis(totalMs))
+                    : Optional.empty();
+        } catch (RuntimeException e) {
+            // Malformed input fails in start() with a proper task failure; no lease needed here.
+            return Optional.empty();
         }
     }
 

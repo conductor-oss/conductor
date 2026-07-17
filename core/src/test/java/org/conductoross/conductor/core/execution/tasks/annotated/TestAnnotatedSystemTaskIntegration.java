@@ -31,7 +31,6 @@ import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
-import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.sdk.workflow.task.InputParam;
 import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
@@ -84,21 +83,15 @@ public class TestAnnotatedSystemTaskIntegration {
             return mock(MetadataDAO.class);
         }
 
-        @Bean
-        public QueueDAO queueDAO() {
-            return mock(QueueDAO.class);
-        }
-
         @Bean(name = "workerTaskAnnotationScanner")
         public WorkerTaskAnnotationScanner workerTaskAnnotationScanner(
                 List<AnnotatedSystemTaskWorker> workers,
                 @Qualifier(SystemTaskRegistry.ASYNC_SYSTEM_TASKS_QUALIFIER)
                         Set<WorkflowSystemTask> asyncSystemTasks,
                 ParametersUtils parametersUtils,
-                MetadataDAO metadataDAO,
-                QueueDAO queueDAO) {
+                MetadataDAO metadataDAO) {
             return new WorkerTaskAnnotationScanner(
-                    workers, asyncSystemTasks, parametersUtils, metadataDAO, queueDAO);
+                    workers, asyncSystemTasks, parametersUtils, metadataDAO);
         }
     }
 

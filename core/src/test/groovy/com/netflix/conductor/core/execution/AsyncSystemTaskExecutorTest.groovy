@@ -262,6 +262,78 @@ class AsyncSystemTaskExecutorTest extends Specification {
         task.callbackAfterSeconds == properties.systemTaskWorkerCallbackDuration.seconds
     }
 
+    def "Execute extends the queue message lease declared by the system task before invoking it"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        String queueName = QueueUtils.getQueueName(task)
+        boolean leaseExtendedBeforeStart = false
+        workflowSystemTask.getExecutionLease(task) >> Optional.of(Duration.ofSeconds(3600))
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        1 * queueDAO.setUnackTimeout(queueName, taskId, 3600_000L) >> { leaseExtendedBeforeStart = true; return true }
+        1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> {
+            assert leaseExtendedBeforeStart: "the lease must be extended before the blocking invocation starts"
+            task.status = TaskModel.Status.COMPLETED
+        }
+        1 * executionDAOFacade.updateTask(task)
+        1 * queueDAO.remove(queueName, taskId)
+        1 * workflowExecutor.decide(workflowId)
+
+        task.status == TaskModel.Status.COMPLETED
+    }
+
+    def "Execute does not touch the queue message lease when the system task declares none"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        workflowSystemTask.getEvaluationOffset(task, 1) >> Optional.empty()
+        workflowSystemTask.getExecutionLease(task) >> Optional.empty()
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.IN_PROGRESS }
+        0 * queueDAO.setUnackTimeout(*_)
+    }
+
+    def "Execute still invokes the system task when extending the lease fails"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        String queueName = QueueUtils.getQueueName(task)
+        workflowSystemTask.getExecutionLease(task) >> Optional.of(Duration.ofSeconds(3600))
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        1 * queueDAO.setUnackTimeout(queueName, taskId, 3600_000L) >> { throw new RuntimeException("queue unavailable") }
+        1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.COMPLETED }
+        1 * executionDAOFacade.updateTask(task)
+
+        task.status == TaskModel.Status.COMPLETED
+    }
+
     def "Execute preserves a callback interval set by the system task"() {
         given:
         properties.systemTaskWorkerCallbackDuration = Duration.ofSeconds(30)

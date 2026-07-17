@@ -31,11 +31,12 @@ import com.netflix.conductor.test.utils.ControllableWorker
  * REPRODUCES ISSUE #1321 - Async system tasks running longer than the queue unack window are
  * executed twice.
  *
- * <p>The fix lives in {@code AnnotatedWorkflowSystemTask} (the adapter every annotated system-task
- * worker, e.g. LLM_CHAT_COMPLETE, runs through): before invoking the blocking worker method,
- * {@code start()} extends the queue message's visibility to the task's responseTimeoutSeconds via
- * {@code queueDAO.setUnackTimeout}, so the message is not redelivered to a second
- * system-task-worker mid-execution.
+ * <p>The fix: {@code AnnotatedWorkflowSystemTask} (the adapter every annotated system-task worker,
+ * e.g. LLM_CHAT_COMPLETE, runs through) declares an execution lease of the task's
+ * responseTimeoutSeconds via {@code WorkflowSystemTask#getExecutionLease}, and
+ * {@code AsyncSystemTaskExecutor} extends the queue message's visibility by that lease (via
+ * {@code queueDAO.setUnackTimeout}) before invoking the blocking worker method, so the message is
+ * not redelivered to a second system-task-worker mid-execution.
  *
  * <p>This spec drives the REAL production path: the worker bean is registered through the real
  * WorkerTaskAnnotationScanner, the adapter comes out of the real SystemTaskRegistry, and execution
@@ -50,8 +51,9 @@ import com.netflix.conductor.test.utils.ControllableWorker
  *       that outlasts the queue's unack window.</li>
  *   <li>{@code setUnackTimeout(queue, taskId, 1000)} after the first pop = compresses the real
  *       ~30-60s unack window down to ~1s so the test is deterministic and fast; it represents the
- *       visibility window that is about to elapse. The fix OVERRIDES this inside the adapter's
- *       start() with 1000 * responseTimeoutSeconds, keeping the message hidden.</li>
+ *       visibility window that is about to elapse. The fix OVERRIDES this inside the executor,
+ *       which extends the lease to responseTimeoutSeconds before start(), keeping the message
+ *       hidden.</li>
  *   <li>The second {@code pop} after the compressed window = the queue's unack sweep re-making the
  *       still-popped message available, and a second system-task worker polling it (the exact
  *       production redelivery path). Whether it succeeds is gated by the real queue visibility.</li>
@@ -131,8 +133,8 @@ class Issue1321DuplicateAsyncSystemTaskSpec extends AbstractSpecification {
         List<String> polled1 = popWithRetry(3000)
         assert polled1 == [taskId]
         // Compress the real unack/visibility window (~30-60s in production) to ~1s so redelivery
-        // becomes observable within the test's time budget. The fix overrides this with
-        // 1000 * responseTimeoutSeconds inside the adapter's start(), before the method runs.
+        // becomes observable within the test's time budget. The fix overrides this: the executor
+        // extends the lease to the adapter's responseTimeoutSeconds before the method runs.
         queueDAO.setUnackTimeout(QUEUE, taskId, 1000L)
         Thread worker1 = new Thread({ asyncSystemTaskExecutor.execute(adapter, taskId) })
         worker1.setDaemon(true)

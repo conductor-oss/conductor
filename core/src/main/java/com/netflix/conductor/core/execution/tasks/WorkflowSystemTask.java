@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
+import java.time.Duration;
 import java.util.Optional;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
@@ -78,6 +79,25 @@ public abstract class WorkflowSystemTask {
      *     Optional.empty()} if no postponement is required
      */
     public Optional<Long> getEvaluationOffset(TaskModel taskModel, long maxOffset) {
+        return Optional.empty();
+    }
+
+    /**
+     * The queue-message lease this task needs to cover its execution.
+     *
+     * <p>Async system tasks are invoked with their queue message popped but not yet acked; if an
+     * implementation blocks inside {@link #start} or {@link #execute} for longer than the queue's
+     * redelivery window, the message is redelivered mid-execution and a second worker executes the
+     * same task again. Implementations that block on remote work (e.g. an LLM or HTTP call) should
+     * return the duration the invocation may legally run, and the executor extends the message's
+     * visibility by that amount before invoking the task.
+     *
+     * @param task Instance of the Task
+     * @return the lease to apply before this task is executed, or {@code Optional.empty()} (the
+     *     default) if the invocation returns quickly and the queue's default redelivery window
+     *     suffices
+     */
+    public Optional<Duration> getExecutionLease(TaskModel task) {
         return Optional.empty();
     }
 

@@ -222,4 +222,47 @@ public class HttpTaskUnitTest {
                 "Should fail with missing URI",
                 task.getReasonForIncompletion().contains("Missing HTTP URI"));
     }
+
+    // ---- Execution lease tests ----
+    //
+    // The HTTP call blocks inside start() with the task still SCHEDULED. Calls configured to
+    // run long enough to approach a queue redelivery window must declare an execution lease so
+    // AsyncSystemTaskExecutor extends the message's visibility (else the call is executed
+    // twice). Short calls must NOT declare one: that would add a queue write to every HTTP
+    // task execution.
+
+    @Test
+    public void testNoExecutionLeaseForDefaultTimeouts() {
+        TaskModel task = new TaskModel();
+        HttpTask.Input input = new HttpTask.Input();
+        input.setUri("http://localhost/test");
+        input.setMethod("GET");
+        task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
+
+        // Input defaults: 3000ms connect + 3000ms read — far below any redelivery window.
+        assertEquals(java.util.Optional.empty(), httpTask.getExecutionLease(task));
+    }
+
+    @Test
+    public void testExecutionLeaseDeclaredForLongTimeouts() {
+        TaskModel task = new TaskModel();
+        HttpTask.Input input = new HttpTask.Input();
+        input.setUri("http://localhost/slow");
+        input.setMethod("POST");
+        input.setConnectionTimeOut(5_000);
+        input.setReadTimeOut(120_000);
+        task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
+
+        assertEquals(
+                java.util.Optional.of(java.time.Duration.ofMillis(125_000)),
+                httpTask.getExecutionLease(task));
+    }
+
+    @Test
+    public void testNoExecutionLeaseForMalformedInput() {
+        TaskModel task = new TaskModel();
+        task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, "not a request object");
+
+        assertEquals(java.util.Optional.empty(), httpTask.getExecutionLease(task));
+    }
 }

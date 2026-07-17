@@ -12,7 +12,9 @@
  */
 package com.netflix.conductor.core.execution;
 
+import java.time.Duration;
 import java.util.Map;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -164,6 +166,7 @@ public class AsyncSystemTaskExecutor {
                             task.getTaskId());
                 }
                 task.setInputData(parametersUtils.substituteSecrets(literalInput));
+                extendLease(systemTask, task, queueName);
                 try {
                     if (task.getStatus() == TaskModel.Status.SCHEDULED) {
                         task.setStartTime(System.currentTimeMillis());
@@ -218,6 +221,28 @@ public class AsyncSystemTaskExecutor {
             if (hasTaskExecutionCompleted) {
                 workflowExecutor.decide(workflowId);
             }
+        }
+    }
+
+    /**
+     * Extends the queue message's visibility to cover a blocking invocation, when the system task
+     * declares one via {@link WorkflowSystemTask#getExecutionLease(TaskModel)}. Without this, a
+     * task that blocks in start()/execute() past the queue's redelivery window is redelivered
+     * mid-execution and a second worker executes the same task again.
+     */
+    private void extendLease(WorkflowSystemTask systemTask, TaskModel task, String queueName) {
+        try {
+            Optional<Duration> lease = systemTask.getExecutionLease(task);
+            if (lease == null || lease.isEmpty()) {
+                return;
+            }
+            queueDAO.setUnackTimeout(queueName, task.getTaskId(), lease.get().toMillis());
+        } catch (Exception e) {
+            LOGGER.warn(
+                    "Unable to extend queue message lease for task {}/{}",
+                    task.getTaskType(),
+                    task.getTaskId(),
+                    e);
         }
     }
 

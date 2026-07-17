@@ -14,13 +14,12 @@ package org.conductoross.conductor.core.execution.tasks.annotated;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.time.Duration;
 import java.util.Optional;
 
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
-import com.netflix.conductor.core.utils.QueueUtils;
-import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
@@ -48,8 +47,6 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
 
     private final AnnotatedMethodResultMapper resultMapper;
 
-    private final QueueDAO queueDAO;
-
     /**
      * Creates a new AnnotatedWorkflowSystemTask.
      *
@@ -60,28 +57,12 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
      */
     public AnnotatedWorkflowSystemTask(
             String taskType, Method method, Object bean, WorkerTask annotation) {
-        this(taskType, method, bean, annotation, null);
-    }
-
-    /**
-     * Creates a new AnnotatedWorkflowSystemTask.
-     *
-     * @param taskType The task type name
-     * @param method The annotated method to invoke
-     * @param bean The Spring bean instance containing the method
-     * @param annotation The @WorkerTask annotation metadata
-     * @param queueDAO Used to extend the task queue message's visibility over blocking method
-     *     invocations; may be null, in which case visibility is not managed
-     */
-    public AnnotatedWorkflowSystemTask(
-            String taskType, Method method, Object bean, WorkerTask annotation, QueueDAO queueDAO) {
         super(taskType);
         this.method = method;
         this.bean = bean;
         this.annotation = annotation;
         this.parameterMapper = new AnnotatedMethodParameterMapper();
         this.resultMapper = new AnnotatedMethodResultMapper();
-        this.queueDAO = queueDAO;
     }
 
     @Override
@@ -92,37 +73,22 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
 
     @Override
     public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
-        // The annotated method runs synchronously and can block for the full response timeout
-        // (e.g. an LLM provider call), during which the task row stays SCHEDULED and nothing
-        // renews the queue message's lease. If the QueueDAO's unack/redelivery window is shorter
-        // than the invocation, the message is redelivered mid-execution and a second
-        // system-task-worker invokes the same method again (duplicate provider call). Extend the
-        // message's visibility to cover the blocking invocation before it starts.
-        extendQueueVisibility(task);
         execute(workflow, task, workflowExecutor);
     }
 
-    private void extendQueueVisibility(TaskModel task) {
-        if (queueDAO == null) {
-            return;
-        }
-        task.getTaskDefinition()
+    /**
+     * The annotated method runs synchronously and can block for the full response timeout (e.g. an
+     * LLM provider call), during which the task row stays SCHEDULED and nothing renews the queue
+     * message's lease. Declare a lease covering the blocking invocation so the executor extends the
+     * message's visibility before invoking the method; otherwise the message is redelivered
+     * mid-execution and a second system-task-worker invokes the same method again (duplicate
+     * provider call).
+     */
+    @Override
+    public Optional<Duration> getExecutionLease(TaskModel task) {
+        return task.getTaskDefinition()
                 .filter(taskDef -> taskDef.getResponseTimeoutSeconds() > 0)
-                .ifPresent(
-                        taskDef -> {
-                            try {
-                                queueDAO.setUnackTimeout(
-                                        QueueUtils.getQueueName(task),
-                                        task.getTaskId(),
-                                        1000L * taskDef.getResponseTimeoutSeconds());
-                            } catch (Exception e) {
-                                log.warn(
-                                        "Unable to extend queue visibility for task {}/{}",
-                                        getTaskType(),
-                                        task.getTaskId(),
-                                        e);
-                            }
-                        });
+                .map(taskDef -> Duration.ofSeconds(taskDef.getResponseTimeoutSeconds()));
     }
 
     @Override
