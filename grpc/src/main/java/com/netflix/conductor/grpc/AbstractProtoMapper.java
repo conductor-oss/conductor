@@ -1114,6 +1114,17 @@ public abstract class AbstractProtoMapper {
         if (from.getExecutionMetadata() != null) {
             to.setExecutionMetadata( toProto( from.getExecutionMetadata() ) );
         }
+        for (TaskExecLog elem : from.getLogs()) {
+            to.addLogs( toProto(elem) );
+        }
+        if (from.getExternalOutputPayloadStoragePath() != null) {
+            to.setExternalOutputPayloadStoragePath( from.getExternalOutputPayloadStoragePath() );
+        }
+        if (from.getSubWorkflowId() != null) {
+            to.setSubWorkflowId( from.getSubWorkflowId() );
+        }
+        to.setExtendLease( from.isExtendLease() );
+        to.setSupportsCancellation( from.isSupportsCancellation() );
         return to.build();
     }
 
@@ -1136,6 +1147,11 @@ public abstract class AbstractProtoMapper {
         if (from.hasExecutionMetadata()) {
             to.setExecutionMetadata( fromProto( from.getExecutionMetadata() ) );
         }
+        to.setLogs( from.getLogsList().stream().map(this::fromProto).collect(Collectors.toCollection(ArrayList::new)) );
+        to.setExternalOutputPayloadStoragePath( from.getExternalOutputPayloadStoragePath() );
+        to.setSubWorkflowId( from.getSubWorkflowId() );
+        to.setExtendLease( from.getExtendLease() );
+        to.setSupportsCancellation( from.getSupportsCancellation() );
         return to;
     }
 

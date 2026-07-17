@@ -16,6 +16,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Optional;
 
+import org.conductoross.conductor.core.execution.tasks.TaskCancellationHandler;
+
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
@@ -154,13 +156,13 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
         String workflowId =
                 workflow != null ? workflow.getWorkflowId() : task.getWorkflowInstanceId();
         log.debug("Cancelling annotated task {} for workflow {}", getTaskType(), workflowId);
-        if (bean instanceof AnnotatedTaskCancellationHandler cancellationHandler) {
+        if (bean instanceof TaskCancellationHandler cancellationHandler) {
             String reason =
                     task.getReasonForIncompletion() != null
                             ? task.getReasonForIncompletion()
                             : "Annotated task canceled by workflow " + workflowId;
             try {
-                cancellationHandler.cancel(getTaskType(), task.toTask(), reason);
+                cancellationHandler.cancel(task.toTask(), reason);
             } catch (Exception e) {
                 // Cancellation is best effort. The Conductor task must still reach a terminal
                 // state even when the downstream agent is temporarily unavailable.

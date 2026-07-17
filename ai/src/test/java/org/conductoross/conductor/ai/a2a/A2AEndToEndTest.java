@@ -169,7 +169,7 @@ class A2AEndToEndTest {
         TaskResult result = invoke(workers, task);
         assertEquals(TaskResult.Status.IN_PROGRESS, result.getStatus());
 
-        workers.cancel(A2AWorkers.AGENT, task, "workflow canceled");
+        workers.cancel(task, "workflow canceled");
 
         assertEquals(1, agent.cancelCalls());
     }

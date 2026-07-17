@@ -490,7 +490,9 @@ export function useWorkflowNames(
 
 /** Registered AgentSpan definitions, used anywhere an agent—not a workflow—is selectable. */
 export function useAgentNames(
-  optionsOverride: Partial<UseQueryOptions<{ name: string }[], FetchError>> = {},
+  optionsOverride: Partial<
+    UseQueryOptions<{ name: string }[], FetchError>
+  > = {},
 ): string[] {
   const { data } = useFetch<{ name: string }[]>("/agent/list", {
     staleTime: DEFAULT_STALE_TIME,
