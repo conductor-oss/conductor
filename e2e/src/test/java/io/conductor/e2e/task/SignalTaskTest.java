@@ -78,8 +78,7 @@ public class SignalTaskTest {
                         () -> {
                             Workflow wf = workflowClient.getWorkflow(workflowId, true);
                             assertFalse(wf.getTasks().isEmpty());
-                            assertEquals(
-                                    Task.Status.IN_PROGRESS, wf.getTasks().get(0).getStatus());
+                            assertEquals(Task.Status.IN_PROGRESS, wf.getTasks().get(0).getStatus());
                         });
 
         return workflowId;
@@ -148,9 +147,7 @@ public class SignalTaskTest {
     public void testAsyncSignalWorkflowNotFound() throws IOException {
         Request req =
                 new Request.Builder()
-                        .url(
-                                ApiUtil.SERVER_ROOT_URI
-                                        + "/tasks/non-existent-wf-id/COMPLETED/signal")
+                        .url(ApiUtil.SERVER_ROOT_URI + "/tasks/non-existent-wf-id/COMPLETED/signal")
                         .post(RequestBody.create("{}", JSON))
                         .build();
         try (Response response = httpClient.newCall(req).execute()) {
