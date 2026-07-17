@@ -61,10 +61,11 @@ const getMaskElements = (p: Page) => [
  * moving on so a following action cannot race the state update in CI.
  */
 const selectWorkflowStatus = async (page: Page, status: string) => {
-  const statusSelector = page.locator("#workflow-search-status");
-  await statusSelector.click();
+  const statusInput = page.locator("#workflow-search-status");
+  const statusField = statusInput.locator("xpath=..");
+  await statusInput.click();
   await page.getByRole("option", { name: status }).click();
-  await expect(statusSelector).toContainText(
+  await expect(statusField).toContainText(
     status.charAt(0) + status.slice(1).toLowerCase(),
   );
   await page.keyboard.press("Escape");
