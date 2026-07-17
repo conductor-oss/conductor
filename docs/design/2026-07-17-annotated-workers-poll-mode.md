@@ -94,6 +94,22 @@ their HTTP `TaskClient`; both repos share everything above the seam. (A
 loopback-HTTP fallback config is nearly free and gives an orkes-identical
 topology for anyone running OSS workers out-of-process.)
 
+## Scaling topologies
+
+Because poll-worker mode routes annotated types through the standard task API
+path, all three topologies work with the same beans and no further code:
+
+1. **Single binary** (default): the in-process host polls. Scales with server
+   replicas — polling is competitive over the shared queue, so N servers ×
+   `threadCount` pollers execute safely in parallel.
+2. **Server + external workers**: external worker processes (conductor-client
+   + the same `@WorkerTask` beans, i.e. orkes' workers-app assembly) poll the
+   task API alongside the in-process host.
+3. **Fully external / independently scalable** (orkes-exact):
+   `conductor.annotated-workers.polling-host.enabled=false` — the server only
+   schedules, queues, and auto-registers task defs; standalone worker jars own
+   all execution and scale independently of the server fleet.
+
 ## Known deltas to resolve before flipping the default
 
 - **Poll latency**: system tasks fire ~ms after `decide()`; pollers add

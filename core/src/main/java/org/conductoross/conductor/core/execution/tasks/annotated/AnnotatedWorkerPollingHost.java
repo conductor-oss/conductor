@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Lazy;
@@ -70,20 +71,32 @@ public class AnnotatedWorkerPollingHost implements SmartLifecycle {
 
     static final int DEFAULT_RETRY_COUNT = 3;
 
+    /**
+     * When false, the server only schedules/queues annotated task types (and still auto-registers
+     * their task defs); execution is left entirely to external workers polling the task API — e.g.
+     * a standalone workers process built from the same @WorkerTask beans and the conductor client,
+     * which is exactly orkes-conductor's independently-scalable workers topology.
+     */
+    public static final String POLLING_ENABLED_PROPERTY =
+            "conductor.annotated-workers.polling-host.enabled";
+
     private final WorkerTaskAnnotationScanner scanner;
     private final ExecutionService executionService;
     private final MetadataDAO metadataDAO;
     private final String workerId;
+    private final boolean pollingEnabled;
     private final AtomicBoolean running = new AtomicBoolean(false);
     private ScheduledExecutorService pollerPool;
 
     public AnnotatedWorkerPollingHost(
             WorkerTaskAnnotationScanner scanner,
             @Lazy ExecutionService executionService,
-            @Lazy MetadataDAO metadataDAO) {
+            @Lazy MetadataDAO metadataDAO,
+            @Value("${" + POLLING_ENABLED_PROPERTY + ":true}") boolean pollingEnabled) {
         this.scanner = scanner;
         this.executionService = executionService;
         this.metadataDAO = metadataDAO;
+        this.pollingEnabled = pollingEnabled;
         this.workerId = Utils.getServerId() + "-annotated-poll-worker";
     }
 
@@ -99,6 +112,15 @@ public class AnnotatedWorkerPollingHost implements SmartLifecycle {
         }
 
         workers.forEach(worker -> registerTaskDefIfAbsent(worker.getTaskType()));
+
+        if (!pollingEnabled) {
+            log.info(
+                    "In-process polling disabled ({}=false); {} annotated task type(s) are queued"
+                            + " for external workers polling the task API",
+                    POLLING_ENABLED_PROPERTY,
+                    workers.size());
+            return;
+        }
 
         int totalThreads =
                 workers.stream().mapToInt(w -> Math.max(1, w.getAnnotation().threadCount())).sum();

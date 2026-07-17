@@ -87,7 +87,7 @@ public class TestAnnotatedWorkerPollingHost {
                         mock(ParametersUtils.class),
                         metadataDAO,
                         WorkerTaskAnnotationScanner.MODE_POLL_WORKER);
-        host = new AnnotatedWorkerPollingHost(scanner, executionService, metadataDAO);
+        host = new AnnotatedWorkerPollingHost(scanner, executionService, metadataDAO, true);
         // pollAndExecute is guarded by the running flag
         setRunning();
     }
@@ -222,6 +222,31 @@ public class TestAnnotatedWorkerPollingHost {
         assertFalse(
                 "task mappers must still be registered for the decider",
                 pollScanner.annotatedTaskSystems().isEmpty());
+    }
+
+    @Test
+    public void testDisabledPollingHostRegistersDefsButStartsNoPollers() throws Exception {
+        Set<WorkflowSystemTask> asyncSystemTasks = new HashSet<>();
+        WorkerTaskAnnotationScanner pollScanner =
+                new WorkerTaskAnnotationScanner(
+                        List.of(new ScannedPollBean()),
+                        asyncSystemTasks,
+                        mock(ParametersUtils.class),
+                        metadataDAO,
+                        WorkerTaskAnnotationScanner.MODE_POLL_WORKER);
+        pollScanner.afterPropertiesSet();
+        when(metadataDAO.getTaskDef("scanned_poll_task")).thenReturn(null);
+
+        AnnotatedWorkerPollingHost disabledHost =
+                new AnnotatedWorkerPollingHost(pollScanner, executionService, metadataDAO, false);
+        disabledHost.start();
+
+        // Task def is still registered server-side for external workers...
+        verify(metadataDAO).createTaskDef(any(TaskDef.class));
+        // ...but no in-process poller pool is created.
+        var poolField = AnnotatedWorkerPollingHost.class.getDeclaredField("pollerPool");
+        poolField.setAccessible(true);
+        assertNull(poolField.get(disabledHost));
     }
 
     @Test
