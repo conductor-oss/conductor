@@ -1,0 +1,4 @@
+{
+  "_README": "conductor-oss known failures for the agent python e2e suite (bundle: conductor-ai-e2e-python-*, from conductor-oss/python-sdk), consumed by known_failures_plugin.py via E2E_KNOWN_FAILURES. Each key is a pytest node-id (or a '<file>::<Class>::<test>' suffix); the value is the reason + a tracking link. The suite is expected GREEN against the SQLite server built from this repo, so this list is EMPTY. Add an entry only for a genuine, tracked, deterministic failure while its fix is in flight; a key that matches nothing is a harmless no-op (the test still runs and the gate still catches a real break), and a fixed bug turns its test XPASS — remove the entry then. Do NOT list flaky tests (those are handled by rerun).",
+  "_HOWTO": "Reconcile from the run's results/junit-e2e.xml. Example entry: \"test_suite4_mcp_tools.py::TestSuite4McpTools::test_mcp_lifecycle\": \"reason — conductor-oss/conductor#NNNN\""
+}
