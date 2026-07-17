@@ -74,7 +74,9 @@ export function useWorkflowConfig(
 
       return {
         workflowVersions: [...workflowVersionsVal],
-        workflowInputTemplate: getTemplateFromInputParams(def?.["inputParameters"])
+        workflowInputTemplate: getTemplateFromInputParams(
+          def?.["inputParameters"],
+        )
           ? getTemplateFromInputParams(def?.["inputParameters"])
           : agentNames.includes(workflowType)
             ? '{\n  "prompt": ""\n}'

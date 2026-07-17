@@ -71,6 +71,10 @@ export const executionMachine = createMachine<
               target: "noAccess",
             },
             {
+              cond: "isNotFound",
+              target: "notFound",
+            },
+            {
               actions: ["logError", "assignError"],
               target: "init",
             },
@@ -80,6 +84,7 @@ export const executionMachine = createMachine<
       noAccess: {
         type: "final",
       },
+      notFound: {},
       init: {
         type: "parallel",
         states: {
