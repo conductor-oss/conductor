@@ -49,6 +49,30 @@ public class PostgresIndexQueryBuilderTest {
     }
 
     @Test
+    void shouldKeepAgentChildrenBelowTheirParent() throws SQLException {
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "workflow_index",
+                        "classifier=agent",
+                        "",
+                        0,
+                        15,
+                        List.of("agentHierarchy:DESC", "startTime:DESC"),
+                        properties);
+
+        assertEquals(
+                "SELECT json_data::TEXT FROM workflow_index WHERE classifier = ? ORDER BY "
+                        + "COALESCE((SELECT parent.start_time FROM workflow_index parent WHERE "
+                        + "parent.workflow_id = workflow_index.parent_workflow_id), "
+                        + "workflow_index.start_time) DESC, "
+                        + "COALESCE(NULLIF(workflow_index.parent_workflow_id, ''), "
+                        + "workflow_index.workflow_id) ASC, "
+                        + "CASE WHEN workflow_index.parent_workflow_id = '' THEN 0 ELSE 1 END ASC, "
+                        + "start_time DESC LIMIT ? OFFSET ?",
+                builder.getQuery());
+    }
+
+    @Test
     void shouldGenerateCountQueryForEmptyString() throws SQLException {
         String inputQuery = "";
         PostgresIndexQueryBuilder builder =

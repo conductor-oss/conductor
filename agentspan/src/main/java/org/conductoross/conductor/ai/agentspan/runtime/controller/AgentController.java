@@ -225,7 +225,7 @@ public class AgentController {
      * available.
      */
     @GetMapping("/{executionId}/status")
-    public Map<String, Object> getAgentStatus(@PathVariable("executionId") String executionId) {
+    public AgentStatusResponse getAgentStatus(@PathVariable("executionId") String executionId) {
         return agentService.getStatus(executionId);
     }
 

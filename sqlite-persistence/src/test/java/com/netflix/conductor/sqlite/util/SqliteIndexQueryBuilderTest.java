@@ -14,6 +14,7 @@ package com.netflix.conductor.sqlite.util;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -35,6 +36,30 @@ public class SqliteIndexQueryBuilderTest {
                         "table_name", "", "", 0, 15, new ArrayList<>(), properties);
         String generatedQuery = builder.getQuery();
         assertEquals("SELECT json_data FROM table_name LIMIT ? OFFSET ?", generatedQuery);
+    }
+
+    @Test
+    void shouldKeepAgentChildrenBelowTheirParent() throws SQLException {
+        SqliteIndexQueryBuilder builder =
+                new SqliteIndexQueryBuilder(
+                        "workflow_index",
+                        "classifier=agent",
+                        "",
+                        0,
+                        15,
+                        List.of("agentHierarchy:DESC", "startTime:DESC"),
+                        properties);
+
+        assertEquals(
+                "SELECT json_data FROM workflow_index WHERE classifier = ? ORDER BY "
+                        + "COALESCE((SELECT parent.start_time FROM workflow_index parent WHERE "
+                        + "parent.workflow_id = workflow_index.parent_workflow_id), "
+                        + "workflow_index.start_time) DESC, "
+                        + "COALESCE(NULLIF(workflow_index.parent_workflow_id, ''), "
+                        + "workflow_index.workflow_id) ASC, "
+                        + "CASE WHEN workflow_index.parent_workflow_id = '' THEN 0 ELSE 1 END ASC, "
+                        + "start_time DESC LIMIT ? OFFSET ?",
+                builder.getQuery());
     }
 
     @Test

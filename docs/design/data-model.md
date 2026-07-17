@@ -1,129 +1,101 @@
-# Data Model — Conductor-Agent Runtime Branch
+# Agent Worker Data Model
 
-Types and JSON shapes for the `agentType: "conductor"` branch. All names are defined in
-[architecture.md](./architecture.md) and reused here verbatim. This document is the reference the
-examples and docs render from — do not introduce a field that is not listed here.
+The portable agent workers use the public Conductor `Task` and `TaskResult` types. The task output
+is the durable checkpoint shared by embedded execution and remote SDK polling.
 
-## 1. Java types (existing production code)
+## 1. AgentClient
 
-### 1.1 Core `WorkflowExecutor`
+`AgentClient` is the control-plane interface used by the `conductor` branch. Its methods cover
+compile, deploy, start, status, execution search, respond, stop, signal, cancel, and SSE streaming.
+The worker depends on this interface rather than on an HTTP controller or core
+`WorkflowExecutor`.
 
-```java
-public interface WorkflowExecutor {
-    AgentStartResponse startAgentExecution(AgentStartRequest request);
-    WorkflowModel getWorkflow(String workflowId, boolean includeTasks);
-    TaskModel updateTask(TaskResult taskResult);
-    void terminateWorkflow(String workflowId, String reason);
-}
-```
+## 2. ConductorAgentRequest
 
-### 1.2 `AgentStartRequest` (`common.metadata.agent`)
+`ConductorAgentRequest` extends `AgentStartRequest`. It therefore supports the controller's start
+fields, including:
 
-| Field | Type | Source (`A2ACallRequest` → start request) |
+| Field | Type | Purpose |
 |---|---|---|
-| `name` | `String` | `agentName` |
-| `version` | `Integer` | `agentVersion` |
-| `prompt` | `String` | resolved per [architecture.md §4.2](./architecture.md) |
-| `context` | `Map<String,Object>` | `context` |
-| `sessionId` | `String` | `sessionId` |
-| `runId` | `String` | `runId` |
-| `idempotencyKey` | `String` | derived, [architecture.md §4.6](./architecture.md) |
+| `name` | `String` | Previously deployed agent name |
+| `version` | `Integer` | Optional deployed version |
+| `prompt` | `String` | User input for start or resume |
+| `model` | `String` | Per-call model override |
+| `sessionId` | `String` | Session association |
+| `media` | `List<String>` | Media inputs |
+| `context` | `Map<String,Object>` | Additional execution context |
+| `idempotencyKey` | `String` | Optional caller-supplied key |
+| `framework` / `rawConfig` | framework-specific values | Inline foreign-agent construction |
+| `runId` | `String` | Per-execution worker-domain isolation |
 
-### 1.3 `ConductorAgentExecution` (`@Data @Builder`, immutable snapshot)
+The worker adds:
 
-| Field | Type | Meaning |
+| Field | Type | Purpose |
 |---|---|---|
-| `executionId` | `String` | Runtime-assigned id for poll/respond/cancel. |
-| `agentName` | `String` | Executing agent. |
-| `sessionId` | `String` | Owning session. |
-| `state` | `ConductorAgentState` | Current lifecycle state. |
-| `output` | `Map<String,Object>` | Structured output of a completed run. |
-| `text` | `String` | Latest text (partial while running, final when complete). |
-| `pendingTool` | `Map<String,Object>` | Set only when `state == WAITING`. |
-| `reasonForIncompletion` | `String` | Explanation for `FAILED`/`CANCELED`. |
+| `executionId` | `String` | Resume an in-flight run instead of starting a new one |
+| `pollIntervalSeconds` | `Integer` | Poll delay; default 5 |
+| `maxDurationSeconds` | `Integer` | Absolute deadline; default 86400 |
+| `maxPollFailures` | `Integer` | Consecutive transient-failure cap; default 30 |
 
-Convenience: `isComplete()`, `isRunning()`, `isWaiting()`.
+## 3. ConductorAgentExecution
 
-### 1.4 `ConductorAgentState` (enum)
+`ConductorAgentExecution` is the normalized snapshot consumed by `ConductorAgentDelegate`:
 
-`RUNNING`, `WAITING`, `COMPLETED`, `FAILED`, `CANCELED`.
-`isTerminal()` → COMPLETED/FAILED/CANCELED; `isInterrupted()` → WAITING.
+| Field | Meaning |
+|---|---|
+| `executionId` | Agent execution identifier |
+| `agentName` | Executed agent |
+| `state` | Normalized `ConductorAgentState` |
+| `output` | Structured result |
+| `text` | Latest or final text |
+| `pendingTool` | Pending human/tool request |
+| `reasonForIncompletion` | Failure or cancellation reason |
+| `startTime` | Agent execution start time in epoch milliseconds |
+| `endTime` | Terminal agent execution end time in epoch milliseconds |
 
-## 2. Task input JSON (`inputParameters`)
+States are `RUNNING`, `WAITING`, `COMPLETED`, `FAILED`, and `CANCELED`.
 
-Deserialised into `A2ACallRequest`. Conductor-branch subset (see
-[architecture.md §4.2](./architecture.md)):
+## 4. Durable task output
 
-```json
-{
-  "agentType": "conductor",
-  "agentName": "research_agent",
-  "agentVersion": 1,
-  "text": "Summarize the latest release notes",
-  "context": { "locale": "en-US" },
-  "sessionId": "session-123",
-  "runId": "run-abc",
-  "executionId": "exec-xyz",
-  "pollIntervalSeconds": 5,
-  "maxDurationSeconds": 86400,
-  "maxPollFailures": 30
-}
-```
-
-- `agentName` + a prompt are required on a fresh start.
-- `executionId` present → resume: the resolved prompt is fed back as `{"result": <prompt>}` via
-  `respond(executionId, ...)`, then the snapshot is re-read.
-
-## 3. Task output JSON (`outputData`)
-
-Keyed by `ConductorAgentResults` constants ([architecture.md §4.3](./architecture.md)). Shape varies
-by terminal state.
-
-**Completed run:**
+`ConductorAgentResults` owns the persisted keys:
 
 ```json
 {
   "executionId": "exec-xyz",
   "agentName": "research_agent",
-  "sessionId": "session-123",
-  "state": "COMPLETED",
-  "text": "Here is the summary...",
-  "output": { "summary": "...", "citations": ["..."] },
-  "agentStartedAt": 1752451200000,
+  "state": "working",
+  "taskId": "exec-xyz",
+  "contextId": "session-123",
+  "task": {
+    "kind": "task",
+    "id": "exec-xyz",
+    "contextId": "session-123",
+    "status": { "state": "working" },
+    "metadata": {
+      "agentType": "conductor",
+      "executionId": "exec-xyz",
+      "agentName": "research_agent"
+    }
+  },
+  "agentStartTime": 1752451200000,
   "agentPollFailures": 0
 }
 ```
 
-**Waiting for human/tool input** (task status is `COMPLETED`, `waiting=true`):
+The shared `state`, `taskId`, `contextId`, `task`, `agentMessage`, `artifacts`, and `text` fields use
+the same A2A v0.3 wire model as remote A2A agents. Native states map as follows: `RUNNING` to
+`working`, `WAITING` to `input-required`, `COMPLETED` to `completed`, `FAILED` to `failed`, and
+`CANCELED` to `canceled`.
 
-```json
-{
-  "executionId": "exec-xyz",
-  "agentName": "research_agent",
-  "sessionId": "session-123",
-  "state": "WAITING",
-  "waiting": true,
-  "pendingTool": { "name": "ask_human", "arguments": { "question": "Which region?" } },
-  "text": "I need one clarification before continuing."
-}
-```
+Terminal executions additionally expose `agentEndTime`. Completed executions retain the legacy
+`output` map and add A2A message/artifact parts, including a data part with the full structured
+result. Waiting executions complete the current task with `waiting: true`, an A2A
+`input-required` status, and may expose `pendingTool` and `text`.
 
-**Failed run** (task status `FAILED`, `reasonForIncompletion` set on the task):
+## 5. Invariants
 
-```json
-{
-  "executionId": "exec-xyz",
-  "agentName": "research_agent",
-  "state": "FAILED"
-}
-```
-
-## 4. Invariants (asserted by the tests in [testing.md](./testing.md))
-
-1. `state` in output always equals `ConductorAgentState.name()` of the applied snapshot; a null
-   snapshot state is treated as `RUNNING`.
-2. `agentStartedAt` is written exactly once and never overwritten across polls/retries.
-3. `agentPollFailures` resets to `0` on any successful `getStatus`.
-4. On `WAITING`, the Conductor task status is `COMPLETED` (not IN_PROGRESS) and `waiting=true`.
-5. The idempotency key is byte-for-byte identical across retries of the same
-   `(workflowInstanceId, referenceTaskName, iteration)`.
+1. `agentStartTime` is set once and survives retries and process restarts.
+2. `executionId` is persisted before later invocations poll status.
+3. A successful status call resets `agentPollFailures` to zero.
+4. The idempotency key uses retry-stable task identity, never `taskId`.
+5. Every invocation returns a complete `TaskResult`; the annotation runtime applies and persists it.

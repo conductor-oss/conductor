@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
 import java.util.*;
+import java.util.stream.IntStream;
 
 import javax.sql.DataSource;
 
@@ -826,6 +827,42 @@ public class SqliteIndexDAOTest {
         SearchResult<WorkflowSummary> results =
                 indexDAO.searchWorkflowSummary(query, "*", 0, 15, new ArrayList<>());
         assertEquals("Should find 2 child workflows", 2, results.getResults().size());
+    }
+
+    @Test
+    public void testAgentHierarchySortPlacesChildImmediatelyAfterParent() {
+        WorkflowSummary child = getMockWorkflowSummary("agent-child", "agent-parent");
+        child.setClassifier("agent");
+        indexDAO.indexWorkflow(child);
+
+        WorkflowSummary unrelated = getMockWorkflowSummary("agent-unrelated", "");
+        unrelated.setClassifier("agent");
+        indexDAO.indexWorkflow(unrelated);
+
+        WorkflowSummary parent = getMockWorkflowSummary("agent-parent", "");
+        parent.setClassifier("agent");
+        indexDAO.indexWorkflow(parent);
+
+        SearchResult<WorkflowSummary> results =
+                indexDAO.searchWorkflowSummary(
+                        "classifier=agent",
+                        "*",
+                        0,
+                        15,
+                        Arrays.asList("agentHierarchy:DESC", "startTime:DESC"));
+
+        int parentIndex =
+                IntStream.range(0, results.getResults().size())
+                        .filter(
+                                i ->
+                                        "agent-parent"
+                                                .equals(
+                                                        results.getResults()
+                                                                .get(i)
+                                                                .getWorkflowId()))
+                        .findFirst()
+                        .orElseThrow();
+        assertEquals("agent-child", results.getResults().get(parentIndex + 1).getWorkflowId());
     }
 
     @Test

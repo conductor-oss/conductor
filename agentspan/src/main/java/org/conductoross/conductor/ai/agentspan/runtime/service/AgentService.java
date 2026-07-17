@@ -1221,31 +1221,18 @@ public class AgentService {
     }
 
     /** Get the current status of an agent execution. */
-    public Map<String, Object> getStatus(String executionId) {
+    public AgentStatusResponse getStatus(String executionId) {
         Workflow workflow = workflowService.getExecutionStatus(executionId, true);
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("executionId", executionId);
-        result.put("status", workflow.getStatus().name());
-
         boolean isComplete = workflow.getStatus().isTerminal();
-        result.put("isComplete", isComplete);
-        result.put("isRunning", workflow.getStatus() == Workflow.WorkflowStatus.RUNNING);
-
-        if (isComplete) {
-            result.put("output", workflow.getOutput());
-        }
-
-        String reason = workflow.getReasonForIncompletion();
-        if (reason != null && !reason.isBlank()) {
-            result.put("reasonForIncompletion", reason);
-        }
+        Map<String, Object> pendingTool = null;
+        boolean waiting = false;
 
         // Find pending HUMAN or PULL_WORKFLOW_MESSAGES task
         for (Task task : workflow.getTasks()) {
             if (("HUMAN".equals(task.getTaskType())
                             || "PULL_WORKFLOW_MESSAGES".equals(task.getTaskType()))
                     && task.getStatus() == Task.Status.IN_PROGRESS) {
-                Map<String, Object> pendingTool = new LinkedHashMap<>();
+                pendingTool = new LinkedHashMap<>();
                 pendingTool.put("taskRefName", task.getReferenceTaskName());
                 if (task.getInputData() != null) {
                     pendingTool.put("tool_name", task.getInputData().get("tool_name"));
@@ -1265,13 +1252,23 @@ public class AgentService {
                                 task.getInputData().get("response_ui_schema"));
                     }
                 }
-                result.put("pendingTool", pendingTool);
-                result.put("isWaiting", true);
+                waiting = true;
                 break;
             }
         }
 
-        return result;
+        return AgentStatusResponse.builder()
+                .executionId(executionId)
+                .status(workflow.getStatus().name())
+                .complete(isComplete)
+                .running(workflow.getStatus() == Workflow.WorkflowStatus.RUNNING)
+                .waiting(waiting)
+                .output(isComplete ? workflow.getOutput() : null)
+                .reasonForIncompletion(workflow.getReasonForIncompletion())
+                .pendingTool(pendingTool)
+                .startTime(workflow.getStartTime())
+                .endTime(workflow.getEndTime() > 0 ? workflow.getEndTime() : null)
+                .build();
     }
 
     // ── Framework event push ─────────────────────────────────────────

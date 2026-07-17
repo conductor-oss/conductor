@@ -20,6 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -66,6 +67,20 @@ public class TestAnnotatedWorkflowSystemTask {
                 throw new RuntimeException("TaskContext is null");
             }
             return Map.of("taskId", context.getTaskId(), "input", input);
+        }
+    }
+
+    static class CancelAwareWorkerBean extends TestWorkerBean
+            implements AnnotatedTaskCancellationHandler {
+        private String canceledTaskType;
+        private Task canceledTask;
+        private String cancelReason;
+
+        @Override
+        public void cancel(String taskType, Task task, String reason) {
+            canceledTaskType = taskType;
+            canceledTask = task;
+            cancelReason = reason;
         }
     }
 
@@ -187,6 +202,24 @@ public class TestAnnotatedWorkflowSystemTask {
 
         systemTask.cancel(workflow, task, workflowExecutor);
 
+        assertEquals(TaskModel.Status.CANCELED, task.getStatus());
+    }
+
+    @Test
+    public void testCancelInvokesBeanLifecycleHook() throws Exception {
+        CancelAwareWorkerBean bean = new CancelAwareWorkerBean();
+        Method method = TestWorkerBean.class.getMethod("successTask", String.class);
+        WorkerTask annotation = createAnnotation("cancel_task");
+        AnnotatedWorkflowSystemTask systemTask =
+                new AnnotatedWorkflowSystemTask("cancel_task", method, bean, annotation);
+        TaskModel task = createTask(Map.of("input", "test"));
+        task.setReasonForIncompletion("parent terminated");
+
+        systemTask.cancel(workflow, task, workflowExecutor);
+
+        assertEquals("cancel_task", bean.canceledTaskType);
+        assertEquals("task-123", bean.canceledTask.getTaskId());
+        assertEquals("parent terminated", bean.cancelReason);
         assertEquals(TaskModel.Status.CANCELED, task.getStatus());
     }
 

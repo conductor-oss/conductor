@@ -40,8 +40,25 @@ public class AgentCard {
     private List<AgentSkill> skills;
     private List<String> defaultInputModes;
     private List<String> defaultOutputModes;
+
+    /** Current A2A 1.x discovery interfaces, ordered with the preferred interface first. */
+    private List<AgentInterface> supportedInterfaces;
+
+    /** Legacy A2A 0.3 interfaces retained for cards already in the ecosystem. */
     private List<AgentInterface> additionalInterfaces;
+
     private Map<String, Object> securitySchemes;
+
+    /** Current A2A 1.x security requirements. */
+    private List<Map<String, Object>> securityRequirements;
+
+    /** Legacy A2A 0.3 security requirements. */
     private List<Map<String, List<String>>> security;
+
+    private List<AgentCardSignature> signatures;
+
+    /** Legacy pre-1.0 extended-card declarations retained for compatibility. */
     private boolean supportsAuthenticatedExtendedCard;
+
+    private boolean supportsExtendedAgentCard;
 }

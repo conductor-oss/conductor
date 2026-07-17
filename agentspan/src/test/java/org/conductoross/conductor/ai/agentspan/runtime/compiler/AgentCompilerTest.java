@@ -19,6 +19,7 @@ import org.conductoross.conductor.common.metadata.agent.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.netflix.conductor.common.metadata.workflow.WorkflowClassifier;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
@@ -46,6 +47,9 @@ class AgentCompilerTest {
 
         assertThat(wf.getName()).isEqualTo("test_agent");
         assertThat(wf.getVersion()).isEqualTo(1);
+        assertThat(wf.getMetadata())
+                .containsEntry("classifier", WorkflowClassifier.AGENT)
+                .containsKey("agentDef");
         assertThat(wf.getTasks()).hasSize(1);
 
         WorkflowTask llmTask = wf.getTasks().get(0);

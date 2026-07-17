@@ -278,7 +278,10 @@ public class SqliteIndexQueryBuilder {
             if (splitCond.length == 2) {
                 String attribute = camelToSnake(splitCond[0]);
                 String order = splitCond[1].toUpperCase();
-                if (Arrays.asList(VALID_FIELDS).contains(attribute)
+                if ("agent_hierarchy".equals(attribute)
+                        && Arrays.asList(VALID_SORT_ORDER).contains(order)) {
+                    sortConds.add(agentHierarchySort(order));
+                } else if (Arrays.asList(VALID_FIELDS).contains(attribute)
                         && Arrays.asList(VALID_SORT_ORDER).contains(order)) {
                     sortConds.add(attribute + " " + order);
                 }
@@ -289,6 +292,30 @@ public class SqliteIndexQueryBuilder {
             return " ORDER BY " + String.join(", ", sortConds);
         }
         return "";
+    }
+
+    /**
+     * Groups a parent workflow and its direct children using the parent's workflow id. A correlated
+     * lookup keeps groups in parent start-time order; the rank puts the parent first. This must be
+     * performed by the index query, before pagination, so a child cannot appear on a preceding
+     * page.
+     */
+    private String agentHierarchySort(String order) {
+        return "COALESCE((SELECT parent.start_time FROM "
+                + table
+                + " parent WHERE parent.workflow_id = "
+                + table
+                + ".parent_workflow_id), "
+                + table
+                + ".start_time) "
+                + order
+                + ", COALESCE(NULLIF("
+                + table
+                + ".parent_workflow_id, ''), "
+                + table
+                + ".workflow_id) ASC, CASE WHEN "
+                + table
+                + ".parent_workflow_id = '' THEN 0 ELSE 1 END ASC";
     }
 
     private static String camelToSnake(String camel) {

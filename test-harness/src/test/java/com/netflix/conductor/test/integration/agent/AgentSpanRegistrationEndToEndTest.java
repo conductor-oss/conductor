@@ -176,6 +176,7 @@ class AgentSpanRegistrationEndToEndTest {
         // agents in ConductorAgentEndToEndTest.
         WorkflowDef compiled = metadataService.getWorkflowDef(agentName, null);
         assertTrue(compiled.isAgent());
+        assertEquals("agent", compiled.getMetadata().get("classifier"));
         assertEquals("conductor", compiled.getMetadata().get("agent_sdk"));
         @SuppressWarnings("unchecked")
         Map<String, Object> agentDef = (Map<String, Object>) compiled.getMetadata().get("agentDef");
@@ -189,7 +190,7 @@ class AgentSpanRegistrationEndToEndTest {
         assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
 
         Task chat = agentTaskOf(completed);
-        assertEquals("COMPLETED", chat.getOutputData().get("state"));
+        assertEquals("completed", chat.getOutputData().get("state"));
         @SuppressWarnings("unchecked")
         Map<String, Object> output = (Map<String, Object>) chat.getOutputData().get("output");
         assertNotNull(output, "a real LLM_CHAT_COMPLETE agent must surface a structured output");
@@ -251,7 +252,7 @@ class AgentSpanRegistrationEndToEndTest {
         assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
 
         Task chat = agentTaskOf(completed);
-        assertEquals("COMPLETED", chat.getOutputData().get("state"));
+        assertEquals("completed", chat.getOutputData().get("state"));
         String executionId = (String) chat.getOutputData().get("executionId");
 
         Workflow agentExecution = executionService.getExecutionStatus(executionId, true);
@@ -380,7 +381,7 @@ class AgentSpanRegistrationEndToEndTest {
         assertTrue(!humanTurns.isEmpty());
 
         Task lastChat = chatCalls.get(chatCalls.size() - 1);
-        assertEquals("COMPLETED", lastChat.getOutputData().get("state"));
+        assertEquals("completed", lastChat.getOutputData().get("state"));
         String executionId = (String) lastChat.getOutputData().get("executionId");
 
         Workflow agentExecution = executionService.getExecutionStatus(executionId, true);

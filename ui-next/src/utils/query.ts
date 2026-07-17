@@ -488,6 +488,21 @@ export function useWorkflowNames(
   );
 }
 
+/** Registered AgentSpan definitions, used anywhere an agent—not a workflow—is selectable. */
+export function useAgentNames(
+  optionsOverride: Partial<UseQueryOptions<{ name: string }[], FetchError>> = {},
+): string[] {
+  const { data } = useFetch<{ name: string }[]>("/agent/list", {
+    staleTime: DEFAULT_STALE_TIME,
+    ...optionsOverride,
+  });
+
+  return useMemo(
+    () => (data ? data.map((agent) => agent.name).filter(Boolean) : []),
+    [data],
+  );
+}
+
 export const useSharedQueryContext = (): {
   url: string;
   cacheQueryKey: (string | undefined)[];
