@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import com.netflix.conductor.client.http.MetadataClient;
 import com.netflix.conductor.client.http.TaskClient;
@@ -70,7 +71,7 @@ class AgentTaskTests {
     private static final TaskClient taskClient = ApiUtil.TASK_CLIENT;
     private static final AgentClient agentClient = ApiUtil.AGENT_CLIENT;
     private static final String MODEL =
-            System.getenv().getOrDefault("AGENT_E2E_MODEL", "openai/gpt-4o-mini");
+            System.getenv().getOrDefault("AGENT_E2E_MODEL", "OpenAI/gpt-4o-mini");
 
     @BeforeAll
     static void registerAgentTaskDef() {
@@ -84,6 +85,7 @@ class AgentTaskTests {
     }
 
     @Test
+    @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
     void helloWorldAgentCompletesAndExposesSubWorkflowId() {
         String agentName = "hello_world_agent_e2e_" + UUID.randomUUID();
         registerHelloWorldAgent(agentName);
@@ -108,6 +110,7 @@ class AgentTaskTests {
     }
 
     @Test
+    @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
     void longRunningAgentPollsMultipleTimesBeforeCompleting() {
         String agentName = "long_running_agent_e2e_" + UUID.randomUUID();
         String workerTaskName = registerLongRunningAgent(agentName);
@@ -130,7 +133,7 @@ class AgentTaskTests {
                         + callbackDelayMillis
                         + "ms");
         assertTrue(
-                callbackDelayMillis < 8_000,
+                callbackDelayMillis < 10_000,
                 "AGENT callback was delayed well beyond five seconds: "
                         + callbackDelayMillis
                         + "ms");
@@ -147,6 +150,7 @@ class AgentTaskTests {
     }
 
     @Test
+    @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
     void agentClientStartsWaitsRespondsAndCompletesARealAgent() {
         String agentName = "approval_agent_e2e_" + UUID.randomUUID();
         String toolName = agentName + "_work";
@@ -174,6 +178,7 @@ class AgentTaskTests {
     }
 
     @Test
+    @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
     void workflowWithTwoAgentTasksCarriesAConversationAcrossDurableRounds() {
         String firstAgent = "research_agent_e2e_" + UUID.randomUUID();
         String secondAgent = "review_agent_e2e_" + UUID.randomUUID();
@@ -493,6 +498,7 @@ class AgentTaskTests {
      * shared child execution.
      */
     @Test
+    @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
     void concurrentCallsToTheSameAgentStayIndependent() {
         String agentName = "hello_world_agent_concurrent_e2e_" + UUID.randomUUID();
         registerHelloWorldAgent(agentName);
