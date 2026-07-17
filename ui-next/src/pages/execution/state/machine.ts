@@ -84,7 +84,9 @@ export const executionMachine = createMachine<
       noAccess: {
         type: "final",
       },
-      notFound: {},
+      notFound: {
+        type: "final",
+      },
       init: {
         type: "parallel",
         states: {
