@@ -28,7 +28,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
@@ -50,20 +49,17 @@ public class WorkerTaskAnnotationScanner implements InitializingBean {
     private final Map<String, TaskMapper> taskMappers = new HashMap<>();
     private final ParametersUtils parametersUtils;
     private final MetadataDAO metadataDAO;
-    private final ExecutionDAOFacade executionDAOFacade;
 
     public WorkerTaskAnnotationScanner(
             List<AnnotatedSystemTaskWorker> annotatedSystemTaskWorkers,
             @Qualifier(SystemTaskRegistry.ASYNC_SYSTEM_TASKS_QUALIFIER)
                     Set<WorkflowSystemTask> asyncSystemTasks,
             @Lazy ParametersUtils parametersUtils,
-            @Lazy MetadataDAO metadataDAO,
-            @Lazy ExecutionDAOFacade executionDAOFacade) {
+            @Lazy MetadataDAO metadataDAO) {
         this.annotatedSystemTaskWorkers = annotatedSystemTaskWorkers;
         this.asyncSystemTasks = asyncSystemTasks;
         this.parametersUtils = parametersUtils;
         this.metadataDAO = metadataDAO;
-        this.executionDAOFacade = executionDAOFacade;
     }
 
     /**
@@ -98,8 +94,7 @@ public class WorkerTaskAnnotationScanner implements InitializingBean {
                                 taskType);
 
                         AnnotatedWorkflowSystemTask task =
-                                new AnnotatedWorkflowSystemTask(
-                                        taskType, method, bean, annotation, executionDAOFacade);
+                                new AnnotatedWorkflowSystemTask(taskType, method, bean, annotation);
 
                         // Add to existing asyncSystemTasks collection
                         asyncSystemTasks.add(task);

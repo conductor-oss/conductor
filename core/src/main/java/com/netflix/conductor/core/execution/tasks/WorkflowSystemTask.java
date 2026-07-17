@@ -82,6 +82,18 @@ public abstract class WorkflowSystemTask {
     }
 
     /**
+     * @return True if this task's {@link #start} blocks until the work completes (e.g. a remote
+     *     provider call). The caller persists the task's IN_PROGRESS transition before invoking
+     *     {@code start()} for such tasks, so a queue message redelivered mid-invocation sees the
+     *     in-flight status instead of SCHEDULED and does not trigger a duplicate execution.
+     *     Defaults to false: {@code start()} is expected to return quickly and the task is
+     *     persisted only after it returns.
+     */
+    public boolean isBlockingStart() {
+        return false;
+    }
+
+    /**
      * @return True if the task is supposed to be started asynchronously using internal queues.
      */
     public boolean isAsync() {

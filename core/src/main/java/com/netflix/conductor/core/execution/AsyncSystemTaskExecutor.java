@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
@@ -168,6 +169,25 @@ public class AsyncSystemTaskExecutor {
                     if (task.getStatus() == TaskModel.Status.SCHEDULED) {
                         task.setStartTime(System.currentTimeMillis());
                         Monitors.recordQueueWaitTime(task.getTaskType(), task.getQueueWaitTime());
+                        if (systemTask.isBlockingStart()) {
+                            // start() blocks until the work completes, and nothing below runs
+                            // until it returns. Hand off through the same
+                            // WorkflowExecutor.updateTask contract a remote worker uses before
+                            // long work: it persists the IN_PROGRESS transition (so a queue
+                            // message redelivered mid-invocation sees the in-flight status
+                            // instead of SCHEDULED - see #1321) and postpones the queue message
+                            // past the blocking call.
+                            task.setStatus(TaskModel.Status.IN_PROGRESS);
+                            TaskResult handOff = new TaskResult();
+                            handOff.setWorkflowInstanceId(workflowId);
+                            handOff.setTaskId(task.getTaskId());
+                            handOff.setStatus(TaskResult.Status.IN_PROGRESS);
+                            handOff.setCallbackAfterSeconds(
+                                    systemTask
+                                            .getEvaluationOffset(task, systemTaskCallbackTime)
+                                            .orElse(systemTaskCallbackTime));
+                            workflowExecutor.updateTask(handOff);
+                        }
                         systemTask.start(workflow, task, workflowExecutor);
                     } else {
                         systemTask.execute(workflow, task, workflowExecutor);

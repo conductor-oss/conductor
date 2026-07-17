@@ -23,7 +23,6 @@ import org.mockito.Mockito;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
-import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -284,11 +283,10 @@ public class TestAnnotatedWorkflowSystemTask {
 
     // ── Issue #1321: the status contract prevents duplicate execution on queue redelivery ──
     //
-    // The annotated method blocks synchronously (e.g. an LLM provider call) with nothing
-    // persisted until it returns, so a redelivered queue message used to make a second worker
-    // invoke the same method again. The adapter now follows the system-task status contract:
-    // SCHEDULED means start (the IN_PROGRESS transition is persisted BEFORE the method is
-    // invoked), IN_PROGRESS means an invocation is in flight - don't do anything. The one
+    // The annotated method blocks synchronously (e.g. an LLM provider call). The adapter
+    // declares isBlockingStart() so the CALLER (AsyncSystemTaskExecutor) persists the
+    // IN_PROGRESS hand-off before invoking start(); the adapter itself follows the status
+    // contract: IN_PROGRESS means an invocation is in flight - execute() does nothing. The one
     // exception: a worker-requested callback (IN_PROGRESS + callbackAfterSeconds > 0) is
     // re-invoked, preserving the long-running LLM/A2A worker flow.
 
@@ -307,35 +305,18 @@ public class TestAnnotatedWorkflowSystemTask {
     }
 
     @Test
-    public void testInProgressTransitionPersistedBeforeInvocation() throws Exception {
-        ClaimProbeBean bean = new ClaimProbeBean();
+    public void testDeclaresBlockingStart() throws Exception {
+        // The declaration is what makes the caller (AsyncSystemTaskExecutor) persist the
+        // IN_PROGRESS hand-off before invoking start().
         Method method = ClaimProbeBean.class.getMethod("blockingCall");
-        ExecutionDAOFacade facade = mock(ExecutionDAOFacade.class);
-        Mockito.doAnswer(
-                        invocation -> {
-                            TaskModel persisted = invocation.getArgument(0);
-                            assertEquals(TaskModel.Status.IN_PROGRESS, persisted.getStatus());
-                            assertEquals(0, persisted.getCallbackAfterSeconds());
-                            bean.claimPersisted = true;
-                            return null;
-                        })
-                .when(facade)
-                .updateTask(Mockito.any(TaskModel.class));
-
         AnnotatedWorkflowSystemTask systemTask =
                 new AnnotatedWorkflowSystemTask(
-                        "claim_task", method, bean, createAnnotation("claim_task"), facade);
+                        "blocking_task",
+                        method,
+                        new ClaimProbeBean(),
+                        createAnnotation("blocking_task"));
 
-        TaskModel task = createTask(Map.of());
-        task.setTaskType("claim_task");
-
-        systemTask.start(workflow, task, workflowExecutor);
-
-        assertTrue(
-                "the IN_PROGRESS transition must be persisted before the blocking method is"
-                        + " invoked",
-                bean.claimPersistedAtInvocation);
-        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        assertTrue(systemTask.isBlockingStart());
     }
 
     @Test
@@ -344,11 +325,7 @@ public class TestAnnotatedWorkflowSystemTask {
         Method method = ClaimProbeBean.class.getMethod("blockingCall");
         AnnotatedWorkflowSystemTask systemTask =
                 new AnnotatedWorkflowSystemTask(
-                        "claimed_task",
-                        method,
-                        bean,
-                        createAnnotation("claimed_task"),
-                        mock(ExecutionDAOFacade.class));
+                        "claimed_task", method, bean, createAnnotation("claimed_task"));
 
         TaskModel task = createTask(Map.of());
         task.setTaskType("claimed_task");
@@ -371,8 +348,7 @@ public class TestAnnotatedWorkflowSystemTask {
                         "offset_task",
                         method,
                         new ClaimProbeBean(),
-                        createAnnotation("offset_task"),
-                        mock(ExecutionDAOFacade.class));
+                        createAnnotation("offset_task"));
 
         TaskModel task = createTask(Map.of());
         task.setStatus(TaskModel.Status.IN_PROGRESS);
@@ -402,11 +378,7 @@ public class TestAnnotatedWorkflowSystemTask {
         Method method = ClaimProbeBean.class.getMethod("blockingCall");
         AnnotatedWorkflowSystemTask systemTask =
                 new AnnotatedWorkflowSystemTask(
-                        "callback_task",
-                        method,
-                        bean,
-                        createAnnotation("callback_task"),
-                        mock(ExecutionDAOFacade.class));
+                        "callback_task", method, bean, createAnnotation("callback_task"));
 
         TaskModel task = createTask(Map.of());
         task.setTaskType("callback_task");
@@ -421,7 +393,7 @@ public class TestAnnotatedWorkflowSystemTask {
     }
 
     @Test
-    public void testExecutesWithoutFacadeAsBefore() throws Exception {
+    public void testStartInvokesTheMethod() throws Exception {
         ClaimProbeBean bean = new ClaimProbeBean();
         Method method = ClaimProbeBean.class.getMethod("blockingCall");
         AnnotatedWorkflowSystemTask systemTask =

@@ -26,7 +26,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
@@ -84,21 +83,15 @@ public class TestAnnotatedSystemTaskIntegration {
             return mock(MetadataDAO.class);
         }
 
-        @Bean
-        public ExecutionDAOFacade executionDAOFacade() {
-            return mock(ExecutionDAOFacade.class);
-        }
-
         @Bean(name = "workerTaskAnnotationScanner")
         public WorkerTaskAnnotationScanner workerTaskAnnotationScanner(
                 List<AnnotatedSystemTaskWorker> workers,
                 @Qualifier(SystemTaskRegistry.ASYNC_SYSTEM_TASKS_QUALIFIER)
                         Set<WorkflowSystemTask> asyncSystemTasks,
                 ParametersUtils parametersUtils,
-                MetadataDAO metadataDAO,
-                ExecutionDAOFacade executionDAOFacade) {
+                MetadataDAO metadataDAO) {
             return new WorkerTaskAnnotationScanner(
-                    workers, asyncSystemTasks, parametersUtils, metadataDAO, executionDAOFacade);
+                    workers, asyncSystemTasks, parametersUtils, metadataDAO);
         }
     }
 

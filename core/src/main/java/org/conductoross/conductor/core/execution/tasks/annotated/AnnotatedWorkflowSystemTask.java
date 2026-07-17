@@ -19,10 +19,8 @@ import java.util.Optional;
 import org.conductoross.conductor.core.execution.tasks.TaskCancellationHandler;
 
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
-import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
-import com.netflix.conductor.core.utils.Utils;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
@@ -50,8 +48,6 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
 
     private final AnnotatedMethodResultMapper resultMapper;
 
-    private final ExecutionDAOFacade executionDAOFacade;
-
     /**
      * Postpone applied to a queue message redelivered while an invocation is in flight, when the
      * task def carries no response timeout. Keeps redelivered messages quiet until well past any
@@ -60,8 +56,7 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
     static final long DEFAULT_IN_FLIGHT_POSTPONE_SECONDS = 3600;
 
     /**
-     * Creates a new AnnotatedWorkflowSystemTask without duplicate-execution protection (no way to
-     * persist the IN_PROGRESS transition). Used by tests.
+     * Creates a new AnnotatedWorkflowSystemTask.
      *
      * @param taskType The task type name
      * @param method The annotated method to invoke
@@ -70,33 +65,12 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
      */
     public AnnotatedWorkflowSystemTask(
             String taskType, Method method, Object bean, WorkerTask annotation) {
-        this(taskType, method, bean, annotation, null);
-    }
-
-    /**
-     * Creates a new AnnotatedWorkflowSystemTask.
-     *
-     * @param taskType The task type name
-     * @param method The annotated method to invoke
-     * @param bean The Spring bean instance containing the method
-     * @param annotation The @WorkerTask annotation metadata
-     * @param executionDAOFacade Used to persist the task's IN_PROGRESS transition before the
-     *     blocking method invocation; may be null, in which case redelivered messages re-execute as
-     *     before
-     */
-    public AnnotatedWorkflowSystemTask(
-            String taskType,
-            Method method,
-            Object bean,
-            WorkerTask annotation,
-            ExecutionDAOFacade executionDAOFacade) {
         super(taskType);
         this.method = method;
         this.bean = bean;
         this.annotation = annotation;
         this.parameterMapper = new AnnotatedMethodParameterMapper();
         this.resultMapper = new AnnotatedMethodResultMapper();
-        this.executionDAOFacade = executionDAOFacade;
     }
 
     @Override
@@ -105,7 +79,20 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
         return true;
     }
 
-    /** SCHEDULED means the task needs to be started: transition to IN_PROGRESS and invoke. */
+    /**
+     * The annotated method runs synchronously inside {@link #start} and can block for minutes (e.g.
+     * an LLM provider call). Declaring this lets the caller persist the IN_PROGRESS hand-off before
+     * invoking, so redelivered queue messages see the in-flight status.
+     */
+    @Override
+    public boolean isBlockingStart() {
+        return true;
+    }
+
+    /**
+     * SCHEDULED means the task needs to be started. The caller has already persisted the
+     * IN_PROGRESS hand-off (see {@link #isBlockingStart}); this just invokes the method.
+     */
     @Override
     public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         invokeWorker(workflow, task);
@@ -133,12 +120,6 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
     }
 
     private boolean invokeWorker(WorkflowModel workflow, TaskModel task) {
-        // The annotated method runs synchronously and can block for minutes (e.g. an LLM provider
-        // call). Persist the IN_PROGRESS transition BEFORE invoking so a redelivered queue
-        // message sees the real status and backs off (issue #1321) — otherwise the task row stays
-        // SCHEDULED for the whole invocation and a second worker re-executes the method.
-        markInProgress(task);
-
         TaskContext taskContext = TaskContext.set(task.toTask());
         // A plain annotated-worker return value is terminal by default. Long-running workers can
         // override this execution state through their TaskContext without leaking TaskResult into
@@ -175,31 +156,6 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
             return true;
         } finally {
             TaskContext.clear();
-        }
-    }
-
-    /**
-     * Persists the standard SCHEDULED → IN_PROGRESS transition before the blocking invocation
-     * (resetting callbackAfterSeconds so an in-flight redelivery is distinguishable from a
-     * worker-requested callback). Best effort: if the transition cannot be persisted, execution
-     * proceeds with the historical (unprotected) behavior.
-     */
-    private void markInProgress(TaskModel task) {
-        if (executionDAOFacade == null) {
-            return;
-        }
-        try {
-            task.setStatus(TaskModel.Status.IN_PROGRESS);
-            task.setCallbackAfterSeconds(0);
-            task.setWorkerId(Utils.getServerId());
-            executionDAOFacade.updateTask(task);
-        } catch (Exception e) {
-            log.warn(
-                    "Unable to persist IN_PROGRESS transition for task {}/{}; duplicate-execution"
-                            + " protection unavailable for this invocation",
-                    getTaskType(),
-                    task.getTaskId(),
-                    e);
         }
     }
 
