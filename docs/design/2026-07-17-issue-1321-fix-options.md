@@ -57,6 +57,26 @@ Still requires new code (no wiring exists), abandons postgres/sqlite users —
 including the deployment the bug was reported on — and leaves upstream #1321
 unfixed by default.
 
+## Option F — give system tasks the SIMPLE-task recovery model (rejected)
+
+SIMPLE tasks don't have this bug because poll deletes the queue message
+(`ExecutionService.java:242` → `:379` → `ack` = remove), persists `IN_PROGRESS`
+immediately (`:179`), and recovery is the decider's def-aware response timeout
+(`DeciderService.java:928`). Porting that to `AsyncSystemTaskExecutor`
+(ack-at-pop before `start()`) sounds like unification but unravels: the kept
+message is also every long-lived system task's re-evaluation timer and
+rate-limit deferral (postpone at `AsyncSystemTaskExecutor.java:195`, `:224`),
+decider recovery means timeout→retry which is unsafe for side-effectful system
+tasks (the reason `MetadataMapperService.java:125-131` zeroes their timeouts),
+and paused-then-resumed attempts re-open #1322, requiring the terminal-update
+guard that broke legitimate flows. Core surgery for a problem two task types
+have.
+
+Long-term variant worth keeping in mind: run annotated workers as **in-process
+SIMPLE workers** (SDK worker model polling the task API) — they'd inherit
+ack-at-poll + def-timeout recovery with zero core changes, at the cost of poll
+latency, worker pools, and a rewrite of the annotated-worker feature.
+
 ## Follow-up (needed regardless): make the lease value reliable
 
 Option A reads `responseTimeoutSeconds` from the embedded task def. Single-agent
