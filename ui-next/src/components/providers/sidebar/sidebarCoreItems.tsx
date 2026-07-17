@@ -4,7 +4,7 @@
  * These items are merged with plugin-registered items in UiSidebar.
  * - Executions submenu (Workflow, Scheduler, Queue Monitor)
  * - Run Workflow button
- * - Definitions submenu (Workflow, Task, Event Handler, Scheduler)
+ * - Definitions submenu (Workflow, Agents, Task, Event Handler, Scheduler)
  * - Help menu
  * - API Docs
  */
@@ -62,6 +62,7 @@ const CORE_SIDEBAR_POSITIONS = {
   // Definitions submenu children
   DEFINITIONS: {
     workflowDefItem: 100,
+    agentDefItem: 150,
     taskDefItem: 200,
     eventHandlerDefItem: 300,
     schedulerDefItem: 350,
@@ -142,16 +143,6 @@ export function getCoreSidebarItems(open: boolean): MenuItemType[] {
       position: 250,
       items: [
         {
-          id: "agentDefItem",
-          title: "Agents",
-          icon: null,
-          linkTo: AGENT_DEFINITION_URL.BASE,
-          shortcuts: [],
-          hotkeys: "",
-          hidden: hideAgentspan,
-          position: 100,
-        },
-        {
           id: "agentExeItem",
           title: "Executions",
           icon: null,
@@ -169,7 +160,7 @@ export function getCoreSidebarItems(open: boolean): MenuItemType[] {
           linkTo: SKILLS_URL.BASE,
           shortcuts: [],
           hotkeys: "",
-          hidden: hideAgentspan,
+          hidden: true,
           position: 300,
         },
         {
@@ -219,6 +210,16 @@ export function getCoreSidebarItems(open: boolean): MenuItemType[] {
           hotkeys: "",
           hidden: false,
           position: D.workflowDefItem,
+        },
+        {
+          id: "agentDefItem",
+          title: "Agents",
+          icon: null,
+          linkTo: AGENT_DEFINITION_URL.BASE,
+          shortcuts: [],
+          hotkeys: "",
+          hidden: hideAgentspan,
+          position: D.agentDefItem,
         },
         {
           id: "taskDefItem",

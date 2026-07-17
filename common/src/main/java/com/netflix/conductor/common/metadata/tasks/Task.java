@@ -24,6 +24,7 @@ import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.protobuf.Any;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -827,6 +828,7 @@ public class Task {
     /**
      * @return the execution metadata, creating it if it doesn't exist (for setting timing data)
      */
+    @JsonIgnore
     public ExecutionMetadata getOrCreateExecutionMetadata() {
         if (executionMetadata == null) {
             executionMetadata = new ExecutionMetadata();
@@ -838,6 +840,7 @@ public class Task {
      * @return the execution metadata only if it has data, null otherwise (for protobuf
      *     serialization)
      */
+    @JsonIgnore
     public ExecutionMetadata getExecutionMetadataIfHasData() {
         if (executionMetadata != null && executionMetadata.hasData()) {
             return executionMetadata;

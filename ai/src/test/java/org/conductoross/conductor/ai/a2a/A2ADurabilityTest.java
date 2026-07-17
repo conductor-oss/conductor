@@ -17,31 +17,31 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.conductoross.conductor.ai.a2a.EmbeddedA2AAgent.SendMode;
+import org.conductoross.conductor.ai.tasks.worker.A2AWorkers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.env.Environment;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
-import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
 
+import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.invoke;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
 /**
  * Durability test-harness — validates the proof obligations from {@code
  * design/a2a/09-durable-a2a.md} by injecting failures against a real embedded A2A agent and the
- * real {@link AgentTask} / {@link A2AService} logic.
+ * real annotation-backed {@link A2AWorkers} / {@link A2AService} logic.
  *
  * <table>
  *   <tr><td>T1</td><td>{@link #t1_crashRecovery_resumesOnAFreshInstance()}</td><td>P1 crash-safe resume</td></tr>
@@ -58,7 +58,7 @@ class A2ADurabilityTest {
 
     private EmbeddedA2AAgent agent;
     private OkHttpClient client;
-    private Environment environment;
+    private String callbackUrl;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -68,7 +68,7 @@ class A2ADurabilityTest {
                         .connectTimeout(2, TimeUnit.SECONDS)
                         .readTimeout(5, TimeUnit.SECONDS)
                         .build();
-        environment = mock(Environment.class);
+        callbackUrl = null;
     }
 
     @AfterEach
@@ -83,25 +83,30 @@ class A2ADurabilityTest {
         return service;
     }
 
-    private AgentTask newTask(A2AService service) {
-        return new AgentTask(service, environment);
+    private A2AWorkers newWorkers(A2AService service) {
+        return new A2AWorkers(
+                service,
+                new org.conductoross.conductor.ai.agent.UnavailableAgentClient(),
+                callbackUrl);
     }
 
-    private TaskModel taskModel(
+    private Task taskModel(
             String taskId, String wf, String ref, int iteration, Map<String, Object> extra) {
-        TaskModel model = new TaskModel();
-        model.setTaskId(taskId);
-        model.setWorkflowInstanceId(wf);
-        model.setReferenceTaskName(ref);
-        model.setIteration(iteration);
+        Task task = new Task();
+        task.setTaskId(taskId);
+        task.setWorkflowInstanceId(wf);
+        task.setReferenceTaskName(ref);
+        task.setIteration(iteration);
+        task.setStatus(Task.Status.SCHEDULED);
+        task.setOutputData(new HashMap<>());
         Map<String, Object> input = new HashMap<>();
         input.put("agentUrl", agent.url());
         input.put("text", "convert 100 USD");
         if (extra != null) {
             input.putAll(extra);
         }
-        model.setInputData(input);
-        return model;
+        task.setInputData(input);
+        return task;
     }
 
     // ---- T1: crash recovery -------------------------------------------------------------------
@@ -111,20 +116,20 @@ class A2ADurabilityTest {
         agent.sendMode(SendMode.TASK_WORKING).completeAfterPolls(2).text("done");
 
         // Instance #1 starts the call; the remote task is created and we go IN_PROGRESS.
-        TaskModel model = taskModel("t1", "wf-1", "agent", 0, null);
-        newTask(newService()).start(null, model, null);
-        assertEquals(TaskModel.Status.IN_PROGRESS, model.getStatus());
-        assertEquals(EmbeddedA2AAgent.AGENT_TASK_ID, model.getOutputData().get("taskId"));
+        Task task = taskModel("t1", "wf-1", "agent", 0, null);
+        TaskResult result = invoke(newWorkers(newService()), task);
+        assertEquals(TaskResult.Status.IN_PROGRESS, result.getStatus());
+        assertEquals(EmbeddedA2AAgent.AGENT_TASK_ID, task.getOutputData().get("taskId"));
 
         // "Restart": a brand-new service + task instance resumes purely from the persisted
-        // TaskModel state (its output carries the remote taskId).
-        AgentTask afterRestart = newTask(newService());
+        // task state (its output carries the remote taskId).
+        A2AWorkers afterRestart = newWorkers(newService());
         int guard = 0;
-        while (model.getStatus() == TaskModel.Status.IN_PROGRESS && guard++ < 20) {
-            afterRestart.execute(null, model, null);
+        while (result.getStatus() == TaskResult.Status.IN_PROGRESS && guard++ < 20) {
+            result = invoke(afterRestart, task);
         }
-        assertEquals(TaskModel.Status.COMPLETED, model.getStatus());
-        assertEquals("done", model.getOutputData().get("text"));
+        assertEquals(TaskResult.Status.COMPLETED, result.getStatus());
+        assertEquals("done", result.getOutputData().get("text"));
     }
 
     @Test
@@ -132,31 +137,31 @@ class A2ADurabilityTest {
         agent.sendMode(SendMode.TASK_WORKING).completeAfterPolls(2).text("recovered");
 
         // Instance #1 starts the call → IN_PROGRESS, remote taskId recorded in the task output.
-        TaskModel before = taskModel("t1b", "wf-1", "agent", 0, null);
-        newTask(newService()).start(null, before, null);
-        assertEquals(TaskModel.Status.IN_PROGRESS, before.getStatus());
+        Task before = taskModel("t1b", "wf-1", "agent", 0, null);
+        TaskResult result = invoke(newWorkers(newService()), before);
+        assertEquals(TaskResult.Status.IN_PROGRESS, result.getStatus());
 
         // Cross the exact persistence boundary the engine crosses on restart: the durable task
         // state (input + output maps) is serialized to JSON — as the execution DAO stores it —
-        // and a COLD TaskModel is reconstructed from that JSON alone (no in-memory carry-over).
+        // and a cold Task is reconstructed from that JSON alone (no in-memory carry-over).
         ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
         String inputJson = objectMapper.writeValueAsString(before.getInputData());
         String outputJson = objectMapper.writeValueAsString(before.getOutputData());
 
-        TaskModel restored = new TaskModel();
+        Task restored = new Task();
         restored.setTaskId(before.getTaskId());
         restored.setInputData(objectMapper.readValue(inputJson, Map.class));
-        restored.addOutput(objectMapper.readValue(outputJson, Map.class));
-        restored.setStatus(TaskModel.Status.IN_PROGRESS);
+        restored.setOutputData(objectMapper.readValue(outputJson, Map.class));
+        restored.setStatus(Task.Status.IN_PROGRESS);
 
         // A fresh service + task instance (a "restarted" worker) resumes from the restored state.
-        AgentTask afterRestart = newTask(newService());
+        A2AWorkers afterRestart = newWorkers(newService());
         int guard = 0;
-        while (restored.getStatus() == TaskModel.Status.IN_PROGRESS && guard++ < 20) {
-            afterRestart.execute(null, restored, null);
+        while (result.getStatus() == TaskResult.Status.IN_PROGRESS && guard++ < 20) {
+            result = invoke(afterRestart, restored);
         }
 
-        assertEquals(TaskModel.Status.COMPLETED, restored.getStatus());
+        assertEquals(TaskResult.Status.COMPLETED, result.getStatus());
         assertEquals("recovered", restored.getOutputData().get("text"));
     }
 
@@ -168,12 +173,12 @@ class A2ADurabilityTest {
 
         // Attempt 1 (taskId t-a) and a "retry" (taskId t-b) — Conductor mints a new taskId per
         // retry but keeps the same workflowId + referenceTaskName + iteration.
-        TaskModel attempt1 = taskModel("t-a", "wf-9", "callAgent", 0, null);
-        newTask(newService()).start(null, attempt1, null);
+        Task attempt1 = taskModel("t-a", "wf-9", "callAgent", 0, null);
+        invoke(newWorkers(newService()), attempt1);
         String id1 = agent.lastMessageId();
 
-        TaskModel attempt2 = taskModel("t-b", "wf-9", "callAgent", 0, null);
-        newTask(newService()).start(null, attempt2, null);
+        Task attempt2 = taskModel("t-b", "wf-9", "callAgent", 0, null);
+        invoke(newWorkers(newService()), attempt2);
         String id2 = agent.lastMessageId();
 
         assertNotNull(id1);
@@ -184,12 +189,12 @@ class A2ADurabilityTest {
     void t3_messageId_distinctPerIteration() {
         agent.sendMode(SendMode.TASK_COMPLETED);
 
-        TaskModel iter0 = taskModel("t-0", "wf-9", "callAgent", 0, null);
-        newTask(newService()).start(null, iter0, null);
+        Task iter0 = taskModel("t-0", "wf-9", "callAgent", 0, null);
+        invoke(newWorkers(newService()), iter0);
         String id0 = agent.lastMessageId();
 
-        TaskModel iter1 = taskModel("t-1", "wf-9", "callAgent", 1, null);
-        newTask(newService()).start(null, iter1, null);
+        Task iter1 = taskModel("t-1", "wf-9", "callAgent", 1, null);
+        invoke(newWorkers(newService()), iter1);
         String id1 = agent.lastMessageId();
 
         assertNotEquals(id0, id1, "different DO_WHILE iterations must use distinct messageIds");
@@ -201,9 +206,9 @@ class A2ADurabilityTest {
         Map<String, Object> message = new HashMap<>();
         message.put("messageId", "caller-supplied-id");
         message.put("parts", java.util.List.of(Map.of("kind", "text", "text", "hi")));
-        TaskModel model = taskModel("t-x", "wf-9", "callAgent", 0, Map.of("message", message));
+        Task task = taskModel("t-x", "wf-9", "callAgent", 0, Map.of("message", message));
 
-        newTask(newService()).start(null, model, null);
+        invoke(newWorkers(newService()), task);
 
         assertEquals("caller-supplied-id", agent.lastMessageId());
     }
@@ -215,68 +220,102 @@ class A2ADurabilityTest {
         // Send succeeds (task working), then the agent goes dark on every poll.
         agent.sendMode(SendMode.TASK_WORKING).failGetTask(true);
 
-        TaskModel model = taskModel("t4", "wf-1", "agent", 0, Map.of("maxPollFailures", 3));
-        AgentTask task = newTask(newService());
-        task.start(null, model, null);
-        assertEquals(TaskModel.Status.IN_PROGRESS, model.getStatus());
+        Task task = taskModel("t4", "wf-1", "agent", 0, Map.of("maxPollFailures", 3));
+        A2AWorkers workers = newWorkers(newService());
+        TaskResult result = invoke(workers, task);
+        assertEquals(TaskResult.Status.IN_PROGRESS, result.getStatus());
 
         int guard = 0;
-        while (model.getStatus() == TaskModel.Status.IN_PROGRESS && guard++ < 50) {
-            task.execute(null, model, null);
+        while (result.getStatus() == TaskResult.Status.IN_PROGRESS && guard++ < 50) {
+            result = invoke(workers, task);
         }
 
         assertEquals(
-                TaskModel.Status.FAILED_WITH_TERMINAL_ERROR,
-                model.getStatus(),
+                TaskResult.Status.FAILED_WITH_TERMINAL_ERROR,
+                result.getStatus(),
                 "a dead agent must drive the task terminal, not poll forever");
         assertTrue(guard <= 5, "should give up near the failure cap, not loop the guard");
+        assertEquals(
+                1,
+                agent.cancelCalls(),
+                "hitting the poll-failure cap must still attempt a best-effort remote cancel");
     }
 
     @Test
     void t4_deadline_failsTerminally() {
         agent.sendMode(SendMode.TASK_WORKING).completeAfterPolls(1000); // never completes in time
 
-        TaskModel model = taskModel("t4b", "wf-1", "agent", 0, Map.of("maxDurationSeconds", 1));
-        AgentTask task = newTask(newService());
-        task.start(null, model, null);
+        Task task = taskModel("t4b", "wf-1", "agent", 0, Map.of("maxDurationSeconds", 1));
+        A2AWorkers workers = newWorkers(newService());
+        invoke(workers, task);
         // Force the deadline to be in the past (simulate elapsed time deterministically).
-        model.addOutput(A2AResults.KEY_STARTED_AT, System.currentTimeMillis() - 5000);
+        task.getOutputData().put(A2AResults.KEY_STARTED_AT, System.currentTimeMillis() - 5000);
 
-        task.execute(null, model, null);
+        TaskResult result = invoke(workers, task);
 
-        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, model.getStatus());
+        assertEquals(TaskResult.Status.FAILED_WITH_TERMINAL_ERROR, result.getStatus());
         assertTrue(
-                model.getReasonForIncompletion().contains("max duration"),
-                model.getReasonForIncompletion());
+                result.getReasonForIncompletion().contains("max duration"),
+                result.getReasonForIncompletion());
+        assertEquals(
+                1,
+                agent.cancelCalls(),
+                "exceeding the deadline must still attempt a best-effort remote cancel");
+    }
+
+    @Test
+    void t4c_streamingHang_boundedByMaxDurationSeconds() {
+        // Alive but stuck: sends keepalives (which reset the client's per-read timeout) but never
+        // the terminal event. Only an overall call deadline can bound this.
+        agent.hangStream(true);
+
+        Task task =
+                taskModel(
+                        "t4c",
+                        "wf-1",
+                        "agent",
+                        0,
+                        Map.of("streaming", true, "maxDurationSeconds", 2));
+
+        long startedAt = System.currentTimeMillis();
+        TaskResult result = invoke(newWorkers(newService()), task);
+        long elapsedMs = System.currentTimeMillis() - startedAt;
+
+        assertEquals(TaskResult.Status.FAILED, result.getStatus());
+        assertTrue(
+                elapsedMs < 5000,
+                "a hung-but-alive stream must be bounded by maxDurationSeconds (2s), not run to"
+                        + " the agent's full keepalive window (5s): took "
+                        + elapsedMs
+                        + "ms");
     }
 
     // ---- T5: durable push — backstop poll completes even with no webhook ----------------------
 
     @Test
     void t5_pushBackstop_completesWithoutWebhook() {
-        when(environment.getProperty(AgentTask.CALLBACK_URL_PROPERTY))
-                .thenReturn("https://conductor.example.com");
+        callbackUrl = "https://conductor.example.com";
         // Remote returns "working" on send, "completed" on the first poll. No webhook ever fires.
         agent.sendMode(SendMode.TASK_WORKING).completeAfterPolls(0).text("via-backstop");
 
-        TaskModel model =
+        Task task =
                 taskModel(
                         "t5",
                         "wf-1",
                         "agent",
                         0,
                         Map.of("pushNotification", true, "pushBackstopPollSeconds", 7));
-        AgentTask task = newTask(newService());
+        A2AWorkers workers = newWorkers(newService());
 
-        task.start(null, model, null);
-        assertEquals(TaskModel.Status.IN_PROGRESS, model.getStatus());
+        TaskResult result = invoke(workers, task);
+        assertEquals(TaskResult.Status.IN_PROGRESS, result.getStatus());
 
         // Push mode must poll at the slow backstop cadence, not the fast default.
-        assertEquals(7L, task.getEvaluationOffset(model, 30).orElseThrow());
+        assertEquals(7L, result.getCallbackAfterSeconds());
 
         // The backstop poll completes the task even though no webhook was delivered.
-        task.execute(null, model, null);
-        assertEquals(TaskModel.Status.COMPLETED, model.getStatus());
-        assertEquals("via-backstop", model.getOutputData().get("text"));
+        result = invoke(workers, task);
+        assertEquals(TaskResult.Status.COMPLETED, result.getStatus());
+        assertEquals("via-backstop", result.getOutputData().get("text"));
     }
 }

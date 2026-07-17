@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.annotations.VisibleForTesting;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.config.ConductorProperties;
@@ -36,13 +37,6 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_JOI
 public class Join extends WorkflowSystemTask {
 
     @VisibleForTesting static final double EVALUATION_OFFSET_BASE = 1.2;
-
-    /**
-     * Marker key present in an AgentSpan agent execution's workflow input/variables. When set, the
-     * embedded AgentSpan runtime owns the workflow and the JOIN output is kept compact (see {@link
-     * #AGENT_PROPAGATED_KEYS}).
-     */
-    private static final String AGENTSPAN_CTX = "__agentspan_ctx__";
 
     /**
      * Keys propagated from fork-branch outputs into the JOIN output for AgentSpan agent executions.
@@ -153,14 +147,9 @@ public class Join extends WorkflowSystemTask {
         return false;
     }
 
-    /**
-     * True when this workflow is an embedded AgentSpan agent execution, detected via the {@code
-     * __agentspan_ctx__} marker on the workflow input or variables. Inert for all other workflows.
-     */
     private static boolean isAgentExecution(WorkflowModel workflow) {
-        return (workflow.getInput() != null && workflow.getInput().containsKey(AGENTSPAN_CTX))
-                || (workflow.getVariables() != null
-                        && workflow.getVariables().containsKey(AGENTSPAN_CTX));
+        WorkflowDef def = workflow.getWorkflowDefinition();
+        return def != null && def.isAgent();
     }
 
     /** Returns a copy of {@code output} containing only {@link #AGENT_PROPAGATED_KEYS}. */

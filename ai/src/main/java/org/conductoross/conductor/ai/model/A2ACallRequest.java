@@ -32,13 +32,51 @@ import lombok.NoArgsConstructor;
 public class A2ACallRequest extends LLMWorkerInput {
 
     /**
-     * Agent runtime/protocol. Only {@code "a2a"} (Agent2Agent) is supported today; native runtimes
-     * (e.g. {@code langgraph}, {@code openai}) are planned. Defaults to {@code "a2a"}.
+     * Agent runtime/protocol. {@code "a2a"} (Agent2Agent, the default) calls a remote agent over
+     * the A2A protocol; {@code "conductor"} runs an agent on the embedded agentspan runtime. Other
+     * native runtimes (e.g. {@code langgraph}, {@code openai}) are planned. Defaults to {@code
+     * "a2a"}.
      */
     private String agentType = "a2a";
 
-    /** The remote agent's JSON-RPC endpoint URL (the {@code url} from its Agent Card). */
+    /**
+     * The remote agent URL. This may be the JSON-RPC endpoint advertised by the Agent Card or a
+     * discoverable Agent Card URL; the worker resolves discovery URLs before execution.
+     */
     private String agentUrl;
+
+    /**
+     * Name of the Conductor agent to run (agentType {@code "conductor"}). Identifies the registered
+     * agent on the embedded runtime.
+     */
+    private String agentName;
+
+    /**
+     * Version of the Conductor agent to run (agentType {@code "conductor"}). When null, the runtime
+     * uses the latest registered version.
+     */
+    private Integer agentVersion;
+
+    /**
+     * Session id for the Conductor agent run (agentType {@code "conductor"}). Associates the run
+     * with an existing conversation/session.
+     */
+    private String sessionId;
+
+    /** Run id for the Conductor agent execution (agentType {@code "conductor"}). */
+    private String runId;
+
+    /**
+     * Execution id of an in-flight Conductor agent run (agentType {@code "conductor"}). When set,
+     * the call resumes that execution (e.g. to provide a requested human/tool response) instead of
+     * starting a new one.
+     */
+    private String executionId;
+
+    /**
+     * Additional context values passed to the Conductor agent run (agentType {@code "conductor"}).
+     */
+    private Map<String, Object> context;
 
     /** Convenience: a single text part to send. */
     private String text;
