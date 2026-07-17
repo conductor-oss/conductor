@@ -395,16 +395,16 @@ export function useTaskQueueInfo(taskName: string): {
   };
 }
 
-export function useAction(
+export function useAction<TData = any, TVariables = any>(
   path: string,
   method = "post",
-  callbacks?: any,
+  callbacks?: UseMutationOptions<TData, FetchError, TVariables>,
   isText?: boolean,
 ) {
   const fetchContext = useFetchContext();
   const authHeaders = useAuthHeaders();
 
-  return useMutation(
+  return useMutation<TData, FetchError, TVariables>(
     (mutateParams) =>
       fetchWithContext(
         path,

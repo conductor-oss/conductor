@@ -612,7 +612,7 @@ class AgentSpanRegistrationEndToEndTest {
         loop.setTaskReferenceName("loop");
         loop.setType("DO_WHILE");
         loop.setLoopCondition(
-                "if ( $.chat['state'] == 'WAITING' && $.loop['iteration'] < 6 ) {"
+                "if ( $.chat['state'] == 'input-required' && $.loop['iteration'] < 6 ) {"
                         + " true; } else { false; }");
         loop.setLoopOver(List.of(resolvePrompt, chat, human));
 
