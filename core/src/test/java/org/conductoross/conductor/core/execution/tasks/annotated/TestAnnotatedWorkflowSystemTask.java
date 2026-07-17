@@ -16,6 +16,7 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.conductoross.conductor.core.execution.tasks.TaskCancellationHandler;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -70,15 +71,12 @@ public class TestAnnotatedWorkflowSystemTask {
         }
     }
 
-    static class CancelAwareWorkerBean extends TestWorkerBean
-            implements AnnotatedTaskCancellationHandler {
-        private String canceledTaskType;
+    static class CancelAwareWorkerBean extends TestWorkerBean implements TaskCancellationHandler {
         private Task canceledTask;
         private String cancelReason;
 
         @Override
-        public void cancel(String taskType, Task task, String reason) {
-            canceledTaskType = taskType;
+        public void cancel(Task task, String reason) {
             canceledTask = task;
             cancelReason = reason;
         }
@@ -217,7 +215,7 @@ public class TestAnnotatedWorkflowSystemTask {
 
         systemTask.cancel(workflow, task, workflowExecutor);
 
-        assertEquals("cancel_task", bean.canceledTaskType);
+        assertEquals("cancel_task", bean.canceledTask.getTaskType());
         assertEquals("task-123", bean.canceledTask.getTaskId());
         assertEquals("parent terminated", bean.cancelReason);
         assertEquals(TaskModel.Status.CANCELED, task.getStatus());

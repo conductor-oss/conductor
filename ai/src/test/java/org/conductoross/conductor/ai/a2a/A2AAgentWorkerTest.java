@@ -271,7 +271,7 @@ class A2AAgentWorkerTest {
         when(service.cancelTask(anyString(), eq("agent-task-1"), any()))
                 .thenReturn(agentTask(TaskState.CANCELED, null));
 
-        workers.cancel(A2AWorkers.AGENT, task, "workflow canceled");
+        workers.cancel(task, "workflow canceled");
 
         verify(service).cancelTask(eq("http://agent"), eq("agent-task-1"), any());
     }

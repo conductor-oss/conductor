@@ -24,6 +24,7 @@ import org.conductoross.conductor.ai.tasks.worker.A2AWorkers;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.sdk.workflow.executor.task.TaskContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,6 +38,7 @@ public final class A2AWorkerTestSupport {
 
     public static Task task(Map<String, Object> input) {
         Task task = new Task();
+        task.setTaskType(TaskType.TASK_TYPE_AGENT);
         task.setTaskId("conductor-task-1");
         task.setInputData(new HashMap<>(input));
         task.setOutputData(new HashMap<>());
