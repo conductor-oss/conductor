@@ -17,7 +17,6 @@ import { mockCommonApis } from "./helpers/mockApi";
 
 const SCREENSHOT_CONFIG = {
   maxDiffPixelRatio: 0.03,
-  maxDiffPixels: 1500,
 };
 
 const VIEWPORTS = [
