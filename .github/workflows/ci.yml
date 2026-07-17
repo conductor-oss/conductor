@@ -485,6 +485,10 @@ jobs:
       # Pinned python-sdk release bundle (conductor-python[agents] resolves to the same version).
       # python-sdk release tags carry no `v` prefix. Bump deliberately.
       CONDUCTOR_PY_E2E_BUNDLE_VERSION: "2.0.0-rc2"
+      # Pinned agentspan CLI release — a few suites (cli-skills, credential lifecycle) shell
+      # out to the `agentspan` binary. Independent of the server pin; bump deliberately.
+      AGENTSPAN_CLI_VERSION: "0.4.4"
+      AGENTSPAN_CLI_PATH: ${{ github.workspace }}/agentspan
       AGENTSPAN_SERVER_URL: http://localhost:8080/api
       AGENTSPAN_LLM_MODEL: openai/gpt-4o-mini
       MCP_TESTKIT_URL: http://localhost:3001
@@ -539,6 +543,16 @@ jobs:
           echo "$(cat "${NAME}.tar.gz.sha256")  ${NAME}.tar.gz" | sha256sum -c -
           tar -xzf "${NAME}.tar.gz"
           echo "BUNDLE_DIR=${NAME}" >> "$GITHUB_ENV"
+
+      - name: Download AgentSpan CLI
+        # A few suites (cli-skills, credential lifecycle) shell out to the `agentspan`
+        # binary; without it they error with FileNotFoundError instead of skipping.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "v${AGENTSPAN_CLI_VERSION}" --repo agentspan-ai/agentspan \
+            --pattern "agentspan_linux_amd64" --output agentspan
+          chmod +x agentspan
 
       # `run.sh` forwards extra args to pytest, so `-p known_failures_plugin` loads the
       # orkes-style xfail plugin (found via PYTHONPATH) without editing the bundle. Gating:
