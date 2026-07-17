@@ -481,6 +481,9 @@ jobs:
     if: ${{ github.event_name != 'pull_request' || needs.detect-changes.outputs.agent == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    permissions:
+      contents: read
+      checks: write   # publish the junit test-report check
     env:
       # Pinned python-sdk release bundle (conductor-python[agents] resolves to the same version).
       # python-sdk release tags carry no `v` prefix. Bump deliberately.
@@ -488,7 +491,9 @@ jobs:
       # Pinned agentspan CLI release — a few suites (cli-skills, credential lifecycle) shell
       # out to the `agentspan` binary. Independent of the server pin; bump deliberately.
       AGENTSPAN_CLI_VERSION: "0.4.4"
-      AGENTSPAN_CLI_PATH: ${{ github.workspace }}/agentspan
+      # Named `agentspan-cli`, not `agentspan` — the repo already has an `agentspan/`
+      # module directory that `gh release download --output agentspan` would collide with.
+      AGENTSPAN_CLI_PATH: ${{ github.workspace }}/agentspan-cli
       AGENTSPAN_SERVER_URL: http://localhost:8080/api
       AGENTSPAN_LLM_MODEL: openai/gpt-4o-mini
       MCP_TESTKIT_URL: http://localhost:3001
@@ -551,8 +556,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release download "v${AGENTSPAN_CLI_VERSION}" --repo agentspan-ai/agentspan \
-            --pattern "agentspan_linux_amd64" --output agentspan
-          chmod +x agentspan
+            --pattern "agentspan_linux_amd64" --output "$AGENTSPAN_CLI_PATH" --clobber
+          chmod +x "$AGENTSPAN_CLI_PATH"
 
       # `run.sh` forwards extra args to pytest, so `-p known_failures_plugin` loads the
       # orkes-style xfail plugin (found via PYTHONPATH) without editing the bundle. Gating:
@@ -566,6 +571,7 @@ jobs:
 
       - name: Publish test report
         if: always()
+        continue-on-error: true   # gating is the e2e run step's exit code; a checks-API hiccup must not fail the job
         uses: mikepenz/action-junit-report@v4
         with:
           report_paths: "${{ env.BUNDLE_DIR }}/results/junit-e2e.xml"
