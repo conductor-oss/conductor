@@ -16,6 +16,7 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import org.conductoross.conductor.core.execution.tasks.TaskCancellationHandler;
 import org.junit.Before;
 import org.junit.Test;
@@ -212,7 +213,7 @@ public class TestAnnotatedWorkflowSystemTask {
                 new AnnotatedWorkflowSystemTask("cancel_task", method, bean, annotation);
         TaskModel task = createTask(Map.of("input", "test"));
         task.setReasonForIncompletion("parent terminated");
-
+        task.setTaskType("cancel_task");
         systemTask.cancel(workflow, task, workflowExecutor);
 
         assertEquals("cancel_task", bean.canceledTask.getTaskType());
@@ -272,6 +273,7 @@ public class TestAnnotatedWorkflowSystemTask {
     private TaskModel createTask(Map<String, Object> inputData) {
         TaskModel task = new TaskModel();
         task.setTaskId("task-123");
+        task.setTaskType(TaskType.TASK_TYPE_AGENT);
         task.setWorkflowInstanceId("workflow-123");
         task.setInputData(new HashMap<>(inputData));
         task.setOutputData(new HashMap<>());
