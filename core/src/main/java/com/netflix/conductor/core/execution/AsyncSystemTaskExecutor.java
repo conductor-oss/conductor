@@ -168,26 +168,6 @@ public class AsyncSystemTaskExecutor {
                     if (task.getStatus() == TaskModel.Status.SCHEDULED) {
                         task.setStartTime(System.currentTimeMillis());
                         Monitors.recordQueueWaitTime(task.getTaskType(), task.getQueueWaitTime());
-                        // start() runs synchronously and can block for the full response
-                        // timeout (e.g. an LLM provider call). Nothing is persisted until it
-                        // returns and the task stays SCHEDULED, so a QueueDAO whose redelivery
-                        // window is shorter than the execution time would let another
-                        // system-task-worker pop the still-SCHEDULED message and invoke start()
-                        // a second time. Extend the message's visibility to cover the blocking
-                        // call. asyncComplete tasks are left untouched: they intentionally stay
-                        // in the queue awaiting external completion.
-                        if (!isTaskAsyncComplete) {
-                            task.getTaskDefinition()
-                                    .filter(taskDef -> taskDef.getResponseTimeoutSeconds() > 0)
-                                    .ifPresent(
-                                            taskDef ->
-                                                    queueDAO.setUnackTimeout(
-                                                            queueName,
-                                                            task.getTaskId(),
-                                                            1000L
-                                                                    * taskDef
-                                                                            .getResponseTimeoutSeconds()));
-                        }
                         systemTask.start(workflow, task, workflowExecutor);
                     } else {
                         systemTask.execute(workflow, task, workflowExecutor);
@@ -230,34 +210,14 @@ public class AsyncSystemTaskExecutor {
             Monitors.error(AsyncSystemTaskExecutor.class.getSimpleName(), "executeSystemTask");
             LOGGER.error("Error executing system task - {}, with id: {}", systemTask, taskId, e);
         } finally {
-            // A duplicate attempt (queue redelivery during a long-running start(), worker pause,
-            // GC stall) can finish after another attempt already finalized this task and the
-            // workflow acted on that result. If the stored task turned terminal while this
-            // attempt was executing, this attempt is stale: persisting it would overwrite the
-            // consumed outputData/endTime, so drop the update. Only the finalize path pays for
-            // the re-read; non-terminal updates persist as before.
-            TaskModel storedTask = task.getStatus().isTerminal() ? loadTaskQuietly(taskId) : null;
-            if (storedTask != null && storedTask.getStatus().isTerminal()) {
-                LOGGER.warn(
-                        "Ignoring late update for already terminal task {}/{} in workflow {}:"
-                                + " stored status {}, this attempt's status {}",
-                        task.getTaskType(),
-                        task.getTaskId(),
-                        workflowId,
-                        storedTask.getStatus(),
-                        task.getStatus());
+            executionDAOFacade.updateTask(task);
+            if (shouldRemoveTaskFromQueue) {
                 queueDAO.remove(queueName, task.getTaskId());
-            } else {
-                executionDAOFacade.updateTask(task);
-                if (shouldRemoveTaskFromQueue) {
-                    queueDAO.remove(queueName, task.getTaskId());
-                    LOGGER.debug("{} removed from queue: {}", task, queueName);
-                }
-                // if the current task execution has completed, then the workflow needs to be
-                // evaluated
-                if (hasTaskExecutionCompleted) {
-                    workflowExecutor.decide(workflowId);
-                }
+                LOGGER.debug("{} removed from queue: {}", task, queueName);
+            }
+            // if the current task execution has completed, then the workflow needs to be evaluated
+            if (hasTaskExecutionCompleted) {
+                workflowExecutor.decide(workflowId);
             }
         }
     }

@@ -430,12 +430,13 @@ public class ExecutionDAOFacadeTest {
 
     // ── Issue #1322 ────────────────────────────────────────────────────
     //
-    // The late-duplicate terminal-update guard lives in AsyncSystemTaskExecutor
-    // (the only path where duplicate attempts race), NOT here: legitimate engine
-    // flows update terminal tasks with new terminal statuses through this facade
+    // The terminal-task overwrite reported in #1322 is prevented at its root
+    // (#1321: duplicate attempts from queue redelivery, fixed in
+    // AnnotatedWorkflowSystemTask by extending queue visibility over blocking
+    // invocations). This facade intentionally stays last-write-wins: legitimate
+    // engine flows update terminal tasks with new terminal statuses through it
     // (optional FAILED -> COMPLETED_WITH_ERRORS, sub-workflow retry syncing the
-    // parent task FAILED -> COMPLETED). The tests below pin that this facade
-    // stays last-write-wins for those flows.
+    // parent task FAILED -> COMPLETED). The tests below pin that behavior.
 
     @Test
     public void testUpdateTaskPersistsWhenStoredTaskIsNonTerminal() {

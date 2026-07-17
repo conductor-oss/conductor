@@ -15,12 +15,17 @@ package org.conductoross.conductor.core.execution.tasks.annotated;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.utils.QueueUtils;
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
@@ -29,6 +34,8 @@ import com.netflix.conductor.sdk.workflow.task.InputParam;
 import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
 import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 
 public class TestAnnotatedWorkflowSystemTask {
@@ -236,6 +243,136 @@ public class TestAnnotatedWorkflowSystemTask {
                 new AnnotatedWorkflowSystemTask("test", method, bean, annotation);
 
         assertSame(bean, systemTask.getBean());
+    }
+
+    // ── Issue #1321: extend queue visibility over blocking method invocations ──
+    //
+    // The adapter runs annotated worker methods (e.g. LLM_CHAT_COMPLETE provider
+    // calls) synchronously in start() while the task stays SCHEDULED. If the
+    // QueueDAO's unack/redelivery window is shorter than the invocation, the queue
+    // message is redelivered mid-execution and a second worker invokes the same
+    // method again. start() must extend the message's visibility to the task's
+    // responseTimeoutSeconds BEFORE invoking the method.
+
+    /** Records whether queue visibility had already been extended when the method ran. */
+    static class VisibilityProbeBean {
+        final AtomicBoolean visibilityExtended;
+        volatile boolean extendedAtInvocation;
+
+        VisibilityProbeBean(AtomicBoolean visibilityExtended) {
+            this.visibilityExtended = visibilityExtended;
+        }
+
+        public Map<String, Object> blockingCall() {
+            extendedAtInvocation = visibilityExtended.get();
+            return Map.of("ok", true);
+        }
+    }
+
+    @Test
+    public void testStartExtendsQueueVisibilityToResponseTimeoutBeforeInvocation()
+            throws Exception {
+        AtomicBoolean visibilityExtended = new AtomicBoolean(false);
+        VisibilityProbeBean bean = new VisibilityProbeBean(visibilityExtended);
+        Method method = VisibilityProbeBean.class.getMethod("blockingCall");
+        WorkerTask annotation = createAnnotation("llm_like_task");
+        QueueDAO queueDAO = mock(QueueDAO.class);
+        Mockito.doAnswer(
+                        invocation -> {
+                            visibilityExtended.set(true);
+                            return null;
+                        })
+                .when(queueDAO)
+                .setUnackTimeout(anyString(), anyString(), anyLong());
+
+        AnnotatedWorkflowSystemTask systemTask =
+                new AnnotatedWorkflowSystemTask(
+                        "llm_like_task", method, bean, annotation, queueDAO);
+
+        TaskModel task = createTask(Map.of());
+        task.setTaskType("llm_like_task");
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("llm_like_task");
+        taskDef.setResponseTimeoutSeconds(3600);
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("llm_like_task");
+        workflowTask.setTaskDefinition(taskDef);
+        task.setWorkflowTask(workflowTask);
+
+        systemTask.start(workflow, task, workflowExecutor);
+
+        Mockito.verify(queueDAO)
+                .setUnackTimeout(QueueUtils.getQueueName(task), task.getTaskId(), 3600_000L);
+        assertTrue(
+                "queue visibility must be extended before the blocking method is invoked",
+                bean.extendedAtInvocation);
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+    }
+
+    @Test
+    public void testStartWithoutTaskDefDoesNotTouchQueueVisibility() throws Exception {
+        VisibilityProbeBean bean = new VisibilityProbeBean(new AtomicBoolean(false));
+        Method method = VisibilityProbeBean.class.getMethod("blockingCall");
+        WorkerTask annotation = createAnnotation("no_taskdef_task");
+        QueueDAO queueDAO = mock(QueueDAO.class);
+
+        AnnotatedWorkflowSystemTask systemTask =
+                new AnnotatedWorkflowSystemTask(
+                        "no_taskdef_task", method, bean, annotation, queueDAO);
+
+        TaskModel task = createTask(Map.of());
+        task.setTaskType("no_taskdef_task");
+
+        systemTask.start(workflow, task, workflowExecutor);
+
+        Mockito.verify(queueDAO, Mockito.never())
+                .setUnackTimeout(anyString(), anyString(), anyLong());
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+    }
+
+    @Test
+    public void testStartWithZeroResponseTimeoutDoesNotTouchQueueVisibility() throws Exception {
+        VisibilityProbeBean bean = new VisibilityProbeBean(new AtomicBoolean(false));
+        Method method = VisibilityProbeBean.class.getMethod("blockingCall");
+        WorkerTask annotation = createAnnotation("zero_timeout_task");
+        QueueDAO queueDAO = mock(QueueDAO.class);
+
+        AnnotatedWorkflowSystemTask systemTask =
+                new AnnotatedWorkflowSystemTask(
+                        "zero_timeout_task", method, bean, annotation, queueDAO);
+
+        TaskModel task = createTask(Map.of());
+        task.setTaskType("zero_timeout_task");
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("zero_timeout_task");
+        taskDef.setResponseTimeoutSeconds(0);
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("zero_timeout_task");
+        workflowTask.setTaskDefinition(taskDef);
+        task.setWorkflowTask(workflowTask);
+
+        systemTask.start(workflow, task, workflowExecutor);
+
+        Mockito.verify(queueDAO, Mockito.never())
+                .setUnackTimeout(anyString(), anyString(), anyLong());
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+    }
+
+    @Test
+    public void testStartWithoutQueueDAOStillExecutes() throws Exception {
+        VisibilityProbeBean bean = new VisibilityProbeBean(new AtomicBoolean(false));
+        Method method = VisibilityProbeBean.class.getMethod("blockingCall");
+        WorkerTask annotation = createAnnotation("legacy_ctor_task");
+
+        AnnotatedWorkflowSystemTask systemTask =
+                new AnnotatedWorkflowSystemTask("legacy_ctor_task", method, bean, annotation);
+
+        TaskModel task = createTask(Map.of());
+        task.setTaskType("legacy_ctor_task");
+
+        systemTask.start(workflow, task, workflowExecutor);
+
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
     }
 
     private TaskModel createTask(Map<String, Object> inputData) {
