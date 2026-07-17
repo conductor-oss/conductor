@@ -77,6 +77,12 @@ SIMPLE workers** (SDK worker model polling the task API) — they'd inherit
 ack-at-poll + def-timeout recovery with zero core changes, at the cost of poll
 latency, worker pools, and a rewrite of the annotated-worker feature.
 
+This variant is validated in practice: **orkes-conductor has no
+`SystemTaskWorker`/`AsyncSystemTaskExecutor` at all** — HTTP and AI/LLM tasks
+run as poll workers (`workers/.../http/HttpWorker.java` `extends RemoteWorker
+implements Worker`, in a separate `OrkesConductorWorkersApplication`), so the
+queue-pop → blocking-`start()` path #1321 lives on was removed there entirely.
+
 ## Follow-up (needed regardless): make the lease value reliable
 
 Option A reads `responseTimeoutSeconds` from the embedded task def. Single-agent
