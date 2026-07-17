@@ -317,6 +317,9 @@ class MultiAgentCompilerTest {
             assertThat(subWfTask.getSubWorkflowParam()).isNotNull();
             assertThat(subWfTask.getSubWorkflowParam().getWorkflowDef()).isNotNull();
             WorkflowDef inlineWf = subWfTask.getSubWorkflowParam().getWorkflowDef();
+            assertThat(inlineWf.getMetadata())
+                    .containsEntry("classifier", "agent")
+                    .containsKey("agentDef");
             // Inline workflow should have ctx_resolve + init_state + DO_WHILE + transfer_msg
             assertThat(inlineWf.getTasks()).hasSize(4);
             assertThat(inlineWf.getTasks().get(0).getType()).isEqualTo("INLINE"); // ctx_resolve

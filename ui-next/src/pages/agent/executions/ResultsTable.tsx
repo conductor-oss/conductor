@@ -68,7 +68,7 @@ const executionFields: LegacyColumn[] = [
           </span>
         );
       }
-      return <strong>{value}</strong>;
+      return value;
     },
   },
   {

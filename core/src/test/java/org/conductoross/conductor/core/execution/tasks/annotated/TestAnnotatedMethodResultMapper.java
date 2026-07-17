@@ -19,6 +19,7 @@ import java.util.Map;
 
 import org.junit.Test;
 
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.sdk.workflow.task.OutputParam;
 
@@ -61,6 +62,10 @@ public class TestAnnotatedMethodResultMapper {
             pojo.field1 = "value1";
             pojo.field2 = 123;
             return pojo;
+        }
+
+        public TaskResult taskResultReturn() {
+            return null;
         }
     }
 
@@ -166,6 +171,80 @@ public class TestAnnotatedMethodResultMapper {
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
         assertEquals("test", task.getOutputData().get("field1"));
         assertEquals(99, task.getOutputData().get("field2"));
+    }
+
+    @Test
+    public void testPojoReturnUsesTaskContextLifecycle() throws Exception {
+        Method method = TestWorker.class.getMethod("pojoReturn");
+        TaskModel task = createTaskModel();
+        TestPojo pojo = new TestPojo();
+        pojo.field1 = "working";
+        pojo.field2 = 3;
+        TaskResult contextResult = new TaskResult();
+        contextResult.setStatus(TaskResult.Status.IN_PROGRESS);
+        contextResult.setCallbackAfterSeconds(5);
+        contextResult.setSubWorkflowId("agent-execution-1");
+
+        mapper.applyResult(pojo, task, method, contextResult);
+
+        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
+        assertEquals(5, task.getCallbackAfterSeconds());
+        assertEquals("agent-execution-1", task.getSubWorkflowId());
+        assertEquals("working", task.getOutputData().get("field1"));
+        assertEquals(3, task.getOutputData().get("field2"));
+    }
+
+    @Test
+    public void testPojoReturnPreservesTaskContextFailure() throws Exception {
+        Method method = TestWorker.class.getMethod("pojoReturn");
+        TaskModel task = createTaskModel();
+        TestPojo pojo = new TestPojo();
+        pojo.field1 = "partial";
+        TaskResult contextResult = new TaskResult();
+        contextResult.setStatus(TaskResult.Status.FAILED_WITH_TERMINAL_ERROR);
+        contextResult.setReasonForIncompletion("invalid agent request");
+
+        mapper.applyResult(pojo, task, method, contextResult);
+
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertEquals("invalid agent request", task.getReasonForIncompletion());
+        assertEquals("partial", task.getOutputData().get("field1"));
+    }
+
+    @Test
+    public void testTaskResultCopiesLifecycleFields() throws Exception {
+        Method method = TestWorker.class.getMethod("taskResultReturn");
+        TaskModel task = createTaskModel();
+        TaskResult result = new TaskResult();
+        result.setStatus(TaskResult.Status.IN_PROGRESS);
+        result.setCallbackAfterSeconds(7);
+        result.setReasonForIncompletion("still working");
+        result.setWorkerId("worker-1");
+        result.setSubWorkflowId("child-1");
+        result.setExternalOutputPayloadStoragePath("s3://bucket/output");
+        result.getOutputData().put("checkpoint", 3);
+
+        mapper.applyResult(result, task, method);
+
+        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
+        assertEquals(7, task.getCallbackAfterSeconds());
+        assertEquals("still working", task.getReasonForIncompletion());
+        assertEquals("worker-1", task.getWorkerId());
+        assertEquals("child-1", task.getSubWorkflowId());
+        assertEquals("s3://bucket/output", task.getExternalOutputPayloadStoragePath());
+        assertEquals(3, task.getOutputData().get("checkpoint"));
+    }
+
+    @Test
+    public void testTaskResultMapsCanceledStatus() throws Exception {
+        Method method = TestWorker.class.getMethod("taskResultReturn");
+        TaskModel task = createTaskModel();
+        TaskResult result = new TaskResult();
+        result.setStatus(TaskResult.Status.CANCELED);
+
+        mapper.applyResult(result, task, method);
+
+        assertEquals(TaskModel.Status.CANCELED, task.getStatus());
     }
 
     private TaskModel createTaskModel() {

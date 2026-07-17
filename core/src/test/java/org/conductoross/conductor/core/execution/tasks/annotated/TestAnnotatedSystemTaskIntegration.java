@@ -12,9 +12,11 @@
  */
 package org.conductoross.conductor.core.execution.tasks.annotated;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.conductoross.conductor.core.execution.tasks.AnnotatedSystemTaskWorker;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,22 +30,27 @@ import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.ParametersUtils;
+import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.sdk.workflow.task.InputParam;
 import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
 
 /**
  * Integration test to verify that WorkerTaskAnnotationScanner correctly discovers and
  * registers @WorkerTask annotated methods with the Spring application context.
  */
 @RunWith(SpringRunner.class)
-@Import({TestAnnotatedSystemTaskIntegration.TestConfig.class, WorkerTaskAnnotationScanner.class})
+@Import({TestAnnotatedSystemTaskIntegration.TestConfig.class, SystemTaskRegistry.class})
 public class TestAnnotatedSystemTaskIntegration {
 
     @Autowired
     @Qualifier(SystemTaskRegistry.ASYNC_SYSTEM_TASKS_QUALIFIER)
     private Set<WorkflowSystemTask> asyncSystemTasks;
+
+    @Autowired private SystemTaskRegistry systemTaskRegistry;
 
     @TestConfiguration
     static class TestConfig {
@@ -71,10 +78,32 @@ public class TestAnnotatedSystemTaskIntegration {
             // Mock ParametersUtils for test
             return new ParametersUtils(null);
         }
+
+        @Bean
+        public MetadataDAO metadataDAO() {
+            return mock(MetadataDAO.class);
+        }
+
+        @Bean
+        public QueueDAO queueDAO() {
+            return mock(QueueDAO.class);
+        }
+
+        @Bean(name = "workerTaskAnnotationScanner")
+        public WorkerTaskAnnotationScanner workerTaskAnnotationScanner(
+                List<AnnotatedSystemTaskWorker> workers,
+                @Qualifier(SystemTaskRegistry.ASYNC_SYSTEM_TASKS_QUALIFIER)
+                        Set<WorkflowSystemTask> asyncSystemTasks,
+                ParametersUtils parametersUtils,
+                MetadataDAO metadataDAO,
+                QueueDAO queueDAO) {
+            return new WorkerTaskAnnotationScanner(
+                    workers, asyncSystemTasks, parametersUtils, metadataDAO, queueDAO);
+        }
     }
 
     /** Sample bean with @WorkerTask annotated methods for testing */
-    static class SampleAnnotatedTasks {
+    static class SampleAnnotatedTasks implements AnnotatedSystemTaskWorker {
 
         @WorkerTask("integration_test_task_1")
         public Map<String, Object> task1(@InputParam("input") String input) {
@@ -103,6 +132,12 @@ public class TestAnnotatedSystemTaskIntegration {
                         .count();
 
         assertEquals("Non-annotated methods should not be registered", 0, notATaskCount);
+    }
+
+    @Test
+    public void testAnnotatedTasksAreRegisteredAsSystemTasks() {
+        assertTrue(systemTaskRegistry.isSystemTask("integration_test_task_1"));
+        assertTrue(systemTaskRegistry.isSystemTask("integration_test_task_2"));
     }
 
     private AnnotatedWorkflowSystemTask findTask(String taskType) {

@@ -14,14 +14,15 @@ package io.conductor.e2e.task;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import com.netflix.conductor.client.http.MetadataClient;
 import com.netflix.conductor.client.http.TaskClient;
@@ -35,6 +36,11 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 
 import io.conductor.e2e.util.ApiUtil;
+import io.orkes.conductor.client.AgentClient;
+import io.orkes.conductor.client.model.agent.AgentRequest;
+import io.orkes.conductor.client.model.agent.AgentStatusResponse;
+import io.orkes.conductor.client.model.agent.RespondBody;
+import io.orkes.conductor.client.model.agent.StartResponse;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,34 +55,26 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * fully docker-composed server (real persistence/search/queue, real decider, real background
  * task-worker coordinator — no manual queue draining needed).
  *
- * <p>Every agent registered here is a plain {@link WorkflowDef} stamped with {@code
- * metadata.agentDef} (the minimal contract {@code WorkflowDef.isAgent()} checks — see {@code
- * AgentSpanRegistrationEndToEndTest} in test-harness for the real {@code
- * AgentService.deploy()}-compiled equivalent, which needs an LLM and isn't ported here). All
- * scenarios are entirely native system tasks ({@code WAIT}/{@code INLINE}/{@code HUMAN}) — no
- * worker, no LLM, deterministic.
+ * <p>Every agent is deployed through Java SDK {@link AgentClient#deployAgent(AgentRequest)}. That
+ * calls {@code AgentController /api/agent/deploy}, exercises normalization and compilation, stamps
+ * the full agent definition, registers its workflow and tool task definitions, and returns the
+ * server's registration response. No test hand-writes or stamps an agent {@link WorkflowDef}.
  *
- * <p>{@link #registerAgentTaskDef} globally registers {@code "AGENT"} with {@code retryCount=0} so
- * the failure-path tests below fail fast on a single attempt instead of accumulating the
- * class-default {@code retryCount=3}. An inline {@code TaskDef} via {@code WorkflowTask
- * .setTaskDefinition()} was tried first — it's only consulted by {@code DoWhileTaskMapper}'s own
- * sub-scheduling logic, and had no effect on this plain top-level {@code AGENT} task when tested
- * empirically (it kept retrying 4 times regardless), so a real global registration is required.
+ * <p>{@link #registerAgentTaskDef} registers {@code "AGENT"} with {@code retryCount=0} on a fresh
+ * server so failure-path tests fail fast. If a shared server already owns that task definition, the
+ * suite preserves it and allows enough time for its configured retries.
  */
-@Disabled
 class AgentTaskTests {
 
     private static final MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
     private static final WorkflowClient workflowClient = ApiUtil.WORKFLOW_CLIENT;
     private static final TaskClient taskClient = ApiUtil.TASK_CLIENT;
+    private static final AgentClient agentClient = ApiUtil.AGENT_CLIENT;
+    private static final String MODEL =
+            System.getenv().getOrDefault("AGENT_E2E_MODEL", "OpenAI/gpt-4o-mini");
 
     @BeforeAll
     static void registerAgentTaskDef() {
-        // An inline TaskDef via WorkflowTask.setTaskDefinition() is only consulted by the
-        // DO_WHILE mapper's own sub-scheduling logic -- verified empirically here: setting it on
-        // a plain top-level AGENT task had no effect, and the task kept retrying with the
-        // class-default retryCount=3 regardless. A real global registration is required to get
-        // fast, single-attempt failures for the failure-path tests below.
         TaskDef taskDef = new TaskDef("AGENT");
         taskDef.setRetryCount(0);
         try {
@@ -87,6 +85,7 @@ class AgentTaskTests {
     }
 
     @Test
+    @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
     void helloWorldAgentCompletesAndExposesSubWorkflowId() {
         String agentName = "hello_world_agent_e2e_" + UUID.randomUUID();
         registerHelloWorldAgent(agentName);
@@ -99,85 +98,152 @@ class AgentTaskTests {
         assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
 
         Task agentTask = agentTaskOf(completed);
-        assertEquals("COMPLETED", agentTask.getOutputData().get("state"));
+        assertEquals("completed", agentTask.getOutputData().get("state"));
         String executionId = (String) agentTask.getOutputData().get("executionId");
         assertNotNull(executionId);
         assertEquals(executionId, agentTask.getSubWorkflowId());
-        assertTrue(
-                String.valueOf(agentTask.getOutputData().get("text"))
-                        .contains("Hello, world! You said: are you there?"));
+        assertTrue(!agentResultText(agentTask).isBlank(), "real agent result must not be blank");
 
         Workflow agentExecution = workflowClient.getWorkflow(executionId, true);
         assertEquals(Workflow.WorkflowStatus.COMPLETED, agentExecution.getStatus());
+        assertControllerDeployedAgent(agentName);
     }
 
     @Test
+    @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
     void longRunningAgentPollsMultipleTimesBeforeCompleting() {
         String agentName = "long_running_agent_e2e_" + UUID.randomUUID();
-        registerLongRunningAgent(agentName);
+        String workerTaskName = registerLongRunningAgent(agentName);
 
         String wfName = "call_agent_long_e2e_" + UUID.randomUUID();
-        registerCallAgentWorkflow(wfName, agentName, null);
+        registerCallAgentWorkflow(
+                wfName, agentName, Map.of("pollIntervalSeconds", 5, "maxDurationSeconds", 60));
         String workflowId = startWorkflow(wfName, Map.of());
 
-        Workflow completed = awaitTerminal(workflowId, 30);
+        Task firstPoll = awaitAgentPoll(workflowId, 1, 20);
+        assertEquals(5, firstPoll.getCallbackAfterSeconds());
+        int firstPollCount = firstPoll.getPollCount();
+        long firstUpdateTime = firstPoll.getUpdateTime();
+
+        Task secondPoll = awaitAgentPoll(workflowId, firstPollCount + 1, 15);
+        long callbackDelayMillis = secondPoll.getUpdateTime() - firstUpdateTime;
+        assertTrue(
+                callbackDelayMillis >= 4_500,
+                "AGENT was re-polled before its five-second callback: "
+                        + callbackDelayMillis
+                        + "ms");
+        assertTrue(
+                callbackDelayMillis < 10_000,
+                "AGENT callback was delayed well beyond five seconds: "
+                        + callbackDelayMillis
+                        + "ms");
+
+        completeWorkerTask(workerTaskName, "Long-running agent completed after two durable polls.");
+
+        Workflow completed = awaitTerminal(workflowId, 20);
         assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
 
         Task agentTask = agentTaskOf(completed);
-        assertEquals("COMPLETED", agentTask.getOutputData().get("state"));
-        // The 3x(WAIT 2s)+INLINE child running to completion is itself proof the AGENT was polled
-        // across multiple sweeps — a single immediate poll couldn't have completed a ~6s child.
-        // (pollCount is not applicable: it is only incremented on the async system-task queue path,
-        // which a synchronous AGENT no longer uses.)
-        assertTrue(
-                String.valueOf(agentTask.getOutputData().get("text"))
-                        .contains("Long-running agent finished after 3 waits."));
+        assertEquals("completed", agentTask.getOutputData().get("state"));
+        assertTrue(agentTask.getPollCount() > secondPoll.getPollCount());
+        assertTrue(!agentResultText(agentTask).isBlank(), "real agent result must not be blank");
     }
 
     @Test
-    void conversationLoopAlternatesAgentAndHumanUntilComplete() {
-        String agentName = "conversation_agent_e2e_" + UUID.randomUUID();
-        registerConversationAgent(agentName);
+    @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
+    void agentClientStartsWaitsRespondsAndCompletesARealAgent() {
+        String agentName = "approval_agent_e2e_" + UUID.randomUUID();
+        String toolName = agentName + "_work";
+        Map<String, Object> config = approvalAgentConfig(agentName, toolName);
+        deployAgent(config);
 
-        String wfName = "conversation_loop_e2e_" + UUID.randomUUID();
-        registerConversationLoopWorkflow(wfName, agentName);
-        String workflowId = startWorkflow(wfName, Map.of("initialPrompt", "Hi, I'd like to chat."));
+        StartResponse started =
+                agentClient.startAgent(
+                        AgentRequest.nativeAgent(config)
+                                .prompt("Use the required work tool, then summarize its result.")
+                                .build());
+        assertNotNull(started.getExecutionId());
+        assertEquals(agentName, started.getAgentName());
 
-        Workflow completed = awaitConversationTerminal(workflowId);
+        AgentStatusResponse waiting = awaitAgentStatus(started.getExecutionId(), true, false, 90);
+        assertTrue(waiting.isWaiting());
+        assertNotNull(waiting.getPendingTool());
+
+        agentClient.respond(started.getExecutionId(), RespondBody.approve("approved by E2E"));
+        completeWorkerTask(toolName, "approved tool result");
+
+        AgentStatusResponse completed = awaitAgentStatus(started.getExecutionId(), false, true, 90);
+        assertEquals("COMPLETED", completed.getStatus());
+        assertNotNull(completed.getOutput());
+    }
+
+    @Test
+    @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
+    void workflowWithTwoAgentTasksCarriesAConversationAcrossDurableRounds() {
+        String firstAgent = "research_agent_e2e_" + UUID.randomUUID();
+        String secondAgent = "review_agent_e2e_" + UUID.randomUUID();
+        deployAgent(
+                basicAgentConfig(
+                        firstAgent,
+                        "You are the first participant in a technical discussion. Respond concisely to the other participant's latest message."));
+        deployAgent(
+                basicAgentConfig(
+                        secondAgent,
+                        "You are the second participant in a technical discussion. Challenge or improve the other participant's latest message."));
+
+        String wfName = "two_agent_chat_e2e_" + UUID.randomUUID();
+        registerTwoAgentConversationWorkflow(wfName, firstAgent, secondAgent, 2);
+        String workflowId =
+                startWorkflow(
+                        wfName,
+                        Map.of(
+                                "initialMessage",
+                                "Durable execution is essential for reliable AI agents. What do you think?"));
+
+        Workflow completed = awaitTerminal(workflowId, 120);
         assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
 
-        List<Task> chatCalls = tasksOfType(completed, "AGENT");
-        List<Task> humanTurns = tasksOfType(completed, "HUMAN");
-        assertEquals(3, chatCalls.size(), "fresh start + 2 resumes, one per question asked");
-        assertEquals(3, humanTurns.size());
+        Task conversationLoop = lastTaskOfType(completed, "DO_WHILE");
+        assertNotNull(conversationLoop, "round-robin agent must compile to a durable loop");
+        assertEquals(Task.Status.COMPLETED, conversationLoop.getStatus());
+        assertEquals(2, ((Number) conversationLoop.getOutputData().get("iteration")).intValue());
 
-        Task turn1 = chatCalls.get(0);
-        assertEquals("WAITING", turn1.getOutputData().get("state"));
-        String executionId = (String) turn1.getOutputData().get("executionId");
-        assertEquals(executionId, turn1.getSubWorkflowId());
-
-        Task turn2 = chatCalls.get(1);
-        assertEquals("WAITING", turn2.getOutputData().get("state"));
-        assertEquals(
-                executionId,
-                turn2.getOutputData().get("executionId"),
-                "resume must reattach to the SAME child execution, never start a new one");
-
-        Task turn3 = chatCalls.get(2);
-        assertEquals("COMPLETED", turn3.getOutputData().get("state"));
+        List<Task> agentTurns = tasksOfType(completed, "AGENT");
+        assertEquals(4, agentTurns.size(), "two AGENT tasks must each execute for two rounds");
         assertTrue(
-                String.valueOf(turn3.getOutputData().get("text"))
-                        .contains("Thanks Alice! I will remember your favorite color is blue."));
+                agentTurns.stream().allMatch(t -> t.getStatus() == Task.Status.COMPLETED),
+                "every agent turn must complete");
+
+        List<Task> firstAgentTurns = agentTurns(completed, "agent_a");
+        List<Task> secondAgentTurns = agentTurns(completed, "agent_b");
+        assertEquals(2, firstAgentTurns.size(), "first AGENT task must speak twice");
+        assertEquals(2, secondAgentTurns.size(), "second AGENT task must speak twice");
+
+        String firstReply = agentResultText(firstAgentTurns.get(0));
+        String secondReply = agentResultText(secondAgentTurns.get(0));
+        assertTrue(!firstReply.isBlank());
+        assertTrue(!secondReply.isBlank());
+        assertTrue(
+                String.valueOf(secondAgentTurns.get(0).getInputData().get("prompt"))
+                        .contains(firstReply),
+                "Agent B's first turn must receive Agent A's first reply");
+        assertTrue(
+                String.valueOf(firstAgentTurns.get(1).getInputData().get("prompt"))
+                        .contains(secondReply),
+                "Agent A's second turn must receive Agent B's first reply");
+
+        assertControllerDeployedAgent(firstAgent);
+        assertControllerDeployedAgent(secondAgent);
     }
 
     @Test
     void terminatingParentCancelsInFlightConductorAgent() {
-        String agentName = "conversation_agent_cancel_e2e_" + UUID.randomUUID();
-        registerConversationAgent(agentName);
+        String agentName = "blocking_agent_cancel_e2e_" + UUID.randomUUID();
+        registerLongRunningAgent(agentName);
 
-        String wfName = "conversation_cancel_e2e_" + UUID.randomUUID();
-        registerConversationLoopWorkflow(wfName, agentName);
-        String workflowId = startWorkflow(wfName, Map.of("initialPrompt", "Hi, I'd like to chat."));
+        String wfName = "agent_cancel_e2e_" + UUID.randomUUID();
+        registerCallAgentWorkflow(wfName, agentName, null);
+        String workflowId = startWorkflow(wfName, Map.of());
 
         String[] executionIdHolder = new String[1];
         await().atMost(30, TimeUnit.SECONDS)
@@ -221,7 +287,7 @@ class AgentTaskTests {
     @Test
     void agentExceedingMaxDurationFailsTerminallyAndTerminatesTheChild() {
         String agentName = "slow_agent_e2e_" + UUID.randomUUID();
-        registerSlowAgent(agentName, "10 seconds");
+        registerSlowAgent(agentName);
 
         String wfName = "call_agent_timeout_e2e_" + UUID.randomUUID();
         registerCallAgentWorkflow(wfName, agentName, Map.of("maxDurationSeconds", 3));
@@ -248,12 +314,10 @@ class AgentTaskTests {
      * class:
      *
      * <ul>
-     *   <li>{@code agentExceedingMaxDurationFailsTerminallyWithoutCancelingTheChild} (above) is the
-     *       AGENT <i>wrapper</i> task's own {@code maxDurationSeconds} deadline, enforced by {@code
-     *       ConductorAgentDelegate.execute()} while the child is merely {@code RUNNING}.
-     *   <li>A per-task {@code TaskDef.responseTimeoutSeconds} (tried and abandoned — see the class
-     *       javadoc) never fires for a system task like AGENT/WAIT — that mechanism assumes an
-     *       external worker polling and going silent, which doesn't apply here.
+     *   <li>{@code agentExceedingMaxDurationFailsTerminallyAndTerminatesTheChild} is the AGENT
+     *       <i>wrapper</i> task's own {@code maxDurationSeconds} deadline.
+     *   <li>This test configures {@code timeoutSeconds}/{@code TIME_OUT_WF} on the child agent
+     *       workflow itself.
      * </ul>
      *
      * <p>Here the registered agent's <b>own</b> {@code WorkflowDef.timeoutSeconds} + {@code
@@ -268,7 +332,7 @@ class AgentTaskTests {
     @Test
     void agentsOwnWorkflowTimeoutMapsToFailedOnTheAgentTask() {
         String agentName = "self_timeout_agent_e2e_" + UUID.randomUUID();
-        registerSlowAgentWithOwnTimeout(agentName, "10 seconds", 3);
+        registerSlowAgentWithOwnTimeout(agentName, 3);
 
         String wfName = "call_agent_selftimeout_e2e_" + UUID.randomUUID();
         // Generous maxDurationSeconds so the WRAPPER's own deadline guard can't race with (or
@@ -276,17 +340,37 @@ class AgentTaskTests {
         registerCallAgentWorkflow(wfName, agentName, Map.of("maxDurationSeconds", 60));
         String workflowId = startWorkflow(wfName, Map.of());
 
-        Workflow completed = awaitTerminal(workflowId, 90);
+        Task runningAgent = awaitAgentPoll(workflowId, 1, 20);
+        String executionId = (String) runningAgent.getOutputData().get("executionId");
+        assertNotNull(executionId);
+
+        // A blocked SIMPLE task produces no child-workflow events by itself. Trigger the public
+        // decider endpoint after the configured deadline so this test verifies the workflow's own
+        // timeout deterministically instead of depending on the server sweeper cadence.
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
+                .until(
+                        () ->
+                                System.currentTimeMillis()
+                                                - workflowClient
+                                                        .getWorkflow(executionId, false)
+                                                        .getCreateTime()
+                                        > 3_500);
+        workflowClient.runDecider(executionId);
+
+        // A shared server may have retries configured on the global AGENT task definition. The
+        // child is already TIMED_OUT; allow those wrapper retries to settle before asserting the
+        // final mapping.
+        Workflow completed = awaitTerminal(workflowId, 45);
         assertEquals(Workflow.WorkflowStatus.FAILED, completed.getStatus());
 
         Task agentTask = agentTaskOf(completed);
         assertEquals(Task.Status.FAILED, agentTask.getStatus());
-        assertEquals("FAILED", agentTask.getOutputData().get("state"));
+        assertEquals("failed", agentTask.getOutputData().get("state"));
         assertTrue(
                 agentTask.getReasonForIncompletion().contains("Workflow timed out after"),
                 "reason: " + agentTask.getReasonForIncompletion());
 
-        String executionId = (String) agentTask.getOutputData().get("executionId");
         assertEquals(
                 Workflow.WorkflowStatus.TIMED_OUT,
                 workflowClient.getWorkflow(executionId, false).getStatus());
@@ -359,10 +443,50 @@ class AgentTaskTests {
         Workflow completed = awaitTerminal(workflowId, 30);
         Task agentTask = agentTaskOf(completed);
         assertEquals(Task.Status.CANCELED, agentTask.getStatus());
-        assertEquals("CANCELED", agentTask.getOutputData().get("state"));
+        assertEquals("canceled", agentTask.getOutputData().get("state"));
         assertEquals(
                 "operator canceled the agent execution directly",
                 agentTask.getReasonForIncompletion());
+    }
+
+    @Test
+    void cancelAgentTaskStopsRunningConductorAgent() {
+        String agentName = "long_running_agent_taskcancel_e2e_" + UUID.randomUUID();
+        registerLongRunningAgent(agentName);
+
+        String callerWorkflowName = "call_agent_taskcancel_e2e_" + UUID.randomUUID();
+        registerCallAgentWorkflow(callerWorkflowName, agentName, null);
+        String callerWorkflowId = startWorkflow(callerWorkflowName, Map.of());
+
+        Task runningAgent = awaitAgentPoll(callerWorkflowId, 1, 20);
+        String executionId = (String) runningAgent.getOutputData().get("executionId");
+        assertNotNull(executionId);
+
+        String cancelWorkflowName = "cancel_agent_e2e_" + UUID.randomUUID();
+        registerCancelAgentWorkflow(cancelWorkflowName);
+        String cancelWorkflowId =
+                startWorkflow(
+                        cancelWorkflowName,
+                        Map.of(
+                                "executionId",
+                                executionId,
+                                "reason",
+                                "canceled by the CANCEL_AGENT worker"));
+
+        Workflow cancelWorkflow = awaitTerminal(cancelWorkflowId, 20);
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, cancelWorkflow.getStatus());
+        Task cancelTask = lastTaskOfType(cancelWorkflow, "CANCEL_AGENT");
+        assertNotNull(cancelTask);
+        assertEquals(true, cancelTask.getOutputData().get("canceled"));
+        assertEquals(executionId, cancelTask.getOutputData().get("executionId"));
+
+        Workflow callerWorkflow = awaitTerminal(callerWorkflowId, 20);
+        Task canceledAgent = agentTaskOf(callerWorkflow);
+        assertEquals(Task.Status.CANCELED, canceledAgent.getStatus());
+        assertEquals("canceled", canceledAgent.getOutputData().get("state"));
+        assertEquals(
+                Workflow.WorkflowStatus.TERMINATED,
+                workflowClient.getWorkflow(executionId, false).getStatus());
     }
 
     /**
@@ -372,17 +496,9 @@ class AgentTaskTests {
      * workflowInstanceId + referenceTaskName + iteration}, which differs here on {@code
      * referenceTaskName} between the two fork branches) — rather than accidentally colliding on a
      * shared child execution.
-     *
-     * <p>Two scenarios explored and deliberately <b>not</b> included here, because they turned out
-     * not to model real behavior for a system task like AGENT (driven internally by {@code
-     * AsyncSystemTaskExecutor}, not polled by an external worker): engine-level {@code
-     * TaskDef.responseTimeoutSeconds} never fired even set far shorter than the agent's own
-     * completion time (the workflow simply ran to normal completion), and {@code
-     * TaskDef.retryDelaySeconds} was not honored between automatic retries (three attempts
-     * completed within ~5 seconds despite a configured 2s delay) — so a deterministic "fails once,
-     * recovers on retry" test isn't achievable without a real timing race.
      */
     @Test
+    @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
     void concurrentCallsToTheSameAgentStayIndependent() {
         String agentName = "hello_world_agent_concurrent_e2e_" + UUID.randomUUID();
         registerHelloWorldAgent(agentName);
@@ -433,8 +549,8 @@ class AgentTaskTests {
         assertNotNull(executionId2);
         assertNotEquals(
                 executionId1, executionId2, "each fork branch must get its own child execution");
-        assertTrue(String.valueOf(chat1.getOutputData().get("text")).contains("branch one"));
-        assertTrue(String.valueOf(chat2.getOutputData().get("text")).contains("branch two"));
+        assertTrue(!agentResultText(chat1).isBlank());
+        assertTrue(!agentResultText(chat2).isBlank());
     }
 
     // ── engine helpers ─────────────────────────────────────────────────────
@@ -453,48 +569,88 @@ class AgentTaskTests {
         return latest[0];
     }
 
-    /** Also plays "the human" for the {@code DO_WHILE(chat, human)} conversation workflows. */
-    private static Workflow awaitConversationTerminal(String workflowId) {
-        Workflow[] latest = new Workflow[1];
-        await().atMost(60, TimeUnit.SECONDS)
-                .pollInterval(500, TimeUnit.MILLISECONDS)
+    private static Task awaitAgentPoll(
+            String workflowId, int minimumPollCount, int timeoutSeconds) {
+        Task[] latest = new Task[1];
+        await().atMost(timeoutSeconds, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
                 .untilAsserted(
                         () -> {
-                            answerPendingHumanTask(workflowId);
-                            Workflow wf = workflowClient.getWorkflow(workflowId, true);
-                            latest[0] = wf;
-                            assertNotNull(wf.getStatus());
-                            assertTrue(wf.getStatus().isTerminal());
+                            Task task = agentTaskOf(workflowClient.getWorkflow(workflowId, true));
+                            assertNotNull(task);
+                            latest[0] = task;
+                            assertEquals(Task.Status.IN_PROGRESS, task.getStatus());
+                            assertTrue(
+                                    task.getPollCount() >= minimumPollCount,
+                                    "pollCount="
+                                            + task.getPollCount()
+                                            + ", expected at least "
+                                            + minimumPollCount);
                         });
         return latest[0];
     }
 
-    private static void answerPendingHumanTask(String workflowId) {
-        Workflow workflow = workflowClient.getWorkflow(workflowId, true);
-        Task human = lastTaskOfType(workflow, "HUMAN");
-        if (human == null || human.getStatus() != Task.Status.IN_PROGRESS) {
-            return;
-        }
+    private static void completeWorkerTask(String taskType, String text) {
+        Task[] polled = new Task[1];
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
+                .untilAsserted(
+                        () -> {
+                            Task task = taskClient.pollTask(taskType, "agent-e2e-worker", null);
+                            assertNotNull(task);
+                            assertNotNull(task.getTaskId());
+                            polled[0] = task;
+                        });
 
-        String answer = "ok, thanks!";
-        Task chat = lastTaskOfType(workflow, "AGENT");
-        if (chat != null
-                && chat.getOutputData().get("pendingTool") instanceof Map<?, ?> pending
-                && pending.get("parameters") instanceof Map<?, ?> parameters) {
-            String question = String.valueOf(parameters.get("question"));
-            if (question.contains("name")) {
-                answer = "Alice";
-            } else if (question.contains("favorite color")) {
-                answer = "blue";
-            }
-        }
+        TaskResult result = new TaskResult(polled[0]);
+        result.setStatus(TaskResult.Status.COMPLETED);
+        result.setOutputData(Map.of("text", text));
+        taskClient.updateTask(result);
+    }
 
-        TaskResult taskResult = new TaskResult();
-        taskResult.setTaskId(human.getTaskId());
-        taskResult.setWorkflowInstanceId(workflowId);
-        taskResult.setStatus(TaskResult.Status.COMPLETED);
-        taskResult.setOutputData(Map.of("answer", answer));
-        taskClient.updateTask(taskResult);
+    private static AgentStatusResponse awaitAgentStatus(
+            String executionId,
+            boolean expectedWaiting,
+            boolean expectedComplete,
+            int timeoutSeconds) {
+        AgentStatusResponse[] latest = new AgentStatusResponse[1];
+        await().atMost(timeoutSeconds, TimeUnit.SECONDS)
+                .pollInterval(500, TimeUnit.MILLISECONDS)
+                .untilAsserted(
+                        () -> {
+                            AgentStatusResponse status = agentClient.getAgentStatus(executionId);
+                            latest[0] = status;
+                            assertEquals(expectedWaiting, status.isWaiting());
+                            assertEquals(expectedComplete, status.isComplete());
+                        });
+        return latest[0];
+    }
+
+    private static String agentResultText(Task task) {
+        Object text = task.getOutputData().get("text");
+        if (text != null) {
+            return String.valueOf(text);
+        }
+        Object structured = task.getOutputData().get("output");
+        if (structured instanceof Map<?, ?> output && output.get("result") != null) {
+            return String.valueOf(output.get("result"));
+        }
+        return "";
+    }
+
+    private static void assertControllerDeployedAgent(String agentName) {
+        WorkflowDef definition = metadataClient.getWorkflowDef(agentName, 1);
+        assertNotNull(definition);
+        assertNotNull(definition.getTasks());
+        assertTrue(!definition.getTasks().isEmpty(), "AgentController must compile agent tasks");
+        assertNotNull(definition.getMetadata());
+        assertEquals("conductor", definition.getMetadata().get("agent_sdk"));
+        assertTrue(
+                definition.getMetadata().get("agentDef") instanceof Map<?, ?>,
+                "AgentController must persist the full agentDef");
+        Map<?, ?> agentDef = (Map<?, ?>) definition.getMetadata().get("agentDef");
+        assertEquals(agentName, agentDef.get("name"));
+        assertNotNull(agentDef.get("model"));
     }
 
     private static Task lastTaskOfType(Workflow workflow, String taskType) {
@@ -515,6 +671,17 @@ class AgentTaskTests {
         return matches;
     }
 
+    private static List<Task> agentTurns(Workflow workflow, String baseReferenceName) {
+        return tasksOfType(workflow, "AGENT").stream()
+                .filter(
+                        task ->
+                                task.getReferenceTaskName().equals(baseReferenceName)
+                                        || task.getReferenceTaskName()
+                                                .startsWith(baseReferenceName + "__"))
+                .sorted((left, right) -> Integer.compare(left.getIteration(), right.getIteration()))
+                .toList();
+    }
+
     private static Task agentTaskOf(Workflow workflow) {
         return lastTaskOfType(workflow, "AGENT");
     }
@@ -530,203 +697,97 @@ class AgentTaskTests {
     // ── registration ────────────────────────────────────────────────────────
 
     private static void registerHelloWorldAgent(String agentName) {
-        WorkflowTask hello = new WorkflowTask();
-        hello.setName("INLINE");
-        hello.setTaskReferenceName("hello");
-        hello.setType("INLINE");
-        Map<String, Object> helloInput = new HashMap<>();
-        helloInput.put("input", "${workflow.input}");
-        helloInput.put("evaluatorType", "javascript");
-        helloInput.put("expression", "({text: 'Hello, world! You said: ' + $.input.prompt})");
-        hello.setInputParameters(helloInput);
-
-        WorkflowDef def = new WorkflowDef();
-        def.setName(agentName);
-        def.setVersion(1);
-        def.setOwnerEmail("agent-e2e@conductor.test");
-        def.setTasks(List.of(hello));
-        def.setOutputParameters(Map.of("text", "${hello.output.result.text}"));
-        def.setMetadata(Map.of("agentDef", Map.of("name", agentName)));
-        metadataClient.updateWorkflowDefs(List.of(def));
+        deployAgent(
+                basicAgentConfig(
+                        agentName,
+                        "You are a concise test agent. Answer the user's prompt in one sentence."));
     }
 
-    private static void registerSlowAgent(String agentName, String waitDuration) {
-        WorkflowTask wait = new WorkflowTask();
-        wait.setName("WAIT");
-        wait.setTaskReferenceName("wait");
-        wait.setType("WAIT");
-        wait.setInputParameters(Map.of("duration", waitDuration));
-
-        WorkflowDef def = new WorkflowDef();
-        def.setName(agentName);
-        def.setVersion(1);
-        def.setOwnerEmail("agent-e2e@conductor.test");
-        def.setTasks(List.of(wait));
-        def.setMetadata(Map.of("agentDef", Map.of("name", agentName)));
-        metadataClient.updateWorkflowDefs(List.of(def));
+    private static void registerSlowAgent(String agentName) {
+        deployBlockingAgent(agentName, 120);
     }
 
     /**
-     * A {@code WAIT(waitDuration)} agent slower than {@code selfTimeoutSeconds}, with its own
-     * {@code WorkflowDef.timeoutSeconds}/{@code TIME_OUT_WF} set so ITS workflow (not any AGENT
-     * task wrapping it) times out on its own.
+     * An agent blocked on an unpolled {@code SIMPLE} task, with its own {@code
+     * WorkflowDef.timeoutSeconds}/{@code TIME_OUT_WF} set so ITS workflow (not any AGENT task
+     * wrapping it) times out on its own.
      */
-    private static void registerSlowAgentWithOwnTimeout(
-            String agentName, String waitDuration, int selfTimeoutSeconds) {
-        WorkflowTask wait = new WorkflowTask();
-        wait.setName("WAIT");
-        wait.setTaskReferenceName("wait");
-        wait.setType("WAIT");
-        wait.setInputParameters(Map.of("duration", waitDuration));
-
-        WorkflowDef def = new WorkflowDef();
-        def.setName(agentName);
-        def.setVersion(1);
-        def.setOwnerEmail("agent-e2e@conductor.test");
-        def.setTasks(List.of(wait));
-        def.setTimeoutSeconds(selfTimeoutSeconds);
-        def.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
-        def.setMetadata(Map.of("agentDef", Map.of("name", agentName)));
-        metadataClient.updateWorkflowDefs(List.of(def));
+    private static void registerSlowAgentWithOwnTimeout(String agentName, int selfTimeoutSeconds) {
+        deployBlockingAgent(agentName, selfTimeoutSeconds);
     }
 
     private static void registerFailingAgent(String agentName) {
-        WorkflowTask boom = new WorkflowTask();
-        boom.setName("INLINE");
-        boom.setTaskReferenceName("boom");
-        boom.setType("INLINE");
-        boom.setInputParameters(Map.of("evaluatorType", "not_a_real_evaluator", "expression", "1"));
-
-        WorkflowDef def = new WorkflowDef();
-        def.setName(agentName);
-        def.setVersion(1);
-        def.setOwnerEmail("agent-e2e@conductor.test");
-        def.setTasks(List.of(boom));
-        def.setMetadata(Map.of("agentDef", Map.of("name", agentName)));
-        metadataClient.updateWorkflowDefs(List.of(def));
+        Map<String, Object> config =
+                basicAgentConfig(
+                        agentName, "This agent intentionally targets an unknown provider.");
+        config.put("model", "unknown_e2e_provider/unknown_model");
+        deployAgent(config);
     }
 
-    private static void registerLongRunningAgent(String agentName) {
-        List<WorkflowTask> tasks = new ArrayList<>();
-        for (int i = 1; i <= 3; i++) {
-            WorkflowTask wait = new WorkflowTask();
-            wait.setName("WAIT");
-            wait.setTaskReferenceName("wait" + i);
-            wait.setType("WAIT");
-            wait.setInputParameters(Map.of("duration", "2 seconds"));
-            tasks.add(wait);
-
-            WorkflowTask step = new WorkflowTask();
-            step.setName("INLINE");
-            step.setTaskReferenceName("step" + i);
-            step.setType("INLINE");
-            Map<String, Object> stepInput = new HashMap<>();
-            stepInput.put("input", "${workflow.input}");
-            stepInput.put("evaluatorType", "javascript");
-            stepInput.put(
-                    "expression",
-                    i < 3
-                            ? "({note: 'step" + i + " done'})"
-                            : "({text: 'Long-running agent finished after 3 waits. You said: '"
-                                    + " + $.input.prompt})");
-            step.setInputParameters(stepInput);
-            tasks.add(step);
-        }
-
-        WorkflowDef def = new WorkflowDef();
-        def.setName(agentName);
-        def.setVersion(1);
-        def.setOwnerEmail("agent-e2e@conductor.test");
-        def.setTasks(tasks);
-        def.setOutputParameters(Map.of("text", "${step3.output.result.text}"));
-        def.setMetadata(Map.of("agentDef", Map.of("name", agentName)));
-        metadataClient.updateWorkflowDefs(List.of(def));
+    private static String registerLongRunningAgent(String agentName) {
+        return deployBlockingAgent(agentName, 120);
     }
 
-    private static void registerConversationAgent(String agentName) {
-        WorkflowTask wait1 = waitTask("wait1");
-        WorkflowTask greet = inlineTask("greet", Map.of("prompt", "${workflow.input.prompt}"));
-        greet.getInputParameters()
-                .put(
-                        "expression",
-                        "({text: 'Hello! You said: ' + $.prompt + '. What is your name?'})");
-
-        WorkflowTask askName = humanQuestionTask("ask_name", "${greet.output.result.text}");
-
-        WorkflowTask wait2 = waitTask("wait2");
-        WorkflowTask followup = inlineTask("followup", Map.of("name", "${ask_name.output.result}"));
-        followup.getInputParameters()
-                .put(
-                        "expression",
-                        "({text: 'Nice to meet you, ' + $.name + '! What is your favorite color?'})");
-
-        WorkflowTask askColor = humanQuestionTask("ask_color", "${followup.output.result.text}");
-
-        WorkflowTask wait3 = waitTask("wait3");
-        Map<String, Object> finalizeInput = new HashMap<>();
-        finalizeInput.put("name", "${ask_name.output.result}");
-        finalizeInput.put("color", "${ask_color.output.result}");
-        WorkflowTask finalize = inlineTask("finalize", finalizeInput);
-        finalize.getInputParameters()
-                .put(
-                        "expression",
-                        "({text: 'Thanks ' + $.name + '! I will remember your favorite color is '"
-                                + " + $.color + '. Conversation complete.'})");
-
-        WorkflowDef def = new WorkflowDef();
-        def.setName(agentName);
-        def.setVersion(1);
-        def.setOwnerEmail("agent-e2e@conductor.test");
-        def.setTasks(List.of(wait1, greet, askName, wait2, followup, askColor, wait3, finalize));
-        def.setOutputParameters(Map.of("text", "${finalize.output.result.text}"));
-        def.setMetadata(Map.of("agentDef", Map.of("name", agentName)));
-        metadataClient.updateWorkflowDefs(List.of(def));
+    private static String deployBlockingAgent(String agentName, int timeoutSeconds) {
+        String taskType = registerPendingWorkerTask();
+        Map<String, Object> config =
+                basicAgentConfig(
+                        agentName,
+                        "Use the prefilled work result as context, then answer in one sentence.");
+        config.put("timeoutSeconds", timeoutSeconds);
+        config.put("tools", List.of(workerTool(taskType, false)));
+        config.put(
+                "prefillTools",
+                List.of(
+                        Map.of(
+                                "toolName",
+                                taskType,
+                                "arguments",
+                                Map.of("prompt", "durable work"))));
+        deployAgent(config);
+        return taskType;
     }
 
-    private static void registerConversationLoopWorkflow(String name, String agentName) {
-        // No more message>parts>text>prompt fallback (ConductorAgentRequest has a single
-        // `prompt` field) — resolve the effective prompt explicitly before `chat` runs, same fix
-        // as ConductorAgentEndToEndTest#registerConversationLoopWorkflow (test-harness module).
-        WorkflowTask resolvePrompt = new WorkflowTask();
-        resolvePrompt.setName("INLINE");
-        resolvePrompt.setTaskReferenceName("resolve_prompt");
-        resolvePrompt.setType("INLINE");
-        Map<String, Object> resolveInput = new HashMap<>();
-        resolveInput.put("initialPrompt", "${workflow.input.initialPrompt}");
-        resolveInput.put("humanAnswer", "${human.output.answer}");
-        resolveInput.put("evaluatorType", "javascript");
-        resolveInput.put(
-                "expression", "({prompt: $.humanAnswer ? $.humanAnswer : $.initialPrompt})");
-        resolvePrompt.setInputParameters(resolveInput);
+    private static Map<String, Object> approvalAgentConfig(String agentName, String toolName) {
+        Map<String, Object> config =
+                basicAgentConfig(
+                        agentName,
+                        "You must call the required work tool exactly once before answering. Do not answer directly.");
+        config.put("maxTurns", 4);
+        config.put("tools", List.of(workerTool(toolName, true)));
+        config.put("requiredTools", List.of(toolName));
+        return config;
+    }
 
-        WorkflowTask chat = new WorkflowTask();
-        chat.setName("AGENT");
-        chat.setTaskReferenceName("chat");
-        chat.setType("AGENT");
-        Map<String, Object> chatInput = new HashMap<>();
-        chatInput.put("agentType", "conductor");
-        chatInput.put("name", agentName);
-        chatInput.put("executionId", "${chat.output.executionId}");
-        chatInput.put("prompt", "${resolve_prompt.output.result.prompt}");
-        chatInput.put("pollIntervalSeconds", 1);
-        chatInput.put("maxDurationSeconds", 180);
-        chat.setInputParameters(chatInput);
+    private static Map<String, Object> basicAgentConfig(String name, String instructions) {
+        Map<String, Object> config = new LinkedHashMap<>();
+        config.put("name", name);
+        config.put("model", MODEL);
+        config.put("instructions", instructions);
+        config.put("maxTurns", 3);
+        config.put("timeoutSeconds", 120);
+        config.put("temperature", 0.0);
+        return config;
+    }
 
-        WorkflowTask human = new WorkflowTask();
-        human.setName("HUMAN");
-        human.setTaskReferenceName("human");
-        human.setType("HUMAN");
+    private static Map<String, Object> workerTool(String name, boolean approvalRequired) {
+        Map<String, Object> tool = new LinkedHashMap<>();
+        tool.put("name", name);
+        tool.put("description", "Complete deterministic work for the agent lifecycle E2E.");
+        tool.put("toolType", "worker");
+        tool.put("approvalRequired", approvalRequired);
+        tool.put(
+                "inputSchema",
+                Map.of("type", "object", "properties", Map.of("prompt", Map.of("type", "string"))));
+        return tool;
+    }
 
-        WorkflowTask loop = new WorkflowTask();
-        loop.setName("loop");
-        loop.setTaskReferenceName("loop");
-        loop.setType("DO_WHILE");
-        loop.setLoopCondition(
-                "if ( $.chat['state'] == 'WAITING' && $.loop['iteration'] < 6 ) {"
-                        + " true; } else { false; }");
-        loop.setLoopOver(List.of(resolvePrompt, chat, human));
-
-        registerWorkflow(name, loop);
+    private static StartResponse deployAgent(Map<String, Object> config) {
+        StartResponse response = agentClient.deployAgent(AgentRequest.nativeAgent(config).build());
+        assertEquals(config.get("name"), response.getAgentName());
+        assertEquals(null, response.getExecutionId(), "deploy must not start an execution");
+        assertControllerDeployedAgent(String.valueOf(config.get("name")));
+        return response;
     }
 
     private static WorkflowTask callAgentTask(String agentName, Map<String, Object> extraInput) {
@@ -751,6 +812,104 @@ class AgentTaskTests {
         registerWorkflow(name, callAgentTask(agentName, extraInput));
     }
 
+    /**
+     * Registers a workflow with two concrete {@code AGENT} task definitions in a bounded loop. The
+     * SET_VARIABLE tasks carry the previous speaker's reply into the next AGENT task, including
+     * across loop iterations, so this tests agent-to-agent conversation rather than a multi-agent
+     * definition hidden behind one AGENT task.
+     */
+    private static void registerTwoAgentConversationWorkflow(
+            String name, String firstAgent, String secondAgent, int rounds) {
+        WorkflowTask initConversation = new WorkflowTask();
+        initConversation.setName("set_variable");
+        initConversation.setTaskReferenceName("init_conversation");
+        initConversation.setType("SET_VARIABLE");
+        initConversation.setInputParameters(
+                Map.of("lastMessage", "${workflow.input.initialMessage}"));
+
+        WorkflowTask agentA =
+                conversationAgentTask(
+                        "agent_a",
+                        firstAgent,
+                        "The other participant said:\n${workflow.variables.lastMessage}\n\nRespond to them directly.");
+        WorkflowTask saveAgentA =
+                setLastMessageTask("save_agent_a", "${agent_a.output.output.result}");
+
+        WorkflowTask agentB =
+                conversationAgentTask(
+                        "agent_b",
+                        secondAgent,
+                        "The other participant said:\n${workflow.variables.lastMessage}\n\nRespond to them directly.");
+        WorkflowTask saveAgentB =
+                setLastMessageTask("save_agent_b", "${agent_b.output.output.result}");
+
+        WorkflowTask loop = new WorkflowTask();
+        loop.setName("agent_chat_loop");
+        loop.setTaskReferenceName("agent_chat_loop");
+        loop.setType("DO_WHILE");
+        loop.setEvaluatorType("graaljs");
+        loop.setInputParameters(Map.of("rounds", rounds));
+        loop.setLoopCondition(
+                "(function(){ return $.agent_chat_loop['iteration'] < $.rounds; })();");
+        loop.setLoopOver(List.of(agentA, saveAgentA, agentB, saveAgentB));
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName(name);
+        def.setVersion(1);
+        def.setOwnerEmail("agent-e2e@conductor.test");
+        def.setTimeoutSeconds(180);
+        def.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
+        def.setTasks(List.of(initConversation, loop));
+        def.setOutputParameters(Map.of("finalReply", "${workflow.variables.lastMessage}"));
+        metadataClient.updateWorkflowDefs(List.of(def));
+    }
+
+    private static WorkflowTask conversationAgentTask(
+            String taskReferenceName, String agentName, String prompt) {
+        WorkflowTask task = new WorkflowTask();
+        task.setName("AGENT");
+        task.setTaskReferenceName(taskReferenceName);
+        task.setType("AGENT");
+        task.setInputParameters(
+                Map.of(
+                        "agentType",
+                        "conductor",
+                        "name",
+                        agentName,
+                        "prompt",
+                        prompt,
+                        "pollIntervalSeconds",
+                        1,
+                        "maxDurationSeconds",
+                        120));
+        return task;
+    }
+
+    private static WorkflowTask setLastMessageTask(String taskReferenceName, String message) {
+        WorkflowTask task = new WorkflowTask();
+        task.setName("set_variable");
+        task.setTaskReferenceName(taskReferenceName);
+        task.setType("SET_VARIABLE");
+        task.setInputParameters(Map.of("lastMessage", message));
+        return task;
+    }
+
+    private static void registerCancelAgentWorkflow(String name) {
+        WorkflowTask task = new WorkflowTask();
+        task.setName("CANCEL_AGENT");
+        task.setTaskReferenceName("cancelAgent");
+        task.setType("CANCEL_AGENT");
+        task.setInputParameters(
+                Map.of(
+                        "agentType",
+                        "conductor",
+                        "executionId",
+                        "${workflow.input.executionId}",
+                        "reason",
+                        "${workflow.input.reason}"));
+        registerWorkflow(name, task);
+    }
+
     private static void registerWorkflow(String name, WorkflowTask onlyTask) {
         WorkflowDef def = new WorkflowDef();
         def.setName(name);
@@ -760,38 +919,7 @@ class AgentTaskTests {
         metadataClient.updateWorkflowDefs(List.of(def));
     }
 
-    private static WorkflowTask waitTask(String refName) {
-        WorkflowTask wait = new WorkflowTask();
-        wait.setName("WAIT");
-        wait.setTaskReferenceName(refName);
-        wait.setType("WAIT");
-        wait.setInputParameters(Map.of("duration", "2 seconds"));
-        return wait;
-    }
-
-    private static WorkflowTask inlineTask(String refName, Map<String, Object> extraInput) {
-        WorkflowTask task = new WorkflowTask();
-        task.setName("INLINE");
-        task.setTaskReferenceName(refName);
-        task.setType("INLINE");
-        Map<String, Object> taskInput = new HashMap<>();
-        taskInput.put("evaluatorType", "javascript");
-        taskInput.putAll(extraInput);
-        task.setInputParameters(taskInput);
-        return task;
-    }
-
-    private static WorkflowTask humanQuestionTask(String refName, String questionExpression) {
-        WorkflowTask task = new WorkflowTask();
-        task.setName("HUMAN");
-        task.setTaskReferenceName(refName);
-        task.setType("HUMAN");
-        task.setInputParameters(
-                Map.of(
-                        "tool_name",
-                        "ask_question",
-                        "parameters",
-                        Map.of("question", questionExpression)));
-        return task;
+    private static String registerPendingWorkerTask() {
+        return "agent_pending_work_e2e_" + UUID.randomUUID();
     }
 }

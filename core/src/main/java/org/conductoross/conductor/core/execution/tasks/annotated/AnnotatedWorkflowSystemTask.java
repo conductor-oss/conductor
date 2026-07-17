@@ -16,6 +16,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Optional;
 
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.QueueUtils;
@@ -127,7 +128,12 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
     @Override
     public boolean execute(
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
-        TaskContext.set(task.toTask());
+        TaskContext taskContext = TaskContext.set(task.toTask());
+        // A plain annotated-worker return value is terminal by default. Long-running workers can
+        // override this execution state through their TaskContext without leaking TaskResult into
+        // their public output POJO.
+        taskContext.getTaskResult().setStatus(TaskResult.Status.COMPLETED);
+        taskContext.getTaskResult().setCallbackAfterSeconds(0);
         try {
             log.debug(
                     "Executing annotated task {} for workflow {}",
@@ -141,7 +147,7 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
             Object result = method.invoke(bean, parameters);
 
             // Apply the result to the task
-            resultMapper.applyResult(result, task, method);
+            resultMapper.applyResult(result, task, method, taskContext.getTaskResult());
 
             log.debug(
                     "Completed annotated task {} with status {}", getTaskType(), task.getStatus());
@@ -195,13 +201,29 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
 
     @Override
     public void cancel(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
-        // Default implementation - annotated tasks typically don't need custom cancel
-        // logic
-        log.debug(
-                "Cancelling annotated task {} for workflow {}",
-                getTaskType(),
-                workflow.getWorkflowId());
-        task.setStatus(TaskModel.Status.CANCELED);
+        String workflowId =
+                workflow != null ? workflow.getWorkflowId() : task.getWorkflowInstanceId();
+        log.debug("Cancelling annotated task {} for workflow {}", getTaskType(), workflowId);
+        if (bean instanceof AnnotatedTaskCancellationHandler cancellationHandler) {
+            String reason =
+                    task.getReasonForIncompletion() != null
+                            ? task.getReasonForIncompletion()
+                            : "Annotated task canceled by workflow " + workflowId;
+            try {
+                cancellationHandler.cancel(getTaskType(), task.toTask(), reason);
+            } catch (Exception e) {
+                // Cancellation is best effort. The Conductor task must still reach a terminal
+                // state even when the downstream agent is temporarily unavailable.
+                log.warn(
+                        "Failed to propagate cancellation for annotated task {}: {}",
+                        getTaskType(),
+                        e.getMessage(),
+                        e);
+            }
+        }
+        if (task.getStatus() == null || !task.getStatus().isTerminal()) {
+            task.setStatus(TaskModel.Status.CANCELED);
+        }
     }
 
     @Override

@@ -61,10 +61,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>This exercises the same wiring as {@code
  * com.netflix.conductor.test.integration.a2a.A2ADurableEngineEndToEndTest}, but for the embedded
- * {@code conductor} agent runtime instead of a remote A2A agent: {@code AgentTask} dispatches to
- * {@code ConductorAgentDelegate}, which calls {@code WorkflowExecutor.startAgentExecution} to
- * resolve the registered agent by name/version ({@code WorkflowDef.isAgent()} + {@code
- * metadata.agentDef}) and starts it as an ordinary child workflow, then polls it to completion.
+ * {@code conductor} agent runtime instead of a remote A2A agent: the {@code AGENT} worker
+ * dispatches to {@code ConductorAgentDelegate}, which calls {@code
+ * WorkflowExecutor.startAgentExecution} to resolve the registered agent by name/version ({@code
+ * WorkflowDef.isAgent()} + {@code metadata.agentDef}) and starts it as an ordinary child workflow,
+ * then polls it to completion.
  *
  * <p>The "hello world" agent has no LLM/tool dependency — its only task is a synchronous {@code
  * INLINE} script that echoes the prompt back as {@code text}. This keeps the test deterministic and
@@ -132,11 +133,23 @@ class ConductorAgentEndToEndTest {
 
         Task agentTask = agentTaskOf(completed);
         assertNotNull(agentTask, "AGENT task must be present on the completed workflow");
-        assertEquals("COMPLETED", agentTask.getOutputData().get("state"));
+        assertEquals("completed", agentTask.getOutputData().get("state"));
         assertEquals(agentName, agentTask.getOutputData().get("agentName"));
         String executionId = (String) agentTask.getOutputData().get("executionId");
         assertNotNull(
                 executionId, "executionId of the started hello-world agent run must be surfaced");
+        assertEquals(executionId, agentTask.getOutputData().get("taskId"));
+        assertTrue(agentTask.getOutputData().get("task") instanceof Map<?, ?>);
+        Map<?, ?> protocolTask = (Map<?, ?>) agentTask.getOutputData().get("task");
+        assertEquals("task", protocolTask.get("kind"));
+        assertEquals(executionId, protocolTask.get("id"));
+        assertTrue(protocolTask.get("status") instanceof Map<?, ?>);
+        assertEquals("completed", ((Map<?, ?>) protocolTask.get("status")).get("state"));
+        assertTrue(protocolTask.get("artifacts") instanceof List<?>);
+        assertTrue(!((List<?>) protocolTask.get("artifacts")).isEmpty());
+        assertTrue(agentTask.getOutputData().get("agentMessage") instanceof Map<?, ?>);
+        assertEquals(
+                "agent", ((Map<?, ?>) agentTask.getOutputData().get("agentMessage")).get("role"));
         assertEquals(
                 executionId,
                 agentTask.getSubWorkflowId(),
@@ -179,7 +192,7 @@ class ConductorAgentEndToEndTest {
 
         Task agentTask = agentTaskOf(completed);
         assertNotNull(agentTask, "AGENT task must be present on the completed workflow");
-        assertEquals("COMPLETED", agentTask.getOutputData().get("state"));
+        assertEquals("completed", agentTask.getOutputData().get("state"));
         String executionId = (String) agentTask.getOutputData().get("executionId");
         assertEquals(
                 executionId,
@@ -193,21 +206,88 @@ class ConductorAgentEndToEndTest {
 
         Workflow agentExecution = executionService.getExecutionStatus(executionId, true);
         assertEquals(Workflow.WorkflowStatus.COMPLETED, agentExecution.getStatus());
-        // The child ran all 6 tasks (3 real WAIT delays, ~6s). Because AGENT is synchronous, its
-        // execute() is re-invoked by the decider on each sweep — a single immediate poll right
-        // after start() would have seen the child still on its first WAIT, not COMPLETED. So the
-        // child having run to completion with all pairs done is itself proof the task was polled
-        // across multiple cycles. (pollCount is not applicable: it is only incremented on the
-        // async system-task queue path, which a synchronous AGENT no longer uses.)
+        assertTrue(
+                agentTask.getPollCount() >= 2,
+                "the async AGENT worker must poll a long-running execution more than once");
         assertEquals(6, agentExecution.getTasks().size(), "all 3 WAIT/INLINE pairs must have run");
+    }
+
+    @Test
+    void callConductorAgentHonorsFiveSecondPollInterval() {
+        String agentName = "poll_interval_agent_" + UUID.randomUUID();
+        registerSlowAgent(agentName, "20 seconds");
+
+        String wfName = "conductor_agent_poll_interval_e2e_" + UUID.randomUUID();
+        registerCallAgentWorkflow(wfName, agentName, Map.of("pollIntervalSeconds", 5));
+        String workflowId = startWorkflow(wfName);
+
+        WorkflowSystemTask agentSystemTask = systemTask("AGENT");
+        AtomicReference<String> taskIdRef = new AtomicReference<>();
+        Awaitility.await()
+                .atMost(10, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
+                .until(
+                        () -> {
+                            workflowExecutor.decide(workflowId);
+                            List<String> taskIds = queueDAO.pop("AGENT", 1, 100);
+                            if (taskIds.isEmpty()) {
+                                return false;
+                            }
+                            String taskId = taskIds.get(0);
+                            taskIdRef.set(taskId);
+                            asyncSystemTaskExecutor.execute(agentSystemTask, taskId);
+                            return true;
+                        });
+
+        String taskId = taskIdRef.get();
+        Task agentTask = agentTaskOf(executionService.getExecutionStatus(workflowId, true));
+        assertNotNull(agentTask);
+        assertEquals(Task.Status.IN_PROGRESS, agentTask.getStatus());
+        assertEquals(5, agentTask.getCallbackAfterSeconds());
+        assertEquals(1, agentTask.getPollCount());
+        assertTrue(
+                queueDAO.pop("AGENT", 1, 100).isEmpty(),
+                "AGENT task must not be immediately visible after requesting a five-second callback");
+
+        long postponedAt = System.nanoTime();
+        AtomicReference<Long> visibleAfterMillis = new AtomicReference<>();
+        Awaitility.await()
+                .atMost(8, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
+                .until(
+                        () -> {
+                            List<String> taskIds = queueDAO.pop("AGENT", 1, 100);
+                            if (taskIds.isEmpty()) {
+                                return false;
+                            }
+                            assertEquals(taskId, taskIds.get(0));
+                            visibleAfterMillis.set(
+                                    TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - postponedAt));
+                            return true;
+                        });
+
+        assertTrue(
+                visibleAfterMillis.get() >= 4_500,
+                "AGENT task became visible before its five-second callback: "
+                        + visibleAfterMillis.get()
+                        + "ms");
+        assertTrue(
+                visibleAfterMillis.get() < 7_500,
+                "AGENT task did not become visible close to its five-second callback: "
+                        + visibleAfterMillis.get()
+                        + "ms");
+
+        String executionId = (String) agentTask.getOutputData().get("executionId");
+        workflowExecutor.terminateWorkflow(executionId, "poll interval test cleanup");
+        workflowExecutor.terminateWorkflow(workflowId, "poll interval test cleanup");
     }
 
     /**
      * The money-shot conversation test: a {@code DO_WHILE} loop whose body is just two tasks —
      * {@code AGENT} then {@code HUMAN} — makes a long-running conductor agent and a "human"
-     * actually talk to each other over several turns, driving every branch of {@code AgentTask}
-     * that the earlier tests don't reach: the <b>resume</b> path ({@code start()} with a non-blank
-     * {@code executionId}, which calls {@link
+     * actually talk to each other over several turns, driving every branch of the {@code AGENT}
+     * worker that the earlier tests don't reach: the <b>resume</b> path ({@code start()} with a
+     * non-blank {@code executionId}, which calls {@link
      * org.conductoross.conductor.ai.agent.ConductorAgentDelegate#start}'s {@code respond()} branch)
      * and the {@code WAITING} branch of {@code applyExecution} (surfacing {@code
      * pendingTool}/{@code text} and completing the Conductor task while the underlying run is
@@ -253,7 +333,7 @@ class ConductorAgentEndToEndTest {
         // workflow isn't terminal, so ConductorAgentDelegate.getStatus() has no `output` to read
         // `text` from yet — the question only ever surfaces via `pendingTool`.
         Task turn1 = chatCalls.get(0);
-        assertEquals("WAITING", turn1.getOutputData().get("state"));
+        assertEquals("input-required", turn1.getOutputData().get("state"));
         assertTrue(
                 pendingQuestion(turn1).contains("What is your name?"),
                 "turn 1 should ask for a name: " + pendingQuestion(turn1));
@@ -263,7 +343,7 @@ class ConductorAgentEndToEndTest {
 
         // Turn 2: resumed with "Alice" — asks for a favorite color and pauses again.
         Task turn2 = chatCalls.get(1);
-        assertEquals("WAITING", turn2.getOutputData().get("state"));
+        assertEquals("input-required", turn2.getOutputData().get("state"));
         assertEquals(
                 executionId,
                 turn2.getOutputData().get("executionId"),
@@ -274,7 +354,7 @@ class ConductorAgentEndToEndTest {
 
         // Turn 3: resumed with "blue" — the agent synthesizes both answers and completes.
         Task turn3 = chatCalls.get(2);
-        assertEquals("COMPLETED", turn3.getOutputData().get("state"));
+        assertEquals("completed", turn3.getOutputData().get("state"));
         assertEquals(executionId, turn3.getOutputData().get("executionId"));
         assertTrue(
                 String.valueOf(turn3.getOutputData().get("text"))
@@ -291,11 +371,11 @@ class ConductorAgentEndToEndTest {
     }
 
     /**
-     * Exercises {@code AgentTask.cancel()} / {@code ConductorAgentDelegate.cancel()}: terminating
-     * the parent workflow while the {@code chat} AGENT task is still mid-flight (started, not yet
-     * {@code WAITING}/completed) must propagate the termination to the in-flight conductor agent
-     * execution — the same "the agent is a sub-workflow, so cancel it like one" contract that
-     * {@code AgentTask.subWorkflowId} advertises to the UI.
+     * Exercises annotated-task cancellation and {@code ConductorAgentDelegate.cancel()}:
+     * terminating the parent workflow while the {@code chat} AGENT task is still mid-flight
+     * (started, not yet {@code WAITING}/completed) must propagate the termination to the in-flight
+     * conductor agent execution — the same "the agent is a sub-workflow, so cancel it like one"
+     * contract that the AGENT task's {@code subWorkflowId} advertises to the UI.
      */
     @Test
     void terminatingParentWorkflowCancelsInFlightConductorAgent() {
@@ -319,6 +399,7 @@ class ConductorAgentEndToEndTest {
                 .until(
                         () -> {
                             workflowExecutor.decide(workflowId);
+                            drainQueue("AGENT");
                             drainQueue("WAIT");
                             Task chat =
                                     agentTaskOf(
@@ -473,6 +554,7 @@ class ConductorAgentEndToEndTest {
                 .until(
                         () -> {
                             workflowExecutor.decide(workflowId);
+                            drainQueue("AGENT");
                             drainQueue("WAIT");
                             Task chat =
                                     agentTaskOf(
@@ -494,7 +576,7 @@ class ConductorAgentEndToEndTest {
 
         Task agentTask = agentTaskOf(completed);
         assertEquals(Task.Status.CANCELED, agentTask.getStatus());
-        assertEquals("CANCELED", agentTask.getOutputData().get("state"));
+        assertEquals("canceled", agentTask.getOutputData().get("state"));
         assertEquals(
                 "operator canceled the agent execution directly",
                 agentTask.getReasonForIncompletion());
@@ -537,7 +619,7 @@ class ConductorAgentEndToEndTest {
 
         Task agentTask = agentTaskOf(completed);
         assertEquals(Task.Status.FAILED, agentTask.getStatus());
-        assertEquals("FAILED", agentTask.getOutputData().get("state"));
+        assertEquals("failed", agentTask.getOutputData().get("state"));
         assertTrue(
                 agentTask.getReasonForIncompletion().contains("Workflow timed out after"),
                 "reason: " + agentTask.getReasonForIncompletion());
@@ -564,6 +646,7 @@ class ConductorAgentEndToEndTest {
                 .until(
                         () -> {
                             workflowExecutor.decide(workflowId);
+                            drainQueue("AGENT");
                             drainQueue("WAIT");
                             answerPendingHumanTask(workflowId);
                             Workflow wf = executionService.getExecutionStatus(workflowId, true);
@@ -642,29 +725,29 @@ class ConductorAgentEndToEndTest {
     }
 
     /**
-     * Drains the async {@code WAIT} system-task queue (used by the child agent's own "thinking"
-     * steps) via {@link AsyncSystemTaskExecutor} — the same path {@code
+     * Drains an async system-task queue via {@link AsyncSystemTaskExecutor} — the same path {@code
      * SystemTaskWorkerCoordinator} takes in production. Needed because {@code
      * conductor.system-task-workers.enabled=false} in test mode disables the automatic coordinator,
-     * so nothing else pops these queues; the long-running agent's own {@code WAIT} steps would
-     * otherwise never advance. The {@code AGENT} task itself is synchronous and is driven by {@code
-     * workflowExecutor.decide(workflowId)} instead.
+     * so nothing else pops the {@code AGENT} and {@code WAIT} queues used by these tests.
      */
     private void drainQueue(String taskType) {
-        WorkflowSystemTask task =
-                asyncSystemTasks.stream()
-                        .filter(t -> taskType.equals(t.getTaskType()))
-                        .findFirst()
-                        .orElseThrow(
-                                () ->
-                                        new IllegalStateException(
-                                                taskType
-                                                        + " WorkflowSystemTask was not registered —"
-                                                        + " conductor.integrations.ai.enabled must be"
-                                                        + " true and the ai module on the classpath."));
+        WorkflowSystemTask task = systemTask(taskType);
         for (String taskId : queueDAO.pop(taskType, 5, 100)) {
             asyncSystemTaskExecutor.execute(task, taskId);
         }
+    }
+
+    private WorkflowSystemTask systemTask(String taskType) {
+        return asyncSystemTasks.stream()
+                .filter(t -> taskType.equals(t.getTaskType()))
+                .findFirst()
+                .orElseThrow(
+                        () ->
+                                new IllegalStateException(
+                                        taskType
+                                                + " WorkflowSystemTask was not registered —"
+                                                + " conductor.integrations.ai.enabled must be"
+                                                + " true and the ai module on the classpath."));
     }
 
     private Task agentTaskOf(Workflow workflow) {
@@ -980,9 +1063,10 @@ class ConductorAgentEndToEndTest {
         // Unlike ParametersUtils' general ${ref.output.x} resolution, DoWhile.evaluateCondition
         // binds each loop-body ref name directly to that task's outputData map (not wrapped in an
         // {input,output,...} envelope) — so this reads $.chat['state'], not
-        // $.chat['output']['state'].
+        // $.chat['output']['state']. State uses the A2A wire spelling, so a paused agent is
+        // "input-required" rather than the internal WAITING enum value.
         loop.setLoopCondition(
-                "if ( $.chat['state'] == 'WAITING' && $.loop['iteration'] < 6 ) {"
+                "if ( $.chat['state'] == 'input-required' && $.loop['iteration'] < 6 ) {"
                         + " true; } else { false; }");
         loop.setLoopOver(List.of(resolvePrompt, chat, human));
 
