@@ -17,8 +17,10 @@ import java.lang.reflect.Method;
 import java.util.Optional;
 
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
+import com.netflix.conductor.core.utils.Utils;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
@@ -46,8 +48,21 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
 
     private final AnnotatedMethodResultMapper resultMapper;
 
+    private final ExecutionDAOFacade executionDAOFacade;
+
     /**
-     * Creates a new AnnotatedWorkflowSystemTask.
+     * Marker persisted into the task's outputData while an invocation of the annotated method is in
+     * flight on some worker thread. A redelivered queue message finds the marker and skips
+     * re-execution ({@link #execute} returns false without invoking the method), preventing
+     * duplicate invocations of blocking calls (issue #1321). Removed before the invocation's result
+     * is applied, so it never appears in completed output and never blocks legitimate IN_PROGRESS +
+     * callbackAfterSeconds re-executions (used by LLM/A2A workers).
+     */
+    public static final String IN_FLIGHT_MARKER = "_annotatedTaskInFlight";
+
+    /**
+     * Creates a new AnnotatedWorkflowSystemTask without duplicate-execution protection (no way to
+     * persist the in-flight claim). Used by tests.
      *
      * @param taskType The task type name
      * @param method The annotated method to invoke
@@ -56,12 +71,32 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
      */
     public AnnotatedWorkflowSystemTask(
             String taskType, Method method, Object bean, WorkerTask annotation) {
+        this(taskType, method, bean, annotation, null);
+    }
+
+    /**
+     * Creates a new AnnotatedWorkflowSystemTask.
+     *
+     * @param taskType The task type name
+     * @param method The annotated method to invoke
+     * @param bean The Spring bean instance containing the method
+     * @param annotation The @WorkerTask annotation metadata
+     * @param executionDAOFacade Used to persist the in-flight claim before the blocking method
+     *     invocation; may be null, in which case redelivered messages re-execute as before
+     */
+    public AnnotatedWorkflowSystemTask(
+            String taskType,
+            Method method,
+            Object bean,
+            WorkerTask annotation,
+            ExecutionDAOFacade executionDAOFacade) {
         super(taskType);
         this.method = method;
         this.bean = bean;
         this.annotation = annotation;
         this.parameterMapper = new AnnotatedMethodParameterMapper();
         this.resultMapper = new AnnotatedMethodResultMapper();
+        this.executionDAOFacade = executionDAOFacade;
     }
 
     @Override
@@ -78,6 +113,21 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
     @Override
     public boolean execute(
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
+        // The annotated method runs synchronously and can block for minutes (e.g. an LLM provider
+        // call) with nothing persisted until it returns, so a queue redelivery mid-invocation
+        // makes a second worker execute the same method again (issue #1321). An in-flight claim
+        // persisted before the invocation lets the redelivered execution detect this and back off.
+        if (task.getOutputData().containsKey(IN_FLIGHT_MARKER)) {
+            log.warn(
+                    "Task {}/{} is already being executed (in-flight claim by {}); skipping"
+                            + " redelivered execution",
+                    getTaskType(),
+                    task.getTaskId(),
+                    task.getOutputData().get(IN_FLIGHT_MARKER));
+            return false;
+        }
+        claimInFlight(task);
+
         TaskContext taskContext = TaskContext.set(task.toTask());
         // A plain annotated-worker return value is terminal by default. Long-running workers can
         // override this execution state through their TaskContext without leaking TaskResult into
@@ -96,6 +146,11 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
             // Invoke the annotated method
             Object result = method.invoke(bean, parameters);
 
+            // Release the claim before applying the result so it never leaks into completed
+            // output, and so a legitimate IN_PROGRESS + callbackAfterSeconds result (long-running
+            // workers) is re-executed normally on its callback.
+            task.getOutputData().remove(IN_FLIGHT_MARKER);
+
             // Apply the result to the task
             resultMapper.applyResult(result, task, method, taskContext.getTaskResult());
 
@@ -113,7 +168,34 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
             task.setReasonForIncompletion(getRootCauseMessage(e));
             return true;
         } finally {
+            task.getOutputData().remove(IN_FLIGHT_MARKER);
             TaskContext.clear();
+        }
+    }
+
+    /**
+     * Persists an IN_PROGRESS claim (status + in-flight marker) BEFORE the blocking invocation, so
+     * a redelivered queue message sees the claim and does not re-execute the method. Without the
+     * persist, the task row stays SCHEDULED for the whole invocation and a second worker cannot
+     * tell the difference between "never started" and "in flight". Best effort: if the claim cannot
+     * be persisted, execution proceeds with the historical (unprotected) behavior.
+     */
+    private void claimInFlight(TaskModel task) {
+        if (executionDAOFacade == null) {
+            return;
+        }
+        try {
+            task.setStatus(TaskModel.Status.IN_PROGRESS);
+            task.getOutputData()
+                    .put(IN_FLIGHT_MARKER, Utils.getServerId() + "/" + System.currentTimeMillis());
+            executionDAOFacade.updateTask(task);
+        } catch (Exception e) {
+            log.warn(
+                    "Unable to persist in-flight claim for task {}/{}; duplicate-execution"
+                            + " protection unavailable for this invocation",
+                    getTaskType(),
+                    task.getTaskId(),
+                    e);
         }
     }
 
