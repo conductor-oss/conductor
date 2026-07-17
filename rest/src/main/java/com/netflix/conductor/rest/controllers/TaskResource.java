@@ -94,8 +94,13 @@ public class TaskResource {
     @Operation(summary = "Update a task and return the next available task to be processed")
     public ResponseEntity<Task> updateTaskV2(@RequestBody @Valid TaskResult taskResult) {
         TaskModel updatedTask = taskService.updateTask(taskResult);
-        if (updatedTask == null) {
+        if (updatedTask == null || !updatedTask.getStatus().isTerminal()) {
             return ResponseEntity.noContent().build();
+        }
+        if (taskResult.isSupportsCancellation()
+                && updatedTask.getStatus() == TaskModel.Status.CANCELED) {
+            // TODO: Return cancelled task
+            // To be implemented in the future versions
         }
         String taskType = updatedTask.getTaskType();
         String domain = updatedTask.getDomain();

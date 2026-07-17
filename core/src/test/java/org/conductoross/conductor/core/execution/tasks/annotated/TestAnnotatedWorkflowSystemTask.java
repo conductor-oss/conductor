@@ -16,11 +16,13 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.conductoross.conductor.core.execution.tasks.TaskCancellationHandler;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -70,15 +72,12 @@ public class TestAnnotatedWorkflowSystemTask {
         }
     }
 
-    static class CancelAwareWorkerBean extends TestWorkerBean
-            implements AnnotatedTaskCancellationHandler {
-        private String canceledTaskType;
+    static class CancelAwareWorkerBean extends TestWorkerBean implements TaskCancellationHandler {
         private Task canceledTask;
         private String cancelReason;
 
         @Override
-        public void cancel(String taskType, Task task, String reason) {
-            canceledTaskType = taskType;
+        public void cancel(Task task, String reason) {
             canceledTask = task;
             cancelReason = reason;
         }
@@ -214,10 +213,10 @@ public class TestAnnotatedWorkflowSystemTask {
                 new AnnotatedWorkflowSystemTask("cancel_task", method, bean, annotation);
         TaskModel task = createTask(Map.of("input", "test"));
         task.setReasonForIncompletion("parent terminated");
-
+        task.setTaskType("cancel_task");
         systemTask.cancel(workflow, task, workflowExecutor);
 
-        assertEquals("cancel_task", bean.canceledTaskType);
+        assertEquals("cancel_task", bean.canceledTask.getTaskType());
         assertEquals("task-123", bean.canceledTask.getTaskId());
         assertEquals("parent terminated", bean.cancelReason);
         assertEquals(TaskModel.Status.CANCELED, task.getStatus());
@@ -274,6 +273,7 @@ public class TestAnnotatedWorkflowSystemTask {
     private TaskModel createTask(Map<String, Object> inputData) {
         TaskModel task = new TaskModel();
         task.setTaskId("task-123");
+        task.setTaskType(TaskType.TASK_TYPE_AGENT);
         task.setWorkflowInstanceId("workflow-123");
         task.setInputData(new HashMap<>(inputData));
         task.setOutputData(new HashMap<>());
