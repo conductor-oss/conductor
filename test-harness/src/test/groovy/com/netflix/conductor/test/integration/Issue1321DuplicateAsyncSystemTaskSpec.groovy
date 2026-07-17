@@ -31,10 +31,10 @@ import com.netflix.conductor.test.utils.ControllableWorker
  * REPRODUCES ISSUE #1321 - Async system tasks running longer than the queue unack window are
  * executed twice.
  *
- * <p>The fix: {@code AnnotatedWorkflowSystemTask.execute()} persists an IN_PROGRESS in-flight
- * claim (status + marker in outputData) BEFORE invoking the blocking worker method. A redelivered
- * queue message still reaches a second system-task-worker, but its execution finds the claim and
- * returns false without invoking the method — the operation runs exactly once.
+ * <p>The fix: the adapter follows the system-task status contract. {@code start()} persists the
+ * standard SCHEDULED → IN_PROGRESS transition BEFORE invoking the blocking worker method; a
+ * redelivered queue message reaches a second system-task-worker as {@code execute()} on an
+ * IN_PROGRESS task with no callback due, which does nothing — the operation runs exactly once.
  *
  * <p>This spec drives the REAL production path: the worker bean is registered through the real
  * WorkerTaskAnnotationScanner, the adapter comes out of the real SystemTaskRegistry, and execution
@@ -49,8 +49,8 @@ import com.netflix.conductor.test.utils.ControllableWorker
  *       that outlasts the queue's unack window.</li>
  *   <li>{@code setUnackTimeout(queue, taskId, 1000)} after the first pop = compresses the real
  *       ~30-60s unack window down to ~1s so the test is deterministic and fast; it represents the
- *       visibility window that is about to elapse. With the claim fix the message IS redelivered,
- *       but the second execution backs off on the persisted in-flight claim.</li>
+ *       visibility window that is about to elapse. The message IS redelivered, but the second
+ *       execution sees the persisted IN_PROGRESS status and does nothing.</li>
  *   <li>The second {@code pop} after the compressed window = the queue's unack sweep re-making the
  *       still-popped message available, and a second system-task worker polling it (the exact
  *       production redelivery path). Whether it succeeds is gated by the real queue visibility.</li>
@@ -131,13 +131,13 @@ class Issue1321DuplicateAsyncSystemTaskSpec extends AbstractSpecification {
         assert polled1 == [taskId]
         // Compress the real unack/visibility window (~30-60s in production) to ~1s so redelivery
         // becomes observable within the test's time budget. The message WILL be redelivered; the
-        // fix makes the redelivered execution back off on the persisted in-flight claim.
+        // redelivered execution sees the persisted IN_PROGRESS status and does nothing.
         queueDAO.setUnackTimeout(QUEUE, taskId, 1000L)
         Thread worker1 = new Thread({ asyncSystemTaskExecutor.execute(adapter, taskId) })
         worker1.setDaemon(true)
         worker1.start()
 
-        and: "the worker method has been entered and is blocking (the in-flight claim is persisted)"
+        and: "the worker method has been entered and is blocking (IN_PROGRESS already persisted)"
         assert controllableWorker.enteredRun.await(10, TimeUnit.SECONDS)
 
         and: "the compressed unack window elapses"

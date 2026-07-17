@@ -53,18 +53,15 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
     private final ExecutionDAOFacade executionDAOFacade;
 
     /**
-     * Marker persisted into the task's outputData while an invocation of the annotated method is in
-     * flight on some worker thread. A redelivered queue message finds the marker and skips
-     * re-execution ({@link #execute} returns false without invoking the method), preventing
-     * duplicate invocations of blocking calls (issue #1321). Removed before the invocation's result
-     * is applied, so it never appears in completed output and never blocks legitimate IN_PROGRESS +
-     * callbackAfterSeconds re-executions (used by LLM/A2A workers).
+     * Postpone applied to a queue message redelivered while an invocation is in flight, when the
+     * task def carries no response timeout. Keeps redelivered messages quiet until well past any
+     * realistic blocking call, and doubles as the crash-recovery retry delay.
      */
-    public static final String IN_FLIGHT_MARKER = "_annotatedTaskInFlight";
+    static final long DEFAULT_IN_FLIGHT_POSTPONE_SECONDS = 3600;
 
     /**
      * Creates a new AnnotatedWorkflowSystemTask without duplicate-execution protection (no way to
-     * persist the in-flight claim). Used by tests.
+     * persist the IN_PROGRESS transition). Used by tests.
      *
      * @param taskType The task type name
      * @param method The annotated method to invoke
@@ -83,8 +80,9 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
      * @param method The annotated method to invoke
      * @param bean The Spring bean instance containing the method
      * @param annotation The @WorkerTask annotation metadata
-     * @param executionDAOFacade Used to persist the in-flight claim before the blocking method
-     *     invocation; may be null, in which case redelivered messages re-execute as before
+     * @param executionDAOFacade Used to persist the task's IN_PROGRESS transition before the
+     *     blocking method invocation; may be null, in which case redelivered messages re-execute as
+     *     before
      */
     public AnnotatedWorkflowSystemTask(
             String taskType,
@@ -107,28 +105,39 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
         return true;
     }
 
+    /** SCHEDULED means the task needs to be started: transition to IN_PROGRESS and invoke. */
     @Override
     public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
-        execute(workflow, task, workflowExecutor);
+        invokeWorker(workflow, task);
     }
 
+    /**
+     * Called by the engine when the task is already IN_PROGRESS. Per the system-task status
+     * contract: IN_PROGRESS means an invocation is in flight — don't do anything. The one exception
+     * is a worker-requested re-execution: long-running workers (LLM/A2A) return IN_PROGRESS with
+     * {@code callbackAfterSeconds > 0} and expect to be re-invoked when the callback fires.
+     */
     @Override
     public boolean execute(
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
-        // The annotated method runs synchronously and can block for minutes (e.g. an LLM provider
-        // call) with nothing persisted until it returns, so a queue redelivery mid-invocation
-        // makes a second worker execute the same method again (issue #1321). An in-flight claim
-        // persisted before the invocation lets the redelivered execution detect this and back off.
-        if (task.getOutputData().containsKey(IN_FLIGHT_MARKER)) {
-            log.warn(
-                    "Task {}/{} is already being executed (in-flight claim by {}); skipping"
-                            + " redelivered execution",
+        if (task.getStatus() == TaskModel.Status.IN_PROGRESS
+                && task.getCallbackAfterSeconds() == 0) {
+            log.debug(
+                    "Task {}/{} is IN_PROGRESS with no callback due; skipping redelivered"
+                            + " execution",
                     getTaskType(),
-                    task.getTaskId(),
-                    task.getOutputData().get(IN_FLIGHT_MARKER));
+                    task.getTaskId());
             return false;
         }
-        claimInFlight(task);
+        return invokeWorker(workflow, task);
+    }
+
+    private boolean invokeWorker(WorkflowModel workflow, TaskModel task) {
+        // The annotated method runs synchronously and can block for minutes (e.g. an LLM provider
+        // call). Persist the IN_PROGRESS transition BEFORE invoking so a redelivered queue
+        // message sees the real status and backs off (issue #1321) — otherwise the task row stays
+        // SCHEDULED for the whole invocation and a second worker re-executes the method.
+        markInProgress(task);
 
         TaskContext taskContext = TaskContext.set(task.toTask());
         // A plain annotated-worker return value is terminal by default. Long-running workers can
@@ -148,11 +157,6 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
             // Invoke the annotated method
             Object result = method.invoke(bean, parameters);
 
-            // Release the claim before applying the result so it never leaks into completed
-            // output, and so a legitimate IN_PROGRESS + callbackAfterSeconds result (long-running
-            // workers) is re-executed normally on its callback.
-            task.getOutputData().remove(IN_FLIGHT_MARKER);
-
             // Apply the result to the task
             resultMapper.applyResult(result, task, method, taskContext.getTaskResult());
 
@@ -170,30 +174,28 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
             task.setReasonForIncompletion(getRootCauseMessage(e));
             return true;
         } finally {
-            task.getOutputData().remove(IN_FLIGHT_MARKER);
             TaskContext.clear();
         }
     }
 
     /**
-     * Persists an IN_PROGRESS claim (status + in-flight marker) BEFORE the blocking invocation, so
-     * a redelivered queue message sees the claim and does not re-execute the method. Without the
-     * persist, the task row stays SCHEDULED for the whole invocation and a second worker cannot
-     * tell the difference between "never started" and "in flight". Best effort: if the claim cannot
-     * be persisted, execution proceeds with the historical (unprotected) behavior.
+     * Persists the standard SCHEDULED → IN_PROGRESS transition before the blocking invocation
+     * (resetting callbackAfterSeconds so an in-flight redelivery is distinguishable from a
+     * worker-requested callback). Best effort: if the transition cannot be persisted, execution
+     * proceeds with the historical (unprotected) behavior.
      */
-    private void claimInFlight(TaskModel task) {
+    private void markInProgress(TaskModel task) {
         if (executionDAOFacade == null) {
             return;
         }
         try {
             task.setStatus(TaskModel.Status.IN_PROGRESS);
-            task.getOutputData()
-                    .put(IN_FLIGHT_MARKER, Utils.getServerId() + "/" + System.currentTimeMillis());
+            task.setCallbackAfterSeconds(0);
+            task.setWorkerId(Utils.getServerId());
             executionDAOFacade.updateTask(task);
         } catch (Exception e) {
             log.warn(
-                    "Unable to persist in-flight claim for task {}/{}; duplicate-execution"
+                    "Unable to persist IN_PROGRESS transition for task {}/{}; duplicate-execution"
                             + " protection unavailable for this invocation",
                     getTaskType(),
                     task.getTaskId(),
@@ -262,8 +264,20 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
 
     @Override
     public Optional<Long> getEvaluationOffset(TaskModel taskModel, long maxOffset) {
-        return taskModel.getCallbackAfterSeconds() > 0
-                ? Optional.of(taskModel.getCallbackAfterSeconds())
-                : Optional.empty();
+        if (taskModel.getCallbackAfterSeconds() > 0) {
+            return Optional.of(taskModel.getCallbackAfterSeconds());
+        }
+        if (taskModel.getStatus() == TaskModel.Status.IN_PROGRESS) {
+            // A redelivered message for an in-flight invocation: postpone it far enough to cover
+            // the blocking call (short default postpones would also make the persisted
+            // callbackAfterSeconds look like a worker-requested callback on the next redelivery,
+            // re-invoking the method mid-flight). Doubles as the crash-recovery retry delay.
+            long postpone =
+                    taskModel.getResponseTimeoutSeconds() > 0
+                            ? taskModel.getResponseTimeoutSeconds()
+                            : DEFAULT_IN_FLIGHT_POSTPONE_SECONDS;
+            return Optional.of(postpone);
+        }
+        return Optional.empty();
     }
 }

@@ -282,13 +282,15 @@ public class TestAnnotatedWorkflowSystemTask {
         return task;
     }
 
-    // ── Issue #1321: in-flight claim prevents duplicate execution on queue redelivery ──
+    // ── Issue #1321: the status contract prevents duplicate execution on queue redelivery ──
     //
     // The annotated method blocks synchronously (e.g. an LLM provider call) with nothing
     // persisted until it returns, so a redelivered queue message used to make a second worker
-    // invoke the same method again. execute() now persists an IN_PROGRESS claim (status +
-    // in-flight marker in outputData) BEFORE invoking the method, and a redelivered execution
-    // that finds the marker returns false without invoking.
+    // invoke the same method again. The adapter now follows the system-task status contract:
+    // SCHEDULED means start (the IN_PROGRESS transition is persisted BEFORE the method is
+    // invoked), IN_PROGRESS means an invocation is in flight - don't do anything. The one
+    // exception: a worker-requested callback (IN_PROGRESS + callbackAfterSeconds > 0) is
+    // re-invoked, preserving the long-running LLM/A2A worker flow.
 
     /** Records invocations and, at invocation time, whether the claim was already persisted. */
     static class ClaimProbeBean {
@@ -305,7 +307,7 @@ public class TestAnnotatedWorkflowSystemTask {
     }
 
     @Test
-    public void testClaimIsPersistedBeforeInvocationAndReleasedAfter() throws Exception {
+    public void testInProgressTransitionPersistedBeforeInvocation() throws Exception {
         ClaimProbeBean bean = new ClaimProbeBean();
         Method method = ClaimProbeBean.class.getMethod("blockingCall");
         ExecutionDAOFacade facade = mock(ExecutionDAOFacade.class);
@@ -313,11 +315,7 @@ public class TestAnnotatedWorkflowSystemTask {
                         invocation -> {
                             TaskModel persisted = invocation.getArgument(0);
                             assertEquals(TaskModel.Status.IN_PROGRESS, persisted.getStatus());
-                            assertTrue(
-                                    persisted
-                                            .getOutputData()
-                                            .containsKey(
-                                                    AnnotatedWorkflowSystemTask.IN_FLIGHT_MARKER));
+                            assertEquals(0, persisted.getCallbackAfterSeconds());
                             bean.claimPersisted = true;
                             return null;
                         })
@@ -334,16 +332,14 @@ public class TestAnnotatedWorkflowSystemTask {
         systemTask.start(workflow, task, workflowExecutor);
 
         assertTrue(
-                "the in-flight claim must be persisted before the blocking method is invoked",
+                "the IN_PROGRESS transition must be persisted before the blocking method is"
+                        + " invoked",
                 bean.claimPersistedAtInvocation);
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
-        assertFalse(
-                "the marker must not leak into completed output",
-                task.getOutputData().containsKey(AnnotatedWorkflowSystemTask.IN_FLIGHT_MARKER));
     }
 
     @Test
-    public void testRedeliveredExecutionWithInFlightMarkerIsSkipped() throws Exception {
+    public void testRedeliveredInFlightExecutionIsSkipped() throws Exception {
         ClaimProbeBean bean = new ClaimProbeBean();
         Method method = ClaimProbeBean.class.getMethod("blockingCall");
         AnnotatedWorkflowSystemTask systemTask =
@@ -357,7 +353,7 @@ public class TestAnnotatedWorkflowSystemTask {
         TaskModel task = createTask(Map.of());
         task.setTaskType("claimed_task");
         task.setStatus(TaskModel.Status.IN_PROGRESS);
-        task.getOutputData().put(AnnotatedWorkflowSystemTask.IN_FLIGHT_MARKER, "other-worker/123");
+        task.setCallbackAfterSeconds(0);
 
         boolean result = systemTask.execute(workflow, task, workflowExecutor);
 
@@ -368,10 +364,40 @@ public class TestAnnotatedWorkflowSystemTask {
     }
 
     @Test
+    public void testInFlightRedeliveryIsPostponedPastTheBlockingCall() throws Exception {
+        Method method = ClaimProbeBean.class.getMethod("blockingCall");
+        AnnotatedWorkflowSystemTask systemTask =
+                new AnnotatedWorkflowSystemTask(
+                        "offset_task",
+                        method,
+                        new ClaimProbeBean(),
+                        createAnnotation("offset_task"),
+                        mock(ExecutionDAOFacade.class));
+
+        TaskModel task = createTask(Map.of());
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        task.setCallbackAfterSeconds(0);
+
+        // No response timeout on the task: the default in-flight postpone applies.
+        assertEquals(
+                java.util.Optional.of(
+                        AnnotatedWorkflowSystemTask.DEFAULT_IN_FLIGHT_POSTPONE_SECONDS),
+                systemTask.getEvaluationOffset(task, 30));
+
+        // With a response timeout, the postpone matches it.
+        task.setResponseTimeoutSeconds(45);
+        assertEquals(java.util.Optional.of(45L), systemTask.getEvaluationOffset(task, 30));
+
+        // Worker-requested callbacks keep their own interval.
+        task.setCallbackAfterSeconds(5);
+        assertEquals(java.util.Optional.of(5L), systemTask.getEvaluationOffset(task, 30));
+    }
+
+    @Test
     public void testLegitimateInProgressCallbackReexecutionIsNotBlocked() throws Exception {
         // LLM/A2A workers legitimately return IN_PROGRESS + callbackAfterSeconds and expect
-        // re-execution on the callback. No in-flight marker is present then (it is removed
-        // before the result is applied), so the guard must let the re-execution through.
+        // re-execution on the callback. callbackAfterSeconds > 0 distinguishes that from an
+        // in-flight redelivery, so the guard must let the re-execution through.
         ClaimProbeBean bean = new ClaimProbeBean();
         Method method = ClaimProbeBean.class.getMethod("blockingCall");
         AnnotatedWorkflowSystemTask systemTask =
