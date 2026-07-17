@@ -126,6 +126,8 @@ export const useExecutionMachine = () => {
 
   const isNoAccess = useSelector(service, (state) => state.matches("noAccess"));
 
+  const isNotFound = useSelector(service, (state) => state.matches("notFound"));
+
   useEffect(() => {
     if (!_isEmpty(tabIndex) && openedTab !== tabIndex && isReady) {
       send({
@@ -313,6 +315,7 @@ export const useExecutionMachine = () => {
     taskListActor,
     rightPanelActor,
     isNoAccess,
+    isNotFound,
     doWhileSelection,
     nodes,
     isAssistantPanelOpen,

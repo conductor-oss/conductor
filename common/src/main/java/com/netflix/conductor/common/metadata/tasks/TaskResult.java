@@ -26,6 +26,8 @@ import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.google.protobuf.Any;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.constraints.NotEmpty;
+import lombok.Getter;
+import lombok.Setter;
 
 /** Result of the task execution. */
 @ProtoMessage
@@ -70,13 +72,26 @@ public class TaskResult {
     @ProtoField(id = 9)
     private ExecutionMetadata executionMetadata;
 
+    @ProtoField(id = 10)
     private List<TaskExecLog> logs = new CopyOnWriteArrayList<>();
 
+    @ProtoField(id = 11)
     private String externalOutputPayloadStoragePath;
 
+    @ProtoField(id = 12)
     private String subWorkflowId;
 
+    @ProtoField(id = 13)
     private boolean extendLease;
+
+    @ProtoField(id = 14)
+    // If the task supports cancellation, used by external workers (requires SDK support) to signal
+    // the server
+    // That the task supports cancellation and sever can send update back for long-running tasks
+    // when they get canceled
+    // by the server events (workflow termination, timeouts etc)
+    // Workers are expected to handle this when set to cancel any long-running activity
+    private @Getter @Setter boolean supportsCancellation;
 
     public TaskResult(Task task) {
         this.workflowInstanceId = task.getWorkflowInstanceId();
