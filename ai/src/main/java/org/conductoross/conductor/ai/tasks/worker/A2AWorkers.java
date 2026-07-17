@@ -43,7 +43,7 @@ import org.conductoross.conductor.ai.model.A2ACancelRequest;
 import org.conductoross.conductor.ai.model.A2ACancelResult;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.conductoross.conductor.core.execution.tasks.AnnotatedSystemTaskWorker;
-import org.conductoross.conductor.core.execution.tasks.annotated.AnnotatedTaskCancellationHandler;
+import org.conductoross.conductor.core.execution.tasks.TaskCancellationHandler;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
@@ -70,7 +70,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @Conditional(AIIntegrationEnabledCondition.class)
-public class A2AWorkers implements AnnotatedSystemTaskWorker, AnnotatedTaskCancellationHandler {
+public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHandler {
 
     public static final String GET_AGENT_CARD = "GET_AGENT_CARD";
     public static final String AGENT = "AGENT";
@@ -222,7 +222,8 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, AnnotatedTaskCance
     }
 
     @Override
-    public void cancel(String taskType, Task task, String reason) {
+    public void cancel(Task task, String reason) {
+        String taskType = task.getTaskType();
         if (!AGENT.equals(taskType)) {
             return;
         }
