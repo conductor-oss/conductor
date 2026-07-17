@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.service;
 
+import org.conductoross.conductor.ai.agent.AgentEventStream;
 import org.conductoross.conductor.common.metadata.agent.AgentSSEEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,6 +80,31 @@ class AgentStreamRegistryTest {
         // Register now and verify replay works (proving buffering happened)
         SseEmitter emitter = registry.register("wf-1", 0L);
         assertThat(emitter).isNotNull();
+    }
+
+    @Test
+    void inProcessStreamReceivesEventsWithoutHttp() {
+        AgentEventStream stream = registry.openStream("wf-1", null);
+        registry.send("wf-1", AgentSSEEvent.thinking("wf-1", "llm"));
+
+        AgentSSEEvent event = stream.nextEvent();
+
+        assertThat(event).isNotNull();
+        assertThat(event.getType()).isEqualTo("thinking");
+        assertThat(event.getId()).isEqualTo(1);
+        assertThat(stream.getLastEventId()).isEqualTo("1");
+    }
+
+    @Test
+    void inProcessStreamReplaysAndThenCompletes() {
+        registry.send("wf-1", AgentSSEEvent.thinking("wf-1", "first"));
+        registry.send("wf-1", AgentSSEEvent.toolCall("wf-1", "search", null));
+        registry.complete("wf-1");
+
+        AgentEventStream stream = registry.openStream("wf-1", "1");
+
+        assertThat(stream.nextEvent().getId()).isEqualTo(2);
+        assertThat(stream.nextEvent()).isNull();
     }
 
     // ── Alias (sub-workflow forwarding) ──────────────────────────────

@@ -18,8 +18,12 @@ import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.a2a.model.A2ATask;
+import org.conductoross.conductor.ai.a2a.model.AgentCard;
 import org.conductoross.conductor.ai.a2a.model.TaskState;
+import org.conductoross.conductor.ai.model.A2AAgentCardRequest;
+import org.conductoross.conductor.ai.model.A2AAgentCardResult;
 import org.conductoross.conductor.ai.model.A2ACallRequest;
+import org.conductoross.conductor.ai.tasks.worker.A2AWorkers;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +69,26 @@ public class A2ACallbackResource {
         this.a2aService = a2aService;
     }
 
+    /**
+     * Resolve a public A2A Agent Card using the same discovery, network policy, and SSRF checks as
+     * the {@code GET_AGENT_CARD} system task.
+     *
+     * <p>The typed result deliberately contains only the discovered card. Request headers are used
+     * for discovery but are never reflected into the response, which makes the result safe to
+     * persist as workflow task metadata.
+     */
+    @PostMapping("/agent-card")
+    public A2AAgentCardResult getAgentCard(@RequestBody A2AAgentCardRequest request) {
+        if (request == null || !A2AService.isA2aAgentType(request.getAgentType())) {
+            throw new IllegalArgumentException("A2A agent-card discovery requires agentType 'a2a'");
+        }
+        if (StringUtils.isBlank(request.getAgentUrl())) {
+            throw new IllegalArgumentException("A2A agent-card discovery requires 'agentUrl'");
+        }
+        AgentCard card = a2aService.getAgentCard(request.getAgentUrl(), request.getHeaders());
+        return new A2AAgentCardResult(card);
+    }
+
     @PostMapping("/callback/{taskId}")
     public ResponseEntity<Void> onPushNotification(
             @PathVariable("taskId") String taskId,
@@ -76,7 +100,7 @@ public class A2ACallbackResource {
             String token = resolveToken(authHeader, customHeader);
 
             Task task = loadTask(taskId);
-            if (task == null || !AgentTask.TASK_TYPE.equals(task.getTaskType())) {
+            if (task == null || !A2AWorkers.AGENT.equals(task.getTaskType())) {
                 return ResponseEntity.notFound().build();
             }
             scope.add(A2ALogging.WORKFLOW_ID, task.getWorkflowInstanceId())
@@ -197,8 +221,10 @@ public class A2ACallbackResource {
             case TaskState.FAILED:
             case TaskState.REJECTED:
                 return TaskResult.Status.FAILED;
+            case TaskState.CANCELED:
+                return TaskResult.Status.FAILED_WITH_TERMINAL_ERROR;
             default:
-                // completed / canceled / input-required / auth-required
+                // completed / input-required / auth-required
                 return TaskResult.Status.COMPLETED;
         }
     }

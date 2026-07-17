@@ -12,284 +12,257 @@
  */
 package org.conductoross.conductor.ai.agent;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import org.conductoross.conductor.ai.a2a.A2AService;
+import org.conductoross.conductor.ai.a2a.model.A2AMessage;
+import org.conductoross.conductor.ai.a2a.model.A2ATask;
+import org.conductoross.conductor.ai.a2a.model.TaskState;
+import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
+import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
+import org.conductoross.conductor.common.metadata.agent.AgentStatusResponse;
+import org.conductoross.conductor.common.metadata.agent.CompileResponse;
 import org.junit.jupiter.api.Test;
 
-import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.model.TaskModel;
-import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Unit coverage for the WorkflowExecutor-backed conductor-agent state machine. */
+/** Behavior coverage for the client-backed durable Conductor-agent state machine. */
 class ConductorAgentDelegateTest {
 
-    private final ConductorAgentDelegate delegate = new ConductorAgentDelegate();
+    @Test
+    void startsOnceThenPollsToCompletion() {
+        FakeAgentClient client = new FakeAgentClient();
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(client);
+        Task first =
+                task(
+                        Map.of(
+                                "agentType",
+                                "conductor",
+                                "name",
+                                "planner",
+                                "prompt",
+                                "go",
+                                "sessionId",
+                                "session-1",
+                                "pollIntervalSeconds",
+                                11));
 
-    private static TaskModel taskModel(Map<String, Object> input) {
-        TaskModel model = new TaskModel();
-        model.setInputData(input);
-        model.setTaskId("conductor-task-1");
-        model.setWorkflowInstanceId("wf-1");
-        model.setReferenceTaskName("agent_ref");
-        model.setIteration(0);
-        return model;
-    }
+        TaskResult started = delegate.execute(first);
 
-    private static Map<String, Object> conductorInput() {
-        Map<String, Object> input = new HashMap<>();
-        input.put("agentType", "conductor");
-        input.put("name", "planner");
-        input.put("prompt", "plan my trip");
-        return input;
-    }
+        assertEquals(TaskResult.Status.IN_PROGRESS, started.getStatus());
+        assertEquals(11, started.getCallbackAfterSeconds());
+        assertEquals("exec-1", started.getOutputData().get("executionId"));
+        assertEquals(TaskState.WORKING, started.getOutputData().get("state"));
+        assertEquals("exec-1", started.getOutputData().get("taskId"));
+        assertEquals("session-1", started.getOutputData().get("contextId"));
+        A2ATask workingTask = protocolTask(started);
+        assertEquals("task", workingTask.getKind());
+        assertEquals(TaskState.WORKING, workingTask.getStatus().getState());
+        assertNotNull(started.getOutputData().get("agentStartTime"));
+        assertFalse(started.getOutputData().containsKey("agentEndTime"));
+        assertNotNull(client.startedRequest.getIdempotencyKey());
+        assertTrue(client.startedRequest.getIdempotencyKey().contains("wf-1:agent_ref:2"));
 
-    private static WorkflowModel workflow(WorkflowModel.Status status) {
-        WorkflowModel workflow = new WorkflowModel();
-        workflow.setWorkflowId("exec-1");
-        WorkflowDef definition = new WorkflowDef();
-        definition.setName("planner");
-        workflow.setWorkflowDefinition(definition);
-        workflow.setStatus(status);
-        workflow.setInput(Map.of("session_id", "sess-1"));
-        return workflow;
-    }
+        Task polled = task(first.getInputData());
+        polled.setOutputData(started.getOutputData());
+        client.status =
+                AgentStatusResponse.builder()
+                        .executionId("exec-1")
+                        .status("COMPLETED")
+                        .complete(true)
+                        .output(Map.of("context", Map.of("language", "en"), "result", "done"))
+                        .startTime(1000L)
+                        .endTime(2000L)
+                        .build();
 
-    private static TaskModel waitingHumanTask() {
-        TaskModel human = new TaskModel();
-        human.setTaskId("human-1");
-        human.setTaskType("HUMAN");
-        human.setReferenceTaskName("approval");
-        human.setStatus(TaskModel.Status.IN_PROGRESS);
-        human.setInputData(
-                Map.of(
-                        "tool_calls",
-                        List.of(
-                                Map.of(
-                                        "name",
-                                        "book_trip",
-                                        "inputParameters",
-                                        Map.of("city", "Paris"))),
-                        "response_schema",
-                        Map.of("type", "object")));
-        return human;
+        TaskResult completed = delegate.execute(polled);
+
+        assertEquals(TaskResult.Status.COMPLETED, completed.getStatus());
+        assertEquals("done", ((Map<?, ?>) completed.getOutputData().get("output")).get("result"));
+        assertEquals("done", completed.getOutputData().get("text"));
+        assertEquals(TaskState.COMPLETED, completed.getOutputData().get("state"));
+        A2ATask protocolTask = protocolTask(completed);
+        assertEquals("exec-1", protocolTask.getId());
+        assertEquals("session-1", protocolTask.getContextId());
+        assertEquals(TaskState.COMPLETED, protocolTask.getStatus().getState());
+        assertEquals("agent", protocolTask.getStatus().getMessage().getRole());
+        assertEquals("message", protocolTask.getStatus().getMessage().getKind());
+        assertEquals("done", protocolTask.getStatus().getMessage().getParts().getFirst().getText());
+        assertEquals("text", protocolTask.getArtifacts().getFirst().getParts().get(0).getKind());
+        assertEquals("data", protocolTask.getArtifacts().getFirst().getParts().get(1).getKind());
+        assertEquals(1000L, completed.getOutputData().get("agentStartTime"));
+        assertEquals(2000L, completed.getOutputData().get("agentEndTime"));
+        assertFalse(completed.getOutputData().containsKey("agentStartedAt"));
+        assertEquals(1, client.startCalls);
+        assertEquals(1, client.statusCalls);
     }
 
     @Test
-    void start_startsRegisteredAgentAndMovesToInProgress() {
-        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
-        TaskModel task = taskModel(conductorInput());
-        task.setIteration(3);
+    void waitingExecutionCompletesTaskWithPendingTool() {
+        FakeAgentClient client = new FakeAgentClient();
+        client.status =
+                AgentStatusResponse.builder()
+                        .executionId("exec-1")
+                        .status("RUNNING")
+                        .waiting(true)
+                        .pendingTool(Map.of("taskRefName", "approval"))
+                        .build();
+        Task task = task(Map.of("agentType", "conductor"));
+        task.setOutputData(Map.of("executionId", "exec-1"));
 
-        delegate.start(task, executor);
+        TaskResult result = new ConductorAgentDelegate(client).execute(task);
 
-        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
-        assertEquals("exec-1", task.getOutputData().get(ConductorAgentResults.KEY_EXECUTION_ID));
-        assertEquals("planner", executor.lastStartRequest.getName());
-        assertEquals("plan my trip", executor.lastStartRequest.getPrompt());
+        assertEquals(TaskResult.Status.COMPLETED, result.getStatus());
+        assertEquals(true, result.getOutputData().get("waiting"));
+        assertEquals(TaskState.INPUT_REQUIRED, result.getOutputData().get("state"));
+        A2AMessage statusMessage = protocolTask(result).getStatus().getMessage();
+        assertEquals("data", statusMessage.getParts().getFirst().getKind());
         assertEquals(
-                "conductor-agent-wf-1:agent_ref:3", executor.lastStartRequest.getIdempotencyKey());
-    }
-
-    @Test
-    void start_blankNameFailsTerminally() {
-        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
-        Map<String, Object> input = conductorInput();
-        input.remove("name");
-        TaskModel task = taskModel(input);
-
-        delegate.start(task, executor);
-
-        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
-        assertNull(executor.lastStartRequest);
-    }
-
-    @Test
-    void start_blankPromptFailsTerminally() {
-        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
-        Map<String, Object> input = conductorInput();
-        input.remove("prompt");
-        TaskModel task = taskModel(input);
-
-        delegate.start(task, executor);
-
-        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
-        assertNull(executor.lastStartRequest);
-    }
-
-    @Test
-    void execute_completedWorkflowCopiesOutputAndText() {
-        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
-        executor.workflow = workflow(WorkflowModel.Status.COMPLETED);
-        executor.workflow.setOutput(Map.of("answer", 42, "text", "all done"));
-        TaskModel task = pollingTask();
-
-        boolean changed = delegate.execute(task, executor);
-
-        assertTrue(changed);
-        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+                "approval",
+                ((Map<?, ?>)
+                                ((Map<?, ?>) statusMessage.getParts().getFirst().getData())
+                                        .get("pendingTool"))
+                        .get("taskRefName"));
         assertEquals(
-                Map.of("answer", 42, "text", "all done"),
-                task.getOutputData().get(ConductorAgentResults.KEY_OUTPUT));
-        assertEquals("all done", task.getOutputData().get(ConductorAgentResults.KEY_TEXT));
+                "approval",
+                ((Map<?, ?>) result.getOutputData().get("pendingTool")).get("taskRefName"));
     }
 
     @Test
-    void execute_waitingWorkflowSurfacesPendingHumanRequest() {
-        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
-        executor.workflow = workflow(WorkflowModel.Status.RUNNING);
-        executor.workflow.setTasks(List.of(waitingHumanTask()));
-        TaskModel task = pollingTask();
+    void canceledExecutionIsTerminalAndPreservesState() {
+        FakeAgentClient client = new FakeAgentClient();
+        client.status =
+                AgentStatusResponse.builder()
+                        .executionId("exec-1")
+                        .status("TERMINATED")
+                        .complete(true)
+                        .reasonForIncompletion("parent canceled")
+                        .startTime(1000L)
+                        .endTime(2500L)
+                        .build();
+        Task task = task(Map.of("agentType", "conductor"));
+        task.setOutputData(Map.of("executionId", "exec-1"));
 
-        boolean changed = delegate.execute(task, executor);
+        TaskResult result = new ConductorAgentDelegate(client).execute(task);
 
-        assertTrue(changed);
-        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
-        assertEquals(Boolean.TRUE, task.getOutputData().get(ConductorAgentResults.KEY_WAITING));
+        assertEquals(TaskResult.Status.CANCELED, result.getStatus());
+        assertEquals(TaskState.CANCELED, result.getOutputData().get("state"));
+        assertEquals(TaskState.CANCELED, protocolTask(result).getStatus().getState());
         assertEquals(
-                List.of(Map.of("name", "book_trip", "args", Map.of("city", "Paris"))),
-                ((Map<?, ?>) task.getOutputData().get(ConductorAgentResults.KEY_PENDING_TOOL))
-                        .get("toolCalls"));
+                "parent canceled",
+                protocolTask(result).getStatus().getMessage().getParts().getFirst().getText());
+        assertEquals("parent canceled", result.getReasonForIncompletion());
+        assertEquals(1000L, result.getOutputData().get("agentStartTime"));
+        assertEquals(2500L, result.getOutputData().get("agentEndTime"));
     }
 
     @Test
-    void execute_failedAndTerminatedWorkflowsMapToTaskStates() {
-        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
-        executor.workflow = workflow(WorkflowModel.Status.FAILED);
-        executor.workflow.setReasonForIncompletion("model error");
-        TaskModel failed = pollingTask();
+    void cancellationUsesAgentClientInsteadOfWorkflowExecutor() {
+        FakeAgentClient client = new FakeAgentClient();
+        client.status =
+                AgentStatusResponse.builder().executionId("exec-1").status("RUNNING").build();
+        Task task = task(Map.of("agentType", "conductor"));
+        task.setOutputData(Map.of("executionId", "exec-1"));
 
-        assertTrue(delegate.execute(failed, executor));
-        assertEquals(TaskModel.Status.FAILED, failed.getStatus());
-        assertEquals("model error", failed.getReasonForIncompletion());
+        new ConductorAgentDelegate(client).cancel(task, "workflow canceled");
 
-        executor.workflow = workflow(WorkflowModel.Status.TERMINATED);
-        TaskModel terminated = pollingTask();
-        assertTrue(delegate.execute(terminated, executor));
-        assertEquals(TaskModel.Status.CANCELED, terminated.getStatus());
+        assertEquals("exec-1", client.canceledExecutionId);
+        assertEquals("workflow canceled", client.cancelReason);
     }
 
-    @Test
-    void execute_deadlineExceededFailsTerminally() {
-        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
-        Map<String, Object> input = conductorInput();
-        input.put("maxDurationSeconds", 1);
-        TaskModel task = taskModel(input);
-        task.addOutput(ConductorAgentResults.KEY_EXECUTION_ID, "exec-1");
-        task.addOutput(ConductorAgentResults.KEY_STARTED_AT, System.currentTimeMillis() - 10_000L);
-
-        assertTrue(delegate.execute(task, executor));
-        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
-        assertEquals(
-                "exec-1",
-                executor.lastTerminatedExecutionId,
-                "the abandoned child execution must be terminated, not left running");
-    }
-
-    @Test
-    void execute_pollFailureCapFailsTerminally() {
-        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
-        executor.throwOnGetWorkflow = true;
-        Map<String, Object> input = conductorInput();
-        input.put("maxPollFailures", 2);
-        TaskModel task = taskModel(input);
-        task.addOutput(ConductorAgentResults.KEY_EXECUTION_ID, "exec-1");
-        task.addOutput(ConductorAgentResults.KEY_STARTED_AT, System.currentTimeMillis());
-
-        assertFalse(delegate.execute(task, executor));
-        assertTrue(delegate.execute(task, executor));
-        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
-        assertEquals(
-                "exec-1",
-                executor.lastTerminatedExecutionId,
-                "an unreachable child execution must still get a best-effort terminate call");
-    }
-
-    @Test
-    void start_withExecutionIdCompletesPendingHumanTaskThenReadsStatus() {
-        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
-        executor.workflow = workflow(WorkflowModel.Status.RUNNING);
-        executor.workflow.setTasks(List.of(waitingHumanTask()));
-        executor.workflowAfterUpdate = workflow(WorkflowModel.Status.COMPLETED);
-        executor.workflowAfterUpdate.setOutput(Map.of("answer", "New York"));
-        Map<String, Object> input = conductorInput();
-        input.put("executionId", "exec-1");
-        input.put("prompt", "New York");
-        TaskModel task = taskModel(input);
-
-        delegate.start(task, executor);
-
-        assertEquals("human-1", executor.lastTaskResult.getTaskId());
-        assertEquals(Map.of("result", "New York"), executor.lastTaskResult.getOutputData());
-        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
-        assertNull(executor.lastStartRequest);
-    }
-
-    @Test
-    void cancelTerminatesChildWorkflowBestEffort() {
-        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
-        TaskModel task = pollingTask();
-
-        delegate.cancel(task, executor, "workflow canceled");
-
-        assertEquals("exec-1", executor.lastTerminatedExecutionId);
-        assertEquals("workflow canceled", executor.lastTerminationReason);
-        assertEquals(TaskModel.Status.CANCELED, task.getStatus());
-
-        executor.throwOnTerminate = true;
-        delegate.cancel(task, executor, "again");
-        assertEquals(TaskModel.Status.CANCELED, task.getStatus());
-    }
-
-    // A child that already finished on its own (e.g. its own workflow timeout -> TIMED_OUT) must
-    // not be re-terminated by the cleanup hook — that would rewrite TIMED_OUT to TERMINATED.
-    @Test
-    void cancelSkipsTerminateWhenChildAlreadyTerminal() {
-        FakeWorkflowExecutor executor = new FakeWorkflowExecutor();
-        executor.workflow = workflow(WorkflowModel.Status.TIMED_OUT);
-        TaskModel task = pollingTask();
-
-        delegate.cancel(task, executor, "workflow canceled");
-
-        assertNull(
-                executor.lastTerminatedExecutionId,
-                "an already-terminal child execution must be left untouched");
-        assertEquals(TaskModel.Status.CANCELED, task.getStatus());
-    }
-
-    @Test
-    void nullExecutorFailsTerminally() {
-        TaskModel task = taskModel(conductorInput());
-
-        delegate.start(task, null);
-
-        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
-        assertEquals(
-                "Conductor agent execution requires a WorkflowExecutor",
-                task.getReasonForIncompletion());
-    }
-
-    @Test
-    void agentTypePredicatesRemainStable() {
-        assertTrue(A2AService.isConductorAgentType("conductor"));
-        assertTrue(A2AService.isConductorAgentType("CONDUCTOR"));
-        assertFalse(A2AService.isConductorAgentType(null));
-        assertTrue(A2AService.isA2aAgentType(null));
-        assertTrue(A2AService.isA2aAgentType("a2a"));
-        assertFalse(A2AService.isA2aAgentType("conductor"));
-    }
-
-    private static TaskModel pollingTask() {
-        TaskModel task = taskModel(conductorInput());
-        task.addOutput(ConductorAgentResults.KEY_EXECUTION_ID, "exec-1");
-        task.addOutput(ConductorAgentResults.KEY_STARTED_AT, System.currentTimeMillis());
+    private static Task task(Map<String, Object> input) {
+        Task task = new Task();
+        task.setTaskId("task-1");
+        task.setWorkflowInstanceId("wf-1");
+        task.setReferenceTaskName("agent_ref");
+        task.setIteration(2);
+        task.setStatus(Task.Status.IN_PROGRESS);
+        task.setInputData(input);
         return task;
+    }
+
+    private static A2ATask protocolTask(TaskResult result) {
+        return new ObjectMapper().convertValue(result.getOutputData().get("task"), A2ATask.class);
+    }
+
+    private static final class FakeAgentClient implements AgentClient {
+
+        private AgentStartRequest startedRequest;
+        private AgentStatusResponse status =
+                AgentStatusResponse.builder()
+                        .executionId("exec-1")
+                        .status("RUNNING")
+                        .running(true)
+                        .build();
+        private int startCalls;
+        private int statusCalls;
+        private String canceledExecutionId;
+        private String cancelReason;
+
+        @Override
+        public CompileResponse compileAgent(AgentStartRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public AgentStartResponse deployAgent(AgentStartRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public AgentStartResponse startAgent(AgentStartRequest request) {
+            startedRequest = request;
+            startCalls++;
+            return AgentStartResponse.builder().executionId("exec-1").agentName("planner").build();
+        }
+
+        @Override
+        public AgentStatusResponse getAgentStatus(String executionId) {
+            statusCalls++;
+            return status;
+        }
+
+        @Override
+        public Map<String, Object> getExecution(String executionId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Map<String, Object> listExecutions(Map<String, Object> params) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void respond(String executionId, Map<String, Object> body) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void stopAgent(String executionId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void signalAgent(String executionId, String message) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void cancelAgent(String executionId, String reason) {
+            canceledExecutionId = executionId;
+            cancelReason = reason;
+        }
+
+        @Override
+        public AgentEventStream streamSse(String executionId, String lastEventId) {
+            throw new UnsupportedOperationException();
+        }
     }
 }

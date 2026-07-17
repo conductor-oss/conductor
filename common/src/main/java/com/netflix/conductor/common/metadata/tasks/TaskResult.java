@@ -36,7 +36,8 @@ public class TaskResult {
         IN_PROGRESS,
         FAILED,
         FAILED_WITH_TERMINAL_ERROR,
-        COMPLETED
+        COMPLETED,
+        CANCELED
     }
 
     @NotEmpty(message = "Workflow Id cannot be null or empty")
@@ -91,7 +92,6 @@ public class TaskResult {
         this.externalOutputPayloadStoragePath = task.getExternalOutputPayloadStoragePath();
         this.subWorkflowId = task.getSubWorkflowId();
         switch (task.getStatus()) {
-            case CANCELED:
             case COMPLETED_WITH_ERRORS:
             case TIMED_OUT:
             case SKIPPED:
@@ -177,8 +177,8 @@ public class TaskResult {
      *     <p><b>IN_PROGRESS</b>: Use this for long running tasks, indicating the task is still in
      *     progress and should be checked again at a later time. e.g. the worker checks the status
      *     of the job in the DB, while the job is being executed by another process.
-     *     <p><b>FAILED, FAILED_WITH_TERMINAL_ERROR, COMPLETED</b>: Terminal statuses for the task.
-     *     Use FAILED_WITH_TERMINAL_ERROR when you do not want the task to be retried.
+     *     <p><b>FAILED, FAILED_WITH_TERMINAL_ERROR, COMPLETED, CANCELED</b>: Terminal statuses for
+     *     the task. Use FAILED_WITH_TERMINAL_ERROR when you do not want the task to be retried.
      * @see #setCallbackAfterSeconds(long)
      */
     public void setStatus(Status status) {

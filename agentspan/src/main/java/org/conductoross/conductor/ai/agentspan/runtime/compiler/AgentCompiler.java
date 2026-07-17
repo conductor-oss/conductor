@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
+import com.netflix.conductor.common.metadata.workflow.WorkflowClassifier;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
@@ -219,26 +220,10 @@ public class AgentCompiler {
             wf.setMaskedFields(config.getMaskedFields());
         }
 
-        // Stamp agent capability tags and agentDef into workflow metadata.
-        // Done here (not only in AgentService) so sub-workflows compiled recursively
-        // also carry their own agentDef — AgentService only stamps the top-level def.
-        if (!isFrameworkPassthrough(config) && !isGraphStructure(config)) {
-            Set<String> caps = collectCapabilities(config);
-            Map<String, Object> metadata =
-                    wf.getMetadata() != null
-                            ? new LinkedHashMap<>(wf.getMetadata())
-                            : new LinkedHashMap<>();
-            metadata.put("agent_capabilities", new ArrayList<>(caps));
-            try {
-                metadata.put("agentDef", MAPPER.convertValue(config, Map.class));
-            } catch (Exception e) {
-                log.debug(
-                        "Could not stamp agentDef for agent '{}': {}",
-                        config.getName(),
-                        e.getMessage());
-            }
-            wf.setMetadata(metadata);
-        }
+        // Stamp the agent classifier and definition into workflow metadata. The explicit
+        // classifier is what execution search indexes, so agent runs do not appear in the
+        // workflow-only execution list.
+        stampAgentMetadata(wf, config);
 
         // Ensure every task has a name (Conductor requires it for execution)
         if (wf.getTasks() != null) {
@@ -254,6 +239,29 @@ public class AgentCompiler {
         }
 
         return wf;
+    }
+
+    /**
+     * Marks a generated workflow definition as an agent and retains the source definition needed to
+     * render its details. Embedded swarm workflows call this directly because they are built as
+     * inline {@code SUB_WORKFLOW} definitions and bypass {@link #compile(AgentConfig)}.
+     */
+    void stampAgentMetadata(WorkflowDef wf, AgentConfig config) {
+        Map<String, Object> metadata =
+                wf.getMetadata() != null
+                        ? new LinkedHashMap<>(wf.getMetadata())
+                        : new LinkedHashMap<>();
+        metadata.put("classifier", WorkflowClassifier.AGENT);
+        metadata.put("agent_capabilities", new ArrayList<>(collectCapabilities(config)));
+        try {
+            metadata.put("agentDef", MAPPER.convertValue(config, Map.class));
+        } catch (Exception e) {
+            log.debug(
+                    "Could not stamp agentDef for agent '{}': {}",
+                    config.getName(),
+                    e.getMessage());
+        }
+        wf.setMetadata(metadata);
     }
 
     // ── Simple agent (no tools) ─────────────────────────────────────
@@ -3755,11 +3763,7 @@ public class AgentCompiler {
                         "result", "${_fw_task.output.result}",
                         "context", "${workflow.input.context}"));
 
-        Map<String, Object> metadata =
-                config.getMetadata() != null
-                        ? new LinkedHashMap<>(config.getMetadata())
-                        : new LinkedHashMap<>();
-        wf.setMetadata(metadata);
+        stampAgentMetadata(wf, config);
 
         return wf;
     }

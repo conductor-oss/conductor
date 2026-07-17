@@ -262,6 +262,39 @@ class AsyncSystemTaskExecutorTest extends Specification {
         task.callbackAfterSeconds == properties.systemTaskWorkerCallbackDuration.seconds
     }
 
+    def "Execute preserves a callback interval set by the system task"() {
+        given:
+        properties.systemTaskWorkerCallbackDuration = Duration.ofSeconds(30)
+        executor = new AsyncSystemTaskExecutor(executionDAOFacade, queueDAO, metadataDAO, properties, workflowExecutor, parametersUtils)
+
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        String queueName = QueueUtils.getQueueName(task)
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> {
+            task.status = TaskModel.Status.IN_PROGRESS
+            task.callbackAfterSeconds = 5
+        }
+        1 * workflowSystemTask.getEvaluationOffset(task, 30) >> {
+            assert task.callbackAfterSeconds == 5
+            Optional.of(task.callbackAfterSeconds)
+        }
+        1 * queueDAO.postpone(queueName, taskId, task.workflowPriority, 5)
+        1 * executionDAOFacade.updateTask(task)
+
+        task.status == TaskModel.Status.IN_PROGRESS
+        task.callbackAfterSeconds == 5
+    }
+
     def "Execute with a task id that is in SCHEDULED state and WorkflowSystemTask.start sets the task in a terminal state"() {
         given:
         String workflowId = "workflowId"

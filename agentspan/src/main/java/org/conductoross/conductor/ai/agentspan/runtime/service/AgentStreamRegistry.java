@@ -16,8 +16,10 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.conductoross.conductor.ai.agent.AgentEventStream;
 import org.conductoross.conductor.common.metadata.agent.AgentSSEEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +44,10 @@ public class AgentStreamRegistry {
 
     /** Connected SSE emitters per execution ID. */
     private final ConcurrentHashMap<String, CopyOnWriteArrayList<SseEmitter>> emitters =
+            new ConcurrentHashMap<>();
+
+    /** In-process subscribers used by the embedded AgentClient implementation. */
+    private final ConcurrentHashMap<String, CopyOnWriteArrayList<LocalEventStream>> subscribers =
             new ConcurrentHashMap<>();
 
     /** Event buffer per execution ID (for replay on reconnect). */
@@ -98,6 +104,31 @@ public class AgentStreamRegistry {
     }
 
     /**
+     * Open an in-process event stream without routing through the HTTP/SSE controller.
+     *
+     * <p>Registration and buffer replay share the buffer monitor with {@link #send}; this prevents
+     * an event from falling into the gap between replaying old events and subscribing for new ones.
+     */
+    public AgentEventStream openStream(String executionId, String lastEventId) {
+        String targetId = aliases.getOrDefault(executionId, executionId);
+        long resumeAfter = parseEventId(lastEventId);
+        BoundedEventBuffer buffer =
+                buffers.computeIfAbsent(targetId, k -> new BoundedEventBuffer(DEFAULT_BUFFER_SIZE));
+        LocalEventStream stream = new LocalEventStream(targetId);
+        synchronized (buffer) {
+            subscribers.computeIfAbsent(targetId, k -> new CopyOnWriteArrayList<>()).add(stream);
+            for (AgentSSEEvent event : buffer.eventsSince(resumeAfter)) {
+                stream.offer(event);
+            }
+            if (completedAt.containsKey(targetId)) {
+                removeSubscriber(targetId, stream);
+                stream.complete();
+            }
+        }
+        return stream;
+    }
+
+    /**
      * Register a child execution as an alias for a parent execution. Events from the child will be
      * forwarded to the parent's SSE stream.
      */
@@ -120,9 +151,18 @@ public class AgentStreamRegistry {
         long seqId = sequences.computeIfAbsent(targetId, k -> new AtomicLong(0)).incrementAndGet();
         event.setId(seqId);
 
-        // Buffer the event
-        buffers.computeIfAbsent(targetId, k -> new BoundedEventBuffer(DEFAULT_BUFFER_SIZE))
-                .add(event);
+        // Buffer and dispatch to in-process subscribers atomically with stream registration.
+        BoundedEventBuffer buffer =
+                buffers.computeIfAbsent(targetId, k -> new BoundedEventBuffer(DEFAULT_BUFFER_SIZE));
+        synchronized (buffer) {
+            buffer.add(event);
+            CopyOnWriteArrayList<LocalEventStream> localStreams = subscribers.get(targetId);
+            if (localStreams != null) {
+                for (LocalEventStream stream : localStreams) {
+                    stream.offer(event);
+                }
+            }
+        }
 
         // Broadcast to all connected emitters
         CopyOnWriteArrayList<SseEmitter> list = emitters.get(targetId);
@@ -155,8 +195,17 @@ public class AgentStreamRegistry {
             }
         }
 
-        // Mark for buffer cleanup after retention period
-        completedAt.put(targetId, System.currentTimeMillis());
+        BoundedEventBuffer buffer =
+                buffers.computeIfAbsent(targetId, k -> new BoundedEventBuffer(DEFAULT_BUFFER_SIZE));
+        synchronized (buffer) {
+            CopyOnWriteArrayList<LocalEventStream> localStreams = subscribers.remove(targetId);
+            if (localStreams != null) {
+                localStreams.forEach(LocalEventStream::complete);
+            }
+            // Mark while holding the same monitor used by openStream so a subscriber cannot be
+            // added after the completion signal was dispatched.
+            completedAt.put(targetId, System.currentTimeMillis());
+        }
 
         // Note: aliases are NOT cleaned up here. A child workflow's alias (child→parent)
         // must persist until the parent completes, so that any late events from the child
@@ -232,6 +281,8 @@ public class AgentStreamRegistry {
             }
         }
         emitters.clear();
+        subscribers.values().forEach(streams -> streams.forEach(LocalEventStream::complete));
+        subscribers.clear();
         logger.info("Completed all SSE emitters for shutdown");
     }
 
@@ -244,6 +295,27 @@ public class AgentStreamRegistry {
             if (list.isEmpty()) {
                 emitters.remove(executionId);
             }
+        }
+    }
+
+    private void removeSubscriber(String executionId, LocalEventStream stream) {
+        CopyOnWriteArrayList<LocalEventStream> list = subscribers.get(executionId);
+        if (list != null) {
+            list.remove(stream);
+            if (list.isEmpty()) {
+                subscribers.remove(executionId, list);
+            }
+        }
+    }
+
+    private static long parseEventId(String lastEventId) {
+        if (lastEventId == null || lastEventId.isBlank()) {
+            return 0;
+        }
+        try {
+            return Long.parseLong(lastEventId);
+        } catch (NumberFormatException e) {
+            return 0;
         }
     }
 
@@ -284,6 +356,65 @@ public class AgentStreamRegistry {
                 }
             }
             return result;
+        }
+    }
+
+    private final class LocalEventStream implements AgentEventStream {
+
+        private final AgentSSEEvent completed = new AgentSSEEvent();
+        private final String executionId;
+        private final LinkedBlockingQueue<AgentSSEEvent> events = new LinkedBlockingQueue<>();
+        private volatile boolean closed;
+        private volatile String lastEventId;
+
+        private LocalEventStream(String executionId) {
+            this.executionId = executionId;
+        }
+
+        private void offer(AgentSSEEvent event) {
+            if (!closed) {
+                events.offer(event);
+            }
+        }
+
+        private void complete() {
+            if (!closed) {
+                events.offer(completed);
+            }
+        }
+
+        @Override
+        public AgentSSEEvent nextEvent() {
+            if (closed) {
+                return null;
+            }
+            try {
+                AgentSSEEvent event = events.take();
+                if (event == completed) {
+                    closed = true;
+                    removeSubscriber(executionId, this);
+                    return null;
+                }
+                lastEventId = String.valueOf(event.getId());
+                return event;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return null;
+            }
+        }
+
+        @Override
+        public String getLastEventId() {
+            return lastEventId;
+        }
+
+        @Override
+        public void close() {
+            if (!closed) {
+                closed = true;
+                removeSubscriber(executionId, this);
+                events.offer(completed);
+            }
         }
     }
 }

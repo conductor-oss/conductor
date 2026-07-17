@@ -19,11 +19,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.conductoross.conductor.ai.a2a.A2AService;
 import org.conductoross.conductor.ai.a2a.A2AService.SendResult;
-import org.conductoross.conductor.ai.a2a.AgentTask;
 import org.conductoross.conductor.ai.a2a.model.A2AMessage;
 import org.conductoross.conductor.ai.a2a.model.AgentCard;
 import org.conductoross.conductor.ai.a2a.model.Part;
 import org.conductoross.conductor.ai.a2a.model.TaskState;
+import org.conductoross.conductor.ai.tasks.worker.A2AWorkers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -33,20 +33,21 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.env.Environment;
 import org.springframework.test.context.TestPropertySource;
 
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
-import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.service.MetadataService;
 import com.netflix.conductor.service.TaskService;
 import com.netflix.conductor.service.WorkflowService;
 
 import okhttp3.OkHttpClient;
 
+import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.invoke;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -63,11 +64,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * The capstone: <b>Conductor calling Conductor over A2A.</b> The real {@link AgentTask} client
- * drives the real {@link A2AServerResource} over real HTTP (random port) through the full A2A
- * round-trip — discovery, message/send → start workflow, tasks/get → poll to completion — with a
- * stateful fake engine standing in for the persistence layer. Also proves the client's
- * deterministic {@code messageId} arrives as the server's workflow idempotency key.
+ * The capstone: <b>Conductor calling Conductor over A2A.</b> The annotation-backed {@link
+ * A2AWorkers} client drives the real {@link A2AServerResource} over real HTTP (random port) through
+ * the full A2A round-trip — discovery, message/send → start workflow, tasks/get → poll to
+ * completion — with a stateful fake engine standing in for the persistence layer. Also proves the
+ * client's deterministic {@code messageId} arrives as the server's workflow idempotency key.
  */
 @SpringBootTest(
         classes = A2ALoopbackTest.LoopbackApp.class,
@@ -192,27 +193,29 @@ class A2ALoopbackTest {
     @Test
     void fullRoundTrip_clientTaskDrivesServerWorkflowToCompletion() {
         A2AService service = clientService();
-        AgentTask client = new AgentTask(service, mock(Environment.class));
+        A2AWorkers workers = new A2AWorkers(service);
 
-        TaskModel model = new TaskModel();
-        model.setTaskId("client-task-1");
-        model.setWorkflowInstanceId("client-wf");
-        model.setReferenceTaskName("callPizza");
-        model.setInputData(Map.of("agentUrl", agentUrl(), "text", "one large pepperoni"));
+        Task task = new Task();
+        task.setTaskId("client-task-1");
+        task.setWorkflowInstanceId("client-wf");
+        task.setReferenceTaskName("callPizza");
+        task.setStatus(Task.Status.SCHEDULED);
+        task.setInputData(Map.of("agentUrl", agentUrl(), "text", "one large pepperoni"));
+        task.setOutputData(new java.util.HashMap<>());
 
         // message/send → server starts the workflow → RUNNING → client task IN_PROGRESS.
-        client.start(null, model, null);
-        assertEquals(TaskModel.Status.IN_PROGRESS, model.getStatus());
-        assertEquals("wf-loop-1", model.getOutputData().get("taskId"));
+        TaskResult result = invoke(workers, task);
+        assertEquals(TaskResult.Status.IN_PROGRESS, result.getStatus());
+        assertEquals("wf-loop-1", result.getOutputData().get("taskId"));
 
         // tasks/get poll loop → server flips to COMPLETED → client task COMPLETED.
         int guard = 0;
-        while (model.getStatus() == TaskModel.Status.IN_PROGRESS && guard++ < 20) {
-            client.execute(null, model, null);
+        while (result.getStatus() == TaskResult.Status.IN_PROGRESS && guard++ < 20) {
+            result = invoke(workers, task);
         }
-        assertEquals(TaskModel.Status.COMPLETED, model.getStatus());
-        assertEquals("completed", model.getOutputData().get("state"));
-        assertNotNull(model.getOutputData().get("artifacts"));
+        assertEquals(TaskResult.Status.COMPLETED, result.getStatus());
+        assertEquals("completed", result.getOutputData().get("state"));
+        assertNotNull(result.getOutputData().get("artifacts"));
 
         // The client's deterministic messageId crossed the wire and became the server's
         // idempotency key (server-side effectively-once).

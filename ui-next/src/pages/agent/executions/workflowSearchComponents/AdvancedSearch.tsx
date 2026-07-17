@@ -32,7 +32,7 @@ import { DoSearchProps } from "types/WorkflowExecution";
 import { dateToEpoch, useLocalStorage } from "utils";
 import { WORKFLOW_SEARCH_QUERY_SUGGESTIONS } from "utils/constants/common";
 import { ERROR_URL } from "utils/constants/route";
-import { useWorkflowNames, useWorkflowSearch } from "utils/query";
+import { useAgentNames, useWorkflowSearch } from "utils/query";
 import { getErrors } from "utils/utils";
 import { ApiSearchModalIntegration } from "../ApiSearchModalIntegration";
 import { DateControlComponent } from "../DateControlComponent";
@@ -133,7 +133,7 @@ export default function AdvancedSearch({
   } | null>(null);
 
   // For dropdown
-  const workflowNames: string[] = useWorkflowNames();
+  const agentNames = useAgentNames();
 
   useEffect(() => {
     return () => {
@@ -419,7 +419,7 @@ export default function AdvancedSearch({
                         const propertyKeys = [
                           ...WORKFLOW_SEARCH_QUERY_SUGGESTIONS,
                           ...workflowStatuses,
-                          ...workflowNames,
+                          ...agentNames,
                           "workflowType",
                         ];
                         // Provide suggestions for properties that start with the current text
