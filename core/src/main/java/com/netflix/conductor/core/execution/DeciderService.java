@@ -240,10 +240,24 @@ public class DeciderService {
                     && pendingTask.getStatus().isTerminal()) {
                 pendingTask.setExecuted(true);
                 List<TaskModel> nextTasks = getNextTask(workflow, pendingTask);
-                if (pendingTask.isLoopOverTask()
-                        && !TaskType.DO_WHILE.name().equals(pendingTask.getTaskType())
-                        && !nextTasks.isEmpty()) {
-                    nextTasks = filterNextLoopOverTasks(nextTasks, pendingTask, workflow);
+                if (!nextTasks.isEmpty()) {
+                    if (TaskType.DO_WHILE.name().equals(pendingTask.getTaskType())) {
+                        // A DO_WHILE's iteration field is its own loop counter, so
+                        // isLoopOverTask() is true even for a top-level loop. Only a
+                        // DO_WHILE nested inside another loop (reference name carries the
+                        // parent's __<iteration> suffix) has loop-over siblings, and they
+                        // must be stamped with the parent's iteration, not this loop's
+                        // counter.
+                        int parentIteration =
+                                extractIterationFromRefName(pendingTask.getReferenceTaskName());
+                        if (parentIteration > 0) {
+                            nextTasks =
+                                    filterNextLoopOverTasks(
+                                            nextTasks, parentIteration, pendingTask, workflow);
+                        }
+                    } else if (pendingTask.isLoopOverTask()) {
+                        nextTasks = filterNextLoopOverTasks(nextTasks, pendingTask, workflow);
+                    }
                 }
                 nextTasks.forEach(
                         nextTask ->
@@ -319,14 +333,19 @@ public class DeciderService {
     @VisibleForTesting
     List<TaskModel> filterNextLoopOverTasks(
             List<TaskModel> tasks, TaskModel pendingTask, WorkflowModel workflow) {
+        return filterNextLoopOverTasks(tasks, pendingTask.getIteration(), pendingTask, workflow);
+    }
+
+    @VisibleForTesting
+    List<TaskModel> filterNextLoopOverTasks(
+            List<TaskModel> tasks, int iteration, TaskModel pendingTask, WorkflowModel workflow) {
 
         // Update the task reference name and iteration
         tasks.forEach(
                 nextTask -> {
                     nextTask.setReferenceTaskName(
-                            TaskUtils.appendIteration(
-                                    nextTask.getReferenceTaskName(), pendingTask.getIteration()));
-                    nextTask.setIteration(pendingTask.getIteration());
+                            TaskUtils.appendIteration(nextTask.getReferenceTaskName(), iteration));
+                    nextTask.setIteration(iteration);
                 });
 
         List<String> tasksInWorkflow =
@@ -343,6 +362,23 @@ public class DeciderService {
                         runningTask ->
                                 !tasksInWorkflow.contains(runningTask.getReferenceTaskName()))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Extracts the iteration from a loop-over task's reference name suffix ({@code __<iteration>}),
+     * or returns -1 if the reference name carries no such suffix.
+     */
+    @VisibleForTesting
+    static int extractIterationFromRefName(String referenceTaskName) {
+        int idx = referenceTaskName.lastIndexOf("__");
+        if (idx < 0) {
+            return -1;
+        }
+        try {
+            return Integer.parseInt(referenceTaskName.substring(idx + 2));
+        } catch (NumberFormatException e) {
+            return -1;
+        }
     }
 
     private List<TaskModel> startWorkflow(WorkflowModel workflow)
