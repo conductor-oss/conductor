@@ -1,0 +1,45 @@
+{
+  "name": "conductor_agent_multi_agent",
+  "version": 1,
+  "schemaVersion": 2,
+  "description": "Durable multi-agent orchestration on the embedded runtime: a FORK_JOIN fans out to two AGENT (conductor) tasks running different registered agents, then a JOIN collects both. Each branch gets an independent executionId and the two runs poll concurrently without blocking a worker thread.",
+  "tasks": [
+    {
+      "name": "fork_agents",
+      "taskReferenceName": "fork_agents_ref",
+      "type": "FORK_JOIN",
+      "forkTasks": [
+        [
+          {
+            "name": "run_planner",
+            "taskReferenceName": "run_planner_ref",
+            "type": "AGENT",
+            "inputParameters": {
+              "agentType": "conductor",
+              "name": "planner",
+              "prompt": "${workflow.input.prompt}"
+            }
+          }
+        ],
+        [
+          {
+            "name": "run_researcher",
+            "taskReferenceName": "run_researcher_ref",
+            "type": "AGENT",
+            "inputParameters": {
+              "agentType": "conductor",
+              "name": "researcher",
+              "prompt": "${workflow.input.prompt}"
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "join_agents",
+      "taskReferenceName": "join_agents_ref",
+      "type": "JOIN",
+      "joinOn": ["run_planner_ref", "run_researcher_ref"]
+    }
+  ]
+}

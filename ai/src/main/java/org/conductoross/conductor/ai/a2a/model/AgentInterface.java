@@ -21,5 +21,13 @@ import lombok.Data;
 public class AgentInterface {
 
     private String url;
+
+    /** Current A2A 1.x field. */
+    private String protocolBinding;
+
+    private String protocolVersion;
+    private String tenant;
+
+    /** Legacy A2A 0.3 field retained for compatibility. */
     private String transport;
 }

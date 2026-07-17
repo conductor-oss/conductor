@@ -475,6 +475,41 @@ public class WorkflowDef extends Auditable {
         return tasks;
     }
 
+    /**
+     * Collects the unique names of all statically declared SIMPLE tasks in this workflow and any
+     * statically embedded inline sub-workflow definitions.
+     *
+     * <p>Runtime workflow-definition expressions are not available until execution and are
+     * intentionally skipped. Encounter order is retained, and identity-based cycle detection
+     * protects against reused or cyclic in-memory definitions.
+     */
+    public Set<String> collectSimpleTaskNames() {
+        Set<String> names = new LinkedHashSet<>();
+        Set<WorkflowDef> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        collectSimpleTaskNames(names, visited);
+        return names;
+    }
+
+    private void collectSimpleTaskNames(Set<String> names, Set<WorkflowDef> visited) {
+        if (!visited.add(this) || tasks == null) {
+            return;
+        }
+
+        for (WorkflowTask task : collectTasks()) {
+            if (TaskType.SIMPLE.name().equals(task.getType())) {
+                names.add(task.getName());
+            }
+
+            // Runtime expressions (for example "${compile.output.workflowDef}") are Strings and
+            // are deliberately skipped because their worker tasks do not exist until execution.
+            if (task.getSubWorkflowParam() != null
+                    && task.getSubWorkflowParam().getWorkflowDefinition()
+                            instanceof WorkflowDef nestedWorkflowDef) {
+                nestedWorkflowDef.collectSimpleTaskNames(names, visited);
+            }
+        }
+    }
+
     @JsonIgnore
     public boolean isAgent() {
         return metadata != null

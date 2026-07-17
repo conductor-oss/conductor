@@ -118,7 +118,7 @@ public final class A2AResults {
         }
     }
 
-    static String stateOf(A2ATask task) {
+    public static String stateOf(A2ATask task) {
         return task.getStatus() != null ? task.getStatus().getState() : null;
     }
 }

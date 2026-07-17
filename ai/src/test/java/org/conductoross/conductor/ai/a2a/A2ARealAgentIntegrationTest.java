@@ -16,17 +16,18 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.conductoross.conductor.ai.a2a.model.AgentCard;
+import org.conductoross.conductor.ai.tasks.worker.A2AWorkers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springframework.core.env.Environment;
 
-import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 
 import okhttp3.OkHttpClient;
 
+import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.invoke;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 
 /**
  * Opt-in integration test against a REAL, externally running A2A agent (e.g. an agent from {@code
@@ -72,9 +73,11 @@ class A2ARealAgentIntegrationTest {
         String url = System.getenv("A2A_AGENT_URL");
         String prompt = System.getenv().getOrDefault("A2A_AGENT_PROMPT", "hello");
 
-        AgentTask callAgentTask = new AgentTask(service(), mock(Environment.class));
-        TaskModel task = new TaskModel();
+        A2AWorkers workers = new A2AWorkers(service());
+        Task task = new Task();
         task.setTaskId("it-task-1");
+        task.setStatus(Task.Status.SCHEDULED);
+        task.setOutputData(new java.util.HashMap<>());
         Map<String, Object> input = new java.util.HashMap<>();
         input.put("agentUrl", url);
         input.put("text", prompt);
@@ -83,17 +86,20 @@ class A2ARealAgentIntegrationTest {
         }
         task.setInputData(input);
 
-        callAgentTask.start(null, task, null);
+        TaskResult result = invoke(workers, task);
 
         int guard = 0;
-        while (task.getStatus() == TaskModel.Status.IN_PROGRESS && guard++ < 60) {
-            callAgentTask.execute(null, task, null);
+        while (result.getStatus() == TaskResult.Status.IN_PROGRESS && guard++ < 60) {
+            result = invoke(workers, task);
         }
 
         assertTrue(
-                task.getStatus().isTerminal() || task.getStatus() == TaskModel.Status.COMPLETED,
-                "expected a terminal status, got " + task.getStatus());
+                result.getStatus() != TaskResult.Status.IN_PROGRESS,
+                "expected a terminal status, got " + result.getStatus());
         System.out.println(
-                "A2A call result: status=" + task.getStatus() + " output=" + task.getOutputData());
+                "A2A call result: status="
+                        + result.getStatus()
+                        + " output="
+                        + result.getOutputData());
     }
 }

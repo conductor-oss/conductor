@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.metrics;
 
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
@@ -107,5 +109,90 @@ public class MonitorsTest {
         assertNotSame(
                 Monitors.getCounter("test_tag_distinct", "env", "prod"),
                 Monitors.getCounter("test_tag_distinct", "env", "staging"));
+    }
+
+    @Test
+    public void registerWebhookQueueDepthGauge_readsLiveQueueSize() {
+        SimpleMeterRegistry probe = new SimpleMeterRegistry();
+        Monitors.addMeterRegistry(probe);
+
+        BlockingQueue<String> queue = new LinkedBlockingDeque<>(2);
+        Monitors.registerWebhookQueueDepthGauge(queue, "WORKFLOW");
+
+        assertEquals(0.0, probe.find("webhook_queue_depth").gauge().value(), 0.001);
+
+        queue.offer("a");
+        queue.offer("b");
+        assertEquals(2.0, probe.find("webhook_queue_depth").gauge().value(), 0.001);
+
+        queue.poll();
+        assertEquals(1.0, probe.find("webhook_queue_depth").gauge().value(), 0.001);
+    }
+
+    @Test
+    public void recordWebhookPublishSuccess_incrementsTaggedCounter() {
+        SimpleMeterRegistry probe = new SimpleMeterRegistry();
+        Monitors.addMeterRegistry(probe);
+
+        Monitors.recordWebhookPublishSuccess("WORKFLOW", "kitchen_sink", "COMPLETED");
+
+        Counter counter =
+                probe.find("webhook_publish_success")
+                        .tag("notificationType", "WORKFLOW")
+                        .tag("name", "kitchen_sink")
+                        .tag("status", "COMPLETED")
+                        .counter();
+        assertNotNull(counter);
+        assertEquals(1.0, counter.count(), 0.001);
+    }
+
+    @Test
+    public void recordWebhookPublishFailure_incrementsTaggedCounter() {
+        SimpleMeterRegistry probe = new SimpleMeterRegistry();
+        Monitors.addMeterRegistry(probe);
+
+        Monitors.recordWebhookPublishFailure("TASK", "my_task", "IOException");
+
+        Counter counter =
+                probe.find("webhook_publish_failure")
+                        .tag("notificationType", "TASK")
+                        .tag("name", "my_task")
+                        .tag("errorType", "IOException")
+                        .counter();
+        assertNotNull(counter);
+        assertEquals(1.0, counter.count(), 0.001);
+    }
+
+    @Test
+    public void recordWebhookEnqueueFailure_incrementsTaggedCounter() {
+        SimpleMeterRegistry probe = new SimpleMeterRegistry();
+        Monitors.addMeterRegistry(probe);
+
+        Monitors.recordWebhookEnqueueFailure("WORKFLOW", "kitchen_sink");
+
+        Counter counter =
+                probe.find("webhook_enqueue_failure")
+                        .tag("notificationType", "WORKFLOW")
+                        .tag("name", "kitchen_sink")
+                        .counter();
+        assertNotNull(counter);
+        assertEquals(1.0, counter.count(), 0.001);
+    }
+
+    @Test
+    public void recordWebhookPublishSuccess_defaultsBlankTagsToUnknown() {
+        SimpleMeterRegistry probe = new SimpleMeterRegistry();
+        Monitors.addMeterRegistry(probe);
+
+        Monitors.recordWebhookPublishSuccess("TASK", "", null);
+
+        Counter counter =
+                probe.find("webhook_publish_success")
+                        .tag("notificationType", "TASK")
+                        .tag("name", "unknown")
+                        .tag("status", "unknown")
+                        .counter();
+        assertNotNull(counter);
+        assertEquals(1.0, counter.count(), 0.001);
     }
 }
