@@ -16,14 +16,12 @@ describe("mapTaskStatus", () => {
     expect(mapTaskStatus("COMPLETED")).toBe(AgentStatus.COMPLETED);
   });
 
-  it.each([
-    "FAILED",
-    "FAILED_WITH_TERMINAL_ERROR",
-    "TIMED_OUT",
-    "CANCELED",
-  ])("maps terminal-failure status %s to FAILED", (status) => {
-    expect(mapTaskStatus(status)).toBe(AgentStatus.FAILED);
-  });
+  it.each(["FAILED", "FAILED_WITH_TERMINAL_ERROR", "TIMED_OUT", "CANCELED"])(
+    "maps terminal-failure status %s to FAILED",
+    (status) => {
+      expect(mapTaskStatus(status)).toBe(AgentStatus.FAILED);
+    },
+  );
 
   it.each(["IN_PROGRESS", "SCHEDULED", "PENDING"])(
     "maps in-progress status %s to RUNNING",
@@ -44,14 +42,12 @@ describe("taskSuccess", () => {
     expect(taskSuccess("COMPLETED")).toBe(true);
   });
 
-  it.each([
-    "FAILED",
-    "FAILED_WITH_TERMINAL_ERROR",
-    "TIMED_OUT",
-    "CANCELED",
-  ])("returns false for terminal-failure status %s", (status) => {
-    expect(taskSuccess(status)).toBe(false);
-  });
+  it.each(["FAILED", "FAILED_WITH_TERMINAL_ERROR", "TIMED_OUT", "CANCELED"])(
+    "returns false for terminal-failure status %s",
+    (status) => {
+      expect(taskSuccess(status)).toBe(false);
+    },
+  );
 
   it.each(["IN_PROGRESS", "SCHEDULED", "PENDING"])(
     "returns undefined (spinner) for in-progress status %s",
@@ -68,14 +64,12 @@ describe("taskSuccess", () => {
 });
 
 describe("isFailedTaskStatus", () => {
-  it.each([
-    "FAILED",
-    "FAILED_WITH_TERMINAL_ERROR",
-    "TIMED_OUT",
-    "CANCELED",
-  ])("treats %s as a terminal failure", (status) => {
-    expect(isFailedTaskStatus(status)).toBe(true);
-  });
+  it.each(["FAILED", "FAILED_WITH_TERMINAL_ERROR", "TIMED_OUT", "CANCELED"])(
+    "treats %s as a terminal failure",
+    (status) => {
+      expect(isFailedTaskStatus(status)).toBe(true);
+    },
+  );
 
   it.each(["COMPLETED", "IN_PROGRESS", "SCHEDULED", "SKIPPED"])(
     "does not treat %s as a terminal failure",
