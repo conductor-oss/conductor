@@ -22,29 +22,30 @@ import org.conductoross.conductor.ai.tasks.worker.A2AWorkers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.env.Environment;
 
-import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 
 import okhttp3.OkHttpClient;
 
+import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.invoke;
+import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.task;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
 /**
  * End-to-end tests against a real, embedded A2A agent ({@link EmbeddedA2AAgent}) over loopback HTTP
  * — exercising discovery, send, polling, streaming, and cancellation through the actual wire
- * protocol and the real {@link A2AService}/{@link AgentTask} logic (no mocks on the A2A path).
+ * protocol and the annotation-backed {@link A2AWorkers} logic (no mocks on the A2A path).
  */
 class A2AEndToEndTest {
 
     private EmbeddedA2AAgent agent;
     private A2AService service;
-    private AgentTask callAgentTask;
+    private A2AWorkers workers;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -58,20 +59,12 @@ class A2AEndToEndTest {
         // Spy to bypass SSRF check for loopback — embedded agent uses 127.0.0.1.
         service = spy(new A2AService(client));
         doNothing().when(service).validateAgentUrl(anyString());
-        Environment environment = mock(Environment.class);
-        callAgentTask = new AgentTask(service, environment);
+        workers = new A2AWorkers(service);
     }
 
     @AfterEach
     void tearDown() {
         agent.close();
-    }
-
-    private TaskModel taskModel(Map<String, Object> input) {
-        TaskModel model = new TaskModel();
-        model.setInputData(input);
-        model.setTaskId("conductor-task-1");
-        return model;
     }
 
     @Test
@@ -84,11 +77,10 @@ class A2AEndToEndTest {
 
     @Test
     void getAgentCardWorker_resolvesRealAgentCard() {
-        A2AWorkers workers = new A2AWorkers(service);
         A2AAgentCardRequest request = new A2AAgentCardRequest();
         request.setAgentUrl(agent.url());
 
-        AgentCard card = workers.getAgentCard(request);
+        AgentCard card = workers.getAgentCard(request).getAgentCard();
 
         assertEquals("Embedded Agent", card.getName());
     }
@@ -97,41 +89,40 @@ class A2AEndToEndTest {
     void callAgent_immediateCompletion() {
         agent.sendMode(SendMode.TASK_COMPLETED).text("42");
 
-        TaskModel task = taskModel(Map.of("agentUrl", agent.url(), "text", "convert"));
-        callAgentTask.start(null, task, null);
+        TaskResult result =
+                invoke(workers, task(Map.of("agentUrl", agent.url(), "text", "convert")));
 
-        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
-        assertEquals("42", task.getOutputData().get("text"));
+        assertEquals(TaskResult.Status.COMPLETED, result.getStatus());
+        assertEquals("42", result.getOutputData().get("text"));
     }
 
     @Test
     void callAgent_directMessageReply() {
         agent.sendMode(SendMode.MESSAGE).text("hi there");
 
-        TaskModel task = taskModel(Map.of("agentUrl", agent.url(), "text", "hello"));
-        callAgentTask.start(null, task, null);
+        TaskResult result = invoke(workers, task(Map.of("agentUrl", agent.url(), "text", "hello")));
 
-        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
-        assertEquals("message", task.getOutputData().get("state"));
-        assertEquals("hi there", task.getOutputData().get("text"));
+        assertEquals(TaskResult.Status.COMPLETED, result.getStatus());
+        assertEquals("message", result.getOutputData().get("state"));
+        assertEquals("hi there", result.getOutputData().get("text"));
     }
 
     @Test
     void callAgent_pollsLongRunningTaskToCompletion() {
         agent.sendMode(SendMode.TASK_WORKING).completeAfterPolls(2).text("done");
 
-        TaskModel task = taskModel(Map.of("agentUrl", agent.url(), "text", "convert"));
-        callAgentTask.start(null, task, null);
-        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
+        Task task = task(Map.of("agentUrl", agent.url(), "text", "convert"));
+        TaskResult result = invoke(workers, task);
+        assertEquals(TaskResult.Status.IN_PROGRESS, result.getStatus());
 
         // Simulate the engine's poll loop.
         int guard = 0;
-        while (task.getStatus() == TaskModel.Status.IN_PROGRESS && guard++ < 20) {
-            callAgentTask.execute(null, task, null);
+        while (result.getStatus() == TaskResult.Status.IN_PROGRESS && guard++ < 20) {
+            result = invoke(workers, task);
         }
 
-        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
-        assertEquals("done", task.getOutputData().get("text"));
+        assertEquals(TaskResult.Status.COMPLETED, result.getStatus());
+        assertEquals("done", result.getOutputData().get("text"));
         assertTrue(agent.getCalls() >= 2, "expected the agent to be polled");
     }
 
@@ -139,25 +130,33 @@ class A2AEndToEndTest {
     void callAgent_inputRequiredCompletesWithQuestion() {
         agent.sendMode(SendMode.INPUT_REQUIRED);
 
-        TaskModel task = taskModel(Map.of("agentUrl", agent.url(), "text", "convert"));
-        callAgentTask.start(null, task, null);
+        TaskResult result =
+                invoke(workers, task(Map.of("agentUrl", agent.url(), "text", "convert")));
 
-        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
-        assertEquals("input-required", task.getOutputData().get("state"));
-        assertEquals(EmbeddedA2AAgent.AGENT_TASK_ID, task.getOutputData().get("taskId"));
-        assertEquals("Which currency?", task.getOutputData().get("text"));
+        assertEquals(TaskResult.Status.COMPLETED, result.getStatus());
+        assertEquals("input-required", result.getOutputData().get("state"));
+        assertEquals(EmbeddedA2AAgent.AGENT_TASK_ID, result.getOutputData().get("taskId"));
+        assertEquals("Which currency?", result.getOutputData().get("text"));
     }
 
     @Test
     void callAgent_streamingAggregatesChunks() {
         agent.sendMode(SendMode.STREAM);
 
-        TaskModel task =
-                taskModel(Map.of("agentUrl", agent.url(), "text", "convert", "streaming", true));
-        callAgentTask.start(null, task, null);
+        TaskResult result =
+                invoke(
+                        workers,
+                        task(
+                                Map.of(
+                                        "agentUrl",
+                                        agent.url(),
+                                        "text",
+                                        "convert",
+                                        "streaming",
+                                        true)));
 
-        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
-        String text = (String) task.getOutputData().get("text");
+        assertEquals(TaskResult.Status.COMPLETED, result.getStatus());
+        String text = (String) result.getOutputData().get("text");
         assertTrue(text.contains("Hello"), text);
         assertTrue(text.contains("world"), text);
     }
@@ -166,13 +165,12 @@ class A2AEndToEndTest {
     void cancel_propagatesToRealAgent() {
         agent.sendMode(SendMode.TASK_WORKING);
 
-        TaskModel task = taskModel(Map.of("agentUrl", agent.url(), "text", "x"));
-        callAgentTask.start(null, task, null);
-        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
+        Task task = task(Map.of("agentUrl", agent.url(), "text", "x"));
+        TaskResult result = invoke(workers, task);
+        assertEquals(TaskResult.Status.IN_PROGRESS, result.getStatus());
 
-        callAgentTask.cancel(null, task, null);
+        workers.cancel(A2AWorkers.AGENT, task, "workflow canceled");
 
-        assertEquals(TaskModel.Status.CANCELED, task.getStatus());
         assertEquals(1, agent.cancelCalls());
     }
 }

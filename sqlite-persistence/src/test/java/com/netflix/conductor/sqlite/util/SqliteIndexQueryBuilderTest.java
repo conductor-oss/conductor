@@ -14,6 +14,7 @@ package com.netflix.conductor.sqlite.util;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -22,6 +23,7 @@ import org.mockito.Mockito;
 import com.netflix.conductor.sqlite.config.SqliteProperties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 public class SqliteIndexQueryBuilderTest {
@@ -35,6 +37,25 @@ public class SqliteIndexQueryBuilderTest {
                         "table_name", "", "", 0, 15, new ArrayList<>(), properties);
         String generatedQuery = builder.getQuery();
         assertEquals("SELECT json_data FROM table_name LIMIT ? OFFSET ?", generatedQuery);
+    }
+
+    @Test
+    void shouldKeepAgentChildrenBelowTheirParent() throws SQLException {
+        SqliteIndexQueryBuilder builder =
+                new SqliteIndexQueryBuilder(
+                        "workflow_index",
+                        "classifier=agent",
+                        "",
+                        0,
+                        15,
+                        List.of("agentHierarchy:DESC", "startTime:DESC"),
+                        properties);
+
+        String query = builder.getQuery();
+        assertTrue(query.startsWith("WITH RECURSIVE workflow_hierarchy"));
+        assertTrue(query.contains("JOIN workflow_hierarchy parent"));
+        assertTrue(query.contains("LEFT JOIN workflow_hierarchy"));
+        assertTrue(query.contains("workflow_hierarchy.hierarchy_path ASC"));
     }
 
     @Test
@@ -127,6 +148,69 @@ public class SqliteIndexQueryBuilderTest {
         assertEquals(
                 "SELECT json_data FROM table_name WHERE status IN (?,?) LIMIT ? OFFSET ?",
                 generatedQuery);
+    }
+
+    @Test
+    void shouldGenerateQueryForClassifier() throws SQLException {
+        String inputQuery = "classifier=\"agent\"";
+        SqliteIndexQueryBuilder builder =
+                new SqliteIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getQuery();
+        assertEquals(
+                "SELECT json_data FROM table_name WHERE classifier = ? LIMIT ? OFFSET ?",
+                generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter("agent");
+        inOrder.verify(mockQuery).addParameter(15);
+        inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldMatchLegacyNullRowsForUntaggedClassifier() throws SQLException {
+        // Rows indexed before the classifier column existed are untagged plain workflows;
+        // filtering for the "workflow" token must also match those NULL rows.
+        String inputQuery = "classifier=\"workflow\"";
+        SqliteIndexQueryBuilder builder =
+                new SqliteIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getQuery();
+        assertEquals(
+                "SELECT json_data FROM table_name WHERE (classifier = ? OR classifier IS NULL) LIMIT ? OFFSET ?",
+                generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter("workflow");
+        inOrder.verify(mockQuery).addParameter(15);
+        inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldMatchLegacyNullRowsForUntaggedClassifierInClause() throws SQLException {
+        String inputQuery = "classifier IN (agent,workflow)";
+        SqliteIndexQueryBuilder builder =
+                new SqliteIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getQuery();
+        assertEquals(
+                "SELECT json_data FROM table_name WHERE (classifier IN (?,?) OR classifier IS NULL) LIMIT ? OFFSET ?",
+                generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter("agent");
+        inOrder.verify(mockQuery).addParameter("workflow");
+        inOrder.verify(mockQuery).addParameter(15);
+        inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
     }
 
     @Test

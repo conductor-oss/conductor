@@ -277,15 +277,69 @@ public class WorkflowResourceTest {
 
     @Test
     public void testSearch() {
-        workflowResource.search(0, 100, "asc", "*", "*");
+        workflowResource.search(0, 100, "asc", "*", "*", null, false);
         verify(mockWorkflowService, times(1))
                 .searchWorkflows(anyInt(), anyInt(), anyString(), anyString(), anyString());
     }
 
     @Test
     public void testSearchV2() {
-        workflowResource.searchV2(0, 100, "asc", "*", "*");
+        workflowResource.searchV2(0, 100, "asc", "*", "*", null, false);
         verify(mockWorkflowService).searchWorkflowsV2(0, 100, "asc", "*", "*");
+    }
+
+    @Test
+    public void testSearchWithClassifierAppendsToQuery() {
+        workflowResource.search(0, 100, "asc", "*", "status IN (RUNNING)", "agent", false);
+        verify(mockWorkflowService)
+                .searchWorkflows(
+                        0,
+                        100,
+                        "agentHierarchy:DESC|asc",
+                        "*",
+                        "status IN (RUNNING) AND classifier IN (agent)");
+    }
+
+    @Test
+    public void testSearchWithClassifierOnly() {
+        workflowResource.search(0, 100, "asc", "*", null, "agent, workflow", false);
+        verify(mockWorkflowService)
+                .searchWorkflows(0, 100, "asc", "*", "classifier IN (agent,workflow)");
+    }
+
+    @Test
+    public void testSearchV2WithClassifierAppendsToQuery() {
+        workflowResource.searchV2(0, 100, "asc", "*", null, "agent", false);
+        verify(mockWorkflowService)
+                .searchWorkflowsV2(0, 100, "agentHierarchy:DESC|asc", "*", "classifier IN (agent)");
+    }
+
+    @Test
+    public void testSearchWithTopLevelOnlyAppendsToQuery() {
+        workflowResource.search(0, 100, "asc", "*", "status IN (RUNNING)", null, true);
+        verify(mockWorkflowService)
+                .searchWorkflows(
+                        0, 100, "asc", "*", "status IN (RUNNING) AND parentWorkflowId=\"\"");
+    }
+
+    @Test
+    public void testSearchWithTopLevelOnlyAlone() {
+        workflowResource.search(0, 100, "asc", "*", null, null, true);
+        verify(mockWorkflowService).searchWorkflows(0, 100, "asc", "*", "parentWorkflowId=\"\"");
+    }
+
+    @Test
+    public void testSearchWithTopLevelOnlyAndClassifier() {
+        workflowResource.search(0, 100, "asc", "*", null, "agent", true);
+        verify(mockWorkflowService)
+                .searchWorkflows(
+                        0, 100, "asc", "*", "classifier IN (agent) AND parentWorkflowId=\"\"");
+    }
+
+    @Test
+    public void testSearchV2WithTopLevelOnlyAppendsToQuery() {
+        workflowResource.searchV2(0, 100, "asc", "*", null, null, true);
+        verify(mockWorkflowService).searchWorkflowsV2(0, 100, "asc", "*", "parentWorkflowId=\"\"");
     }
 
     @Test

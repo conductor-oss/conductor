@@ -1,21 +1,25 @@
 import { DataTable, NavLink, Paper } from "components";
 import { ColumnCustomType } from "components/ui/DataTable/types";
 import SectionHeader from "components/layout/SectionHeader";
+import SectionHeaderActions from "components/ui/layout/SectionHeaderActions";
+import AddIcon from "components/icons/AddIcon";
 import Header from "components/ui/Header";
 import NoDataComponent from "components/ui/NoDataComponent";
 import SectionContainer from "components/ui/layout/SectionContainer";
 import { useMemo } from "react";
 import { Helmet } from "react-helmet";
-import { AGENT_EXECUTIONS_URL } from "utils/constants/route";
+import { useNavigate } from "react-router";
+import { AGENT_DEFINITION_URL } from "utils/constants/route";
 import { useFetch } from "utils/query";
 import { AgentSummary } from "./types";
 
 const INTRO_CONTENT = `**Agents** are AI agent definitions compiled and run as native Conductor workflows by the embedded AgentSpan runtime.
 
-Deploy agents with the AgentSpan SDK or CLI, then run and observe them here.`;
+No agents deployed yet? Use **Create Agent** for a copy-and-run SDK guide.`;
 
 export default function AgentDefinitions() {
   const { data, isFetching, refetch } = useFetch<AgentSummary[]>("/agent/list");
+  const navigate = useNavigate();
 
   const columns = useMemo(
     () => [
@@ -24,11 +28,11 @@ export default function AgentDefinitions() {
         name: "name",
         label: "Agent name",
         tooltip: "Agent name",
-        renderer: (name: string) => (
+        renderer: (name: string, agent: AgentSummary) => (
           <NavLink
-            path={`${AGENT_EXECUTIONS_URL}?agentName=${encodeURIComponent(name)}`}
+            path={`${AGENT_DEFINITION_URL.BASE}/${encodeURIComponent(name.trim())}/${agent.version}`}
           >
-            {name}
+            {name.trim()}
           </NavLink>
         ),
       },
@@ -81,7 +85,25 @@ export default function AgentDefinitions() {
       <Helmet>
         <title>Agents</title>
       </Helmet>
-      <SectionHeader title="Agents" _deprecate_marginTop={0} />
+      <SectionHeader
+        title="Agents"
+        _deprecate_marginTop={0}
+        actions={
+          <SectionHeaderActions
+            buttons={[
+              {
+                label: "Create Agent",
+                color: "secondary",
+                onClick: () =>
+                  navigate(
+                    `${AGENT_DEFINITION_URL.NEW}?language=python&framework=native`,
+                  ),
+                startIcon: <AddIcon />,
+              },
+            ]}
+          />
+        }
+      />
       <SectionContainer>
         {/*@ts-ignore*/}
         <Paper variant="outlined">

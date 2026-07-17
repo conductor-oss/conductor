@@ -51,6 +51,20 @@ export interface SearchObj {
   freeText?: string;
   query?: string;
   queryId?: string;
+  /**
+   * Optional classifier filter (comma-separated, e.g. "workflow" or "agent").
+   * Passed through as a dedicated REST param (not folded into `query`) so it
+   * applies uniformly whether the caller built its query via dropdowns or
+   * hand-typed it in the Advanced search editor.
+   */
+  classifier?: string;
+  /**
+   * When true, restricts agent execution search to top-level agents only
+   * (server maps this to parentWorkflowId = ""). Sent by the "Hide sub-agent
+   * executions" toggle on the agent executions page. Unknown request params
+   * are dropped harmlessly by older backends that don't yet support it.
+   */
+  topLevelOnly?: boolean;
 }
 
 export interface TaskSearchObj extends Omit<SearchObj, "page"> {
@@ -252,7 +266,8 @@ export function useSearch<T = any>(
   return useQuery<T, FetchError>(
     [fetchContext.stack, pathRoot, searchObj],
     () => {
-      const { rowsPerPage, page, sort, freeText, query } = searchObj;
+      const { rowsPerPage, page, sort, freeText, query, classifier } =
+        searchObj;
       let params: IObject = {
         start: (page - 1) * rowsPerPage,
         size: rowsPerPage,
@@ -260,6 +275,14 @@ export function useSearch<T = any>(
         freeText: freeText,
         query: query,
       };
+      if (classifier) {
+        params = { ...params, classifier };
+      }
+      if (searchObj.topLevelOnly) {
+        // Restrict to top-level agents (server maps to parentWorkflowId = "").
+        // Older backends drop this unknown request param harmlessly.
+        params = { ...params, topLevelOnly: searchObj.topLevelOnly };
+      }
       if (searchObj.queryId) {
         params = { queryId: searchObj.queryId, ...params };
       }
@@ -372,16 +395,16 @@ export function useTaskQueueInfo(taskName: string): {
   };
 }
 
-export function useAction(
+export function useAction<TData = any, TVariables = any>(
   path: string,
   method = "post",
-  callbacks?: any,
+  callbacks?: UseMutationOptions<TData, FetchError, TVariables>,
   isText?: boolean,
 ) {
   const fetchContext = useFetchContext();
   const authHeaders = useAuthHeaders();
 
-  return useMutation(
+  return useMutation<TData, FetchError, TVariables>(
     (mutateParams) =>
       fetchWithContext(
         path,
@@ -462,6 +485,21 @@ export function useWorkflowNames(
   return useMemo(
     () => (workflows ? workflows.map((def) => def.name) : []),
     [workflows],
+  );
+}
+
+/** Registered AgentSpan definitions, used anywhere an agent—not a workflow—is selectable. */
+export function useAgentNames(
+  optionsOverride: Partial<UseQueryOptions<{ name: string }[], FetchError>> = {},
+): string[] {
+  const { data } = useFetch<{ name: string }[]>("/agent/list", {
+    staleTime: DEFAULT_STALE_TIME,
+    ...optionsOverride,
+  });
+
+  return useMemo(
+    () => (data ? data.map((agent) => agent.name).filter(Boolean) : []),
+    [data],
   );
 }
 
