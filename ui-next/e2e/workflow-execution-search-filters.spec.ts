@@ -56,6 +56,20 @@ const getMaskElements = (p: Page) => [
   p.locator("#linear-indeterminate-progress"),
 ];
 
+/**
+ * MUI commits an autocomplete selection on the next React render. Wait for its selected tag before
+ * moving on so a following action cannot race the state update in CI.
+ */
+const selectWorkflowStatus = async (page: Page, status: string) => {
+  const statusSelector = page.locator("#workflow-search-status");
+  await statusSelector.click();
+  await page.getByRole("option", { name: status }).click();
+  await expect(statusSelector).toContainText(
+    status.charAt(0) + status.slice(1).toLowerCase(),
+  );
+  await page.keyboard.press("Escape");
+};
+
 const screenshotAtAllViewports = async (
   page: Page,
   filename: string,
@@ -105,9 +119,7 @@ test.describe("Workflow execution search - filters visual snapshot", () => {
   }) => {
     await gotoExecutions(page);
 
-    await page.locator("#workflow-search-status").click();
-    await page.getByRole("option", { name: "COMPLETED" }).click();
-    await page.keyboard.press("Escape");
+    await selectWorkflowStatus(page, "COMPLETED");
 
     await screenshotAtAllViewports(
       page,
@@ -124,11 +136,8 @@ test.describe("Workflow execution search - filters visual snapshot", () => {
   }) => {
     await gotoExecutions(page);
 
-    await page.locator("#workflow-search-status").click();
-    await page.getByRole("option", { name: "COMPLETED" }).click();
-    await page.locator("#workflow-search-status").click();
-    await page.getByRole("option", { name: "FAILED" }).click();
-    await page.keyboard.press("Escape");
+    await selectWorkflowStatus(page, "COMPLETED");
+    await selectWorkflowStatus(page, "FAILED");
 
     await page
       .locator("#workflow-search-correlation-id")
@@ -148,9 +157,7 @@ test.describe("Workflow execution search - filters visual snapshot", () => {
   test("Should match search form after reset", async ({ page }) => {
     await gotoExecutions(page);
 
-    await page.locator("#workflow-search-status").click();
-    await page.getByRole("option", { name: "COMPLETED" }).click();
-    await page.keyboard.press("Escape");
+    await selectWorkflowStatus(page, "COMPLETED");
     await page.locator("#workflow-search-id").fill("some-id");
 
     await page.locator("#reset-workflow-btn").click();
@@ -167,9 +174,7 @@ test.describe("Workflow execution search - filters visual snapshot", () => {
   }) => {
     await gotoExecutions(page);
 
-    await page.locator("#workflow-search-status").click();
-    await page.getByRole("option", { name: "COMPLETED" }).click();
-    await page.keyboard.press("Escape");
+    await selectWorkflowStatus(page, "COMPLETED");
 
     await page.locator("#search-workflow-btn").click();
     await page.waitForTimeout(1000);
