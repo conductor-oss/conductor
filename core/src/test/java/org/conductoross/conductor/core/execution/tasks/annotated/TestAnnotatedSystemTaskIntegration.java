@@ -91,7 +91,11 @@ public class TestAnnotatedSystemTaskIntegration {
                 ParametersUtils parametersUtils,
                 MetadataDAO metadataDAO) {
             return new WorkerTaskAnnotationScanner(
-                    workers, asyncSystemTasks, parametersUtils, metadataDAO);
+                    workers,
+                    asyncSystemTasks,
+                    parametersUtils,
+                    metadataDAO,
+                    WorkerTaskAnnotationScanner.MODE_SYSTEM_TASK);
         }
     }
 

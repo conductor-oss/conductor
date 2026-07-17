@@ -13,6 +13,7 @@
 package org.conductoross.conductor.core.execution.tasks.annotated;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -36,30 +38,53 @@ import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
 /**
- * Spring component that scans for @WorkerTask annotated methods in Spring beans and adds them to
- * the existing asyncSystemTasks collection and taskMappersByTaskType map.
+ * Spring component that scans for @WorkerTask annotated methods in Spring beans.
+ *
+ * <p>Two execution modes, selected by {@code conductor.annotated-workers.mode}:
+ *
+ * <ul>
+ *   <li>{@code system-task} (default) — each annotated method is registered as an async system task
+ *       (added to the asyncSystemTasks collection) and executed in-engine by the system-task-worker
+ *       machinery. This is the historical behavior.
+ *   <li>{@code poll-worker} — annotated task types are NOT registered as system tasks, so the
+ *       decider queues them like any worker task, and {@link AnnotatedWorkerPollingHost} executes
+ *       them through the standard poll/update path ({@code ExecutionService.poll} acks the queue
+ *       message and moves the task to IN_PROGRESS before the method runs; recovery is the decider's
+ *       task-def response timeout). This is the same execution model orkes-conductor uses for these
+ *       task types, with in-process pollers instead of a remote workers process.
+ * </ul>
+ *
+ * <p>In both modes a TaskMapper is registered per task type so the decider can schedule it.
  */
 @Component
 public class WorkerTaskAnnotationScanner implements InitializingBean {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkerTaskAnnotationScanner.class);
 
+    public static final String MODE_PROPERTY = "conductor.annotated-workers.mode";
+    public static final String MODE_SYSTEM_TASK = "system-task";
+    public static final String MODE_POLL_WORKER = "poll-worker";
+
     private final List<AnnotatedSystemTaskWorker> annotatedSystemTaskWorkers;
     private final Set<WorkflowSystemTask> asyncSystemTasks;
     private final Map<String, TaskMapper> taskMappers = new HashMap<>();
+    private final List<AnnotatedWorkflowSystemTask> discoveredWorkers = new ArrayList<>();
     private final ParametersUtils parametersUtils;
     private final MetadataDAO metadataDAO;
+    private final String mode;
 
     public WorkerTaskAnnotationScanner(
             List<AnnotatedSystemTaskWorker> annotatedSystemTaskWorkers,
             @Qualifier(SystemTaskRegistry.ASYNC_SYSTEM_TASKS_QUALIFIER)
                     Set<WorkflowSystemTask> asyncSystemTasks,
             @Lazy ParametersUtils parametersUtils,
-            @Lazy MetadataDAO metadataDAO) {
+            @Lazy MetadataDAO metadataDAO,
+            @Value("${" + MODE_PROPERTY + ":" + MODE_SYSTEM_TASK + "}") String mode) {
         this.annotatedSystemTaskWorkers = annotatedSystemTaskWorkers;
         this.asyncSystemTasks = asyncSystemTasks;
         this.parametersUtils = parametersUtils;
         this.metadataDAO = metadataDAO;
+        this.mode = mode;
     }
 
     /**
@@ -95,9 +120,18 @@ public class WorkerTaskAnnotationScanner implements InitializingBean {
 
                         AnnotatedWorkflowSystemTask task =
                                 new AnnotatedWorkflowSystemTask(taskType, method, bean, annotation);
+                        discoveredWorkers.add(task);
 
-                        // Add to existing asyncSystemTasks collection
-                        asyncSystemTasks.add(task);
+                        if (MODE_POLL_WORKER.equals(mode)) {
+                            // Not a system task: the decider queues this type like any worker
+                            // task and AnnotatedWorkerPollingHost executes it via poll/update.
+                            LOGGER.info(
+                                    "Annotated task type {} registered for poll-worker execution",
+                                    taskType);
+                        } else {
+                            // Add to existing asyncSystemTasks collection
+                            asyncSystemTasks.add(task);
+                        }
 
                         // Register a TaskMapper for this task type so DeciderService can find it
                         AnnotatedSystemTaskMapper mapper =
@@ -131,5 +165,10 @@ public class WorkerTaskAnnotationScanner implements InitializingBean {
     @Bean
     public Map<String, TaskMapper> annotatedTaskSystems() {
         return taskMappers;
+    }
+
+    /** The annotated worker adapters discovered by the scan, regardless of mode. */
+    public List<AnnotatedWorkflowSystemTask> getDiscoveredWorkers() {
+        return List.copyOf(discoveredWorkers);
     }
 }
