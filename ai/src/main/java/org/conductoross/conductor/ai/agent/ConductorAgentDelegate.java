@@ -72,7 +72,7 @@ public class ConductorAgentDelegate {
             } else {
                 execution =
                         fromStatus(
-                                conductorAgentClient.getAgentStatus(statusRequest(executionId)),
+                                conductorAgentClient.getAgentStatus(executionId),
                                 asString(
                                         result.getOutputData()
                                                 .get(ConductorAgentResults.KEY_AGENT_NAME)));
@@ -116,8 +116,7 @@ public class ConductorAgentDelegate {
                             .executionId(executionId)
                             .body(Map.of("result", request.getPrompt()))
                             .build());
-            return fromStatus(
-                    conductorAgentClient.getAgentStatus(statusRequest(executionId)), null);
+            return fromStatus(conductorAgentClient.getAgentStatus(executionId), null);
         }
 
         if (StringUtils.isBlank(request.getName())) {
@@ -230,7 +229,12 @@ public class ConductorAgentDelegate {
 
     private ConductorAgentExecution fromStatus(
             ConductorAgentStatusResponse status, String knownAgentName) {
-        ConductorAgentState state = deriveState(status.getStatus(), status.isWaiting());
+        ConductorAgentState state =
+                status.isWaiting()
+                        ? ConductorAgentState.WAITING
+                        : status.getStatus() != null
+                                ? status.getStatus()
+                                : ConductorAgentState.RUNNING;
         Map<String, Object> output = status.isComplete() ? status.getOutput() : null;
         return ConductorAgentExecution.builder()
                 .executionId(status.getExecutionId())
@@ -253,28 +257,12 @@ public class ConductorAgentDelegate {
         return text instanceof CharSequence ? text.toString() : null;
     }
 
-    private static ConductorAgentState deriveState(String status, boolean waiting) {
-        if (waiting) {
-            return ConductorAgentState.WAITING;
-        }
-        if (status == null) {
-            return ConductorAgentState.RUNNING;
-        }
-        return switch (status) {
-            case "COMPLETED" -> ConductorAgentState.COMPLETED;
-            case "FAILED", "TIMED_OUT" -> ConductorAgentState.FAILED;
-            case "TERMINATED", "CANCELED" -> ConductorAgentState.CANCELED;
-            default -> ConductorAgentState.RUNNING;
-        };
-    }
-
     private void cancelBestEffort(String executionId, String reason) {
         if (StringUtils.isBlank(executionId)) {
             return;
         }
         try {
-            ConductorAgentStatusResponse status =
-                    conductorAgentClient.getAgentStatus(statusRequest(executionId));
+            ConductorAgentStatusResponse status = conductorAgentClient.getAgentStatus(executionId);
             if (status != null && status.isComplete()) {
                 return;
             }
@@ -350,10 +338,6 @@ public class ConductorAgentDelegate {
                 + task.getReferenceTaskName()
                 + ":"
                 + task.getIteration();
-    }
-
-    private static ConductorAgentStatusRequest statusRequest(String executionId) {
-        return ConductorAgentStatusRequest.builder().executionId(executionId).build();
     }
 
     private static long asLong(Object value, long defaultValue) {

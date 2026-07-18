@@ -19,7 +19,7 @@ import org.conductoross.conductor.ai.agent.ConductorAgentCancelRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentRespondRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
-import org.conductoross.conductor.ai.agent.ConductorAgentStatusRequest;
+import org.conductoross.conductor.ai.agent.ConductorAgentState;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
 import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
 import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
@@ -90,14 +90,16 @@ class ServiceConductorAgentClientTest {
                                 .status("COMPLETED")
                                 .complete(true)
                                 .output(Map.of("result", "done"))
+                                .pendingTool(
+                                        Map.of(
+                                                "tool_name", "publish_article",
+                                                "taskRefName", "approve_publish"))
                                 .startTime(10L)
                                 .endTime(20L)
                                 .build());
         ServiceConductorAgentClient client = new ServiceConductorAgentClient(agentService);
 
-        ConductorAgentStatusResponse status =
-                client.getAgentStatus(
-                        ConductorAgentStatusRequest.builder().executionId("exec-1").build());
+        ConductorAgentStatusResponse status = client.getAgentStatus("exec-1");
         client.respond(
                 ConductorAgentRespondRequest.builder()
                         .executionId("exec-1")
@@ -110,12 +112,48 @@ class ServiceConductorAgentClientTest {
                         .build());
 
         assertEquals("exec-1", status.getExecutionId());
-        assertEquals("COMPLETED", status.getStatus());
+        assertEquals(ConductorAgentState.COMPLETED, status.getStatus());
         assertTrue(status.isComplete());
         assertEquals(Map.of("result", "done"), status.getOutput());
+        assertEquals("publish_article", status.getPendingToolName());
+        assertEquals("approve_publish", status.getPendingToolTaskRefName());
         assertEquals(10L, status.getStartTime());
         assertEquals(20L, status.getEndTime());
         verify(agentService).respond("exec-1", Map.of("result", "approved"));
         verify(agentService).cancelAgent("exec-1", "parent canceled");
+    }
+
+    @Test
+    void statusContractUsesEnumAndPrimitiveTimestamps() throws Exception {
+        assertEquals(
+                ConductorAgentState.class,
+                ConductorAgentStatusResponse.class.getDeclaredField("status").getType());
+        assertEquals(
+                long.class,
+                ConductorAgentStatusResponse.class.getDeclaredField("startTime").getType());
+        assertEquals(
+                long.class,
+                ConductorAgentStatusResponse.class.getDeclaredField("endTime").getType());
+    }
+
+    @Test
+    void normalizesWorkflowStatusesAndMissingPendingToolFields() {
+        AgentService agentService = mock(AgentService.class);
+        when(agentService.getStatus("exec-2"))
+                .thenReturn(
+                        AgentStatusResponse.builder()
+                                .executionId("exec-2")
+                                .status("TIMED_OUT")
+                                .pendingTool(Map.of("taskRefName", "review_result"))
+                                .build());
+        ServiceConductorAgentClient client = new ServiceConductorAgentClient(agentService);
+
+        ConductorAgentStatusResponse status = client.getAgentStatus("exec-2");
+
+        assertEquals(ConductorAgentState.FAILED, status.getStatus());
+        assertEquals("review_result", status.getPendingToolName());
+        assertEquals("review_result", status.getPendingToolTaskRefName());
+        assertEquals(0L, status.getStartTime());
+        assertEquals(0L, status.getEndTime());
     }
 }

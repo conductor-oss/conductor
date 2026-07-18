@@ -71,7 +71,7 @@ class ConductorAgentDelegateTest {
         client.status =
                 ConductorAgentStatusResponse.builder()
                         .executionId("exec-1")
-                        .status("COMPLETED")
+                        .status(ConductorAgentState.COMPLETED)
                         .complete(true)
                         .output(Map.of("context", Map.of("language", "en"), "result", "done"))
                         .startTime(1000L)
@@ -106,7 +106,7 @@ class ConductorAgentDelegateTest {
         client.status =
                 ConductorAgentStatusResponse.builder()
                         .executionId("exec-1")
-                        .status("RUNNING")
+                        .status(ConductorAgentState.WAITING)
                         .waiting(true)
                         .pendingTool(Map.of("taskRefName", "approval"))
                         .build();
@@ -137,7 +137,7 @@ class ConductorAgentDelegateTest {
         client.status =
                 ConductorAgentStatusResponse.builder()
                         .executionId("exec-1")
-                        .status("TERMINATED")
+                        .status(ConductorAgentState.CANCELED)
                         .complete(true)
                         .reasonForIncompletion("parent canceled")
                         .startTime(1000L)
@@ -165,7 +165,7 @@ class ConductorAgentDelegateTest {
         client.status =
                 ConductorAgentStatusResponse.builder()
                         .executionId("exec-1")
-                        .status("RUNNING")
+                        .status(ConductorAgentState.RUNNING)
                         .build();
         Task task = task(Map.of("agentType", "conductor"));
         task.setOutputData(Map.of("executionId", "exec-1"));
@@ -197,7 +197,7 @@ class ConductorAgentDelegateTest {
         private ConductorAgentStatusResponse status =
                 ConductorAgentStatusResponse.builder()
                         .executionId("exec-1")
-                        .status("RUNNING")
+                        .status(ConductorAgentState.RUNNING)
                         .running(true)
                         .build();
         private int startCalls;
@@ -216,7 +216,7 @@ class ConductorAgentDelegateTest {
         }
 
         @Override
-        public ConductorAgentStatusResponse getAgentStatus(ConductorAgentStatusRequest request) {
+        public ConductorAgentStatusResponse getAgentStatus(String executionId) {
             statusCalls++;
             return status;
         }

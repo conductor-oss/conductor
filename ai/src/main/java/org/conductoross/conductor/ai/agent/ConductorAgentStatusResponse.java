@@ -30,7 +30,7 @@ import lombok.NoArgsConstructor;
 public class ConductorAgentStatusResponse {
 
     private String executionId;
-    private String status;
+    private ConductorAgentState status;
 
     @JsonProperty("isComplete")
     private boolean complete;
@@ -44,6 +44,8 @@ public class ConductorAgentStatusResponse {
     private Map<String, Object> output;
     private String reasonForIncompletion;
     private Map<String, Object> pendingTool;
-    private Long startTime;
-    private Long endTime;
+    private String pendingToolName;
+    private String pendingToolTaskRefName;
+    private long startTime;
+    private long endTime;
 }

@@ -20,7 +20,6 @@ import org.conductoross.conductor.ai.agent.ConductorAgentClient;
 import org.conductoross.conductor.ai.agent.ConductorAgentRespondRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
-import org.conductoross.conductor.ai.agent.ConductorAgentStatusRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
 import org.conductoross.conductor.ai.model.A2ACallRequest;
 import org.conductoross.conductor.ai.model.A2ACallResult;
@@ -127,7 +126,7 @@ public final class A2AWorkerTestSupport {
         }
 
         @Override
-        public ConductorAgentStatusResponse getAgentStatus(ConductorAgentStatusRequest request) {
+        public ConductorAgentStatusResponse getAgentStatus(String executionId) {
             throw unexpectedInvocation();
         }
 

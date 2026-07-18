@@ -22,7 +22,7 @@ public interface ConductorAgentClient extends AutoCloseable {
 
     ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request);
 
-    ConductorAgentStatusResponse getAgentStatus(ConductorAgentStatusRequest request);
+    ConductorAgentStatusResponse getAgentStatus(String executionId);
 
     void respond(ConductorAgentRespondRequest request);
 

@@ -12,12 +12,14 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.service;
 
+import java.util.Map;
+
 import org.conductoross.conductor.ai.agent.ConductorAgentCancelRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentClient;
 import org.conductoross.conductor.ai.agent.ConductorAgentRespondRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
-import org.conductoross.conductor.ai.agent.ConductorAgentStatusRequest;
+import org.conductoross.conductor.ai.agent.ConductorAgentState;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
 import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
 import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
@@ -55,9 +57,28 @@ public class ServiceConductorAgentClient implements ConductorAgentClient {
     }
 
     @Override
-    public ConductorAgentStatusResponse getAgentStatus(ConductorAgentStatusRequest request) {
-        AgentStatusResponse response = agentService.getStatus(request.getExecutionId());
-        return objectMapper.convertValue(response, ConductorAgentStatusResponse.class);
+    public ConductorAgentStatusResponse getAgentStatus(String executionId) {
+        AgentStatusResponse response = agentService.getStatus(executionId);
+        Map<String, Object> pendingTool = response.getPendingTool();
+        String pendingToolTaskRefName = value(pendingTool, "taskRefName");
+        String pendingToolName = value(pendingTool, "tool_name");
+        if (pendingToolName == null) {
+            pendingToolName = pendingToolTaskRefName;
+        }
+        return ConductorAgentStatusResponse.builder()
+                .executionId(response.getExecutionId())
+                .status(toState(response))
+                .complete(response.isComplete())
+                .running(response.isRunning())
+                .waiting(response.isWaiting())
+                .output(response.getOutput())
+                .reasonForIncompletion(response.getReasonForIncompletion())
+                .pendingTool(pendingTool)
+                .pendingToolName(pendingToolName)
+                .pendingToolTaskRefName(pendingToolTaskRefName)
+                .startTime(timestamp(response.getStartTime()))
+                .endTime(timestamp(response.getEndTime()))
+                .build();
     }
 
     @Override
@@ -68,5 +89,24 @@ public class ServiceConductorAgentClient implements ConductorAgentClient {
     @Override
     public void cancelAgent(ConductorAgentCancelRequest request) {
         agentService.cancelAgent(request.getExecutionId(), request.getReason());
+    }
+
+    private static ConductorAgentState toState(AgentStatusResponse response) {
+        if (response.isWaiting()) {
+            return ConductorAgentState.WAITING;
+        }
+        return ConductorAgentState.fromStatus(response.getStatus());
+    }
+
+    private static long timestamp(Long value) {
+        return value != null ? value : 0L;
+    }
+
+    private static String value(Map<String, Object> values, String key) {
+        if (values == null || values.get(key) == null) {
+            return null;
+        }
+        String value = values.get(key).toString();
+        return value.isBlank() ? null : value;
     }
 }
