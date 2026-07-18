@@ -22,6 +22,7 @@ import org.conductoross.conductor.model.file.StorageType;
 public class StubFileStorage implements FileStorage {
 
     private final Map<String, byte[]> files = new ConcurrentHashMap<>();
+    private final Map<String, String> abortedUploads = new ConcurrentHashMap<>();
 
     @Override
     public StorageType getStorageType() {
@@ -68,7 +69,16 @@ public class StubFileStorage implements FileStorage {
         files.putIfAbsent(storagePath, new byte[0]);
     }
 
+    @Override
+    public void abortMultipartUpload(String storagePath, String uploadId) {
+        abortedUploads.put(storagePath, uploadId);
+    }
+
     public void putFile(String storagePath, byte[] data) {
         files.put(storagePath, data);
+    }
+
+    public boolean wasMultipartUploadAborted(String storagePath, String uploadId) {
+        return uploadId.equals(abortedUploads.get(storagePath));
     }
 }

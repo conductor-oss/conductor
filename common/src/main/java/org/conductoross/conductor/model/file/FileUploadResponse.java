@@ -17,7 +17,7 @@ import java.util.Objects;
 /**
  * Response to {@code POST /api/files}. Carries the new {@code fileHandleId} plus a presigned upload
  * URL and its expiry. Status is {@code UPLOADING}; client confirms via {@code POST
- * /api/files/{fileId}/upload-complete}.
+ * /api/files/{workflowId}/{fileId}/upload-complete}.
  */
 public class FileUploadResponse {
 
