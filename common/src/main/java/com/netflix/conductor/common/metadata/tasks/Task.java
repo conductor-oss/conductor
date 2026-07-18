@@ -224,9 +224,6 @@ public class Task {
     @ProtoField(id = 46)
     private Map<String, String> runtimeMetadata = new HashMap<>();
 
-    @ProtoField(id = 47)
-    private String createdBy;
-
     public Task() {}
 
     /**
