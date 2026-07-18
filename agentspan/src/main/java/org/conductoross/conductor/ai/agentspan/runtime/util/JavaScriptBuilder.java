@@ -13,6 +13,7 @@
 package org.conductoross.conductor.ai.agentspan.runtime.util;
 
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -624,7 +625,9 @@ public class JavaScriptBuilder {
                         + "      result.push(errTask);"
                         + "      continue;"
                         + "    }"
-                        + "    var t = {name: n, taskReferenceName: tc.taskReferenceName || n,"
+                        // A model may call the same tool more than once in a turn. Dynamic fork
+                        // references must be unique or JOIN silently aliases results.
+                        + "    var t = {name: n, taskReferenceName: (tc.taskReferenceName || n) + '_' + i,"
                         + "             type: tc.type || 'SIMPLE', inputParameters: tc.inputParameters || {},"
                         + "             optional: true,"
                         + "             retryCount: 2, retryLogic: 'LINEAR_BACKOFF',"
@@ -748,6 +751,7 @@ public class JavaScriptBuilder {
                         + "      t.inputParameters._agent_state = agentState;"
                         + "      if (cliCfg[n]) { t.inputParameters._allowed_commands = cliCfg[n].allowedCommands; }"
                         + "    }"
+                        + "    t.inputParameters._agent_tool_name = n;"
                         + "    result.push(t);"
                         + "  }"
                         + "  return {dynamicTasks: result};");
@@ -947,22 +951,61 @@ public class JavaScriptBuilder {
      * string, or {@code ''} when there is no transfer call or it carries no message.
      */
     public static String extractTransferMessageScript() {
+        return extractTransferMessageScript(null);
+    }
+
+    /**
+     * Extract a transfer message only for an exact compiler-generated transfer name.
+     *
+     * <p>The allow-list is important: user tools are allowed to contain the transfer-looking
+     * substring in their name, and those ordinary tools must never annotate or route a swarm
+     * handoff merely because of their spelling.
+     */
+    public static String extractTransferMessageScript(Map<String, String> allowedTools) {
+        String allowedCheck =
+                allowedTools == null
+                        ? "name.indexOf('_transfer_to_') < 0"
+                        : "allowed[name] === undefined";
         // Java interop: tool call entries are Java Maps — use .get(k) with property fallback,
         // matching flatMergeContextScript.
         return iife(
-                "var calls = $.tool_calls;"
+                "var allowed="
+                        + toJson(allowedTools == null ? Map.of() : allowedTools)
+                        + ";var calls = $.tool_calls;"
                         + "if (calls == null) return '';"
                         + "for (var i = 0; i < calls.length; i++) {"
                         + "  var c = calls[i]; if (c == null) continue;"
                         + "  var name = (c.get ? c.get('name') : c.name);"
                         + "  name = (name == null) ? '' : String(name);"
-                        + "  if (name.indexOf('_transfer_to_') < 0) continue;"
+                        + "  if ("
+                        + allowedCheck
+                        + ") continue;"
                         + "  var params = (c.get ? c.get('inputParameters') : c.inputParameters);"
                         + "  if (params == null) return '';"
                         + "  var m = (params.get ? params.get('message') : params.message);"
                         + "  return (m == null) ? '' : String(m);"
                         + "}"
                         + "return '';");
+    }
+
+    /**
+     * Return the first valid generated SWARM transfer call. The allow-list is compiled from the
+     * source agent's permitted transitions, so a hallucinated or disallowed transfer is never a
+     * routing signal. The map shape is intentionally compiler-local; no agent-definition wire
+     * contract is involved.
+     */
+    public static String detectTransferScript(Map<String, String> allowedTools) {
+        return iife(
+                "var allowed="
+                        + toJson(allowedTools)
+                        + ";var calls=$.tool_calls||[];"
+                        + "for(var i=0;i<calls.length;i++){var c=calls[i]||{};"
+                        + "var n=c.get?c.get('name'):c.name; n=n==null?'':String(n);"
+                        + "if(allowed[n]===undefined) continue;"
+                        + "var p=c.get?c.get('inputParameters'):c.inputParameters;"
+                        + "var m=p==null?'':(p.get?p.get('message'):p.message);"
+                        + "return {is_transfer:true,transfer_to:allowed[n],transfer_message:m==null?'':String(m)};}"
+                        + "return {is_transfer:false,transfer_to:'',transfer_message:''};");
     }
 
     /** Build human task validation script for guardrails. */
@@ -1781,8 +1824,11 @@ public class JavaScriptBuilder {
         return iife(
                 "  var base = $.currentState || {};"
                         + "  var joinOutput = $.joinOutput || {};"
+                        + "  var toolResults = [];"
                         + "  for (var key in joinOutput) {"
                         + "    var taskOut = joinOutput[key] || {};"
+                        + "    var toolName = taskOut._agent_tool_name || key.replace(/_[0-9]+$/, '');"
+                        + "    toolResults.push({name: String(toolName), output: taskOut});"
                         + "    var updates = taskOut._state_updates;"
                         + "    if (updates) {"
                         + "      for (var k in updates) {"
@@ -1801,7 +1847,7 @@ public class JavaScriptBuilder {
                         + "      }"
                         + "    }"
                         + "  }"
-                        + "  return {mergedState: base};");
+                        + "  return {mergedState: base, toolResults: toolResults};");
     }
 
     /**

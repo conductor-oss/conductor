@@ -19,6 +19,8 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.*;
 
+import org.conductoross.conductor.ai.http.ExternalDataLimits;
+import org.conductoross.conductor.ai.http.OutboundTargetPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,21 +72,27 @@ public class ListApiToolsTask extends WorkflowSystemTask {
 
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
+    private final OutboundTargetPolicy outboundTargetPolicy;
 
-    public ListApiToolsTask() {
+    public ListApiToolsTask(OutboundTargetPolicy outboundTargetPolicy) {
         this(
                 new ObjectMapper(),
                 HttpClient.newBuilder()
                         .connectTimeout(Duration.ofSeconds(10))
-                        .followRedirects(HttpClient.Redirect.NORMAL)
-                        .build());
+                        .followRedirects(HttpClient.Redirect.NEVER)
+                        .build(),
+                outboundTargetPolicy);
     }
 
     /** Visible-for-testing constructor. */
-    ListApiToolsTask(ObjectMapper objectMapper, HttpClient httpClient) {
+    ListApiToolsTask(
+            ObjectMapper objectMapper,
+            HttpClient httpClient,
+            OutboundTargetPolicy outboundTargetPolicy) {
         super(TASK_TYPE);
         this.objectMapper = objectMapper;
         this.httpClient = httpClient;
+        this.outboundTargetPolicy = outboundTargetPolicy;
         logger.debug("ListApiToolsTask registered (task type={})", TASK_TYPE);
     }
 
@@ -147,6 +155,9 @@ public class ListApiToolsTask extends WorkflowSystemTask {
                     return;
                 }
             }
+            // The document controls its advertised API server. Validate it before the generated
+            // HTTP tools persist or execute that target.
+            outboundTargetPolicy.validate(baseUrl);
 
             Map<String, Object> output = new LinkedHashMap<>();
             output.put("tools", tools);
@@ -178,6 +189,7 @@ public class ListApiToolsTask extends WorkflowSystemTask {
      * paths relative to the origin of the given URL.
      */
     private FetchResult fetchSpec(String specUrl, Map<String, String> headers) throws Exception {
+        outboundTargetPolicy.validate(specUrl);
         // Try the provided URL first
         FetchResult result = attemptFetch(specUrl, headers);
         if (result != null) {
@@ -203,20 +215,17 @@ public class ListApiToolsTask extends WorkflowSystemTask {
     /** Returns a FetchResult if the response is valid JSON, otherwise null. */
     private FetchResult attemptFetch(String url, Map<String, String> headers) {
         try {
-            HttpRequest.Builder reqBuilder =
-                    HttpRequest.newBuilder().uri(URI.create(url)).timeout(REQUEST_TIMEOUT).GET();
-            if (headers != null) {
-                headers.forEach(reqBuilder::header);
-            }
-
-            HttpResponse<String> response =
-                    httpClient.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
+            HttpResponse<byte[]> response = sendWithValidatedRedirects(url, headers);
 
             if (response.statusCode() >= 400) {
                 return null;
             }
 
-            String body = response.body();
+            if (response.body().length > ExternalDataLimits.MAX_PAYLOAD_BYTES) {
+                throw new IllegalArgumentException(
+                        "OpenAPI document exceeds the 1 MiB payload limit");
+            }
+            String body = new String(response.body(), java.nio.charset.StandardCharsets.UTF_8);
             if (body == null || body.isBlank()) {
                 return null;
             }
@@ -233,10 +242,77 @@ public class ListApiToolsTask extends WorkflowSystemTask {
             }
             return new FetchResult(url, root);
 
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (Exception e) {
             logger.debug("Fetch attempt failed for {}: {}", url, e.getMessage());
             return null;
         }
+    }
+
+    /** Follows a bounded redirect chain only after each destination passes the outbound policy. */
+    private HttpResponse<byte[]> sendWithValidatedRedirects(String url, Map<String, String> headers)
+            throws Exception {
+        String currentUrl = url;
+        for (int redirects = 0; redirects <= 5; redirects++) {
+            outboundTargetPolicy.validate(currentUrl);
+            HttpRequest.Builder request =
+                    HttpRequest.newBuilder()
+                            .uri(URI.create(currentUrl))
+                            .timeout(REQUEST_TIMEOUT)
+                            .GET();
+            addHeaders(request, headers);
+            HttpResponse<byte[]> response =
+                    httpClient.send(request.build(), HttpResponse.BodyHandlers.ofByteArray());
+            if (response.statusCode() < 300 || response.statusCode() >= 400) {
+                return response;
+            }
+            String location = response.headers().firstValue("Location").orElse(null);
+            if (location == null) {
+                throw new IllegalArgumentException(
+                        "API spec redirect is missing a Location header");
+            }
+            String target = URI.create(currentUrl).resolve(location).toString();
+            outboundTargetPolicy.validate(target);
+            if (hasSensitiveHeaders(headers)
+                    && !outboundTargetPolicy.isSameOrigin(currentUrl, target)) {
+                throw new IllegalArgumentException(
+                        "Refusing to forward credentials across an API spec redirect");
+            }
+            currentUrl = target;
+        }
+        throw new IllegalArgumentException("API spec exceeded the redirect limit");
+    }
+
+    private void addHeaders(HttpRequest.Builder builder, Map<String, String> headers) {
+        if (headers == null) {
+            return;
+        }
+        headers.forEach(
+                (name, value) -> {
+                    if (name == null
+                            || value == null
+                            || name.indexOf('\r') >= 0
+                            || name.indexOf('\n') >= 0
+                            || value.indexOf('\r') >= 0
+                            || value.indexOf('\n') >= 0) {
+                        throw new IllegalArgumentException(
+                                "API spec headers must not contain CR or LF characters");
+                    }
+                    builder.header(name, value);
+                });
+    }
+
+    private boolean hasSensitiveHeaders(Map<String, String> headers) {
+        if (headers == null) {
+            return false;
+        }
+        return headers.keySet().stream()
+                .anyMatch(
+                        name ->
+                                "authorization".equalsIgnoreCase(name)
+                                        || "cookie".equalsIgnoreCase(name)
+                                        || "proxy-authorization".equalsIgnoreCase(name));
     }
 
     // -----------------------------------------------------------------------

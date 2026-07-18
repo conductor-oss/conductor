@@ -14,6 +14,7 @@ dependencies {
 
     // AgentSpan's real event listener depends on its SSE registry at test runtime.
     testImplementation 'org.springframework:spring-webmvc'
+    testImplementation 'com.squareup.okhttp3:mockwebserver:4.12.0'
 
     testImplementation 'org.graalvm.polyglot:polyglot:25.0.2'
     testImplementation 'org.graalvm.js:js:25.0.2'

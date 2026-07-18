@@ -246,25 +246,11 @@ public class AgentConfig {
      * present in the compiled WorkflowDef, so collectSimpleTaskNames misses them.
      */
     public void collectDynamicTransferNames(Set<String> names) {
-        // Swarm: {source}_transfer_to_{peer} for each pair
-        if (this.getStrategy() == Strategy.SWARM
-                && this.getAgents() != null
-                && !this.getAgents().isEmpty()) {
-            List<String> allNames = new ArrayList<>();
-            allNames.add(this.getName());
-            for (AgentConfig sub : this.getAgents()) {
-                allNames.add(sub.getName());
-            }
-            for (String src : allNames) {
-                for (String dst : allNames) {
-                    if (!src.equals(dst)) {
-                        names.add(src + "_transfer_to_" + dst);
-                    }
-                }
-            }
-        }
+        // SWARM transfer calls are compiler-owned control signals. They are intentionally absent
+        // from required worker lists and task-definition registration.
         // Hybrid: {parent}_transfer_to_{sub} for agents with both tools and sub-agents
-        if (this.getAgents() != null
+        if (this.getStrategy() != Strategy.SWARM
+                && this.getAgents() != null
                 && !this.getAgents().isEmpty()
                 && this.getTools() != null
                 && !this.getTools().isEmpty()) {

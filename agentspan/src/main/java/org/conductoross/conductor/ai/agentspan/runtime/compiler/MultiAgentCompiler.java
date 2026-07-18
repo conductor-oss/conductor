@@ -23,6 +23,7 @@ import org.conductoross.conductor.ai.agentspan.runtime.util.SchemaSubsetValidato
 import org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowTaskUtils;
 import org.conductoross.conductor.common.metadata.agent.AgentConfig;
 import org.conductoross.conductor.common.metadata.agent.GuardrailConfig;
+import org.conductoross.conductor.common.metadata.agent.HandoffConfig;
 import org.conductoross.conductor.common.metadata.agent.ModelParser;
 import org.conductoross.conductor.common.metadata.agent.ModelParser.ParsedModel;
 import org.conductoross.conductor.common.metadata.agent.ToolConfig;
@@ -1160,6 +1161,7 @@ public class MultiAgentCompiler {
     // ── Swarm strategy ──────────────────────────────────────────────
 
     private WorkflowDef compileSwarm(AgentConfig config) {
+        validateSwarmHandoffs(config);
         WorkflowDef wf = agentCompiler.createWorkflow(config);
         wf.setDescription("Swarm orchestration: " + config.getName());
         AgentCompiler.ResolvedInstructions instructionsPlan =
@@ -1181,6 +1183,7 @@ public class MultiAgentCompiler {
                         .temperature(config.getTemperature())
                         .maxTokens(config.getMaxTokens())
                         .thinkingConfig(config.getThinkingConfig())
+                        .allowedTransitions(config.getAllowedTransitions())
                         .build();
 
         List<AgentConfig> allSwarmAgents = new ArrayList<>();
@@ -1213,6 +1216,7 @@ public class MultiAgentCompiler {
         initInputs.put("last_response", "");
         initInputs.put("is_transfer", false);
         initInputs.put("transfer_to", "");
+        initInputs.put("_last_tool_results", List.of());
         initInputs.put("_agent_state", "${" + swarmCtxResolveRef + ".output.result}");
         initVar.setInputParameters(initInputs);
 
@@ -1227,29 +1231,58 @@ public class MultiAgentCompiler {
 
         // Parent agent as case "0", sub-agents shifted to 1, 2, ...
         Map<String, List<WorkflowTask>> cases = new LinkedHashMap<>();
-        List<ToolConfig> parentTransferTools = buildTransferToolsFor(parentAsAgent, allSwarmAgents);
+        List<ToolConfig> parentTransferTools =
+                buildTransferToolsFor(
+                        parentAsAgent, allSwarmAgents, config.getAllowedTransitions());
         cases.put("0", buildSwarmCaseTasks(config, parentAsAgent, 0, parentTransferTools));
         for (int i = 0; i < numAgents; i++) {
             AgentConfig sub = config.getAgents().get(i);
-            List<ToolConfig> subTransferTools = buildTransferToolsFor(sub, allSwarmAgents);
+            List<ToolConfig> subTransferTools =
+                    buildTransferToolsFor(sub, allSwarmAgents, config.getAllowedTransitions());
             List<WorkflowTask> caseTasks =
                     buildSwarmCaseTasks(config, sub, i + 1, subTransferTools);
             cases.put(String.valueOf(i + 1), caseTasks);
         }
         switchTask.setDecisionCases(cases);
 
-        // 3. Handoff check worker — checks transfer first, then conditions
+        // 3. Handoff resolver. Generated transfer tools are control signals, not workers.  The
+        // source case has already merged its context and appended its annotation before this
+        // resolver selects the next active agent.
         String handoffRef = toRef(config.getName()) + "_handoff_check";
         WorkflowTask handoffTask = new WorkflowTask();
-        handoffTask.setName(toRef(config.getName()) + "_handoff_check");
+        handoffTask.setName("INLINE");
         handoffTask.setTaskReferenceName(handoffRef);
-        handoffTask.setType("SIMPLE");
+        handoffTask.setType("INLINE");
         Map<String, Object> handoffInputs = new LinkedHashMap<>();
+        handoffInputs.put("evaluatorType", "graaljs");
+        handoffInputs.put("expression", swarmHandoffResolverScript(config, allSwarmAgents));
         handoffInputs.put("result", "${workflow.variables.last_response}");
         handoffInputs.put("active_agent", "${workflow.variables.active_agent}");
         handoffInputs.put("conversation", "${workflow.variables.conversation}");
         handoffInputs.put("is_transfer", "${workflow.variables.is_transfer}");
         handoffInputs.put("transfer_to", "${workflow.variables.transfer_to}");
+        handoffInputs.put("tool_results", "${workflow.variables._last_tool_results}");
+        List<WorkflowTask> conditionTasks = new ArrayList<>();
+        if (config.getHandoffs() != null) {
+            for (int i = 0; i < config.getHandoffs().size(); i++) {
+                HandoffConfig condition = config.getHandoffs().get(i);
+                if (!"on_condition".equals(condition.getType())) continue;
+                String conditionRef = toRef(config.getName()) + "_handoff_condition_" + i;
+                WorkflowTask conditionTask = new WorkflowTask();
+                conditionTask.setName(condition.getTaskName());
+                conditionTask.setTaskReferenceName(conditionRef);
+                conditionTask.setType("SIMPLE");
+                Map<String, Object> conditionInputs = new LinkedHashMap<>();
+                conditionInputs.put("result", "${workflow.variables.last_response}");
+                conditionInputs.put("conversation", "${workflow.variables.conversation}");
+                conditionInputs.put("context", "${workflow.variables._agent_state}");
+                conditionInputs.put("active_agent", "${workflow.variables.active_agent}");
+                conditionInputs.put("tool_results", "${workflow.variables._last_tool_results}");
+                conditionTask.setInputParameters(conditionInputs);
+                conditionTasks.add(conditionTask);
+                handoffInputs.put("condition_" + i, ref(conditionRef + ".output"));
+            }
+        }
         handoffTask.setInputParameters(handoffInputs);
 
         // Update active_agent
@@ -1257,11 +1290,14 @@ public class MultiAgentCompiler {
         updateActive.setType("SET_VARIABLE");
         updateActive.setTaskReferenceName(toRef(config.getName()) + "_update_active");
         updateActive.setInputParameters(
-                Map.of("active_agent", ref(handoffRef + ".output.active_agent")));
+                Map.of("active_agent", ref(handoffRef + ".output.result.active_agent")));
 
         // 4. Optional stop_when / termination workers
-        List<WorkflowTask> loopTasks =
-                new ArrayList<>(List.of(switchTask, handoffTask, updateActive));
+        List<WorkflowTask> loopTasks = new ArrayList<>();
+        loopTasks.add(switchTask);
+        loopTasks.addAll(conditionTasks);
+        loopTasks.add(handoffTask);
+        loopTasks.add(updateActive);
 
         String stopWhenRef = null;
         if (config.getStopWhen() != null) {
@@ -1285,7 +1321,7 @@ public class MultiAgentCompiler {
         StringBuilder termCondition = new StringBuilder();
         termCondition.append(
                 String.format(
-                        "if ( $.%s['iteration'] < %d && $.%s['handoff'] == true",
+                        "if ( $.%s['iteration'] < %d && $.%s['result'].handoff == true",
                         loopRef, maxTurns, handoffRef));
         if (stopWhenRef != null) {
             termCondition.append(String.format(" && $.%s.should_continue == true", stopWhenRef));
@@ -1297,7 +1333,7 @@ public class MultiAgentCompiler {
 
         Map<String, Object> loopInputs = new LinkedHashMap<>();
         loopInputs.put(loopRef, "${" + loopRef + "}");
-        loopInputs.put(handoffRef, "${" + handoffRef + "}");
+        loopInputs.put(handoffRef, "${" + handoffRef + ".output}");
         if (stopWhenRef != null) loopInputs.put(stopWhenRef, "${" + stopWhenRef + "}");
         if (terminationRef != null) loopInputs.put(terminationRef, "${" + terminationRef + "}");
 
@@ -1350,10 +1386,28 @@ public class MultiAgentCompiler {
     }
 
     /** Build transfer_to_<peer> tools for a swarm agent, excluding itself. */
-    List<ToolConfig> buildTransferToolsFor(AgentConfig self, List<AgentConfig> allSwarmAgents) {
+    List<ToolConfig> buildTransferToolsFor(
+            AgentConfig self,
+            List<AgentConfig> allSwarmAgents,
+            Map<String, List<String>> swarmTransitions) {
         List<ToolConfig> transferTools = new ArrayList<>();
+        Set<String> declaredToolNames = new HashSet<>();
+        if (self.getTools() != null) {
+            for (ToolConfig tool : self.getTools()) {
+                if (tool.getName() != null) {
+                    declaredToolNames.add(tool.getName());
+                }
+            }
+        }
         for (AgentConfig peer : allSwarmAgents) {
             if (peer.getName().equals(self.getName())) continue;
+            if (!isTransitionAllowed(self, peer.getName(), swarmTransitions)) continue;
+            String transferName = self.getName() + "_transfer_to_" + peer.getName();
+            if (declaredToolNames.contains(transferName)) {
+                throw new IllegalArgumentException(
+                        "SWARM tool name collides with compiler-owned transfer control: "
+                                + transferName);
+            }
             String peerDesc =
                     peer.getDescription() != null && !peer.getDescription().isEmpty()
                             ? peer.getDescription()
@@ -1362,7 +1416,7 @@ public class MultiAgentCompiler {
                                     : "Agent: " + peer.getName());
             ToolConfig transferTool =
                     ToolConfig.builder()
-                            .name(self.getName() + "_transfer_to_" + peer.getName())
+                            .name(transferName)
                             .description(
                                     "Transfer the conversation to "
                                             + peer.getName()
@@ -1385,11 +1439,137 @@ public class MultiAgentCompiler {
                                                                     + ": what they should do next and any context they need.")),
                                             "required",
                                             List.of("message")))
-                            .toolType("worker")
+                            // This is deliberately not a worker.  The swarm compiler detects this
+                            // LLM-visible tool call before normal tool dispatch and uses it as a
+                            // routing control signal.
+                            .toolType("handoff")
                             .build();
             transferTools.add(transferTool);
         }
         return transferTools;
+    }
+
+    private static boolean isTransitionAllowed(
+            AgentConfig source, String target, Map<String, List<String>> swarmTransitions) {
+        Map<String, List<String>> transitions = source.getAllowedTransitions();
+        if ((transitions == null || transitions.isEmpty()) && swarmTransitions != null) {
+            transitions = swarmTransitions;
+        }
+        if (transitions == null || transitions.isEmpty()) {
+            return true;
+        }
+        List<String> allowed = transitions.get(source.getName());
+        return allowed != null && allowed.stream().anyMatch(target::equals);
+    }
+
+    private static Map<String, String> transferToolNames(List<ToolConfig> transferTools) {
+        Map<String, String> targets = new LinkedHashMap<>();
+        for (ToolConfig tool : transferTools) {
+            String marker = "_transfer_to_";
+            int index = tool.getName().indexOf(marker);
+            if (index >= 0)
+                targets.put(tool.getName(), tool.getName().substring(index + marker.length()));
+        }
+        return targets;
+    }
+
+    /** Validate the declarative SWARM contract without changing its wire representation. */
+    private static void validateSwarmHandoffs(AgentConfig config) {
+        if (config.getHandoffs() == null) return;
+        Set<String> targets = new HashSet<>();
+        targets.add(config.getName());
+        if (config.getAgents() != null) {
+            for (AgentConfig agent : config.getAgents()) targets.add(agent.getName());
+        }
+        for (HandoffConfig handoff : config.getHandoffs()) {
+            if (handoff == null
+                    || handoff.getType() == null
+                    || !Set.of("on_tool_result", "on_text_mention", "on_condition")
+                            .contains(handoff.getType())) {
+                throw new IllegalArgumentException(
+                        "SWARM handoff type must be on_tool_result, on_text_mention, or on_condition");
+            }
+            if (handoff.getTarget() == null || !targets.contains(handoff.getTarget())) {
+                throw new IllegalArgumentException(
+                        "SWARM handoff target must name a swarm agent: " + handoff.getTarget());
+            }
+            switch (handoff.getType()) {
+                case "on_tool_result" -> {
+                    if (isBlank(handoff.getToolName()) || isBlank(handoff.getResultContains())) {
+                        throw new IllegalArgumentException(
+                                "on_tool_result requires toolName and resultContains");
+                    }
+                }
+                case "on_text_mention" -> {
+                    if (isBlank(handoff.getText())) {
+                        throw new IllegalArgumentException("on_text_mention requires text");
+                    }
+                }
+                case "on_condition" -> {
+                    if (isBlank(handoff.getTaskName())) {
+                        throw new IllegalArgumentException(
+                                "on_condition requires a nonblank taskName");
+                    }
+                }
+                default -> throw new IllegalStateException("validated above");
+            }
+        }
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    /**
+     * First-wins handoff resolver. Explicit model transfers take precedence; declarative text and
+     * tool-result matches then follow configuration order. The returned map is consumed by the
+     * outer loop after the source case has made the transcript/state durable.
+     */
+    private static String swarmHandoffResolverScript(
+            AgentConfig config, List<AgentConfig> allAgents) {
+        Map<String, Integer> indexes = new LinkedHashMap<>();
+        for (int i = 0; i < allAgents.size(); i++) indexes.put(allAgents.get(i).getName(), i);
+        List<Map<String, Object>> rules = new ArrayList<>();
+        if (config.getHandoffs() != null) {
+            for (HandoffConfig h : config.getHandoffs()) {
+                Map<String, Object> rule = new LinkedHashMap<>();
+                rule.put("type", h.getType());
+                rule.put("target", h.getTarget());
+                rule.put("toolName", h.getToolName());
+                rule.put("resultContains", h.getResultContains());
+                rule.put("text", h.getText());
+                rule.put("index", rules.size());
+                rules.add(rule);
+            }
+        }
+        return JavaScriptBuilder.iife(
+                "var indexes="
+                        + JavaScriptBuilder.toJson(indexes)
+                        + ";"
+                        + "var rules="
+                        + JavaScriptBuilder.toJson(rules)
+                        + ";"
+                        + "var active=$.active_agent == null ? '0' : String($.active_agent);"
+                        + "var has=function(v){return v!==null&&v!==undefined&&String(v)!=='';};"
+                        // Tool outputs can be text, objects, arrays, or null. JSON is the
+                        // stable representation for structured successful JOIN outputs; plain
+                        // String(object) would only produce '[object Object]' and make a
+                        // declarative resultContains rule silently miss.
+                        + "var text=function(v){if(v==null)return '';if(typeof v==='string')return v;"
+                        + "try{return JSON.stringify(v);}catch(e){return String(v);}};"
+                        + "if (($.is_transfer===true||$.is_transfer==='true') && has($.transfer_to)"
+                        + " && indexes[String($.transfer_to)]!==undefined) return {handoff:true,active_agent:String(indexes[String($.transfer_to)])};"
+                        + "var result=$.result==null?'':String($.result).toLowerCase();"
+                        + "var trs=$.tool_results||[];"
+                        + "for(var i=0;i<rules.length;i++){var r=rules[i]; var hit=false;"
+                        + " if(r.type==='on_text_mention') hit=result.indexOf(String(r.text).toLowerCase())>=0;"
+                        + " else if(r.type==='on_tool_result'){for(var j=0;j<trs.length;j++){var x=trs[j]||{};"
+                        + " var n=x.get?x.get('name'):x.name; var o=x.get?x.get('output'):x.output;"
+                        + " if(String(n)===String(r.toolName)&&text(o).toLowerCase().indexOf(String(r.resultContains).toLowerCase())>=0){hit=true;break;}}}"
+                        + " else if(r.type==='on_condition'){var c=$['condition_'+r.index];"
+                        + " var h=c&&(c.get?c.get('handoff'):c.handoff); if(typeof h!=='boolean') throw 'Invalid on_condition output: handoff must be boolean'; hit=h;}"
+                        + " if(hit) return {handoff:true,active_agent:String(indexes[r.target])};}"
+                        + "return {handoff:true,active_agent:active};");
     }
 
     /**
@@ -1444,19 +1624,29 @@ public class MultiAgentCompiler {
         // LLM task
         WorkflowTask llmTask = agentCompiler.buildLlmTask(agent, parsed, llmRef, toolSpecs);
 
-        // Tool call routing
+        // Detect a transfer before ordinary tool dispatch. This is compiler-owned routing logic;
+        // transfer tools never become dynamically forked SIMPLE tasks.
+        WorkflowTask checkTransferTask = new WorkflowTask();
+        checkTransferTask.setName("INLINE");
+        checkTransferTask.setTaskReferenceName(checkTransferRef);
+        checkTransferTask.setType("INLINE");
+        checkTransferTask.setInputParameters(
+                Map.of(
+                        "evaluatorType", "graaljs",
+                        "tool_calls", ref(llmRef + ".output.toolCalls"),
+                        "expression",
+                                JavaScriptBuilder.detectTransferScript(
+                                        transferToolNames(transferTools))));
+
+        // Tool call routing (the transfer detector makes this a no-op for a transfer turn).
         WorkflowTask toolRouter =
                 tc.buildToolCallRouting(
                         agent.getName(), llmRef, allTools, hasApproval, agent.getModel());
-
-        // Check-transfer worker
-        WorkflowTask checkTransferTask = new WorkflowTask();
-        checkTransferTask.setName(agent.getName() + "_check_transfer");
-        checkTransferTask.setTaskReferenceName(checkTransferRef);
-        checkTransferTask.setType("SIMPLE");
-        Map<String, Object> ctInputs = new LinkedHashMap<>();
-        ctInputs.put("tool_calls", ref(llmRef + ".output.toolCalls"));
-        checkTransferTask.setInputParameters(ctInputs);
+        toolRouter
+                .getInputParameters()
+                .put("isTransfer", ref(checkTransferRef + ".output.result.is_transfer"));
+        toolRouter.setExpression(
+                "$.isTransfer == true ? 'none' : ($.toolCalls != null && $.toolCalls.length > 0 ? 'tool_call' : 'none')");
 
         // DoWhile loop: continue while tool calls present and no transfer
         String loopRef = agent.getName() + "_loop";
@@ -1465,7 +1655,7 @@ public class MultiAgentCompiler {
                 String.format(
                         "($.%s['toolCalls'] != null && $.%s['toolCalls'].length > 0)",
                         llmRef, llmRef);
-        String notTransfer = String.format("($.%s.is_transfer != true)", checkTransferRef);
+        String notTransfer = String.format("($.%s.result.is_transfer != true)", checkTransferRef);
         String termCondition =
                 String.format(
                         "if ( $.%s['iteration'] < %d && ($.%s['finishReason'] == 'LENGTH' || $.%s['finishReason'] == 'MAX_TOKENS' || (%s && %s)) ) { true; } else { false; }",
@@ -1479,7 +1669,7 @@ public class MultiAgentCompiler {
                 agentCompiler.buildDoWhile(
                         loopRef,
                         termCondition,
-                        List.of(llmTask, toolRouter, checkTransferTask),
+                        List.of(llmTask, checkTransferTask, toolRouter),
                         loopInputs);
 
         // Initialize _agent_state for ToolContext.state from the caller-provided context
@@ -1512,7 +1702,9 @@ public class MultiAgentCompiler {
                 Map.of(
                         "evaluatorType", "graaljs",
                         "tool_calls", ref(llmRef + ".output.toolCalls"),
-                        "expression", JavaScriptBuilder.extractTransferMessageScript()));
+                        "expression",
+                                JavaScriptBuilder.extractTransferMessageScript(
+                                        transferToolNames(transferTools))));
 
         // Build the sub-workflow
         WorkflowDef subWf = agentCompiler.createWorkflow(agent);
@@ -1522,12 +1714,13 @@ public class MultiAgentCompiler {
         Map<String, Object> swarmAgentOutputs = new LinkedHashMap<>();
         swarmAgentOutputs.put("result", ref(llmRef + ".output.result"));
         swarmAgentOutputs.put("finishReason", ref(llmRef + ".output.finishReason"));
-        swarmAgentOutputs.put("is_transfer", ref(checkTransferRef + ".output.is_transfer"));
-        swarmAgentOutputs.put("transfer_to", ref(checkTransferRef + ".output.transfer_to"));
+        swarmAgentOutputs.put("is_transfer", ref(checkTransferRef + ".output.result.is_transfer"));
+        swarmAgentOutputs.put("transfer_to", ref(checkTransferRef + ".output.result.transfer_to"));
         swarmAgentOutputs.put("transfer_message", ref(transferMsgRef + ".output.result"));
         // Round-trip structured state: tools merge into _agent_state during the loop, and the
         // swarm parent merges this back into its own _agent_state after each turn.
         swarmAgentOutputs.put("context", "${workflow.variables._agent_state}");
+        swarmAgentOutputs.put("tool_results", "${workflow.variables._last_tool_results}");
         subWf.setOutputParameters(swarmAgentOutputs);
         // Backfill task.name on system tasks (SET_VARIABLE, DO_WHILE, INLINE)
         // so Conductor's WorkflowSweeper doesn't trip on "TaskDef name cannot
@@ -1607,14 +1800,18 @@ public class MultiAgentCompiler {
         }
         transferLlm.setInputParameters(llmInputs);
 
-        // 4. Check-transfer worker
+        // 4. Compiler-owned transfer detection; no generated SIMPLE worker is required.
         WorkflowTask checkTransferTask = new WorkflowTask();
-        checkTransferTask.setName(agent.getName() + "_check_transfer");
+        checkTransferTask.setName("INLINE");
         checkTransferTask.setTaskReferenceName(checkTransferRef);
-        checkTransferTask.setType("SIMPLE");
-        Map<String, Object> ctInputs = new LinkedHashMap<>();
-        ctInputs.put("tool_calls", ref(transferLlmRef + ".output.toolCalls"));
-        checkTransferTask.setInputParameters(ctInputs);
+        checkTransferTask.setType("INLINE");
+        checkTransferTask.setInputParameters(
+                Map.of(
+                        "evaluatorType", "graaljs",
+                        "tool_calls", ref(transferLlmRef + ".output.toolCalls"),
+                        "expression",
+                                JavaScriptBuilder.detectTransferScript(
+                                        transferToolNames(transferTools))));
 
         // 5. Extract the transfer message from the transfer LLM's tool calls so the parent can
         // record the delegation intent in the conversation.
@@ -1626,7 +1823,9 @@ public class MultiAgentCompiler {
                 Map.of(
                         "evaluatorType", "graaljs",
                         "tool_calls", ref(transferLlmRef + ".output.toolCalls"),
-                        "expression", JavaScriptBuilder.extractTransferMessageScript()));
+                        "expression",
+                                JavaScriptBuilder.extractTransferMessageScript(
+                                        transferToolNames(transferTools))));
 
         // Build the wrapper sub-workflow
         WorkflowDef subWf = agentCompiler.createWorkflow(agent);
@@ -1636,12 +1835,13 @@ public class MultiAgentCompiler {
         Map<String, Object> hierOutputs = new LinkedHashMap<>();
         hierOutputs.put("result", ref(innerRef + ".output.result"));
         hierOutputs.put("finishReason", "stop");
-        hierOutputs.put("is_transfer", ref(checkTransferRef + ".output.is_transfer"));
-        hierOutputs.put("transfer_to", ref(checkTransferRef + ".output.transfer_to"));
+        hierOutputs.put("is_transfer", ref(checkTransferRef + ".output.result.is_transfer"));
+        hierOutputs.put("transfer_to", ref(checkTransferRef + ".output.result.transfer_to"));
         hierOutputs.put("transfer_message", ref(transferMsgRef + ".output.result"));
         // Round-trip structured state: every inner strategy outputs `context`; without this the
         // swarm parent's _agent_state merge always sees null and state never accumulates.
         hierOutputs.put("context", ref(innerRef + ".output.context"));
+        hierOutputs.put("tool_results", ref(innerRef + ".output.tool_results"));
         subWf.setOutputParameters(hierOutputs);
         // See compileSwarmAgentWorkflow above — backfill task names so the
         // embedded SUB_WORKFLOW passes Conductor's null-name validation.
@@ -1992,6 +2192,7 @@ public class MultiAgentCompiler {
         setInputs.put("last_response", responseRef);
         setInputs.put("is_transfer", ref(subRef + ".output.is_transfer"));
         setInputs.put("transfer_to", ref(subRef + ".output.transfer_to"));
+        setInputs.put("_last_tool_results", ref(subRef + ".output.tool_results"));
         setInputs.put("_agent_state", "${" + sCtxMergeRef + ".output.result}");
         setVar.setInputParameters(setInputs);
         caseTasks.add(setVar);

@@ -34,7 +34,7 @@ export default function LeftPanelTabs({
   const isAgentWorkflow = isAgentWorkflowExecution(execution);
 
   // Agent-classified executions get a curated tab set that matches
-  // AgentSpan's own UI 1:1: Agent Execution, Debug View (Diagram, relabeled),
+  // AgentSpan's own UI 1:1: Agent Execution, Workflow View (Diagram, relabeled),
   // Task List, Timeline, Agent Definition (Summary, relabeled), JSON — no
   // Workflow Input/Output, Variables, or Tasks to Domain. Regular workflows
   // keep the full Conductor tab set unchanged.
@@ -47,7 +47,7 @@ export default function LeftPanelTabs({
           value: ExecutionTabs.AGENT_EXECUTION_TAB,
         },
         {
-          label: "Debug View",
+          label: "Workflow View",
           onClick: () => onChangeExecutionTab(ExecutionTabs.DIAGRAM_TAB),
           value: ExecutionTabs.DIAGRAM_TAB,
         },

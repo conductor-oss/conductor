@@ -1912,7 +1912,9 @@ public class ToolCompiler {
         setTask.setType("SET_VARIABLE");
         setTask.setTaskReferenceName(setRef);
         setTask.setInputParameters(
-                Map.of("_agent_state", "${" + mergeRef + ".output.result.mergedState}"));
+                Map.of(
+                        "_agent_state", "${" + mergeRef + ".output.result.mergedState}",
+                        "_last_tool_results", "${" + mergeRef + ".output.result.toolResults}"));
 
         return List.of(mergeTask, setTask);
     }

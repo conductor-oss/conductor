@@ -167,7 +167,8 @@ public class AgentService {
         stampAgentDef(metadata, request, config);
         def.setMetadata(metadata);
 
-        Set<String> workerNames = def.collectSimpleTaskNames();
+        Set<String> workerNames = new LinkedHashSet<>(def.collectSimpleTaskNames());
+        collectDeclaredWorkerNames(config, workerNames);
         config.collectDynamicTransferNames(workerNames);
         List<String> requiredWorkers = new ArrayList<>(workerNames);
         Map<String, Object> defMap = MAPPER.convertValue(def, Map.class);
@@ -270,7 +271,8 @@ public class AgentService {
         // 3. Register task definitions for worker tools
         registerTaskDefinitions(config);
 
-        Set<String> deployWorkerNames = def.collectSimpleTaskNames();
+        Set<String> deployWorkerNames = new LinkedHashSet<>(def.collectSimpleTaskNames());
+        collectDeclaredWorkerNames(config, deployWorkerNames);
         config.collectDynamicTransferNames(deployWorkerNames);
         return AgentStartResponse.builder()
                 .agentName(def.getName())
@@ -936,6 +938,38 @@ public class AgentService {
         collectAndRegisterTasks(config, registered);
     }
 
+    /**
+     * Dynamic worker-tool dispatch is emitted by a runtime fork and is therefore absent from {@link
+     * WorkflowDef#collectSimpleTaskNames()}. Keep the compile/deploy contract truthful by reporting
+     * those user-owned workers explicitly. Compiler-owned SWARM transfer controls are deliberately
+     * excluded; only declared worker tools and declared condition workers need a poller.
+     */
+    private static void collectDeclaredWorkerNames(AgentConfig config, Set<String> names) {
+        if (config.getTools() != null) {
+            for (ToolConfig tool : config.getTools()) {
+                if ("worker".equals(tool.getToolType())
+                        && tool.getName() != null
+                        && !tool.getName().isBlank()) {
+                    names.add(tool.getName());
+                }
+            }
+        }
+        if (config.getStrategy() == AgentConfig.Strategy.SWARM && config.getHandoffs() != null) {
+            for (HandoffConfig handoff : config.getHandoffs()) {
+                if ("on_condition".equals(handoff.getType())
+                        && handoff.getTaskName() != null
+                        && !handoff.getTaskName().isBlank()) {
+                    names.add(handoff.getTaskName());
+                }
+            }
+        }
+        if (config.getAgents() != null) {
+            for (AgentConfig agent : config.getAgents()) {
+                collectDeclaredWorkerNames(agent, names);
+            }
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private void collectAndRegisterTasks(AgentConfig config, Set<String> registered) {
         // Credential names declared on each SIMPLE task's TaskDef.runtimeMetadata (embedded only,
@@ -1034,12 +1068,17 @@ public class AgentService {
             }
         }
 
-        // Register handoff check worker for swarm
-        if (config.getHandoffs() != null && !config.getHandoffs().isEmpty()) {
-            String taskName = config.getName() + "_handoff_check";
-            if (!registered.contains(taskName)) {
-                registerTaskDef(taskName);
-                registered.add(taskName);
+        // Declarative SWARM conditions are the only handoff workers. Generated transfer and
+        // handoff-check names are compiler-owned INLINE logic and must never be registered.
+        if (config.getStrategy() == AgentConfig.Strategy.SWARM && config.getHandoffs() != null) {
+            for (HandoffConfig handoff : config.getHandoffs()) {
+                if ("on_condition".equals(handoff.getType())
+                        && handoff.getTaskName() != null
+                        && !handoff.getTaskName().isBlank()
+                        && !registered.contains(handoff.getTaskName())) {
+                    registerTaskDef(handoff.getTaskName(), agentCreds);
+                    registered.add(handoff.getTaskName());
+                }
             }
         }
 
@@ -1053,7 +1092,8 @@ public class AgentService {
         }
 
         // Register check_transfer worker for hybrid (has both agents AND tools)
-        if (config.getAgents() != null
+        if (config.getStrategy() != AgentConfig.Strategy.SWARM
+                && config.getAgents() != null
                 && !config.getAgents().isEmpty()
                 && config.getTools() != null
                 && !config.getTools().isEmpty()) {
@@ -1064,41 +1104,9 @@ public class AgentService {
             }
         }
 
-        // Register check_transfer workers for swarm sub-agents
-        // In swarm mode, each sub-agent gets a {name}_check_transfer SIMPLE task
-        if (config.getStrategy() == AgentConfig.Strategy.SWARM && config.getAgents() != null) {
-            for (AgentConfig sub : config.getAgents()) {
-                String taskName = sub.getName() + "_check_transfer";
-                if (!registered.contains(taskName)) {
-                    registerTaskDef(taskName);
-                    registered.add(taskName);
-                }
-            }
-        }
-
-        // Register transfer_to_ workers for swarm agents
-        // Each agent gets {source}_transfer_to_{peer} — matching MultiAgentCompiler
-        if (config.getStrategy() == AgentConfig.Strategy.SWARM && config.getAgents() != null) {
-            List<String> allNames = new ArrayList<>();
-            allNames.add(config.getName());
-            for (AgentConfig sub : config.getAgents()) {
-                allNames.add(sub.getName());
-            }
-            for (String source : allNames) {
-                for (String peer : allNames) {
-                    if (!source.equals(peer)) {
-                        String taskName = source + "_transfer_to_" + peer;
-                        if (!registered.contains(taskName)) {
-                            registerTaskDef(taskName);
-                            registered.add(taskName);
-                        }
-                    }
-                }
-            }
-        }
-
         // Register transfer_to_ workers for hybrid agents (has both tools and sub-agents)
-        if (config.getAgents() != null
+        if (config.getStrategy() != AgentConfig.Strategy.SWARM
+                && config.getAgents() != null
                 && !config.getAgents().isEmpty()
                 && config.getTools() != null
                 && !config.getTools().isEmpty()) {
