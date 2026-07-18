@@ -44,15 +44,12 @@ public interface FileStorage {
      */
     StorageFileInfo getStorageFileInfo(String storagePath);
 
-    /**
-     * Starts a backend-native multipart upload. Returns the backend's upload ID (S3 {@code
-     * UploadId}, GCS resumable session ID, etc.).
-     */
+    /** Starts a backend-native multipart upload and returns its backend-specific upload ID. */
     String initiateMultipartUpload(String storagePath);
 
     /**
-     * Returns a presigned URL for a single part of an S3 multipart upload. Not called for GCS/Azure
-     * — those reuse the resumable URL from {@link #initiateMultipartUpload}.
+     * Returns a signed URL for one multipart part. Provider-specific query parameters may be added
+     * by the transfer client after this URL is issued.
      *
      * @param partNumber 1-based part number
      */
@@ -62,7 +59,13 @@ public interface FileStorage {
     /**
      * Finalizes a multipart upload.
      *
-     * @param partETags ordered list of ETags returned by each part upload
+     * @param partETags ordered provider completion tokens, such as S3 ETags or Azure block IDs
      */
     void completeMultipartUpload(String storagePath, String uploadId, List<String> partETags);
+
+    /**
+     * Cancels a multipart upload when the backend exposes an explicit abort operation. Backends
+     * whose uncommitted parts expire automatically can use this default no-op.
+     */
+    default void abortMultipartUpload(String storagePath, String uploadId) {}
 }
