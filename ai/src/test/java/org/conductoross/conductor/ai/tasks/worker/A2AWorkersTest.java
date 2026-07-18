@@ -23,6 +23,7 @@ import org.conductoross.conductor.ai.a2a.model.AgentCard;
 import org.conductoross.conductor.ai.a2a.model.TaskState;
 import org.conductoross.conductor.ai.a2a.model.TaskStatus;
 import org.conductoross.conductor.ai.agent.AgentClient;
+import org.conductoross.conductor.ai.agent.UnavailableAgentClient;
 import org.conductoross.conductor.ai.model.A2AAgentCardRequest;
 import org.conductoross.conductor.ai.model.A2AAgentCardResult;
 import org.conductoross.conductor.ai.model.A2ACallRequest;
@@ -32,8 +33,10 @@ import org.conductoross.conductor.ai.model.A2ACancelResult;
 import org.conductoross.conductor.core.execution.tasks.annotated.AnnotatedWorkflowSystemTask;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.core.env.Environment;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.MapPropertySource;
 
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
@@ -44,12 +47,12 @@ import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class A2AWorkersTest {
@@ -84,14 +87,35 @@ class A2AWorkersTest {
     }
 
     @Test
-    void springConstructionDoesNotResolveAgentClient() {
-        @SuppressWarnings("unchecked")
-        ObjectProvider<AgentClient> agentClientProvider = mock(ObjectProvider.class);
-        Environment environment = mock(Environment.class);
+    void lazyAgentClientInjectionBreaksSpringDependencyCycle() {
+        try (AnnotationConfigApplicationContext context =
+                new AnnotationConfigApplicationContext()) {
+            context.getEnvironment()
+                    .getPropertySources()
+                    .addFirst(
+                            new MapPropertySource(
+                                    "a2a-workers-test",
+                                    Map.of("conductor.integrations.ai.enabled", "true")));
+            context.register(A2AWorkers.class, CircularAgentClientConfiguration.class);
+            context.refresh();
 
-        new A2AWorkers(a2aService, agentClientProvider, environment);
+            assertNotNull(context.getBean(A2AWorkers.class));
+            assertNotNull(context.getBean(AgentClient.class));
+        }
+    }
 
-        verifyNoInteractions(agentClientProvider);
+    @Configuration(proxyBeanMethods = false)
+    static class CircularAgentClientConfiguration {
+
+        @Bean
+        A2AService a2aService() {
+            return mock(A2AService.class);
+        }
+
+        @Bean
+        AgentClient agentClient(A2AWorkers workers) {
+            return new UnavailableAgentClient();
+        }
     }
 
     @Test

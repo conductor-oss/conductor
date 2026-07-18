@@ -17,7 +17,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Supplier;
 
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.a2a.A2AException;
@@ -44,9 +43,9 @@ import org.conductoross.conductor.ai.model.A2ACancelResult;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.conductoross.conductor.core.execution.tasks.AnnotatedSystemTaskWorker;
 import org.conductoross.conductor.core.execution.tasks.TaskCancellationHandler;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -85,45 +84,36 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
 
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
     private final A2AService a2aService;
-    private final Supplier<AgentClient> agentClientSupplier;
+    private final AgentClient agentClient;
     private final String callbackUrl;
 
     /**
      * Spring constructor.
      *
-     * <p>AgentClient resolution must stay deferred: the embedded implementation depends on
-     * AgentService and WorkflowService, while this bean is created during annotated-task scanner
-     * initialization. Resolving it here would create a Spring dependency cycle.
+     * <p>The lazy injection-point proxy keeps the dependency explicit while deferring construction
+     * of the embedded implementation. That implementation depends on AgentService and
+     * WorkflowService, which eventually depend on the annotated-task scanner that creates this
+     * worker.
      */
     @Autowired
     public A2AWorkers(
-            A2AService a2aService,
-            ObjectProvider<AgentClient> agentClientProvider,
-            Environment environment) {
-        this(
-                a2aService,
-                () -> agentClientProvider.getIfAvailable(UnavailableAgentClient::new),
-                environment.getProperty(CALLBACK_URL_PROPERTY));
+            A2AService a2aService, @Lazy AgentClient agentClient, Environment environment) {
+        this(a2aService, agentClient, environment.getProperty(CALLBACK_URL_PROPERTY));
     }
 
     public A2AWorkers(A2AService a2aService, AgentClient agentClient, String callbackUrl) {
-        this(a2aService, () -> agentClient, callbackUrl);
-    }
-
-    private A2AWorkers(
-            A2AService a2aService, Supplier<AgentClient> agentClientSupplier, String callbackUrl) {
         this.a2aService = a2aService;
-        this.agentClientSupplier = agentClientSupplier;
+        this.agentClient = agentClient;
         this.callbackUrl = StringUtils.trimToNull(callbackUrl);
     }
 
     public A2AWorkers(A2AService a2aService, AgentClient agentClient) {
-        this(a2aService, agentClient, null);
+        this(a2aService, agentClient, (String) null);
     }
 
     /** Creates remote-A2A-only workers when the Conductor agent control plane is unavailable. */
     public A2AWorkers(A2AService a2aService) {
-        this(a2aService, new UnavailableAgentClient(), null);
+        this(a2aService, new UnavailableAgentClient(), (String) null);
     }
 
     /** Fetch a remote agent's Agent Card. */
@@ -150,7 +140,7 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
         Task task = TaskContext.get().getTask();
         TaskResult result;
         if (A2AService.isConductorAgentType(request.getAgentType())) {
-            result = new ConductorAgentDelegate(agentClient()).execute(task);
+            result = new ConductorAgentDelegate(agentClient).execute(task);
         } else {
             result = executeRemote(task, request);
         }
@@ -169,11 +159,10 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
                 return finish(result, A2ACancelResult.class);
             }
             try {
-                agentClient()
-                        .cancelAgent(
-                                executionId,
-                                StringUtils.firstNonBlank(
-                                        request.getReason(), "Cancelled by CANCEL_AGENT task"));
+                agentClient.cancelAgent(
+                        executionId,
+                        StringUtils.firstNonBlank(
+                                request.getReason(), "Cancelled by CANCEL_AGENT task"));
                 result.getOutputData().put("executionId", executionId);
                 result.getOutputData().put("canceled", true);
                 result.setStatus(TaskResult.Status.COMPLETED);
@@ -229,7 +218,7 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
         }
         A2ACallRequest request = parse(task, A2ACallRequest.class);
         if (A2AService.isConductorAgentType(request.getAgentType())) {
-            new ConductorAgentDelegate(agentClient()).cancel(task, reason);
+            new ConductorAgentDelegate(agentClient).cancel(task, reason);
             return;
         }
         String remoteTaskId =
@@ -660,10 +649,6 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
 
     private <T> T parse(Task task, Class<T> type) {
         return objectMapper.convertValue(task.getInputData(), type);
-    }
-
-    private AgentClient agentClient() {
-        return agentClientSupplier.get();
     }
 
     private static <T extends TaskResult> T fail(T result, String reason, boolean nonRetryable) {
