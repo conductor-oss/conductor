@@ -24,6 +24,7 @@ import org.mockito.Mockito;
 import com.netflix.conductor.postgres.config.PostgresProperties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.*;
 
@@ -60,16 +61,11 @@ public class PostgresIndexQueryBuilderTest {
                         List.of("agentHierarchy:DESC", "startTime:DESC"),
                         properties);
 
-        assertEquals(
-                "SELECT json_data::TEXT FROM workflow_index WHERE classifier = ? ORDER BY "
-                        + "COALESCE((SELECT parent.start_time FROM workflow_index parent WHERE "
-                        + "parent.workflow_id = workflow_index.parent_workflow_id), "
-                        + "workflow_index.start_time) DESC, "
-                        + "COALESCE(NULLIF(workflow_index.parent_workflow_id, ''), "
-                        + "workflow_index.workflow_id) ASC, "
-                        + "CASE WHEN workflow_index.parent_workflow_id = '' THEN 0 ELSE 1 END ASC, "
-                        + "start_time DESC LIMIT ? OFFSET ?",
-                builder.getQuery());
+        String query = builder.getQuery();
+        assertTrue(query.startsWith("WITH RECURSIVE workflow_hierarchy"));
+        assertTrue(query.contains("JOIN workflow_hierarchy parent"));
+        assertTrue(query.contains("LEFT JOIN workflow_hierarchy"));
+        assertTrue(query.contains("workflow_hierarchy.hierarchy_path ASC"));
     }
 
     @Test

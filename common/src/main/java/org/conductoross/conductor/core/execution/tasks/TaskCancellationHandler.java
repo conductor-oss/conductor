@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.core.execution.tasks.annotated;
+package org.conductoross.conductor.core.execution.tasks;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 
@@ -18,14 +18,13 @@ import com.netflix.conductor.common.metadata.tasks.Task;
  * Optional lifecycle hook for beans that expose {@code @WorkerTask} methods as embedded system
  * tasks.
  */
-public interface AnnotatedTaskCancellationHandler {
+public interface TaskCancellationHandler {
 
     /**
-     * Propagates cancellation to resources owned by an annotated task.
+     * Propagates cancellation to resources owned by a worker task.
      *
-     * @param taskType annotated task type being canceled
      * @param task current public task representation
      * @param reason cancellation reason supplied by the engine
      */
-    void cancel(String taskType, Task task, String reason);
+    void cancel(Task task, String reason);
 }

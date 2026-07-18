@@ -835,6 +835,10 @@ public class SqliteIndexDAOTest {
         child.setClassifier("agent");
         indexDAO.indexWorkflow(child);
 
+        WorkflowSummary grandchild = getMockWorkflowSummary("agent-grandchild", "agent-child");
+        grandchild.setClassifier("agent");
+        indexDAO.indexWorkflow(grandchild);
+
         WorkflowSummary unrelated = getMockWorkflowSummary("agent-unrelated", "");
         unrelated.setClassifier("agent");
         indexDAO.indexWorkflow(unrelated);
@@ -863,6 +867,7 @@ public class SqliteIndexDAOTest {
                         .findFirst()
                         .orElseThrow();
         assertEquals("agent-child", results.getResults().get(parentIndex + 1).getWorkflowId());
+        assertEquals("agent-grandchild", results.getResults().get(parentIndex + 2).getWorkflowId());
     }
 
     @Test

@@ -1063,9 +1063,10 @@ class ConductorAgentEndToEndTest {
         // Unlike ParametersUtils' general ${ref.output.x} resolution, DoWhile.evaluateCondition
         // binds each loop-body ref name directly to that task's outputData map (not wrapped in an
         // {input,output,...} envelope) — so this reads $.chat['state'], not
-        // $.chat['output']['state'].
+        // $.chat['output']['state']. State uses the A2A wire spelling, so a paused agent is
+        // "input-required" rather than the internal WAITING enum value.
         loop.setLoopCondition(
-                "if ( $.chat['state'] == 'WAITING' && $.loop['iteration'] < 6 ) {"
+                "if ( $.chat['state'] == 'input-required' && $.loop['iteration'] < 6 ) {"
                         + " true; } else { false; }");
         loop.setLoopOver(List.of(resolvePrompt, chat, human));
 

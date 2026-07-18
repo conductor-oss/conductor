@@ -210,10 +210,12 @@ public class SqliteIndexQueryBuilder {
                                             .map(c -> c.getQueryFragment())
                                             .collect(Collectors.toList()));
         }
-        return "SELECT "
+        return hierarchyCte()
+                + "SELECT "
                 + selectColumn
                 + " FROM "
                 + table
+                + hierarchyJoin()
                 + queryString
                 + getSort()
                 + " LIMIT ? OFFSET ?";
@@ -295,27 +297,51 @@ public class SqliteIndexQueryBuilder {
     }
 
     /**
-     * Groups a parent workflow and its direct children using the parent's workflow id. A correlated
-     * lookup keeps groups in parent start-time order; the rank puts the parent first. This must be
-     * performed by the index query, before pagination, so a child cannot appear on a preceding
-     * page.
+     * Groups an agent root and every descendant in depth-first order. The recursive CTE makes this
+     * a database operation before pagination, so a nested sub-agent cannot be separated from its
+     * ancestors by another execution page.
      */
     private String agentHierarchySort(String order) {
-        return "COALESCE((SELECT parent.start_time FROM "
-                + table
-                + " parent WHERE parent.workflow_id = "
-                + table
-                + ".parent_workflow_id), "
+        return "COALESCE(workflow_hierarchy.root_start_time, "
                 + table
                 + ".start_time) "
                 + order
-                + ", COALESCE(NULLIF("
+                + ", COALESCE(workflow_hierarchy.root_workflow_id, "
                 + table
-                + ".parent_workflow_id, ''), "
-                + table
-                + ".workflow_id) ASC, CASE WHEN "
-                + table
-                + ".parent_workflow_id = '' THEN 0 ELSE 1 END ASC";
+                + ".workflow_id) ASC, CASE WHEN workflow_hierarchy.workflow_id IS NULL THEN 1 ELSE 0 END ASC, "
+                + "workflow_hierarchy.hierarchy_path ASC";
+    }
+
+    private boolean hasAgentHierarchySort() {
+        return "workflow_index".equals(table)
+                && sort.stream()
+                        .map(s -> s.split(":", 2)[0])
+                        .map(SqliteIndexQueryBuilder::camelToSnake)
+                        .anyMatch("agent_hierarchy"::equals);
+    }
+
+    private String hierarchyCte() {
+        if (!hasAgentHierarchySort()) {
+            return "";
+        }
+        return "WITH RECURSIVE workflow_hierarchy(workflow_id, root_workflow_id, root_start_time, hierarchy_path) AS ("
+                + " SELECT workflow_id, workflow_id, start_time, '|' || workflow_id || '|'"
+                + " FROM workflow_index WHERE parent_workflow_id IS NULL OR parent_workflow_id = ''"
+                + " UNION ALL"
+                + " SELECT child.workflow_id, parent.root_workflow_id, parent.root_start_time,"
+                + " parent.hierarchy_path || child.workflow_id || '|'"
+                + " FROM workflow_index child JOIN workflow_hierarchy parent"
+                + " ON child.parent_workflow_id = parent.workflow_id"
+                + " WHERE instr(parent.hierarchy_path, '|' || child.workflow_id || '|') = 0"
+                + ") ";
+    }
+
+    private String hierarchyJoin() {
+        return hasAgentHierarchySort()
+                ? " LEFT JOIN workflow_hierarchy ON workflow_hierarchy.workflow_id = "
+                        + table
+                        + ".workflow_id"
+                : "";
     }
 
     private static String camelToSnake(String camel) {

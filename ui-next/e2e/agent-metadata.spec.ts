@@ -273,10 +273,6 @@ test("renders agent identities and definition details", async ({ page }) => {
   await expect(
     page.getByText("advertised_tool_35", { exact: true }),
   ).toBeAttached();
-
-  await page.screenshot({
-    path: "/private/tmp/conductor-agent-definition.png",
-  });
 });
 
 test("renders agent identities and execution details", async ({ page }) => {
@@ -322,8 +318,4 @@ test("renders agent identities and execution details", async ({ page }) => {
   );
   await expect(page.getByText("openai/gpt-5")).toBeVisible();
   await expect(page.getByText("worker_tool_36")).toBeAttached();
-
-  await page.screenshot({
-    path: "/private/tmp/conductor-agent-execution.png",
-  });
 });
