@@ -20,6 +20,8 @@ import java.util.Objects;
 import java.util.OptionalInt;
 import java.util.Set;
 
+import org.conductoross.conductor.ai.AIModel;
+import org.conductoross.conductor.ai.AIModelProvider;
 import org.conductoross.conductor.ai.agentspan.runtime.service.AgentStreamRegistry;
 import org.conductoross.conductor.ai.agentspan.runtime.util.ModelContextWindows;
 import org.conductoross.conductor.ai.model.ChatCompletion;
@@ -100,6 +102,10 @@ public class AgentChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletio
 
     @Autowired(required = false)
     private AgentStreamRegistry streamRegistry;
+
+    /** The primary mapper also serves ordinary AI workflows, so honor provider prefill support. */
+    @Autowired(required = false)
+    private AIModelProvider aiModelProvider;
 
     public AgentChatCompleteTaskMapper() {
         super(ChatCompletion.NAME);
@@ -357,6 +363,11 @@ public class AgentChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletio
             historyContextTaskRefName = chatCompleteTask.getParentTaskReferenceName();
         }
 
+        String previousResponseId = chatCompletion.getPreviousResponseId();
+        boolean suppressLoopAssistantHistory =
+                (previousResponseId != null && !previousResponseId.isBlank())
+                        || !providerSupportsAssistantPrefill(chatCompletion);
+
         List<ChatMessage> history = new ArrayList<>();
 
         for (TaskModel task : workflow.getTasks()) {
@@ -367,13 +378,21 @@ public class AgentChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletio
             boolean skipTask = true;
             ChatMessage.Role role = ChatMessage.Role.assistant;
 
-            if (task.getParentTaskReferenceName() != null
+            // A DO_WHILE body task belongs to the loop parent as well as a numbered iteration.
+            // Check its same-refName iteration first; otherwise the parent branch includes the
+            // prior assistant response before prefill/previousResponseId suppression can apply.
+            boolean sameRefNameLoopIteration =
+                    task.isLoopOverTask()
+                            && task.getWorkflowTask()
+                                    .getTaskReferenceName()
+                                    .equals(
+                                            chatCompleteTask
+                                                    .getWorkflowTask()
+                                                    .getTaskReferenceName());
+            if (sameRefNameLoopIteration) {
+                skipTask = suppressLoopAssistantHistory;
+            } else if (task.getParentTaskReferenceName() != null
                     && task.getParentTaskReferenceName().equals(historyContextTaskRefName)) {
-                skipTask = false;
-            } else if (task.isLoopOverTask()
-                    && task.getWorkflowTask()
-                            .getTaskReferenceName()
-                            .equals(historyContextTaskRefName)) {
                 skipTask = false;
             } else if (chatCompletion.getParticipants() != null) {
                 ChatMessage.Role participantRole =
@@ -566,6 +585,21 @@ public class AgentChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletio
             }
         }
         chatCompletion.getMessages().addAll(history);
+    }
+
+    private boolean providerSupportsAssistantPrefill(ChatCompletion chatCompletion) {
+        if (aiModelProvider == null || chatCompletion.getLlmProvider() == null) {
+            return true;
+        }
+        try {
+            AIModel model = aiModelProvider.getModel(chatCompletion);
+            return model.supportsAssistantPrefill();
+        } catch (RuntimeException unknownProvider) {
+            log.debug(
+                    "Provider '{}' not registered; defaulting supportsAssistantPrefill=true",
+                    chatCompletion.getLlmProvider());
+            return true;
+        }
     }
 
     // ── Context condensation ─────────────────────────────────────────
