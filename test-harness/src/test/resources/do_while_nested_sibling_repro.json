@@ -1,0 +1,76 @@
+{
+    "name": "do_while_nested_sibling_repro",
+    "description": "Repro for #1256: outer DO_WHILE whose loopOver is [inner DO_WHILE, sibling]. The sibling scheduled right after the inner DO_WHILE must receive the outer loop iteration suffix; if not, the outer DO_WHILE never sees its iteration complete and the workflow hangs. Uses LAMBDA only (no workers).",
+    "version": 1,
+    "schemaVersion": 2,
+    "tasks": [
+        {
+            "name": "nested_outer_loop",
+            "taskReferenceName": "nested_outer_loop",
+            "inputParameters": {},
+            "type": "DO_WHILE",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopCondition": "if (false) { true; } else { false; }",
+            "loopOver": [
+                {
+                    "name": "nested_inner_loop",
+                    "taskReferenceName": "nested_inner_loop",
+                    "inputParameters": {},
+                    "type": "DO_WHILE",
+                    "decisionCases": {},
+                    "defaultCase": [],
+                    "forkTasks": [],
+                    "startDelay": 0,
+                    "joinOn": [],
+                    "optional": false,
+                    "defaultExclusiveJoinTask": [],
+                    "asyncComplete": false,
+                    "loopCondition": "if (false) { true; } else { false; }",
+                    "loopOver": [
+                        {
+                            "name": "nested_inner_body",
+                            "taskReferenceName": "nested_inner_body",
+                            "inputParameters": {
+                                "scriptExpression": "return {ok: true}"
+                            },
+                            "type": "LAMBDA",
+                            "decisionCases": {},
+                            "defaultCase": [],
+                            "forkTasks": [],
+                            "startDelay": 0,
+                            "joinOn": [],
+                            "optional": false,
+                            "defaultExclusiveJoinTask": [],
+                            "asyncComplete": false,
+                            "loopOver": []
+                        }
+                    ]
+                },
+                {
+                    "name": "nested_sibling_check",
+                    "taskReferenceName": "nested_sibling_check",
+                    "inputParameters": {
+                        "scriptExpression": "return {ok: true}"
+                    },
+                    "type": "LAMBDA",
+                    "decisionCases": {},
+                    "defaultCase": [],
+                    "forkTasks": [],
+                    "startDelay": 0,
+                    "joinOn": [],
+                    "optional": false,
+                    "defaultExclusiveJoinTask": [],
+                    "asyncComplete": false,
+                    "loopOver": []
+                }
+            ]
+        }
+    ]
+}

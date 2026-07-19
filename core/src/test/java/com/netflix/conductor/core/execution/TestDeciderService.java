@@ -2052,4 +2052,49 @@ public class TestDeciderService {
 
         return workflowDef;
     }
+
+    @Test
+    public void testExtractIterationFromRefName() {
+        // A nested loop-over task's ref name carries the parent loop's __<iteration> suffix.
+        assertEquals(1, DeciderService.extractIterationFromRefName("sibling_check__1"));
+        assertEquals(12, DeciderService.extractIterationFromRefName("inner_loop__12"));
+        // Handles ref names that themselves contain "__" — the LAST suffix is the iteration.
+        assertEquals(2, DeciderService.extractIterationFromRefName("a__b__2"));
+        // A top-level DO_WHILE has no __<iteration> suffix -> -1. This is the guard that keeps
+        // decide() from stamping the task after a top-level DO_WHILE (parentIteration > 0 is
+        // false),
+        // so ordinary (non-nested) DO_WHILE behavior is unchanged by this fix.
+        assertEquals(-1, DeciderService.extractIterationFromRefName("inner_loop"));
+        // Defensive: a dangling "__" or non-numeric suffix must not be mistaken for an iteration.
+        assertEquals(-1, DeciderService.extractIterationFromRefName("inner_loop__"));
+        assertEquals(-1, DeciderService.extractIterationFromRefName("inner_loop__abc"));
+    }
+
+    @Test
+    public void testFilterNextLoopOverTasksWithExplicitIteration() {
+        // The nested-DO_WHILE path stamps the following sibling with the PARENT loop's iteration
+        // (extracted from the DO_WHILE's ref-name suffix), not the nested loop's own counter.
+        WorkflowModel workflow = new WorkflowModel();
+
+        TaskModel pendingTask = new TaskModel();
+        pendingTask.setReferenceTaskName("inner_loop__3");
+        pendingTask.setTaskId("inner_loop__3");
+        pendingTask.setStatus(TaskModel.Status.COMPLETED);
+        pendingTask.setIteration(1); // the nested loop's OWN counter — must NOT be used here
+
+        TaskModel sibling = new TaskModel();
+        sibling.setReferenceTaskName("sibling_check");
+        sibling.setTaskId("sibling_check");
+        sibling.setStatus(TaskModel.Status.SCHEDULED);
+
+        workflow.getTasks().add(pendingTask);
+
+        List<TaskModel> result =
+                deciderService.filterNextLoopOverTasks(
+                        Arrays.asList(sibling), 3, pendingTask, workflow);
+
+        assertEquals(1, result.size());
+        assertEquals("sibling_check__3", result.get(0).getReferenceTaskName());
+        assertEquals(3, result.get(0).getIteration());
+    }
 }

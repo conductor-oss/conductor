@@ -45,7 +45,21 @@ class DoWhileSpec extends AbstractSpecification {
                 'do_while_system_tasks.json',
                 'do_while_with_decision_task.json',
                 'do_while_set_variable_fix.json',
-                'do_while_high_iteration_test.json')
+                'do_while_high_iteration_test.json',
+                'do_while_nested_sibling_repro.json')
+    }
+
+    def "Repro #1256: a sibling after a nested DO_WHILE gets the outer iteration suffix and the workflow completes"() {
+        when: "A workflow whose outer DO_WHILE body is [inner DO_WHILE, sibling] is started (LAMBDA only, auto-completes)"
+        def workflowInstanceId = startWorkflow("do_while_nested_sibling_repro", 1, "nested-sibling", new HashMap(), null)
+
+        then: "The outer loop completes its single iteration and the whole workflow COMPLETES"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.COMPLETED
+            getTaskByRefName("nested_sibling_check__1") != null
+            getTaskByRefName("nested_sibling_check__1").status == Task.Status.COMPLETED
+            getTaskByRefName("nested_sibling_check__1").iteration == 1
+        }
     }
 
     def "Test workflow with 2 iterations of five tasks"() {
