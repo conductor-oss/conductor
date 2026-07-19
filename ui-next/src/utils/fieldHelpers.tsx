@@ -6,6 +6,7 @@ import MuiTypography from "components/ui/MuiTypography";
 import { path as _path, clone, setWith } from "lodash/fp";
 import { ConductorValueInput } from "pages/definition/EditorPanel/TaskFormTab/forms/ConductorValueInput";
 import { ConductorArrayMapFormBase } from "pages/definition/EditorPanel/TaskFormTab/forms/LLMFormFields/ConductorArrayMapForm";
+import { LLMAutocompleteVariables } from "pages/definition/EditorPanel/TaskFormTab/forms/LLMFormFields/LLMAutocompleteVariables";
 import {
   LLMFormFieldsEvents,
   LLMFormFieldsMachineContext,
@@ -457,7 +458,7 @@ const aiFieldTypes = {
       task,
     );
     return (
-      <ConductorAutocompleteVariables
+      <LLMAutocompleteVariables
         openOnFocus
         onChange={(value) => onChange(setValue(value))}
         value={ipValue}
@@ -472,7 +473,7 @@ const aiFieldTypes = {
       task,
     );
     return (
-      <ConductorAutocompleteVariables
+      <LLMAutocompleteVariables
         openOnFocus
         onChange={(value) => onChange(setValue(value))}
         value={ipValue}

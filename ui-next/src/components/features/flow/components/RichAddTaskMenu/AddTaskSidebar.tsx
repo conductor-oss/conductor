@@ -42,6 +42,7 @@ import {
   SubWorkflowTaskDef,
 } from "types";
 import { getSequentiallySuffix } from "utils/strings";
+import { pluralizeResults } from "utils/helpers";
 import { getInitials } from "utils/utils";
 import { ActorRef } from "xstate";
 import { itemFilterMatcher } from "./helpers";
@@ -566,7 +567,7 @@ const AddTaskSidebar = ({
                   userSelect: "none",
                 }}
               >
-                {filteredOptions.length} results
+                {pluralizeResults(filteredOptions.length)}
               </Typography>
             )}
           </Box>

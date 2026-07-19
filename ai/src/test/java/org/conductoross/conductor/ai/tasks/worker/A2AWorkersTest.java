@@ -12,24 +12,47 @@
  */
 package org.conductoross.conductor.ai.tasks.worker;
 
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.conductoross.conductor.ai.a2a.A2AService;
+import org.conductoross.conductor.ai.a2a.A2AService.SendResult;
 import org.conductoross.conductor.ai.a2a.model.A2ATask;
 import org.conductoross.conductor.ai.a2a.model.AgentCard;
 import org.conductoross.conductor.ai.a2a.model.TaskState;
 import org.conductoross.conductor.ai.a2a.model.TaskStatus;
+import org.conductoross.conductor.ai.agent.AgentClient;
+import org.conductoross.conductor.ai.agent.UnavailableAgentClient;
 import org.conductoross.conductor.ai.model.A2AAgentCardRequest;
+import org.conductoross.conductor.ai.model.A2AAgentCardResult;
+import org.conductoross.conductor.ai.model.A2ACallRequest;
+import org.conductoross.conductor.ai.model.A2ACallResult;
 import org.conductoross.conductor.ai.model.A2ACancelRequest;
+import org.conductoross.conductor.ai.model.A2ACancelResult;
+import org.conductoross.conductor.core.execution.tasks.annotated.AnnotatedWorkflowSystemTask;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.MapPropertySource;
 
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
+import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class A2AWorkersTest {
@@ -52,9 +75,9 @@ class A2AWorkersTest {
         A2AAgentCardRequest request = new A2AAgentCardRequest();
         request.setAgentUrl("http://agent");
 
-        AgentCard result = workers.getAgentCard(request);
+        A2AAgentCardResult result = workers.getAgentCard(request);
 
-        assertEquals("Currency Agent", result.getName());
+        assertEquals("Currency Agent", result.getAgentCard().getName());
     }
 
     @Test
@@ -64,28 +87,89 @@ class A2AWorkersTest {
     }
 
     @Test
-    void cancelAgentTask_callsService() {
-        A2ATask cancelled = new A2ATask();
-        TaskStatus status = new TaskStatus();
-        status.setState(TaskState.CANCELED);
-        cancelled.setStatus(status);
-        when(a2aService.cancelTask(eq("http://agent"), eq("t1"), any())).thenReturn(cancelled);
+    void lazyAgentClientInjectionBreaksSpringDependencyCycle() {
+        try (AnnotationConfigApplicationContext context =
+                new AnnotationConfigApplicationContext()) {
+            context.getEnvironment()
+                    .getPropertySources()
+                    .addFirst(
+                            new MapPropertySource(
+                                    "a2a-workers-test",
+                                    Map.of("conductor.integrations.ai.enabled", "true")));
+            context.register(A2AWorkers.class, CircularAgentClientConfiguration.class);
+            context.refresh();
 
-        A2ACancelRequest request = new A2ACancelRequest();
-        request.setAgentUrl("http://agent");
-        request.setTaskId("t1");
+            assertNotNull(context.getBean(A2AWorkers.class));
+            assertNotNull(context.getBean(AgentClient.class));
+        }
+    }
 
-        A2ATask result = workers.cancelAgentTask(request);
+    @Configuration(proxyBeanMethods = false)
+    static class CircularAgentClientConfiguration {
 
-        assertEquals(TaskState.CANCELED, result.getStatus().getState());
-        verify(a2aService).cancelTask(eq("http://agent"), eq("t1"), any());
+        @Bean
+        A2AService a2aService() {
+            return mock(A2AService.class);
+        }
+
+        @Bean
+        AgentClient agentClient(A2AWorkers workers) {
+            return new UnavailableAgentClient();
+        }
     }
 
     @Test
-    void cancelAgentTask_missingTaskId_isNonRetryable() {
-        A2ACancelRequest request = new A2ACancelRequest();
-        request.setAgentUrl("http://agent");
+    void annotatedWorkerMethodsUseTypedInputAndOutputContracts() throws Exception {
+        Method getAgentCard = A2AWorkers.class.getMethod("getAgentCard", A2AAgentCardRequest.class);
+        Method agent = A2AWorkers.class.getMethod("agent", A2ACallRequest.class);
+        Method cancelAgent = A2AWorkers.class.getMethod("cancelAgent", A2ACancelRequest.class);
 
-        assertThrows(NonRetryableException.class, () -> workers.cancelAgentTask(request));
+        assertEquals(A2AAgentCardResult.class, getAgentCard.getReturnType());
+        assertEquals(A2ACallResult.class, agent.getReturnType());
+        assertEquals(A2ACancelResult.class, cancelAgent.getReturnType());
+        assertFalse(TaskResult.class.isAssignableFrom(A2AAgentCardResult.class));
+        assertFalse(TaskResult.class.isAssignableFrom(A2ACallResult.class));
+        assertFalse(TaskResult.class.isAssignableFrom(A2ACancelResult.class));
+    }
+
+    @Test
+    void annotatedAgentHonorsConfiguredPollInterval() throws Exception {
+        A2ATask remoteTask = new A2ATask();
+        remoteTask.setId("remote-task-1");
+        TaskStatus status = new TaskStatus();
+        status.setState(TaskState.WORKING);
+        remoteTask.setStatus(status);
+        when(a2aService.sendMessage(anyString(), any(), any(), any()))
+                .thenReturn(SendResult.ofTask(remoteTask));
+
+        Method method = A2AWorkers.class.getMethod("agent", A2ACallRequest.class);
+        WorkerTask annotation = method.getAnnotation(WorkerTask.class);
+        AnnotatedWorkflowSystemTask systemTask =
+                new AnnotatedWorkflowSystemTask(A2AWorkers.AGENT, method, workers, annotation);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("workflow-1");
+        TaskModel task = new TaskModel();
+        task.setTaskId("task-1");
+        task.setWorkflowInstanceId("workflow-1");
+        task.setReferenceTaskName("agent_ref");
+        task.setTaskType(A2AWorkers.AGENT);
+        task.setInputData(
+                new HashMap<>(
+                        Map.of(
+                                "agentUrl",
+                                "http://agent",
+                                "text",
+                                "hello",
+                                "pollIntervalSeconds",
+                                17)));
+        task.setOutputData(new HashMap<>());
+        task.setStatus(TaskModel.Status.SCHEDULED);
+
+        systemTask.start(workflow, task, mock(WorkflowExecutor.class));
+
+        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
+        assertEquals(17, task.getCallbackAfterSeconds());
+        assertEquals(17L, systemTask.getEvaluationOffset(task, 60).orElseThrow());
     }
 }

@@ -27,15 +27,25 @@ const VIEWPORTS = [
   { width: 390, height: 844, label: "mobile" },
 ];
 
+// The "Execution Start Time" filter defaults to `Date.now() - 72h`, rendered as
+// an absolute timestamp. Left to the live clock the chip drifts every run (and a
+// load-timing race can show the "Last 72 Hours" label instead), so the snapshots
+// are only stable if the value is pinned. Freeze the clock and seed `startFrom`
+// with the matching fixed epoch so the chip always renders "May 29, 2026 @
+// 12:00:00"; seeding the query param also settles the value on the first render.
+const FIXED_NOW = new Date("2026-06-01T12:00:00.000Z");
+const FIXED_START_FROM = FIXED_NOW.getTime() - 72 * 60 * 60 * 1000; // 1780056000000
+
 const gotoExecutions = async (page: Page) => {
   await mockCommonApis(page);
+  await page.clock.setFixedTime(FIXED_NOW);
   await page.addInitScript(() => {
     localStorage.setItem(
       "tooltipFlags",
       JSON.stringify({ executionSearch: true }),
     );
   });
-  await page.goto("/executions");
+  await page.goto(`/executions?startFrom=${FIXED_START_FROM}`);
   await page.waitForLoadState("domcontentloaded");
   await page.waitForSelector("#workflow-search-name-dropdown");
   await page.waitForSelector("#search-workflow-btn");
@@ -45,6 +55,21 @@ const getMaskElements = (p: Page) => [
   p.locator("[data-testid='user-avatar']"),
   p.locator("#linear-indeterminate-progress"),
 ];
+
+/**
+ * MUI commits an autocomplete selection on the next React render. Wait for its selected tag before
+ * moving on so a following action cannot race the state update in CI.
+ */
+const selectWorkflowStatus = async (page: Page, status: string) => {
+  const statusInput = page.locator("#workflow-search-status");
+  const statusField = statusInput.locator("xpath=..");
+  await statusInput.click();
+  await page.getByRole("option", { name: status }).click();
+  await expect(statusField).toContainText(
+    status.charAt(0) + status.slice(1).toLowerCase(),
+  );
+  await page.keyboard.press("Escape");
+};
 
 const screenshotAtAllViewports = async (
   page: Page,
@@ -95,9 +120,7 @@ test.describe("Workflow execution search - filters visual snapshot", () => {
   }) => {
     await gotoExecutions(page);
 
-    await page.locator("#workflow-search-status").click();
-    await page.getByRole("option", { name: "COMPLETED" }).click();
-    await page.keyboard.press("Escape");
+    await selectWorkflowStatus(page, "COMPLETED");
 
     await screenshotAtAllViewports(
       page,
@@ -114,11 +137,8 @@ test.describe("Workflow execution search - filters visual snapshot", () => {
   }) => {
     await gotoExecutions(page);
 
-    await page.locator("#workflow-search-status").click();
-    await page.getByRole("option", { name: "COMPLETED" }).click();
-    await page.locator("#workflow-search-status").click();
-    await page.getByRole("option", { name: "FAILED" }).click();
-    await page.keyboard.press("Escape");
+    await selectWorkflowStatus(page, "COMPLETED");
+    await selectWorkflowStatus(page, "FAILED");
 
     await page
       .locator("#workflow-search-correlation-id")
@@ -138,9 +158,7 @@ test.describe("Workflow execution search - filters visual snapshot", () => {
   test("Should match search form after reset", async ({ page }) => {
     await gotoExecutions(page);
 
-    await page.locator("#workflow-search-status").click();
-    await page.getByRole("option", { name: "COMPLETED" }).click();
-    await page.keyboard.press("Escape");
+    await selectWorkflowStatus(page, "COMPLETED");
     await page.locator("#workflow-search-id").fill("some-id");
 
     await page.locator("#reset-workflow-btn").click();
@@ -157,9 +175,7 @@ test.describe("Workflow execution search - filters visual snapshot", () => {
   }) => {
     await gotoExecutions(page);
 
-    await page.locator("#workflow-search-status").click();
-    await page.getByRole("option", { name: "COMPLETED" }).click();
-    await page.keyboard.press("Escape");
+    await selectWorkflowStatus(page, "COMPLETED");
 
     await page.locator("#search-workflow-btn").click();
     await page.waitForTimeout(1000);
