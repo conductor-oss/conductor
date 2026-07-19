@@ -434,6 +434,18 @@ public class AgentChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletio
                     String toolRefName = toolCall.getTaskReferenceName();
                     List<TaskModel> toolModels =
                             refNameToTask.getOrDefault(toolRefName, new ArrayList<>());
+                    // AgentSpan dispatches tool calls with FORK_JOIN_DYNAMIC. The LLM gives the
+                    // logical call ref (for example, toolu_abc); Conductor assigns each dynamic
+                    // branch a stable descendant ref (toolu_abc_0). Match those descendants so
+                    // the next LLM turn receives the tool response instead of retrying the call.
+                    if (toolModels.isEmpty() && toolRefName != null) {
+                        String dynamicPrefix = toolRefName + "_";
+                        toolModels =
+                                refNameToTask.entrySet().stream()
+                                        .filter(entry -> entry.getKey().startsWith(dynamicPrefix))
+                                        .flatMap(entry -> entry.getValue().stream())
+                                        .toList();
+                    }
                     for (TaskModel toolModel : toolModels) {
                         if (!toolModel.getStatus().isTerminal()) continue;
 

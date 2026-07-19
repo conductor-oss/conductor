@@ -356,7 +356,13 @@ public class ListApiToolsTask extends WorkflowSystemTask {
         if (servers != null && servers.isArray() && !servers.isEmpty()) {
             String url = servers.get(0).path("url").asText("");
             if (!url.isBlank()) {
-                return url;
+                URI serverUrl = URI.create(url);
+                if (serverUrl.isAbsolute()) {
+                    return url;
+                }
+                URI fetchedUri = URI.create(fetchedUrl);
+                URI origin = URI.create(fetchedUri.getScheme() + "://" + fetchedUri.getAuthority());
+                return origin.resolve(serverUrl).toString();
             }
         }
         // Fallback: derive from the URL we fetched

@@ -262,6 +262,65 @@ jobs:
         with:
           name: test-harness-coverage-report
           path: "test-harness/build/reports/jacoco"
+  agentspan-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+      - name: Set up Zulu JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: "zulu"
+          java-version: "21"
+      - name: Cache Gradle packages
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
+      - name: Force Docker API Version
+        run: echo 'api.version=1.44' > ~/.docker-java.properties
+      - name: Run deterministic AgentSpan E2E tests
+        run: ./gradlew :conductor-test-harness:agentspanDeterministicE2E
+      - name: Run live-provider AgentSpan E2E coverage
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL: ${{ vars.ANTHROPIC_MODEL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+        run: ./gradlew :conductor-agentspan:agentspanEndToEndCoverage
+      - name: Publish AgentSpan E2E test report
+        uses: mikepenz/action-junit-report@v6
+        if: always()
+        with:
+          report_paths: "test-harness/build/test-results/agentspanDeterministicE2E/TEST-*.xml,test-harness/build/test-results/agentspanRealE2E/TEST-*.xml"
+          check_name: AgentSpan E2E Test Report
+      - name: Upload AgentSpan E2E reports
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: agentspan-e2e-reports
+          path: |
+            test-harness/build/reports/tests/agentspanDeterministicE2E
+            test-harness/build/reports/tests/agentspanRealE2E
+          if-no-files-found: warn
+      - name: Upload AgentSpan coverage report
+        uses: actions/upload-artifact@v7
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        with:
+          name: agentspan-e2e-coverage-report
+          path: agentspan/build/reports/jacoco/agentspanEndToEndCoverage
+          if-no-files-found: error
   generate-e2e-matrix:
     runs-on: ubuntu-latest
     outputs:

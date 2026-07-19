@@ -1786,6 +1786,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         startReq.setInput(input);
 
         Set<String> startWorkerNames = def.collectSimpleTaskNames();
+        config.collectDeclaredWorkerTaskNames(startWorkerNames);
         config.collectDynamicTransferNames(startWorkerNames);
         List<String> requiredWorkers = new ArrayList<>(startWorkerNames);
 

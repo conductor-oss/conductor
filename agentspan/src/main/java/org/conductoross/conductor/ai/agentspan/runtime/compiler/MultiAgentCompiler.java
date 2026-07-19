@@ -1551,19 +1551,24 @@ public class MultiAgentCompiler {
                         + ";"
                         + "var active=$.active_agent == null ? '0' : String($.active_agent);"
                         + "var has=function(v){return v!==null&&v!==undefined&&String(v)!=='';};"
-                        // Tool outputs can be text, objects, arrays, or null. JSON is the
-                        // stable representation for structured successful JOIN outputs; plain
-                        // String(object) would only produce '[object Object]' and make a
-                        // declarative resultContains rule silently miss.
+                        // Tool outputs can be text, objects, arrays, or null. Workflow outputs
+                        // are often Java Map/List proxies: JSON.stringify(proxy) becomes "{}",
+                        // while String(proxy) preserves its values (for example
+                        // {customerName=Alice}). Native JavaScript values still use JSON.
                         + "var text=function(v){if(v==null)return '';if(typeof v==='string')return v;"
+                        + "if(v.get||v.entrySet)return String(v);"
                         + "try{return JSON.stringify(v);}catch(e){return String(v);}};"
                         + "if (($.is_transfer===true||$.is_transfer==='true') && has($.transfer_to)"
                         + " && indexes[String($.transfer_to)]!==undefined) return {handoff:true,active_agent:String(indexes[String($.transfer_to)])};"
                         + "var result=$.result==null?'':String($.result).toLowerCase();"
                         + "var trs=$.tool_results||[];"
+                        // Workflow variables arrive as Java List proxies in GraalJS. A direct
+                        // `trs.length` only works for native arrays, silently skipping every
+                        // successful JOIN output and preventing on_tool_result handoffs.
+                        + "var trCount=trs.size?trs.size():(trs.length||0);"
                         + "for(var i=0;i<rules.length;i++){var r=rules[i]; var hit=false;"
                         + " if(r.type==='on_text_mention') hit=result.indexOf(String(r.text).toLowerCase())>=0;"
-                        + " else if(r.type==='on_tool_result'){for(var j=0;j<trs.length;j++){var x=trs[j]||{};"
+                        + " else if(r.type==='on_tool_result'){for(var j=0;j<trCount;j++){var x=(trs.get?trs.get(j):trs[j])||{};"
                         + " var n=x.get?x.get('name'):x.name; var o=x.get?x.get('output'):x.output;"
                         + " if(String(n)===String(r.toolName)&&text(o).toLowerCase().indexOf(String(r.resultContains).toLowerCase())>=0){hit=true;break;}}}"
                         + " else if(r.type==='on_condition'){var c=$['condition_'+r.index];"
@@ -1579,6 +1584,20 @@ public class MultiAgentCompiler {
      * outputs {result, finishReason, is_transfer, transfer_to}.
      */
     WorkflowDef compileSwarmAgentWorkflow(AgentConfig agent, List<ToolConfig> transferTools) {
+        return compileSwarmAgentWorkflow(agent, transferTools, false);
+    }
+
+    /**
+     * Compiles a child used by the SWARM coordinator.
+     *
+     * <p>When the parent has an {@code on_tool_result} rule, a completed dynamic-tool JOIN must
+     * return control to the coordinator before the child opens another LLM turn. The coordinator
+     * owns the declared handoff rules and has the durable merged tool results required to select
+     * the next agent. Continuing the child loop first would hide the result behind an unnecessary
+     * source-model turn and allow that turn to change the routing signal.
+     */
+    private WorkflowDef compileSwarmAgentWorkflow(
+            AgentConfig agent, List<ToolConfig> transferTools, boolean returnAfterToolResults) {
         // Claude Code agents use passthrough — no LLM loop, just a single SIMPLE task
         if (agent.getModel() != null && agent.getModel().startsWith("claude-code")) {
             // Ensure the passthrough worker tool is set
@@ -1656,10 +1675,12 @@ public class MultiAgentCompiler {
                         "($.%s['toolCalls'] != null && $.%s['toolCalls'].length > 0)",
                         llmRef, llmRef);
         String notTransfer = String.format("($.%s.result.is_transfer != true)", checkTransferRef);
+        String continueAfterToolCalls =
+                returnAfterToolResults ? "false" : "(" + hasToolCalls + " && " + notTransfer + ")";
         String termCondition =
                 String.format(
-                        "if ( $.%s['iteration'] < %d && ($.%s['finishReason'] == 'LENGTH' || $.%s['finishReason'] == 'MAX_TOKENS' || (%s && %s)) ) { true; } else { false; }",
-                        loopRef, maxTurns, llmRef, llmRef, hasToolCalls, notTransfer);
+                        "if ( $.%s['iteration'] < %d && ($.%s['finishReason'] == 'LENGTH' || $.%s['finishReason'] == 'MAX_TOKENS' || %s) ) { true; } else { false; }",
+                        loopRef, maxTurns, llmRef, llmRef, continueAfterToolCalls);
 
         Map<String, Object> loopInputs = new LinkedHashMap<>();
         loopInputs.put(loopRef, "${" + loopRef + "}");
@@ -1688,8 +1709,16 @@ public class MultiAgentCompiler {
         WorkflowTask initState = new WorkflowTask();
         initState.setType("SET_VARIABLE");
         initState.setTaskReferenceName(agent.getName() + "_init_state");
+        // Keep the same state contract as a standalone/hybrid agent. In particular, dynamic
+        // tool JOINs append normalized {name, output} values to _last_tool_results; without an
+        // initialized list, a missing template can resolve to its parent map and the SWARM parent
+        // cannot evaluate an on_tool_result handoff from the child's durable output.
         initState.setInputParameters(
-                Map.of("_agent_state", "${" + ctxResolveRef + ".output.result}"));
+                Map.of(
+                        "_agent_state",
+                        "${" + ctxResolveRef + ".output.result}",
+                        "_last_tool_results",
+                        List.of()));
 
         // Extract the transfer message from the last LLM turn's tool calls so the parent can
         // record the delegation intent in the conversation (the check_transfer worker only
@@ -2132,7 +2161,15 @@ public class MultiAgentCompiler {
         String subRef = parent.getName() + "_agent_" + idx + "_" + sub.getName();
 
         // Compile as SUB_WORKFLOW with inline transfer-aware workflow
-        WorkflowDef agentWf = compileSwarmAgentWorkflow(sub, transferTools);
+        boolean returnAfterToolResults =
+                parent.getHandoffs() != null
+                        && parent.getHandoffs().stream()
+                                .anyMatch(
+                                        handoff ->
+                                                handoff != null
+                                                        && "on_tool_result"
+                                                                .equals(handoff.getType()));
+        WorkflowDef agentWf = compileSwarmAgentWorkflow(sub, transferTools, returnAfterToolResults);
         WorkflowTask task = new WorkflowTask();
         task.setType("SUB_WORKFLOW");
         task.setName(sub.getName());
@@ -2831,8 +2868,20 @@ public class MultiAgentCompiler {
         outputInputs.put("r", "${workflow.variables.final_result}");
         outputInputs.put(
                 "expression",
-                "(function(){ var r = $.r; if (r == null) return '';"
-                        + " return (typeof r === 'object') ? JSON.stringify(r) : String(r); })()");
+                "(function(){"
+                        + " function plain(v){"
+                        + " if(v == null || typeof v !== 'object') return v;"
+                        + " if(Array.isArray(v)){ var a=[]; for(var i=0;i<v.length;i++) a.push(plain(v[i])); return a; }"
+                        + " if(v.keySet && v.get){ var o={}; var ks=v.keySet().toArray();"
+                        + " for(var k=0;k<ks.length;k++){ var key=ks[k]; o[key]=plain(v.get(key)); } return o; }"
+                        + " if(v.size && v.get){ var l=[]; for(var j=0;j<v.size();j++) l.push(plain(v.get(j))); return l; }"
+                        + " var native={}; var nativeKeys=Object.keys(v);"
+                        + " for(var n=0;n<nativeKeys.length;n++){ var nativeKey=nativeKeys[n]; native[nativeKey]=plain(v[nativeKey]); }"
+                        + " return native;"
+                        + " }"
+                        + " var r=plain($.r); if(r == null) return '';"
+                        + " return (typeof r === 'object') ? JSON.stringify(r) : String(r);"
+                        + " })()");
         outputSelect.setInputParameters(outputInputs);
         tasks.add(outputSelect);
 

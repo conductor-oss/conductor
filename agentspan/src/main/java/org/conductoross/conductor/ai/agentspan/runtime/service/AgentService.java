@@ -880,20 +880,19 @@ public class AgentService {
                             .getWorkflowDef(name, version)
                             .orElseThrow(
                                     () ->
-                                            new IllegalArgumentException(
+                                            new NotFoundException(
                                                     "Agent not found: " + name + " v" + version));
         } else {
             def =
                     metadataDAO
                             .getLatestWorkflowDef(name)
-                            .orElseThrow(
-                                    () -> new IllegalArgumentException("Agent not found: " + name));
+                            .orElseThrow(() -> new NotFoundException("Agent not found: " + name));
         }
         Map<String, Object> metadata = def.getMetadata();
         if (metadata != null && metadata.get("agentDef") instanceof Map) {
             return (Map<String, Object>) metadata.get("agentDef");
         }
-        throw new IllegalArgumentException("No agent definition found for: " + name);
+        throw new NotFoundException("No agent definition found for: " + name);
     }
 
     public void deleteAgent(String name, Integer version) {
@@ -904,8 +903,7 @@ public class AgentService {
             WorkflowDef def =
                     metadataDAO
                             .getLatestWorkflowDef(name)
-                            .orElseThrow(
-                                    () -> new IllegalArgumentException("Agent not found: " + name));
+                            .orElseThrow(() -> new NotFoundException("Agent not found: " + name));
             metadataDAO.removeWorkflowDef(name, def.getVersion());
         }
     }
@@ -960,6 +958,13 @@ public class AgentService {
                         && handoff.getTaskName() != null
                         && !handoff.getTaskName().isBlank()) {
                     names.add(handoff.getTaskName());
+                }
+            }
+        }
+        if (config.getCallbacks() != null) {
+            for (CallbackConfig callback : config.getCallbacks()) {
+                if (callback.getTaskName() != null && !callback.getTaskName().isBlank()) {
+                    names.add(callback.getTaskName());
                 }
             }
         }
@@ -1088,34 +1093,6 @@ public class AgentService {
             if (!registered.contains(taskName)) {
                 registerTaskDef(taskName);
                 registered.add(taskName);
-            }
-        }
-
-        // Register check_transfer worker for hybrid (has both agents AND tools)
-        if (config.getStrategy() != AgentConfig.Strategy.SWARM
-                && config.getAgents() != null
-                && !config.getAgents().isEmpty()
-                && config.getTools() != null
-                && !config.getTools().isEmpty()) {
-            String taskName = config.getName() + "_check_transfer";
-            if (!registered.contains(taskName)) {
-                registerTaskDef(taskName);
-                registered.add(taskName);
-            }
-        }
-
-        // Register transfer_to_ workers for hybrid agents (has both tools and sub-agents)
-        if (config.getStrategy() != AgentConfig.Strategy.SWARM
-                && config.getAgents() != null
-                && !config.getAgents().isEmpty()
-                && config.getTools() != null
-                && !config.getTools().isEmpty()) {
-            for (AgentConfig sub : config.getAgents()) {
-                String taskName = config.getName() + "_transfer_to_" + sub.getName();
-                if (!registered.contains(taskName)) {
-                    registerTaskDef(taskName);
-                    registered.add(taskName);
-                }
             }
         }
 

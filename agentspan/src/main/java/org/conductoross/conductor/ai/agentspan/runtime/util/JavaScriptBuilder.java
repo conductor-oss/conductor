@@ -1186,148 +1186,6 @@ public class JavaScriptBuilder {
      * @param apiServersJson JSON array of [{headers}, ...] for each API source
      * @param maxTools threshold for filtering
      */
-    /**
-     * JavaScript that parses an OpenAPI 3.x, Swagger 2.0, or Postman collection JSON into
-     * normalized tool descriptors. Runs as an INLINE task after the HTTP fetch task retrieves the
-     * spec.
-     *
-     * <p>Input: {@code $.specBody} (parsed JSON object), {@code $.specUrl}
-     *
-     * <p>Output: {@code {tools: [...], baseUrl: "...", format: "openapi3|swagger2|postman"}}
-     */
-    public static String apiParseScript() {
-        return iife(
-                """
-            var spec = $.specBody;
-            var specUrl = $.specUrl || '';
-            if (!spec) return {tools: [], baseUrl: '', format: 'unknown'};
-            // If spec is a string, parse it
-            if (typeof spec === 'string') { try { spec = JSON.parse(spec); } catch(e) { return {tools: [], baseUrl: specUrl, format: 'parse_error', error: '' + e}; } }
-            // For GraalJS interop: access nested maps via string keys
-            function get(obj, key) { if (!obj) return null; return obj[key] !== undefined ? obj[key] : null; }
-
-            var tools = [];
-            var baseUrl = '';
-            var format = 'unknown';
-
-            function slug(s) { return s.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '').toLowerCase(); }
-            function mergeParams(params, reqBody) {
-                var props = {};
-                var required = [];
-                (params || []).forEach(function(p) {
-                    if (p.name && p['in'] !== 'header') {
-                        props[p.name] = p.schema || {type: 'string'};
-                        if (p.description) props[p.name].description = p.description;
-                        if (p.required) required.push(p.name);
-                    }
-                });
-                if (reqBody && reqBody.content) {
-                    var ct = reqBody.content['application/json'] || reqBody.content[Object.keys(reqBody.content)[0]];
-                    if (ct && ct.schema && ct.schema.properties) {
-                        var bp = ct.schema.properties;
-                        Object.keys(bp).forEach(function(k) { props[k] = bp[k]; });
-                        if (ct.schema.required) ct.schema.required.forEach(function(r) { if (required.indexOf(r) < 0) required.push(r); });
-                    }
-                }
-                return {type: 'object', properties: props, required: required.length > 0 ? required : undefined};
-            }
-
-            // OpenAPI 3.x
-            var oa = get(spec, 'openapi');
-            if (oa && ('' + oa).indexOf('3.') === 0) {
-                format = 'openapi3';
-                var servers = get(spec, 'servers');
-                var rawBase = (servers && servers[0]) ? get(servers[0], 'url') : null;
-                var specBase = rawBase ? '' + rawBase : '';
-                // If baseUrl is relative (starts with /), prepend the spec URL's origin
-                if (specBase && specBase.indexOf('/') === 0) {
-                    var m = specUrl.match(/^(https?:\\/\\/[^\\/]+)/);
-                    specBase = (m ? m[1] : '') + specBase;
-                }
-                // Fallback: derive origin from the spec URL
-                if (!specBase) {
-                    var m2 = specUrl.match(/^(https?:\\/\\/[^\\/]+)/);
-                    specBase = m2 ? m2[1] : specUrl.replace(/\\/[^\\/]*\\.(json|yaml).*$/, '');
-                }
-                baseUrl = specBase;
-                var paths = get(spec, 'paths');
-                if (paths) {
-                    for (var path in paths) {
-                        var methods = get(paths, path);
-                        if (!methods || typeof methods !== 'object') continue;
-                        var httpMethods = ['get','post','put','patch','delete','head','options'];
-                        for (var mi = 0; mi < httpMethods.length; mi++) {
-                            var m = httpMethods[mi];
-                            var op = get(methods, m);
-                            if (!op) continue;
-                            var opId = get(op, 'operationId');
-                            var name = '' + (opId || (m + '_' + slug('' + path)));
-                            var summary = get(op, 'summary');
-                            var description = get(op, 'description');
-                            var desc = '' + (summary || description || name);
-                            tools.push({
-                                name: name,
-                                description: desc,
-                                method: m.toUpperCase(),
-                                path: '' + path,
-                                inputSchema: mergeParams(get(op, 'parameters') || get(methods, 'parameters'), get(op, 'requestBody'))
-                            });
-                        }
-                    }
-                }
-            }
-            // Swagger 2.0
-            else if (get(spec, 'swagger') === '2.0') {
-                format = 'swagger2';
-                var scheme = (spec.schemes && spec.schemes[0]) || 'https';
-                baseUrl = scheme + '://' + (spec.host || '') + (spec.basePath || '');
-                var paths2 = spec.paths || {};
-                Object.keys(paths2).forEach(function(path) {
-                    var methods = paths2[path];
-                    ['get','post','put','patch','delete'].forEach(function(m) {
-                        var op = methods[m];
-                        if (!op) return;
-                        var name = op.operationId || (m + '_' + slug(path));
-                        var params = (op.parameters || []).concat(methods.parameters || []);
-                        var bodyParam = params.filter(function(p) { return p['in'] === 'body'; })[0];
-                        var otherParams = params.filter(function(p) { return p['in'] !== 'body'; });
-                        var schema = mergeParams(otherParams, bodyParam ? {content: {'application/json': {schema: bodyParam.schema}}} : null);
-                        tools.push({
-                            name: name, description: op.summary || op.description || name,
-                            method: m.toUpperCase(), path: path, inputSchema: schema
-                        });
-                    });
-                });
-            }
-            // Postman Collection
-            else if ((get(spec, 'info') && get(get(spec, 'info'), '_postman_id')) || (get(spec, 'item') && Array.isArray(get(spec, 'item')))) {
-                format = 'postman';
-                function flatten(items, prefix) {
-                    (items || []).forEach(function(item) {
-                        if (item.item) { flatten(item.item, (prefix ? prefix + '_' : '') + slug(item.name || '')); return; }
-                        if (!item.request) return;
-                        var req = item.request;
-                        var url = typeof req.url === 'string' ? req.url : (req.url && req.url.raw ? req.url.raw : '');
-                        var name = (prefix ? prefix + '_' : '') + slug(item.name || 'unnamed');
-                        var method = (req.method || 'GET').toUpperCase();
-                        var pathStr = url.replace(/https?:\\/\\/[^\\/]+/, '');
-                        if (!baseUrl && url) baseUrl = url.replace(pathStr, '');
-                        var props = {};
-                        if (req.url && req.url.query) req.url.query.forEach(function(q) { props[q.key] = {type: 'string', description: q.description || ''}; });
-                        tools.push({
-                            name: name, description: item.name || name,
-                            method: method, path: pathStr,
-                            inputSchema: {type: 'object', properties: props}
-                        });
-                    });
-                }
-                flatten(spec.item, '');
-            }
-
-            return {tools: tools, baseUrl: baseUrl, format: format};
-            """);
-    }
-
     public static String apiPrepareScript(
             String staticSpecsJson,
             int mcpServerCount,
@@ -1814,22 +1672,34 @@ public class JavaScriptBuilder {
 
     /**
      * Build the state merge script that collects {@code _state_updates} from all forked tool task
-     * outputs and merges them into a single state dict.
+     * outputs, appends them to the durable ordered tool-result history, and merges state updates
+     * into a single state dict.
      *
-     * <p>Reads {@code $.currentState} (the existing workflow variable) and {@code $.joinOutput}
-     * (the JOIN task output containing all tool results). Each tool may include {@code
-     * _state_updates} in its output; these are shallow-merged onto the base state.
+     * <p>Reads {@code $.currentState} (the existing workflow variable), {@code
+     * $.previousToolResults} (the accumulated history), and {@code $.joinOutput} (the JOIN task
+     * output containing this turn's tool results). Each tool may include {@code _state_updates} in
+     * its output; these are shallow-merged onto the base state.
      */
     public static String stateMergeScript() {
         return iife(
                 "  var base = $.currentState || {};"
+                        + "  var previousToolResults = $.previousToolResults || [];"
                         + "  var joinOutput = $.joinOutput || {};"
                         + "  var toolResults = [];"
+                        // A workflow variable may arrive as either a native JS array or a Java
+                        // List proxy. Use indexed access in both forms so every prior observation
+                        // remains visible to later ReAct turns.
+                        + "  var previousCount = previousToolResults.size ? previousToolResults.size() : (previousToolResults.length || 0);"
+                        + "  for (var p = 0; p < previousCount; p++) {"
+                        + "    var prior = previousToolResults.get ? previousToolResults.get(p) : previousToolResults[p];"
+                        + "    if (prior != null) toolResults.push(prior);"
+                        + "  }"
                         + "  for (var key in joinOutput) {"
                         + "    var taskOut = joinOutput[key] || {};"
-                        + "    var toolName = taskOut._agent_tool_name || key.replace(/_[0-9]+$/, '');"
-                        + "    toolResults.push({name: String(toolName), output: taskOut});"
-                        + "    var updates = taskOut._state_updates;"
+                        + "    var rawOutput = taskOut._agent_tool_output || taskOut;"
+                        + "    var toolName = taskOut._agent_tool_name || rawOutput._agent_tool_name || key.replace(/_[0-9]+$/, '');"
+                        + "    toolResults.push({name: String(toolName), output: rawOutput});"
+                        + "    var updates = rawOutput._state_updates || taskOut._state_updates;"
                         + "    if (updates) {"
                         + "      for (var k in updates) {"
                         + "        var bv = base[k]; var uv = updates[k];"
@@ -1917,7 +1787,8 @@ public class JavaScriptBuilder {
      * output, reducing workflow payload by ~N × prompt_size.
      *
      * <p>Input: {@code state} → the _agent_state dict, {@code signals} → signal injection string,
-     * {@code maxSize} → max total context bytes, {@code maxValueSize} → max per-value bytes.
+     * {@code toolResults} → completed results from the immediately preceding tool turn, {@code
+     * maxSize} → max total context bytes, {@code maxValueSize} → max per-value bytes.
      *
      * <p>Output: the context prefix string with trailing {@code "\n\n"} (or empty).
      */
@@ -1931,7 +1802,8 @@ public class JavaScriptBuilder {
                 // since bracket notation may not work for Java Maps.
                 "var rawState = $.state;"
                         + "var signals = $.signals || '';"
-                        + "if (!rawState && !signals) return '';"
+                        + "var toolResults = $.toolResults;"
+                        + "if (!rawState && !signals && !toolResults) return '';"
                         + "var maxSize = $.maxSize || 32768;"
                         + "var maxValueSize = $.maxValueSize || 4096;"
                         // Collect map entries via for-in (works on Java Maps in GraalJS)
@@ -1964,6 +1836,14 @@ public class JavaScriptBuilder {
                         // injecting a leading-whitespace artifact when empty.
                         + "var parts = [];"
                         + "if (signals) { parts.push('[SIGNALS]\\n' + signals + '\\n[/SIGNALS]'); }"
+                        // Tool result values can be Java collection proxies. Prefer JSON when the
+                        // runtime exposes one; fall back to Java's useful toString rendering.
+                        + "if (toolResults) {"
+                        + "  var renderedTools = '';"
+                        + "  try { renderedTools = JSON.stringify(toolResults); } catch (e) {}"
+                        + "  if (!renderedTools || renderedTools === '{}' || renderedTools === '[]') renderedTools = '' + toolResults;"
+                        + "  if (renderedTools && renderedTools !== '[]') parts.push('[TOOL RESULTS]\\n' + renderedTools + '\\n[/TOOL RESULTS]');"
+                        + "}"
                         + "if (Object.keys(truncated).length > 0) {"
                         + "  parts.push('Context:\\n```json\\n' + JSON.stringify(truncated, null, 2) + '\\n```');"
                         + "}"
