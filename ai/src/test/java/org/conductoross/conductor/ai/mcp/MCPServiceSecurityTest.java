@@ -67,6 +67,11 @@ class MCPServiceSecurityTest {
 
     @Test
     void refusesAnUnconfiguredTargetBeforeSendingTheRequest() {
+        OutboundTargetPolicy restrictedPolicy = new OutboundTargetPolicy();
+        restrictedPolicy.setAllowedOrigins(
+                List.of(server.url("/").toString().replaceAll("/$", "")));
+        service = new MCPService(new OkHttpClient(), restrictedPolicy);
+
         assertThatThrownBy(
                         () ->
                                 service.callTool(

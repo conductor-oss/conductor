@@ -25,12 +25,13 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * Allow-list policy for externally supplied AI integration targets.
+ * Optional allow-list policy for externally supplied AI integration targets.
  *
  * <p>MCP servers and OpenAPI documents are commonly supplied by users or models. They must not be
- * able to turn the Conductor server into an SSRF client. The policy therefore defaults to deny and
- * requires an exact configured HTTP(S) origin. Redirects must be validated by callers with this
- * same policy before they are followed.
+ * able to turn the Conductor server into an SSRF client. Configuring one or more allowed origins
+ * enables an exact-origin allow-list and private-network protection. Without configured origins,
+ * all HTTP(S) targets are allowed for backwards-compatible default behavior. Redirects must be
+ * validated by callers with this same policy before they are followed.
  */
 @Component
 @ConfigurationProperties(prefix = "conductor.ai.outbound")
@@ -38,7 +39,7 @@ import lombok.Setter;
 @Setter
 public class OutboundTargetPolicy {
 
-    /** Exact HTTP(S) origins that MCP and AgentSpan API discovery may contact. */
+    /** Exact HTTP(S) origins that MCP and AgentSpan API discovery may contact when configured. */
     private List<String> allowedOrigins = List.of();
 
     /** Allows explicitly configured development/test origins that resolve to private addresses. */
@@ -65,15 +66,16 @@ public class OutboundTargetPolicy {
             throw new OutboundTargetDeniedException("Outbound target must include a host");
         }
 
-        String origin = origin(uri);
-        if (allowedOrigins == null
-                || allowedOrigins.stream().map(this::configuredOrigin).noneMatch(origin::equals)) {
-            throw new OutboundTargetDeniedException(
-                    "Outbound target origin is not allow-listed: " + origin);
-        }
+        if (allowedOrigins != null && !allowedOrigins.isEmpty()) {
+            String origin = origin(uri);
+            if (allowedOrigins.stream().map(this::configuredOrigin).noneMatch(origin::equals)) {
+                throw new OutboundTargetDeniedException(
+                        "Outbound target origin is not allow-listed: " + origin);
+            }
 
-        if (!allowPrivateNetworks) {
-            validatePublicAddress(uri.getHost());
+            if (!allowPrivateNetworks) {
+                validatePublicAddress(uri.getHost());
+            }
         }
     }
 

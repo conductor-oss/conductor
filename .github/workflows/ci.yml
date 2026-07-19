@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       persistence: ${{ steps.filter.outputs.persistence }}
+      ui: ${{ steps.filter.outputs.ui }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -46,6 +47,9 @@ jobs:
               - 'scheduler/redis-persistence/**'
               - 'scheduler/sqlite-persistence/**'
               - 'sqlite-persistence/**'
+            ui:
+              - 'ui/**'
+              - 'ui-next/**'
 
   build:
     runs-on: ubuntu-latest
@@ -419,6 +423,11 @@ jobs:
   build-ui:
     # ui-next is the default UI: it is what docker/server/Dockerfile bundles
     # into the conductor:server image, so it is what CI builds and tests.
+    needs: detect-changes
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' ||
+      needs.detect-changes.outputs.ui == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:

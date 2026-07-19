@@ -21,11 +21,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class OutboundTargetPolicyTest {
 
     @Test
-    void defaultsToDenyAndRejectsUnsafeTargetForms() {
+    void defaultsToAllowingAllHttpTargetsAndRejectsUnsafeTargetForms() {
         OutboundTargetPolicy policy = new OutboundTargetPolicy();
 
-        assertThatThrownBy(() -> policy.validate("http://example.com/mcp"))
-                .hasMessageContaining("not allow-listed");
+        policy.validate("http://example.com/mcp");
+        policy.validate("http://127.0.0.1:8080/mcp");
         assertThatThrownBy(() -> policy.validate("file:///etc/passwd"))
                 .hasMessageContaining("Only http and https");
         assertThatThrownBy(() -> policy.validate("http://user:password@example.com/mcp"))

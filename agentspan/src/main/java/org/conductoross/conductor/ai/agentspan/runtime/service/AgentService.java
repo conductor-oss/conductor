@@ -27,8 +27,6 @@ import org.conductoross.conductor.ai.agentspan.runtime.normalizer.NormalizerRegi
 import org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowClassifiers;
 import org.conductoross.conductor.common.metadata.agent.*;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -83,72 +81,6 @@ public class AgentService {
     private final AgentStreamRegistry streamRegistry;
     private final SkillRegistryService skillRegistryService;
     private final MetadataService metadataService;
-
-    /**
-     * Agent definitions created before execution classifiers were introduced still advertise their
-     * agent metadata, but their historic index rows say {@code workflow}. Re-index every registered
-     * agent's existing execution tree once. Descendants are traversed through {@code
-     * parentWorkflowId}, so inline and nested sub-agents inherit the agent classifier too.
-     */
-    @EventListener(ApplicationReadyEvent.class)
-    void backfillLegacyAgentExecutionClassifiers() {
-        Set<String> agentNamesToReindex = new HashSet<>();
-        for (WorkflowDef definition : metadataDAO.getAllWorkflowDefs()) {
-            Map<String, Object> metadata = definition.getMetadata();
-            if (!WorkflowClassifiers.isAgent(metadata)
-                    || String.valueOf(AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE)
-                            .equals(
-                                    String.valueOf(
-                                            metadata.get(AGENT_CLASSIFIER_BACKFILL_VERSION)))) {
-                continue;
-            }
-
-            Map<String, Object> upgradedMetadata = new LinkedHashMap<>(metadata);
-            upgradedMetadata.put("classifier", WorkflowClassifiers.AGENT);
-            upgradedMetadata.put(
-                    AGENT_CLASSIFIER_BACKFILL_VERSION, AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE);
-            definition.setMetadata(upgradedMetadata);
-            metadataDAO.updateWorkflowDef(definition);
-            agentNamesToReindex.add(definition.getName());
-        }
-
-        for (String agentName : agentNamesToReindex) {
-            // ExecutionDAO implementations require concrete bounds.  Backfill every persisted
-            // legacy execution through startup, rather than depending on a persistence-specific
-            // interpretation of null as an unbounded range.
-            for (WorkflowModel workflow :
-                    executionDAO.getWorkflowsByType(agentName, 0L, Instant.now().toEpochMilli())) {
-                reindexAgentExecutionTree(workflow, new HashSet<>());
-            }
-        }
-        if (!agentNamesToReindex.isEmpty()) {
-            log.info(
-                    "Backfilled agent execution classifiers for {} agent definitions",
-                    agentNamesToReindex.size());
-        }
-    }
-
-    private void reindexAgentExecutionTree(WorkflowModel workflow, Set<String> visitedWorkflowIds) {
-        if (workflow == null || !visitedWorkflowIds.add(workflow.getWorkflowId())) {
-            return;
-        }
-
-        WorkflowSummary summary = new WorkflowSummary(workflow.toWorkflow());
-        summary.setClassifier(WorkflowClassifiers.AGENT);
-        indexDAO.indexWorkflow(summary);
-
-        SearchResult<WorkflowSummary> children =
-                indexDAO.searchWorkflowSummary(
-                        "parentWorkflowId=" + workflow.getWorkflowId(),
-                        "*",
-                        0,
-                        Integer.MAX_VALUE,
-                        Collections.emptyList());
-        for (WorkflowSummary child : children.getResults()) {
-            reindexAgentExecutionTree(
-                    executionDAO.getWorkflow(child.getWorkflowId()), visitedWorkflowIds);
-        }
-    }
 
     /**
      * Compile an agent config into a WorkflowDef and return it. Supports both native AgentConfig
