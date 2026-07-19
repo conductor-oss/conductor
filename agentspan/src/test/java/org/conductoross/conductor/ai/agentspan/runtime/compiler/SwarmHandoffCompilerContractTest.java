@@ -142,6 +142,7 @@ class SwarmHandoffCompilerContractTest {
                             "var $={active_agent:'1',is_transfer:false,transfer_to:'',result:'',"
                                     + "tool_results:[{name:'lookup',output:{status:'declined'}}]};"
                                     + resolver);
+            assertThat(notRouted.getMember("handoff").asBoolean()).isFalse();
             assertThat(notRouted.getMember("active_agent").asString()).isEqualTo("1");
         }
     }

@@ -306,7 +306,7 @@ public class MultiAgentCompiler {
         String systemPrompt =
                 buildCoordinatorPrompt(config.getName(), instructions, agentsInfo, agentNames);
 
-        WorkflowTask routerLlm = buildIterativeRouterLlm(routerRef, parsed, systemPrompt);
+        WorkflowTask routerLlm = buildIterativeRouterLlm(routerRef, parsed, systemPrompt, config);
 
         // 2a. Normalize the raw router output to a canonical agent name or DONE — the SWITCH,
         // the conversation annotation, and the loop condition all read the normalized value.
@@ -917,7 +917,7 @@ public class MultiAgentCompiler {
             }
             String systemPrompt =
                     buildCoordinatorPrompt(config.getName(), routerInstr, agentsInfo, agentNames);
-            routerTask = buildIterativeRouterLlm(routerRef, routerParsed, systemPrompt);
+            routerTask = buildIterativeRouterLlm(routerRef, routerParsed, systemPrompt, config);
         }
 
         // 2a. Normalize the raw router output (LLM or user worker) to a canonical agent name
@@ -1574,7 +1574,10 @@ public class MultiAgentCompiler {
                         + " else if(r.type==='on_condition'){var c=$['condition_'+r.index];"
                         + " var h=c&&(c.get?c.get('handoff'):c.handoff); if(typeof h!=='boolean') throw 'Invalid on_condition output: handoff must be boolean'; hit=h;}"
                         + " if(hit) return {handoff:true,active_agent:String(indexes[r.target])};}"
-                        + "return {handoff:true,active_agent:active};");
+                        // A completed turn without a matching transfer or declarative rule is a
+                        // terminal swarm result.  Returning handoff=true here would re-run the
+                        // same active agent until the max-turn guard is exhausted.
+                        + "return {handoff:false,active_agent:active};");
     }
 
     /**
@@ -2377,7 +2380,7 @@ public class MultiAgentCompiler {
      * cause failures (e.g. consecutive/empty assistant messages that Gemini rejects).
      */
     private WorkflowTask buildIterativeRouterLlm(
-            String taskRef, ParsedModel parsed, String systemPrompt) {
+            String taskRef, ParsedModel parsed, String systemPrompt, AgentConfig parentAgent) {
         // Inner LLM task inside the sub-workflow
         WorkflowTask llm = new WorkflowTask();
         llm.setName("LLM_CHAT_COMPLETE");
@@ -2403,6 +2406,10 @@ public class MultiAgentCompiler {
         routerWf.setInputParameters(List.of("conversation"));
         routerWf.setTasks(List.of(llm));
         routerWf.setOutputParameters(Map.of("result", ref(taskRef + "_llm.output.result")));
+        // Routers are implementation details of an AgentSpan execution.  Stamping the inline
+        // definition preserves that identity in the execution index, where parentWorkflowId
+        // distinguishes this generated child from the top-level agent run.
+        agentCompiler.stampAgentMetadata(routerWf, parentAgent);
 
         // SUB_WORKFLOW task that passes conversation as input
         WorkflowTask subTask = new WorkflowTask();

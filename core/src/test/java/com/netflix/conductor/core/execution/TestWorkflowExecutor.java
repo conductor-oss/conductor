@@ -912,12 +912,7 @@ public class TestWorkflowExecutor {
 
         assertEquals("existing-agent-execution", response.getExecutionId());
         assertEquals("registered-agent", response.getAgentName());
-        assertEquals(
-                Set.of(
-                        "static_worker",
-                        "registered-agent_transfer_to_peer",
-                        "peer_transfer_to_registered-agent"),
-                new HashSet<>(response.getRequiredWorkers()));
+        assertEquals(Set.of("static_worker"), new HashSet<>(response.getRequiredWorkers()));
         verify(metadataDAO, never()).getLatestWorkflowDef(anyString());
         verify(executionDAOFacade, never()).createWorkflow(any());
     }

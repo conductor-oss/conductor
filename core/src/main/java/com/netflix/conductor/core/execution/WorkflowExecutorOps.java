@@ -1787,7 +1787,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
         Set<String> startWorkerNames = def.collectSimpleTaskNames();
         config.collectDeclaredWorkerTaskNames(startWorkerNames);
-        config.collectDynamicTransferNames(startWorkerNames);
         List<String> requiredWorkers = new ArrayList<>(startWorkerNames);
 
         // Domain-based task routing for stateful agents.

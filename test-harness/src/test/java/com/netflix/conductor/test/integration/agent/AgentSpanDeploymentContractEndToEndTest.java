@@ -15,6 +15,7 @@ package com.netflix.conductor.test.integration.agent;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -289,6 +290,51 @@ class AgentSpanDeploymentContractEndToEndTest {
         assertThrows(
                 NotFoundException.class,
                 () -> metadataService.getTaskDef(team + "_transfer_to_" + agentB));
+    }
+
+    @Test
+    void legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds() throws Exception {
+        String agent = "legacy_backfill_agent_" + UUID.randomUUID().toString().replace('-', '_');
+        agentService.deploy(
+                AgentStartRequest.builder()
+                        .agentConfig(
+                                AgentConfig.builder()
+                                        .name(agent)
+                                        .model("openai/gpt-4o-mini")
+                                        .maxTurns(1)
+                                        .build())
+                        .build());
+
+        AgentStartResponse started =
+                agentService.start(
+                        AgentStartRequest.builder()
+                                .name(agent)
+                                .prompt("Create a persisted execution for the legacy backfill")
+                                .build());
+        Task llm = awaitScheduledLlm(started.getExecutionId());
+        completeScriptedLlm(llm, Map.of("finishReason", "STOP", "result", "Done."));
+        assertEquals(
+                Workflow.WorkflowStatus.COMPLETED,
+                awaitAgentTerminal(started.getExecutionId()).getStatus());
+
+        WorkflowDef legacyDefinition = metadataService.getWorkflowDef(agent, null);
+        Map<String, Object> legacyMetadata =
+                new java.util.LinkedHashMap<>(legacyDefinition.getMetadata());
+        legacyMetadata.remove("agent_classifier_backfill_version");
+        legacyDefinition.setMetadata(legacyMetadata);
+        metadataService.updateWorkflowDef(List.of(legacyDefinition));
+
+        Method backfill =
+                AgentService.class.getDeclaredMethod("backfillLegacyAgentExecutionClassifiers");
+        backfill.setAccessible(true);
+        backfill.invoke(agentService);
+
+        assertEquals(
+                2,
+                metadataService
+                        .getWorkflowDef(agent, null)
+                        .getMetadata()
+                        .get("agent_classifier_backfill_version"));
     }
 
     @Test
@@ -3946,7 +3992,7 @@ class AgentSpanDeploymentContractEndToEndTest {
     }
 
     @Test
-    void swarmTextMentionRoutesCaseInsensitivelyAndLeavesNonmatchingTextWithTheSource() {
+    void swarmTextMentionRoutesCaseInsensitivelyAndTerminalNonmatchingTextEndsTheSwarm() {
         String suffix = UUID.randomUUID().toString().replace('-', '_');
         String team = "text_team_" + suffix;
         String analyst = "text_analyst_" + suffix;
@@ -4006,19 +4052,12 @@ class AgentSpanDeploymentContractEndToEndTest {
         Task firstSource = awaitScheduledLlmAcrossSubworkflows(nonmatching.getExecutionId());
         completeScriptedLlm(
                 firstSource, Map.of("finishReason", "STOP", "result", "This is routine work."));
-        Task secondSource = awaitScheduledLlmAcrossSubworkflows(nonmatching.getExecutionId());
         assertTrue(firstSource.getReferenceTaskName().contains(team + "_llm"));
-        assertTrue(
-                secondSource.getReferenceTaskName().contains(team + "_llm"),
-                "nonmatching text must keep the next turn with the active source agent");
-        completeScriptedLlm(
-                secondSource,
-                Map.of("finishReason", "STOP", "result", "Routine work is complete."));
         Workflow completed = awaitAgentTerminal(nonmatching.getExecutionId());
         assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
         assertTrue(
                 String.valueOf(completed.getOutput().get("result"))
-                        .contains("Routine work is complete."));
+                        .contains("This is routine work."));
     }
 
     @Test
@@ -4066,17 +4105,13 @@ class AgentSpanDeploymentContractEndToEndTest {
             Task firstSource = awaitScheduledLlmAcrossSubworkflows(falseResult.getExecutionId());
             completeScriptedLlm(
                     firstSource, Map.of("finishReason", "STOP", "result", "No handoff yet."));
-            Task secondSource = awaitScheduledLlmAcrossSubworkflows(falseResult.getExecutionId());
             assertTrue(firstSource.getReferenceTaskName().contains(team + "_llm"));
+            Workflow falseCompleted = awaitAgentTerminal(falseResult.getExecutionId());
+            assertEquals(Workflow.WorkflowStatus.COMPLETED, falseCompleted.getStatus());
             assertTrue(
-                    secondSource.getReferenceTaskName().contains(team + "_llm"),
-                    "handoff=false must not invoke the target agent");
-            completeScriptedLlm(
-                    secondSource,
-                    Map.of("finishReason", "STOP", "result", "Source stayed active."));
-            assertEquals(
-                    Workflow.WorkflowStatus.COMPLETED,
-                    awaitAgentTerminal(falseResult.getExecutionId()).getStatus());
+                    String.valueOf(falseCompleted.getOutput().get("result"))
+                            .contains("No handoff yet."),
+                    "handoff=false must end the swarm without invoking either source or target again");
 
             for (String outcome : List.of("missing", "non_boolean")) {
                 AgentStartResponse invalidResult =
@@ -4096,7 +4131,7 @@ class AgentSpanDeploymentContractEndToEndTest {
                         failed.getStatus(),
                         "on_condition must fail closed when handoff is " + outcome);
             }
-            assertEquals(4, conditionWorker.invocationCount.get());
+            assertEquals(3, conditionWorker.invocationCount.get());
         } finally {
             runner.shutdown();
         }

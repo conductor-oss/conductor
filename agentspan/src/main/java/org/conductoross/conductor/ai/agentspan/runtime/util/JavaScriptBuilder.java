@@ -1836,11 +1836,20 @@ public class JavaScriptBuilder {
                         // injecting a leading-whitespace artifact when empty.
                         + "var parts = [];"
                         + "if (signals) { parts.push('[SIGNALS]\\n' + signals + '\\n[/SIGNALS]'); }"
-                        // Tool result values can be Java collection proxies. Prefer JSON when the
-                        // runtime exposes one; fall back to Java's useful toString rendering.
+                        // Materialize Java collection proxies before JSON serialization. GraalJS
+                        // serializes a Java List of Java Maps as [{}, ...], which hides the
+                        // completed observation from the next ReAct turn and can cause repeated
+                        // tool calls.
+                        + "var toPlain=function(v){"
+                        + " if(v==null||typeof v!=='object')return v;"
+                        + " if(Array.isArray(v)){var nativeArray=[];for(var ai=0;ai<v.length;ai++)nativeArray.push(toPlain(v[ai]));return nativeArray;}"
+                        + " if(v.entrySet){var obj={};var it=v.entrySet().iterator();while(it.hasNext()){var entry=it.next();obj[String(entry.getKey())]=toPlain(entry.getValue());}return obj;}"
+                        + " if(v.size&&v.get){var javaArray=[];var count=Number(v.size());for(var li=0;li<count;li++)javaArray.push(toPlain(v.get(li)));return javaArray;}"
+                        + " return v;"
+                        + "};"
                         + "if (toolResults) {"
                         + "  var renderedTools = '';"
-                        + "  try { renderedTools = JSON.stringify(toolResults); } catch (e) {}"
+                        + "  try { renderedTools = JSON.stringify(toPlain(toolResults)); } catch (e) {}"
                         + "  if (!renderedTools || renderedTools === '{}' || renderedTools === '[]') renderedTools = '' + toolResults;"
                         + "  if (renderedTools && renderedTools !== '[]') parts.push('[TOOL RESULTS]\\n' + renderedTools + '\\n[/TOOL RESULTS]');"
                         + "}"

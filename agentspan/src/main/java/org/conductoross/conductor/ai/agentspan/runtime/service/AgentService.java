@@ -65,6 +65,9 @@ public class AgentService {
     private static final ObjectMapper MAPPER = new ObjectMapperProvider().getObjectMapper();
     private static final String AGENT_CLASSIFIER_BACKFILL_VERSION =
             "agent_classifier_backfill_version";
+    // Version 2 additionally reindexes generated router sub-workflows, which older compiler
+    // output persisted as ordinary workflow executions.
+    private static final int AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE = 2;
 
     private final AgentCompiler agentCompiler;
     private final NormalizerRegistry normalizerRegistry;
@@ -93,7 +96,7 @@ public class AgentService {
         for (WorkflowDef definition : metadataDAO.getAllWorkflowDefs()) {
             Map<String, Object> metadata = definition.getMetadata();
             if (!WorkflowClassifiers.isAgent(metadata)
-                    || "1"
+                    || String.valueOf(AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE)
                             .equals(
                                     String.valueOf(
                                             metadata.get(AGENT_CLASSIFIER_BACKFILL_VERSION)))) {
@@ -102,14 +105,19 @@ public class AgentService {
 
             Map<String, Object> upgradedMetadata = new LinkedHashMap<>(metadata);
             upgradedMetadata.put("classifier", WorkflowClassifiers.AGENT);
-            upgradedMetadata.put(AGENT_CLASSIFIER_BACKFILL_VERSION, 1);
+            upgradedMetadata.put(
+                    AGENT_CLASSIFIER_BACKFILL_VERSION, AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE);
             definition.setMetadata(upgradedMetadata);
             metadataDAO.updateWorkflowDef(definition);
             agentNamesToReindex.add(definition.getName());
         }
 
         for (String agentName : agentNamesToReindex) {
-            for (WorkflowModel workflow : executionDAO.getWorkflowsByType(agentName, null, null)) {
+            // ExecutionDAO implementations require concrete bounds.  Backfill every persisted
+            // legacy execution through startup, rather than depending on a persistence-specific
+            // interpretation of null as an unbounded range.
+            for (WorkflowModel workflow :
+                    executionDAO.getWorkflowsByType(agentName, 0L, Instant.now().toEpochMilli())) {
                 reindexAgentExecutionTree(workflow, new HashSet<>());
             }
         }
@@ -169,7 +177,6 @@ public class AgentService {
 
         Set<String> workerNames = new LinkedHashSet<>(def.collectSimpleTaskNames());
         collectDeclaredWorkerNames(config, workerNames);
-        config.collectDynamicTransferNames(workerNames);
         List<String> requiredWorkers = new ArrayList<>(workerNames);
         Map<String, Object> defMap = MAPPER.convertValue(def, Map.class);
         return CompileResponse.builder()
@@ -273,7 +280,6 @@ public class AgentService {
 
         Set<String> deployWorkerNames = new LinkedHashSet<>(def.collectSimpleTaskNames());
         collectDeclaredWorkerNames(config, deployWorkerNames);
-        config.collectDynamicTransferNames(deployWorkerNames);
         return AgentStartResponse.builder()
                 .agentName(def.getName())
                 .requiredWorkers(new ArrayList<>(deployWorkerNames))

@@ -454,6 +454,15 @@ class MultiAgentCompilerTest {
         boolean hasSwitchInLoop =
                 loop.getLoopOver().stream().anyMatch(t -> "SWITCH".equals(t.getType()));
         assertThat(hasSwitchInLoop).isTrue();
+        WorkflowTask routerSubWorkflow =
+                loop.getLoopOver().stream()
+                        .filter(task -> "SUB_WORKFLOW".equals(task.getType()))
+                        .findFirst()
+                        .orElseThrow();
+        WorkflowDef routerWorkflow = routerSubWorkflow.getSubWorkflowParam().getWorkflowDef();
+        assertThat(routerWorkflow.getMetadata())
+                .containsEntry("classifier", "agent")
+                .containsKey("agentDef");
 
         // Switch should have agent cases + DONE
         WorkflowTask switchTask =
