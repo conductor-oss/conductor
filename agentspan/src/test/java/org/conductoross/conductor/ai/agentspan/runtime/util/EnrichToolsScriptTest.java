@@ -16,6 +16,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.conductoross.conductor.ai.model.ChatCompletion;
+import org.conductoross.conductor.ai.model.ToolSpec;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Value;
 import org.junit.jupiter.api.AfterEach;
@@ -550,11 +552,17 @@ class EnrichToolsScriptTest {
         assertThat(resolvedTool.get("inputSchema")).isEqualTo(schema);
         assertThat((Map<String, Object>) resolvedTool.get("configParams"))
                 .containsEntry("selfDescribing", true);
+
+        ChatCompletion llmInput =
+                MAPPER.convertValue(map("tools", resolved.get("tools")), ChatCompletion.class);
+        ToolSpec llmTool = llmInput.getTools().get(0);
+        assertThat(llmTool.getInputSchema()).isEqualTo(schema);
+        assertThat(llmTool.getConfigParams()).containsEntry("selfDescribing", true);
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    void discoveredApiSchemaIsSelfDescribingBeforeLlmReceivesIt() throws Exception {
+    void discoveredMcpAndApiSchemasAreSelfDescribingBeforeLlmReceivesThem() throws Exception {
         Map<String, Object> schema =
                 map(
                         "type",
@@ -581,18 +589,65 @@ class EnrichToolsScriptTest {
                         schema);
         Map<String, Object> discoveredApi =
                 map("baseUrl", "http://localhost:3001/api", "tools", List.of(operation));
+        Map<String, Object> discoveredMcp =
+                map(
+                        "name",
+                        "lookup_weather_alerts",
+                        "description",
+                        "Lookup weather alerts",
+                        "inputSchema",
+                        schema);
 
         Map<String, Object> prepared =
                 evaluateWithJavaInputs(
                         JavaScriptBuilder.apiPrepareScript(
-                                "[]", 0, "[]", 1, "[{\"headers\":{}}]", 32),
-                        map("api_discovered_0", discoveredApi));
-        Map<String, Object> tool = ((List<Map<String, Object>>) prepared.get("tools")).get(0);
-        assertThat(tool.get("type")).isEqualTo("HTTP");
-        assertThat(tool.get("inputSchema")).isEqualTo(schema);
-        assertThat(tool.get("selfDescribing")).isEqualTo(true);
-        assertThat((Map<String, Object>) tool.get("configParams"))
+                                "[]",
+                                1,
+                                "[{\"serverUrl\":\"http://localhost:3001/mcp\",\"headers\":{}}]",
+                                1,
+                                "[{\"headers\":{}}]",
+                                32),
+                        map(
+                                "mcp_discovered_0",
+                                List.of(discoveredMcp),
+                                "api_discovered_0",
+                                discoveredApi));
+        List<Map<String, Object>> tools = (List<Map<String, Object>>) prepared.get("tools");
+        Map<String, Object> mcpTool = tools.get(0);
+        Map<String, Object> apiTool = tools.get(1);
+        assertThat(mcpTool.get("inputSchema")).isEqualTo(schema);
+        assertThat((Map<String, Object>) mcpTool.get("configParams"))
+                .containsEntry("selfDescribing", true)
+                .containsEntry("mcpServer", "http://localhost:3001/mcp");
+        assertThat(apiTool.get("type")).isEqualTo("HTTP");
+        assertThat(apiTool.get("inputSchema")).isEqualTo(schema);
+        assertThat(apiTool.get("selfDescribing")).isEqualTo(true);
+        assertThat((Map<String, Object>) apiTool.get("configParams"))
                 .containsEntry("selfDescribing", true);
+
+        Map<String, Object> filtered =
+                evaluateWithJavaInputs(
+                        JavaScriptBuilder.filterToolsScriptDynamic(),
+                        map("allTools", tools, "selectedNames", "[\"get_weather\"]"));
+        Map<String, Object> resolved =
+                evaluateWithJavaInputs(
+                        JavaScriptBuilder.mcpResolveScript(),
+                        map(
+                                "filtered_tools",
+                                filtered.get("tools"),
+                                "prepared_tools",
+                                tools,
+                                "mcpConfig",
+                                prepared.get("mcpConfig"),
+                                "apiConfig",
+                                prepared.get("apiConfig")));
+        ToolSpec llmTool =
+                MAPPER.convertValue(map("tools", resolved.get("tools")), ChatCompletion.class)
+                        .getTools()
+                        .get(0);
+        assertThat(llmTool.getName()).isEqualTo("get_weather");
+        assertThat(llmTool.getInputSchema()).isEqualTo(schema);
+        assertThat(llmTool.getConfigParams()).containsEntry("selfDescribing", true);
     }
 
     @Test
