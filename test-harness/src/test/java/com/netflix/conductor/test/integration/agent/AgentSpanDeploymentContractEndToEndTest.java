@@ -547,6 +547,7 @@ class AgentSpanDeploymentContractEndToEndTest {
                                         .build())
                         .build());
 
+        String idempotencyKey = "client-idempotency-" + suffix;
         ConductorAgentStartRequest request =
                 ConductorAgentStartRequest.builder()
                         .name(agent)
@@ -554,13 +555,14 @@ class AgentSpanDeploymentContractEndToEndTest {
                         .context(Map.of("tenant", "acme"))
                         .sessionId("session-42")
                         .runId("run-42")
-                        .idempotencyKey("client-idempotency-" + suffix)
+                        .idempotencyKey(idempotencyKey)
                         .build();
         ConductorAgentStartResponse first = conductorAgentClient.startAgent(request);
+        Workflow workflow = executionDAO.getWorkflow(first.getExecutionId(), true).toWorkflow();
+        assertEquals(idempotencyKey, workflow.getCorrelationId());
         ConductorAgentStartResponse replay = conductorAgentClient.startAgent(request);
 
         assertEquals(first.getExecutionId(), replay.getExecutionId());
-        Workflow workflow = executionDAO.getWorkflow(first.getExecutionId(), true).toWorkflow();
         assertEquals(Map.of("tenant", "acme"), workflow.getInput().get("context"));
         assertEquals("session-42", workflow.getInput().get("session_id"));
         assertFalse(workflow.getInput().containsKey("credentials"));

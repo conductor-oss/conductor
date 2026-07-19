@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.core.execution;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,7 +41,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
@@ -894,12 +894,17 @@ public class TestWorkflowExecutor {
                                 "agents",
                                 List.of(Map.of("name", "peer")))));
 
-        Workflow existing = new Workflow();
-        existing.setWorkflowId("existing-agent-execution");
+        String idempotentWorkflowId =
+                UUID.nameUUIDFromBytes(
+                                ("agent:registered-agent:agent-request-1")
+                                        .getBytes(StandardCharsets.UTF_8))
+                        .toString();
+        WorkflowModel existing = new WorkflowModel();
+        existing.setWorkflowId(idempotentWorkflowId);
         when(metadataDAO.getWorkflowDef("registered-agent", 3)).thenReturn(Optional.of(agentDef));
-        when(executionDAOFacade.getWorkflowsByCorrelationId(
-                        "registered-agent", "agent-request-1", false))
-                .thenReturn(List.of(existing));
+        when(executionLockService.acquireLock(idempotentWorkflowId)).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO(idempotentWorkflowId, false))
+                .thenReturn(existing);
 
         AgentStartResponse response =
                 workflowExecutor.startAgentExecution(
@@ -910,11 +915,12 @@ public class TestWorkflowExecutor {
                                 .idempotencyKey("agent-request-1")
                                 .build());
 
-        assertEquals("existing-agent-execution", response.getExecutionId());
+        assertEquals(idempotentWorkflowId, response.getExecutionId());
         assertEquals("registered-agent", response.getAgentName());
         assertEquals(Set.of("static_worker"), new HashSet<>(response.getRequiredWorkers()));
         verify(metadataDAO, never()).getLatestWorkflowDef(anyString());
         verify(executionDAOFacade, never()).createWorkflow(any());
+        verify(executionLockService).releaseLock(idempotentWorkflowId);
     }
 
     @Test
