@@ -24,14 +24,44 @@ class ExecutionConfig {
     private final ExecutorService executorService;
     private final SemaphoreUtil semaphoreUtil;
 
+    /** Dedicated pool size, or -1 when using the shared pool. */
+    private final int poolSize;
+
+    /** Isolated queues: own dedicated pool + own semaphore, permits == threadCount. */
     ExecutionConfig(int threadCount, String threadNameFormat) {
+        this(newThreadPool(threadCount, threadNameFormat), threadCount, threadCount);
+    }
 
-        this.executorService =
-                Executors.newFixedThreadPool(
-                        threadCount,
-                        new BasicThreadFactory.Builder().namingPattern(threadNameFormat).build());
+    /** Per-task-type override: own dedicated pool with explicit permit count. */
+    ExecutionConfig(int threadCount, String threadNameFormat, int permits) {
+        this(newThreadPool(threadCount, threadNameFormat), permits, threadCount);
+    }
 
-        this.semaphoreUtil = new SemaphoreUtil(threadCount);
+    /**
+     * Non-isolated queues: share the given pool but each gets its own semaphore, so a slow/busy
+     * queue cannot exhaust a shared permit pool and starve other queues' polling.
+     */
+    ExecutionConfig(ExecutorService executorService, int permits) {
+        this(executorService, permits, -1);
+    }
+
+    /** Test-only: inject a pre-built semaphore (e.g. a mock). */
+    ExecutionConfig(ExecutorService executorService, SemaphoreUtil semaphoreUtil) {
+        this.executorService = executorService;
+        this.semaphoreUtil = semaphoreUtil;
+        this.poolSize = -1;
+    }
+
+    private ExecutionConfig(ExecutorService executorService, int permits, int poolSize) {
+        this.executorService = executorService;
+        this.semaphoreUtil = new SemaphoreUtil(permits);
+        this.poolSize = poolSize;
+    }
+
+    static ExecutorService newThreadPool(int threadCount, String threadNameFormat) {
+        return Executors.newFixedThreadPool(
+                threadCount,
+                new BasicThreadFactory.Builder().namingPattern(threadNameFormat).build());
     }
 
     public ExecutorService getExecutorService() {
@@ -40,5 +70,10 @@ class ExecutionConfig {
 
     public SemaphoreUtil getSemaphoreUtil() {
         return semaphoreUtil;
+    }
+
+    /** Dedicated thread-pool size, or -1 when this config uses the shared pool. */
+    public int getPoolSize() {
+        return poolSize;
     }
 }
