@@ -56,6 +56,17 @@ public class AgentCompiler {
                     "message", "${workflow.input.prompt}",
                     "media", "${workflow.input.media}");
 
+    /**
+     * Distillation prompt for the long-term (OCG) memory summarizer LLM step. Kept in sync with the
+     * Python {@code MEMORY_SUMMARIZER_INSTRUCTIONS} in the SDK's {@code ocg_memory.py}.
+     */
+    private static final String MEMORY_SUMMARIZER_INSTRUCTIONS =
+            "You distill a conversation into a durable memory. Read the transcript and "
+                    + "extract only reusable, durable facts about the user, their preferences, and "
+                    + "the task — the kind of thing worth remembering for next time. Ignore greetings, "
+                    + "filler, and one-off details. Write a one-paragraph summary, a short list of "
+                    + "facts, and a few topical tags. Be concise and concrete.";
+
     private int timeoutSeconds = 0;
     private int llmRetryCount = 3;
     private int contextMaxSizeBytes = 32768;
@@ -727,6 +738,11 @@ public class AgentCompiler {
             // have null content on the first loop iteration.
             initVars.put("_human_feedback", "");
         }
+        if (config.getLongTermMemory() != null) {
+            // Pre-initialize to empty string so the LTM system message has
+            // non-null content before the ltm_search/format tasks run.
+            initVars.put("_ltm_context", "");
+        }
         WorkflowTask initState = new WorkflowTask();
         initState.setType("SET_VARIABLE");
         initState.setTaskReferenceName(toRef(config.getName()) + "_init_state");
@@ -735,6 +751,16 @@ public class AgentCompiler {
 
         // Prefill tool calls: execute before the loop so results are in LLM context
         allTasks.addAll(prefill.tasks());
+
+        // ── Long-term (OCG) memory: retrieve + inject (pre-loop) ─────────
+        // Search OCG for relevant memories, format them into a text block,
+        // and stash it in the ``_ltm_context`` workflow variable so buildLlmTask's
+        // system message picks it up on every turn. Best-effort: the search/format
+        // tasks are optional so a memory outage never fails the agent. No-op when
+        // longTermMemory is absent.
+        if (config.getLongTermMemory() != null) {
+            allTasks.addAll(buildLtmRetrievalTasks(config));
+        }
 
         // Required tools enforcement: wrap loop + check in outer DO_WHILE
         if (config.getRequiredTools() != null && !config.getRequiredTools().isEmpty()) {
@@ -774,10 +800,15 @@ public class AgentCompiler {
         }
 
         // Post-loop: resolve output (guardrail fix or human edit may override LLM output)
+        // ``finalOutputRef`` captures the JSONPath to the agent's final text result so
+        // the long-term memory distill step (below) can summarize it. Differs between
+        // the guardrail branch (resolve_output) and the non-guardrail branch (synth_output).
+        String finalOutputRef;
         List<GuardrailConfig> outGuardrails = getOutputGuardrails(config);
         if (!outGuardrails.isEmpty()) {
             String resolveRef = toRef(config.getName()) + "_resolve_output";
             allTasks.add(buildResolveOutputTask(resolveRef, llmRef));
+            finalOutputRef = resolveRef + ".output.result.result";
 
             Map<String, Object> outputParams = new LinkedHashMap<>();
             outputParams.put("result", ref(resolveRef + ".output.result.result"));
@@ -796,6 +827,7 @@ public class AgentCompiler {
             // their content arg).
             String synthRef = toRef(config.getName()) + "_synth_output";
             allTasks.add(buildSynthesizeOutputTask(synthRef, llmRef));
+            finalOutputRef = synthRef + ".output.result";
 
             Map<String, Object> outputParams = new LinkedHashMap<>();
             outputParams.put("result", ref(synthRef + ".output.result"));
@@ -805,9 +837,286 @@ public class AgentCompiler {
             wf.setOutputParameters(outputParams);
         }
 
+        // ── Long-term (OCG) memory: distill + save + feedback (post-loop) ──
+        // Runs AFTER the output-synthesis task so the distiller can summarize the
+        // agent's final result. All tasks are best-effort (optional=true) so a
+        // memory/feedback failure never fails the agent workflow. No-op when
+        // longTermMemory is absent.
+        if (config.getLongTermMemory() != null) {
+            allTasks.addAll(buildLtmSaveTasks(config, finalOutputRef));
+        }
+
         wf.setTasks(allTasks);
         applyTimeout(wf, config);
         return wf;
+    }
+
+    // ── Long-term (OCG) memory compilation ──────────────────────────────
+    // Compiled only into compileWithTools() (the CE orchestrator path).
+    // compileSimple/compileHybrid are NOT yet covered.
+
+    /**
+     * Build the pre-loop retrieval tasks for long-term (OCG) memory:
+     *
+     * <ol>
+     *   <li>{@code *_ltm_search} — HTTP POST {@code /api/v1/memories/search} (feedback-blended
+     *       ranking).
+     *   <li>{@code *_ltm_format} — INLINE (GraalJS) that formats the hits into a text block
+     *       (folding the good/bad signal) per {@link JavaScriptBuilder#formatMemorySearchScript()}.
+     *   <li>{@code *_ltm_set_context} — SET_VARIABLE stashing the formatted block into {@code
+     *       _ltm_context} for the LLM system message.
+     * </ol>
+     *
+     * All tasks are {@code optional=true} (best-effort).
+     */
+    List<WorkflowTask> buildLtmRetrievalTasks(AgentConfig config) {
+        LongTermMemoryConfig ltm = config.getLongTermMemory();
+        String base = toRef(config.getName());
+        List<WorkflowTask> tasks = new ArrayList<>();
+
+        // 1. Search HTTP task
+        String searchRef = base + "_ltm_search";
+        Map<String, Object> searchBody = new LinkedHashMap<>();
+        searchBody.put("query", "${workflow.input.prompt}");
+        searchBody.put("agent", ltm.getAgent());
+        searchBody.put("limit", ltm.getMaxResults() != null ? ltm.getMaxResults() : 5);
+        searchBody.put("include_shared", true);
+        if (ltm.getUser() != null && !ltm.getUser().isBlank()) {
+            searchBody.put("user", ltm.getUser());
+        }
+        WorkflowTask searchTask =
+                buildMemoryHttpTask(
+                        searchRef,
+                        ltm.getOcgUrl() + "/api/v1/memories/search",
+                        "POST",
+                        ltm.getCredential(),
+                        searchBody);
+        tasks.add(searchTask);
+
+        // 2. Format INLINE task
+        String formatRef = base + "_ltm_format";
+        WorkflowTask formatTask = new WorkflowTask();
+        formatTask.setType("INLINE");
+        formatTask.setTaskReferenceName(formatRef);
+        formatTask.setOptional(true);
+        Map<String, Object> formatInputs = new LinkedHashMap<>();
+        formatInputs.put("evaluatorType", "graaljs");
+        formatInputs.put("expression", JavaScriptBuilder.formatMemorySearchScript());
+        formatInputs.put("memories", "${" + searchRef + ".output.response.body.memories}");
+        formatTask.setInputParameters(formatInputs);
+        tasks.add(formatTask);
+
+        // 3. SET_VARIABLE: stash formatted block into _ltm_context
+        WorkflowTask setCtx = new WorkflowTask();
+        setCtx.setType("SET_VARIABLE");
+        setCtx.setTaskReferenceName(base + "_ltm_set_context");
+        setCtx.setOptional(true);
+        setCtx.setInputParameters(Map.of("_ltm_context", "${" + formatRef + ".output.result}"));
+        tasks.add(setCtx);
+
+        return tasks;
+    }
+
+    /**
+     * Build the post-loop distill/save/feedback tasks for long-term (OCG) memory:
+     *
+     * <ol>
+     *   <li>{@code *_ltm_distill} — LLM_CHAT_COMPLETE that summarizes the ticket + final report
+     *       into a MemorySummary-shaped JSON ({@code summary}, {@code facts}, {@code tags}).
+     *   <li>{@code *_ltm_build_value} — INLINE building the durable memory ``value`` string from
+     *       summary + facts.
+     *   <li>{@code *_ltm_save} — HTTP POST {@code /api/v1/memories}.
+     *   <li>{@code *_ltm_feedback_links} — HTTP POST {@code /api/v1/memories/{key}/feedback-links}.
+     *   <li>{@code <feedbackSink.taskName>} — SIMPLE worker handing the links to the user's Python
+     *       feedback_sink (only when {@code feedbackSink} is set).
+     * </ol>
+     *
+     * All tasks are {@code optional=true} (best-effort).
+     *
+     * @param finalOutputRef JSONPath (without ``${}``) to the agent's final result.
+     */
+    List<WorkflowTask> buildLtmSaveTasks(AgentConfig config, String finalOutputRef) {
+        LongTermMemoryConfig ltm = config.getLongTermMemory();
+        String base = toRef(config.getName());
+        List<WorkflowTask> tasks = new ArrayList<>();
+
+        String scope = ltm.getScope() != null ? ltm.getScope() : "agent";
+        // Stable per-conversation key. Mirrors the Python save which keys on
+        // ``conversation:{session_id or execution_id}``.
+        String memoryKey = "conversation:${workflow.workflowId}";
+
+        // 1. Distill LLM task — summarize the run into durable facts. Falls back to
+        // the agent's own model when no dedicated summary model is configured.
+        String distillRef = base + "_ltm_distill";
+        String summaryModel =
+                ltm.getSummaryModel() != null && !ltm.getSummaryModel().isBlank()
+                        ? ltm.getSummaryModel()
+                        : config.getModel();
+        WorkflowTask distillTask = buildMemoryDistillTask(distillRef, summaryModel, finalOutputRef);
+        tasks.add(distillTask);
+
+        // 2. Build value INLINE — summary + facts → durable value string.
+        String valueRef = base + "_ltm_build_value";
+        WorkflowTask valueTask = new WorkflowTask();
+        valueTask.setType("INLINE");
+        valueTask.setTaskReferenceName(valueRef);
+        valueTask.setOptional(true);
+        Map<String, Object> valueInputs = new LinkedHashMap<>();
+        valueInputs.put("evaluatorType", "graaljs");
+        valueInputs.put("expression", JavaScriptBuilder.buildMemoryValueScript());
+        // LLM_CHAT_COMPLETE exposes its result as a JSON *string* at output.result
+        // (jsonOutput only nudges the model; the server does not parse it). So pass
+        // the raw string and let the INLINE JSON.parse it — distillRef.output.result.summary
+        // would never resolve. summary/facts/tags are then read from THIS task below.
+        valueInputs.put("distilled", "${" + distillRef + ".output.result}");
+        valueTask.setInputParameters(valueInputs);
+        tasks.add(valueTask);
+
+        // 3. Save HTTP task.
+        String saveRef = base + "_ltm_save";
+        Map<String, Object> saveBody = new LinkedHashMap<>();
+        saveBody.put("key", memoryKey);
+        saveBody.put("agent", ltm.getAgent());
+        saveBody.put("value", "${" + valueRef + ".output.result.value}");
+        saveBody.put("description", "${" + valueRef + ".output.result.description}");
+        saveBody.put("scope", scope);
+        saveBody.put("source", "agent_inferred");
+        saveBody.put("tags", "${" + valueRef + ".output.result.tags}");
+        if (ltm.getUser() != null && !ltm.getUser().isBlank()) {
+            saveBody.put("user", ltm.getUser());
+        }
+        WorkflowTask saveTask =
+                buildMemoryHttpTask(
+                        saveRef,
+                        ltm.getOcgUrl() + "/api/v1/memories",
+                        "POST",
+                        ltm.getCredential(),
+                        saveBody);
+        tasks.add(saveTask);
+
+        // 4. Feedback-links HTTP task (mint signed good/bad capability URLs).
+        String linksRef = base + "_ltm_feedback_links";
+        StringBuilder linksUri = new StringBuilder();
+        linksUri.append(ltm.getOcgUrl())
+                .append("/api/v1/memories/")
+                .append(memoryKey)
+                .append("/feedback-links?agent=")
+                .append(ltm.getAgent());
+        if (ltm.getUser() != null && !ltm.getUser().isBlank()) {
+            linksUri.append("&user=").append(ltm.getUser());
+        }
+        WorkflowTask linksTask =
+                buildMemoryHttpTask(
+                        linksRef, linksUri.toString(), "POST", ltm.getCredential(), null);
+        tasks.add(linksTask);
+
+        // 5. feedback_sink SIMPLE worker — hand the links to the user's Python sink.
+        if (config.getFeedbackSink() != null && config.getFeedbackSink().getTaskName() != null) {
+            WorkflowTask sinkTask = new WorkflowTask();
+            sinkTask.setName(config.getFeedbackSink().getTaskName());
+            sinkTask.setTaskReferenceName(base + "_feedback_sink");
+            sinkTask.setType("SIMPLE");
+            sinkTask.setOptional(true);
+            Map<String, Object> sinkInputs = new LinkedHashMap<>();
+            sinkInputs.put("memory_key", memoryKey);
+            sinkInputs.put("summary", "${" + valueRef + ".output.result.summary}");
+            sinkInputs.put("facts", "${" + valueRef + ".output.result.facts}");
+            sinkInputs.put("tags", "${" + valueRef + ".output.result.tags}");
+            sinkInputs.put("good_url", "${" + linksRef + ".output.response.body.good_url}");
+            sinkInputs.put("bad_url", "${" + linksRef + ".output.response.body.bad_url}");
+            sinkInputs.put("expires_at", "${" + linksRef + ".output.response.body.expires_at}");
+            sinkInputs.put("agent", ltm.getAgent());
+            if (ltm.getUser() != null && !ltm.getUser().isBlank()) {
+                sinkInputs.put("user", ltm.getUser());
+            }
+            sinkTask.setInputParameters(sinkInputs);
+            tasks.add(sinkTask);
+        }
+
+        return tasks;
+    }
+
+    /**
+     * Build an HTTP task targeting the OCG BFF. The credential is written as a {@code ${NAME}}
+     * placeholder and rewritten by {@link ToolCompiler#escapeCredentialHeaders} into a {@code
+     * ${workflow.secrets.NAME}} reference — the same wire-only-resolved path the OCG query tools
+     * use, so plaintext is never persisted. Marked {@code optional=true} so memory failures never
+     * fail the agent. A {@code null} body sends no JSON body.
+     */
+    WorkflowTask buildMemoryHttpTask(
+            String refName,
+            String uri,
+            String method,
+            String credential,
+            Map<String, Object> body) {
+        WorkflowTask task = new WorkflowTask();
+        task.setName("http_ocg_memory");
+        task.setTaskReferenceName(refName);
+        task.setType("HTTP");
+        task.setOptional(true);
+
+        Map<String, Object> httpReq = new LinkedHashMap<>();
+        httpReq.put("uri", uri);
+        httpReq.put("method", method);
+        Map<String, Object> headers = new LinkedHashMap<>();
+        headers.put("Authorization", "Bearer ${" + credential + "}");
+        headers.put("Content-Type", "application/json");
+        // Rewrite ${NAME} -> ${workflow.secrets.NAME} for direct real-task placement.
+        httpReq.put("headers", ToolCompiler.escapeCredentialHeaders(headers));
+        httpReq.put("accept", "application/json");
+        httpReq.put("connectionTimeOut", 30000);
+        httpReq.put("readTimeOut", 30000);
+        if (body != null) {
+            httpReq.put("body", body);
+        }
+
+        Map<String, Object> inputs = new LinkedHashMap<>();
+        inputs.put("http_request", httpReq);
+        task.setInputParameters(inputs);
+        return task;
+    }
+
+    /**
+     * Build the LLM distillation task: summarize the ticket + final report into a
+     * MemorySummary-shaped JSON ({@code summary}, {@code facts}, {@code tags}). Forces JSON output.
+     * Marked {@code optional=true}.
+     */
+    WorkflowTask buildMemoryDistillTask(
+            String distillRef, String summaryModel, String finalOutputRef) {
+        ParsedModel parsed = ModelParser.parse(summaryModel);
+        WorkflowTask llm = new WorkflowTask();
+        llm.setName("LLM_CHAT_COMPLETE");
+        llm.setTaskReferenceName(distillRef);
+        llm.setType("LLM_CHAT_COMPLETE");
+        llm.setOptional(true);
+
+        String systemMessage =
+                MEMORY_SUMMARIZER_INSTRUCTIONS
+                        + "\n\nRespond with a JSON object matching this schema: "
+                        + "{\"summary\": string (one short paragraph: what happened / what was learned), "
+                        + "\"facts\": array of strings (durable, reusable facts about the user or task; no chit-chat), "
+                        + "\"tags\": array of strings (short topical tags)}. Output only valid JSON, no other text.";
+
+        List<Object> messages = new ArrayList<>();
+        messages.add(Map.of("role", "system", "message", systemMessage));
+        messages.add(
+                Map.of(
+                        "role",
+                        "user",
+                        "message",
+                        "TICKET:\n${workflow.input.prompt}\n\nFINAL REPORT:\n${"
+                                + finalOutputRef
+                                + "}"));
+
+        Map<String, Object> inputs = new LinkedHashMap<>();
+        inputs.put("llmProvider", parsed.getProvider());
+        inputs.put("model", parsed.getModel());
+        inputs.put("messages", messages);
+        inputs.put("jsonOutput", true);
+        inputs.put("maxTokens", 2048);
+        inputs.put("temperature", 0);
+        llm.setInputParameters(inputs);
+        return llm;
     }
 
     // ── Hybrid: tools AND sub-agents ────────────────────────────────
@@ -1249,6 +1558,13 @@ public class AgentCompiler {
         wf.setTimeoutSeconds(60L);
         wf.setTimeoutPolicy(null);
         wf.setInputParameters(WORKFLOW_INPUTS);
+        // Default ``media`` to an empty list so ``${workflow.input.media}`` never
+        // resolves to null. The SDK/API start path (AgentService) already defaults
+        // this, but inbound-webhook starts bypass AgentService, leaving the user
+        // ChatMessage's media null — the upstream ChatCompleteTask then NPEs on
+        // ``getMedia().stream()`` while assembling multi-turn history. inputTemplate
+        // values are defaults only; a caller-supplied ``media`` still overrides.
+        wf.setInputTemplate(Map.of("media", List.of()));
         return wf;
     }
 
@@ -1407,6 +1723,19 @@ public class AgentCompiler {
             if (!instrText.isEmpty()) {
                 messages.add(Map.of("role", "system", "message", instrText));
             }
+        }
+
+        // Long-term (OCG) memory: inject retrieved context as a system message.
+        // ``_ltm_context`` is computed pre-loop by the ``*_ltm_search`` HTTP task
+        // + ``*_ltm_format`` INLINE and stored as a workflow variable (empty string
+        // when nothing relevant is found, so this message is harmless). Mirrors the
+        // ``_human_feedback`` system-message pattern. No-op when longTermMemory is
+        // absent.
+        if (config.getLongTermMemory() != null) {
+            messages.add(
+                    Map.of(
+                            "role", "system",
+                            "message", "${workflow.variables._ltm_context}"));
         }
 
         // Memory messages

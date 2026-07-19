@@ -1508,13 +1508,37 @@ public class AgentService {
 
     public SearchResult<WorkflowSummary> searchExecutionsRaw(
             int start, int size, String sort, String freeText, String query) {
-        return searchExecutionsRaw(start, size, sort, freeText, query, null);
+        return searchExecutionsRaw(start, size, sort, freeText, query, null, false);
     }
 
     public SearchResult<WorkflowSummary> searchExecutionsRaw(
             int start, int size, String sort, String freeText, String query, String classifier) {
-        return workflowService.searchWorkflows(
-                start, size, sort, freeText, withClassifierFilter(query, classifier));
+        return searchExecutionsRaw(start, size, sort, freeText, query, classifier, false);
+    }
+
+    /**
+     * Search executions with an optional {@code classifier} filter (folded in as {@code classifier
+     * IN (...)}) and an optional top-level-only restriction. Top-level executions are roots (no
+     * parent); roots store {@code parent_workflow_id = ""}, so the restriction is the filter {@code
+     * parentWorkflowId = ""}. Both are ANDed onto the caller's {@code query}.
+     */
+    public SearchResult<WorkflowSummary> searchExecutionsRaw(
+            int start,
+            int size,
+            String sort,
+            String freeText,
+            String query,
+            String classifier,
+            boolean topLevelOnly) {
+        String effectiveQuery = withClassifierFilter(query, classifier);
+        if (topLevelOnly) {
+            String topLevelFilter = "parentWorkflowId = \"\"";
+            effectiveQuery =
+                    (effectiveQuery == null || effectiveQuery.isBlank())
+                            ? topLevelFilter
+                            : effectiveQuery + " AND " + topLevelFilter;
+        }
+        return workflowService.searchWorkflows(start, size, sort, freeText, effectiveQuery);
     }
 
     /**

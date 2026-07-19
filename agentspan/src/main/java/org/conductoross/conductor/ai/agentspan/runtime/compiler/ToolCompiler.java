@@ -77,6 +77,19 @@ public class ToolCompiler {
     }
 
     /**
+     * Rewrite {@code ${NAME}} credential placeholders in an HTTP headers map for direct placement
+     * into a real (non-INLINE) task's {@code inputParameters}. Exposed for compiler-emitted HTTP
+     * tasks (e.g. long-term memory) that must resolve credentials the same way tool HTTP calls do:
+     * the placeholder ends up as a {@code ${workflow.secrets.NAME}} reference, which conductor
+     * defers at input binding and resolves wire-only at the task's own hand-off (see {@link
+     * #secretRefHeaders}).
+     */
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> escapeCredentialHeaders(Map<?, ?> headers) {
+        return (Map<String, Object>) secretRefHeaders(escapeCredentialPlaceholders(headers));
+    }
+
+    /**
      * Rewrite a {@code ${NAME}} credential placeholder to the inert transport form {@code #{NAME}}.
      *
      * <p>Two-form design: header configs travel through INLINE enrich/prepare scripts (as script

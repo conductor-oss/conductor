@@ -90,6 +90,20 @@ public class AgentConfig {
     private List<GuardrailConfig> guardrails;
     private MemoryConfig memory;
 
+    /**
+     * Long-term (OCG-backed) memory configuration. When present, the compiler inlines memory
+     * retrieval (pre-loop) and distill/save/feedback (post-loop) steps into the workflow. Distinct
+     * from the short-term {@link #memory}.
+     */
+    private LongTermMemoryConfig longTermMemory;
+
+    /**
+     * Worker reference for the long-term memory {@code feedback_sink} callable. When present (and
+     * {@link #longTermMemory} is set), the compiler emits a post-loop SIMPLE task that hands the
+     * human good/bad capability links to the user's Python feedback_sink worker.
+     */
+    private WorkerRef feedbackSink;
+
     @Builder.Default private int maxTurns = 100;
 
     private Integer maxTokens;

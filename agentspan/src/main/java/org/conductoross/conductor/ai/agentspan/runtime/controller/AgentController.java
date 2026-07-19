@@ -386,7 +386,9 @@ public class AgentController {
 
     /**
      * Search executions (pass-through to Conductor search, used by UI). An optional {@code
-     * classifier} filter (comma-separated) is folded into the query as {@code classifier IN (...)}.
+     * classifier} filter (comma-separated) is folded into the query as {@code classifier IN (...)};
+     * {@code topLevelOnly=true} restricts results to root executions ({@code parentWorkflowId =
+     * ""}).
      */
     @GetMapping("/executions/search")
     public SearchResult<WorkflowSummary> searchExecutionsRaw(
@@ -395,8 +397,11 @@ public class AgentController {
             @RequestParam(name = "sort", defaultValue = "startTime:DESC") String sort,
             @RequestParam(name = "freeText", required = false) String freeText,
             @RequestParam(name = "query", required = false) String query,
-            @RequestParam(name = "classifier", required = false) String classifier) {
-        return agentService.searchExecutionsRaw(start, size, sort, freeText, query, classifier);
+            @RequestParam(name = "classifier", required = false) String classifier,
+            @RequestParam(name = "topLevelOnly", required = false, defaultValue = "false")
+                    boolean topLevelOnly) {
+        return agentService.searchExecutionsRaw(
+                start, size, sort, freeText, query, classifier, topLevelOnly);
     }
 
     // ── Bulk operations ─────────────────────────────────────────────
