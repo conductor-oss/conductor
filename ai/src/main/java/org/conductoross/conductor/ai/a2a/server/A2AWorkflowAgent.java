@@ -88,6 +88,9 @@ public class A2AWorkflowAgent {
     }
 
     private boolean isExposed(WorkflowDef def) {
+        if (properties.isExposeAll()) {
+            return true;
+        }
         if (properties.getExposedWorkflows().contains(def.getName())) {
             return true;
         }
