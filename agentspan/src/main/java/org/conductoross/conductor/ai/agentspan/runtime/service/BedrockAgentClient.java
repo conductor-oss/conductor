@@ -12,9 +12,7 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.service;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -71,8 +69,6 @@ public class BedrockAgentClient implements ConductorAgentClient {
         return A2AService.AGENT_TYPE_BEDROCK;
     }
 
-
-
     @Override
     public ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request) {
         String sessionId =
@@ -117,7 +113,9 @@ public class BedrockAgentClient implements ConductorAgentClient {
         return ConductorAgentStatusResponse.builder()
                 .executionId(executionId)
                 .status(agentState)
-                .complete(agentState == ConductorAgentState.COMPLETED || agentState == ConductorAgentState.FAILED)
+                .complete(
+                        agentState == ConductorAgentState.COMPLETED
+                                || agentState == ConductorAgentState.FAILED)
                 .running(agentState == ConductorAgentState.RUNNING)
                 .waiting(agentState == ConductorAgentState.WAITING)
                 .output(state.output)
@@ -130,7 +128,8 @@ public class BedrockAgentClient implements ConductorAgentClient {
     public void respond(ConductorAgentRespondRequest request) {
         ExecutionState state = executions.get(request.getExecutionId());
         if (state == null) {
-            throw new IllegalStateException("No execution found for id: " + request.getExecutionId());
+            throw new IllegalStateException(
+                    "No execution found for id: " + request.getExecutionId());
         }
 
         // Build the returnControlInvocationResults from the respond body
@@ -140,11 +139,16 @@ public class BedrockAgentClient implements ConductorAgentClient {
         SessionState sessionState =
                 SessionState.builder()
                         .returnControlInvocationResults(
-                                rb -> rb.apiResult(
-                                        ar -> ar.actionGroup(state.pendingToolName)
-                                                .apiPath("/invoke")
-                                                .httpMethod("POST")
-                                                .responseBody(Map.of("application/json", contentBody))))
+                                rb ->
+                                        rb.apiResult(
+                                                ar ->
+                                                        ar.actionGroup(state.pendingToolName)
+                                                                .apiPath("/invoke")
+                                                                .httpMethod("POST")
+                                                                .responseBody(
+                                                                        Map.of(
+                                                                                "application/json",
+                                                                                contentBody))))
                         .build();
 
         InvokeAgentRequest invokeRequest =
@@ -205,7 +209,10 @@ public class BedrockAgentClient implements ConductorAgentClient {
             if (payload.invocationInputs() != null && !payload.invocationInputs().isEmpty()) {
                 String toolName =
                         payload.invocationInputs().get(0).apiInvocationInput() != null
-                                ? payload.invocationInputs().get(0).apiInvocationInput().actionGroup()
+                                ? payload.invocationInputs()
+                                        .get(0)
+                                        .apiInvocationInput()
+                                        .actionGroup()
                                 : "unknown";
                 state.pendingToolName = toolName;
                 state.pendingTool = Map.of("tool_name", toolName, "payload", payload.toString());
@@ -220,7 +227,8 @@ public class BedrockAgentClient implements ConductorAgentClient {
             ConductorAgentStartRequest request, String region) {
         String credentialRef = request.getCredentialRef();
         if (StringUtils.isNotBlank(credentialRef)) {
-            String accessKeyId = credentialResolutionService.resolve(credentialRef + ".accessKeyId");
+            String accessKeyId =
+                    credentialResolutionService.resolve(credentialRef + ".accessKeyId");
             String secretAccessKey =
                     credentialResolutionService.resolve(credentialRef + ".secretAccessKey");
             if (StringUtils.isNotBlank(accessKeyId) && StringUtils.isNotBlank(secretAccessKey)) {

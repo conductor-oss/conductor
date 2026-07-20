@@ -36,7 +36,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -44,13 +43,15 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 /**
- * {@link ConductorAgentClient} backed by Azure AI Foundry Agents via the OpenAI Assistants-compatible API.
+ * {@link ConductorAgentClient} backed by Azure AI Foundry Agents via the OpenAI
+ * Assistants-compatible API.
  *
- * <p>Auth uses Entra ID client credentials flow. Credentials are resolved from the Conductor
- * secret store using the {@code credentialRef} on the start request, with dotted-path sub-keys
- * {@code .client_id}, {@code .client_secret}, and {@code .tenant_id}.
+ * <p>Auth uses Entra ID client credentials flow. Credentials are resolved from the Conductor secret
+ * store using the {@code credentialRef} on the start request, with dotted-path sub-keys {@code
+ * .client_id}, {@code .client_secret}, and {@code .tenant_id}.
  *
  * <p>Required rawConfig fields:
+ *
  * <ul>
  *   <li>{@code assistantId} - the Azure AI Foundry assistant ID (create it via portal or API first)
  *   <li>{@code endpoint} - the agentsEndpointUri for the AI Foundry project (optional if
@@ -68,7 +69,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
     private final CredentialResolutionService credentialResolutionService;
     private final OkHttpClient httpClient;
-    private final ConcurrentHashMap<String, ExecutionContext> executions = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ExecutionContext> executions =
+            new ConcurrentHashMap<>();
 
     public AzureFoundryAgentClient(
             CredentialResolutionService credentialResolutionService, OkHttpClient httpClient) {
@@ -120,6 +122,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
     /**
      * Polls the current run status. Maps Azure run states to {@link ConductorAgentState}:
+     *
      * <ul>
      *   <li>completed → COMPLETED with last assistant message as output
      *   <li>requires_action → WAITING with tool call details as pendingTool
@@ -174,7 +177,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
             ObjectNode runBody = MAPPER.createObjectNode();
             runBody.put("assistant_id", ctx.assistantId);
-            JsonNode newRun = post(ctx.endpoint + "/threads/" + executionId + "/runs", runBody, token);
+            JsonNode newRun =
+                    post(ctx.endpoint + "/threads/" + executionId + "/runs", runBody, token);
             ctx.runId = newRun.path("id").asText();
         }
     }
@@ -204,9 +208,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             String token) {
         JsonNode run = get(ctx.endpoint + "/threads/" + threadId + "/runs/" + ctx.runId, token);
         JsonNode toolCalls =
-                run.path("required_action")
-                        .path("submit_tool_outputs")
-                        .path("tool_calls");
+                run.path("required_action").path("submit_tool_outputs").path("tool_calls");
 
         ObjectNode body = MAPPER.createObjectNode();
         ArrayNode outputs = body.putArray("tool_outputs");
@@ -233,9 +235,10 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             String threadId, JsonNode run, ExecutionContext ctx, String token) {
         String azureStatus = run.path("status").asText("queued");
         ConductorAgentState state = toState(azureStatus);
-        boolean complete = state == ConductorAgentState.COMPLETED
-                || state == ConductorAgentState.FAILED
-                || state == ConductorAgentState.CANCELED;
+        boolean complete =
+                state == ConductorAgentState.COMPLETED
+                        || state == ConductorAgentState.FAILED
+                        || state == ConductorAgentState.CANCELED;
 
         Map<String, Object> output = null;
         Map<String, Object> pendingTool = null;
@@ -247,8 +250,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             JsonNode messages = get(ctx.endpoint + "/threads/" + threadId + "/messages", token);
             for (JsonNode msg : messages.path("data")) {
                 if ("assistant".equals(msg.path("role").asText())) {
-                    String text =
-                            msg.path("content").path(0).path("text").path("value").asText("");
+                    String text = msg.path("content").path(0).path("text").path("value").asText("");
                     output = Map.of("result", text);
                     break;
                 }
@@ -260,10 +262,11 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             if (toolCalls.isArray() && toolCalls.size() > 0) {
                 JsonNode first = toolCalls.get(0);
                 pendingToolName = first.path("function").path("name").asText("unknown");
-                pendingTool = Map.of(
-                        "tool_name", pendingToolName,
-                        "tool_call_id", first.path("id").asText(),
-                        "arguments", first.path("function").path("arguments").asText("{}"));
+                pendingTool =
+                        Map.of(
+                                "tool_name", pendingToolName,
+                                "tool_call_id", first.path("id").asText(),
+                                "arguments", first.path("function").path("arguments").asText("{}"));
             }
         } else if (state == ConductorAgentState.FAILED) {
             reason = run.path("last_error").path("message").asText("Run failed");
@@ -309,12 +312,14 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                             + "' must contain client_id, client_secret, and tenant_id");
         }
 
-        String scope = StringUtils.defaultIfBlank(
-                rawConfig(request, "scope"),
-                credentialResolutionService.resolve(credentialRef + ".scope"));
+        String scope =
+                StringUtils.defaultIfBlank(
+                        rawConfig(request, "scope"),
+                        credentialResolutionService.resolve(credentialRef + ".scope"));
         scope = StringUtils.defaultIfBlank(scope, DEFAULT_SCOPE);
 
-        return OAuthTokenProvider.forAzureEntraId(httpClient, tenantId, clientId, clientSecret, scope);
+        return OAuthTokenProvider.forAzureEntraId(
+                httpClient, tenantId, clientId, clientSecret, scope);
     }
 
     private String resolveEndpoint(ConductorAgentStartRequest request) {
@@ -374,8 +379,12 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             String responseBody = response.body() != null ? response.body().string() : "{}";
             if (!response.isSuccessful()) {
                 throw new RuntimeException(
-                        "Azure Foundry API call to " + label + " failed: HTTP "
-                                + response.code() + " — " + responseBody);
+                        "Azure Foundry API call to "
+                                + label
+                                + " failed: HTTP "
+                                + response.code()
+                                + " — "
+                                + responseBody);
             }
             return MAPPER.readTree(responseBody);
         } catch (IOException e) {
