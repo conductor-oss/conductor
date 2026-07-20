@@ -1,0 +1,26 @@
+{
+  "name": "controllable_poll_worker_wf",
+  "description": "workflow with a single controllable annotated task executed in poll-worker mode",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "CONTROLLABLE_POLL_TASK",
+      "taskReferenceName": "controllable_poll_ref",
+      "inputParameters": {},
+      "type": "CONTROLLABLE_POLL_TASK",
+      "startDelay": 0,
+      "optional": false,
+      "asyncComplete": false
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {
+    "taskOutput": "${controllable_poll_ref.output.attempt}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}
