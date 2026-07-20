@@ -19,20 +19,30 @@ import org.conductoross.conductor.ai.a2a.model.TaskState;
 import org.conductoross.conductor.ai.a2a.model.TaskStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
+import com.netflix.conductor.metrics.Monitors;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.Counter;
 import jakarta.servlet.http.HttpServletRequest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class A2AServerResourceTest {
 
@@ -162,5 +172,81 @@ class A2AServerResourceTest {
 
         assertEquals(200, response.getStatusCode().value());
         assertEquals("order_pizza", ((AgentCard) response.getBody()).getName());
+    }
+
+    // ---- A2A v0.2 backward-compat alias tests ------------------------------------------------
+
+    @Test
+    void tasksSend_alias_dispatchesToSendMessage() {
+        when(agent.sendMessage(eq("order_pizza"), any(A2AMessage.class)))
+                .thenReturn(task("wf-1", TaskState.WORKING));
+
+        JsonNode request =
+                rpc(
+                        "tasks/send",
+                        "{\"message\":{\"role\":\"user\",\"kind\":\"message\",\"messageId\":\"m1\",\"parts\":[{\"kind\":\"text\",\"text\":\"hi\"}]}}");
+        ResponseEntity<JsonNode> response = call("order_pizza", request);
+
+        assertEquals("wf-1", response.getBody().get("result").get("id").asText());
+        verify(agent).sendMessage(eq("order_pizza"), any(A2AMessage.class));
+    }
+
+    @Test
+    void tasksSend_alias_metricRecordedAsMessageSend() {
+        when(agent.sendMessage(eq("order_pizza"), any(A2AMessage.class)))
+                .thenReturn(task("wf-1", TaskState.WORKING));
+
+        double beforeMessageSend = counterCount("message/send");
+        double beforeTasksSend = counterCount("tasks/send");
+
+        call(
+                "order_pizza",
+                rpc(
+                        "tasks/send",
+                        "{\"message\":{\"role\":\"user\",\"kind\":\"message\",\"messageId\":\"m1\",\"parts\":[{\"kind\":\"text\",\"text\":\"hi\"}]}}"));
+
+        assertEquals(beforeMessageSend + 1, counterCount("message/send"), 0.01);
+        assertEquals(beforeTasksSend, counterCount("tasks/send"), 0.01);
+    }
+
+    @Test
+    void tasksSendSubscribe_alias_returnsSseEmitter() {
+        when(agent.isExposed("order_pizza")).thenReturn(true);
+
+        JsonNode request =
+                rpc(
+                        "tasks/sendSubscribe",
+                        "{\"message\":{\"role\":\"user\",\"kind\":\"message\",\"messageId\":\"m1\",\"parts\":[{\"kind\":\"text\",\"text\":\"hi\"}]}}");
+        // tasks/sendSubscribe routes to the streaming handler, which returns an SseEmitter
+        // directly rather than a ResponseEntity, so the call(...) cast helper is not used here.
+        Object result = resource.jsonRpc("order_pizza", request);
+
+        assertInstanceOf(SseEmitter.class, result);
+    }
+
+    @Test
+    void rpcPathSuffix_routesToJsonRpcHandler() throws Exception {
+        when(agent.sendMessage(eq("order_pizza"), any(A2AMessage.class)))
+                .thenReturn(task("wf-1", TaskState.WORKING));
+
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(resource).build();
+        mvc.perform(
+                        post("/a2a/order_pizza/rpc")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"message/send\","
+                                                + "\"params\":{\"message\":{\"role\":\"user\",\"kind\":\"message\",\"messageId\":\"m1\","
+                                                + "\"parts\":[{\"kind\":\"text\",\"text\":\"hi\"}]}}}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.id").value("wf-1"));
+    }
+
+    private double counterCount(String methodTag) {
+        Counter counter =
+                Monitors.getRegistry()
+                        .find("a2a_server_requests")
+                        .tag("method", methodTag)
+                        .counter();
+        return counter == null ? 0.0 : counter.count();
     }
 }

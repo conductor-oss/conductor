@@ -18,7 +18,8 @@ import java.util.Map;
 import org.conductoross.conductor.ai.a2a.model.A2ATask;
 import org.conductoross.conductor.ai.a2a.model.TaskState;
 import org.conductoross.conductor.ai.a2a.model.TaskStatus;
-import org.conductoross.conductor.ai.agent.AgentClient;
+import org.conductoross.conductor.ai.agent.ConductorAgentCancelRequest;
+import org.conductoross.conductor.ai.agent.ConductorAgentClient;
 import org.conductoross.conductor.ai.model.A2ACancelResult;
 import org.conductoross.conductor.ai.tasks.worker.A2AWorkers;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,14 +41,14 @@ import static org.mockito.Mockito.when;
 class A2ACancelWorkerTest {
 
     private A2AService a2aService;
-    private AgentClient agentClient;
+    private ConductorAgentClient conductorAgentClient;
     private A2AWorkers workers;
 
     @BeforeEach
     void setUp() {
         a2aService = mock(A2AService.class);
-        agentClient = mock(AgentClient.class);
-        workers = new A2AWorkers(a2aService, agentClient);
+        conductorAgentClient = mock(ConductorAgentClient.class);
+        workers = new A2AWorkers(a2aService, conductorAgentClient);
     }
 
     @Test
@@ -94,14 +95,24 @@ class A2ACancelWorkerTest {
         assertEquals(Task.Status.COMPLETED, task.getStatus());
         assertEquals("exec-1", result.getExecutionId());
         assertEquals(Boolean.TRUE, result.getCanceled());
-        verify(agentClient).cancelAgent("exec-1", "user requested");
+        verify(conductorAgentClient)
+                .cancelAgent(
+                        ConductorAgentCancelRequest.builder()
+                                .executionId("exec-1")
+                                .reason("user requested")
+                                .build());
     }
 
     @Test
     void conductorDefaultsReasonWhenBlank() {
         invokeCancel(workers, task(Map.of("agentType", "conductor", "executionId", "exec-1")));
 
-        verify(agentClient).cancelAgent(eq("exec-1"), eq("Cancelled by CANCEL_AGENT task"));
+        verify(conductorAgentClient)
+                .cancelAgent(
+                        ConductorAgentCancelRequest.builder()
+                                .executionId("exec-1")
+                                .reason("Cancelled by CANCEL_AGENT task")
+                                .build());
     }
 
     @Test
