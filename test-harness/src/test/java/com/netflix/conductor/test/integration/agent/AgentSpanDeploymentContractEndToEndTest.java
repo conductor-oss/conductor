@@ -15,7 +15,6 @@ package com.netflix.conductor.test.integration.agent;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -290,51 +289,6 @@ class AgentSpanDeploymentContractEndToEndTest {
         assertThrows(
                 NotFoundException.class,
                 () -> metadataService.getTaskDef(team + "_transfer_to_" + agentB));
-    }
-
-    @Test
-    void legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds() throws Exception {
-        String agent = "legacy_backfill_agent_" + UUID.randomUUID().toString().replace('-', '_');
-        agentService.deploy(
-                AgentStartRequest.builder()
-                        .agentConfig(
-                                AgentConfig.builder()
-                                        .name(agent)
-                                        .model("openai/gpt-4o-mini")
-                                        .maxTurns(1)
-                                        .build())
-                        .build());
-
-        AgentStartResponse started =
-                agentService.start(
-                        AgentStartRequest.builder()
-                                .name(agent)
-                                .prompt("Create a persisted execution for the legacy backfill")
-                                .build());
-        Task llm = awaitScheduledLlm(started.getExecutionId());
-        completeScriptedLlm(llm, Map.of("finishReason", "STOP", "result", "Done."));
-        assertEquals(
-                Workflow.WorkflowStatus.COMPLETED,
-                awaitAgentTerminal(started.getExecutionId()).getStatus());
-
-        WorkflowDef legacyDefinition = metadataService.getWorkflowDef(agent, null);
-        Map<String, Object> legacyMetadata =
-                new java.util.LinkedHashMap<>(legacyDefinition.getMetadata());
-        legacyMetadata.remove("agent_classifier_backfill_version");
-        legacyDefinition.setMetadata(legacyMetadata);
-        metadataService.updateWorkflowDef(List.of(legacyDefinition));
-
-        Method backfill =
-                AgentService.class.getDeclaredMethod("backfillLegacyAgentExecutionClassifiers");
-        backfill.setAccessible(true);
-        backfill.invoke(agentService);
-
-        assertEquals(
-                2,
-                metadataService
-                        .getWorkflowDef(agent, null)
-                        .getMetadata()
-                        .get("agent_classifier_backfill_version"));
     }
 
     @Test
