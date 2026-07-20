@@ -4,6 +4,8 @@
  * they can be unit-tested without mounting the full search form.
  */
 
+import { FEATURES, featureFlags } from "utils/flags";
+
 /** Conductor execution IDs are typically UUIDs. */
 export const WORKFLOW_ID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -19,15 +21,47 @@ export function workflowIdClause(value: string): string {
 /**
  * Postgres freeText uses to_tsquery(), which treats many characters as
  * operators (e.g. !, &, |, -, /). Those terms must use structured query
- * filters instead (workflowType / workflowId).
+ * filters instead (workflowType / workflowId / identifier).
  */
 export function isUnsafeForFreeText(value: string): boolean {
   return /[^a-zA-Z0-9_\s]/.test(value);
 }
 
+/**
+ * Alphanumeric segments joined by hyphens (e.g. `corr-test`). Common for
+ * correlation IDs / idempotency keys; `-` is unsafe in freeText (to_tsquery
+ * NOT), so these are routed to an identifier match clause.
+ */
+export function isHyphenatedToken(value: string): boolean {
+  return /^[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)+$/.test(value);
+}
+
 /** Quote a value for Conductor's query DSL; the server strips the quotes. */
 export function quoteQueryValue(value: string): string {
   return `'${value.replace(/'/g, "")}'`;
+}
+
+/**
+ * Match an identifier-like term (correlation / idempotency key).
+ *
+ * Orkes archive search only supports AND between clauses, so Orkes uses
+ * `identifier=` which the backend expands to a SQL OR across correlationId
+ * and idempotencyKey.
+ *
+ * OSS (SQLite index) only parses `AND`-joined equality clauses — parenthesized
+ * `OR` is treated as a single invalid attribute and returns 0 hits. Agent
+ * starts already stamp idempotencyKey onto correlationId, so matching
+ * correlationId alone covers both on OSS.
+ */
+export function identifierMatchClause(
+  value: string,
+  useOrkesIdentifierField = featureFlags.isEnabled(FEATURES.ACCESS_MANAGEMENT),
+): string {
+  const quoted = quoteQueryValue(value);
+  if (useOrkesIdentifierField) {
+    return `identifier=${quoted}`;
+  }
+  return `correlationId=${quoted}`;
 }
 
 function wildcardToRegExp(pattern: string): RegExp {
@@ -78,9 +112,14 @@ export function resolveCombinedSearch(
   {
     selectedTypes = [],
     knownAgentNames = [],
+    useOrkesIdentifierField = featureFlags.isEnabled(
+      FEATURES.ACCESS_MANAGEMENT,
+    ),
   }: {
     selectedTypes?: string[];
     knownAgentNames?: string[];
+    /** Orkes `identifier=` vs OSS `(correlationId OR idempotencyKey)`. */
+    useOrkesIdentifierField?: boolean;
   } = {},
 ): CombinedSearchResolution {
   const search = searchInput.trim();
@@ -98,15 +137,24 @@ export function resolveCombinedSearch(
   } else if (selectedTypes.length === 0) {
     const matchedAgents = matchAgentNames(search, knownAgentNames);
     // Prefer workflowType when: known agent, wildcard, or freeText-unsafe
-    // (e.g. @!@&/2/). Agent executions often use names that are not in
-    // /agent/list, so unsafe terms still try exact workflowType match.
+    // (e.g. @!@&/2/), except hyphenated tokens → identifier OR.
+    // Agent executions often use names that are not in /agent/list, so other
+    // unsafe terms still try exact workflowType match.
     if (matchedAgents.length) {
       searchClauses.push(workflowTypeClause(matchedAgents));
-    } else if (search.includes("*") || isUnsafeForFreeText(search)) {
+    } else if (search.includes("*")) {
+      searchClauses.push(workflowTypeClause([search]));
+    } else if (isHyphenatedToken(search)) {
+      searchClauses.push(
+        identifierMatchClause(search, useOrkesIdentifierField),
+      );
+    } else if (isUnsafeForFreeText(search)) {
       searchClauses.push(workflowTypeClause([search]));
     } else {
       freeText = search;
     }
+  } else if (isHyphenatedToken(search)) {
+    searchClauses.push(identifierMatchClause(search, useOrkesIdentifierField));
   } else if (!isUnsafeForFreeText(search)) {
     freeText = search;
   }

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  identifierMatchClause,
+  isHyphenatedToken,
   isUnsafeForFreeText,
   matchAgentNames,
   quoteQueryValue,
@@ -21,6 +23,32 @@ describe("isUnsafeForFreeText", () => {
     expect(isUnsafeForFreeText("correlation123")).toBe(false);
     expect(isUnsafeForFreeText("hello world")).toBe(false);
     expect(isUnsafeForFreeText("idempotency_key")).toBe(false);
+  });
+});
+
+describe("isHyphenatedToken", () => {
+  it("matches alphanumeric segments joined by hyphens", () => {
+    expect(isHyphenatedToken("corr-test")).toBe(true);
+    expect(isHyphenatedToken("a-b-c")).toBe(true);
+  });
+
+  it("rejects plain tokens and other special characters", () => {
+    expect(isHyphenatedToken("correlationid12345")).toBe(false);
+    expect(isHyphenatedToken("order.123")).toBe(false);
+  });
+});
+
+describe("identifierMatchClause", () => {
+  it("emits Orkes identifier= when useOrkesIdentifierField is true", () => {
+    expect(identifierMatchClause("corr-test", true)).toBe(
+      "identifier='corr-test'",
+    );
+  });
+
+  it("emits OSS correlationId when useOrkesIdentifierField is false", () => {
+    expect(identifierMatchClause("corr-test", false)).toBe(
+      "correlationId='corr-test'",
+    );
   });
 });
 
@@ -121,6 +149,39 @@ describe("resolveCombinedSearch", () => {
     });
   });
 
+  it("routes unknown hyphenated terms to Orkes identifier=, not workflowType", () => {
+    expect(
+      resolveCombinedSearch("corr-test", { useOrkesIdentifierField: true }),
+    ).toEqual({
+      searchClauses: ["identifier='corr-test'"],
+      freeText: "*",
+      isExecutionIdSearch: false,
+    });
+  });
+
+  it("routes unknown hyphenated terms to correlationId when not Orkes", () => {
+    expect(
+      resolveCombinedSearch("corr-test", { useOrkesIdentifierField: false }),
+    ).toEqual({
+      searchClauses: ["correlationId='corr-test'"],
+      freeText: "*",
+      isExecutionIdSearch: false,
+    });
+  });
+
+  it("still prefers known hyphenated agent names over identifier", () => {
+    expect(
+      resolveCombinedSearch("my-agent", {
+        knownAgentNames: KNOWN_AGENTS,
+        useOrkesIdentifierField: true,
+      }),
+    ).toEqual({
+      searchClauses: ["workflowType IN ('my-agent')"],
+      freeText: "*",
+      isExecutionIdSearch: false,
+    });
+  });
+
   it("routes agent wildcards with no list hits to workflowType LIKE", () => {
     expect(resolveCombinedSearch("my-*")).toEqual({
       searchClauses: ["workflowType=my-*"],
@@ -167,6 +228,19 @@ describe("resolveCombinedSearch", () => {
       resolveCombinedSearch("@!@&/2/", { selectedTypes: ["payment-bot"] }),
     ).toEqual({
       searchClauses: [],
+      freeText: "*",
+      isExecutionIdSearch: false,
+    });
+  });
+
+  it("ANDs hyphenated identifier with an existing agent dropdown filter", () => {
+    expect(
+      resolveCombinedSearch("corr-test", {
+        selectedTypes: ["payment-bot"],
+        useOrkesIdentifierField: true,
+      }),
+    ).toEqual({
+      searchClauses: ["identifier='corr-test'"],
       freeText: "*",
       isExecutionIdSearch: false,
     });
