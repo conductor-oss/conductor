@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.lang3.StringUtils;
+import org.conductoross.conductor.ai.a2a.A2AService;
 import org.conductoross.conductor.ai.agent.ConductorAgentCancelRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentClient;
 import org.conductoross.conductor.ai.agent.ConductorAgentRespondRequest;
@@ -54,7 +55,6 @@ import software.amazon.awssdk.services.bedrockagentruntime.model.SessionState;
  * <p>Activated by {@code conductor.ai.bedrock-agent.enabled=true}.
  */
 @Component
-@ConditionalOnProperty(name = "conductor.ai.bedrock-agent.enabled", havingValue = "true")
 public class BedrockAgentClient implements ConductorAgentClient {
 
     private static final Logger log = LoggerFactory.getLogger(BedrockAgentClient.class);
@@ -66,6 +66,12 @@ public class BedrockAgentClient implements ConductorAgentClient {
     public BedrockAgentClient(CredentialResolutionService credentialResolutionService) {
         this.credentialResolutionService = credentialResolutionService;
     }
+
+    @Override
+    public String agentType() {
+        return A2AService.AGENT_TYPE_BEDROCK;
+    }
+
 
 
     @Override

@@ -19,6 +19,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.StringUtils;
+import org.conductoross.conductor.ai.a2a.A2AService;
 import org.conductoross.conductor.ai.agent.ConductorAgentCancelRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentClient;
 import org.conductoross.conductor.ai.agent.ConductorAgentRespondRequest;
@@ -54,7 +55,6 @@ import okhttp3.Response;
  * <p>Activated by {@code conductor.ai.azure-foundry.enabled=true}.
  */
 @Component
-@ConditionalOnProperty(name = "conductor.ai.azure-foundry.enabled", havingValue = "true")
 public class AzureFoundryAgentClient implements ConductorAgentClient {
 
     private static final Logger log = LoggerFactory.getLogger(AzureFoundryAgentClient.class);
@@ -70,6 +70,11 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             CredentialResolutionService credentialResolutionService, OkHttpClient httpClient) {
         this.credentialResolutionService = credentialResolutionService;
         this.httpClient = httpClient;
+    }
+
+    @Override
+    public String agentType() {
+        return A2AService.AGENT_TYPE_AZURE_FOUNDRY;
     }
 
     @Override

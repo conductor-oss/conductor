@@ -84,34 +84,34 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
 
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
     private final A2AService a2aService;
-    private final ConductorAgentClient conductorAgentClient;
+    private final Map<String, ConductorAgentClient> agentClients;
     private final String callbackUrl;
 
     /**
-     * Spring constructor.
-     *
-     * <p>The lazy injection-point proxy keeps the dependency explicit while deferring construction
-     * of the embedded implementation. That implementation depends on AgentService and
-     * WorkflowService, which eventually depend on the annotated-task scanner that creates this
-     * worker.
+     * Spring constructor — receives all registered {@link ConductorAgentClient} implementations.
+     * Each client self-declares its {@code agentType()}; the map is built once at startup so
+     * routing in {@link #agent} is a plain map lookup with no conditional logic.
      */
     @Autowired
     public A2AWorkers(
             A2AService a2aService,
-            @Lazy ConductorAgentClient conductorAgentClient,
+            @Lazy List<ConductorAgentClient> conductorAgentClients,
             Environment environment) {
-        this(a2aService, conductorAgentClient, environment.getProperty(CALLBACK_URL_PROPERTY));
+        this(a2aService, conductorAgentClients, environment.getProperty(CALLBACK_URL_PROPERTY));
     }
 
     public A2AWorkers(
-            A2AService a2aService, ConductorAgentClient conductorAgentClient, String callbackUrl) {
+            A2AService a2aService,
+            List<ConductorAgentClient> conductorAgentClients,
+            String callbackUrl) {
         this.a2aService = a2aService;
-        this.conductorAgentClient = conductorAgentClient;
+        this.agentClients = new HashMap<>();
+        conductorAgentClients.forEach(c -> agentClients.put(c.agentType().toLowerCase(), c));
         this.callbackUrl = StringUtils.trimToNull(callbackUrl);
     }
 
-    public A2AWorkers(A2AService a2aService, ConductorAgentClient conductorAgentClient) {
-        this(a2aService, conductorAgentClient, (String) null);
+    public A2AWorkers(A2AService a2aService, List<ConductorAgentClient> conductorAgentClients) {
+        this(a2aService, conductorAgentClients, (String) null);
     }
 
     /** Fetch a remote agent's Agent Card. */
@@ -137,8 +137,10 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
     public A2ACallResult agent(A2ACallRequest request) {
         Task task = TaskContext.get().getTask();
         TaskResult result;
-        if (A2AService.isConductorAgentType(request.getAgentType())) {
-            result = new ConductorAgentDelegate(conductorAgentClient).execute(task);
+        ConductorAgentClient client = agentClients.get(
+                StringUtils.defaultIfBlank(request.getAgentType(), "").toLowerCase());
+        if (client != null) {
+            result = new ConductorAgentDelegate(client).execute(task);
         } else {
             result = executeRemote(task, request);
         }
@@ -150,14 +152,16 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
     public A2ACancelResult cancelAgent(A2ACancelRequest request) {
         Task task = TaskContext.get().getTask();
         TaskResult result = resultFor(task);
-        if (A2AService.isConductorAgentType(request.getAgentType())) {
+        ConductorAgentClient cancelClient = agentClients.get(
+                StringUtils.defaultIfBlank(request.getAgentType(), "").toLowerCase());
+        if (cancelClient != null) {
             String executionId = StringUtils.trimToNull(request.getExecutionId());
             if (executionId == null) {
-                fail(result, "CANCEL_AGENT (conductor) requires 'executionId'", true);
+                fail(result, "CANCEL_AGENT requires 'executionId'", true);
                 return finish(result, A2ACancelResult.class);
             }
             try {
-                conductorAgentClient.cancelAgent(
+                cancelClient.cancelAgent(
                         ConductorAgentCancelRequest.builder()
                                 .executionId(executionId)
                                 .reason(
@@ -172,7 +176,7 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
             } catch (Exception e) {
                 fail(
                         result,
-                        "Failed to terminate conductor agent execution "
+                        "Failed to cancel agent execution "
                                 + executionId
                                 + ": "
                                 + e.getMessage(),

@@ -23,6 +23,7 @@ import org.conductoross.conductor.ai.agent.ConductorAgentState;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
 import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
 import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
+import org.conductoross.conductor.ai.a2a.A2AService;
 import org.conductoross.conductor.common.metadata.agent.AgentStatusResponse;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -46,6 +47,11 @@ public class ServiceConductorAgentClient implements ConductorAgentClient {
 
     public ServiceConductorAgentClient(AgentService agentService) {
         this.agentService = agentService;
+    }
+
+    @Override
+    public String agentType() {
+        return A2AService.AGENT_TYPE_CONDUCTOR;
     }
 
     @Override
