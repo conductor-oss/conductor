@@ -83,6 +83,13 @@ public final class KnownProviderEnvVars {
                     "AWS_SECRET_ACCESS_KEY",
                     "AWS_REGION",
                     "BEDROCK_API_KEY",
+                    "BEDROCK_AGENT_ID",
+                    "BEDROCK_AGENT_ALIAS_ID",
+                    // Azure Foundry / Entra ID
+                    "AZURE_CLIENT_ID",
+                    "AZURE_CLIENT_SECRET",
+                    "AZURE_TENANT_ID",
+                    "AZURE_FOUNDRY_ENDPOINT",
                     // Ollama (local inference) — OLLAMA_BASE_URL is the documented
                     // variable; OLLAMA_HOST is Ollama's bind-address variable and is
                     // deliberately not read (often 0.0.0.0:11434, not a callable URL)

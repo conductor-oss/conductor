@@ -10,45 +10,41 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.agent;
-
-import java.util.List;
-import java.util.Map;
-
-import org.conductoross.conductor.common.metadata.agent.AgentConfig;
+package org.conductoross.conductor.ai.agent.credentials;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/** AI-module request for starting a native Conductor agent execution. */
+/** Credential configuration for an external agent platform resolved from the secret store. */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ConductorAgentStartRequest {
+public class AgentCredentialConfig {
 
-    private String name;
-    private Integer version;
-    private AgentConfig agentConfig;
-    private String prompt;
-    private String model;
-    private String sessionId;
-    private List<String> media;
-    private Map<String, Object> context;
-    private String idempotencyKey;
-    private String framework;
-    private Map<String, Object> rawConfig;
-    private Map<String, Object> skillRef;
-    private Integer timeoutSeconds;
-    private String runId;
+    public enum Platform {
+        BEDROCK,
+        AZURE_FOUNDRY,
+        OPENAI,
+        VERTEX_AI,
+        STATIC
+    }
 
-    @JsonProperty("static_plan")
-    private Map<String, Object> staticPlan;
+    private Platform platform;
 
+    /** Name of the secret in Conductor's secret store. Supports dotted JSON paths. */
     private String credentialRef;
+
+    /** AWS region for Bedrock; ignored by other platforms. */
+    private String region;
+
+    /** Agent endpoint URL (e.g. Azure Foundry A2A endpoint). */
+    private String endpoint;
+
+    /** OAuth scope; defaults are applied per-platform if omitted. */
+    private String scope;
 }
