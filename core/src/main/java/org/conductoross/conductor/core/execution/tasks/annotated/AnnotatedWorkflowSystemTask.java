@@ -72,6 +72,16 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
         return true;
     }
 
+    /**
+     * The annotated method blocks in-process (e.g. a remote provider call) for potentially minutes,
+     * so the poll must persist the IN_PROGRESS claim and lease the queue message before dispatch;
+     * otherwise a message redelivered mid-invocation re-executes the method (#1321).
+     */
+    @Override
+    public boolean claimOnPoll() {
+        return true;
+    }
+
     @Override
     public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         execute(workflow, task, workflowExecutor);

@@ -469,4 +469,118 @@ class AsyncSystemTaskExecutorTest extends Specification {
         task.getInputData() == literal
     }
 
+    def "Execute a claimed task with pre-claim status SCHEDULED dispatches start without reloading or recounting"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId1"
+        TaskModel task = new TaskModel()
+        task.setTaskId(taskId)
+        task.setTaskType("TEST_TASK")
+        task.setWorkflowInstanceId(workflowId)
+        // the claim already flipped the status, persisted start time and counted the poll
+        task.setStatus(TaskModel.Status.IN_PROGRESS)
+        task.setStartTime(100L)
+        task.setPollCount(1)
+        task.setCallbackAfterSeconds(3600L)
+        String queueName = QueueUtils.getQueueName(task)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        ClaimedSystemTask claimedTask = new ClaimedSystemTask(task, TaskModel.Status.SCHEDULED)
+
+        when:
+        executor.execute(workflowSystemTask, claimedTask)
+
+        then:
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        // the claimed model is used directly - no reload by id
+        0 * executionDAOFacade.getTaskModel(_)
+        // pre-claim status selects start() even though the current status is IN_PROGRESS
+        1 * workflowSystemTask.start(workflow, task, workflowExecutor)
+        0 * workflowSystemTask.execute(*_)
+        1 * workflowSystemTask.getEvaluationOffset(task, 1) >> Optional.empty()
+        1 * queueDAO.postpone(queueName, taskId, task.workflowPriority, 1)
+        1 * executionDAOFacade.updateTask(task)
+
+        // the claim counted the poll and stamped the start time; the executor must not redo either
+        task.pollCount == 1
+        task.startTime == 100L
+    }
+
+    def "Execute a claimed task with pre-claim status IN_PROGRESS dispatches execute"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId1"
+        TaskModel task = new TaskModel()
+        task.setTaskId(taskId)
+        task.setTaskType("TEST_TASK")
+        task.setWorkflowInstanceId(workflowId)
+        task.setStatus(TaskModel.Status.IN_PROGRESS)
+        task.setPollCount(2)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        // crash recovery or a due multi-turn callback: the task was already IN_PROGRESS
+        ClaimedSystemTask claimedTask = new ClaimedSystemTask(task, TaskModel.Status.IN_PROGRESS)
+
+        when:
+        executor.execute(workflowSystemTask, claimedTask)
+
+        then:
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        0 * workflowSystemTask.start(*_)
+        1 * workflowSystemTask.execute(workflow, task, workflowExecutor)
+        1 * executionDAOFacade.updateTask(task)
+        task.pollCount == 2
+    }
+
+    def "Execute a claimed task whose start completes it removes the leased message and evaluates the workflow"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId1"
+        TaskModel task = new TaskModel()
+        task.setTaskId(taskId)
+        task.setTaskType("TEST_TASK")
+        task.setWorkflowInstanceId(workflowId)
+        task.setStatus(TaskModel.Status.IN_PROGRESS)
+        String queueName = QueueUtils.getQueueName(task)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        ClaimedSystemTask claimedTask = new ClaimedSystemTask(task, TaskModel.Status.SCHEDULED)
+
+        when:
+        executor.execute(workflowSystemTask, claimedTask)
+
+        then:
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> {
+            task.setStatus(TaskModel.Status.COMPLETED)
+        }
+        1 * executionDAOFacade.updateTask(task)
+        // terminal result: the leased message is removed and the workflow decided
+        1 * queueDAO.remove(queueName, taskId)
+        1 * workflowExecutor.decide(workflowId)
+        task.endTime != 0
+    }
+
+    def "Execute a claimed task in a terminated workflow cancels it and removes the leased message"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId1"
+        TaskModel task = new TaskModel()
+        task.setTaskId(taskId)
+        task.setTaskType("TEST_TASK")
+        task.setWorkflowInstanceId(workflowId)
+        task.setStatus(TaskModel.Status.IN_PROGRESS)
+        String queueName = QueueUtils.getQueueName(task)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.COMPLETED)
+        ClaimedSystemTask claimedTask = new ClaimedSystemTask(task, TaskModel.Status.SCHEDULED)
+
+        when:
+        executor.execute(workflowSystemTask, claimedTask)
+
+        then:
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        0 * workflowSystemTask.start(*_)
+        0 * workflowSystemTask.execute(*_)
+        1 * executionDAOFacade.updateTask(task)
+        1 * queueDAO.remove(queueName, taskId)
+        task.status == TaskModel.Status.CANCELED
+    }
+
 }

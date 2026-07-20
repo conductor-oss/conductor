@@ -1,0 +1,26 @@
+{
+  "name": "controllable_short_lease_wf",
+  "description": "workflow with a controllable async system task whose task def carries a short response timeout (claim lease crash-recovery test)",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "controllable_task_short_lease",
+      "taskReferenceName": "controllable_ref",
+      "inputParameters": {},
+      "type": "CONTROLLABLE_SYS_TASK",
+      "startDelay": 0,
+      "optional": false,
+      "asyncComplete": false
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {
+    "taskOutput": "${controllable_ref.output.attempt}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}
