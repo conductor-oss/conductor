@@ -101,7 +101,6 @@ public class TestWorkflowExecutorDecideLoop {
                         systemTaskRegistry,
                         mock(ParametersUtils.class),
                         mock(IDGenerator.class),
-                        new com.fasterxml.jackson.databind.ObjectMapper(),
                         Optional.empty());
     }
 

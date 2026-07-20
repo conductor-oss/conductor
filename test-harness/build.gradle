@@ -14,6 +14,7 @@ dependencies {
     testImplementation project(':conductor-http-task')
     testImplementation project(':conductor-scheduler-core')
     testImplementation project(':conductor-ai')
+    testImplementation project(':conductor-agentspan')
 
     testImplementation "org.conductoross:conductor-client:${revConductorClient}"
 
@@ -71,6 +72,37 @@ dependencies {
 }
 
 tasks.withType(Test)  {
+    maxParallelForks = 1
+}
+
+// AgentSpan's deterministic suite uses real Conductor services plus Testcontainers. The live
+// suite additionally calls a configured LLM provider and is deliberately separate from the
+// default test task so local contributors do not need provider credentials to run unit tests.
+tasks.named('test') {
+    useJUnitPlatform {
+        excludeTags 'agentspan-live-e2e'
+    }
+}
+
+tasks.register('agentspanDeterministicE2E', Test) {
+    description = 'Runs AgentSpan real-engine E2E tests without an external LLM provider'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'agentspan-deterministic-e2e'
+    }
+    maxParallelForks = 1
+}
+
+tasks.register('agentspanRealE2E', Test) {
+    description = 'Runs AgentSpan E2E tests against a configured live LLM provider'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'agentspan-live-e2e'
+    }
     maxParallelForks = 1
 }
 

@@ -3,6 +3,7 @@ import {
   AgentRunData,
   AgentStatus,
   AgentStrategy,
+  AgentTimelineKind,
   AgentTurn,
   EventType,
   ExecutionMetrics,
@@ -78,7 +79,14 @@ function sumTokens(tokensList: TokenUsage[]): TokenUsage {
 export function computeMetrics(run: AgentRunData): ExecutionMetrics {
   const allRuns = collectAllRuns(run);
   const totalTokens = sumTokens(allRuns.map((r) => r.totalTokens));
-  const totalTurns = allRuns.reduce((sum, r) => sum + r.turns.length, 0);
+  const totalTurns = allRuns.reduce(
+    (sum, r) =>
+      sum +
+      r.turns.filter(
+        (turn) => timelineItemKind(turn) === AgentTimelineKind.TURN,
+      ).length,
+    0,
+  );
   const totalDurationMs = run.totalDurationMs; // Use root agent's wall-clock time
   const failedAgents = allRuns.filter(
     (r) => r.status === AgentStatus.FAILED,
@@ -133,11 +141,143 @@ function toMs(value: string | number | undefined | null): number {
   return typeof value === "number" ? value : parseInt(value, 10) || 0;
 }
 
+export function timelineItemId(turn: AgentTurn): string {
+  return turn.id ?? `turn-${turn.turnNumber}`;
+}
+
+export function timelineItemKind(turn: AgentTurn): AgentTimelineKind {
+  return turn.kind ?? AgentTimelineKind.TURN;
+}
+
+export function timelineItemLabel(turn: AgentTurn): string {
+  switch (timelineItemKind(turn)) {
+    case AgentTimelineKind.PREPARATION:
+      return "Preparation";
+    case AgentTimelineKind.FINALIZATION:
+      return "Finalization";
+    default:
+      return `Turn ${turn.turnNumber}`;
+  }
+}
+
+/** Compact, safe text for diagram and tree labels when an execution carries JSON input/output. */
+export function agentValuePreview(
+  value: unknown,
+  maxLength = 80,
+): string | undefined {
+  if (value == null) return undefined;
+  let text: string;
+  if (typeof value === "string") {
+    text = value;
+  } else {
+    try {
+      text = JSON.stringify(value);
+    } catch {
+      text = "[complex data]";
+    }
+  }
+  return text.length > maxLength ? `${text.slice(0, maxLength)}…` : text;
+}
+
+function taskOrder(task: ExecutionTask, originalIndex: number): number[] {
+  return [
+    task.startTime ?? task.scheduledTime ?? Number.MAX_SAFE_INTEGER,
+    task.scheduledTime ?? Number.MAX_SAFE_INTEGER,
+    Number(task.seq ?? Number.MAX_SAFE_INTEGER),
+    originalIndex,
+  ];
+}
+
+function sortTasksChronologically(tasks: ExecutionTask[]): ExecutionTask[] {
+  return tasks
+    .map((task, index) => ({ task, order: taskOrder(task, index) }))
+    .sort((a, b) => {
+      for (let i = 0; i < a.order.length; i++) {
+        if (a.order[i] !== b.order[i]) return a.order[i] - b.order[i];
+      }
+      return 0;
+    })
+    .map(({ task }) => task);
+}
+
+function sortTasksByWorkflowSequence(tasks: ExecutionTask[]): ExecutionTask[] {
+  return tasks
+    .map((task, index) => ({ task, index, sequence: Number(task.seq) }))
+    .sort((left, right) => {
+      const leftSequence = Number.isFinite(left.sequence)
+        ? left.sequence
+        : Number.MAX_SAFE_INTEGER;
+      const rightSequence = Number.isFinite(right.sequence)
+        ? right.sequence
+        : Number.MAX_SAFE_INTEGER;
+      return leftSequence - rightSequence || left.index - right.index;
+    })
+    .map(({ task }) => task);
+}
+
+/**
+ * Runtime FORK/FORK_JOIN and JOIN tasks bracket work that must remain parallel
+ * in the debugger. Consecutive tool events are not sufficient evidence: MCP
+ * discovery emits sequential LIST_MCP_TOOLS tasks that happen to be adjacent.
+ */
+function parallelGroupsByTaskReference(
+  tasks: ExecutionTask[],
+): Map<string, string> {
+  const groups = new Map<string, string>();
+  const stack: string[] = [];
+
+  // A JOIN is scheduled before its branches finish, so timestamps cannot
+  // reliably describe the fork boundary. `seq` preserves the workflow shape.
+  for (const task of sortTasksByWorkflowSequence(tasks)) {
+    if (["FORK", "FORK_JOIN", "FORK_JOIN_DYNAMIC"].includes(task.taskType)) {
+      stack.push(task.referenceTaskName);
+      continue;
+    }
+    if (task.taskType === "JOIN") {
+      stack.pop();
+      continue;
+    }
+    const current = stack[stack.length - 1];
+    if (current) groups.set(task.referenceTaskName, current);
+  }
+
+  return groups;
+}
+
+/** Task statuses Conductor considers terminal failures (no further progress). */
+const FAILED_TASK_STATUSES = new Set([
+  "FAILED",
+  "FAILED_WITH_TERMINAL_ERROR",
+  "TIMED_OUT",
+  "CANCELED",
+]);
+
+/** Task statuses that are still actively progressing (caller shows a spinner). */
+const IN_PROGRESS_TASK_STATUSES = new Set([
+  "IN_PROGRESS",
+  "SCHEDULED",
+  "PENDING",
+]);
+
+/**
+ * Whether a task status represents a terminal failure. Use this instead of
+ * comparing against the literal "FAILED" — Conductor has several terminal
+ * failure statuses (FAILED_WITH_TERMINAL_ERROR, TIMED_OUT, CANCELED) and
+ * treating only "FAILED" as failed leaves the others rendering as running.
+ */
+export function isFailedTaskStatus(status: string): boolean {
+  return FAILED_TASK_STATUSES.has(status);
+}
+
 /** Maps task status to a tri-state success flag: true=completed, false=failed, undefined=in-progress */
-function taskSuccess(status: string): boolean | undefined {
+export function taskSuccess(status: string): boolean | undefined {
   if (status === "COMPLETED") return true;
-  if (status === "FAILED" || status === "TIMED_OUT") return false;
-  return undefined; // IN_PROGRESS → caller shows spinner
+  if (FAILED_TASK_STATUSES.has(status)) return false;
+  if (IN_PROGRESS_TASK_STATUSES.has(status)) return undefined; // caller shows spinner
+  // Any other terminal status (SKIPPED, COMPLETED_WITH_ERRORS, NULL, or an
+  // unknown future status) is treated as not-in-progress so the UI never shows
+  // a perpetual spinner for a task the backend has already finished.
+  return false;
 }
 
 /**
@@ -195,16 +335,24 @@ function buildAllAttempts(
   );
 }
 
-function mapTaskStatus(status: string): AgentStatus {
+export function mapTaskStatus(status: string): AgentStatus {
   switch (status) {
     case "COMPLETED":
       return AgentStatus.COMPLETED;
     case "FAILED":
+    case "FAILED_WITH_TERMINAL_ERROR":
+    case "TIMED_OUT":
+    case "CANCELED":
       return AgentStatus.FAILED;
     case "IN_PROGRESS":
+    case "SCHEDULED":
+    case "PENDING":
       return AgentStatus.RUNNING;
     default:
-      return AgentStatus.RUNNING;
+      // Unknown/other terminal statuses (e.g. SKIPPED, COMPLETED_WITH_ERRORS)
+      // must not fall through to RUNNING — that renders a perpetual "running"
+      // chip + spinner for a task the backend has already finished (issue #4260).
+      return AgentStatus.FAILED;
   }
 }
 
@@ -366,6 +514,9 @@ function transformChainWorkflowToAgentRun(
         totalTokens: ZERO_TOKENS,
         totalDurationMs: durationMs,
         strategy: AgentStrategy.SINGLE,
+        agentType: task.inputData?.agentType as string | undefined,
+        invocationStrategy: AgentStrategy.SEQUENTIAL,
+        input: task.inputData?.workflowInput ?? task.inputData,
         output: resultStr,
         failureReason: task.reasonForIncompletion ?? undefined,
       };
@@ -413,6 +564,8 @@ function transformChainWorkflowToAgentRun(
       ].filter((v): v is number => v != null && v > 0);
 
       return {
+        id: `turn-${idx + 1}`,
+        kind: AgentTimelineKind.TURN,
         turnNumber: idx + 1,
         events,
         status: mapTaskStatus(task.status),
@@ -437,16 +590,7 @@ function transformChainWorkflowToAgentRun(
           execution.status === WorkflowExecutionStatus.TERMINATED
         ? FinishReason.ERROR
         : undefined;
-  const execInput = execution.input as any;
-  const agentInput: string | undefined =
-    typeof execInput === "string"
-      ? execInput || undefined
-      : typeof execInput === "object" && execInput !== null
-        ? execInput.prompt ||
-          execInput.conversation ||
-          execInput.message ||
-          undefined
-        : undefined;
+  const agentInput = execution.input ?? undefined;
 
   // Root output: last step's result, or workflow output field
   const lastStep = sortedSteps[sortedSteps.length - 1];
@@ -471,6 +615,9 @@ function transformChainWorkflowToAgentRun(
   return {
     id: execution.workflowId,
     agentName: execution.workflowName ?? execution.workflowType ?? "agent",
+    agentType: execution.workflowDefinition?.metadata?.agent_sdk as
+      | string
+      | undefined,
     model: chainModel,
     turns,
     status: mapWorkflowStatus(execution.status),
@@ -480,7 +627,7 @@ function transformChainWorkflowToAgentRun(
     finishReason,
     strategy: AgentStrategy.SEQUENTIAL,
     input: agentInput,
-    output: chainOutput,
+    output: execution.output ?? chainOutput,
   };
 }
 
@@ -546,8 +693,11 @@ export function transformWorkflowExecutionToAgentRun(
   // Group tasks by DO_WHILE iteration number; collect root-level tasks separately
   const iterMap = new Map<number, ExecutionTask[]>();
   const rootActiveTasks: ExecutionTask[] = [];
+  const parallelGroups = parallelGroupsByTaskReference(tasks);
   for (const task of tasks) {
-    const iter = getIterationNum(task.referenceTaskName);
+    const iter = task.loopOverTask
+      ? getIterationNum(task.referenceTaskName)
+      : null;
     if (iter !== null) {
       if (!iterMap.has(iter)) iterMap.set(iter, []);
       iterMap.get(iter)!.push(task);
@@ -674,12 +824,11 @@ export function transformWorkflowExecutionToAgentRun(
             typeof result === "string" && result.length > 0
               ? result
               : undefined;
-          // Agent-as-tool: input is nested under workflowInput.prompt
+          // Preserve the complete child payload. Prompt-only extraction hid
+          // context and structured arguments from the execution inspector.
           const agentInput = isAgentAsTool
-            ? ((task.inputData as any)?.workflowInput?.prompt as
-                | string
-                | undefined)
-            : undefined;
+            ? ((task.inputData as any)?.workflowInput ?? task.inputData)
+            : task.inputData?.workflowInput;
           const durationMs =
             task.endTime && task.startTime ? task.endTime - task.startTime : 0;
 
@@ -723,6 +872,8 @@ export function transformWorkflowExecutionToAgentRun(
             totalTokens: ZERO_TOKENS,
             totalDurationMs: durationMs,
             strategy: AgentStrategy.SINGLE,
+            agentType: task.inputData?.agentType as string | undefined,
+            invocationStrategy: AgentStrategy.HANDOFF,
             input: agentInput,
             output: resultStr,
             failureReason: task.reasonForIncompletion ?? undefined,
@@ -815,7 +966,7 @@ export function transformWorkflowExecutionToAgentRun(
         const idData = (toolTask.inputData ?? {}) as Record<string, unknown>;
         const od = (toolTask.outputData ?? {}) as Record<string, unknown>;
         const toolName = toolTask.taskType;
-        const failed = toolTask.status === "FAILED";
+        const failed = isFailedTaskStatus(toolTask.status);
         const toolDuration =
           toolTask.endTime && toolTask.startTime
             ? toolTask.endTime - toolTask.startTime
@@ -989,6 +1140,7 @@ export function transformWorkflowExecutionToAgentRun(
           },
           toolArgs: cleanInput,
           result: failed ? undefined : od,
+          parallelGroup: parallelGroups.get(toolTask.referenceTaskName),
           success: taskSuccess(toolTask.status),
           durationMs: toolDuration,
           taskMeta: {
@@ -1038,7 +1190,7 @@ export function transformWorkflowExecutionToAgentRun(
         iterTasks.some((t) => t.status === "IN_PROGRESS");
       const anyFailed =
         subStatuses.includes(AgentStatus.FAILED) ||
-        iterTasks.some((t) => t.status === "FAILED");
+        iterTasks.some((t) => isFailedTaskStatus(t.status));
       const turnStatus = anyRunning
         ? AgentStatus.RUNNING
         : anyFailed
@@ -1046,6 +1198,8 @@ export function transformWorkflowExecutionToAgentRun(
           : AgentStatus.COMPLETED;
 
       return {
+        id: `turn-${idx + 1}`,
+        kind: AgentTimelineKind.TURN,
         turnNumber: idx + 1,
         events,
         status: turnStatus,
@@ -1063,6 +1217,7 @@ export function transformWorkflowExecutionToAgentRun(
     .filter((t) => t.events.length > 0 || t.subAgents.length > 0);
 
   // Build sub-agents from root-level SUB_WORKFLOW tasks (merged into root events turn below).
+  const rootTurnStartIndex = turns.length;
   const rootSubWorkflows = rootActiveTasks.filter(isAgentSubWorkflow);
   const rootSubAgents: AgentRunData[] = rootSubWorkflows.map((task) => {
     const agentName =
@@ -1074,14 +1229,11 @@ export function transformWorkflowExecutionToAgentRun(
     const dur =
       task.endTime && task.startTime ? task.endTime - task.startTime : 0;
 
-    // Extract input from workflowInput (Claude Code / agent-as-tool pattern)
+    // Preserve the complete child payload for inspection, not only its prompt.
     const wfInput = task.inputData?.workflowInput as
       | Record<string, unknown>
       | undefined;
-    const agentInput =
-      (wfInput?.prompt as string | undefined) ??
-      (wfInput?.description as string | undefined) ??
-      undefined;
+    const agentInput = wfInput ?? task.inputData;
 
     // Extract output: try result, then tool_response content blocks
     let outputStr: string | undefined;
@@ -1149,6 +1301,11 @@ export function transformWorkflowExecutionToAgentRun(
       status: mapTaskStatus(task.status),
       totalTokens: ZERO_TOKENS,
       totalDurationMs: dur,
+      agentType: task.inputData?.agentType as string | undefined,
+      invocationStrategy:
+        rootSubWorkflows.length > 1
+          ? AgentStrategy.PARALLEL
+          : AgentStrategy.HANDOFF,
       input: agentInput,
       output: outputStr,
       failureReason: failReason,
@@ -1164,7 +1321,7 @@ export function transformWorkflowExecutionToAgentRun(
     tasks: dedupedRootTasks,
     attemptCounts: rootAttemptCounts,
     attemptGroups: rootAttemptGroups,
-  } = deduplicateRetriedTasks(rootActiveTasks);
+  } = deduplicateRetriedTasks(sortTasksChronologically(rootActiveTasks));
   let finalOutput: string | undefined;
   if (dedupedRootTasks.length > 0) {
     const rootEvents: AgentEvent[] = [];
@@ -1227,6 +1384,15 @@ export function transformWorkflowExecutionToAgentRun(
           durationMs: dur,
           success: taskSuccess(task.status),
           condensationInfo: condensed?.condensationInfo,
+          taskMeta: {
+            taskId: task.taskId,
+            taskType: task.taskType,
+            referenceTaskName: task.referenceTaskName,
+            scheduledTime: task.scheduledTime ?? undefined,
+            startTime: task.startTime ?? undefined,
+            endTime: task.endTime ?? undefined,
+            seq: task.seq,
+          },
         });
 
         if (
@@ -1257,7 +1423,7 @@ export function transformWorkflowExecutionToAgentRun(
         // Root-level tool worker task (no DO_WHILE iteration suffix)
         const od = (task.outputData ?? {}) as Record<string, unknown>;
         const idData = (task.inputData ?? {}) as Record<string, unknown>;
-        const failed = task.status === "FAILED";
+        const failed = isFailedTaskStatus(task.status);
         const dur =
           task.endTime && task.startTime ? task.endTime - task.startTime : 0;
         const cleanInput = Object.fromEntries(
@@ -1330,6 +1496,7 @@ export function transformWorkflowExecutionToAgentRun(
               },
               toolArgs: cleanInput,
               result: failed ? undefined : od,
+              parallelGroup: parallelGroups.get(task.referenceTaskName),
               success: taskSuccess(task.status),
               durationMs: dur,
               taskMeta: {
@@ -1362,6 +1529,7 @@ export function transformWorkflowExecutionToAgentRun(
         .flatMap((t) => [t.startTime, t.endTime])
         .filter((v): v is number => v != null && v > 0);
       turns.push({
+        id: "root-activity",
         turnNumber: turns.length + 1,
         events: rootEvents,
         status: AgentStatus.COMPLETED,
@@ -1376,6 +1544,131 @@ export function transformWorkflowExecutionToAgentRun(
         subAgents: rootSubAgents,
       });
     }
+  }
+
+  // Root-level work is lifecycle activity around the conversational loop, not
+  // an extra turn appended after the loop. This is especially important for
+  // tool discovery and prefill calls, which the compiler runs before Turn 1.
+  const rootActivity = turns[rootTurnStartIndex];
+  if (rootActivity?.id === "root-activity") {
+    turns.splice(rootTurnStartIndex, 1);
+
+    const iterationTasks = sortedIters.flatMap(([, iteration]) => iteration);
+    const iterationStarts = iterationTasks
+      .map((task) => task.startTime)
+      .filter((time): time is number => time != null && time > 0);
+    const iterationEnds = iterationTasks
+      .map((task) => task.endTime)
+      .filter((time): time is number => time != null && time > 0);
+    const firstTurnStart = iterationStarts.length
+      ? Math.min(...iterationStarts)
+      : undefined;
+    const lastTurnEnd = iterationEnds.length
+      ? Math.max(...iterationEnds)
+      : undefined;
+
+    const isPreparationEvent = (event: AgentEvent) => {
+      if (firstTurnStart != null) return event.timestamp <= firstTurnStart;
+      const ref = event.taskMeta?.referenceTaskName ?? "";
+      return (
+        ref.includes("_prefill_") ||
+        /_(?:list_(?:mcp|api)|(?:mcp|api)_(?:prepare|threshold|filter|resolve))/.test(
+          ref,
+        )
+      );
+    };
+    const isFinalizationEvent = (event: AgentEvent) =>
+      lastTurnEnd != null && event.timestamp >= lastTurnEnd;
+    const subStart = (sub: AgentRunData) =>
+      sub.turns[0]?.events[0]?.timestamp ?? Number.MAX_SAFE_INTEGER;
+    const preparationEvents = rootActivity.events.filter(isPreparationEvent);
+    const finalizationEvents = rootActivity.events.filter(isFinalizationEvent);
+    const preparationSubs = rootActivity.subAgents.filter(
+      (sub) => firstTurnStart != null && subStart(sub) <= firstTurnStart,
+    );
+    const finalizationSubs = rootActivity.subAgents.filter(
+      (sub) => lastTurnEnd != null && subStart(sub) >= lastTurnEnd,
+    );
+    const rootEvents = rootActivity.events.filter(
+      (event) =>
+        !preparationEvents.includes(event) &&
+        !finalizationEvents.includes(event),
+    );
+    const rootSubs = rootActivity.subAgents.filter(
+      (sub) =>
+        !preparationSubs.includes(sub) && !finalizationSubs.includes(sub),
+    );
+
+    const buildLifecycleItem = (
+      id: string,
+      kind: AgentTimelineKind,
+      turnNumber: number,
+      events: AgentEvent[],
+      subAgents: AgentRunData[],
+    ): AgentTurn | null => {
+      if (events.length === 0 && subAgents.length === 0) return null;
+      const orderedEvents = [...events].sort(
+        (a, b) => a.timestamp - b.timestamp,
+      );
+      const times = [
+        ...orderedEvents.map((event) => event.timestamp),
+        ...subAgents.flatMap((sub) =>
+          sub.turns.flatMap((turn) =>
+            turn.events.map((event) => event.timestamp),
+          ),
+        ),
+      ].filter((time) => time > 0);
+      const tokens = orderedEvents
+        .filter((event) => event.type === EventType.THINKING && event.tokens)
+        .reduce(
+          (total, event) => ({
+            promptTokens:
+              total.promptTokens + (event.tokens?.promptTokens ?? 0),
+            completionTokens:
+              total.completionTokens + (event.tokens?.completionTokens ?? 0),
+            totalTokens: total.totalTokens + (event.tokens?.totalTokens ?? 0),
+          }),
+          ZERO_TOKENS,
+        );
+      return {
+        id,
+        kind,
+        turnNumber,
+        events: orderedEvents,
+        status: rootActivity.status,
+        durationMs: times.length ? Math.max(...times) - Math.min(...times) : 0,
+        tokens,
+        subAgents,
+        strategy:
+          subAgents.length > 1 ? AgentStrategy.PARALLEL : rootActivity.strategy,
+      };
+    };
+
+    const preparation = buildLifecycleItem(
+      "preparation",
+      AgentTimelineKind.PREPARATION,
+      0,
+      preparationEvents,
+      preparationSubs,
+    );
+    const rootTurn = buildLifecycleItem(
+      "turn-1",
+      AgentTimelineKind.TURN,
+      firstTurnStart == null ? 1 : turns.length + 1,
+      rootEvents,
+      rootSubs,
+    );
+    const finalization = buildLifecycleItem(
+      "finalization",
+      AgentTimelineKind.FINALIZATION,
+      turns.length + (rootTurn ? 1 : 1),
+      finalizationEvents,
+      finalizationSubs,
+    );
+
+    if (preparation) turns.unshift(preparation);
+    if (rootTurn) turns.push(rootTurn);
+    if (finalization) turns.push(finalization);
   }
 
   // Check the framework task (_fw_task) for output — Claude Code agent pattern
@@ -1408,17 +1701,7 @@ export function transformWorkflowExecutionToAgentRun(
     }
   }
 
-  // Extract the initial user prompt from execution input
-  const execInput = execution.input as any;
-  const agentInput: string | undefined =
-    typeof execInput === "string"
-      ? execInput || undefined
-      : typeof execInput === "object" && execInput !== null
-        ? execInput.prompt ||
-          execInput.conversation ||
-          execInput.message ||
-          undefined
-        : undefined;
+  const agentInput = execution.input ?? undefined;
 
   // Accumulate total tokens from all turns
   const totalPromptTokens = turns.reduce(
@@ -1453,6 +1736,9 @@ export function transformWorkflowExecutionToAgentRun(
   return {
     id: execution.workflowId,
     agentName: execution.workflowName ?? execution.workflowType ?? "agent",
+    agentType: execution.workflowDefinition?.metadata?.agent_sdk as
+      | string
+      | undefined,
     model: agentModel,
     turns,
     status: mapWorkflowStatus(execution.status),
@@ -1471,6 +1757,6 @@ export function transformWorkflowExecutionToAgentRun(
           ? AgentStrategy.HANDOFF
           : AgentStrategy.SINGLE,
     input: agentInput,
-    output: finalOutput,
+    output: execution.output ?? finalOutput,
   };
 }

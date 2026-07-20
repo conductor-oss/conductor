@@ -68,3 +68,11 @@ export const isUseGlobalMessage = (
     errorDetails: { message: string };
   }>,
 ) => event?.data?.originalError?.status === HttpStatusCode.Forbidden;
+
+export const isNotFound = (
+  __: ExecutionMachineContext,
+  event: DoneInvokeEvent<{
+    originalError: Response;
+    errorDetails: { message: string };
+  }>,
+) => event?.data?.originalError?.status === HttpStatusCode.NotFound;

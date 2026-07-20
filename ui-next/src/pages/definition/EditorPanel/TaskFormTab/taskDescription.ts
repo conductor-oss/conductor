@@ -86,11 +86,11 @@ export const taskDescriptions: TaskDescriptions = {
   [TaskType.LLM_CHAT_COMPLETE]:
     "A system task to complete the chat query. It can be used to instruct the model's behavior accurately to prevent any deviation from the objective.",
   [TaskType.AGENT]:
-    "Calls a remote A2A (Agent2Agent) agent and works the resulting task to completion. Supports poll, streaming (SSE), and push modes with durable retry and resumption.",
+    "Runs an agent to completion — a remote A2A (Agent2Agent) agent, or a registered agent on the embedded Conductor runtime. Supports poll, streaming (SSE), and push modes with durable retry and resumption.",
   [TaskType.GET_AGENT_CARD]:
     "Fetches a remote A2A agent's Agent Card to discover its skills and capabilities at runtime.",
   [TaskType.CANCEL_AGENT]:
-    "Cancels a running task on a remote A2A agent (A2A tasks/cancel).",
+    "Cancels a running task on a remote A2A agent (A2A tasks/cancel), or terminates a registered Conductor agent execution.",
   [TaskType.LLM_SEARCH_EMBEDDINGS]:
     "Searches a vector database for the closest matches using a set of pre-computed embeddings, rather than generating embeddings from a query string.",
   [TaskType.LIST_MCP_TOOLS]:

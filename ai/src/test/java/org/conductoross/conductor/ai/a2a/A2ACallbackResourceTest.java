@@ -17,11 +17,15 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.conductoross.conductor.ai.a2a.EmbeddedA2AAgent.SendMode;
+import org.conductoross.conductor.ai.model.A2AAgentCardRequest;
+import org.conductoross.conductor.ai.model.A2AAgentCardResult;
+import org.conductoross.conductor.ai.tasks.worker.A2AWorkers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
 
+import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.service.TaskService;
@@ -29,6 +33,8 @@ import com.netflix.conductor.service.TaskService;
 import okhttp3.OkHttpClient;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -77,7 +83,7 @@ class A2ACallbackResourceTest {
     private Task waitingTask(String token) {
         Task task = new Task();
         task.setTaskId("conductor-task-1");
-        task.setTaskType(AgentTask.TASK_TYPE);
+        task.setTaskType(A2AWorkers.AGENT);
         task.setStatus(Task.Status.IN_PROGRESS);
         task.setWorkflowInstanceId("wf-1");
         task.setReferenceTaskName("agentRef");
@@ -167,5 +173,29 @@ class A2ACallbackResourceTest {
 
         assertEquals(200, response.getStatusCode().value());
         verify(taskService, never()).updateTask(any(), any(), any(), any(), anyMap());
+    }
+
+    @Test
+    void agentCard_usesTypedRequestWithoutReflectingHeaders() throws Exception {
+        A2AAgentCardRequest request = new A2AAgentCardRequest();
+        request.setAgentUrl(agent.url());
+        request.setHeaders(Map.of("Authorization", "Bearer discovery-secret"));
+
+        A2AAgentCardResult result = resource.getAgentCard(request);
+
+        assertEquals("Embedded Agent", result.getAgentCard().getName());
+        String json = new ObjectMapperProvider().getObjectMapper().writeValueAsString(result);
+        assertFalse(json.contains("discovery-secret"));
+        assertFalse(json.contains("Authorization"));
+    }
+
+    @Test
+    void agentCard_preservesServiceSsrfPolicy() {
+        A2AService guardedService = new A2AService(new OkHttpClient());
+        A2ACallbackResource guardedResource = new A2ACallbackResource(taskService, guardedService);
+        A2AAgentCardRequest request = new A2AAgentCardRequest();
+        request.setAgentUrl("http://127.0.0.1:8080");
+
+        assertThrows(RuntimeException.class, () -> guardedResource.getAgentCard(request));
     }
 }

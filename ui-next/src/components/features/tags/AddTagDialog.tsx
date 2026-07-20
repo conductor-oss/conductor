@@ -131,7 +131,7 @@ export default function AddTagDialog({
           <ReplaceTagsInput
             label={
               <>
-                Editing tags for <strong>${itemName}</strong>.
+                Editing tags for <strong>{itemName}</strong>.
               </>
             }
             tags={tags}
