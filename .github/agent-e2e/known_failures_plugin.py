@@ -24,12 +24,29 @@ import pytest
 
 
 def _load_known_failures():
+    """Return {nodeid_suffix: (reason, run)}.
+
+    Each JSON value may be either a plain string (the reason; the test still
+    RUNS so a fix XPASSes) or an object {"reason": ..., "run": false} to xfail
+    WITHOUT executing the test — use run:false for a deterministic hang that
+    would otherwise burn CI time every run (you then un-list it manually when
+    fixed, since a non-run xfail can't XPASS). Keys starting with "_" are
+    comments and ignored.
+    """
     path = os.environ.get("E2E_KNOWN_FAILURES")
     if not path or not os.path.exists(path):
         return {}
     with open(path) as f:
         data = json.load(f)
-    return {k: v for k, v in data.items() if not k.startswith("_")}
+    out = {}
+    for k, v in data.items():
+        if k.startswith("_"):
+            continue
+        if isinstance(v, dict):
+            out[k] = (str(v.get("reason", "")), bool(v.get("run", True)))
+        else:
+            out[k] = (str(v), True)
+    return out
 
 
 def _matches(nodeid, suffix):
@@ -49,9 +66,9 @@ def pytest_collection_modifyitems(config, items):
         return
     matched = 0
     for item in items:
-        for suffix, reason in known.items():
+        for suffix, (reason, run) in known.items():
             if _matches(item.nodeid, suffix):
-                item.add_marker(pytest.mark.xfail(reason=reason, strict=False, run=True))
+                item.add_marker(pytest.mark.xfail(reason=reason, strict=False, run=run))
                 matched += 1
                 break
     reporter = config.pluginmanager.get_plugin("terminalreporter")
