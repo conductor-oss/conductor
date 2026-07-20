@@ -15,7 +15,6 @@ package org.conductoross.conductor.ai.agentspan.runtime.service;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.StringUtils;
@@ -45,13 +44,18 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 /**
- * {@link ConductorAgentClient} backed by Azure AI Foundry via the A2A protocol.
+ * {@link ConductorAgentClient} backed by Azure AI Foundry Agents via the OpenAI Assistants-compatible API.
  *
  * <p>Auth uses Entra ID client credentials flow. Credentials are resolved from the Conductor
  * secret store using the {@code credentialRef} on the start request, with dotted-path sub-keys
  * {@code .client_id}, {@code .client_secret}, and {@code .tenant_id}.
  *
- * <p>Activated by {@code conductor.ai.azure-foundry.enabled=true}.
+ * <p>Required rawConfig fields:
+ * <ul>
+ *   <li>{@code assistantId} - the Azure AI Foundry assistant ID (create it via portal or API first)
+ *   <li>{@code endpoint} - the agentsEndpointUri for the AI Foundry project (optional if
+ *       AZURE_FOUNDRY_ENDPOINT secret is set)
+ * </ul>
  */
 @Component
 public class AzureFoundryAgentClient implements ConductorAgentClient {
@@ -59,6 +63,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     private static final Logger log = LoggerFactory.getLogger(AzureFoundryAgentClient.class);
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
     private static final String DEFAULT_SCOPE = "https://management.azure.com/.default";
+    private static final String API_VERSION = "2025-05-01";
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final CredentialResolutionService credentialResolutionService;
@@ -76,30 +81,52 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         return A2AService.AGENT_TYPE_AZURE_FOUNDRY;
     }
 
+    /**
+     * Creates a thread, posts the user message, and starts a run against the configured assistant.
+     * Returns the thread ID as the execution ID.
+     */
     @Override
     public ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request) {
         String endpoint = resolveEndpoint(request);
+        String assistantId = resolveAssistantId(request);
         OAuthTokenProvider tokenProvider = buildTokenProvider(request);
-        String taskId = UUID.randomUUID().toString();
-
-        ObjectNode params = MAPPER.createObjectNode();
-        params.put("id", taskId);
-        ObjectNode message = params.putObject("message");
-        message.put("role", "user");
-        ArrayNode parts = message.putArray("parts");
-        parts.addObject().put("type", "text").put("text", request.getPrompt());
 
         String token = tokenProvider.getToken();
-        callA2A(endpoint, "tasks/send", params, token);
-        executions.put(taskId, new ExecutionContext(endpoint, token, tokenProvider));
+
+        // 1. Create thread
+        JsonNode threadResult = post(endpoint + "/threads", MAPPER.createObjectNode(), token);
+        String threadId = threadResult.path("id").asText();
+
+        // 2. Add user message
+        ObjectNode msgBody = MAPPER.createObjectNode();
+        msgBody.put("role", "user");
+        msgBody.put("content", request.getPrompt());
+        post(endpoint + "/threads/" + threadId + "/messages", msgBody, token);
+
+        // 3. Start run
+        ObjectNode runBody = MAPPER.createObjectNode();
+        runBody.put("assistant_id", assistantId);
+        JsonNode runResult = post(endpoint + "/threads/" + threadId + "/runs", runBody, token);
+        String runId = runResult.path("id").asText();
+
+        executions.put(threadId, new ExecutionContext(endpoint, assistantId, runId, tokenProvider));
 
         return ConductorAgentStartResponse.builder()
-                .executionId(taskId)
-                .agentName(endpoint)
+                .executionId(threadId)
+                .agentName(assistantId)
                 .requiredWorkers(Collections.emptyList())
                 .build();
     }
 
+    /**
+     * Polls the current run status. Maps Azure run states to {@link ConductorAgentState}:
+     * <ul>
+     *   <li>completed → COMPLETED with last assistant message as output
+     *   <li>requires_action → WAITING with tool call details as pendingTool
+     *   <li>failed / expired / cancelled → FAILED / CANCELED
+     *   <li>queued / in_progress → RUNNING
+     * </ul>
+     */
     @Override
     public ConductorAgentStatusResponse getAgentStatus(String executionId) {
         ExecutionContext ctx = executions.get(executionId);
@@ -111,39 +138,158 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                     .reasonForIncompletion("No execution found for id: " + executionId)
                     .build();
         }
-        ObjectNode params = MAPPER.createObjectNode();
-        params.put("id", executionId);
-        JsonNode result = callA2A(ctx.endpoint, "tasks/get", params, ctx.tokenProvider.getToken());
-        return toStatusResponse(executionId, result);
+        String token = ctx.tokenProvider.getToken();
+        String runUrl = ctx.endpoint + "/threads/" + executionId + "/runs/" + ctx.runId;
+        JsonNode run = get(runUrl, token);
+        return toStatusResponse(executionId, run, ctx, token);
     }
 
+    /**
+     * Submits a tool-call result (when the run is in {@code requires_action} state) or posts a new
+     * user message and starts a fresh run (for multi-turn conversation).
+     */
     @Override
     public void respond(ConductorAgentRespondRequest request) {
-        ExecutionContext ctx = executions.get(request.getExecutionId());
+        String executionId = request.getExecutionId();
+        ExecutionContext ctx = executions.get(executionId);
         if (ctx == null) {
-            throw new IllegalStateException("No execution found for id: " + request.getExecutionId());
+            throw new IllegalStateException("No execution found for id: " + executionId);
         }
-        ObjectNode params = MAPPER.createObjectNode();
-        params.put("id", request.getExecutionId());
-        ObjectNode message = params.putObject("message");
-        message.put("role", "user");
-        ArrayNode parts = message.putArray("parts");
-        ObjectNode part = parts.addObject();
-        part.put("type", "text");
-        part.put("text", MAPPER.valueToTree(request.getBody()).toString());
-        callA2A(ctx.endpoint, "tasks/send", params, ctx.tokenProvider.getToken());
+        String token = ctx.tokenProvider.getToken();
+
+        // Check current run state to decide how to respond
+        String runUrl = ctx.endpoint + "/threads/" + executionId + "/runs/" + ctx.runId;
+        JsonNode run = get(runUrl, token);
+        String status = run.path("status").asText();
+
+        if ("requires_action".equals(status)) {
+            submitToolOutputs(executionId, ctx, request, token);
+        } else {
+            // Multi-turn: add message and start new run
+            ObjectNode msgBody = MAPPER.createObjectNode();
+            msgBody.put("role", "user");
+            String content = request.getBody() != null ? request.getBody().toString() : "";
+            msgBody.put("content", content);
+            post(ctx.endpoint + "/threads/" + executionId + "/messages", msgBody, token);
+
+            ObjectNode runBody = MAPPER.createObjectNode();
+            runBody.put("assistant_id", ctx.assistantId);
+            JsonNode newRun = post(ctx.endpoint + "/threads/" + executionId + "/runs", runBody, token);
+            ctx.runId = newRun.path("id").asText();
+        }
     }
 
     @Override
     public void cancelAgent(ConductorAgentCancelRequest request) {
-        ExecutionContext ctx = executions.remove(request.getExecutionId());
+        String executionId = request.getExecutionId();
+        ExecutionContext ctx = executions.remove(executionId);
         if (ctx == null) {
-            log.warn("cancelAgent called for unknown executionId={}", request.getExecutionId());
+            log.warn("cancelAgent called for unknown executionId={}", executionId);
             return;
         }
-        ObjectNode params = MAPPER.createObjectNode();
-        params.put("id", request.getExecutionId());
-        callA2A(ctx.endpoint, "tasks/cancel", params, ctx.tokenProvider.getToken());
+        String token = ctx.tokenProvider.getToken();
+        String cancelUrl =
+                ctx.endpoint + "/threads/" + executionId + "/runs/" + ctx.runId + "/cancel";
+        try {
+            post(cancelUrl, MAPPER.createObjectNode(), token);
+        } catch (Exception e) {
+            log.warn("Failed to cancel Azure Foundry run {}: {}", ctx.runId, e.getMessage());
+        }
+    }
+
+    private void submitToolOutputs(
+            String threadId,
+            ExecutionContext ctx,
+            ConductorAgentRespondRequest request,
+            String token) {
+        JsonNode run = get(ctx.endpoint + "/threads/" + threadId + "/runs/" + ctx.runId, token);
+        JsonNode toolCalls =
+                run.path("required_action")
+                        .path("submit_tool_outputs")
+                        .path("tool_calls");
+
+        ObjectNode body = MAPPER.createObjectNode();
+        ArrayNode outputs = body.putArray("tool_outputs");
+        String resultJson =
+                request.getBody() != null ? MAPPER.valueToTree(request.getBody()).toString() : "{}";
+
+        for (JsonNode tc : toolCalls) {
+            ObjectNode o = outputs.addObject();
+            o.put("tool_call_id", tc.path("id").asText());
+            o.put("output", resultJson);
+        }
+
+        String submitUrl =
+                ctx.endpoint
+                        + "/threads/"
+                        + threadId
+                        + "/runs/"
+                        + ctx.runId
+                        + "/submit_tool_outputs";
+        post(submitUrl, body, token);
+    }
+
+    private ConductorAgentStatusResponse toStatusResponse(
+            String threadId, JsonNode run, ExecutionContext ctx, String token) {
+        String azureStatus = run.path("status").asText("queued");
+        ConductorAgentState state = toState(azureStatus);
+        boolean complete = state == ConductorAgentState.COMPLETED
+                || state == ConductorAgentState.FAILED
+                || state == ConductorAgentState.CANCELED;
+
+        Map<String, Object> output = null;
+        Map<String, Object> pendingTool = null;
+        String pendingToolName = null;
+        String reason = null;
+
+        if (state == ConductorAgentState.COMPLETED) {
+            // Grab the latest assistant message
+            JsonNode messages = get(ctx.endpoint + "/threads/" + threadId + "/messages", token);
+            for (JsonNode msg : messages.path("data")) {
+                if ("assistant".equals(msg.path("role").asText())) {
+                    String text =
+                            msg.path("content").path(0).path("text").path("value").asText("");
+                    output = Map.of("result", text);
+                    break;
+                }
+            }
+            executions.remove(threadId);
+        } else if (state == ConductorAgentState.WAITING) {
+            JsonNode toolCalls =
+                    run.path("required_action").path("submit_tool_outputs").path("tool_calls");
+            if (toolCalls.isArray() && toolCalls.size() > 0) {
+                JsonNode first = toolCalls.get(0);
+                pendingToolName = first.path("function").path("name").asText("unknown");
+                pendingTool = Map.of(
+                        "tool_name", pendingToolName,
+                        "tool_call_id", first.path("id").asText(),
+                        "arguments", first.path("function").path("arguments").asText("{}"));
+            }
+        } else if (state == ConductorAgentState.FAILED) {
+            reason = run.path("last_error").path("message").asText("Run failed");
+        }
+
+        return ConductorAgentStatusResponse.builder()
+                .executionId(threadId)
+                .status(state)
+                .complete(complete)
+                .running(state == ConductorAgentState.RUNNING)
+                .waiting(state == ConductorAgentState.WAITING)
+                .output(output)
+                .pendingTool(pendingTool)
+                .pendingToolName(pendingToolName)
+                .reasonForIncompletion(reason)
+                .build();
+    }
+
+    private static ConductorAgentState toState(String azureStatus) {
+        return switch (azureStatus) {
+            case "completed" -> ConductorAgentState.COMPLETED;
+            case "failed", "expired" -> ConductorAgentState.FAILED;
+            case "cancelled" -> ConductorAgentState.CANCELED;
+            case "requires_action" -> ConductorAgentState.WAITING;
+            default -> ConductorAgentState.RUNNING; // queued, in_progress
+        };
     }
 
     private OAuthTokenProvider buildTokenProvider(ConductorAgentStartRequest request) {
@@ -163,10 +309,9 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                             + "' must contain client_id, client_secret, and tenant_id");
         }
 
-        String scope =
-                StringUtils.defaultIfBlank(
-                        rawConfig(request, "scope"),
-                        credentialResolutionService.resolve(credentialRef + ".scope"));
+        String scope = StringUtils.defaultIfBlank(
+                rawConfig(request, "scope"),
+                credentialResolutionService.resolve(credentialRef + ".scope"));
         scope = StringUtils.defaultIfBlank(scope, DEFAULT_SCOPE);
 
         return OAuthTokenProvider.forAzureEntraId(httpClient, tenantId, clientId, clientSecret, scope);
@@ -179,74 +324,63 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         }
         if (StringUtils.isBlank(endpoint)) {
             throw new IllegalArgumentException(
-                    "Azure Foundry endpoint must be provided in rawConfig.endpoint or AZURE_FOUNDRY_ENDPOINT secret");
+                    "Azure Foundry endpoint must be provided via rawConfig.endpoint or AZURE_FOUNDRY_ENDPOINT secret");
         }
-        return endpoint.endsWith("/") ? endpoint : endpoint + "/";
+        return endpoint.endsWith("/") ? endpoint.substring(0, endpoint.length() - 1) : endpoint;
     }
 
-    private JsonNode callA2A(String endpoint, String method, ObjectNode params, String bearerToken) {
-        ObjectNode rpcBody = MAPPER.createObjectNode();
-        rpcBody.put("jsonrpc", "2.0");
-        rpcBody.put("method", method);
-        rpcBody.put("id", UUID.randomUUID().toString());
-        rpcBody.set("params", params);
-
-        RequestBody body;
-        try {
-            body = RequestBody.create(MAPPER.writeValueAsBytes(rpcBody), JSON);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to serialize A2A request", e);
+    private String resolveAssistantId(ConductorAgentStartRequest request) {
+        String id = rawConfig(request, "assistantId");
+        if (StringUtils.isBlank(id)) {
+            id = rawConfig(request, "agentId");
         }
+        if (StringUtils.isBlank(id)) {
+            throw new IllegalArgumentException(
+                    "rawConfig.assistantId is required for Azure Foundry agent requests");
+        }
+        return id;
+    }
 
+    private JsonNode post(String url, ObjectNode body, String bearerToken) {
+        byte[] bytes;
+        try {
+            bytes = MAPPER.writeValueAsBytes(body);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to serialize request body", e);
+        }
+        String fullUrl = url.contains("?") ? url : url + "?api-version=" + API_VERSION;
         Request request =
                 new Request.Builder()
-                        .url(endpoint)
-                        .post(body)
+                        .url(fullUrl)
+                        .post(RequestBody.create(bytes, JSON))
                         .header("Authorization", "Bearer " + bearerToken)
                         .build();
+        return execute(request, url);
+    }
 
+    private JsonNode get(String url, String bearerToken) {
+        String fullUrl = url.contains("?") ? url : url + "?api-version=" + API_VERSION;
+        Request request =
+                new Request.Builder()
+                        .url(fullUrl)
+                        .get()
+                        .header("Authorization", "Bearer " + bearerToken)
+                        .build();
+        return execute(request, url);
+    }
+
+    private JsonNode execute(Request request, String label) {
         try (Response response = httpClient.newCall(request).execute()) {
-            if (!response.isSuccessful() || response.body() == null) {
+            String responseBody = response.body() != null ? response.body().string() : "{}";
+            if (!response.isSuccessful()) {
                 throw new RuntimeException(
-                        "A2A call to " + method + " failed: HTTP " + response.code());
+                        "Azure Foundry API call to " + label + " failed: HTTP "
+                                + response.code() + " — " + responseBody);
             }
-            JsonNode json = MAPPER.readTree(response.body().string());
-            if (json.has("error")) {
-                throw new RuntimeException(
-                        "A2A error from " + method + ": " + json.get("error").toString());
-            }
-            return json.path("result");
+            return MAPPER.readTree(responseBody);
         } catch (IOException e) {
-            throw new RuntimeException("A2A call to " + method + " failed", e);
+            throw new RuntimeException("Azure Foundry API call to " + label + " failed", e);
         }
-    }
-
-    private ConductorAgentStatusResponse toStatusResponse(String executionId, JsonNode result) {
-        String stateStr = result.path("status").path("state").asText("working");
-        ConductorAgentState state = toState(stateStr);
-        boolean complete = state == ConductorAgentState.COMPLETED || state == ConductorAgentState.FAILED || state == ConductorAgentState.CANCELED;
-        Map<String, Object> output = null;
-        if (complete && result.has("artifacts")) {
-            output = Map.of("artifacts", result.get("artifacts").toString());
-        }
-        return ConductorAgentStatusResponse.builder()
-                .executionId(executionId)
-                .status(state)
-                .complete(complete)
-                .running(state == ConductorAgentState.RUNNING)
-                .waiting(state == ConductorAgentState.WAITING)
-                .output(output)
-                .build();
-    }
-
-    private static ConductorAgentState toState(String a2aState) {
-        return switch (a2aState) {
-            case "completed" -> ConductorAgentState.COMPLETED;
-            case "failed" -> ConductorAgentState.FAILED;
-            case "canceled" -> ConductorAgentState.CANCELED;
-            case "input-required" -> ConductorAgentState.WAITING;
-            default -> ConductorAgentState.RUNNING; // submitted, working
-        };
     }
 
     private static String rawConfig(ConductorAgentStartRequest request, String key) {
@@ -255,6 +389,22 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         return value != null ? value.toString() : null;
     }
 
-    /** Per-execution context: endpoint URL and token provider for A2A calls. */
-    private record ExecutionContext(String endpoint, String token, OAuthTokenProvider tokenProvider) {}
+    /** Per-execution state: endpoint, assistant, thread/run IDs, and token provider. */
+    private static class ExecutionContext {
+        final String endpoint;
+        final String assistantId;
+        volatile String runId;
+        final OAuthTokenProvider tokenProvider;
+
+        ExecutionContext(
+                String endpoint,
+                String assistantId,
+                String runId,
+                OAuthTokenProvider tokenProvider) {
+            this.endpoint = endpoint;
+            this.assistantId = assistantId;
+            this.runId = runId;
+            this.tokenProvider = tokenProvider;
+        }
+    }
 }
