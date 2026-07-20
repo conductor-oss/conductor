@@ -15,8 +15,7 @@ import ConductorInput from "components/ui/inputs/ConductorInput";
 import SplitButton from "components/ui/buttons/ConductorSplitButton";
 import ResetIcon from "components/icons/ResetIcon";
 import SearchIcon from "components/icons/SearchIcon";
-import _isEmpty from "lodash/isEmpty";
-import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { ReactNode, useCallback, useMemo, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { Navigate } from "react-router";
 import { useQueryState } from "react-router-use-location-state";
@@ -24,15 +23,28 @@ import { Key } from "ts-key-enum";
 import { WorkflowExecutionStatus } from "types/Execution";
 import { TaskExecutionResult } from "types/TaskExecution";
 import { DoSearchProps } from "types/WorkflowExecution";
-import { IObject } from "types/common";
-import { dateToEpoch, useLocalStorage } from "utils";
+import { useLocalStorage } from "utils";
 import { ERROR_URL } from "utils/constants/route";
-import { useAutoCompleteInputValidation } from "utils/hooks/useAutoCompleteInputValidation";
 import { useAgentNames, useWorkflowSearch } from "utils/query";
 import { getErrors } from "utils/utils";
 import { ApiSearchModalIntegration } from "../ApiSearchModalIntegration";
 import { DateControlComponent } from "../DateControlComponent";
 import ResultsTable from "../ResultsTable";
+import {
+  toDateControlProps,
+  useAgentSearchFilters,
+} from "../useAgentSearchFilters";
+import {
+  buildBasicSearchQuery,
+  isWorkflowIdQuery,
+  mergeUniqueSortedNames,
+} from "./buildBasicSearchQuery";
+
+/** Shape shown in the results snackbar (from getErrors or fetch Response). */
+type ExecutionSearchError = {
+  message?: string;
+  statusText?: string;
+} & Record<string, unknown>;
 
 const DEFAULT_SORT = "startTime:DESC";
 const workflowStatuses = Object.values(WorkflowExecutionStatus);
@@ -49,79 +61,33 @@ export interface BasicSearchProps {
   }: DoSearchProps) => void;
   SwitchComponent: ReactNode;
   getTableTitle: (resultObj: TaskExecutionResult) => ReactNode;
-  freeText: string;
-  setFreeText: (val: string) => void;
-  status: string[];
-  setStatus: (val: string[]) => void;
-  startTimeFrom: string;
-  setStartTimeFrom: (val: string) => void;
-  onStartFromChange: (val: string) => void;
-  startTimeTo: string;
-  setStartTimeTo: (val: string) => void;
-  onStartToChange: (val: string) => void;
-  endTimeFrom: string;
-  setEndTimeFrom: (val: string) => void;
-  onEndFromChange: (val: string) => void;
-  endTimeTo: string;
-  setEndTimeTo: (val: string) => void;
-  onEndToChange: (val: string) => void;
-  fromDisplayTime: string;
-  setFromDisplayTime: (val: string) => void;
-  toDisplayTime: string;
-  setToDisplayTime: (val: string) => void;
-  openDateSelect: boolean;
-  setOpenDateSelect: (val: boolean) => void;
-  openStartDatePicker: boolean;
-  setStartOpenDatePicker: (val: boolean) => void;
-  openEndDatePicker: boolean;
-  setEndOpenDatePicker: (val: boolean) => void;
-  recentSearches: { start: string; end: string };
 }
 
 export default function BasicSearch({
   doSearch,
   SwitchComponent,
   getTableTitle,
-  freeText,
-  setFreeText,
-  status,
-  setStatus,
-  startTimeFrom,
-  setStartTimeFrom,
-  onStartFromChange,
-  startTimeTo,
-  setStartTimeTo,
-  onStartToChange,
-  endTimeFrom,
-  setEndTimeFrom,
-  onEndFromChange,
-  endTimeTo,
-  setEndTimeTo,
-  onEndToChange,
-  fromDisplayTime,
-  setFromDisplayTime,
-  toDisplayTime,
-  setToDisplayTime,
-  openDateSelect,
-  setOpenDateSelect,
-  openStartDatePicker,
-  setStartOpenDatePicker,
-  openEndDatePicker,
-  setEndOpenDatePicker,
-  recentSearches,
 }: BasicSearchProps) {
+  const filters = useAgentSearchFilters();
+  const {
+    freeText,
+    setFreeText,
+    status,
+    setStatus,
+    startTimeFrom,
+    setStartTimeFrom,
+    startTimeTo,
+    setStartTimeTo,
+    endTimeFrom,
+    setEndTimeFrom,
+    endTimeTo,
+    setEndTimeTo,
+    setFromDisplayTime,
+    setToDisplayTime,
+  } = filters;
   const [page, setPage] = useQueryState("page", 1);
   const [workflowType, setWorkflowType] = useQueryState<string[]>(
     "workflowType",
-    [],
-  );
-  const [workflowId, setWorkflowId] = useQueryState("workflowId", "");
-  const [correlationIds, setCorrelationIds] = useQueryState<string[]>(
-    "correlationIds",
-    [],
-  );
-  const [idempotencyKey, setIdempotencyKey] = useQueryState<string[]>(
-    "idempotencyKey",
     [],
   );
 
@@ -135,24 +101,54 @@ export default function BasicSearch({
   const [sort, setSort] = useQueryState("sort", DEFAULT_SORT);
   const [showCodeDialog, setShowCodeDialog] = useQueryState("displayCode", "");
 
-  const {
-    setValue: setCorrelationInputVal,
-    setFocused: setCorrelationFieldFocus,
-    hasError: correlationIdHasError,
-  } = useAutoCompleteInputValidation();
-
-  const {
-    setValue: setIdempotencyKeyInputVal,
-    setFocused: setIdempotencyKeyFieldFocus,
-    hasError: idempotencyKeyHasError,
-  } = useAutoCompleteInputValidation();
+  const [agentNameInput, setAgentNameInput] = useState("");
+  // Local draft so keystrokes do not rewrite the URL on every change.
+  // When committed freeText changes (reset, back/forward, Advanced↔Basic),
+  // sync during render instead of an effect — see React "adjusting state
+  // when a prop changes".
+  const [searchInput, setSearchInput] = useState(freeText);
+  const [prevFreeText, setPrevFreeText] = useState(freeText);
+  if (freeText !== prevFreeText) {
+    setPrevFreeText(freeText);
+    setSearchInput(freeText);
+  }
 
   const isMobile = useMediaQuery((theme: Theme) =>
     theme.breakpoints.down("sm"),
   );
 
-  // For dropdown
-  const agentNames = useAgentNames();
+  // Registered agent definitions (often empty if nothing is deployed via AgentSpan).
+  const registeredAgentNames = useAgentNames();
+
+  // Stable lookback so the hint query key does not change every render.
+  const [nameHintLookbackMs] = useState(
+    () => Date.now() - 30 * 24 * 60 * 60 * 1000,
+  );
+
+  // Supplement the dropdown with names seen on recent agent executions so the
+  // select is useful even when /agent/list returns [].
+  const { data: agentNameHintResult } = useWorkflowSearch<{
+    results?: { workflowType?: string }[];
+  }>(
+    {
+      page: 1,
+      rowsPerPage: 100,
+      sort: DEFAULT_SORT,
+      query: `startTime>${nameHintLookbackMs}`,
+      freeText: "*",
+      classifier: "agent",
+      topLevelOnly: true,
+    },
+    { staleTime: 60_000 },
+  );
+
+  const knownAgentNames = useMemo(() => {
+    const fromExecutions =
+      agentNameHintResult?.results
+        ?.map((row) => row.workflowType)
+        .filter((name): name is string => Boolean(name)) ?? [];
+    return mergeUniqueSortedNames(registeredAgentNames, fromExecutions);
+  }, [registeredAgentNames, agentNameHintResult]);
 
   // for tooltip flag in localstorage
   const [tooltipFlags, setTooltipFlags] = useLocalStorage("tooltipFlags", {});
@@ -169,12 +165,11 @@ export default function BasicSearch({
 
   const clearAllFields = () => {
     setWorkflowType([]);
-    setCorrelationIds([]);
-    setIdempotencyKey([]);
-    setWorkflowId("");
+    setAgentNameInput("");
     setStatus([]);
     setStartTimeFrom("");
     setStartTimeTo("");
+    setSearchInput("");
     setFreeText("");
     setModifiedFrom("");
     setModifiedTo("");
@@ -200,73 +195,68 @@ export default function BasicSearch({
     setQueryFT(newQueryFT);
   };
 
-  const [errorMessage, setErrorMessage] = useState<IObject | null>(null);
+  const [errorMessage, setErrorMessage] = useState<ExecutionSearchError | null>(
+    null,
+  );
 
   const [unauthorized, setUnauthorized] = useState<{
     message?: string;
     error?: string;
   } | null>(null);
 
-  const buildQuery = useCallback(() => {
-    const clauses = [];
-    if (!_isEmpty(workflowType)) {
-      clauses.push(`workflowType IN (${workflowType.join(",")})`);
+  // Include typed-but-not-committed agent name so Search works without Enter
+  const resolvedWorkflowTypes = useCallback(() => {
+    const types = [...workflowType];
+    const pending = agentNameInput.trim();
+    if (pending && !types.includes(pending)) {
+      types.push(pending);
     }
-    if (!_isEmpty(workflowId)) {
-      clauses.push(`workflowId='${workflowId}'`);
-    }
-    if (!_isEmpty(status)) {
-      clauses.push(`status IN (${status.join(",")})`);
-    }
-    if (!_isEmpty(startTimeFrom)) {
-      clauses.push(`startTime>${dateToEpoch(startTimeFrom)}`);
-    }
-    if (!_isEmpty(startTimeTo)) {
-      clauses.push(`startTime<${dateToEpoch(startTimeTo)}`);
-    }
-    if (!_isEmpty(endTimeFrom)) {
-      clauses.push(`endTime>${dateToEpoch(endTimeFrom)}`);
-    }
-    if (!_isEmpty(endTimeTo)) {
-      clauses.push(`endTime<${dateToEpoch(endTimeTo)}`);
-    }
+    return types;
+  }, [workflowType, agentNameInput]);
 
-    if (!_isEmpty(modifiedFrom)) {
-      clauses.push(`modifiedTime>${modifiedFrom}`);
+  const commitPendingAgentName = useCallback(() => {
+    const pending = agentNameInput.trim();
+    if (pending && !workflowType.includes(pending)) {
+      setWorkflowType([...workflowType, pending]);
     }
-    if (!_isEmpty(modifiedTo)) {
-      clauses.push(`modifiedTime<${modifiedTo}`);
-    }
+    setAgentNameInput("");
+  }, [agentNameInput, workflowType, setWorkflowType]);
 
-    if (!_isEmpty(correlationIds)) {
-      clauses.push(`correlationId IN (${correlationIds.join(",")})`);
-    }
-
-    if (!_isEmpty(idempotencyKey)) {
-      clauses.push(`idempotencyKey IN (${idempotencyKey.join(",")})`);
-    }
-
-    return {
-      query: clauses.join(" AND "),
-      freeText: _isEmpty(freeText) ? "*" : freeText,
-    };
-  }, [
-    freeText,
-    startTimeFrom,
-    startTimeTo,
-    status,
-    workflowId,
-    workflowType,
-    modifiedFrom,
-    modifiedTo,
-    correlationIds,
-    idempotencyKey,
-    endTimeFrom,
-    endTimeTo,
-  ]);
+  const buildQuery = useCallback(
+    () =>
+      buildBasicSearchQuery({
+        searchInput,
+        selectedTypes: resolvedWorkflowTypes(),
+        knownAgentNames,
+        status,
+        startTimeFrom,
+        startTimeTo,
+        endTimeFrom,
+        endTimeTo,
+        modifiedFrom,
+        modifiedTo,
+      }),
+    [
+      searchInput,
+      startTimeFrom,
+      startTimeTo,
+      status,
+      resolvedWorkflowTypes,
+      modifiedFrom,
+      modifiedTo,
+      endTimeFrom,
+      endTimeTo,
+      knownAgentNames,
+    ],
+  );
 
   const [queryFT, setQueryFT] = useState(buildQuery);
   const [hideSubWorkflows, setHideSubWorkflows] = useState(true);
+
+  // Direct execution-id lookup should not also require classifier=agent /
+  // topLevelOnly — older or mis-tagged rows would otherwise return 0 hits.
+  const isExecutionIdQuery = isWorkflowIdQuery(queryFT.query);
+
   const {
     data: resultObj,
     error,
@@ -279,20 +269,23 @@ export default function BasicSearch({
       sort,
       query: queryFT.query,
       freeText: queryFT.freeText,
-      // Scope results to a single classifier: "workflow" for plain workflow
-      // executions, "agent" for AgentSpan agent runs on the Agents pages.
-      classifier: "agent",
-      topLevelOnly: hideSubWorkflows,
+      // Scope results to agent executions unless looking up a specific id.
+      ...(isExecutionIdQuery
+        ? {}
+        : {
+            classifier: "agent",
+            topLevelOnly: hideSubWorkflows,
+          }),
     },
     {},
     {
-      onError: (error: any) => {
+      onError: (error: unknown) => {
         if (error) {
           getErrors(error as Response).then((result) => {
             if (result?.["workflowName"] === "must not be empty") {
               setErrorMessage({ message: "Agent name should not be empty" });
             } else {
-              setErrorMessage(result);
+              setErrorMessage(result as ExecutionSearchError);
             }
           });
         } else {
@@ -302,23 +295,46 @@ export default function BasicSearch({
     },
   );
 
+  // Dropdown options: registered defs + recent executions + names from current results
+  const agentNameOptions = useMemo(() => {
+    const fromResults =
+      resultObj?.results
+        ?.map((row: { workflowType?: string }) => row.workflowType)
+        .filter((name: string | undefined): name is string => Boolean(name)) ??
+      [];
+    return mergeUniqueSortedNames(knownAgentNames, fromResults);
+  }, [knownAgentNames, resultObj]);
+
+  const setRecentTaskSearch = () => {
+    if (startTimeFrom || startTimeTo || endTimeFrom || endTimeTo) {
+      localStorage.setItem(
+        "recentTaskSearch",
+        JSON.stringify({
+          start: startTimeFrom || startTimeTo,
+          end: endTimeTo || endTimeFrom,
+        }),
+      );
+    }
+  };
+
+  const runSearch = () => {
+    setFreeText(searchInput);
+    commitPendingAgentName();
+    doSearch({
+      resultObj,
+      queryFT,
+      buildQuery,
+      setQueryFT,
+      refetch,
+      setPage,
+      setRecentTaskSearch,
+    });
+  };
+
   // hotkeys to search execution
-  useHotkeys(
-    `${Key.Meta}+${Key.Enter}`,
-    () =>
-      doSearch({
-        resultObj,
-        queryFT,
-        buildQuery,
-        setQueryFT,
-        refetch,
-        setPage,
-        setRecentTaskSearch,
-      }),
-    {
-      enableOnFormTags: ["INPUT", "TEXTAREA", "SELECT"],
-    },
-  );
+  useHotkeys(`${Key.Meta}+${Key.Enter}`, () => runSearch(), {
+    enableOnFormTags: ["INPUT", "TEXTAREA", "SELECT"],
+  });
 
   const handleSort = (changedColumn: string, direction: string) => {
     const sortColumn =
@@ -344,33 +360,10 @@ export default function BasicSearch({
     }
   }, [queryFT]);
 
-  const setRecentTaskSearch = () => {
-    if (startTimeFrom || startTimeTo || endTimeFrom || endTimeTo) {
-      localStorage.setItem(
-        "recentTaskSearch",
-        JSON.stringify({
-          start: startTimeFrom || startTimeTo,
-          end: endTimeTo || endTimeFrom,
-        }),
-      );
-    }
-  };
-
-  useEffect(() => {
-    if (!startTimeFrom) {
-      const currentTime = Date.now();
-      const timestamp72HoursAgo = currentTime - 72 * 60 * 60 * 1000;
-      setStartTimeFrom(String(timestamp72HoursAgo));
-    }
-    // eslint-disable-next-line
-  }, []);
-
-  // @ts-ignore
   if (error?.status === 401) {
     const errorResult = error;
     const parseErrorResponse = async () => {
       try {
-        // @ts-ignore
         const json = await errorResult.clone().json();
         setUnauthorized(json);
       } catch {
@@ -392,7 +385,7 @@ export default function BasicSearch({
     return <Navigate to={ERROR_URL} />;
   }
 
-  const handleError = (error: any) => {
+  const handleError = (error: ExecutionSearchError) => {
     setErrorMessage(error);
   };
   const handleClearError = () => {
@@ -411,7 +404,7 @@ export default function BasicSearch({
                 start: (page - 1) * rowsPerPage,
                 size: rowsPerPage,
                 sort,
-                freeText,
+                freeText: buildQuery().freeText,
                 query: buildQuery().query,
               }}
             />
@@ -421,12 +414,41 @@ export default function BasicSearch({
             sx={{ width: "100%" }}
             spacing={3}
             pt={2}
-            justifyContent="flex-end"
+            alignItems="flex-end"
           >
             <Grid
               size={{
-                xs: 6,
-                md: 6,
+                xs: 12,
+                md: 7,
+                lg: 8,
+              }}
+            >
+              <ConductorInput
+                id="workflow-search-combined"
+                fullWidth
+                label="Search"
+                placeholder="Full execution ID, correlation ID, idempotency key, or agent name"
+                value={searchInput}
+                onTextInputChange={setSearchInput}
+                showClearButton
+                autoFocus
+                onKeyDown={(event) => {
+                  if (event.key === Key.Enter) {
+                    event.preventDefault();
+                    runSearch();
+                  }
+                }}
+                tooltip={{
+                  title: "General search",
+                  content:
+                    "Matches a full execution ID (UUID), correlation ID, idempotency key, and free text. Partial agent names match known agents (e.g. aa finds aaaa). Use a wildcard (e.g. my-*) when the agent is not in the known list yet.",
+                }}
+              />
+            </Grid>
+            <Grid
+              size={{
+                xs: 12,
+                md: 5,
                 lg: 4,
               }}
             >
@@ -434,125 +456,47 @@ export default function BasicSearch({
                 id="workflow-search-name-dropdown"
                 fullWidth
                 label="Agent name"
-                options={agentNames.sort((a, b) =>
-                  a.toLowerCase().localeCompare(b.toLowerCase()),
-                )}
+                placeholder="Select agents…"
+                options={agentNameOptions}
                 multiple
                 freeSolo
-                onChange={(__, val: string[]) => setWorkflowType(val)}
+                openOnFocus
+                onInputChange={(__, val: string, reason: string) => {
+                  // Track typed text for Search-without-Enter, but do not
+                  // control inputValue — that breaks the options dropdown.
+                  if (reason === "input" || reason === "clear") {
+                    setAgentNameInput(val);
+                  }
+                  if (reason === "reset") {
+                    setAgentNameInput("");
+                  }
+                }}
+                onChange={(__, val: string[]) => {
+                  setAgentNameInput("");
+                  setWorkflowType(val);
+                }}
                 value={workflowType}
                 autoFocus
                 conductorInputProps={{
                   tooltip: {
-                    title: "Partial Name Search",
+                    title: "Filter by agent",
                     content:
-                      "Search agents by partial names with a wildcard * in your keyword. Then hit ENTER, and now you can click SEARCH. i.e. my-agen* or *bot*",
+                      "Select from registered agents and recently run agent names. You can also type a name or wildcard (e.g. my-agen* or *bot*) and press Enter to add it as a filter — this is not a free-text search.",
                     placement: "top",
                     showInitial: !tooltipFlags.executionSearch ? true : false,
                     initialTimeout: 2000,
                     onClose: handleToolTipOnClose,
                   },
                   autoFocus: true,
-                }}
-              />
-            </Grid>
-            <Grid
-              size={{
-                xs: 6,
-                md: 6,
-                lg: 2,
-              }}
-            >
-              <ConductorInput
-                id="workflow-search-id"
-                fullWidth
-                label="Execution id"
-                value={workflowId}
-                onTextInputChange={setWorkflowId}
-                showClearButton
-              />
-            </Grid>
-            <Grid
-              position="relative"
-              size={{
-                xs: 6,
-                md: 6,
-                lg: 2,
-              }}
-            >
-              <ConductorAutoComplete
-                id="workflow-search-correlation-id"
-                fullWidth
-                label="Correlation id"
-                options={[]}
-                multiple
-                freeSolo
-                onTextInputChange={(typingValue: string) => {
-                  setCorrelationInputVal(typingValue);
-                }}
-                onChange={(evt: any, val: string[]) => {
-                  if (evt.key === "Backspace" || evt.key === "Enter") {
-                    setCorrelationInputVal("");
-                  }
-                  setCorrelationIds(val);
-                }}
-                onFocus={() => setCorrelationFieldFocus(true)}
-                onBlur={() => setCorrelationFieldFocus(false)}
-                value={correlationIds}
-                error={correlationIdHasError}
-                conductorInputProps={{
-                  tooltip: {
-                    title: "Get Agents by Correlation ID",
-                    content:
-                      "Search executions by Correlation ID. This field has support for multiple values, so please remember to press 'Enter' for each value to apply the search.",
-                  },
-                  error: correlationIdHasError,
-                }}
-              />
-            </Grid>
-            <Grid
-              position="relative"
-              size={{
-                xs: 6,
-                md: 6,
-                lg: 2,
-              }}
-            >
-              <ConductorAutoComplete
-                id="workflow-search-idempotency-key"
-                fullWidth
-                label="Idempotency key"
-                options={[]}
-                multiple
-                freeSolo
-                onTextInputChange={(typingValue: string) => {
-                  setIdempotencyKeyInputVal(typingValue);
-                }}
-                onChange={(evt: any, val: string[]) => {
-                  if (evt.key === "Backspace" || evt.key === "Enter") {
-                    setIdempotencyKeyInputVal("");
-                  }
-
-                  setIdempotencyKey(val);
-                }}
-                onFocus={() => setIdempotencyKeyFieldFocus(true)}
-                onBlur={() => setIdempotencyKeyFieldFocus(false)}
-                value={idempotencyKey}
-                error={idempotencyKeyHasError}
-                conductorInputProps={{
-                  tooltip: {
-                    title: "Get Executions by Idempotency key",
-                    content:
-                      "Search executions by Idempotency key. This field has support for multiple values, so please remember to press 'Enter' for each value to apply the search.",
-                  },
-                  error: idempotencyKeyHasError,
+                  placeholder: "Select agents…",
                 }}
               />
             </Grid>
             <Grid
               size={{
                 xs: 12,
-                md: 6,
+                sm: 6,
+                md: 3,
                 lg: 2,
               }}
             >
@@ -577,31 +521,13 @@ export default function BasicSearch({
               alignItems="end"
               size={{
                 xs: 12,
-                sm: 12,
-                md: 6,
+                sm: 6,
+                md: 5,
                 lg: 6,
               }}
             >
               <DateControlComponent
-                startTime={startTimeFrom}
-                onStartFromChange={onStartFromChange}
-                startTimeEnd={startTimeTo}
-                onStartToChange={onStartToChange}
-                endTimeStart={endTimeFrom}
-                onEndFromChange={onEndFromChange}
-                endTime={endTimeTo}
-                onEndToChange={onEndToChange}
-                fromDisplayTime={fromDisplayTime}
-                setFromDisplayTime={setFromDisplayTime}
-                toDisplayTime={toDisplayTime}
-                setToDisplayTime={setToDisplayTime}
-                openDateSelect={openDateSelect}
-                setOpenDateSelect={setOpenDateSelect}
-                openStartDatePicker={openStartDatePicker}
-                setStartOpenDatePicker={setStartOpenDatePicker}
-                openEndDatePicker={openEndDatePicker}
-                setEndOpenDatePicker={setEndOpenDatePicker}
-                recentSearches={recentSearches}
+                {...toDateControlProps(filters)}
                 startDialogTitle="Execution Start Time"
                 startDialogHelpText="Select a date range within which the Execution has started."
                 endDialogTitle="Execution End Time"
@@ -611,74 +537,43 @@ export default function BasicSearch({
               />
             </Grid>
             <Grid
-              size={{
-                xs: 12,
-                sm: 6,
-                md: 6,
-                lg: 3,
-              }}
-            >
-              <ConductorInput
-                fullWidth
-                label="Free text search"
-                value={freeText}
-                onTextInputChange={setFreeText}
-                showClearButton
-              />
-            </Grid>
-            <Grid
               display="flex"
               justifyContent="end"
+              alignItems="end"
+              gap={1}
               size={{
                 xs: 12,
-                sm: 6,
-                md: 6,
-                lg: 3,
+                md: 4,
+                lg: 4,
               }}
             >
-              <Grid size={5}>
-                <FormControl>
-                  {!isMobile && <InputLabel>&nbsp;</InputLabel>}
-                  <Button
-                    id="reset-workflow-btn"
-                    variant="text"
-                    onClick={handleReset}
-                    style={{ width: "100%" }}
-                    startIcon={<ResetIcon />}
-                  >
-                    Reset
-                  </Button>
-                </FormControl>
-              </Grid>
-              <Grid>
-                <FormControl>
-                  {!isMobile && <InputLabel>&nbsp;</InputLabel>}
-
-                  <SplitButton
-                    id="search-workflow-btn"
-                    startIcon={<SearchIcon />}
-                    options={[
-                      {
-                        label: "Show as code",
-                        onClick: () => setShowCodeDialog("active"),
-                      },
-                    ]}
-                    primaryOnClick={() =>
-                      doSearch({
-                        resultObj,
-                        queryFT,
-                        buildQuery,
-                        setQueryFT,
-                        refetch,
-                        setPage,
-                        setRecentTaskSearch,
-                      })
-                    }
-                  >
-                    Search
-                  </SplitButton>
-                </FormControl>
-              </Grid>
+              <FormControl>
+                {!isMobile && <InputLabel>&nbsp;</InputLabel>}
+                <Button
+                  id="reset-workflow-btn"
+                  variant="text"
+                  onClick={handleReset}
+                  startIcon={<ResetIcon />}
+                >
+                  Reset
+                </Button>
+              </FormControl>
+              <FormControl>
+                {!isMobile && <InputLabel>&nbsp;</InputLabel>}
+                <SplitButton
+                  id="search-workflow-btn"
+                  startIcon={<SearchIcon />}
+                  options={[
+                    {
+                      label: "Show as code",
+                      onClick: () => setShowCodeDialog("active"),
+                    },
+                  ]}
+                  primaryOnClick={runSearch}
+                >
+                  Search
+                </SplitButton>
+              </FormControl>
             </Grid>
           </Grid>
         </Box>
