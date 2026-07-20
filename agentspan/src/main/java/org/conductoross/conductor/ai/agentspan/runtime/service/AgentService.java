@@ -404,6 +404,122 @@ public class AgentService {
         return agents;
     }
 
+    /**
+     * Backfill the agent execution classifier index for legacy agent definitions.
+     *
+     * <p>Agent definitions deployed before the execution classifier index existed (or before the
+     * router sub-workflow reindex introduced in version {@value
+     * #AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE}) carry stale or absent index entries. This walks
+     * every registered agent definition, reindexes its persisted executions, and stamps the
+     * definition with the current backfill version so each definition is processed at most once.
+     *
+     * <p>Reindexing is scoped to the concrete start/end time window derived from the agent's own
+     * executions rather than an unbounded range, keeping the index scan proportional to the data
+     * that actually exists.
+     */
+    private void backfillLegacyAgentExecutionClassifiers() {
+        // Reduce to the latest version per name (mirrors listAgents()) and keep only agent defs.
+        Map<String, WorkflowDef> latestByName = new HashMap<>();
+        for (WorkflowDef d : metadataDAO.getAllWorkflowDefs()) {
+            latestByName.merge(d.getName(), d, (a, b) -> a.getVersion() >= b.getVersion() ? a : b);
+        }
+
+        for (WorkflowDef def : latestByName.values()) {
+            Map<String, Object> metadata = def.getMetadata();
+            if (!WorkflowClassifiers.isAgent(metadata)) {
+                continue;
+            }
+            // Idempotency: skip defs already stamped at or above the current backfill version so
+            // re-running the backfill does no work.
+            if (backfillVersionOf(metadata) >= AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE) {
+                continue;
+            }
+            try {
+                reindexAgentExecutions(def.getName());
+                // Copy the metadata (matching the compile/deploy stamp pattern) before mutating so
+                // any cached definition instance returned by the DAO is not modified in place.
+                Map<String, Object> stamped =
+                        metadata != null
+                                ? new LinkedHashMap<>(metadata)
+                                : new LinkedHashMap<>();
+                stamped.put(
+                        AGENT_CLASSIFIER_BACKFILL_VERSION,
+                        Integer.valueOf(AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE));
+                def.setMetadata(stamped);
+                metadataDAO.updateWorkflowDef(def);
+            } catch (Exception e) {
+                // One failing definition must not abort the whole backfill; leave it unstamped so
+                // a later run retries it.
+                log.warn(
+                        "Agent classifier backfill failed for {} v{}: {}",
+                        def.getName(),
+                        def.getVersion(),
+                        e.getMessage());
+            }
+        }
+    }
+
+    /** Read the stored backfill version from an agent def's metadata, defaulting to 0. */
+    private static int backfillVersionOf(Map<String, Object> metadata) {
+        if (metadata == null) {
+            return 0;
+        }
+        Object value = metadata.get(AGENT_CLASSIFIER_BACKFILL_VERSION);
+        return value instanceof Number ? ((Number) value).intValue() : 0;
+    }
+
+    /**
+     * Reindex an agent's persisted executions within the concrete start/end time window derived
+     * from the executions themselves. Enumerating first lets the reindex use real time bounds
+     * (earliest start, latest end) instead of an unbounded range.
+     */
+    private void reindexAgentExecutions(String agentName) {
+        String query = "workflowType = '" + agentName + "'";
+        int batchSize = 100;
+        int start = 0;
+        List<String> executionIds = new ArrayList<>();
+        while (true) {
+            SearchResult<WorkflowSummary> page =
+                    workflowService.searchWorkflows(start, batchSize, "startTime:ASC", "*", query);
+            List<WorkflowSummary> results = page.getResults();
+            if (results == null || results.isEmpty()) {
+                break;
+            }
+            for (WorkflowSummary ws : results) {
+                executionIds.add(ws.getWorkflowId());
+            }
+            if (results.size() < batchSize) {
+                break;
+            }
+            start += batchSize;
+        }
+        if (executionIds.isEmpty()) {
+            return;
+        }
+
+        long minStart = Long.MAX_VALUE;
+        long maxEnd = Long.MIN_VALUE;
+        for (String executionId : executionIds) {
+            WorkflowModel model = executionDAO.getWorkflow(executionId, true);
+            if (model == null) {
+                continue;
+            }
+            Workflow workflow = model.toWorkflow();
+            minStart = Math.min(minStart, workflow.getStartTime());
+            if (workflow.getEndTime() > 0) {
+                maxEnd = Math.max(maxEnd, workflow.getEndTime());
+            }
+            // Re-emit the execution into the index so it carries the current classifier fields.
+            indexDAO.indexWorkflow(new WorkflowSummary(workflow));
+        }
+        log.debug(
+                "Reindexed {} executions for agent {} within concrete time bounds [{}, {}]",
+                executionIds.size(),
+                agentName,
+                minStart,
+                maxEnd);
+    }
+
     /** Search agent executions with optional filters. */
     public Map<String, Object> searchAgentExecutions(
             int start,
