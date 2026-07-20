@@ -32,7 +32,6 @@ import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
 import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -188,12 +187,9 @@ public class BedrockAgentClient implements ConductorAgentClient {
                                 InvokeAgentResponseHandler.Visitor.builder()
                                         .onChunk(
                                                 chunk -> {
-                                                    if (chunk.bytes() != null
-                                                            && chunk.bytes().bytes() != null) {
+                                                    if (chunk.bytes() != null) {
                                                         textBuffer.append(
-                                                                chunk.bytes()
-                                                                        .bytes()
-                                                                        .asUtf8String());
+                                                                chunk.bytes().asUtf8String());
                                                     }
                                                 })
                                         .onReturnControl(returnControl::set)

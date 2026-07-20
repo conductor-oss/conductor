@@ -223,8 +223,10 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
             return;
         }
         A2ACallRequest request = parse(task, A2ACallRequest.class);
-        if (A2AService.isConductorAgentType(request.getAgentType())) {
-            new ConductorAgentDelegate(conductorAgentClient).cancel(task, reason);
+        ConductorAgentClient cancelClient = agentClients.get(
+                StringUtils.defaultIfBlank(request.getAgentType(), "").toLowerCase());
+        if (cancelClient != null) {
+            new ConductorAgentDelegate(cancelClient).cancel(task, reason);
             return;
         }
         String remoteTaskId =
