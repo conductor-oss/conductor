@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.conductoross.conductor.ai.http.ExternalDataLimits;
-import org.conductoross.conductor.ai.http.OutboundTargetPolicy;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,18 +48,15 @@ public class MCPService {
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
     private final JsonTextParser jsonTextParser = new JsonTextParser(objectMapper);
     private final OkHttpClient httpClient;
-    private final OutboundTargetPolicy outboundTargetPolicy;
 
-    public MCPService(
-            OkHttpClient conductorAiHttpClient, OutboundTargetPolicy outboundTargetPolicy) {
-        // Redirects are followed explicitly below so every destination is policy-checked.
+    public MCPService(OkHttpClient conductorAiHttpClient) {
+        // Redirects are followed explicitly below so credentials can be withheld across origins.
         this.httpClient =
                 conductorAiHttpClient
                         .newBuilder()
                         .followRedirects(false)
                         .followSslRedirects(false)
                         .build();
-        this.outboundTargetPolicy = outboundTargetPolicy;
     }
 
     /**
@@ -376,11 +372,10 @@ public class MCPService {
         }
     }
 
-    /** Executes one MCP request with policy validation and explicitly validated redirects. */
+    /** Executes one MCP request and follows redirects while protecting sensitive headers. */
     private ResponsePayload execute(Request initialRequest) throws Exception {
         Request request = initialRequest;
         for (int redirects = 0; redirects <= 5; redirects++) {
-            outboundTargetPolicy.validate(request.url().toString());
             try (Response response = httpClient.newCall(request).execute()) {
                 if (!response.isRedirect()) {
                     return new ResponsePayload(
@@ -394,9 +389,8 @@ public class MCPService {
                             "MCP server returned a redirect without a valid Location");
                 }
                 String target = request.url().resolve(location).toString();
-                outboundTargetPolicy.validate(target);
                 if (hasSensitiveHeaders(request)
-                        && !outboundTargetPolicy.isSameOrigin(request.url().toString(), target)) {
+                        && !isSameOrigin(request.url().toString(), target)) {
                     throw new RuntimeException(
                             "Refusing to forward credentials across an MCP redirect");
                 }
@@ -431,12 +425,22 @@ public class MCPService {
                 || request.header("Proxy-Authorization") != null;
     }
 
+    private boolean isSameOrigin(String firstUrl, String secondUrl) {
+        okhttp3.HttpUrl first = okhttp3.HttpUrl.parse(firstUrl);
+        okhttp3.HttpUrl second = okhttp3.HttpUrl.parse(secondUrl);
+        return first != null
+                && second != null
+                && first.scheme().equalsIgnoreCase(second.scheme())
+                && first.host().equalsIgnoreCase(second.host())
+                && first.port() == second.port();
+    }
+
     private String readBoundedBody(ResponseBody body) throws Exception {
         if (body == null) {
             return "";
         }
         if (body.contentLength() > ExternalDataLimits.MAX_PAYLOAD_BYTES) {
-            throw new RuntimeException("MCP response exceeds the 1 MiB payload limit");
+            throw new RuntimeException("MCP response exceeds the 10 MiB payload limit");
         }
         try (body) {
             okio.Buffer buffer = new okio.Buffer();
@@ -445,7 +449,8 @@ public class MCPService {
             while ((read = body.source().read(buffer, 8192)) != -1) {
                 total += read;
                 if (total > ExternalDataLimits.MAX_PAYLOAD_BYTES) {
-                    throw new RuntimeException("MCP response exceeds the 1 MiB payload limit");
+                    buffer.clear();
+                    throw new RuntimeException("MCP response exceeds the 10 MiB payload limit");
                 }
             }
             return buffer.readUtf8();

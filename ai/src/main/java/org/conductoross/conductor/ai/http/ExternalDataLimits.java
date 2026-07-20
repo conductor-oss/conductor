@@ -20,7 +20,7 @@ import java.util.Map;
 /** Bounds untrusted tool data before it is copied into durable workflow state. */
 public final class ExternalDataLimits {
 
-    public static final int MAX_PAYLOAD_BYTES = 1024 * 1024;
+    public static final int MAX_PAYLOAD_BYTES = 10 * 1024 * 1024;
     public static final int MAX_NESTING_DEPTH = 32;
 
     private ExternalDataLimits() {}

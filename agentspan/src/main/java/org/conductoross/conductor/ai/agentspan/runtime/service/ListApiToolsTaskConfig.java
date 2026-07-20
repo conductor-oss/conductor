@@ -12,7 +12,6 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.service;
 
-import org.conductoross.conductor.ai.http.OutboundTargetPolicy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -21,7 +20,7 @@ import org.springframework.context.annotation.Configuration;
 public class ListApiToolsTaskConfig {
 
     @Bean(ListApiToolsTask.TASK_TYPE)
-    public ListApiToolsTask listApiToolsTask(OutboundTargetPolicy outboundTargetPolicy) {
-        return new ListApiToolsTask(outboundTargetPolicy);
+    public ListApiToolsTask listApiToolsTask() {
+        return new ListApiToolsTask();
     }
 }

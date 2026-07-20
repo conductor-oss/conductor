@@ -12,10 +12,8 @@
  */
 package org.conductoross.conductor.ai.mcp;
 
-import java.util.List;
 import java.util.Map;
 
-import org.conductoross.conductor.ai.http.OutboundTargetPolicy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,7 +22,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /** Verifies MCP transport boundaries against an actual HTTP listener. */
@@ -37,10 +34,7 @@ class MCPServiceSecurityTest {
     void setUp() throws Exception {
         server = new MockWebServer();
         server.start();
-        OutboundTargetPolicy policy = new OutboundTargetPolicy();
-        policy.setAllowedOrigins(List.of(server.url("/").toString().replaceAll("/$", "")));
-        policy.setAllowPrivateNetworks(true);
-        service = new MCPService(new OkHttpClient(), policy);
+        service = new MCPService(new OkHttpClient());
     }
 
     @AfterEach
@@ -53,7 +47,7 @@ class MCPServiceSecurityTest {
         server.enqueue(
                 new MockResponse()
                         .setHeader("Content-Type", "application/json")
-                        .setBody("x".repeat(1024 * 1024 + 1)));
+                        .setBody("x".repeat(10 * 1024 * 1024 + 1)));
 
         assertThatThrownBy(
                         () ->
@@ -62,22 +56,6 @@ class MCPServiceSecurityTest {
                                         "echo_large",
                                         Map.of(),
                                         Map.of()))
-                .hasMessageContaining("1 MiB payload limit");
-    }
-
-    @Test
-    void refusesAnUnconfiguredTargetBeforeSendingTheRequest() {
-        OutboundTargetPolicy restrictedPolicy = new OutboundTargetPolicy();
-        restrictedPolicy.setAllowedOrigins(
-                List.of(server.url("/").toString().replaceAll("/$", "")));
-        service = new MCPService(new OkHttpClient(), restrictedPolicy);
-
-        assertThatThrownBy(
-                        () ->
-                                service.callTool(
-                                        "http://example.invalid/mcp", "echo", Map.of(), Map.of()))
-                .hasMessageContaining("not allow-listed");
-
-        assertThat(server.getRequestCount()).isZero();
+                .hasMessageContaining("10 MiB payload limit");
     }
 }

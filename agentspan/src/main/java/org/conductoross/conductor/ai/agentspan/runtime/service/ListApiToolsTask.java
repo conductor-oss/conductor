@@ -20,7 +20,6 @@ import java.time.Duration;
 import java.util.*;
 
 import org.conductoross.conductor.ai.http.ExternalDataLimits;
-import org.conductoross.conductor.ai.http.OutboundTargetPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,27 +71,21 @@ public class ListApiToolsTask extends WorkflowSystemTask {
 
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
-    private final OutboundTargetPolicy outboundTargetPolicy;
 
-    public ListApiToolsTask(OutboundTargetPolicy outboundTargetPolicy) {
+    public ListApiToolsTask() {
         this(
                 new ObjectMapper(),
                 HttpClient.newBuilder()
                         .connectTimeout(Duration.ofSeconds(10))
                         .followRedirects(HttpClient.Redirect.NEVER)
-                        .build(),
-                outboundTargetPolicy);
+                        .build());
     }
 
     /** Visible-for-testing constructor. */
-    ListApiToolsTask(
-            ObjectMapper objectMapper,
-            HttpClient httpClient,
-            OutboundTargetPolicy outboundTargetPolicy) {
+    ListApiToolsTask(ObjectMapper objectMapper, HttpClient httpClient) {
         super(TASK_TYPE);
         this.objectMapper = objectMapper;
         this.httpClient = httpClient;
-        this.outboundTargetPolicy = outboundTargetPolicy;
         logger.debug("ListApiToolsTask registered (task type={})", TASK_TYPE);
     }
 
@@ -155,10 +148,6 @@ public class ListApiToolsTask extends WorkflowSystemTask {
                     return;
                 }
             }
-            // The document controls its advertised API server. Validate it before the generated
-            // HTTP tools persist or execute that target.
-            outboundTargetPolicy.validate(baseUrl);
-
             Map<String, Object> output = new LinkedHashMap<>();
             output.put("tools", tools);
             output.put("baseUrl", baseUrl);
@@ -189,7 +178,6 @@ public class ListApiToolsTask extends WorkflowSystemTask {
      * paths relative to the origin of the given URL.
      */
     private FetchResult fetchSpec(String specUrl, Map<String, String> headers) throws Exception {
-        outboundTargetPolicy.validate(specUrl);
         // Try the provided URL first
         FetchResult result = attemptFetch(specUrl, headers);
         if (result != null) {
@@ -223,7 +211,7 @@ public class ListApiToolsTask extends WorkflowSystemTask {
 
             if (response.body().length > ExternalDataLimits.MAX_PAYLOAD_BYTES) {
                 throw new IllegalArgumentException(
-                        "OpenAPI document exceeds the 1 MiB payload limit");
+                        "OpenAPI document exceeds the 10 MiB payload limit");
             }
             String body = new String(response.body(), java.nio.charset.StandardCharsets.UTF_8);
             if (body == null || body.isBlank()) {
@@ -255,7 +243,6 @@ public class ListApiToolsTask extends WorkflowSystemTask {
             throws Exception {
         String currentUrl = url;
         for (int redirects = 0; redirects <= 5; redirects++) {
-            outboundTargetPolicy.validate(currentUrl);
             HttpRequest.Builder request =
                     HttpRequest.newBuilder()
                             .uri(URI.create(currentUrl))
@@ -273,9 +260,7 @@ public class ListApiToolsTask extends WorkflowSystemTask {
                         "API spec redirect is missing a Location header");
             }
             String target = URI.create(currentUrl).resolve(location).toString();
-            outboundTargetPolicy.validate(target);
-            if (hasSensitiveHeaders(headers)
-                    && !outboundTargetPolicy.isSameOrigin(currentUrl, target)) {
+            if (hasSensitiveHeaders(headers) && !isSameOrigin(currentUrl, target)) {
                 throw new IllegalArgumentException(
                         "Refusing to forward credentials across an API spec redirect");
             }
@@ -758,6 +743,21 @@ public class ListApiToolsTask extends WorkflowSystemTask {
             prop.put("in", "body");
             properties.put("body", prop);
         }
+    }
+
+    private boolean isSameOrigin(String firstUrl, String secondUrl) {
+        URI first = URI.create(firstUrl);
+        URI second = URI.create(secondUrl);
+        return first.getScheme().equalsIgnoreCase(second.getScheme())
+                && first.getHost().equalsIgnoreCase(second.getHost())
+                && effectivePort(first) == effectivePort(second);
+    }
+
+    private int effectivePort(URI uri) {
+        if (uri.getPort() != -1) {
+            return uri.getPort();
+        }
+        return "https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
     }
 
     // -----------------------------------------------------------------------

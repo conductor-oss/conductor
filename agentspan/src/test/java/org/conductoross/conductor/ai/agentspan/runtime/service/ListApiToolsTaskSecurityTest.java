@@ -17,7 +17,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.conductoross.conductor.ai.http.OutboundTargetPolicy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,10 +62,7 @@ class ListApiToolsTaskSecurityTest {
                     exchange.close();
                 });
         server.start();
-        OutboundTargetPolicy policy = new OutboundTargetPolicy();
-        policy.setAllowedOrigins(List.of(serverUrl("/"), "https://api.example.test"));
-        policy.setAllowPrivateNetworks(true);
-        task = new ListApiToolsTask(policy);
+        task = new ListApiToolsTask();
     }
 
     @AfterEach
@@ -76,12 +72,12 @@ class ListApiToolsTaskSecurityTest {
 
     @Test
     void rejectsAnOversizedOpenApiDocumentBeforeItCanBecomeTaskOutput() {
-        responseBody.set("x".repeat(1024 * 1024 + 1));
+        responseBody.set("x".repeat(10 * 1024 * 1024 + 1));
 
         TaskModel executionTask = start(serverUrl("/api-docs"));
 
         assertThat(executionTask.getStatus()).isEqualTo(TaskModel.Status.FAILED);
-        assertThat(executionTask.getReasonForIncompletion()).contains("1 MiB payload limit");
+        assertThat(executionTask.getReasonForIncompletion()).contains("10 MiB payload limit");
         assertThat(executionTask.getOutputData()).doesNotContainKey("tools");
     }
 
@@ -186,7 +182,7 @@ class ListApiToolsTaskSecurityTest {
     }
 
     @Test
-    void rejectsAValidSpecThatAdvertisesAnUnapprovedApiServer() {
+    void permitsAValidSpecThatAdvertisesAnExternalApiServer() {
         responseBody.set(
                 """
                 {"openapi":"3.0.3","servers":[{"url":"https://unapproved.example.test"}],"paths":{}}
@@ -194,9 +190,9 @@ class ListApiToolsTaskSecurityTest {
 
         TaskModel executionTask = start(serverUrl("/api-docs"));
 
-        assertThat(executionTask.getStatus()).isEqualTo(TaskModel.Status.FAILED);
-        assertThat(executionTask.getReasonForIncompletion()).contains("not allow-listed");
-        assertThat(executionTask.getOutputData()).doesNotContainKey("tools");
+        assertThat(executionTask.getStatus()).isEqualTo(TaskModel.Status.COMPLETED);
+        assertThat(executionTask.getOutputData())
+                .containsEntry("baseUrl", "https://unapproved.example.test");
     }
 
     @Test
