@@ -121,6 +121,11 @@ public final class A2AWorkerTestSupport {
     private static final class UnusedConductorAgentClient implements ConductorAgentClient {
 
         @Override
+        public String agentType() {
+            return "unused-test-client";
+        }
+
+        @Override
         public ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request) {
             throw unexpectedInvocation();
         }
