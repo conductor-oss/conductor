@@ -171,7 +171,11 @@ class AgentSpanDeploymentContractEndToEndTest {
 
     @Autowired private AgentService agentService;
     @Autowired private AgentDagService agentDagService;
-    @Autowired @Qualifier("serviceConductorAgentClient") private ConductorAgentClient conductorAgentClient;
+
+    @Autowired
+    @Qualifier("serviceConductorAgentClient")
+    private ConductorAgentClient conductorAgentClient;
+
     @Autowired private ExecutionDAO executionDAO;
     @Autowired private MetadataService metadataService;
     @Autowired private ExternalPayloadStorage externalPayloadStorage;
