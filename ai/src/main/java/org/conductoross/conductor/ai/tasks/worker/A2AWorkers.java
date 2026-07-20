@@ -43,9 +43,10 @@ import org.conductoross.conductor.ai.model.A2ACancelResult;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.conductoross.conductor.core.execution.tasks.AnnotatedSystemTaskWorker;
 import org.conductoross.conductor.core.execution.tasks.TaskCancellationHandler;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Conditional;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -84,34 +85,49 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
 
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
     private final A2AService a2aService;
-    private final Map<String, ConductorAgentClient> agentClients;
+    private final Map<String, ConductorAgentClient> agentClients = new HashMap<>();
     private final String callbackUrl;
 
+    // Set only in the Spring-managed path; null when constructed directly (SDK / tests).
+    private final ApplicationContext applicationContext;
+
     /**
-     * Spring constructor — receives all registered {@link ConductorAgentClient} implementations.
-     * Each client self-declares its {@code agentType()}; the map is built once at startup so
-     * routing in {@link #agent} is a plain map lookup with no conditional logic.
+     * Spring constructor — does NOT inject {@link ConductorAgentClient} beans directly to avoid a
+     * constructor-injection cycle through {@code ServiceConductorAgentClient → AgentService →
+     * WorkflowServiceImpl → WorkflowExecutorOps → A2AWorkers}. The map is populated in
+     * {@link #registerAgentClients()} once all beans are fully constructed.
      */
     @Autowired
     public A2AWorkers(
-            A2AService a2aService,
-            @Lazy List<ConductorAgentClient> conductorAgentClients,
-            Environment environment) {
-        this(a2aService, conductorAgentClients, environment.getProperty(CALLBACK_URL_PROPERTY));
+            A2AService a2aService, ApplicationContext applicationContext, Environment environment) {
+        this.a2aService = a2aService;
+        this.applicationContext = applicationContext;
+        this.callbackUrl = StringUtils.trimToNull(environment.getProperty(CALLBACK_URL_PROPERTY));
     }
 
+    /** Non-Spring constructor for SDK / test use — callers pass the clients directly. */
     public A2AWorkers(
             A2AService a2aService,
             List<ConductorAgentClient> conductorAgentClients,
             String callbackUrl) {
         this.a2aService = a2aService;
-        this.agentClients = new HashMap<>();
+        this.applicationContext = null;
         conductorAgentClients.forEach(c -> agentClients.put(c.agentType().toLowerCase(), c));
         this.callbackUrl = StringUtils.trimToNull(callbackUrl);
     }
 
     public A2AWorkers(A2AService a2aService, List<ConductorAgentClient> conductorAgentClients) {
         this(a2aService, conductorAgentClients, (String) null);
+    }
+
+    @PostConstruct
+    void registerAgentClients() {
+        if (applicationContext != null) {
+            applicationContext
+                    .getBeansOfType(ConductorAgentClient.class)
+                    .values()
+                    .forEach(c -> agentClients.put(c.agentType().toLowerCase(), c));
+        }
     }
 
     /** Fetch a remote agent's Agent Card. */
