@@ -13,6 +13,7 @@
 package org.conductoross.conductor.ai.agentspan.runtime.util;
 
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -590,6 +591,10 @@ public class JavaScriptBuilder {
                         + "    for (var _hk in h) { o[_hk] = String(h[_hk]).replace(/#\\{([A-Za-z_][A-Za-z0-9_.]*)\\}/g,"
                         + "      function(_m, _n) { return '$' + '{workflow.secrets.' + _n + '}'; }); }"
                         + "    return o; };"
+                        + "  var _plain = function(v) { var o = {}; if (v == null) return o;"
+                        + "    if (typeof v.entrySet === 'function') { var it = v.entrySet().iterator();"
+                        + "      while (it.hasNext()) { var e = it.next(); o[String(e.getKey())] = e.getValue(); } return o; }"
+                        + "    for (var k in v) { if (Object.prototype.hasOwnProperty.call(v, k)) o[k] = v[k]; } return o; };"
                         + "  var agentState = $.agentState || {};"
                         + "  var tcs = $.toolCalls || [];"
                         + "  var result = [];"
@@ -624,7 +629,9 @@ public class JavaScriptBuilder {
                         + "      result.push(errTask);"
                         + "      continue;"
                         + "    }"
-                        + "    var t = {name: n, taskReferenceName: tc.taskReferenceName || n,"
+                        // A model may call the same tool more than once in a turn. Dynamic fork
+                        // references must be unique or JOIN silently aliases results.
+                        + "    var t = {name: n, taskReferenceName: (tc.taskReferenceName || n) + '_' + i,"
                         + "             type: tc.type || 'SIMPLE', inputParameters: tc.inputParameters || {},"
                         + "             optional: true,"
                         + "             retryCount: 2, retryLogic: 'LINEAR_BACKOFF',"
@@ -632,49 +639,54 @@ public class JavaScriptBuilder {
                         + "    if (httpCfg[n]) {"
                         + "      t.type = 'HTTP';"
                         + "      var hc = httpCfg[n];"
-                        + "      var hargs = tc.inputParameters || {};"
+                        + "      var hargs = _plain(tc.inputParameters);"
                         + "      var huri = hc.url || '';"
-                        + "      var hbody = hargs;"
+                        + "      var hmethod = String(hc.method || 'GET').toUpperCase();"
+                        + "      var bodyless = hmethod === 'GET' || hmethod === 'HEAD' || hmethod === 'DELETE' || hmethod === 'OPTIONS';"
+                        + "      var hbody = {}; for (var ha in hargs) { if (ha !== 'method') hbody[ha] = hargs[ha]; }"
                         // Optional URI templating: pathTemplate consumes {param}s from
                         // the LLM's arguments (URL-encoded); queryParams append the
                         // listed args as a query string. Consumed args leave the body.
                         // Tools without these keys keep the static-uri/args-as-body
                         // shape unchanged.
-                        + "      if (hc.pathTemplate || hc.queryParams) {"
-                        + "        var consumed = {};"
+                        + "      if (hc.pathTemplate || hc.queryParams || bodyless) {"
+                        + "        var consumed = {method:true};"
                         + "        if (hc.pathTemplate) {"
                         + "          huri = huri + hc.pathTemplate.replace(/\\{(\\w+)\\}/g,"
                         + "            function(m, k) { consumed[k] = true;"
                         + "              return encodeURIComponent(String(hargs[k] == null ? '' : hargs[k])); });"
                         + "        }"
-                        + "        if (hc.queryParams) {"
+                        + "        var queryKeys = hc.queryParams || (bodyless ? Object.keys(hargs) : []);"
+                        + "        if (queryKeys.length) {"
                         + "          var qs = [];"
-                        + "          for (var qi = 0; qi < hc.queryParams.length; qi++) {"
-                        + "            var qk = hc.queryParams[qi];"
-                        + "            if (hargs[qk] != null && hargs[qk] !== '') { consumed[qk] = true;"
-                        + "              qs.push(encodeURIComponent(qk) + '=' + encodeURIComponent(String(hargs[qk]))); }"
+                        + "          for (var qi = 0; qi < queryKeys.length; qi++) {"
+                        + "            var qk = queryKeys[qi]; var qv = hargs[qk];"
+                        + "            if (qk === 'method' || qv == null || qv === '') continue; consumed[qk] = true;"
+                        + "            if (Array.isArray(qv)) { for (var qj = 0; qj < qv.length; qj++) { if (qv[qj] != null && qv[qj] !== '') qs.push(encodeURIComponent(qk) + '=' + encodeURIComponent(String(qv[qj]))); } }"
+                        + "            else { var qtext = typeof qv === 'object' ? JSON.stringify(qv) : String(qv); if (qtext != null) qs.push(encodeURIComponent(qk) + '=' + encodeURIComponent(qtext)); }"
                         + "          }"
-                        + "          if (qs.length) { huri = huri + (huri.indexOf('?') >= 0 ? '&' : '?') + qs.join('&'); }"
+                        + "          if (qs.length) { var hash = huri.indexOf('#'); var base = hash >= 0 ? huri.substring(0, hash) : huri; var frag = hash >= 0 ? huri.substring(hash) : ''; huri = base + (base.indexOf('?') >= 0 && !base.endsWith('?') ? '&' : '?') + qs.join('&') + frag; }"
                         + "        }"
                         + "        hbody = {};"
-                        + "        for (var hk in hargs) { if (!consumed[hk]) hbody[hk] = hargs[hk]; }"
+                        + "        if (!bodyless) { for (var hk in hargs) { if (!consumed[hk]) hbody[hk] = hargs[hk]; } }"
                         + "      }"
-                        + "      t.inputParameters = {http_request: {"
+                        + "      var hrequest = {"
                         + "        uri: huri,"
-                        + "        method: hc.method || 'GET',"
+                        + "        method: hmethod,"
                         + "        headers: _sec(hc.headers),"
-                        + "        body: hbody,"
                         + "        accept: hc.accept || 'application/json',"
                         + "        contentType: hc.contentType || 'application/json',"
                         + "        connectionTimeOut: 30000,"
-                        + "        readTimeOut: 30000}};"
+                        + "        readTimeOut: 30000};"
+                        + "      if (!bodyless) hrequest.body = hbody;"
+                        + "      t.inputParameters = {http_request: hrequest};"
                         + "    } else if (mcpCfg[n]) {"
                         + "      t.type = 'CALL_MCP_TOOL';"
                         + "      t.name = 'call_mcp_tool';"
                         + "      t.inputParameters = {"
                         + "        mcpServer: mcpCfg[n].mcpServer || '',"
                         + "        method: n,"
-                        + "        arguments: tc.inputParameters || {},"
+                        + "        arguments: Object.keys(_plain(tc.inputParameters)).filter(function(k) { return k !== 'method'; }).reduce(function(a, k) { a[k] = _plain(tc.inputParameters)[k]; return a; }, {}),"
                         + "        headers: _sec(mcpCfg[n].headers)};"
                         + "    } else if (agentToolCfg[n]) {"
                         + "      t.type = 'SUB_WORKFLOW';"
@@ -748,6 +760,7 @@ public class JavaScriptBuilder {
                         + "      t.inputParameters._agent_state = agentState;"
                         + "      if (cliCfg[n]) { t.inputParameters._allowed_commands = cliCfg[n].allowedCommands; }"
                         + "    }"
+                        + "    t.inputParameters._agent_tool_name = n;"
                         + "    result.push(t);"
                         + "  }"
                         + "  return {dynamicTasks: result};");
@@ -947,22 +960,61 @@ public class JavaScriptBuilder {
      * string, or {@code ''} when there is no transfer call or it carries no message.
      */
     public static String extractTransferMessageScript() {
+        return extractTransferMessageScript(null);
+    }
+
+    /**
+     * Extract a transfer message only for an exact compiler-generated transfer name.
+     *
+     * <p>The allow-list is important: user tools are allowed to contain the transfer-looking
+     * substring in their name, and those ordinary tools must never annotate or route a swarm
+     * handoff merely because of their spelling.
+     */
+    public static String extractTransferMessageScript(Map<String, String> allowedTools) {
+        String allowedCheck =
+                allowedTools == null
+                        ? "name.indexOf('_transfer_to_') < 0"
+                        : "allowed[name] === undefined";
         // Java interop: tool call entries are Java Maps — use .get(k) with property fallback,
         // matching flatMergeContextScript.
         return iife(
-                "var calls = $.tool_calls;"
+                "var allowed="
+                        + toJson(allowedTools == null ? Map.of() : allowedTools)
+                        + ";var calls = $.tool_calls;"
                         + "if (calls == null) return '';"
                         + "for (var i = 0; i < calls.length; i++) {"
                         + "  var c = calls[i]; if (c == null) continue;"
                         + "  var name = (c.get ? c.get('name') : c.name);"
                         + "  name = (name == null) ? '' : String(name);"
-                        + "  if (name.indexOf('_transfer_to_') < 0) continue;"
+                        + "  if ("
+                        + allowedCheck
+                        + ") continue;"
                         + "  var params = (c.get ? c.get('inputParameters') : c.inputParameters);"
                         + "  if (params == null) return '';"
                         + "  var m = (params.get ? params.get('message') : params.message);"
                         + "  return (m == null) ? '' : String(m);"
                         + "}"
                         + "return '';");
+    }
+
+    /**
+     * Return the first valid generated SWARM transfer call. The allow-list is compiled from the
+     * source agent's permitted transitions, so a hallucinated or disallowed transfer is never a
+     * routing signal. The map shape is intentionally compiler-local; no agent-definition wire
+     * contract is involved.
+     */
+    public static String detectTransferScript(Map<String, String> allowedTools) {
+        return iife(
+                "var allowed="
+                        + toJson(allowedTools)
+                        + ";var calls=$.tool_calls||[];"
+                        + "for(var i=0;i<calls.length;i++){var c=calls[i]||{};"
+                        + "var n=c.get?c.get('name'):c.name; n=n==null?'':String(n);"
+                        + "if(allowed[n]===undefined) continue;"
+                        + "var p=c.get?c.get('inputParameters'):c.inputParameters;"
+                        + "var m=p==null?'':(p.get?p.get('message'):p.message);"
+                        + "return {is_transfer:true,transfer_to:allowed[n],transfer_message:m==null?'':String(m)};}"
+                        + "return {is_transfer:false,transfer_to:'',transfer_message:''};");
     }
 
     /** Build human task validation script for guardrails. */
@@ -1099,8 +1151,14 @@ public class JavaScriptBuilder {
                             + "];"
                             + "    specs.push({name: t.name, type: 'CALL_MCP_TOOL',"
                             + "      description: t.description || '',"
-                            + "      inputSchema: t.inputSchema || {type:'object',properties:{}},"
-                            + "      configParams: {mcpServer: s.serverUrl, headers: s.headers || {}}});"
+                            + "      inputSchema: _json(t.inputSchema || {type:'object',properties:{}}),"
+                            // OrkesLLM resolves unmarked tools by name against integrations and
+                            // task
+                            // definitions, which can replace (or drop) the schema returned by the
+                            // MCP
+                            // server. Discovery results are already complete tool definitions.
+                            + "      selfDescribing: true,"
+                            + "      configParams: {mcpServer: s.serverUrl, headers: s.headers || {}, selfDescribing: true}});"
                             + "    mcpCfg[t.name] = {mcpServer: s.serverUrl, headers: s.headers || {}};"
                             + "  }");
         }
@@ -1113,6 +1171,18 @@ public class JavaScriptBuilder {
                         + serversJson
                         + ";"
                         + "  var mcpCfg = {};"
+                        // INLINE receives task output as Java Map/List host objects. Returning one
+                        // directly makes Graal serialize it as {}, silently stripping nested JSON
+                        // Schema fields before LLM_CHAT_COMPLETE receives the tool spec.
+                        + "  var _json = function(v) {"
+                        + "    if (v == null || typeof v !== 'object') return v;"
+                        + "    if (Array.isArray(v)) { var a = []; for (var ai = 0; ai < v.length; ai++) a.push(_json(v[ai])); return a; }"
+                        + "    if (typeof v.entrySet === 'function') { var o = {}; var it = v.entrySet().iterator();"
+                        + "      while (it.hasNext()) { var e = it.next(); o[String(e.getKey())] = _json(e.getValue()); } return o; }"
+                        + "    if (typeof v.iterator === 'function') { var l = []; var li = v.iterator();"
+                        + "      while (li.hasNext()) l.push(_json(li.next())); return l; }"
+                        + "    var p = {}; for (var k in v) { if (Object.prototype.hasOwnProperty.call(v, k)) p[k] = _json(v[k]); } return p;"
+                        + "  };"
                         + discoveredReads
                         + mergeLoop
                         + "  return {tools: specs, mcpConfig: mcpCfg,"
@@ -1143,148 +1213,6 @@ public class JavaScriptBuilder {
      * @param apiServersJson JSON array of [{headers}, ...] for each API source
      * @param maxTools threshold for filtering
      */
-    /**
-     * JavaScript that parses an OpenAPI 3.x, Swagger 2.0, or Postman collection JSON into
-     * normalized tool descriptors. Runs as an INLINE task after the HTTP fetch task retrieves the
-     * spec.
-     *
-     * <p>Input: {@code $.specBody} (parsed JSON object), {@code $.specUrl}
-     *
-     * <p>Output: {@code {tools: [...], baseUrl: "...", format: "openapi3|swagger2|postman"}}
-     */
-    public static String apiParseScript() {
-        return iife(
-                """
-            var spec = $.specBody;
-            var specUrl = $.specUrl || '';
-            if (!spec) return {tools: [], baseUrl: '', format: 'unknown'};
-            // If spec is a string, parse it
-            if (typeof spec === 'string') { try { spec = JSON.parse(spec); } catch(e) { return {tools: [], baseUrl: specUrl, format: 'parse_error', error: '' + e}; } }
-            // For GraalJS interop: access nested maps via string keys
-            function get(obj, key) { if (!obj) return null; return obj[key] !== undefined ? obj[key] : null; }
-
-            var tools = [];
-            var baseUrl = '';
-            var format = 'unknown';
-
-            function slug(s) { return s.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '').toLowerCase(); }
-            function mergeParams(params, reqBody) {
-                var props = {};
-                var required = [];
-                (params || []).forEach(function(p) {
-                    if (p.name && p['in'] !== 'header') {
-                        props[p.name] = p.schema || {type: 'string'};
-                        if (p.description) props[p.name].description = p.description;
-                        if (p.required) required.push(p.name);
-                    }
-                });
-                if (reqBody && reqBody.content) {
-                    var ct = reqBody.content['application/json'] || reqBody.content[Object.keys(reqBody.content)[0]];
-                    if (ct && ct.schema && ct.schema.properties) {
-                        var bp = ct.schema.properties;
-                        Object.keys(bp).forEach(function(k) { props[k] = bp[k]; });
-                        if (ct.schema.required) ct.schema.required.forEach(function(r) { if (required.indexOf(r) < 0) required.push(r); });
-                    }
-                }
-                return {type: 'object', properties: props, required: required.length > 0 ? required : undefined};
-            }
-
-            // OpenAPI 3.x
-            var oa = get(spec, 'openapi');
-            if (oa && ('' + oa).indexOf('3.') === 0) {
-                format = 'openapi3';
-                var servers = get(spec, 'servers');
-                var rawBase = (servers && servers[0]) ? get(servers[0], 'url') : null;
-                var specBase = rawBase ? '' + rawBase : '';
-                // If baseUrl is relative (starts with /), prepend the spec URL's origin
-                if (specBase && specBase.indexOf('/') === 0) {
-                    var m = specUrl.match(/^(https?:\\/\\/[^\\/]+)/);
-                    specBase = (m ? m[1] : '') + specBase;
-                }
-                // Fallback: derive origin from the spec URL
-                if (!specBase) {
-                    var m2 = specUrl.match(/^(https?:\\/\\/[^\\/]+)/);
-                    specBase = m2 ? m2[1] : specUrl.replace(/\\/[^\\/]*\\.(json|yaml).*$/, '');
-                }
-                baseUrl = specBase;
-                var paths = get(spec, 'paths');
-                if (paths) {
-                    for (var path in paths) {
-                        var methods = get(paths, path);
-                        if (!methods || typeof methods !== 'object') continue;
-                        var httpMethods = ['get','post','put','patch','delete','head','options'];
-                        for (var mi = 0; mi < httpMethods.length; mi++) {
-                            var m = httpMethods[mi];
-                            var op = get(methods, m);
-                            if (!op) continue;
-                            var opId = get(op, 'operationId');
-                            var name = '' + (opId || (m + '_' + slug('' + path)));
-                            var summary = get(op, 'summary');
-                            var description = get(op, 'description');
-                            var desc = '' + (summary || description || name);
-                            tools.push({
-                                name: name,
-                                description: desc,
-                                method: m.toUpperCase(),
-                                path: '' + path,
-                                inputSchema: mergeParams(get(op, 'parameters') || get(methods, 'parameters'), get(op, 'requestBody'))
-                            });
-                        }
-                    }
-                }
-            }
-            // Swagger 2.0
-            else if (get(spec, 'swagger') === '2.0') {
-                format = 'swagger2';
-                var scheme = (spec.schemes && spec.schemes[0]) || 'https';
-                baseUrl = scheme + '://' + (spec.host || '') + (spec.basePath || '');
-                var paths2 = spec.paths || {};
-                Object.keys(paths2).forEach(function(path) {
-                    var methods = paths2[path];
-                    ['get','post','put','patch','delete'].forEach(function(m) {
-                        var op = methods[m];
-                        if (!op) return;
-                        var name = op.operationId || (m + '_' + slug(path));
-                        var params = (op.parameters || []).concat(methods.parameters || []);
-                        var bodyParam = params.filter(function(p) { return p['in'] === 'body'; })[0];
-                        var otherParams = params.filter(function(p) { return p['in'] !== 'body'; });
-                        var schema = mergeParams(otherParams, bodyParam ? {content: {'application/json': {schema: bodyParam.schema}}} : null);
-                        tools.push({
-                            name: name, description: op.summary || op.description || name,
-                            method: m.toUpperCase(), path: path, inputSchema: schema
-                        });
-                    });
-                });
-            }
-            // Postman Collection
-            else if ((get(spec, 'info') && get(get(spec, 'info'), '_postman_id')) || (get(spec, 'item') && Array.isArray(get(spec, 'item')))) {
-                format = 'postman';
-                function flatten(items, prefix) {
-                    (items || []).forEach(function(item) {
-                        if (item.item) { flatten(item.item, (prefix ? prefix + '_' : '') + slug(item.name || '')); return; }
-                        if (!item.request) return;
-                        var req = item.request;
-                        var url = typeof req.url === 'string' ? req.url : (req.url && req.url.raw ? req.url.raw : '');
-                        var name = (prefix ? prefix + '_' : '') + slug(item.name || 'unnamed');
-                        var method = (req.method || 'GET').toUpperCase();
-                        var pathStr = url.replace(/https?:\\/\\/[^\\/]+/, '');
-                        if (!baseUrl && url) baseUrl = url.replace(pathStr, '');
-                        var props = {};
-                        if (req.url && req.url.query) req.url.query.forEach(function(q) { props[q.key] = {type: 'string', description: q.description || ''}; });
-                        tools.push({
-                            name: name, description: item.name || name,
-                            method: method, path: pathStr,
-                            inputSchema: {type: 'object', properties: props}
-                        });
-                    });
-                }
-                flatten(spec.item, '');
-            }
-
-            return {tools: tools, baseUrl: baseUrl, format: format};
-            """);
-    }
-
     public static String apiPrepareScript(
             String staticSpecsJson,
             int mcpServerCount,
@@ -1316,8 +1244,10 @@ public class JavaScriptBuilder {
                             + "];"
                             + "    specs.push({name: t.name, type: 'CALL_MCP_TOOL',"
                             + "      description: t.description || '',"
-                            + "      inputSchema: t.inputSchema || {type:'object',properties:{}},"
-                            + "      configParams: {mcpServer: s.serverUrl, headers: s.headers || {}}});"
+                            + "      inputSchema: _json(t.inputSchema || {type:'object',properties:{}}),"
+                            // Keep the dynamic MCP path equivalent to static AgentSpan tool specs.
+                            + "      selfDescribing: true,"
+                            + "      configParams: {mcpServer: s.serverUrl, headers: s.headers || {}, selfDescribing: true}});"
                             + "    mcpCfg[t.name] = {mcpServer: s.serverUrl, headers: s.headers || {}};"
                             + "  }");
         }
@@ -1358,7 +1288,9 @@ public class JavaScriptBuilder {
                             + "[i];"
                             + "    specs.push({name: at.name, type: 'HTTP',"
                             + "      description: at.description || '',"
-                            + "      inputSchema: at.inputSchema || {type:'object',properties:{}}});"
+                            // API discovery has the same complete-schema contract as MCP discovery.
+                            + "      inputSchema: _json(at.inputSchema || {type:'object',properties:{}}),"
+                            + "      selfDescribing: true, configParams: {selfDescribing: true}});"
                             + "    apiCfg[at.name] = {baseUrl: apiBase"
                             + i
                             + ","
@@ -1381,6 +1313,17 @@ public class JavaScriptBuilder {
                         + ";"
                         + "  var mcpCfg = {};"
                         + "  var apiCfg = {};"
+                        // Materialize Java-backed discovery output before it becomes an INLINE
+                        // result; nested JSON Schema maps otherwise serialize as {}.
+                        + "  var _json = function(v) {"
+                        + "    if (v == null || typeof v !== 'object') return v;"
+                        + "    if (Array.isArray(v)) { var a = []; for (var ai = 0; ai < v.length; ai++) a.push(_json(v[ai])); return a; }"
+                        + "    if (typeof v.entrySet === 'function') { var o = {}; var it = v.entrySet().iterator();"
+                        + "      while (it.hasNext()) { var e = it.next(); o[String(e.getKey())] = _json(e.getValue()); } return o; }"
+                        + "    if (typeof v.iterator === 'function') { var l = []; var li = v.iterator();"
+                        + "      while (li.hasNext()) l.push(_json(li.next())); return l; }"
+                        + "    var p = {}; for (var k in v) { if (Object.prototype.hasOwnProperty.call(v, k)) p[k] = _json(v[k]); } return p;"
+                        + "  };"
                         + mcpDiscoveredReads
                         + mcpMergeLoop
                         + apiDiscoveredReads
@@ -1437,6 +1380,10 @@ public class JavaScriptBuilder {
                         + "    for (var _hk in h) { o[_hk] = String(h[_hk]).replace(/#\\{([A-Za-z_][A-Za-z0-9_.]*)\\}/g,"
                         + "      function(_m, _n) { return '$' + '{workflow.secrets.' + _n + '}'; }); }"
                         + "    return o; };"
+                        + "  var _plain = function(v) { var o = {}; if (v == null) return o;"
+                        + "    if (typeof v.entrySet === 'function') { var it = v.entrySet().iterator();"
+                        + "      while (it.hasNext()) { var e = it.next(); o[String(e.getKey())] = e.getValue(); } return o; }"
+                        + "    for (var k in v) { if (Object.prototype.hasOwnProperty.call(v, k)) o[k] = v[k]; } return o; };"
                         + "  var agentState = $.agentState || {};"
                         + "  var tcs = $.toolCalls || [];"
                         + "  var result = [];"
@@ -1472,56 +1419,61 @@ public class JavaScriptBuilder {
                         + "    if (httpCfg[n]) {"
                         + "      t.type = 'HTTP';"
                         + "      var hc = httpCfg[n];"
-                        + "      var hargs = tc.inputParameters || {};"
+                        + "      var hargs = _plain(tc.inputParameters);"
                         + "      var huri = hc.url || '';"
-                        + "      var hbody = hargs;"
+                        + "      var hmethod = String(hc.method || 'GET').toUpperCase();"
+                        + "      var bodyless = hmethod === 'GET' || hmethod === 'HEAD' || hmethod === 'DELETE' || hmethod === 'OPTIONS';"
+                        + "      var hbody = {}; for (var ha in hargs) { if (ha !== 'method') hbody[ha] = hargs[ha]; }"
                         // Optional URI templating: pathTemplate consumes {param}s from
                         // the LLM's arguments (URL-encoded); queryParams append the
                         // listed args as a query string. Consumed args leave the body.
                         // Tools without these keys keep the static-uri/args-as-body
                         // shape unchanged.
-                        + "      if (hc.pathTemplate || hc.queryParams) {"
-                        + "        var consumed = {};"
+                        + "      if (hc.pathTemplate || hc.queryParams || bodyless) {"
+                        + "        var consumed = {method:true};"
                         + "        if (hc.pathTemplate) {"
                         + "          huri = huri + hc.pathTemplate.replace(/\\{(\\w+)\\}/g,"
                         + "            function(m, k) { consumed[k] = true;"
                         + "              return encodeURIComponent(String(hargs[k] == null ? '' : hargs[k])); });"
                         + "        }"
-                        + "        if (hc.queryParams) {"
+                        + "        var queryKeys = hc.queryParams || (bodyless ? Object.keys(hargs) : []);"
+                        + "        if (queryKeys.length) {"
                         + "          var qs = [];"
-                        + "          for (var qi = 0; qi < hc.queryParams.length; qi++) {"
-                        + "            var qk = hc.queryParams[qi];"
-                        + "            if (hargs[qk] != null && hargs[qk] !== '') { consumed[qk] = true;"
-                        + "              qs.push(encodeURIComponent(qk) + '=' + encodeURIComponent(String(hargs[qk]))); }"
+                        + "          for (var qi = 0; qi < queryKeys.length; qi++) {"
+                        + "            var qk = queryKeys[qi]; var qv = hargs[qk];"
+                        + "            if (qk === 'method' || qv == null || qv === '') continue; consumed[qk] = true;"
+                        + "            if (Array.isArray(qv)) { for (var qj = 0; qj < qv.length; qj++) { if (qv[qj] != null && qv[qj] !== '') qs.push(encodeURIComponent(qk) + '=' + encodeURIComponent(String(qv[qj]))); } }"
+                        + "            else { var qtext = typeof qv === 'object' ? JSON.stringify(qv) : String(qv); if (qtext != null) qs.push(encodeURIComponent(qk) + '=' + encodeURIComponent(qtext)); }"
                         + "          }"
-                        + "          if (qs.length) { huri = huri + (huri.indexOf('?') >= 0 ? '&' : '?') + qs.join('&'); }"
+                        + "          if (qs.length) { var hash = huri.indexOf('#'); var base = hash >= 0 ? huri.substring(0, hash) : huri; var frag = hash >= 0 ? huri.substring(hash) : ''; huri = base + (base.indexOf('?') >= 0 && !base.endsWith('?') ? '&' : '?') + qs.join('&') + frag; }"
                         + "        }"
                         + "        hbody = {};"
-                        + "        for (var hk in hargs) { if (!consumed[hk]) hbody[hk] = hargs[hk]; }"
+                        + "        if (!bodyless) { for (var hk in hargs) { if (!consumed[hk]) hbody[hk] = hargs[hk]; } }"
                         + "      }"
-                        + "      t.inputParameters = {http_request: {"
+                        + "      var hrequest = {"
                         + "        uri: huri,"
-                        + "        method: hc.method || 'GET',"
+                        + "        method: hmethod,"
                         + "        headers: _sec(hc.headers),"
-                        + "        body: hbody,"
                         + "        accept: hc.accept || 'application/json',"
                         + "        contentType: hc.contentType || 'application/json',"
                         + "        connectionTimeOut: 30000,"
-                        + "        readTimeOut: 30000}};"
+                        + "        readTimeOut: 30000};"
+                        + "      if (!bodyless) hrequest.body = hbody;"
+                        + "      t.inputParameters = {http_request: hrequest};"
                         + "    } else if (mcpCfg[n]) {"
                         + "      t.type = 'CALL_MCP_TOOL';"
                         + "      t.name = 'call_mcp_tool';"
                         + "      t.inputParameters = {"
                         + "        mcpServer: mcpCfg[n].mcpServer || '',"
                         + "        method: n,"
-                        + "        arguments: tc.inputParameters || {},"
+                        + "        arguments: Object.keys(_plain(tc.inputParameters)).filter(function(k) { return k !== 'method'; }).reduce(function(a, k) { a[k] = _plain(tc.inputParameters)[k]; return a; }, {}),"
                         + "        headers: _sec(mcpCfg[n].headers)};"
                         + "    } else if (apiCfg[n]) {"
                         + "      var api = apiCfg[n];"
                         + "      var uri = api.baseUrl + api.path;"
                         + "      var params = {};"
-                        + "      var inp = tc.inputParameters || {};"
-                        + "      for (var k in inp) { params[k] = inp[k]; }"
+                        + "      var inp = _plain(tc.inputParameters);"
+                        + "      for (var k in inp) { if (k !== 'method') params[k] = inp[k]; }"
                         + "      var pathParams = (uri.match(/\\{(\\w+)\\}/g) || []);"
                         + "      for (var j = 0; j < pathParams.length; j++) {"
                         + "        var key = pathParams[j].replace(/[{}]/g, '');"
@@ -1531,11 +1483,11 @@ public class JavaScriptBuilder {
                         + "        }"
                         + "      }"
                         + "      var method = api.method.toUpperCase();"
-                        + "      if (method === 'GET' || method === 'DELETE' || method === 'HEAD') {"
-                        + "        var qs = Object.keys(params).map(function(k) {"
-                        + "          return encodeURIComponent(k) + '=' + encodeURIComponent(String(params[k]));"
+                        + "      if (method === 'GET' || method === 'DELETE' || method === 'HEAD' || method === 'OPTIONS') {"
+                        + "        var qs = Object.keys(params).filter(function(k) { return params[k] != null && params[k] !== ''; }).map(function(k) {"
+                        + "          return encodeURIComponent(k) + '=' + encodeURIComponent(typeof params[k] === 'object' ? JSON.stringify(params[k]) : String(params[k]));"
                         + "        }).join('&');"
-                        + "        if (qs) uri = uri + '?' + qs;"
+                        + "        if (qs) { var hash = uri.indexOf('#'); var base = hash >= 0 ? uri.substring(0, hash) : uri; var frag = hash >= 0 ? uri.substring(hash) : ''; uri = base + (base.indexOf('?') >= 0 && !base.endsWith('?') ? '&' : '?') + qs + frag; }"
                         + "        t.type = 'HTTP';"
                         + "        t.inputParameters = {http_request: {uri: uri, method: method,"
                         + "          headers: _sec(api.headers), accept: 'application/json',"
@@ -1631,6 +1583,15 @@ public class JavaScriptBuilder {
     public static String filterToolsScriptDynamic() {
         return iife(
                 "  var allTools = $.allTools || [];"
+                        + "  var _json = function(v) {"
+                        + "    if (v == null || typeof v !== 'object') return v;"
+                        + "    if (Array.isArray(v)) { var a = []; for (var ai = 0; ai < v.length; ai++) a.push(_json(v[ai])); return a; }"
+                        + "    if (typeof v.entrySet === 'function') { var o = {}; var it = v.entrySet().iterator();"
+                        + "      while (it.hasNext()) { var e = it.next(); o[String(e.getKey())] = _json(e.getValue()); } return o; }"
+                        + "    if (typeof v.iterator === 'function') { var l = []; var li = v.iterator();"
+                        + "      while (li.hasNext()) l.push(_json(li.next())); return l; }"
+                        + "    var p = {}; for (var k in v) { if (Object.prototype.hasOwnProperty.call(v, k)) p[k] = _json(v[k]); } return p;"
+                        + "  };"
                         + "  var raw = $.selectedNames || '[]';"
                         + "  var selected;"
                         + "  try { selected = typeof raw === 'string' ? JSON.parse(raw) : raw; }"
@@ -1643,9 +1604,9 @@ public class JavaScriptBuilder {
                         + "  for (var i = 0; i < selected.length; i++) nameSet[selected[i]] = true;"
                         + "  var result = [];"
                         + "  for (var i = 0; i < allTools.length; i++) {"
-                        + "    if (nameSet[allTools[i].name]) result.push(allTools[i]);"
+                        + "    if (nameSet[allTools[i].name]) result.push(_json(allTools[i]));"
                         + "  }"
-                        + "  if (result.length === 0) result = allTools;"
+                        + "  if (result.length === 0) result = _json(allTools);"
                         + "  return {tools: result};");
     }
 
@@ -1659,8 +1620,17 @@ public class JavaScriptBuilder {
                         + "  var prepared = $.prepared_tools;"
                         + "  var mcpConfig = $.mcpConfig;"
                         + "  var apiConfig = $.apiConfig;"
+                        + "  var _json = function(v) {"
+                        + "    if (v == null || typeof v !== 'object') return v;"
+                        + "    if (Array.isArray(v)) { var a = []; for (var ai = 0; ai < v.length; ai++) a.push(_json(v[ai])); return a; }"
+                        + "    if (typeof v.entrySet === 'function') { var o = {}; var it = v.entrySet().iterator();"
+                        + "      while (it.hasNext()) { var e = it.next(); o[String(e.getKey())] = _json(e.getValue()); } return o; }"
+                        + "    if (typeof v.iterator === 'function') { var l = []; var li = v.iterator();"
+                        + "      while (li.hasNext()) l.push(_json(li.next())); return l; }"
+                        + "    var p = {}; for (var k in v) { if (Object.prototype.hasOwnProperty.call(v, k)) p[k] = _json(v[k]); } return p;"
+                        + "  };"
                         + "  var tools = (filtered && filtered.length > 0) ? filtered : prepared;"
-                        + "  return {tools: tools, mcpConfig: mcpConfig, apiConfig: apiConfig};");
+                        + "  return {tools: _json(tools), mcpConfig: _json(mcpConfig), apiConfig: _json(apiConfig)};");
     }
 
     /**
@@ -1771,19 +1741,34 @@ public class JavaScriptBuilder {
 
     /**
      * Build the state merge script that collects {@code _state_updates} from all forked tool task
-     * outputs and merges them into a single state dict.
+     * outputs, appends them to the durable ordered tool-result history, and merges state updates
+     * into a single state dict.
      *
-     * <p>Reads {@code $.currentState} (the existing workflow variable) and {@code $.joinOutput}
-     * (the JOIN task output containing all tool results). Each tool may include {@code
-     * _state_updates} in its output; these are shallow-merged onto the base state.
+     * <p>Reads {@code $.currentState} (the existing workflow variable), {@code
+     * $.previousToolResults} (the accumulated history), and {@code $.joinOutput} (the JOIN task
+     * output containing this turn's tool results). Each tool may include {@code _state_updates} in
+     * its output; these are shallow-merged onto the base state.
      */
     public static String stateMergeScript() {
         return iife(
                 "  var base = $.currentState || {};"
+                        + "  var previousToolResults = $.previousToolResults || [];"
                         + "  var joinOutput = $.joinOutput || {};"
+                        + "  var toolResults = [];"
+                        // A workflow variable may arrive as either a native JS array or a Java
+                        // List proxy. Use indexed access in both forms so every prior observation
+                        // remains visible to later ReAct turns.
+                        + "  var previousCount = previousToolResults.size ? previousToolResults.size() : (previousToolResults.length || 0);"
+                        + "  for (var p = 0; p < previousCount; p++) {"
+                        + "    var prior = previousToolResults.get ? previousToolResults.get(p) : previousToolResults[p];"
+                        + "    if (prior != null) toolResults.push(prior);"
+                        + "  }"
                         + "  for (var key in joinOutput) {"
                         + "    var taskOut = joinOutput[key] || {};"
-                        + "    var updates = taskOut._state_updates;"
+                        + "    var rawOutput = taskOut._agent_tool_output || taskOut;"
+                        + "    var toolName = taskOut._agent_tool_name || rawOutput._agent_tool_name || key.replace(/_[0-9]+$/, '');"
+                        + "    toolResults.push({name: String(toolName), output: rawOutput});"
+                        + "    var updates = rawOutput._state_updates || taskOut._state_updates;"
                         + "    if (updates) {"
                         + "      for (var k in updates) {"
                         + "        var bv = base[k]; var uv = updates[k];"
@@ -1801,7 +1786,7 @@ public class JavaScriptBuilder {
                         + "      }"
                         + "    }"
                         + "  }"
-                        + "  return {mergedState: base};");
+                        + "  return {mergedState: base, toolResults: toolResults};");
     }
 
     /**
@@ -1871,7 +1856,8 @@ public class JavaScriptBuilder {
      * output, reducing workflow payload by ~N × prompt_size.
      *
      * <p>Input: {@code state} → the _agent_state dict, {@code signals} → signal injection string,
-     * {@code maxSize} → max total context bytes, {@code maxValueSize} → max per-value bytes.
+     * {@code toolResults} → completed results from the immediately preceding tool turn, {@code
+     * maxSize} → max total context bytes, {@code maxValueSize} → max per-value bytes.
      *
      * <p>Output: the context prefix string with trailing {@code "\n\n"} (or empty).
      */
@@ -1885,7 +1871,8 @@ public class JavaScriptBuilder {
                 // since bracket notation may not work for Java Maps.
                 "var rawState = $.state;"
                         + "var signals = $.signals || '';"
-                        + "if (!rawState && !signals) return '';"
+                        + "var toolResults = $.toolResults;"
+                        + "if (!rawState && !signals && !toolResults) return '';"
                         + "var maxSize = $.maxSize || 32768;"
                         + "var maxValueSize = $.maxValueSize || 4096;"
                         // Collect map entries via for-in (works on Java Maps in GraalJS)
@@ -1918,6 +1905,23 @@ public class JavaScriptBuilder {
                         // injecting a leading-whitespace artifact when empty.
                         + "var parts = [];"
                         + "if (signals) { parts.push('[SIGNALS]\\n' + signals + '\\n[/SIGNALS]'); }"
+                        // Materialize Java collection proxies before JSON serialization. GraalJS
+                        // serializes a Java List of Java Maps as [{}, ...], which hides the
+                        // completed observation from the next ReAct turn and can cause repeated
+                        // tool calls.
+                        + "var toPlain=function(v){"
+                        + " if(v==null||typeof v!=='object')return v;"
+                        + " if(Array.isArray(v)){var nativeArray=[];for(var ai=0;ai<v.length;ai++)nativeArray.push(toPlain(v[ai]));return nativeArray;}"
+                        + " if(v.entrySet){var obj={};var it=v.entrySet().iterator();while(it.hasNext()){var entry=it.next();obj[String(entry.getKey())]=toPlain(entry.getValue());}return obj;}"
+                        + " if(v.size&&v.get){var javaArray=[];var count=Number(v.size());for(var li=0;li<count;li++)javaArray.push(toPlain(v.get(li)));return javaArray;}"
+                        + " return v;"
+                        + "};"
+                        + "if (toolResults) {"
+                        + "  var renderedTools = '';"
+                        + "  try { renderedTools = JSON.stringify(toPlain(toolResults)); } catch (e) {}"
+                        + "  if (!renderedTools || renderedTools === '{}' || renderedTools === '[]') renderedTools = '' + toolResults;"
+                        + "  if (renderedTools && renderedTools !== '[]') parts.push('[TOOL RESULTS]\\n' + renderedTools + '\\n[/TOOL RESULTS]');"
+                        + "}"
                         + "if (Object.keys(truncated).length > 0) {"
                         + "  parts.push('Context:\\n```json\\n' + JSON.stringify(truncated, null, 2) + '\\n```');"
                         + "}"

@@ -14,9 +14,13 @@ import {
   Typography,
 } from "@mui/material";
 import { ArrowLeft, Graph, ListBullets } from "@phosphor-icons/react";
-import { getModelIconPath } from "./agentExecutionUtils";
+import { agentValuePreview, getModelIconPath } from "./agentExecutionUtils";
 import { AgentRunData, AgentStatus, AgentStrategy } from "./types";
-import { formatDuration, formatTokens } from "./agentExecutionUtils";
+import {
+  formatDuration,
+  formatTokens,
+  timelineItemId,
+} from "./agentExecutionUtils";
 import { AgentExecutionDiagram } from "./AgentExecutionDiagram";
 import { AgentDetailPanel, DetailNodeData } from "./AgentDetailPanel";
 import { TurnBar } from "./TurnBar";
@@ -296,7 +300,7 @@ export function AgentRunView({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<DetailNodeData | null>(null);
   const [selectedTurn, setSelectedTurn] = useState(
-    agentRun.turns[0]?.turnNumber ?? 1,
+    agentRun.turns[0] ? timelineItemId(agentRun.turns[0]) : "turn-1",
   );
   const [panelWidth, setPanelWidth] = useState<number>(1125);
   const [viewMode, setViewMode] = useState<ViewMode>("diagram");
@@ -310,7 +314,9 @@ export function AgentRunView({
   useEffect(() => {
     setSelectedId(null);
     setSelectedNode(null);
-    setSelectedTurn(agentRun.turns[0]?.turnNumber ?? 1);
+    setSelectedTurn(
+      agentRun.turns[0] ? timelineItemId(agentRun.turns[0]) : "turn-1",
+    );
   }, [agentRun.id]);
 
   const handleDragStart = useCallback((e: ReactMouseEvent) => {
@@ -339,7 +345,7 @@ export function AgentRunView({
   };
 
   const activeTurnData =
-    agentRun.turns.find((t) => t.turnNumber === selectedTurn) ??
+    agentRun.turns.find((t) => timelineItemId(t) === selectedTurn) ??
     agentRun.turns[0];
 
   return (
@@ -492,7 +498,7 @@ export function AgentRunView({
                     </Typography>
                   </Box>
                 )}
-                {agentRun.input && (
+                {agentRun.input != null && (
                   <Box
                     sx={{
                       mt: 0.5,
@@ -525,9 +531,7 @@ export function AgentRunView({
                         wordBreak: "break-word",
                       }}
                     >
-                      {agentRun.input.length > 500
-                        ? agentRun.input.slice(0, 500) + "..."
-                        : agentRun.input}
+                      {agentValuePreview(agentRun.input, 500)}
                     </Typography>
                   </Box>
                 )}

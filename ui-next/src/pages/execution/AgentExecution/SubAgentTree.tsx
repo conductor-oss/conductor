@@ -9,7 +9,11 @@ import {
   XCircle,
 } from "@phosphor-icons/react";
 import { AgentRunData, AgentStatus, AgentStrategy } from "./types";
-import { formatDuration, formatTokens } from "./agentExecutionUtils";
+import {
+  agentValuePreview,
+  formatDuration,
+  formatTokens,
+} from "./agentExecutionUtils";
 
 interface SubAgentTreeProps {
   subAgents: AgentRunData[];
@@ -56,14 +60,15 @@ function SubAgentNode({ agent, onDrillIn, depth }: SubAgentNodeProps) {
   const indent = depth * 16;
 
   // Determine if output is long enough to need truncation
-  const outputLines = agent.output?.split("\n") ?? [];
+  const outputText = agentValuePreview(agent.output, 10_000);
+  const outputLines = outputText?.split("\n") ?? [];
   const isLongOutput =
     outputLines.length > OUTPUT_PREVIEW_LINES ||
-    (agent.output?.length ?? 0) > 400;
+    (outputText?.length ?? 0) > 400;
   const previewText =
     isLongOutput && !outputExpanded
       ? outputLines.slice(0, OUTPUT_PREVIEW_LINES).join("\n") + "\n…"
-      : agent.output;
+      : outputText;
 
   return (
     <Box>

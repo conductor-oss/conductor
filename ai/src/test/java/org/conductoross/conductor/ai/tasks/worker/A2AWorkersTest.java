@@ -22,8 +22,7 @@ import org.conductoross.conductor.ai.a2a.model.A2ATask;
 import org.conductoross.conductor.ai.a2a.model.AgentCard;
 import org.conductoross.conductor.ai.a2a.model.TaskState;
 import org.conductoross.conductor.ai.a2a.model.TaskStatus;
-import org.conductoross.conductor.ai.agent.AgentClient;
-import org.conductoross.conductor.ai.agent.UnavailableAgentClient;
+import org.conductoross.conductor.ai.agent.ConductorAgentClient;
 import org.conductoross.conductor.ai.model.A2AAgentCardRequest;
 import org.conductoross.conductor.ai.model.A2AAgentCardResult;
 import org.conductoross.conductor.ai.model.A2ACallRequest;
@@ -45,6 +44,7 @@ import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
+import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.unusedAgentClient;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -63,7 +63,7 @@ class A2AWorkersTest {
     @BeforeEach
     void setUp() {
         a2aService = mock(A2AService.class);
-        workers = new A2AWorkers(a2aService);
+        workers = new A2AWorkers(a2aService, unusedAgentClient());
     }
 
     @Test
@@ -100,7 +100,7 @@ class A2AWorkersTest {
             context.refresh();
 
             assertNotNull(context.getBean(A2AWorkers.class));
-            assertNotNull(context.getBean(AgentClient.class));
+            assertNotNull(context.getBean(ConductorAgentClient.class));
         }
     }
 
@@ -113,8 +113,8 @@ class A2AWorkersTest {
         }
 
         @Bean
-        AgentClient agentClient(A2AWorkers workers) {
-            return new UnavailableAgentClient();
+        ConductorAgentClient agentClient(A2AWorkers workers) {
+            return unusedAgentClient();
         }
     }
 
