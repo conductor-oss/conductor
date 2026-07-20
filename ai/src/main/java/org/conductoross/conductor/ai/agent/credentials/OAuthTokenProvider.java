@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -66,14 +65,14 @@ public class OAuthTokenProvider implements TokenProvider {
             String clientId,
             String clientSecret,
             String scope) {
-        String endpoint =
-                "https://login.microsoftonline.com/" + tenantId + "/oauth2/v2.0/token";
+        String endpoint = "https://login.microsoftonline.com/" + tenantId + "/oauth2/v2.0/token";
         return new OAuthTokenProvider(httpClient, endpoint, clientId, clientSecret, scope);
     }
 
     @Override
     public synchronized String getToken() {
-        if (cachedToken == null || Instant.now().isAfter(expiresAt.minusSeconds(REFRESH_BUFFER_SECONDS))) {
+        if (cachedToken == null
+                || Instant.now().isAfter(expiresAt.minusSeconds(REFRESH_BUFFER_SECONDS))) {
             refresh();
         }
         return cachedToken;
@@ -92,8 +91,7 @@ public class OAuthTokenProvider implements TokenProvider {
 
         try (Response response = httpClient.newCall(request).execute()) {
             if (!response.isSuccessful() || response.body() == null) {
-                throw new RuntimeException(
-                        "OAuth token request failed: HTTP " + response.code());
+                throw new RuntimeException("OAuth token request failed: HTTP " + response.code());
             }
             JsonNode json = MAPPER.readTree(response.body().string());
             cachedToken = json.get("access_token").asText();

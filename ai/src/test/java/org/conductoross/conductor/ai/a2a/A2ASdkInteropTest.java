@@ -135,7 +135,8 @@ class A2ASdkInteropTest {
         // A second real agent, this one configured to reply with a direct Message (not a Task).
         try (AgentProcess messageAgent = AgentProcess.launch(python, "message")) {
             Task task = callAgentTask(messageAgent.url(), "ping", false);
-            TaskResult result = invoke(new A2AWorkers(service(), List.of(unusedAgentClient())), task);
+            TaskResult result =
+                    invoke(new A2AWorkers(service(), List.of(unusedAgentClient())), task);
 
             assertEquals(TaskResult.Status.COMPLETED, result.getStatus());
             assertTrue(

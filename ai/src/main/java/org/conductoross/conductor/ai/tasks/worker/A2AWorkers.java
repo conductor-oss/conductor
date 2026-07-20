@@ -43,7 +43,6 @@ import org.conductoross.conductor.ai.model.A2ACancelResult;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.conductoross.conductor.core.execution.tasks.AnnotatedSystemTaskWorker;
 import org.conductoross.conductor.core.execution.tasks.TaskCancellationHandler;
-import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Conditional;
@@ -59,6 +58,7 @@ import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -94,8 +94,8 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
     /**
      * Spring constructor — does NOT inject {@link ConductorAgentClient} beans directly to avoid a
      * constructor-injection cycle through {@code ServiceConductorAgentClient → AgentService →
-     * WorkflowServiceImpl → WorkflowExecutorOps → A2AWorkers}. The map is populated in
-     * {@link #registerAgentClients()} once all beans are fully constructed.
+     * WorkflowServiceImpl → WorkflowExecutorOps → A2AWorkers}. The map is populated in {@link
+     * #registerAgentClients()} once all beans are fully constructed.
      */
     @Autowired
     public A2AWorkers(
@@ -153,8 +153,9 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
     public A2ACallResult agent(A2ACallRequest request) {
         Task task = TaskContext.get().getTask();
         TaskResult result;
-        ConductorAgentClient client = agentClients.get(
-                StringUtils.defaultIfBlank(request.getAgentType(), "").toLowerCase());
+        ConductorAgentClient client =
+                agentClients.get(
+                        StringUtils.defaultIfBlank(request.getAgentType(), "").toLowerCase());
         if (client != null) {
             result = new ConductorAgentDelegate(client).execute(task);
         } else {
@@ -168,8 +169,9 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
     public A2ACancelResult cancelAgent(A2ACancelRequest request) {
         Task task = TaskContext.get().getTask();
         TaskResult result = resultFor(task);
-        ConductorAgentClient cancelClient = agentClients.get(
-                StringUtils.defaultIfBlank(request.getAgentType(), "").toLowerCase());
+        ConductorAgentClient cancelClient =
+                agentClients.get(
+                        StringUtils.defaultIfBlank(request.getAgentType(), "").toLowerCase());
         if (cancelClient != null) {
             String executionId = StringUtils.trimToNull(request.getExecutionId());
             if (executionId == null) {
@@ -192,10 +194,7 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
             } catch (Exception e) {
                 fail(
                         result,
-                        "Failed to cancel agent execution "
-                                + executionId
-                                + ": "
-                                + e.getMessage(),
+                        "Failed to cancel agent execution " + executionId + ": " + e.getMessage(),
                         false);
                 return finish(result, A2ACancelResult.class);
             }
@@ -239,8 +238,9 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
             return;
         }
         A2ACallRequest request = parse(task, A2ACallRequest.class);
-        ConductorAgentClient cancelClient = agentClients.get(
-                StringUtils.defaultIfBlank(request.getAgentType(), "").toLowerCase());
+        ConductorAgentClient cancelClient =
+                agentClients.get(
+                        StringUtils.defaultIfBlank(request.getAgentType(), "").toLowerCase());
         if (cancelClient != null) {
             new ConductorAgentDelegate(cancelClient).cancel(task, reason);
             return;
