@@ -120,11 +120,15 @@ public class GuardrailCompiler {
             return new ArrayList<>();
         }
 
-        // Tool guardrails use a fixed iteration ref since retry is handled by the outer DoWhile.
+        // tool-guardrail gate runs inside the agent's DoWhile turn loop
+        // - wire live loop counter (1-based turn number, from loop task ref's output)
+        // - lets retry->raise escalation at maxRetries fire (SDK worker + regex/llm scripts)
+        // - fixed "1" pinned the counter forever -> onFail=retry never escalated
         // toolCallsRef is null: tool guardrails are supposed to evaluate tool calls, so they must
         // not short-circuit on them.
+        String iterationRef = "${" + agentName + "_loop.output.iteration}";
         return compileGuardrailTasksInternal(
-                guardrails, agentName + "_tool", contentRef, "1", null);
+                guardrails, agentName + "_tool", contentRef, iterationRef, null);
     }
 
     /** Internal helper that compiles guardrails without position filtering. */
