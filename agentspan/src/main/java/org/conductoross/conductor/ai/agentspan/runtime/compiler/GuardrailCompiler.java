@@ -86,7 +86,11 @@ public class GuardrailCompiler {
             return new ArrayList<>();
         }
 
-        String iterationRef = "${" + agentName + "_loop.iteration}";
+        // live loop counter:
+        // - lives under DO_WHILE task's OUTPUT ({input, output} per task ref)
+        // - must read as ${<loop>.output.iteration}
+        // - bare ${<loop>.iteration} = null mid-loop -> escalation below silently disabled
+        String iterationRef = "${" + agentName + "_loop.output.iteration}";
         // Output guardrails must only judge final replies. On a tool-call turn the LLM task's
         // output.result is empty (only non-tool turns produce a result), so a content guardrail
         // would misfire every healthy tool round. Derive a reference to the agent LLM task's
@@ -306,6 +310,10 @@ public class GuardrailCompiler {
         normalizeInputs.put("worker_output", "${" + workerRef + ".output}");
         normalizeInputs.put("guardrail_name", guard.getName());
         normalizeInputs.put("default_on_fail", guard.getOnFail());
+        // iteration + max_retries -> normalize script can escalate retry -> raise
+        // (parity with regex/llm guardrails)
+        normalizeInputs.put("iteration", iterationRef);
+        normalizeInputs.put("max_retries", guard.getMaxRetries());
         if (toolCallsRef != null) {
             normalizeInputs.put("toolCalls", toolCallsRef);
         }

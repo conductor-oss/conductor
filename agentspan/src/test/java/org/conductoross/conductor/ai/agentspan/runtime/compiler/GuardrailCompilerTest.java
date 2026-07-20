@@ -121,6 +121,37 @@ class GuardrailCompilerTest {
     }
 
     @Test
+    void testCustomGuardrailNormalizeWiresLiveIterationAndMaxRetriesForEscalation() {
+        GuardrailConfig g =
+                GuardrailConfig.builder()
+                        .name("custom_check")
+                        .guardrailType("custom")
+                        .position("output")
+                        .taskName("my_guardrail_worker")
+                        .onFail("retry")
+                        .maxRetries(3)
+                        .build();
+
+        GuardrailCompiler gc = new GuardrailCompiler();
+        var results = gc.compileGuardrailTasks(List.of(g), "agent", "${ref}");
+
+        WorkflowTask normalize = results.get(0).getTasks().get(1);
+        assertThat(normalize.getType()).isEqualTo("INLINE");
+        // - must read from DO_WHILE task's OUTPUT: ${<loop>.output.iteration}
+        // - bare ${<loop>.iteration} = null mid-loop -> escalation silently disabled
+        assertThat((String) normalize.getInputParameters().get("iteration"))
+                .isEqualTo("${agent_loop.output.iteration}");
+        assertThat(normalize.getInputParameters().get("max_retries")).isEqualTo(3);
+        // normalize script: same retry->raise coercion as regex/llm scripts
+        assertThat((String) normalize.getInputParameters().get("expression"))
+                .contains("iteration >= max_retries")
+                .contains("'raise'")
+                // fix -> raise only if no fixedOutput
+                // else: fix guardrail w/ output wrongly terminated, not applied
+                .contains("fixedOutput === null");
+    }
+
+    @Test
     void testCustomGuardrailIncludesOpenAICompatibleInputAliases() {
         GuardrailConfig g =
                 GuardrailConfig.builder()
