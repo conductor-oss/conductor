@@ -26,12 +26,12 @@ import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
  * Federation or a service account key via the Google Auth Library. Sessions in Vertex map directly
  * to {@code executionId}.
  *
- * <p>To implement: add {@code @Component} to activate auto-registration, inject
- * {@link org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService}
- * for credentials, and replace each method body with the real Vertex AI Agent Builder REST calls.
+ * <p>To implement: add {@code @Component} to activate auto-registration, inject {@link
+ * org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService} for
+ * credentials, and replace each method body with the real Vertex AI Agent Builder REST calls.
  *
- * <p>rawConfig keys to support: {@code projectId}, {@code location}, {@code agentId},
- * {@code sessionId}.
+ * <p>rawConfig keys to support: {@code projectId}, {@code location}, {@code agentId}, {@code
+ * sessionId}.
  */
 // @Component  -- uncomment when implemented
 public class VertexAiAgentClient implements ConductorAgentClient {

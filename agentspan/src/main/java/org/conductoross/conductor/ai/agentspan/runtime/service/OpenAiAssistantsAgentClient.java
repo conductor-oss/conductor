@@ -24,14 +24,14 @@ import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
  *
  * <p>Uses a Thread + Run model: a Thread is a conversation session, a Run is a single execution
  * within it. {@code startAgent()} creates both. {@code getAgentStatus()} polls the Run status.
- * {@code respond()} calls the {@code submit_tool_outputs} endpoint when the Run is in
- * {@code requires_action} state. Auth is a plain API key resolved via
- * {@link org.conductoross.conductor.ai.agent.credentials.StaticTokenProvider}.
+ * {@code respond()} calls the {@code submit_tool_outputs} endpoint when the Run is in {@code
+ * requires_action} state. Auth is a plain API key resolved via {@link
+ * org.conductoross.conductor.ai.agent.credentials.StaticTokenProvider}.
  *
- * <p>To implement: add {@code @Component} to activate auto-registration, inject
- * {@link org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService}
- * and an {@code OkHttpClient}, and replace each method body with the real OpenAI Assistants REST
- * calls against {@code https://api.openai.com/v1}.
+ * <p>To implement: add {@code @Component} to activate auto-registration, inject {@link
+ * org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService} and an
+ * {@code OkHttpClient}, and replace each method body with the real OpenAI Assistants REST calls
+ * against {@code https://api.openai.com/v1}.
  *
  * <p>rawConfig keys to support: {@code assistantId}, {@code baseUrl} (optional override for Azure
  * OpenAI or compatible endpoints).
