@@ -1,0 +1,20 @@
+{
+  "name": "system_task_poll_claim_wf",
+  "description": "workflow for system-task poll claim and timeout recovery",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "poll_claim_http_task",
+      "taskReferenceName": "poll_claim_http_ref",
+      "inputParameters": {
+        "http_request": {
+          "uri": "http://unused.invalid",
+          "method": "GET"
+        }
+      },
+      "type": "HTTP"
+    }
+  ],
+  "schemaVersion": 2,
+  "ownerEmail": "test@harness.com"
+}

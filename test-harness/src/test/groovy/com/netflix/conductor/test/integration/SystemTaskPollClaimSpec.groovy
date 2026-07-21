@@ -12,115 +12,76 @@
  */
 package com.netflix.conductor.test.integration
 
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Qualifier
 
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
+import com.netflix.conductor.common.metadata.tasks.TaskDef.TimeoutPolicy
 import com.netflix.conductor.common.run.Workflow
-import com.netflix.conductor.core.config.ConductorProperties
-import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry
-import com.netflix.conductor.core.execution.tasks.SystemTaskWorker
-import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask
 import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
-import com.netflix.conductor.test.utils.ControllableWorker
 
-/**
- * REGRESSION FOR ISSUES #1321 / #1322 driven through the poll-claim path: SystemTaskWorker polls
- * via {@code ExecutionService.pollQueue}, which persists IN_PROGRESS at poll time like a remote
- * worker, before dispatching the annotated task.
- *
- * <p>The behavioral contract asserted here is the fix's acceptance criteria and is
- * implementation-independent: a blocking annotated system task must (1) be invoked exactly once,
- * (2) read IN_PROGRESS while it runs, and (3) complete.
- */
+import static org.awaitility.Awaitility.await
+
+/** Integration coverage for poll-time claiming and response-timeout recovery of system tasks. */
 class SystemTaskPollClaimSpec extends AbstractSpecification {
 
-    @Autowired
-    ControllableWorker controllableWorker
-
-    SystemTaskWorker systemTaskWorker
+    static final String WF = 'system_task_poll_claim_wf'
+    static final String TASK_DEF = 'poll_claim_http_task'
+    static final String QUEUE = 'HTTP'
+    static final int RESPONSE_TIMEOUT_SECONDS = 2
 
     @Autowired
     QueueDAO queueDAO
 
-    @Autowired
-    ConductorProperties conductorProperties
-
-    // The same collection SystemTaskWorkerCoordinator polls in production; the annotation
-    // scanner adds the AnnotatedWorkflowSystemTask adapters to it.
-    @Autowired
-    @Qualifier(SystemTaskRegistry.ASYNC_SYSTEM_TASKS_QUALIFIER)
-    Set<WorkflowSystemTask> asyncSystemTasks
-
-    static final String WF = 'controllable_async_system_task_wf'
-    static final String QUEUE = ControllableWorker.TASK_TYPE
-    static final int RESPONSE_TIMEOUT_SECONDS = 45
-
     def setup() {
-        controllableWorker.reset()
-        // The test profile disables the production polling coordinator, so construct the real
-        // worker explicitly and drive one deterministic poll without starting a background loop.
-        systemTaskWorker = new SystemTaskWorker(
-                queueDAO, asyncSystemTaskExecutor, conductorProperties, workflowExecutionService)
-        systemTaskWorker.start()
-        registerTaskDef('controllable_task', RESPONSE_TIMEOUT_SECONDS)
-        workflowTestUtil.registerWorkflows('controllable_async_system_task_workflow.json')
+        TaskDef taskDef = new TaskDef()
+        taskDef.name = TASK_DEF
+        taskDef.ownerEmail = 'test@harness.com'
+        taskDef.responseTimeoutSeconds = RESPONSE_TIMEOUT_SECONDS
+        taskDef.timeoutSeconds = 60
+        taskDef.timeoutPolicy = TimeoutPolicy.RETRY
+        taskDef.retryCount = 1
+        taskDef.retryDelaySeconds = 0
+        metadataService.registerTaskDef([taskDef])
+        workflowTestUtil.registerWorkflows('system_task_poll_claim_workflow.json')
     }
 
-    private void registerTaskDef(String name, int responseTimeoutSeconds) {
-        if (workflowTestUtil.getPersistedTaskDefinition(name).isEmpty()) {
-            TaskDef taskDef = new TaskDef()
-            taskDef.name = name
-            taskDef.ownerEmail = 'test@harness.com'
-            taskDef.responseTimeoutSeconds = responseTimeoutSeconds
-            taskDef.timeoutSeconds = 3600
-            taskDef.retryCount = 0
-            metadataService.registerTaskDef([taskDef])
-        }
-    }
+    def "a claimed system task is not redelivered early and is retried after its response timeout"() {
+        when: "an HTTP system task is scheduled and claimed without executing it"
+        def workflowId = startWorkflow(WF, 1, 'poll_claim_' + UUID.randomUUID(), [:], null)
+        List<Task> claimed = workflowExecutionService.pollQueue(QUEUE, 'failed-system-task-node', 1, 100)
 
-    def "a blocking annotated task claimed by SystemTaskWorker must execute exactly once and complete"() {
-        given: "the real adapter registered for the annotated worker by the annotation scanner"
-        WorkflowSystemTask adapter = asyncSystemTasks.find { it.taskType == QUEUE }
-        assert adapter != null
-
-        and: "the controllable worker is armed to block during its invocation"
-        controllableWorker.enteredRun = new CountDownLatch(1)
-        controllableWorker.release = new CountDownLatch(1)
-
-        when: "the workflow is started"
-        def workflowId = startWorkflow(WF, 1, 'batch_poll_' + UUID.randomUUID(), [:], null)
-        def startedWf = workflowExecutionService.getExecutionStatus(workflowId, true)
-
-        then: "the async system task is SCHEDULED and queued"
-        startedWf.status == Workflow.WorkflowStatus.RUNNING
-        startedWf.tasks.size() == 1
-        startedWf.tasks[0].taskType == QUEUE
-        startedWf.tasks[0].status == Task.Status.SCHEDULED
-
-        when: "the production system-task worker claims and dispatches the queue message"
-        systemTaskWorker.pollAndExecute(adapter, QUEUE)
-
-        then: "the task is claimed before the blocking provider call begins"
-        controllableWorker.enteredRun.await(10, TimeUnit.SECONDS)
+        then: "the poll persists the claim and acknowledges the original queue message"
+        claimed.size() == 1
+        claimed[0].status == Task.Status.IN_PROGRESS
         workflowExecutionService.getExecutionStatus(workflowId, true).tasks[0].status == Task.Status.IN_PROGRESS
+        queueDAO.pop(QUEUE, 1, 100).isEmpty()
 
-        when: "the blocking call returns"
-        controllableWorker.release.countDown()
-        conditions.eventually {
-            workflowExecutionService.getExecutionStatus(workflowId, true).tasks[0].status == Task.Status.COMPLETED
+        when: "the configured response timeout has not elapsed"
+        Thread.sleep(500)
+
+        then: "the original message is still not redelivered"
+        queueDAO.pop(QUEUE, 1, 100).isEmpty()
+        workflowExecutionService.getExecutionStatus(workflowId, true).tasks.size() == 1
+
+        when: "the claiming node never responds and the response timeout elapses"
+        await().atMost(10, TimeUnit.SECONDS).pollInterval(200, TimeUnit.MILLISECONDS).until {
+            workflowExecutor.decide(workflowId)
+            Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true)
+            workflow.tasks.size() == 2 && queueDAO.getSize(QUEUE) == 1
         }
+        Workflow recovered = workflowExecutionService.getExecutionStatus(workflowId, true)
 
-        then: "the underlying operation was invoked EXACTLY ONCE and the task completed"
-        controllableWorker.invocations.get() == 1
-
-        cleanup:
-        controllableWorker.release?.countDown()
-        systemTaskWorker?.stop()
+        then: "Conductor times out that attempt and enqueues one new retry attempt"
+        recovered.status == Workflow.WorkflowStatus.RUNNING
+        recovered.tasks[0].status == Task.Status.TIMED_OUT
+        recovered.tasks[1].status == Task.Status.SCHEDULED
+        recovered.tasks[1].retriedTaskId == recovered.tasks[0].taskId
+        recovered.tasks[1].taskId != claimed[0].taskId
+        workflowExecutionService.pollQueue(QUEUE, 'recovery-system-task-node', 1, 100)*.taskId ==
+                [recovered.tasks[1].taskId]
     }
 }

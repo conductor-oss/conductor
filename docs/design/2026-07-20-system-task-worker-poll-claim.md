@@ -86,6 +86,8 @@ recovery boundary for a task that has been claimed but has not completed.
 
 - `TestSystemTaskWorker` verifies that the worker uses the claimed-poll API, dispatches all
   returned task IDs, and releases permits for empty and failed polls.
-- `SystemTaskPollClaimSpec` drives the real `SystemTaskWorker`, scanner, queue, and annotated
-  worker. It blocks the provider method, observes `IN_PROGRESS`, then releases it and verifies
-  exactly one invocation and completion.
+- `SystemTaskPollClaimSpec` uses the production `HTTP` system-task queue and Redis-backed test
+  harness without a test-only worker implementation. It claims but deliberately does not execute
+  the task, modeling a node failure after poll. The test verifies that the acknowledged original
+  message is not redelivered while the claim is live, then verifies that the configured response
+  timeout marks that attempt `TIMED_OUT` and enqueues one new retry attempt.
