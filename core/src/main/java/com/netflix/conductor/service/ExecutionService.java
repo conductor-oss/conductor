@@ -122,9 +122,11 @@ public class ExecutionService {
     /**
      * Polls a fully-qualified queue name while applying the normal task-claim lifecycle.
      *
-     * <p>System-task queues can include an execution namespace or isolation group, neither of which
-     * is representable by the public task-type/domain polling API. Polling the exact queue ensures
-     * a claimed isolated task is not accidentally read from its unisolated queue.
+     * <p>This preserves the exact-queue behavior that {@code SystemTaskWorker} already had when it
+     * called {@code QueueDAO.pop(queueName, ...)} directly. System-task queues can include an
+     * execution namespace or isolation group, neither of which is representable by the public
+     * task-type/domain polling API. The overload is therefore compatibility plumbing for the claim
+     * change, not a new isolation-routing behavior.
      */
     public List<Task> pollQueue(
             String queueName, String workerId, int count, int timeoutInMilliSecond) {

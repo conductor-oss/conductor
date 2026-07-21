@@ -22,6 +22,11 @@ logic but accepts the exact queue name. That detail matters for queues with an e
 namespace or isolation group; reconstructing the queue from only task type and domain would
 silently poll the wrong queue.
 
+This is not an additional isolation-routing fix. The old direct `QueueDAO.pop(queueName, ...)`
+path already polled isolated and namespaced queues correctly. Accepting the exact queue name is
+required to preserve that existing behavior while moving the pop behind the normal claim
+lifecycle; using the task-type/domain `poll()` overload would introduce a routing regression.
+
 The claim path:
 
 1. Pops the message from its exact queue.
