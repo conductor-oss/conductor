@@ -13,6 +13,7 @@
 package org.conductoross.conductor.core.execution.tasks.annotated;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -44,22 +46,35 @@ public class WorkerTaskAnnotationScanner implements InitializingBean {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkerTaskAnnotationScanner.class);
 
+    /** One discovered {@code @WorkerTask} method, when running in poll-worker mode. */
+    public record AnnotatedWorker(
+            String taskType, Method method, Object bean, WorkerTask annotation) {}
+
     private final List<AnnotatedSystemTaskWorker> annotatedSystemTaskWorkers;
     private final Set<WorkflowSystemTask> asyncSystemTasks;
     private final Map<String, TaskMapper> taskMappers = new HashMap<>();
     private final ParametersUtils parametersUtils;
     private final MetadataDAO metadataDAO;
+    private final List<AnnotatedWorker> pollWorkers = new ArrayList<>();
+    private final boolean pollWorkerMode;
 
     public WorkerTaskAnnotationScanner(
             List<AnnotatedSystemTaskWorker> annotatedSystemTaskWorkers,
             @Qualifier(SystemTaskRegistry.ASYNC_SYSTEM_TASKS_QUALIFIER)
                     Set<WorkflowSystemTask> asyncSystemTasks,
             @Lazy ParametersUtils parametersUtils,
-            @Lazy MetadataDAO metadataDAO) {
+            @Lazy MetadataDAO metadataDAO,
+            @Value("${conductor.annotated-workers.mode:system-task}") String mode) {
         this.annotatedSystemTaskWorkers = annotatedSystemTaskWorkers;
         this.asyncSystemTasks = asyncSystemTasks;
         this.parametersUtils = parametersUtils;
         this.metadataDAO = metadataDAO;
+        this.pollWorkerMode = AnnotatedPollWorkerCoordinator.MODE_POLL_WORKER.equals(mode);
+    }
+
+    /** The methods to execute through the worker contract; empty unless in poll-worker mode. */
+    public List<AnnotatedWorker> getPollWorkers() {
+        return List.copyOf(pollWorkers);
     }
 
     /**
@@ -93,20 +108,34 @@ public class WorkerTaskAnnotationScanner implements InitializingBean {
                                 beanName,
                                 taskType);
 
-                        AnnotatedWorkflowSystemTask task =
-                                new AnnotatedWorkflowSystemTask(taskType, method, bean, annotation);
+                        if (pollWorkerMode) {
+                            // poll-worker mode: do NOT register as a system task. The type is
+                            // scheduled through the USER_DEFINED task mapper fallback and
+                            // executed by AnnotatedPollWorkerCoordinator through the standard
+                            // worker contract (poll claims + ACKs before the method runs).
+                            pollWorkers.add(
+                                    new AnnotatedWorker(taskType, method, bean, annotation));
+                            LOGGER.info(
+                                    "Registered annotated task type {} as poll-worker", taskType);
+                        } else {
+                            AnnotatedWorkflowSystemTask task =
+                                    new AnnotatedWorkflowSystemTask(
+                                            taskType, method, bean, annotation);
 
-                        // Add to existing asyncSystemTasks collection
-                        asyncSystemTasks.add(task);
+                            // Add to existing asyncSystemTasks collection
+                            asyncSystemTasks.add(task);
 
-                        // Register a TaskMapper for this task type so DeciderService can find it
-                        AnnotatedSystemTaskMapper mapper =
-                                new AnnotatedSystemTaskMapper(
-                                        taskType, parametersUtils, metadataDAO);
-                        LOGGER.info("Adding task mapper {} for task {}", mapper, taskType);
-                        taskMappers.put(taskType, mapper);
+                            // Register a TaskMapper for this task type so DeciderService can
+                            // find it
+                            AnnotatedSystemTaskMapper mapper =
+                                    new AnnotatedSystemTaskMapper(
+                                            taskType, parametersUtils, metadataDAO);
+                            LOGGER.info("Adding task mapper {} for task {}", mapper, taskType);
+                            taskMappers.put(taskType, mapper);
 
-                        LOGGER.debug("Registered TaskMapper for annotated task type: {}", taskType);
+                            LOGGER.debug(
+                                    "Registered TaskMapper for annotated task type: {}", taskType);
+                        }
                         foundMethods++;
                     }
                 }
