@@ -45,6 +45,37 @@ class GuardrailCompilerTest {
         assertThat(results.get(0).getRefName()).isEqualTo("agent_regex_guardrail_no_ssn");
     }
 
+    // ── Issue #1323: output guardrails must see the LLM's toolCalls ──────
+    //
+    // Output-position guardrails are evaluated every loop iteration. On a
+    // tool-call turn the LLM output.result is [] (only non-tool turns produce a
+    // result Map), so a non-empty-content guardrail fails on every tool round
+    // and injects a correction mid-tool-use. The fix binds a `toolCalls` input
+    // referencing the agent LLM task's output.toolCalls so the generated script
+    // can short-circuit on tool-call turns.
+    @Test
+    void testOutputRegexGuardrailBindsToolCalls() {
+        GuardrailConfig g =
+                GuardrailConfig.builder()
+                        .name("non_empty")
+                        .guardrailType("regex")
+                        .position("output")
+                        .onFail("retry")
+                        .patterns(List.of("\\w"))
+                        .mode("allow")
+                        .build();
+
+        GuardrailCompiler gc = new GuardrailCompiler();
+        var results = gc.compileGuardrailTasks(List.of(g), "agent", "${agent_llm.output.result}");
+
+        WorkflowTask inline = results.get(0).getTasks().get(0);
+        assertThat(inline.getType()).isEqualTo("INLINE");
+        // The INLINE guardrail task must bind toolCalls to the agent LLM task's
+        // output.toolCalls so the script can detect tool-call turns.
+        assertThat(inline.getInputParameters())
+                .containsEntry("toolCalls", "${agent_llm.output.toolCalls}");
+    }
+
     @Test
     void testLLMGuardrail() {
         GuardrailConfig g =
