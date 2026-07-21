@@ -80,10 +80,6 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
     @Override
     public boolean execute(
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
-        // An IN_PROGRESS task is already being executed elsewhere - skip re-execution.
-        if (task.getStatus() == TaskModel.Status.IN_PROGRESS) {
-            return false;
-        }
         TaskContext taskContext = TaskContext.set(task.toTask());
         // A plain annotated-worker return value is terminal by default. Long-running workers can
         // override this execution state through their TaskContext without leaking TaskResult into

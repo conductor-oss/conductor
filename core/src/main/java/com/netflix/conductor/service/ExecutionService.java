@@ -110,11 +110,43 @@ public class ExecutionService {
 
     public List<Task> poll(
             String taskType, String workerId, String domain, int count, int timeoutInMilliSecond) {
+        return pollFromQueue(
+                taskType,
+                workerId,
+                domain,
+                QueueUtils.getQueueName(taskType, domain, null, null),
+                count,
+                timeoutInMilliSecond);
+    }
+
+    /**
+     * Polls a fully-qualified queue name while applying the normal task-claim lifecycle.
+     *
+     * <p>System-task queues can include an execution namespace or isolation group, neither of which
+     * is representable by the public task-type/domain polling API. Polling the exact queue ensures
+     * a claimed isolated task is not accidentally read from its unisolated queue.
+     */
+    public List<Task> pollQueue(
+            String queueName, String workerId, int count, int timeoutInMilliSecond) {
+        String taskType = QueueUtils.getTaskType(queueName);
+        String domain =
+                StringUtils.contains(queueName, QueueUtils.DOMAIN_SEPARATOR)
+                        ? StringUtils.substringBefore(queueName, QueueUtils.DOMAIN_SEPARATOR)
+                        : null;
+        return pollFromQueue(taskType, workerId, domain, queueName, count, timeoutInMilliSecond);
+    }
+
+    private List<Task> pollFromQueue(
+            String taskType,
+            String workerId,
+            String domain,
+            String queueName,
+            int count,
+            int timeoutInMilliSecond) {
         if (timeoutInMilliSecond > MAX_POLL_TIMEOUT_MS) {
             throw new IllegalArgumentException(
                     "Long Poll Timeout value cannot be more than 5 seconds");
         }
-        String queueName = QueueUtils.getQueueName(taskType, domain, null, null);
 
         List<String> taskIds = new LinkedList<>();
         List<Task> tasks = new LinkedList<>();

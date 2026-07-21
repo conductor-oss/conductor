@@ -18,7 +18,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -93,7 +92,8 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
                 pollInterval);
     }
 
-    void pollAndExecute(WorkflowSystemTask systemTask, String queueName) {
+    /** Polls one system-task queue and dispatches every claimed task asynchronously. */
+    public void pollAndExecute(WorkflowSystemTask systemTask, String queueName) {
         if (!isRunning()) {
             LOGGER.debug(
                     "{} stopped. Not polling for task: {}", getClass().getSimpleName(), systemTask);
@@ -126,10 +126,14 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
             // SCHEDULED -> IN_PROGRESS transition the way remote workers get it.
             List<String> polledTaskIds =
                     executionService
-                            .poll(taskName, "system-task-worker", messagesToAcquire, queuePopTimeout)
+                            .pollQueue(
+                                    queueName,
+                                    "system-task-worker",
+                                    messagesToAcquire,
+                                    queuePopTimeout)
                             .stream()
                             .map(Task::getTaskId)
-                            .collect(Collectors.toList());
+                            .toList();
 
             Monitors.recordTaskPoll(queueName);
             LOGGER.debug("Polling queue:{}, got {} tasks", queueName, polledTaskIds.size());

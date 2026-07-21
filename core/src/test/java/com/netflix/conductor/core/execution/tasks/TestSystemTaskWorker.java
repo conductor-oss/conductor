@@ -22,6 +22,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.AsyncSystemTaskExecutor;
 import com.netflix.conductor.dao.QueueDAO;
@@ -96,8 +97,8 @@ public class TestSystemTaskWorker {
 
     @Test
     public void testPollAndExecuteSystemTask() throws Exception {
-        when(queueDAO.pop(anyString(), anyInt(), anyInt()))
-                .thenReturn(Collections.singletonList("taskId"));
+        when(executionService.pollQueue(eq(TEST_TASK), anyString(), anyInt(), anyInt()))
+                .thenReturn(Collections.singletonList(task("taskId")));
 
         CountDownLatch latch = new CountDownLatch(1);
         doAnswer(
@@ -117,7 +118,8 @@ public class TestSystemTaskWorker {
 
     @Test
     public void testBatchPollAndExecuteSystemTask() throws Exception {
-        when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(List.of("t1", "t1"));
+        when(executionService.pollQueue(eq(TEST_TASK), anyString(), anyInt(), anyInt()))
+                .thenReturn(List.of(task("t1"), task("t1")));
 
         CountDownLatch latch = new CountDownLatch(2);
         doAnswer(
@@ -137,7 +139,8 @@ public class TestSystemTaskWorker {
 
     @Test
     public void testPollAndExecuteIsolatedSystemTask() throws Exception {
-        when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(List.of("isolated_taskId"));
+        when(executionService.pollQueue(eq(ISOLATED_TASK), anyString(), anyInt(), anyInt()))
+                .thenReturn(List.of(task("isolated_taskId")));
 
         CountDownLatch latch = new CountDownLatch(1);
         doAnswer(
@@ -158,7 +161,8 @@ public class TestSystemTaskWorker {
     @Test
     public void testPollException() {
         when(properties.getSystemTaskWorkerThreadCount()).thenReturn(1);
-        when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenThrow(RuntimeException.class);
+        when(executionService.pollQueue(eq(TEST_TASK), anyString(), anyInt(), anyInt()))
+                .thenThrow(RuntimeException.class);
 
         systemTaskWorker.pollAndExecute(new TestTask(), TEST_TASK);
 
@@ -168,7 +172,8 @@ public class TestSystemTaskWorker {
     @Test
     public void testBatchPollException() {
         when(properties.getSystemTaskWorkerThreadCount()).thenReturn(2);
-        when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenThrow(RuntimeException.class);
+        when(executionService.pollQueue(eq(TEST_TASK), anyString(), anyInt(), anyInt()))
+                .thenThrow(RuntimeException.class);
 
         systemTaskWorker.pollAndExecute(new TestTask(), TEST_TASK);
 
@@ -179,6 +184,12 @@ public class TestSystemTaskWorker {
         public TestTask() {
             super(TEST_TASK);
         }
+    }
+
+    private Task task(String taskId) {
+        Task task = new Task();
+        task.setTaskId(taskId);
+        return task;
     }
 
     static class IsolatedTask extends WorkflowSystemTask {
