@@ -15,6 +15,7 @@ package com.netflix.conductor.core.execution
 import java.time.Duration
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef
+import com.netflix.conductor.common.metadata.tasks.TaskResult
 import com.netflix.conductor.core.config.ConductorProperties
 import com.netflix.conductor.core.dal.ExecutionDAOFacade
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
@@ -230,6 +231,63 @@ class AsyncSystemTaskExecutorTest extends Specification {
 
         task.status == TaskModel.Status.SCHEDULED
         task.startTime == 0
+    }
+
+    def "Blocking-start system task is handed off via WorkflowExecutor.updateTask before start runs"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        String queueName = QueueUtils.getQueueName(task)
+        boolean handOffDoneBeforeStart = false
+        workflowSystemTask.isBlockingStart() >> true
+        workflowSystemTask.getEvaluationOffset(_, 1) >> Optional.of(3600L)
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        // the pre-start hand-off goes through the sanctioned worker-update contract
+        1 * workflowExecutor.updateTask({ TaskResult tr ->
+            tr.status == TaskResult.Status.IN_PROGRESS &&
+                    tr.taskId == taskId &&
+                    tr.callbackAfterSeconds == 3600L
+        }) >> { handOffDoneBeforeStart = true; return task }
+        1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> {
+            assert handOffDoneBeforeStart: "the IN_PROGRESS hand-off must happen before start() is invoked"
+            task.status = TaskModel.Status.COMPLETED
+        }
+        1 * executionDAOFacade.updateTask(task)
+        1 * queueDAO.remove(queueName, taskId)
+        1 * workflowExecutor.decide(workflowId)
+
+        task.status == TaskModel.Status.COMPLETED
+    }
+
+    def "Non-blocking system task gets no pre-start hand-off"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        workflowSystemTask.isBlockingStart() >> false
+        workflowSystemTask.getEvaluationOffset(task, 1) >> Optional.empty()
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.IN_PROGRESS }
+        0 * workflowExecutor.updateTask(_ as TaskResult)
+        // only the single post-execution persist in the finally block
+        1 * executionDAOFacade.updateTask(task)
     }
 
     def "Execute with a task id that is in SCHEDULED state"() {

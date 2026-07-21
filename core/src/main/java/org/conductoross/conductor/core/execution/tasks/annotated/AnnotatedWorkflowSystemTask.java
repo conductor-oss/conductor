@@ -49,6 +49,13 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
     private final AnnotatedMethodResultMapper resultMapper;
 
     /**
+     * Postpone applied to a queue message redelivered while an invocation is in flight, when the
+     * task def carries no response timeout. Keeps redelivered messages quiet until well past any
+     * realistic blocking call, and doubles as the crash-recovery retry delay.
+     */
+    static final long DEFAULT_IN_FLIGHT_POSTPONE_SECONDS = 3600;
+
+    /**
      * Creates a new AnnotatedWorkflowSystemTask.
      *
      * @param taskType The task type name
@@ -72,14 +79,47 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
         return true;
     }
 
+    /**
+     * The annotated method runs synchronously inside {@link #start} and can block for minutes (e.g.
+     * an LLM provider call). Declaring this lets the caller persist the IN_PROGRESS hand-off before
+     * invoking, so redelivered queue messages see the in-flight status.
+     */
     @Override
-    public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
-        execute(workflow, task, workflowExecutor);
+    public boolean isBlockingStart() {
+        return true;
     }
 
+    /**
+     * SCHEDULED means the task needs to be started. The caller has already persisted the
+     * IN_PROGRESS hand-off (see {@link #isBlockingStart}); this just invokes the method.
+     */
+    @Override
+    public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
+        invokeWorker(workflow, task);
+    }
+
+    /**
+     * Called by the engine when the task is already IN_PROGRESS. Per the system-task status
+     * contract: IN_PROGRESS means an invocation is in flight — don't do anything. The one exception
+     * is a worker-requested re-execution: long-running workers (LLM/A2A) return IN_PROGRESS with
+     * {@code callbackAfterSeconds > 0} and expect to be re-invoked when the callback fires.
+     */
     @Override
     public boolean execute(
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
+        if (task.getStatus() == TaskModel.Status.IN_PROGRESS
+                && task.getCallbackAfterSeconds() == 0) {
+            log.debug(
+                    "Task {}/{} is IN_PROGRESS with no callback due; skipping redelivered"
+                            + " execution",
+                    getTaskType(),
+                    task.getTaskId());
+            return false;
+        }
+        return invokeWorker(workflow, task);
+    }
+
+    private boolean invokeWorker(WorkflowModel workflow, TaskModel task) {
         TaskContext taskContext = TaskContext.set(task.toTask());
         // A plain annotated-worker return value is terminal by default. Long-running workers can
         // override this execution state through their TaskContext without leaking TaskResult into
@@ -180,8 +220,20 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
 
     @Override
     public Optional<Long> getEvaluationOffset(TaskModel taskModel, long maxOffset) {
-        return taskModel.getCallbackAfterSeconds() > 0
-                ? Optional.of(taskModel.getCallbackAfterSeconds())
-                : Optional.empty();
+        if (taskModel.getCallbackAfterSeconds() > 0) {
+            return Optional.of(taskModel.getCallbackAfterSeconds());
+        }
+        if (taskModel.getStatus() == TaskModel.Status.IN_PROGRESS) {
+            // A redelivered message for an in-flight invocation: postpone it far enough to cover
+            // the blocking call (short default postpones would also make the persisted
+            // callbackAfterSeconds look like a worker-requested callback on the next redelivery,
+            // re-invoking the method mid-flight). Doubles as the crash-recovery retry delay.
+            long postpone =
+                    taskModel.getResponseTimeoutSeconds() > 0
+                            ? taskModel.getResponseTimeoutSeconds()
+                            : DEFAULT_IN_FLIGHT_POSTPONE_SECONDS;
+            return Optional.of(postpone);
+        }
+        return Optional.empty();
     }
 }

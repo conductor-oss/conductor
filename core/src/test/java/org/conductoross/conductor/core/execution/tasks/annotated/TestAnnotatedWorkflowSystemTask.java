@@ -281,6 +281,134 @@ public class TestAnnotatedWorkflowSystemTask {
         return task;
     }
 
+    // ── Issue #1321: the status contract prevents duplicate execution on queue redelivery ──
+    //
+    // The annotated method blocks synchronously (e.g. an LLM provider call). The adapter
+    // declares isBlockingStart() so the CALLER (AsyncSystemTaskExecutor) persists the
+    // IN_PROGRESS hand-off before invoking start(); the adapter itself follows the status
+    // contract: IN_PROGRESS means an invocation is in flight - execute() does nothing. The one
+    // exception: a worker-requested callback (IN_PROGRESS + callbackAfterSeconds > 0) is
+    // re-invoked, preserving the long-running LLM/A2A worker flow.
+
+    /** Records invocations and, at invocation time, whether the claim was already persisted. */
+    static class ClaimProbeBean {
+        final java.util.concurrent.atomic.AtomicInteger invocations =
+                new java.util.concurrent.atomic.AtomicInteger();
+        volatile boolean claimPersistedAtInvocation;
+        volatile boolean claimPersisted;
+
+        public Map<String, Object> blockingCall() {
+            invocations.incrementAndGet();
+            claimPersistedAtInvocation = claimPersisted;
+            return Map.of("ok", true);
+        }
+    }
+
+    @Test
+    public void testDeclaresBlockingStart() throws Exception {
+        // The declaration is what makes the caller (AsyncSystemTaskExecutor) persist the
+        // IN_PROGRESS hand-off before invoking start().
+        Method method = ClaimProbeBean.class.getMethod("blockingCall");
+        AnnotatedWorkflowSystemTask systemTask =
+                new AnnotatedWorkflowSystemTask(
+                        "blocking_task",
+                        method,
+                        new ClaimProbeBean(),
+                        createAnnotation("blocking_task"));
+
+        assertTrue(systemTask.isBlockingStart());
+    }
+
+    @Test
+    public void testRedeliveredInFlightExecutionIsSkipped() throws Exception {
+        ClaimProbeBean bean = new ClaimProbeBean();
+        Method method = ClaimProbeBean.class.getMethod("blockingCall");
+        AnnotatedWorkflowSystemTask systemTask =
+                new AnnotatedWorkflowSystemTask(
+                        "claimed_task", method, bean, createAnnotation("claimed_task"));
+
+        TaskModel task = createTask(Map.of());
+        task.setTaskType("claimed_task");
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        task.setCallbackAfterSeconds(0);
+
+        boolean result = systemTask.execute(workflow, task, workflowExecutor);
+
+        assertFalse("redelivered execution must report no state change", result);
+        assertEquals(
+                "the blocking method must NOT be invoked a second time", 0, bean.invocations.get());
+        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
+    }
+
+    @Test
+    public void testInFlightRedeliveryIsPostponedPastTheBlockingCall() throws Exception {
+        Method method = ClaimProbeBean.class.getMethod("blockingCall");
+        AnnotatedWorkflowSystemTask systemTask =
+                new AnnotatedWorkflowSystemTask(
+                        "offset_task",
+                        method,
+                        new ClaimProbeBean(),
+                        createAnnotation("offset_task"));
+
+        TaskModel task = createTask(Map.of());
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        task.setCallbackAfterSeconds(0);
+
+        // No response timeout on the task: the default in-flight postpone applies.
+        assertEquals(
+                java.util.Optional.of(
+                        AnnotatedWorkflowSystemTask.DEFAULT_IN_FLIGHT_POSTPONE_SECONDS),
+                systemTask.getEvaluationOffset(task, 30));
+
+        // With a response timeout, the postpone matches it.
+        task.setResponseTimeoutSeconds(45);
+        assertEquals(java.util.Optional.of(45L), systemTask.getEvaluationOffset(task, 30));
+
+        // Worker-requested callbacks keep their own interval.
+        task.setCallbackAfterSeconds(5);
+        assertEquals(java.util.Optional.of(5L), systemTask.getEvaluationOffset(task, 30));
+    }
+
+    @Test
+    public void testLegitimateInProgressCallbackReexecutionIsNotBlocked() throws Exception {
+        // LLM/A2A workers legitimately return IN_PROGRESS + callbackAfterSeconds and expect
+        // re-execution on the callback. callbackAfterSeconds > 0 distinguishes that from an
+        // in-flight redelivery, so the guard must let the re-execution through.
+        ClaimProbeBean bean = new ClaimProbeBean();
+        Method method = ClaimProbeBean.class.getMethod("blockingCall");
+        AnnotatedWorkflowSystemTask systemTask =
+                new AnnotatedWorkflowSystemTask(
+                        "callback_task", method, bean, createAnnotation("callback_task"));
+
+        TaskModel task = createTask(Map.of());
+        task.setTaskType("callback_task");
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        task.setCallbackAfterSeconds(5);
+
+        boolean result = systemTask.execute(workflow, task, workflowExecutor);
+
+        assertTrue(result);
+        assertEquals(1, bean.invocations.get());
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+    }
+
+    @Test
+    public void testStartInvokesTheMethod() throws Exception {
+        ClaimProbeBean bean = new ClaimProbeBean();
+        Method method = ClaimProbeBean.class.getMethod("blockingCall");
+        AnnotatedWorkflowSystemTask systemTask =
+                new AnnotatedWorkflowSystemTask(
+                        "legacy_task", method, bean, createAnnotation("legacy_task"));
+
+        TaskModel task = createTask(Map.of());
+        task.setTaskType("legacy_task");
+
+        systemTask.start(workflow, task, workflowExecutor);
+
+        assertEquals(1, bean.invocations.get());
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+    }
+
     private WorkerTask createAnnotation(String taskName) {
         WorkerTask annotation = Mockito.mock(WorkerTask.class);
         Mockito.when(annotation.value()).thenReturn(taskName);
