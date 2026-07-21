@@ -81,7 +81,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
             "conductor.app.sweeperThreadCount=1",
             "conductor.app.sweeper.sweepBatchSize=1",
             "conductor.app.sweeper.queuePopTimeout=750",
-            "conductor.integrations.ai.enabled=true"
+            "conductor.integrations.ai.enabled=true",
+            "agentspan.embedded=true"
         })
 class ConductorAgentEndToEndTest {
 
