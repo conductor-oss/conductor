@@ -21,6 +21,8 @@ import org.conductoross.conductor.core.execution.tasks.TaskCancellationHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
+import com.netflix.conductor.core.utils.QueueUtils;
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
@@ -49,21 +51,35 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
     private final AnnotatedMethodResultMapper resultMapper;
 
     /**
+     * Queue used to reserve (postpone) the task's own message before a blocking invocation. May be
+     * null in unit tests that exercise the invocation directly; when null the reserve is skipped.
+     */
+    private final QueueDAO queueDAO;
+
+    /**
      * Creates a new AnnotatedWorkflowSystemTask.
      *
      * @param taskType The task type name
      * @param method The annotated method to invoke
      * @param bean The Spring bean instance containing the method
      * @param annotation The @WorkerTask annotation metadata
+     * @param queueDAO Queue used to reserve the task's message before a blocking call
      */
     public AnnotatedWorkflowSystemTask(
-            String taskType, Method method, Object bean, WorkerTask annotation) {
+            String taskType, Method method, Object bean, WorkerTask annotation, QueueDAO queueDAO) {
         super(taskType);
         this.method = method;
         this.bean = bean;
         this.annotation = annotation;
+        this.queueDAO = queueDAO;
         this.parameterMapper = new AnnotatedMethodParameterMapper();
         this.resultMapper = new AnnotatedMethodResultMapper();
+    }
+
+    /** Convenience constructor without a queue (test use); the reserve step is skipped. */
+    public AnnotatedWorkflowSystemTask(
+            String taskType, Method method, Object bean, WorkerTask annotation) {
+        this(taskType, method, bean, annotation, null);
     }
 
     @Override
@@ -72,6 +88,21 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
         return true;
     }
 
+    /**
+     * Postpone applied to the task's queue message while a blocking invocation is in flight, when
+     * the task carries no response timeout. Doubles as the crash-recovery redelivery delay.
+     */
+    static final long DEFAULT_IN_FLIGHT_POSTPONE_SECONDS = 3600;
+
+    /**
+     * start() and execute() do the same thing: reserve the task's queue message, then invoke the
+     * annotated method. The annotated method runs synchronously and can block for minutes (e.g. an
+     * LLM provider call); reserving first keeps the message present and invisible for the duration
+     * of the call, so the sweeper's repair check does not re-push it and a mid-call redelivery
+     * cannot hand the same task to a second worker (issue #1321). Long-running workers (LLM/A2A)
+     * that return IN_PROGRESS + callbackAfterSeconds set their own re-invocation cadence, which the
+     * engine's post-execution postpone then honors.
+     */
     @Override
     public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         execute(workflow, task, workflowExecutor);
@@ -80,6 +111,32 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
     @Override
     public boolean execute(
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
+        reserveQueueMessage(task);
+        return invokeWorker(workflow, task);
+    }
+
+    /**
+     * Postpone the task's own queue message out past the blocking call, directly on the queue.
+     * Postponing the message (not touching callbackAfterSeconds) keeps it present so the sweeper's
+     * repair check leaves it alone, without inflating the response-timeout budget the way routing
+     * through {@code updateTask(callbackAfterSeconds=responseTimeout)} would.
+     */
+    private void reserveQueueMessage(TaskModel task) {
+        if (queueDAO == null) {
+            return;
+        }
+        long postpone =
+                task.getResponseTimeoutSeconds() > 0
+                        ? task.getResponseTimeoutSeconds()
+                        : DEFAULT_IN_FLIGHT_POSTPONE_SECONDS;
+        queueDAO.postpone(
+                QueueUtils.getQueueName(task),
+                task.getTaskId(),
+                task.getWorkflowPriority(),
+                postpone);
+    }
+
+    private boolean invokeWorker(WorkflowModel workflow, TaskModel task) {
         TaskContext taskContext = TaskContext.set(task.toTask());
         // A plain annotated-worker return value is terminal by default. Long-running workers can
         // override this execution state through their TaskContext without leaking TaskResult into

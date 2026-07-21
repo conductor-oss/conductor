@@ -33,6 +33,7 @@ import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
 /**
@@ -49,17 +50,20 @@ public class WorkerTaskAnnotationScanner implements InitializingBean {
     private final Map<String, TaskMapper> taskMappers = new HashMap<>();
     private final ParametersUtils parametersUtils;
     private final MetadataDAO metadataDAO;
+    private final QueueDAO queueDAO;
 
     public WorkerTaskAnnotationScanner(
             List<AnnotatedSystemTaskWorker> annotatedSystemTaskWorkers,
             @Qualifier(SystemTaskRegistry.ASYNC_SYSTEM_TASKS_QUALIFIER)
                     Set<WorkflowSystemTask> asyncSystemTasks,
             @Lazy ParametersUtils parametersUtils,
-            @Lazy MetadataDAO metadataDAO) {
+            @Lazy MetadataDAO metadataDAO,
+            @Lazy QueueDAO queueDAO) {
         this.annotatedSystemTaskWorkers = annotatedSystemTaskWorkers;
         this.asyncSystemTasks = asyncSystemTasks;
         this.parametersUtils = parametersUtils;
         this.metadataDAO = metadataDAO;
+        this.queueDAO = queueDAO;
     }
 
     /**
@@ -94,7 +98,8 @@ public class WorkerTaskAnnotationScanner implements InitializingBean {
                                 taskType);
 
                         AnnotatedWorkflowSystemTask task =
-                                new AnnotatedWorkflowSystemTask(taskType, method, bean, annotation);
+                                new AnnotatedWorkflowSystemTask(
+                                        taskType, method, bean, annotation, queueDAO);
 
                         // Add to existing asyncSystemTasks collection
                         asyncSystemTasks.add(task);
