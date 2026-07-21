@@ -86,7 +86,11 @@ public class GuardrailCompiler {
             return new ArrayList<>();
         }
 
-        String iterationRef = "${" + agentName + "_loop.iteration}";
+        // live loop counter:
+        // - lives under DO_WHILE task's OUTPUT ({input, output} per task ref)
+        // - must read as ${<loop>.output.iteration}
+        // - bare ${<loop>.iteration} = null mid-loop -> escalation below silently disabled
+        String iterationRef = "${" + agentName + "_loop.output.iteration}";
         // Output guardrails must only judge final replies. On a tool-call turn the LLM task's
         // output.result is empty (only non-tool turns produce a result), so a content guardrail
         // would misfire every healthy tool round. Derive a reference to the agent LLM task's
@@ -116,11 +120,15 @@ public class GuardrailCompiler {
             return new ArrayList<>();
         }
 
-        // Tool guardrails use a fixed iteration ref since retry is handled by the outer DoWhile.
+        // tool-guardrail gate runs inside the agent's DoWhile turn loop
+        // - wire live loop counter (1-based turn number, from loop task ref's output)
+        // - lets retry->raise escalation at maxRetries fire (SDK worker + regex/llm scripts)
+        // - fixed "1" pinned the counter forever -> onFail=retry never escalated
         // toolCallsRef is null: tool guardrails are supposed to evaluate tool calls, so they must
         // not short-circuit on them.
+        String iterationRef = "${" + agentName + "_loop.output.iteration}";
         return compileGuardrailTasksInternal(
-                guardrails, agentName + "_tool", contentRef, "1", null);
+                guardrails, agentName + "_tool", contentRef, iterationRef, null);
     }
 
     /** Internal helper that compiles guardrails without position filtering. */
@@ -306,6 +314,10 @@ public class GuardrailCompiler {
         normalizeInputs.put("worker_output", "${" + workerRef + ".output}");
         normalizeInputs.put("guardrail_name", guard.getName());
         normalizeInputs.put("default_on_fail", guard.getOnFail());
+        // iteration + max_retries -> normalize script can escalate retry -> raise
+        // (parity with regex/llm guardrails)
+        normalizeInputs.put("iteration", iterationRef);
+        normalizeInputs.put("max_retries", guard.getMaxRetries());
         if (toolCallsRef != null) {
             normalizeInputs.put("toolCalls", toolCallsRef);
         }
