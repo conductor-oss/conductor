@@ -22,7 +22,6 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -37,7 +36,6 @@ import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
-import com.netflix.conductor.core.execution.ClaimedSystemTask;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.listener.TaskStatusListener;
@@ -49,10 +47,8 @@ import com.netflix.conductor.model.TaskModel;
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 
 import static junit.framework.TestCase.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -468,129 +464,5 @@ public class ExecutionServiceTest {
         assertNull(polled.get(0).getRuntimeMetadata().get("API_KEY"));
         // the outer catch's re-enqueue (postpone) is NOT triggered
         verify(queueDAO, times(0)).postpone(anyString(), eq(taskId), anyInt(), anyLong());
-    }
-
-    @Test
-    public void testClaimSystemTasksClaimsScheduledTask() {
-        when(conductorProperties.getSystemTaskClaimLeaseDuration())
-                .thenReturn(Duration.ofSeconds(3600));
-        String queueName = "LLM_CHAT_COMPLETE";
-        TaskModel taskModel = new TaskModel();
-        taskModel.setTaskId("t1");
-        taskModel.setTaskType(queueName);
-        taskModel.setTaskDefName(queueName);
-        taskModel.setWorkflowInstanceId("wf1");
-        taskModel.setStatus(TaskModel.Status.SCHEDULED);
-        when(queueDAO.pop(queueName, 1, 100)).thenReturn(List.of("t1"));
-        when(executionDAOFacade.getTaskModel("t1")).thenReturn(taskModel);
-
-        List<ClaimedSystemTask> claimed = executionService.claimSystemTasks(queueName, 1, 100);
-
-        assertEquals(1, claimed.size());
-        assertEquals(TaskModel.Status.SCHEDULED, claimed.get(0).preClaimStatus());
-        assertEquals(TaskModel.Status.IN_PROGRESS, taskModel.getStatus());
-        assertEquals(3600L, taskModel.getCallbackAfterSeconds());
-        assertEquals(1, taskModel.getPollCount());
-        assertNotNull(taskModel.getWorkerId());
-        assertNotEquals(0L, taskModel.getStartTime());
-        // secrets must NOT be substituted at claim time — the executor substitutes with a
-        // literal-input restore; substituting here would persist resolved values
-        verify(parametersUtils, times(0)).substituteSecrets(any());
-        verify(executionDAOFacade).updateTask(taskModel);
-        // the lease replaces the ACK: message postponed by the lease, never removed
-        verify(queueDAO).postpone(queueName, "t1", 0, 3600L);
-        verify(queueDAO, times(0)).remove(anyString(), anyString());
-        verify(taskStatusListener).onTaskInProgress(taskModel);
-    }
-
-    @Test
-    public void testClaimSystemTasksPostponesInFlightTaskWithoutClaiming() {
-        String queueName = "LLM_CHAT_COMPLETE";
-        TaskModel taskModel = new TaskModel();
-        taskModel.setTaskId("t1");
-        taskModel.setTaskType(queueName);
-        taskModel.setWorkflowInstanceId("wf1");
-        taskModel.setStatus(TaskModel.Status.IN_PROGRESS);
-        taskModel.setCallbackAfterSeconds(600);
-        taskModel.setUpdateTime(System.currentTimeMillis());
-        when(queueDAO.pop(queueName, 1, 100)).thenReturn(List.of("t1"));
-        when(executionDAOFacade.getTaskModel("t1")).thenReturn(taskModel);
-
-        List<ClaimedSystemTask> claimed = executionService.claimSystemTasks(queueName, 1, 100);
-
-        // live lease → early redelivery: renew the remaining lease, do not claim
-        assertEquals(0, claimed.size());
-        assertEquals(600L, taskModel.getCallbackAfterSeconds());
-        verify(executionDAOFacade, times(0)).updateTask(any(TaskModel.class));
-        ArgumentCaptor<Long> postponed = ArgumentCaptor.forClass(Long.class);
-        verify(queueDAO).postpone(eq(queueName), eq("t1"), eq(0), postponed.capture());
-        assertTrue(postponed.getValue() >= 1 && postponed.getValue() <= 600);
-    }
-
-    @Test
-    public void testClaimSystemTasksReclaimsTaskWithExpiredLease() {
-        when(conductorProperties.getSystemTaskClaimLeaseDuration())
-                .thenReturn(Duration.ofSeconds(3600));
-        String queueName = "LLM_CHAT_COMPLETE";
-        TaskModel taskModel = new TaskModel();
-        taskModel.setTaskId("t1");
-        taskModel.setTaskType(queueName);
-        taskModel.setWorkflowInstanceId("wf1");
-        taskModel.setStatus(TaskModel.Status.IN_PROGRESS);
-        taskModel.setCallbackAfterSeconds(600);
-        // lease expired long ago: crash recovery or a due multi-turn callback
-        taskModel.setUpdateTime(System.currentTimeMillis() - 700_000L);
-        taskModel.setStartTime(123L);
-        when(queueDAO.pop(queueName, 1, 100)).thenReturn(List.of("t1"));
-        when(executionDAOFacade.getTaskModel("t1")).thenReturn(taskModel);
-
-        List<ClaimedSystemTask> claimed = executionService.claimSystemTasks(queueName, 1, 100);
-
-        assertEquals(1, claimed.size());
-        assertEquals(TaskModel.Status.IN_PROGRESS, claimed.get(0).preClaimStatus());
-        assertEquals(3600L, taskModel.getCallbackAfterSeconds());
-        assertEquals(123L, taskModel.getStartTime());
-        verify(executionDAOFacade).updateTask(taskModel);
-        verify(queueDAO).postpone(queueName, "t1", 0, 3600L);
-    }
-
-    @Test
-    public void testClaimSystemTasksUsesResponseTimeoutAsLease() {
-        String queueName = "LLM_CHAT_COMPLETE";
-        TaskDef taskDef = new TaskDef(queueName);
-        taskDef.setResponseTimeoutSeconds(900);
-        WorkflowTask workflowTask = new WorkflowTask();
-        workflowTask.setTaskDefinition(taskDef);
-        TaskModel taskModel = new TaskModel();
-        taskModel.setTaskId("t1");
-        taskModel.setTaskType(queueName);
-        taskModel.setWorkflowInstanceId("wf1");
-        taskModel.setStatus(TaskModel.Status.SCHEDULED);
-        taskModel.setWorkflowTask(workflowTask);
-        when(queueDAO.pop(queueName, 1, 100)).thenReturn(List.of("t1"));
-        when(executionDAOFacade.getTaskModel("t1")).thenReturn(taskModel);
-
-        List<ClaimedSystemTask> claimed = executionService.claimSystemTasks(queueName, 1, 100);
-
-        assertEquals(1, claimed.size());
-        assertEquals(900L, taskModel.getCallbackAfterSeconds());
-        verify(queueDAO).postpone(queueName, "t1", 0, 900L);
-        verify(conductorProperties, times(0)).getSystemTaskClaimLeaseDuration();
-    }
-
-    @Test
-    public void testClaimSystemTasksRemovesTerminalTask() {
-        String queueName = "LLM_CHAT_COMPLETE";
-        TaskModel taskModel = new TaskModel();
-        taskModel.setTaskId("t1");
-        taskModel.setStatus(TaskModel.Status.COMPLETED);
-        when(queueDAO.pop(queueName, 1, 100)).thenReturn(List.of("t1"));
-        when(executionDAOFacade.getTaskModel("t1")).thenReturn(taskModel);
-
-        List<ClaimedSystemTask> claimed = executionService.claimSystemTasks(queueName, 1, 100);
-
-        assertEquals(0, claimed.size());
-        verify(queueDAO).remove(queueName, "t1");
-        verify(executionDAOFacade, times(0)).updateTask(any(TaskModel.class));
     }
 }

@@ -72,16 +72,6 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
         return true;
     }
 
-    /**
-     * The annotated method blocks in-process (e.g. a remote provider call) for potentially minutes,
-     * so the poll must persist the IN_PROGRESS claim and lease the queue message before dispatch;
-     * otherwise a message redelivered mid-invocation re-executes the method (#1321).
-     */
-    @Override
-    public boolean claimOnPoll() {
-        return true;
-    }
-
     @Override
     public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         execute(workflow, task, workflowExecutor);
@@ -90,6 +80,10 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
     @Override
     public boolean execute(
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
+        // An IN_PROGRESS task is already being executed elsewhere - skip re-execution.
+        if (task.getStatus() == TaskModel.Status.IN_PROGRESS) {
+            return false;
+        }
         TaskContext taskContext = TaskContext.set(task.toTask());
         // A plain annotated-worker return value is terminal by default. Long-running workers can
         // override this execution state through their TaskContext without leaking TaskResult into

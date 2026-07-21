@@ -18,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -26,10 +27,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.annotations.VisibleForTesting;
+import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.AsyncSystemTaskExecutor;
-import com.netflix.conductor.core.execution.ClaimedSystemTask;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.core.utils.SemaphoreUtil;
 import com.netflix.conductor.dao.QueueDAO;
@@ -121,13 +122,14 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
 
             LOGGER.debug("Polling queue: {} with {} slots acquired", queueName, messagesToAcquire);
 
-            if (properties.isSystemTaskClaimOnPollEnabled() && systemTask.claimOnPoll()) {
-                claimAndExecute(systemTask, queueName, executionConfig, messagesToAcquire);
-                return;
-            }
-
+            // Batch-poll instead of a bare queue pop, so the poll itself persists the
+            // SCHEDULED -> IN_PROGRESS transition the way remote workers get it.
             List<String> polledTaskIds =
-                    queueDAO.pop(queueName, messagesToAcquire, queuePopTimeout);
+                    executionService
+                            .poll(taskName, "system-task-worker", messagesToAcquire, queuePopTimeout)
+                            .stream()
+                            .map(Task::getTaskId)
+                            .collect(Collectors.toList());
 
             Monitors.recordTaskPoll(queueName);
             LOGGER.debug("Polling queue:{}, got {} tasks", queueName, polledTaskIds.size());
@@ -171,57 +173,6 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
             semaphoreUtil.completeProcessing(messagesToAcquire);
             Monitors.recordTaskPollError(taskName, e.getClass().getSimpleName());
             LOGGER.error("Error polling system task in queue:{}", queueName, e);
-        }
-    }
-
-    /**
-     * The poll-time-claim path for system tasks declaring {@link WorkflowSystemTask#claimOnPoll()}:
-     * {@link ExecutionService#claimSystemTasks} persists each task's IN_PROGRESS transition and
-     * leases its queue message before the executor is invoked, so a message redelivered while the
-     * blocking invocation is in flight cannot duplicate it. There is deliberately no {@code
-     * ackTaskReceived} here — the lease replaces the ACK, keeping the message in the queue so lease
-     * expiry doubles as crash recovery.
-     */
-    private void claimAndExecute(
-            WorkflowSystemTask systemTask,
-            String queueName,
-            ExecutionConfig executionConfig,
-            int messagesToAcquire) {
-        SemaphoreUtil semaphoreUtil = executionConfig.getSemaphoreUtil();
-        ExecutorService executorService = executionConfig.getExecutorService();
-
-        List<ClaimedSystemTask> claimedTasks =
-                executionService.claimSystemTasks(queueName, messagesToAcquire, queuePopTimeout);
-
-        Monitors.recordTaskPoll(queueName);
-        LOGGER.debug("Claiming from queue:{}, got {} tasks", queueName, claimedTasks.size());
-
-        if (claimedTasks.isEmpty()) {
-            // no task claimed, release all permits
-            semaphoreUtil.completeProcessing(messagesToAcquire);
-            return;
-        }
-
-        // Immediately release unused slots when number of claimed tasks is less than
-        // acquired slots
-        if (claimedTasks.size() < messagesToAcquire) {
-            semaphoreUtil.completeProcessing(messagesToAcquire - claimedTasks.size());
-        }
-
-        for (ClaimedSystemTask claimedTask : claimedTasks) {
-            LOGGER.debug(
-                    "Claimed task: {} from queue: {} being sent to the workflow executor",
-                    claimedTask.task().getTaskId(),
-                    queueName);
-            Monitors.recordTaskPollCount(queueName, 1);
-
-            CompletableFuture<Void> taskCompletableFuture =
-                    CompletableFuture.runAsync(
-                            () -> asyncSystemTaskExecutor.execute(systemTask, claimedTask),
-                            executorService);
-
-            // release permit after processing is complete
-            taskCompletableFuture.whenComplete((r, e) -> semaphoreUtil.completeProcessing(1));
         }
     }
 

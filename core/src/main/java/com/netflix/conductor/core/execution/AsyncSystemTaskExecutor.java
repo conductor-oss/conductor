@@ -115,34 +115,6 @@ public class AsyncSystemTaskExecutor {
             }
         }
 
-        executeTask(systemTask, task, task.getStatus() == TaskModel.Status.SCHEDULED, true);
-    }
-
-    /**
-     * Executes a system task already claimed by {@link
-     * com.netflix.conductor.service.ExecutionService#claimSystemTasks(String, int, int)}. The claim
-     * has persisted the IN_PROGRESS transition, leased the queue message, run the limit checks and
-     * counted the poll — this method only dispatches and persists results. Dispatch uses the
-     * pre-claim status: the claim flips every task to IN_PROGRESS, so the current status can no
-     * longer identify a first execution.
-     *
-     * @param systemTask The {@link WorkflowSystemTask} to be executed.
-     * @param claimedTask The claimed task and its pre-claim status.
-     */
-    public void execute(WorkflowSystemTask systemTask, ClaimedSystemTask claimedTask) {
-        executeTask(
-                systemTask,
-                claimedTask.task(),
-                claimedTask.preClaimStatus() == TaskModel.Status.SCHEDULED,
-                false);
-    }
-
-    private void executeTask(
-            WorkflowSystemTask systemTask,
-            TaskModel task,
-            boolean firstExecution,
-            boolean countPoll) {
-        String queueName = QueueUtils.getQueueName(task);
         boolean hasTaskExecutionCompleted = false;
         boolean shouldRemoveTaskFromQueue = false;
         String workflowId = task.getWorkflowInstanceId();
@@ -176,8 +148,7 @@ public class AsyncSystemTaskExecutor {
                     task.getStatus());
 
             boolean isTaskAsyncComplete = systemTask.isAsyncComplete(task);
-            if (countPoll
-                    && (task.getStatus() == TaskModel.Status.SCHEDULED || !isTaskAsyncComplete)) {
+            if (task.getStatus() == TaskModel.Status.SCHEDULED || !isTaskAsyncComplete) {
                 task.incrementPollCount();
             }
 
@@ -194,14 +165,9 @@ public class AsyncSystemTaskExecutor {
                 }
                 task.setInputData(parametersUtils.substituteSecrets(literalInput));
                 try {
-                    if (firstExecution) {
-                        // A claimed task is already IN_PROGRESS with its start time persisted by
-                        // the claim; only the legacy path still sees SCHEDULED here.
-                        if (task.getStatus() == TaskModel.Status.SCHEDULED) {
-                            task.setStartTime(System.currentTimeMillis());
-                            Monitors.recordQueueWaitTime(
-                                    task.getTaskType(), task.getQueueWaitTime());
-                        }
+                    if (task.getStatus() == TaskModel.Status.SCHEDULED) {
+                        task.setStartTime(System.currentTimeMillis());
+                        Monitors.recordQueueWaitTime(task.getTaskType(), task.getQueueWaitTime());
                         systemTask.start(workflow, task, workflowExecutor);
                     } else {
                         systemTask.execute(workflow, task, workflowExecutor);
@@ -241,11 +207,7 @@ public class AsyncSystemTaskExecutor {
                     task.getStatus());
         } catch (Exception e) {
             Monitors.error(AsyncSystemTaskExecutor.class.getSimpleName(), "executeSystemTask");
-            LOGGER.error(
-                    "Error executing system task - {}, with id: {}",
-                    systemTask,
-                    task.getTaskId(),
-                    e);
+            LOGGER.error("Error executing system task - {}, with id: {}", systemTask, taskId, e);
         } finally {
             executionDAOFacade.updateTask(task);
             if (shouldRemoveTaskFromQueue) {

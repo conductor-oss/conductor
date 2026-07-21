@@ -89,18 +89,6 @@ public abstract class WorkflowSystemTask {
     }
 
     /**
-     * @return True if {@link SystemTaskWorker} must claim this task at poll time — persist the
-     *     SCHEDULED to IN_PROGRESS transition and lease the queue message — before dispatching to
-     *     the executor. Opt in when the task's execution blocks in-process for longer than a queue
-     *     redelivery window; the claim prevents a redelivered message from duplicating an in-flight
-     *     invocation. Defaults to false: the task executes straight off the queue message and its
-     *     status transitions are persisted only after execution returns.
-     */
-    public boolean claimOnPoll() {
-        return false;
-    }
-
-    /**
      * @return True to keep task in 'IN_PROGRESS' state, and 'COMPLETE' later by an external
      *     message.
      */

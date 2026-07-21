@@ -253,22 +253,6 @@ public class ConductorProperties {
     @DurationUnit(ChronoUnit.MILLIS)
     private Duration systemTaskQueuePopTimeout = Duration.ofMillis(100);
 
-    /**
-     * Enables poll-time claiming in {@link
-     * com.netflix.conductor.core.execution.tasks.SystemTaskWorker} for system tasks that declare
-     * {@link com.netflix.conductor.core.execution.tasks.WorkflowSystemTask#claimOnPoll()}.
-     * Operational escape hatch: disabling reverts those queues to the legacy pop/ack path.
-     */
-    private boolean systemTaskClaimOnPollEnabled = true;
-
-    /**
-     * The execution lease taken on a claimed system task's queue message when its task def does not
-     * declare a positive responseTimeoutSeconds. Redelivery after this duration is the
-     * crash-recovery retry, so it must exceed the worst-case blocking invocation.
-     */
-    @DurationUnit(ChronoUnit.SECONDS)
-    private Duration systemTaskClaimLeaseDuration = Duration.ofSeconds(3600);
-
     public String getStack() {
         return stack;
     }
@@ -633,21 +617,5 @@ public class ConductorProperties {
 
     public void setSystemTaskQueuePopTimeout(Duration systemTaskQueuePopTimeout) {
         this.systemTaskQueuePopTimeout = systemTaskQueuePopTimeout;
-    }
-
-    public boolean isSystemTaskClaimOnPollEnabled() {
-        return systemTaskClaimOnPollEnabled;
-    }
-
-    public void setSystemTaskClaimOnPollEnabled(boolean systemTaskClaimOnPollEnabled) {
-        this.systemTaskClaimOnPollEnabled = systemTaskClaimOnPollEnabled;
-    }
-
-    public Duration getSystemTaskClaimLeaseDuration() {
-        return systemTaskClaimLeaseDuration;
-    }
-
-    public void setSystemTaskClaimLeaseDuration(Duration systemTaskClaimLeaseDuration) {
-        this.systemTaskClaimLeaseDuration = systemTaskClaimLeaseDuration;
     }
 }
