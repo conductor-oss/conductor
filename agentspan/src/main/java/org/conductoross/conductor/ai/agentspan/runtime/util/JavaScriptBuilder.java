@@ -341,7 +341,16 @@ public class JavaScriptBuilder {
         String nameJs = toJson(guardrailName);
 
         return iife(
-                "  var content = $.content;"
+                // A tool-call turn is legally empty (output.result is []), so an output
+                // guardrail must not judge it. When toolCalls is bound (output guardrails only)
+                // and non-empty, short-circuit to a pass before evaluating content. Tool-level
+                // guardrails do not bind toolCalls, so this is a no-op for them.
+                "  var __toolCalls = $.toolCalls;"
+                        + "  if (__toolCalls && __toolCalls.length > 0) {"
+                        + "    return {passed: true, message: '', on_fail: 'pass',"
+                        + "            fixed_output: null, guardrail_name: '', should_continue: false};"
+                        + "  }"
+                        + "  var content = $.content;"
                         + "  var iteration = $.iteration;"
                         + "  var patterns = "
                         + patternsJson
@@ -382,7 +391,14 @@ public class JavaScriptBuilder {
     public static String llmGuardrailParserScript(
             String onFail, int maxRetries, String guardrailName) {
         return iife(
-                "  var raw = $.llm_result;"
+                // Skip judging tool-call turns (output.result is empty). Mirrors the regex
+                // guardrail short-circuit; toolCalls is only bound for output guardrails.
+                "  var __toolCalls = $.toolCalls;"
+                        + "  if (__toolCalls && __toolCalls.length > 0) {"
+                        + "    return {passed: true, message: '', on_fail: 'pass',"
+                        + "            fixed_output: null, guardrail_name: '', should_continue: false};"
+                        + "  }"
+                        + "  var raw = $.llm_result;"
                         + "  var iteration = $.iteration;"
                         + "  var on_fail_mode = "
                         + toJson(onFail)
@@ -453,6 +469,15 @@ public class JavaScriptBuilder {
                 "  var raw = $.worker_output;"
                         + "  var guardrailName = $.guardrail_name || 'guardrail';"
                         + "  var defaultOnFail = $.default_on_fail || 'retry';"
+                        // A tool-call turn is legally empty, so an output guardrail must treat it
+                        // as a pass. toolCalls is only bound for output guardrails; tool-level
+                        // guardrails leave it unset and fall through to normal evaluation.
+                        + "  var __toolCalls = $.toolCalls;"
+                        + "  if (__toolCalls && __toolCalls.length > 0) {"
+                        + "    return {passed: true, message: '', on_fail: null,"
+                        + "            fixed_output: null, guardrail_name: guardrailName,"
+                        + "            should_continue: false};"
+                        + "  }"
                         + "  if (raw == null) {"
                         + "    return {passed: true, message: '', on_fail: null,"
                         + "            fixed_output: null, guardrail_name: guardrailName,"
