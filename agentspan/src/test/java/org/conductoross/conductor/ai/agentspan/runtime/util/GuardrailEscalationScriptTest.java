@@ -164,4 +164,41 @@ class GuardrailEscalationScriptTest {
 
         assertThat(result.getMember("passed").asBoolean()).isTrue();
     }
+
+    // ── composition with the tool-call-turn short-circuit (Issue #1323 / PR #1352) ──
+    //
+    // compileGuardrailTasks binds both toolCalls (short-circuit, #1352) and
+    // iteration/max_retries (escalation, this file) into the same normalize INLINE.
+    // - short-circuit must win: tool-call turn = mid-tool-use, never raise
+    // - even if iteration has already crossed max_retries
+    // - matches script order: toolCalls check runs before escalate() is consulted
+
+    @Test
+    void toolCallTurnShortCircuitsPassEvenWhenIterationExceedsMaxRetries() {
+        Value result =
+                normalize(
+                        "{worker_output: {on_fail: 'retry'}, guardrail_name: 'g', "
+                                + "default_on_fail: 'retry', iteration: 5, max_retries: 1, "
+                                + "toolCalls: [{name: 'search'}]}");
+
+        assertThat(result.getMember("passed").asBoolean())
+                .as("a tool-call turn must pass regardless of retry escalation state")
+                .isTrue();
+        assertThat(result.getMember("on_fail").isNull()).isTrue();
+        assertThat(result.getMember("should_continue").asBoolean()).isFalse();
+    }
+
+    @Test
+    void emptyToolCallsArrayDoesNotShortCircuitAndEscalationStillFires() {
+        Value result =
+                normalize(
+                        "{worker_output: {on_fail: 'retry'}, guardrail_name: 'g', "
+                                + "default_on_fail: 'retry', iteration: 3, max_retries: 3, "
+                                + "toolCalls: []}");
+
+        assertThat(result.getMember("on_fail").asString())
+                .as(
+                        "an empty toolCalls array is a genuine final turn -- escalation must still fire")
+                .isEqualTo("raise");
+    }
 }
