@@ -27,6 +27,7 @@ public class FileResourceTest {
 
     private static final String FILE_ID = "abc";
     private static final String FILE_HANDLE_ID = FileIdToFileHandleIdConverter.PREFIX + FILE_ID;
+    private static final String WORKFLOW_ID = "wf-1";
 
     private FileStorageService fileStorageService;
     private FileResource fileResource;
@@ -55,9 +56,9 @@ public class FileResourceTest {
         FileUploadUrlResponse expected = new FileUploadUrlResponse();
         expected.setFileHandleId(FILE_HANDLE_ID);
         expected.setUploadUrl("https://s3/url");
-        when(fileStorageService.getUploadUrl(FILE_ID)).thenReturn(expected);
+        when(fileStorageService.getUploadUrl(WORKFLOW_ID, FILE_ID)).thenReturn(expected);
 
-        FileUploadUrlResponse result = fileResource.getUploadUrl(FILE_ID);
+        FileUploadUrlResponse result = fileResource.getUploadUrl(WORKFLOW_ID, FILE_ID);
         assertEquals("https://s3/url", result.getUploadUrl());
     }
 
@@ -65,9 +66,9 @@ public class FileResourceTest {
     public void testConfirmUpload() {
         FileUploadCompleteResponse expected = new FileUploadCompleteResponse();
         expected.setUploadStatus(FileUploadStatus.UPLOADED);
-        when(fileStorageService.confirmUpload(FILE_ID)).thenReturn(expected);
+        when(fileStorageService.confirmUpload(WORKFLOW_ID, FILE_ID)).thenReturn(expected);
 
-        FileUploadCompleteResponse result = fileResource.confirmUpload(FILE_ID);
+        FileUploadCompleteResponse result = fileResource.confirmUpload(WORKFLOW_ID, FILE_ID);
         assertEquals(FileUploadStatus.UPLOADED, result.getUploadStatus());
     }
 
@@ -75,9 +76,9 @@ public class FileResourceTest {
     public void testGetDownloadUrl() {
         FileDownloadUrlResponse expected = new FileDownloadUrlResponse();
         expected.setDownloadUrl("https://s3/download");
-        when(fileStorageService.getDownloadUrl(FILE_ID, "wf-1")).thenReturn(expected);
+        when(fileStorageService.getDownloadUrl(WORKFLOW_ID, FILE_ID)).thenReturn(expected);
 
-        FileDownloadUrlResponse result = fileResource.getDownloadUrl("wf-1", FILE_ID);
+        FileDownloadUrlResponse result = fileResource.getDownloadUrl(WORKFLOW_ID, FILE_ID);
         assertEquals("https://s3/download", result.getDownloadUrl());
     }
 
@@ -86,9 +87,9 @@ public class FileResourceTest {
         FileHandle expected = new FileHandle();
         expected.setFileHandleId(FILE_HANDLE_ID);
         expected.setFileName("test.pdf");
-        when(fileStorageService.getFileMetadata(FILE_ID)).thenReturn(expected);
+        when(fileStorageService.getFileMetadata(WORKFLOW_ID, FILE_ID)).thenReturn(expected);
 
-        FileHandle result = fileResource.getFileMetadata(FILE_ID);
+        FileHandle result = fileResource.getFileMetadata(WORKFLOW_ID, FILE_ID);
         assertEquals("test.pdf", result.getFileName());
     }
 
@@ -96,9 +97,9 @@ public class FileResourceTest {
     public void testInitiateMultipartUpload() {
         MultipartInitResponse expected = new MultipartInitResponse();
         expected.setUploadId("mp-123");
-        when(fileStorageService.initiateMultipartUpload(FILE_ID)).thenReturn(expected);
+        when(fileStorageService.initiateMultipartUpload(WORKFLOW_ID, FILE_ID)).thenReturn(expected);
 
-        MultipartInitResponse result = fileResource.initiateMultipartUpload(FILE_ID);
+        MultipartInitResponse result = fileResource.initiateMultipartUpload(WORKFLOW_ID, FILE_ID);
         assertEquals("mp-123", result.getUploadId());
     }
 
@@ -106,9 +107,11 @@ public class FileResourceTest {
     public void testGetPartUploadUrl() {
         FileUploadUrlResponse expected = new FileUploadUrlResponse();
         expected.setUploadUrl("https://s3/part/1");
-        when(fileStorageService.getPartUploadUrl(FILE_ID, "mp-123", 1)).thenReturn(expected);
+        when(fileStorageService.getPartUploadUrl(WORKFLOW_ID, FILE_ID, "mp-123", 1))
+                .thenReturn(expected);
 
-        FileUploadUrlResponse result = fileResource.getPartUploadUrl(FILE_ID, "mp-123", 1);
+        FileUploadUrlResponse result =
+                fileResource.getPartUploadUrl(WORKFLOW_ID, FILE_ID, "mp-123", 1);
         assertEquals("https://s3/part/1", result.getUploadUrl());
     }
 
@@ -119,11 +122,18 @@ public class FileResourceTest {
         FileUploadCompleteResponse expected = new FileUploadCompleteResponse();
         expected.setUploadStatus(FileUploadStatus.UPLOADED);
         when(fileStorageService.completeMultipartUpload(
-                        FILE_ID, "mp-123", List.of("etag1", "etag2")))
+                        WORKFLOW_ID, FILE_ID, "mp-123", List.of("etag1", "etag2")))
                 .thenReturn(expected);
 
         FileUploadCompleteResponse result =
-                fileResource.completeMultipartUpload(FILE_ID, "mp-123", request);
+                fileResource.completeMultipartUpload(WORKFLOW_ID, FILE_ID, "mp-123", request);
         assertEquals(FileUploadStatus.UPLOADED, result.getUploadStatus());
+    }
+
+    @Test
+    public void testAbortMultipartUpload() {
+        fileResource.abortMultipartUpload(WORKFLOW_ID, FILE_ID, "mp-123");
+
+        verify(fileStorageService).abortMultipartUpload(WORKFLOW_ID, FILE_ID, "mp-123");
     }
 }

@@ -14,6 +14,7 @@ package com.netflix.conductor.sqlite.util;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -22,6 +23,7 @@ import org.mockito.Mockito;
 import com.netflix.conductor.sqlite.config.SqliteProperties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 public class SqliteIndexQueryBuilderTest {
@@ -35,6 +37,25 @@ public class SqliteIndexQueryBuilderTest {
                         "table_name", "", "", 0, 15, new ArrayList<>(), properties);
         String generatedQuery = builder.getQuery();
         assertEquals("SELECT json_data FROM table_name LIMIT ? OFFSET ?", generatedQuery);
+    }
+
+    @Test
+    void shouldKeepAgentChildrenBelowTheirParent() throws SQLException {
+        SqliteIndexQueryBuilder builder =
+                new SqliteIndexQueryBuilder(
+                        "workflow_index",
+                        "classifier=agent",
+                        "",
+                        0,
+                        15,
+                        List.of("agentHierarchy:DESC", "startTime:DESC"),
+                        properties);
+
+        String query = builder.getQuery();
+        assertTrue(query.startsWith("WITH RECURSIVE workflow_hierarchy"));
+        assertTrue(query.contains("JOIN workflow_hierarchy parent"));
+        assertTrue(query.contains("LEFT JOIN workflow_hierarchy"));
+        assertTrue(query.contains("workflow_hierarchy.hierarchy_path ASC"));
     }
 
     @Test

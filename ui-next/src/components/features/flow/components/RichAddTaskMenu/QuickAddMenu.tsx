@@ -71,7 +71,7 @@ const OSS_QUICK_ADD_TYPES: TaskType[] = [
 /** Placeholder in core quick-add type list → opens Add Task side panel (Integrations tab). */
 const QUICK_ADD_INTEGRATIONS_PANEL = "QUICK_ADD_INTEGRATIONS_PANEL" as const;
 
-// AI/LLM task types for the Agentic Orchestration section (two rows of five).
+// AI/LLM task types for the Agentic Orchestration section (two rows of six).
 const AI_QUICK_ADD_TYPES: TaskType[] = [
   TaskType.LLM_CHAT_COMPLETE,
   TaskType.LLM_GENERATE_EMBEDDINGS,
@@ -81,6 +81,7 @@ const AI_QUICK_ADD_TYPES: TaskType[] = [
   TaskType.AGENT,
   TaskType.GET_AGENT_CARD,
   TaskType.CANCEL_AGENT,
+  TaskType.LIST_MCP_TOOLS,
   TaskType.CALL_MCP_TOOL,
   TaskType.GENERATE_IMAGE,
 ];
@@ -105,7 +106,7 @@ type TaskMenuItem = BaseTaskMenuItem & {
 
 function QuickAddGridItem({ item }: { item: TaskMenuItem }) {
   return (
-    <Grid size={12 / 5}>
+    <Grid size={12 / 6}>
       <Tooltip
         title={item.name}
         arrow
@@ -477,7 +478,7 @@ const QuickAddMenu = ({
     )?.filter((task): task is NonNullable<typeof task> => task !== undefined);
 
     return {
-      coreQuickAddTasks: coreTasks.slice(0, 15),
+      coreQuickAddTasks: coreTasks.slice(0, 18),
       agenticQuickAddTasks: aiTasks,
     };
   }, [taskOptions, openIntegrationsAddTaskPanel]);
@@ -664,7 +665,7 @@ const QuickAddMenu = ({
                 </Button>
               </Box>
 
-              {/* Core quick add: 5 columns × 3 rows = 15 cells max */}
+              {/* Core quick add: 6 columns × 3 rows = 18 cells max */}
               <Grid container spacing={1.5} sx={{ width: "100%" }}>
                 {coreQuickAddTasks.map((item) => (
                   <QuickAddGridItem

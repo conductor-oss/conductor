@@ -51,8 +51,6 @@ public class ConstraintParamUtil {
             } else if (value instanceof List) {
                 errorList.addAll(
                         extractListInputParam(e.getKey(), (List<?>) value, taskName, workflow));
-            } else {
-                e.setValue(value);
             }
         }
         return errorList;

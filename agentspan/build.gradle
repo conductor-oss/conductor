@@ -1,0 +1,44 @@
+dependencies {
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+    // Needed to compile A2A push-notification callback controller and AgentSpan activation glue;
+    // supplied by the server at runtime.
+    compileOnly 'org.springframework.boot:spring-boot-starter-web'
+    compileOnly 'org.springframework.boot:spring-boot-autoconfigure'
+
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+    implementation project(':conductor-ai')
+
+    // Exercise the adapters against a real persisted backend rather than mocked DAOs.
+    testImplementation project(':conductor-sqlite-persistence')
+
+    // AgentSpan's real event listener depends on its SSE registry at test runtime.
+    testImplementation 'org.springframework:spring-webmvc'
+
+    testImplementation 'org.graalvm.polyglot:polyglot:25.0.2'
+    testImplementation 'org.graalvm.js:js:25.0.2'
+
+}
+
+// AgentSpan spans three test JVMs: focused module tests, deterministic real-engine coverage, and
+// a mandatory live-provider suite. Merge their execution files while reporting only AgentSpan
+// production classes so the coverage number reflects deploy/start/MCP and actual model-tool turns.
+tasks.register('agentspanEndToEndCoverage', JacocoReport) {
+    description = 'Reports AgentSpan coverage from module, deterministic, and live real-E2E test runs'
+    group = 'verification'
+    dependsOn test, ':conductor-test-harness:agentspanDeterministicE2E', ':conductor-test-harness:agentspanRealE2E'
+
+    def harness = project(':conductor-test-harness')
+    executionData.from(
+            layout.buildDirectory.file('jacoco/test.exec'),
+            harness.layout.buildDirectory.file('jacoco/agentspanDeterministicE2E.exec'),
+            harness.layout.buildDirectory.file('jacoco/agentspanRealE2E.exec'))
+    additionalSourceDirs.from(sourceSets.main.allJava)
+    sourceDirectories.from(sourceSets.main.allJava)
+    classDirectories.from(sourceSets.main.output.classesDirs)
+    reports {
+        xml.required = true
+        html.required = true
+        html.outputLocation = layout.buildDirectory.dir('reports/jacoco/agentspan-e2e')
+    }
+}

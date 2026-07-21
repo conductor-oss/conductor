@@ -376,52 +376,153 @@ workflowClient.restartWorkflow(workflowId, false);
 
 ## File handling
 
-For workflows that move binary file payloads, the SDK exposes `FileHandler` — a worker-facing reference to a file in the configured backend. Pass it as a worker input/output and the runtime handles upload, download, and the metadata roundtrip transparently. See [File Storage](../advanced/file-storage.md) for the operator-side configuration and [File API](../api/files.md) for the underlying REST surface.
+Binary workflow values are opaque `conductor://file/<id>` strings. Workers inject `org.conductoross.conductor.client.FileClient`, receive handle strings as task inputs, and publish handle strings as outputs. Upload and download are explicit; the task runner does not scan worker objects for files.
 
-The relevant types in `org.conductoross.conductor.sdk.file`:
-
-| Type | Use |
-|---|---|
-| `FileHandler` | Worker parameter type for files. Static `fromLocalFile(Path)` / `fromLocalFile(Path, contentType)` create a handle for a local file the worker is producing. |
-| `FileUploader` | Explicit upload API; obtained from `task.getFileUploader()` inside a `Worker` impl, or from `WorkflowFileClient` outside one. |
-| `FileUploadOptions` | Optional metadata: `contentType`, `fileName`, `taskId`, `multipart`. |
-
-**Worker that consumes a file:**
+Every operation requires the workflow ID:
 
 ```java
-public class TranscodeInput {
-    public FileHandler primary_video;
-    public String resolution;
-}
+public String upload(String workflowId, Path source);
 
-@WorkerTask("transcode_video")
-public @OutputParam("output_file") FileHandler transcode(TranscodeInput input) throws IOException {
-    Path transcoded = Files.createTempFile("transcoded-", ".mp4");
-    try (InputStream in = input.primary_video.getInputStream()) {
-        Files.write(transcoded, in.readAllBytes());
+public String upload(
+        String workflowId,
+        Path source,
+        FileUploadOptions options);
+
+public String upload(
+        String workflowId,
+        InputStream source,
+        FileUploadOptions options);
+
+public Path download(
+        String workflowId,
+        String fileHandleId,
+        Path destination);
+
+public FileMetadata getMetadata(
+        String workflowId,
+        String fileHandleId);
+```
+
+`FileUploadOptions` supports `fileName`, `contentType`, and optional producing `taskId`. Multipart is deliberately absent from the options: `FileClient` selects it automatically from the source size, configured threshold, and provider capability.
+
+### Upload a path with inferred filename
+
+```java
+Path report = Path.of("/work/monthly-report.pdf");
+String handle = fileClient.upload(workflowId, report);
+```
+
+The source must be a readable regular file. Its final path segment becomes the filename.
+
+### Upload a path with metadata
+
+```java
+String handle = fileClient.upload(
+        task.getWorkflowInstanceId(),
+        report,
+        new FileUploadOptions()
+                .setFileName("customer-report.pdf")
+                .setContentType("application/pdf")
+                .setTaskId(task.getTaskId()));
+```
+
+### Upload a stream
+
+```java
+FileUploadOptions options = new FileUploadOptions()
+        .setFileName("events.ndjson")
+        .setContentType("application/x-ndjson")
+        .setTaskId(task.getTaskId());
+
+try (InputStream source = eventStore.openExport()) {
+    String handle = fileClient.upload(task.getWorkflowInstanceId(), source, options);
+    // FileClient does not close source; this try-with-resources block owns it.
+}
+```
+
+A stream upload requires a safe filename. `FileClient` buffers the stream into a repeatable temporary path before creating the server record, removes the temporary file afterward, and never closes the caller-owned stream.
+
+### Read metadata
+
+```java
+FileMetadata metadata = fileClient.getMetadata(workflowId, handle);
+
+System.out.printf(
+        "%s: %s, %d bytes, status=%s%n",
+        metadata.getFileName(),
+        metadata.getContentType(),
+        metadata.getFileSize(),
+        metadata.getUploadStatus());
+```
+
+### Download to a path
+
+```java
+Path destination = Path.of("/work/input.pdf");
+Path downloaded = fileClient.download(workflowId, handle, destination);
+```
+
+The destination may be new or existing. The client downloads to a unique sibling temporary file and atomically replaces the destination only after the transfer succeeds. A failed download removes the temporary file and leaves an existing destination unchanged.
+
+### Pass a file between workers
+
+```java
+public final class RenderWorker implements Worker {
+    private final FileClient fileClient;
+
+    public RenderWorker(FileClient fileClient) {
+        this.fileClient = fileClient;
     }
-    return FileHandler.fromLocalFile(transcoded, "video/mp4");
+
+    @Override
+    public TaskResult execute(Task task) {
+        TaskResult result = new TaskResult(task);
+        Path source = null;
+        Path rendered = null;
+        try {
+            String workflowId = task.getWorkflowInstanceId();
+            String sourceHandle = (String) task.getInputData().get("source");
+            source = Files.createTempFile("source-", ".bin");
+            rendered = Files.createTempFile("rendered-", ".pdf");
+            fileClient.download(workflowId, sourceHandle, source);
+            render(source, rendered);
+
+            String renderedHandle = fileClient.upload(
+                    workflowId,
+                    rendered,
+                    new FileUploadOptions()
+                            .setContentType("application/pdf")
+                            .setTaskId(task.getTaskId()));
+
+            result.setStatus(TaskResult.Status.COMPLETED);
+            result.addOutputData("rendered", renderedHandle);
+        } catch (Exception e) {
+            result.setStatus(TaskResult.Status.FAILED);
+            result.setReasonForIncompletion(e.getMessage());
+        } finally {
+            deleteQuietly(source);
+            deleteQuietly(rendered);
+        }
+        return result;
+    }
 }
 ```
 
-`primary_video` is auto-resolved from the task input — the runtime downloads the file lazily on first read of `getInputStream()`. The returned `FileHandler` is auto-uploaded by the task runner before the task output is published, and the resulting `fileHandleId` is substituted into the output map so downstream tasks can consume it.
+The workflow maps `${render.output.rendered}` into the next task as a plain string. A parent or sub-workflow in the same workflow family can read metadata and download the handle. Only the exact owning workflow can refresh or complete its upload.
 
-**Explicit upload inside a `Worker` implementation:**
+### Automatic multipart and retries
 
-```java
-@Override
-public TaskResult execute(Task task) {
-    Path output = renderReport(task);
-    FileHandler handle = task.getFileUploader().upload(
-            output,
-            new FileUploadOptions().setContentType("application/pdf").setMultipart(true));
-    TaskResult result = new TaskResult(task);
-    result.getOutputData().put("report", handle);
-    return result;
-}
+Spring auto-configuration creates `FileClient` and reads these settings:
+
+```properties
+conductor.file-client.retry-count=3
+conductor.file-client.multipart-threshold=104857600
+conductor.file-client.multipart-part-size=10485760
 ```
 
-Use this form when you want to control upload timing (e.g., upload before the task's main work completes, or upload an `InputStream` that's not backed by a file). When `multipart=true` the SDK uses the multipart upload flow on backends that support it, falling back to single-shot otherwise.
+Files larger than the threshold use multipart for S3 and Azure Blob. GCS, local storage, and generic HTTP(S) signed URLs stay single-request. Before each retry the client obtains a fresh signed URL; it retries only transient I/O failures, throttling, expired signatures, and server errors, and stops when the thread is interrupted.
+
+See the runnable [Media Transcoder example](https://github.com/conductor-oss/java-sdk/tree/main/examples/file-storage/media-transcoder), [File Storage](../advanced/file-storage.md) for server configuration, and [File API](../api/files.md) for the REST contract.
 
 ---
 
