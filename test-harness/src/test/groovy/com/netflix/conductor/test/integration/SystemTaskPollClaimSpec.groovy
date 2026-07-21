@@ -21,16 +21,18 @@ import org.springframework.beans.factory.annotation.Qualifier
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.run.Workflow
+import com.netflix.conductor.core.config.ConductorProperties
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry
 import com.netflix.conductor.core.execution.tasks.SystemTaskWorker
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask
+import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
 import com.netflix.conductor.test.utils.ControllableWorker
 
 /**
- * REGRESSION FOR ISSUES #1321 / #1322 driven through the batch-poll proposal: SystemTaskWorker
- * polls via {@code ExecutionService.poll} (which persists IN_PROGRESS at poll time, like a remote
- * worker) and {@code AnnotatedWorkflowSystemTask.execute} skips IN_PROGRESS tasks.
+ * REGRESSION FOR ISSUES #1321 / #1322 driven through the poll-claim path: SystemTaskWorker polls
+ * via {@code ExecutionService.pollQueue}, which persists IN_PROGRESS at poll time like a remote
+ * worker, before dispatching the annotated task.
  *
  * <p>The behavioral contract asserted here is the fix's acceptance criteria and is
  * implementation-independent: a blocking annotated system task must (1) be invoked exactly once,
@@ -41,8 +43,13 @@ class SystemTaskPollClaimSpec extends AbstractSpecification {
     @Autowired
     ControllableWorker controllableWorker
 
-    @Autowired
     SystemTaskWorker systemTaskWorker
+
+    @Autowired
+    QueueDAO queueDAO
+
+    @Autowired
+    ConductorProperties conductorProperties
 
     // The same collection SystemTaskWorkerCoordinator polls in production; the annotation
     // scanner adds the AnnotatedWorkflowSystemTask adapters to it.
@@ -56,6 +63,11 @@ class SystemTaskPollClaimSpec extends AbstractSpecification {
 
     def setup() {
         controllableWorker.reset()
+        // The test profile disables the production polling coordinator, so construct the real
+        // worker explicitly and drive one deterministic poll without starting a background loop.
+        systemTaskWorker = new SystemTaskWorker(
+                queueDAO, asyncSystemTaskExecutor, conductorProperties, workflowExecutionService)
+        systemTaskWorker.start()
         registerTaskDef('controllable_task', RESPONSE_TIMEOUT_SECONDS)
         workflowTestUtil.registerWorkflows('controllable_async_system_task_workflow.json')
     }
@@ -92,7 +104,6 @@ class SystemTaskPollClaimSpec extends AbstractSpecification {
         startedWf.tasks[0].status == Task.Status.SCHEDULED
 
         when: "the production system-task worker claims and dispatches the queue message"
-        systemTaskWorker.start()
         systemTaskWorker.pollAndExecute(adapter, QUEUE)
 
         then: "the task is claimed before the blocking provider call begins"
@@ -110,5 +121,6 @@ class SystemTaskPollClaimSpec extends AbstractSpecification {
 
         cleanup:
         controllableWorker.release?.countDown()
+        systemTaskWorker?.stop()
     }
 }
