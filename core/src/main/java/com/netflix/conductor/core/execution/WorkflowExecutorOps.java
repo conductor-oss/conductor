@@ -400,6 +400,16 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                         executionDAOFacade.updateTask(task);
                         addTaskToQueue(task);
                     }
+                } else if ((task.getStatus() == FAILED || task.getStatus() == TIMED_OUT)
+                        && TaskType.TASK_TYPE_JOIN.equals(task.getTaskType())) {
+                    // A FAILED or TIMED_OUT JOIN must be reset to IN_PROGRESS during the retry
+                    // walk-up. Without this, any decide() that runs before
+                    // adjustStateIfSubWorkflowChanged consumes a subworkflowChanged flag will find
+                    // a FAILED built-in task and throw TerminateWorkflowException, collapsing the
+                    // parent workflow that should be resuming.
+                    task.setStatus(IN_PROGRESS);
+                    addTaskToQueue(task);
+                    executionDAOFacade.updateTask(task);
                 }
             }
 
