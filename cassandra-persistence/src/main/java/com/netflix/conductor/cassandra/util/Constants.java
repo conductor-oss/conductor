@@ -19,6 +19,7 @@ public interface Constants {
     String TABLE_WORKFLOWS = "workflows";
     String TABLE_TASK_LOOKUP = "task_lookup";
     String TABLE_TASK_DEF_LIMIT = "task_def_limit";
+    String TABLE_TASK_RATE_LIMIT = "task_rate_limit";
     String TABLE_WORKFLOW_DEFS = "workflow_definitions";
     String TABLE_WORKFLOW_DEFS_INDEX = "workflow_defs_index";
     String TABLE_TASK_DEFS = "task_definitions";
@@ -46,6 +47,7 @@ public interface Constants {
     String EVENT_HANDLER_KEY = "event_handler";
     String MESSAGE_ID_KEY = "message_id";
     String EVENT_EXECUTION_ID_KEY = "event_execution_id";
+    String RATE_LIMIT_BUCKET_ID_KEY = "rate_limit_bucket_id";
 
     String ENTITY_TYPE_WORKFLOW = "workflow";
     String ENTITY_TYPE_TASK = "task";

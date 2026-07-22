@@ -37,12 +37,14 @@ import static com.netflix.conductor.cassandra.util.Constants.EVENT_HANDLER_NAME_
 import static com.netflix.conductor.cassandra.util.Constants.HANDLERS_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.MESSAGE_ID_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.PAYLOAD_KEY;
+import static com.netflix.conductor.cassandra.util.Constants.RATE_LIMIT_BUCKET_ID_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.SHARD_ID_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_EVENT_EXECUTIONS;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_EVENT_HANDLERS;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_DEFS;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_DEF_LIMIT;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_LOOKUP;
+import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_RATE_LIMIT;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_WORKFLOWS;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_WORKFLOW_DEFS;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_WORKFLOW_DEFS_INDEX;
@@ -75,6 +77,9 @@ import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_VERSION_KE
  *
  * <p>CREATE TABLE IF NOT EXISTS conductor.task_def_limit( task_def_name text, task_id uuid,
  * workflow_id uuid, PRIMARY KEY ((task_def_name), task_id_key) );
+ *
+ * <p>CREATE TABLE IF NOT EXISTS conductor.task_rate_limit( task_def_name text, rate_limit_bucket_id
+ * timeuuid, PRIMARY KEY ((task_def_name), rate_limit_bucket_id) );
  *
  * <p>CREATE TABLE IF NOT EXISTS conductor.workflow_definitions( workflow_def_name text, version
  * int, workflow_definition text, PRIMARY KEY ((workflow_def_name), version) );
@@ -127,6 +132,7 @@ public abstract class CassandraBaseDAO {
                 session.execute(getCreateWorkflowsTableStatement());
                 session.execute(getCreateTaskLookupTableStatement());
                 session.execute(getCreateTaskDefLimitTableStatement());
+                session.execute(getCreateTaskRateLimitTableStatement());
                 session.execute(getCreateWorkflowDefsTableStatement());
                 session.execute(getCreateWorkflowDefsIndexTableStatement());
                 session.execute(getCreateTaskDefsTableStatement());
@@ -183,6 +189,14 @@ public abstract class CassandraBaseDAO {
                 .addPartitionKey(TASK_DEF_NAME_KEY, DataType.text())
                 .addClusteringColumn(TASK_ID_KEY, DataType.uuid())
                 .addColumn(WORKFLOW_ID_KEY, DataType.uuid())
+                .getQueryString();
+    }
+
+    private String getCreateTaskRateLimitTableStatement() {
+        return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_TASK_RATE_LIMIT)
+                .ifNotExists()
+                .addPartitionKey(TASK_DEF_NAME_KEY, DataType.text())
+                .addClusteringColumn(RATE_LIMIT_BUCKET_ID_KEY, DataType.timeuuid())
                 .getQueryString();
     }
 
