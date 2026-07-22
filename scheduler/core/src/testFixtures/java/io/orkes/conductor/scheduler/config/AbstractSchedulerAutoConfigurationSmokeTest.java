@@ -45,7 +45,7 @@ public abstract class AbstractSchedulerAutoConfigurationSmokeTest {
     protected abstract Class<? extends SchedulerDAO> expectedDaoClass();
 
     @Configuration
-    static class SharedTestBeans {
+    public static class SharedTestBeans {
         @Bean
         public ObjectMapper objectMapper() {
             return new ObjectMapperProvider().getObjectMapper();

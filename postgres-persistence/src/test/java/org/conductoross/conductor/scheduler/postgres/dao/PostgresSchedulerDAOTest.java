@@ -30,10 +30,9 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import com.netflix.conductor.common.config.ObjectMapperProvider;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.orkes.conductor.dao.scheduler.SchedulerDAO;
+import io.orkes.conductor.scheduler.config.AbstractSchedulerAutoConfigurationSmokeTest;
 import io.orkes.conductor.scheduler.dao.AbstractSchedulerDAOTest;
 
 /**
@@ -46,6 +45,7 @@ import io.orkes.conductor.scheduler.dao.AbstractSchedulerDAOTest;
         classes = {
             DataSourceAutoConfiguration.class,
             FlywayAutoConfiguration.class,
+            AbstractSchedulerAutoConfigurationSmokeTest.SharedTestBeans.class,
             PostgresSchedulerDAOTest.PostgresTestConfiguration.class
         })
 @RunWith(SpringRunner.class)
@@ -62,11 +62,6 @@ public class PostgresSchedulerDAOTest extends AbstractSchedulerDAOTest {
 
     @TestConfiguration
     static class PostgresTestConfiguration {
-
-        @Bean
-        public ObjectMapper objectMapper() {
-            return new ObjectMapperProvider().getObjectMapper();
-        }
 
         @Bean(initMethod = "migrate")
         public Flyway flyway(DataSource dataSource) {

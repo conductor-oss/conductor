@@ -28,10 +28,9 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import com.netflix.conductor.common.config.ObjectMapperProvider;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.orkes.conductor.dao.archive.SchedulerArchivalDAO;
+import io.orkes.conductor.scheduler.config.AbstractSchedulerAutoConfigurationSmokeTest;
 import io.orkes.conductor.scheduler.dao.AbstractSchedulerArchivalDAOTest;
 
 /**
@@ -41,6 +40,7 @@ import io.orkes.conductor.scheduler.dao.AbstractSchedulerArchivalDAOTest;
 @ContextConfiguration(
         classes = {
             DataSourceAutoConfiguration.class,
+            AbstractSchedulerAutoConfigurationSmokeTest.SharedTestBeans.class,
             SqliteSchedulerArchivalDAOTest.SqliteTestConfiguration.class
         })
 @RunWith(SpringRunner.class)
@@ -54,11 +54,6 @@ public class SqliteSchedulerArchivalDAOTest extends AbstractSchedulerArchivalDAO
 
     @TestConfiguration
     static class SqliteTestConfiguration {
-
-        @Bean
-        public ObjectMapper objectMapper() {
-            return new ObjectMapperProvider().getObjectMapper();
-        }
 
         @Bean(initMethod = "migrate")
         public Flyway flyway(DataSource dataSource) {
