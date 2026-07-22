@@ -70,13 +70,10 @@ dependencies {
     implementation project(':conductor-json-jq-task')
     implementation project(':conductor-kafka')
 
-    //Scheduler
+    //Scheduler (mysql/postgres/sqlite scheduler DAOs live in their persistence modules)
     implementation project(':conductor-scheduler-core')
-    implementation project(':conductor-scheduler-postgres-persistence')
-    implementation project(':conductor-scheduler-mysql-persistence')
     implementation project(':conductor-scheduler-cassandra-persistence')
     implementation project(':conductor-scheduler-redis-persistence')
-    implementation project(':conductor-scheduler-sqlite-persistence')
 
     //Metrics
     implementation "io.micrometer:micrometer-registry-cloudwatch2:${revMicrometer}"

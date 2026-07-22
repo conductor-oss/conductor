@@ -19,6 +19,8 @@ import java.util.Optional;
 
 import javax.sql.DataSource;
 
+import org.conductoross.conductor.scheduler.sqlite.dao.SqliteSchedulerArchivalDAO;
+import org.conductoross.conductor.scheduler.sqlite.dao.SqliteSchedulerDAO;
 import org.conductoross.conductor.sqlite.dao.SqliteFileMetadataDAO;
 import org.conductoross.conductor.sqlite.dao.SqliteSkillMetadataDAO;
 import org.conductoross.conductor.sqlite.dao.SqliteSkillPackageDAO;
@@ -47,6 +49,8 @@ import com.netflix.conductor.sqlite.dao.metadata.SqliteTaskMetadataDAO;
 import com.netflix.conductor.sqlite.dao.metadata.SqliteWorkflowMetadataDAO;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.orkes.conductor.dao.archive.SchedulerArchivalDAO;
+import io.orkes.conductor.dao.scheduler.SchedulerDAO;
 import jakarta.annotation.PostConstruct;
 
 @Configuration(proxyBeanMethods = false)
@@ -225,6 +229,20 @@ public class SqliteConfiguration {
             @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper) {
         return new SqliteSkillPackageDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn({"flywayForPrimaryDb"})
+    @ConditionalOnProperty(name = "conductor.scheduler.enabled", havingValue = "true")
+    public SchedulerDAO schedulerDAO(ObjectMapper objectMapper) {
+        return new SqliteSchedulerDAO(dataSource, objectMapper);
+    }
+
+    @Bean
+    @DependsOn({"flywayForPrimaryDb"})
+    @ConditionalOnProperty(name = "conductor.scheduler.enabled", havingValue = "true")
+    public SchedulerArchivalDAO schedulerArchivalDAO(ObjectMapper objectMapper) {
+        return new SqliteSchedulerArchivalDAO(dataSource, objectMapper);
     }
 
     public static class CustomRetryPolicy extends SimpleRetryPolicy {

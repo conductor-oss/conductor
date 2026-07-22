@@ -73,6 +73,8 @@ public abstract class AbstractSchedulerDAOTest {
     @Before
     public final void setUp() throws Exception {
         try (Connection conn = dataSource().getConnection()) {
+            // module test datasources may set hikari auto-commit=false — deletes must commit
+            conn.setAutoCommit(true);
             conn.prepareStatement("DELETE FROM scheduler_execution").executeUpdate();
             conn.prepareStatement("DELETE FROM scheduler").executeUpdate();
             conn.prepareStatement("DELETE FROM workflow_scheduled_executions").executeUpdate();

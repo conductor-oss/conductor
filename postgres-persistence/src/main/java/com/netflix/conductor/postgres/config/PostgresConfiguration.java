@@ -22,6 +22,8 @@ import javax.sql.DataSource;
 import org.conductoross.conductor.postgres.dao.PostgresFileMetadataDAO;
 import org.conductoross.conductor.postgres.dao.PostgresSkillMetadataDAO;
 import org.conductoross.conductor.postgres.dao.PostgresSkillPackageDAO;
+import org.conductoross.conductor.scheduler.postgres.dao.PostgresSchedulerArchivalDAO;
+import org.conductoross.conductor.scheduler.postgres.dao.PostgresSchedulerDAO;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -37,6 +39,8 @@ import org.springframework.retry.support.RetryTemplate;
 import com.netflix.conductor.postgres.dao.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.orkes.conductor.dao.archive.SchedulerArchivalDAO;
+import io.orkes.conductor.dao.scheduler.SchedulerDAO;
 import jakarta.annotation.*;
 
 @Configuration(proxyBeanMethods = false)
@@ -164,6 +168,24 @@ public class PostgresConfiguration {
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper) {
         return new PostgresSkillPackageDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn({"flywayForPrimaryDb"})
+    @ConditionalOnProperty(name = "conductor.scheduler.enabled", havingValue = "true")
+    public SchedulerDAO schedulerDAO(
+            @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        return new PostgresSchedulerDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn({"flywayForPrimaryDb"})
+    @ConditionalOnProperty(name = "conductor.scheduler.enabled", havingValue = "true")
+    public SchedulerArchivalDAO schedulerArchivalDAO(
+            @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        return new PostgresSchedulerArchivalDAO(retryTemplate, objectMapper, dataSource);
     }
 
     @Bean

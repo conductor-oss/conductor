@@ -19,6 +19,8 @@ import javax.sql.DataSource;
 
 import org.conductoross.conductor.mysql.dao.MySQLSkillMetadataDAO;
 import org.conductoross.conductor.mysql.dao.MySQLSkillPackageDAO;
+import org.conductoross.conductor.scheduler.mysql.dao.MySQLSchedulerArchivalDAO;
+import org.conductoross.conductor.scheduler.mysql.dao.MySQLSchedulerDAO;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
@@ -38,6 +40,8 @@ import com.netflix.conductor.mysql.dao.MySQLMetadataDAO;
 import com.netflix.conductor.mysql.dao.MySQLQueueDAO;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.orkes.conductor.dao.archive.SchedulerArchivalDAO;
+import io.orkes.conductor.dao.scheduler.SchedulerDAO;
 
 import static com.mysql.cj.exceptions.MysqlErrorNumbers.ER_LOCK_DEADLOCK;
 
@@ -97,6 +101,26 @@ public class MySQLConfiguration {
             ObjectMapper objectMapper,
             DataSource dataSource) {
         return new MySQLSkillPackageDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn({"flyway", "flywayInitializer"})
+    @ConditionalOnProperty(name = "conductor.scheduler.enabled", havingValue = "true")
+    public SchedulerDAO schedulerDAO(
+            @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper,
+            DataSource dataSource) {
+        return new MySQLSchedulerDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn({"flyway", "flywayInitializer"})
+    @ConditionalOnProperty(name = "conductor.scheduler.enabled", havingValue = "true")
+    public SchedulerArchivalDAO schedulerArchivalDAO(
+            @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper,
+            DataSource dataSource) {
+        return new MySQLSchedulerArchivalDAO(retryTemplate, objectMapper, dataSource);
     }
 
     @Bean
