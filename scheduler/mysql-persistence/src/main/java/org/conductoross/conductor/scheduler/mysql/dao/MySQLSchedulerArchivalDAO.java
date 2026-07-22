@@ -37,8 +37,8 @@ import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
  *
  * <p>Extends {@link MySQLBaseDAO} for connection/transaction management. Archival execution records
  * are stored in the {@code workflow_scheduled_executions} table with individual columns for
- * efficient querying. Uses MySQL-compatible SQL syntax. Managed by Flyway ({@code
- * db/migration_scheduler_mysql}).
+ * efficient querying. Uses MySQL-compatible SQL syntax. Managed by the core MySQL Flyway chain
+ * ({@code db/migration}).
  */
 public class MySQLSchedulerArchivalDAO extends MySQLBaseDAO implements SchedulerArchivalDAO {
 

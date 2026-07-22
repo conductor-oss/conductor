@@ -67,14 +67,10 @@ public class MySQLSchedulerDAOTest extends AbstractSchedulerDAOTest {
         }
 
         @Bean(initMethod = "migrate")
-        public Flyway flywayForScheduler(DataSource dataSource) {
+        public Flyway flyway(DataSource dataSource) {
             return Flyway.configure()
-                    .locations("classpath:db/migration_scheduler_mysql")
+                    .locations("classpath:db/migration")
                     .dataSource(dataSource)
-                    .table("flyway_schema_history_scheduler")
-                    .outOfOrder(true)
-                    .baselineOnMigrate(true)
-                    .baselineVersion("0")
                     .load();
         }
 
@@ -84,7 +80,7 @@ public class MySQLSchedulerDAOTest extends AbstractSchedulerDAOTest {
         }
 
         @Bean
-        @DependsOn("flywayForScheduler")
+        @DependsOn("flyway")
         public SchedulerDAO schedulerDAO(
                 RetryTemplate retryTemplate, DataSource dataSource, ObjectMapper objectMapper) {
             return new MySQLSchedulerDAO(retryTemplate, objectMapper, dataSource);

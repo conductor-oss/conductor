@@ -16,7 +16,6 @@ import javax.sql.DataSource;
 
 import org.conductoross.conductor.scheduler.mysql.dao.MySQLSchedulerArchivalDAO;
 import org.conductoross.conductor.scheduler.mysql.dao.MySQLSchedulerDAO;
-import org.flywaydb.core.Flyway;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
@@ -31,36 +30,23 @@ import io.orkes.conductor.dao.scheduler.SchedulerDAO;
  * Spring auto-configuration that registers MySQL-backed {@link SchedulerDAO} and {@link
  * SchedulerArchivalDAO}.
  *
- * <p>Active when {@code conductor.db.type=mysql} AND {@code conductor.scheduler.enabled=true}. Runs
- * Flyway migrations for the scheduler tables using a dedicated history table so they do not
- * conflict with the main Conductor migration history.
+ * <p>Active when {@code conductor.db.type=mysql} AND {@code conductor.scheduler.enabled=true}.
+ * Scheduler tables are created by the core MySQL Flyway chain ({@code db/migration}, V11/V12).
  */
 @AutoConfiguration
 @ConditionalOnExpression(
         "'${conductor.db.type:}' == 'mysql' && '${conductor.scheduler.enabled:false}' == 'true'")
 public class MySQLSchedulerConfiguration {
 
-    @Bean(initMethod = "migrate")
-    public Flyway flywayForScheduler(DataSource dataSource) {
-        return Flyway.configure()
-                .locations("classpath:db/migration_scheduler_mysql")
-                .dataSource(dataSource)
-                .table("flyway_schema_history_scheduler")
-                .outOfOrder(true)
-                .baselineOnMigrate(true)
-                .baselineVersion("0")
-                .load();
-    }
-
     @Bean
-    @DependsOn("flywayForScheduler")
+    @DependsOn({"flyway", "flywayInitializer"})
     public SchedulerDAO schedulerDAO(
             RetryTemplate retryTemplate, DataSource dataSource, ObjectMapper objectMapper) {
         return new MySQLSchedulerDAO(retryTemplate, objectMapper, dataSource);
     }
 
     @Bean
-    @DependsOn("flywayForScheduler")
+    @DependsOn({"flyway", "flywayInitializer"})
     public SchedulerArchivalDAO schedulerArchivalDAO(
             RetryTemplate retryTemplate, DataSource dataSource, ObjectMapper objectMapper) {
         return new MySQLSchedulerArchivalDAO(retryTemplate, objectMapper, dataSource);

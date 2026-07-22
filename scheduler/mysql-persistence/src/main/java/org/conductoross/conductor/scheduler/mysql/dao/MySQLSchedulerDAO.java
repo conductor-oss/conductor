@@ -41,7 +41,7 @@ import io.orkes.conductor.scheduler.model.WorkflowScheduleModel;
  * CONFLICT}). Schedules and execution records are stored as JSON blobs in {@code scheduler} and
  * {@code scheduler_execution} tables respectively.
  *
- * <p>Managed by Flyway ({@code db/migration_scheduler_mysql}).
+ * <p>Managed by the core MySQL Flyway chain ({@code db/migration}).
  */
 public class MySQLSchedulerDAO extends MySQLBaseDAO implements SchedulerDAO {
 

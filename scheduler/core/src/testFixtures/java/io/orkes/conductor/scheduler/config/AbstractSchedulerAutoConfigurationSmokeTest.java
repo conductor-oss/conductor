@@ -56,6 +56,22 @@ public abstract class AbstractSchedulerAutoConfigurationSmokeTest {
         public RetryTemplate postgresRetryTemplate() {
             return new RetryTemplate();
         }
+
+        // stub core Flyway bean names — scheduler DAO @DependsOn needs them present
+        @Bean
+        public Object flyway() {
+            return new Object();
+        }
+
+        @Bean
+        public Object flywayInitializer() {
+            return new Object();
+        }
+
+        @Bean
+        public Object flywayForPrimaryDb() {
+            return new Object();
+        }
     }
 
     private ApplicationContextRunner baseRunner() {
