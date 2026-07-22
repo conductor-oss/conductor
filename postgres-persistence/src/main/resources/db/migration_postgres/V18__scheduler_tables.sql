@@ -1,6 +1,8 @@
 -- Scheduler tables for Conductor OSS.
 -- Schema mirrors Orkes Conductor (table names, column names, json_data pattern).
 -- Multi-tenancy (org_id) is an Orkes enterprise feature and is omitted here.
+-- Must stay idempotent (IF NOT EXISTS): existing deployments may already
+-- have these tables.
 
 CREATE TABLE IF NOT EXISTS scheduler (
     scheduler_name VARCHAR(255) NOT NULL,

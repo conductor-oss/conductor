@@ -35,7 +35,7 @@ import io.orkes.conductor.scheduler.model.WorkflowScheduleModel;
  * scheduler_execution} table additionally carries {@code schedule_name} and {@code state} columns
  * to support efficient queries (OSS has no queue infrastructure to offload this work).
  *
- * <p>Managed by Flyway ({@code db/migration_scheduler}).
+ * <p>Managed by the core Postgres Flyway chain ({@code db/migration_postgres}).
  */
 public class PostgresSchedulerDAO extends PostgresBaseDAO implements SchedulerDAO {
 

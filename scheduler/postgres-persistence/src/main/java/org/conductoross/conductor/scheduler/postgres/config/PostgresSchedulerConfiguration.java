@@ -16,7 +16,6 @@ import javax.sql.DataSource;
 
 import org.conductoross.conductor.scheduler.postgres.dao.PostgresSchedulerArchivalDAO;
 import org.conductoross.conductor.scheduler.postgres.dao.PostgresSchedulerDAO;
-import org.flywaydb.core.Flyway;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
@@ -33,28 +32,16 @@ import io.orkes.conductor.dao.scheduler.SchedulerDAO;
  * SchedulerArchivalDAO}.
  *
  * <p>Active when {@code conductor.db.type=postgres} AND {@code conductor.scheduler.enabled=true}.
- * Runs Flyway migrations for the scheduler tables in a dedicated history table so they do not
- * conflict with the main Conductor migration history.
+ * Scheduler tables are created by the core Postgres Flyway chain ({@code db/migration_postgres},
+ * V18/V19).
  */
 @AutoConfiguration
 @ConditionalOnExpression(
         "'${conductor.db.type:}' == 'postgres' && '${conductor.scheduler.enabled:false}' == 'true'")
 public class PostgresSchedulerConfiguration {
 
-    @Bean(initMethod = "migrate")
-    public Flyway flywayForScheduler(DataSource dataSource) {
-        return Flyway.configure()
-                .locations("classpath:db/migration_scheduler")
-                .dataSource(dataSource)
-                .table("flyway_schema_history_scheduler")
-                .outOfOrder(true)
-                .baselineOnMigrate(true)
-                .baselineVersion("0")
-                .load();
-    }
-
     @Bean
-    @DependsOn("flywayForScheduler")
+    @DependsOn("flywayForPrimaryDb")
     public SchedulerDAO schedulerDAO(
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
             DataSource dataSource,
@@ -63,7 +50,7 @@ public class PostgresSchedulerConfiguration {
     }
 
     @Bean
-    @DependsOn("flywayForScheduler")
+    @DependsOn("flywayForPrimaryDb")
     public SchedulerArchivalDAO schedulerArchivalDAO(
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
             DataSource dataSource,

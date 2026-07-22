@@ -11,3 +11,6 @@ CREATE TABLE IF NOT EXISTS scheduler_next_run (
     epoch_millis BIGINT       NOT NULL,
     PRIMARY KEY (key)
 );
+
+-- retired scheduler-specific Flyway history table; no longer read
+DROP TABLE IF EXISTS flyway_schema_history_scheduler;

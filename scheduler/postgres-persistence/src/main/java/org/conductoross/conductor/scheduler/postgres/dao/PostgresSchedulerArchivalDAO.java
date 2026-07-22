@@ -36,7 +36,7 @@ import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
  *
  * <p>Extends {@link PostgresBaseDAO} for connection/transaction management. Archival execution
  * records are stored in the {@code workflow_scheduled_executions} table with individual columns for
- * efficient querying. Managed by Flyway ({@code db/migration_scheduler}).
+ * efficient querying. Managed by the core Postgres Flyway chain ({@code db/migration_postgres}).
  */
 public class PostgresSchedulerArchivalDAO extends PostgresBaseDAO implements SchedulerArchivalDAO {
 

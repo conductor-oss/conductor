@@ -13,6 +13,7 @@
 package org.conductoross.conductor.scheduler.postgres.dao;
 
 import java.sql.Connection;
+import java.util.Map;
 
 import javax.sql.DataSource;
 
@@ -68,14 +69,12 @@ public class PostgresSchedulerArchivalDAOTest extends AbstractSchedulerArchivalD
         }
 
         @Bean(initMethod = "migrate")
-        public Flyway flywayForScheduler(DataSource dataSource) {
+        public Flyway flyway(DataSource dataSource) {
             return Flyway.configure()
-                    .locations("classpath:db/migration_scheduler")
+                    .locations("classpath:db/migration_postgres")
+                    // transactional lock off — V9 uses CONCURRENTLY (mirrors PostgresConfiguration)
+                    .configuration(Map.of("flyway.postgresql.transactional.lock", "false"))
                     .dataSource(dataSource)
-                    .table("flyway_schema_history_scheduler")
-                    .outOfOrder(true)
-                    .baselineOnMigrate(true)
-                    .baselineVersion("0")
                     .load();
         }
 
@@ -85,7 +84,7 @@ public class PostgresSchedulerArchivalDAOTest extends AbstractSchedulerArchivalD
         }
 
         @Bean
-        @DependsOn("flywayForScheduler")
+        @DependsOn("flyway")
         public SchedulerArchivalDAO schedulerArchivalDAO(
                 RetryTemplate retryTemplate, DataSource dataSource, ObjectMapper objectMapper) {
             return new PostgresSchedulerArchivalDAO(retryTemplate, objectMapper, dataSource);
