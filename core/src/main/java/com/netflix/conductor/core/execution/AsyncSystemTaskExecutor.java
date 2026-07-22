@@ -258,26 +258,25 @@ public class AsyncSystemTaskExecutor {
             Monitors.error(AsyncSystemTaskExecutor.class.getSimpleName(), "executeSystemTask");
             LOGGER.error("Error executing system task - {}, with id: {}", systemTask, taskId, e);
         } finally {
-            if (shouldProcessTask && claimToken != null) {
-                TaskModel persistedTask = loadTaskQuietly(taskId);
-                shouldProcessTask =
-                        !invocationFailed && isTaskClaimOwner(claimToken, persistedTask);
-                if (!shouldProcessTask) {
-                    LOGGER.warn("Rejecting stale system task completion for taskId: {}", taskId);
-                }
-            }
             if (shouldProcessTask) {
-                task.setSystemTaskClaimToken(null);
-                task.setSystemTaskClaimDeadline(0);
-                executionDAOFacade.updateTask(task);
-            }
-            if (shouldProcessTask && shouldRemoveTaskFromQueue) {
-                queueDAO.remove(queueName, task.getTaskId());
-                LOGGER.debug("{} removed from queue: {}", task, queueName);
-            }
-            // if the current task execution has completed, then the workflow needs to be evaluated
-            if (shouldProcessTask && hasTaskExecutionCompleted) {
-                workflowExecutor.decide(workflowId);
+                if (claimToken != null
+                        && (invocationFailed
+                                || !isTaskClaimOwner(claimToken, loadTaskQuietly(taskId)))) {
+                    LOGGER.warn("Rejecting stale system task completion for taskId: {}", taskId);
+                } else {
+                    task.setSystemTaskClaimToken(null);
+                    task.setSystemTaskClaimDeadline(0);
+                    executionDAOFacade.updateTask(task);
+                    if (shouldRemoveTaskFromQueue) {
+                        queueDAO.remove(queueName, task.getTaskId());
+                        LOGGER.debug("{} removed from queue: {}", task, queueName);
+                    }
+                    // if the current task execution has completed, then the workflow needs to be
+                    // evaluated
+                    if (hasTaskExecutionCompleted) {
+                        workflowExecutor.decide(workflowId);
+                    }
+                }
             }
         }
     }
