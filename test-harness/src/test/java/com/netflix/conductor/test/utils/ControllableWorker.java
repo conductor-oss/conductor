@@ -23,6 +23,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.sdk.workflow.executor.task.TaskContext;
 import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
 /**
@@ -49,11 +51,15 @@ public class ControllableWorker implements AnnotatedSystemTaskWorker {
     /** Every {@link #run} invocation blocks on this latch, simulating the provider call. */
     public volatile CountDownLatch release;
 
+    /** When positive, the first invocation requests another callback after this many seconds. */
+    public volatile int firstCallbackAfterSeconds;
+
     /** Reset all control state; call from a spec's setup() before driving a scenario. */
     public void reset() {
         invocations.set(0);
         enteredRun = null;
         release = null;
+        firstCallbackAfterSeconds = 0;
     }
 
     @WorkerTask(TASK_TYPE)
@@ -66,6 +72,10 @@ public class ControllableWorker implements AnnotatedSystemTaskWorker {
         if (release != null) {
             // Bounded to keep the test fast even if something goes wrong.
             release.await(30, TimeUnit.SECONDS);
+        }
+        if (attempt == 1 && firstCallbackAfterSeconds > 0) {
+            TaskContext.get().getTaskResult().setStatus(TaskResult.Status.IN_PROGRESS);
+            TaskContext.get().setCallbackAfter(firstCallbackAfterSeconds);
         }
         Map<String, Object> output = new HashMap<>();
         output.put("attempt", attempt);

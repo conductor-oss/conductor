@@ -263,6 +263,7 @@ public class AsyncSystemTaskExecutor {
                 skipTaskUpdate =
                         invocationFailed
                                 || persistedTask == null
+                                || persistedTask.getStatus().isTerminal()
                                 || !claimToken.equals(persistedTask.getSystemTaskClaimToken());
                 if (skipTaskUpdate) {
                     LOGGER.warn("Rejecting stale system task completion for taskId: {}", taskId);

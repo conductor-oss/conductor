@@ -155,6 +155,9 @@ class Issue1321DuplicateAsyncSystemTaskSpec extends AbstractSpecification {
         inFlight.startTime > 0
         queueDAO.containsMessage(QUEUE, taskId)
 
+        and: "the real sweeper observes the reserved unacked message while the provider is running"
+        sweep(workflowId)
+
         and: "the compressed unack window elapses"
         Thread.sleep(1500)
 
@@ -244,6 +247,100 @@ class Issue1321DuplicateAsyncSystemTaskSpec extends AbstractSpecification {
 
         then: "the stale executor cannot overwrite the terminal state under the same task id"
         afterLateWrite.status == Task.Status.TIMED_OUT
+
+        cleanup:
+        controllableWorker.release?.countDown()
+        worker1?.join(5000)
+    }
+
+    def "sweeper repair delivery cannot re-enter a long-running provider invocation"() {
+        given:
+        WorkflowSystemTask adapter = asyncSystemTasks.find { it.taskType == QUEUE }
+        controllableWorker.enteredRun = new CountDownLatch(1)
+        controllableWorker.release = new CountDownLatch(1)
+        def workflowId = startWorkflow(WF, 1, 'issue1321_sweeper_' + UUID.randomUUID(), [:], null)
+        def taskId = workflowExecutionService.getExecutionStatus(workflowId, true).tasks[0].taskId
+        assert popWithRetry(3000) == [taskId]
+
+        when: "the provider remains in flight after persisting its claim"
+        Thread worker1 = new Thread({ asyncSystemTaskExecutor.execute(adapter, taskId) }, 'issue1321-sweeper-worker')
+        worker1.setDaemon(true)
+        worker1.start()
+        assert controllableWorker.enteredRun.await(10, TimeUnit.SECONDS)
+        assert taskState(workflowId, 'sweeper/in-flight').status == Task.Status.IN_PROGRESS
+
+        and: "the queue message is lost and the real WorkflowSweeper repairs it"
+        queueDAO.remove(QUEUE, taskId)
+        assert !queueDAO.containsMessage(QUEUE, taskId)
+        sweep(workflowId)
+        List<String> repaired = popWithRetry(5000)
+        LOGGER.info('ISSUE1321 sweeper/repaired ids={}', repaired)
+        assert repaired == [taskId]
+
+        and: "a system-task worker processes the repaired delivery"
+        asyncSystemTaskExecutor.execute(adapter, taskId)
+
+        then: "the active claim rejects the delivery without invoking the provider again"
+        controllableWorker.invocations.get() == 1
+        taskState(workflowId, 'sweeper/after-repaired-delivery').status == Task.Status.IN_PROGRESS
+
+        cleanup:
+        controllableWorker.release?.countDown()
+        worker1?.join(5000)
+    }
+
+    def "a completed invocation releases its claim and permits the requested callback"() {
+        given:
+        WorkflowSystemTask adapter = asyncSystemTasks.find { it.taskType == QUEUE }
+        controllableWorker.firstCallbackAfterSeconds = 1
+        def workflowId = startWorkflow(WF, 1, 'issue1321_callback_' + UUID.randomUUID(), [:], null)
+        def taskId = workflowExecutionService.getExecutionStatus(workflowId, true).tasks[0].taskId
+        assert popWithRetry(3000) == [taskId]
+
+        when: "the first provider invocation requests a callback"
+        asyncSystemTaskExecutor.execute(adapter, taskId)
+        Task waiting = taskState(workflowId, 'callback/waiting')
+
+        then:
+        waiting.status == Task.Status.IN_PROGRESS
+        waiting.callbackAfterSeconds == 1
+        controllableWorker.invocations.get() == 1
+
+        when: "the callback becomes due and is delivered"
+        List<String> callbackDelivery = popWithRetry(5000)
+        assert callbackDelivery == [taskId]
+        asyncSystemTaskExecutor.execute(adapter, taskId)
+        Task completed = taskState(workflowId, 'callback/completed')
+
+        then: "the callback is a new invocation rather than an active-claim redelivery"
+        controllableWorker.invocations.get() == 2
+        completed.status == Task.Status.COMPLETED
+    }
+
+    def "workflow termination fences a blocked provider's late completion"() {
+        given:
+        WorkflowSystemTask adapter = asyncSystemTasks.find { it.taskType == QUEUE }
+        controllableWorker.enteredRun = new CountDownLatch(1)
+        controllableWorker.release = new CountDownLatch(1)
+        def workflowId = startWorkflow(WF, 1, 'issue1321_terminate_' + UUID.randomUUID(), [:], null)
+        def taskId = workflowExecutionService.getExecutionStatus(workflowId, true).tasks[0].taskId
+        assert popWithRetry(3000) == [taskId]
+        Thread worker1 = new Thread({ asyncSystemTaskExecutor.execute(adapter, taskId) }, 'issue1321-terminate-worker')
+        worker1.setDaemon(true)
+        worker1.start()
+        assert controllableWorker.enteredRun.await(10, TimeUnit.SECONDS)
+
+        when: "the workflow is terminated while the provider call remains blocked"
+        workflowExecutor.terminateWorkflow(workflowId, 'integration test termination')
+        Task canceled = taskState(workflowId, 'terminate/canceled')
+        controllableWorker.release.countDown()
+        worker1.join(5000)
+        Task afterLateReturn = taskState(workflowId, 'terminate/after-provider-return')
+
+        then: "the provider cannot overwrite the cancellation"
+        canceled.status == Task.Status.CANCELED
+        afterLateReturn.status == Task.Status.CANCELED
+        controllableWorker.invocations.get() == 1
 
         cleanup:
         controllableWorker.release?.countDown()

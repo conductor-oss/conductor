@@ -393,12 +393,19 @@ class AsyncSystemTaskExecutorTest extends Specification {
                 taskDefName: "taskDefName", workflowPriority: 10)
         WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
         String queueName = QueueUtils.getQueueName(task)
+        int taskLoads = 0
 
         when:
         executor.execute(workflowSystemTask, taskId)
 
         then:
-        _ * executionDAOFacade.getTaskModel(taskId) >> task
+        _ * executionDAOFacade.getTaskModel(taskId) >> {
+            if (taskLoads++ == 0) {
+                return task
+            }
+            return new TaskModel(status: TaskModel.Status.IN_PROGRESS,
+                    systemTaskClaimToken: task.systemTaskClaimToken)
+        }
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         2 * executionDAOFacade.updateTask(task) // startTime persist before start() + finally
 
