@@ -30,6 +30,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import com.netflix.conductor.annotations.VisibleForTesting;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -567,6 +568,27 @@ public class AgentService {
     }
 
     /**
+     * Computes the prune cutoff, guarding the two ways an unchecked {@code olderThanDays} turned
+     * the prune into a data-loss operation (issue #1331): non-positive values put the cutoff in the
+     * future (matching every terminal execution), and very large values push the computed epoch
+     * negative, which the search backend matched against recent executions. A cutoff clamped to
+     * epoch start matches nothing, which is the correct meaning of "older than anything that
+     * exists".
+     *
+     * @param olderThanDays minimum age in days, must be >= 1
+     * @param now the current instant
+     * @return cutoff in epoch milliseconds, never negative
+     */
+    @VisibleForTesting
+    static long computePruneCutoffEpochMs(int olderThanDays, Instant now) {
+        if (olderThanDays < 1) {
+            throw new IllegalArgumentException(
+                    "pruneExecutions: olderThanDays must be >= 1, got " + olderThanDays);
+        }
+        return Math.max(0L, now.minus(olderThanDays, ChronoUnit.DAYS).toEpochMilli());
+    }
+
+    /**
      * Bulk-delete completed execution records older than {@code olderThanDays} days.
      *
      * <p>Searches for COMPLETED, FAILED, TERMINATED, and TIMED_OUT executions whose end time is
@@ -577,7 +599,7 @@ public class AgentService {
      * @return number of executions deleted
      */
     public int pruneExecutions(int olderThanDays, boolean archiveTasks) {
-        long cutoffEpochMs = Instant.now().minus(olderThanDays, ChronoUnit.DAYS).toEpochMilli();
+        long cutoffEpochMs = computePruneCutoffEpochMs(olderThanDays, Instant.now());
         String[] terminalStatuses = {"COMPLETED", "FAILED", "TERMINATED", "TIMED_OUT"};
 
         List<String> workflowNames =
