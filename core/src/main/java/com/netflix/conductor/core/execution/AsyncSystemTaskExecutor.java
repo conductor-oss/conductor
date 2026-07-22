@@ -13,6 +13,7 @@
 package com.netflix.conductor.core.execution;
 
 import java.util.Map;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,6 +119,9 @@ public class AsyncSystemTaskExecutor {
 
         boolean hasTaskExecutionCompleted = false;
         boolean shouldRemoveTaskFromQueue = false;
+        boolean invocationFailed = false;
+        boolean shouldProcessTask = true;
+        String claimToken = task.getSystemTaskClaimToken();
         String workflowId = task.getWorkflowInstanceId();
         // if we are here the Task object is updated and needs to be persisted regardless of an
         // exception
@@ -148,6 +152,15 @@ public class AsyncSystemTaskExecutor {
                     task.getTaskId(),
                     task.getStatus());
 
+            if (claimToken != null
+                    && task.getSystemTaskClaimDeadline() > System.currentTimeMillis()) {
+                if (!reserveInflightMessage(queueName, task)) {
+                    LOGGER.warn("Unable to reserve system task {}; skipping execution", taskId);
+                }
+                shouldProcessTask = false;
+                return;
+            }
+
             boolean isTaskAsyncComplete = systemTask.isAsyncComplete(task);
             if (task.getStatus() == TaskModel.Status.SCHEDULED || !isTaskAsyncComplete) {
                 task.incrementPollCount();
@@ -155,7 +168,7 @@ public class AsyncSystemTaskExecutor {
 
             boolean scheduled = task.getStatus() == TaskModel.Status.SCHEDULED;
             if (scheduled || task.getStatus() == TaskModel.Status.IN_PROGRESS) {
-                if (hasExceededResponseTimeout(task)) {
+                if (claimToken != null && hasExceededResponseTimeout(task)) {
                     // The message was redelivered while a previous invocation is still in flight
                     // past responseTimeout. Do NOT run it again in parallel (issue #1321): the task
                     // has exceeded its allowed time, so time it out and let the retry/timeout
@@ -174,7 +187,11 @@ public class AsyncSystemTaskExecutor {
                 } else {
                     // Keep the message present but invisible for the run so it is not redelivered
                     // and the sweeper's repair does not re-queue this running task (issue #1321).
-                    reserveInflightMessage(queueName, task);
+                    if (!reserveInflightMessage(queueName, task)) {
+                        LOGGER.warn("Unable to reserve system task {}; skipping execution", taskId);
+                        shouldProcessTask = false;
+                        return;
+                    }
                     Map<String, Object> literalInput = task.getInputData();
                     // Secrets substitution only sees task.getInputData(); when input has been
                     // offloaded to external payload storage, getInputData()/setInputData() operate
@@ -186,13 +203,22 @@ public class AsyncSystemTaskExecutor {
                     }
                     task.setInputData(parametersUtils.substituteSecrets(literalInput));
                     try {
+                        claimToken = UUID.randomUUID().toString();
+                        task.setSystemTaskClaimToken(claimToken);
+                        task.setSystemTaskClaimDeadline(
+                                System.currentTimeMillis()
+                                        + effectiveResponseTimeoutSeconds(task) * 1000L);
+                        task.setCallbackAfterSeconds(0);
+                        task.setStatus(TaskModel.Status.IN_PROGRESS);
                         if (scheduled) {
                             task.setStartTime(System.currentTimeMillis());
-                            // Persist startTime before invoking (status is left unchanged so a
-                            // system task whose start() branches on SCHEDULED still works) so a
-                            // redelivery can tell the task has already started and time it out if
-                            // it outlives responseTimeout instead of blindly executing it again.
-                            executionDAOFacade.updateTask(task);
+                        }
+                        executionDAOFacade.updateTask(task);
+
+                        // Keep the stored state IN_PROGRESS, but preserve the existing start()
+                        // contract for implementations that inspect the supplied task status.
+                        task.setStatus(scheduled ? TaskModel.Status.SCHEDULED : task.getStatus());
+                        if (scheduled) {
                             Monitors.recordQueueWaitTime(
                                     task.getTaskType(), task.getQueueWaitTime());
                             systemTask.start(workflow, task, workflowExecutor);
@@ -234,17 +260,29 @@ public class AsyncSystemTaskExecutor {
                     task.getTaskId(),
                     task.getStatus());
         } catch (Exception e) {
+            invocationFailed = claimToken != null;
             Monitors.error(AsyncSystemTaskExecutor.class.getSimpleName(), "executeSystemTask");
             LOGGER.error("Error executing system task - {}, with id: {}", systemTask, taskId, e);
         } finally {
-            executionDAOFacade.updateTask(task);
-            if (shouldRemoveTaskFromQueue) {
-                queueDAO.remove(queueName, task.getTaskId());
-                LOGGER.debug("{} removed from queue: {}", task, queueName);
-            }
-            // if the current task execution has completed, then the workflow needs to be evaluated
-            if (hasTaskExecutionCompleted) {
-                workflowExecutor.decide(workflowId);
+            if (shouldProcessTask) {
+                if (claimToken != null
+                        && (invocationFailed
+                                || !isTaskClaimOwner(claimToken, loadTaskQuietly(taskId)))) {
+                    LOGGER.warn("Rejecting stale system task completion for taskId: {}", taskId);
+                } else {
+                    task.setSystemTaskClaimToken(null);
+                    task.setSystemTaskClaimDeadline(0);
+                    executionDAOFacade.updateTask(task);
+                    if (shouldRemoveTaskFromQueue) {
+                        queueDAO.remove(queueName, task.getTaskId());
+                        LOGGER.debug("{} removed from queue: {}", task, queueName);
+                    }
+                    // if the current task execution has completed, then the workflow needs to be
+                    // evaluated
+                    if (hasTaskExecutionCompleted) {
+                        workflowExecutor.decide(workflowId);
+                    }
+                }
             }
         }
     }
@@ -253,9 +291,9 @@ public class AsyncSystemTaskExecutor {
      * Extend the task's queue message visibility to cover the invocation (issue #1321), using its
      * {@code responseTimeoutSeconds} or the default {@link TaskDef#ONE_HOUR} when unset.
      */
-    private void reserveInflightMessage(String queueName, TaskModel task) {
+    private boolean reserveInflightMessage(String queueName, TaskModel task) {
         try {
-            queueDAO.setUnackTimeout(
+            return queueDAO.setUnackTimeout(
                     queueName, task.getTaskId(), effectiveResponseTimeoutSeconds(task) * 1000L);
         } catch (Exception e) {
             LOGGER.error(
@@ -263,6 +301,7 @@ public class AsyncSystemTaskExecutor {
                     task.getTaskId(),
                     queueName,
                     e);
+            return false;
         }
     }
 
@@ -306,5 +345,11 @@ public class AsyncSystemTaskExecutor {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private boolean isTaskClaimOwner(String claimToken, TaskModel persistedTask) {
+        return persistedTask != null
+                && !persistedTask.getStatus().isTerminal()
+                && claimToken.equals(persistedTask.getSystemTaskClaimToken());
     }
 }

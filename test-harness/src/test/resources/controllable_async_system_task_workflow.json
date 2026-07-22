@@ -1,0 +1,26 @@
+{
+  "name": "controllable_async_system_task_wf",
+  "description": "workflow with a single controllable async system task (issues #1321/#1322)",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "controllable_task",
+      "taskReferenceName": "controllable_ref",
+      "inputParameters": {},
+      "type": "CONTROLLABLE_SYS_TASK",
+      "startDelay": 0,
+      "optional": false,
+      "asyncComplete": false
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {
+    "taskOutput": "${controllable_ref.output.attempt}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}
