@@ -166,7 +166,7 @@ public class AsyncSystemTaskExecutor {
 
             boolean scheduled = task.getStatus() == TaskModel.Status.SCHEDULED;
             if (scheduled || task.getStatus() == TaskModel.Status.IN_PROGRESS) {
-                if (hasExceededResponseTimeout(task)) {
+                if (claimToken != null && hasExceededResponseTimeout(task)) {
                     // The message was redelivered while a previous invocation is still in flight
                     // past responseTimeout. Do NOT run it again in parallel (issue #1321): the task
                     // has exceeded its allowed time, so time it out and let the retry/timeout

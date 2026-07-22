@@ -35,7 +35,7 @@ import com.netflix.conductor.test.utils.ControllableWorker
  *
  * <p>Verifies the persisted-claim extension to the queue-reservation fix from PR #1369. The popped
  * message remains unacked and is reserved for responseTimeout before {@code start()}, while the
- * task is atomically moved to IN_PROGRESS with an ownership token. These scenarios cover the
+ * task is moved to IN_PROGRESS with an ownership token. These scenarios cover the
  * normal lease and both boundaries: an unexpectedly early delivery is rejected while the claim is
  * active, and a late result cannot overwrite the timeout established after claim expiry.
  *
@@ -345,6 +345,36 @@ class Issue1321DuplicateAsyncSystemTaskSpec extends AbstractSpecification {
         cleanup:
         controllableWorker.release?.countDown()
         worker1?.join(5000)
+    }
+
+    def "a requested callback longer than responseTimeout is not treated as an execution overrun"() {
+        given:
+        TaskDef taskDef = workflowTestUtil.getPersistedTaskDefinition('controllable_task').get()
+        taskDef.responseTimeoutSeconds = 1
+        metadataService.updateTaskDef(taskDef)
+        WorkflowSystemTask adapter = asyncSystemTasks.find { it.taskType == QUEUE }
+        controllableWorker.firstCallbackAfterSeconds = 2
+        def workflowId = startWorkflow(WF, 1, 'issue1321_long_callback_' + UUID.randomUUID(), [:], null)
+        def taskId = workflowExecutionService.getExecutionStatus(workflowId, true).tasks[0].taskId
+        assert popWithRetry(3000) == [taskId]
+
+        when: "the first invocation requests a callback later than responseTimeout"
+        asyncSystemTaskExecutor.execute(adapter, taskId)
+        Task waiting = taskState(workflowId, 'long-callback/waiting')
+
+        then:
+        waiting.status == Task.Status.IN_PROGRESS
+        waiting.callbackAfterSeconds == 2
+
+        when: "the requested callback becomes due"
+        List<String> callbackDelivery = popWithRetry(5000)
+        assert callbackDelivery == [taskId]
+        asyncSystemTaskExecutor.execute(adapter, taskId)
+        Task completed = taskState(workflowId, 'long-callback/completed')
+
+        then: "the callback executes instead of timing out the completed prior invocation"
+        controllableWorker.invocations.get() == 2
+        completed.status == Task.Status.COMPLETED
     }
 
 }

@@ -310,15 +310,23 @@ class AsyncSystemTaskExecutorTest extends Specification {
         // already started, and not updated within responseTimeout (updateTime is 20s old, timeout 10s)
         long stale = System.currentTimeMillis() - 20_000
         TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.IN_PROGRESS, taskId: taskId, workflowInstanceId: workflowId,
-                taskDefName: "taskDefName", workflowPriority: 10, responseTimeoutSeconds: 10, startTime: stale, updateTime: stale)
+                taskDefName: "taskDefName", workflowPriority: 10, responseTimeoutSeconds: 10, startTime: stale, updateTime: stale,
+                systemTaskClaimToken: "expired-claim", systemTaskClaimDeadline: stale)
         WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
         String queueName = QueueUtils.getQueueName(task)
+        int timeoutTaskLoads = 0
 
         when:
         executor.execute(workflowSystemTask, taskId)
 
         then:
-        _ * executionDAOFacade.getTaskModel(taskId) >> task
+        _ * executionDAOFacade.getTaskModel(taskId) >> {
+            if (timeoutTaskLoads++ == 0) {
+                return task
+            }
+            return new TaskModel(status: TaskModel.Status.IN_PROGRESS,
+                    systemTaskClaimToken: task.systemTaskClaimToken)
+        }
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         // the overrunning task is timed out, NOT invoked again (issue #1321)
         0 * workflowSystemTask.start(*_)

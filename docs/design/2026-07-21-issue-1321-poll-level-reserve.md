@@ -187,9 +187,10 @@ long-running `IN_PROGRESS + callbackAfterSeconds` re-invocation are all unchange
 
 3. **An overrun is timed out, not re-executed.** The reservation only lasts
    `responseTimeout`; if the actual run outlives it, the message *does* reappear.
-   To avoid re-running it in parallel, the executor persists `startTime` before the
-   first invocation (the status is left unchanged so a system task whose `start()`
-   branches on `SCHEDULED` — e.g. `SUB_WORKFLOW` — still works), and on any
+   To avoid re-running it in parallel, the executor persists `startTime` and
+   `IN_PROGRESS` before the first invocation. The local task passed to `start()`
+   retains its pre-claim `SCHEDULED` status so implementations such as
+   `SUB_WORKFLOW` keep their existing contract. On any
    redelivery checks whether the task has already started and has not responded
    within `responseTimeout`:
 
@@ -213,14 +214,13 @@ long-running `IN_PROGRESS + callbackAfterSeconds` re-invocation are all unchange
    the last response), so a worker that keeps checking in within `responseTimeout`
    (LLM/A2A callback flow) is not timed out.
 
-## Proposed after state: reserved message plus persisted claim
+## Current after state: reserved message plus persisted claim
 
 The combined design retains this branch's strongest property—the popped message
 is never ACKed before execution—while treating every async-system-task poll as an
-explicit task claim. Before invoking task code, the claim path captures the
-pre-claim status, conditionally persists `IN_PROGRESS`, assigns a unique claim
-token and deadline, and then reserves the queue message. External work begins only
-after both persistence operations succeed.
+explicit task claim. Before invoking task code, the executor captures the
+pre-claim status, persists `IN_PROGRESS` with a unique claim token and deadline,
+and reserves the queue message.
 
 The captured pre-claim status controls lifecycle dispatch:
 
@@ -266,7 +266,7 @@ sequenceDiagram
     DB-->>X: Return task
     deactivate DB
     X->>X: Capture pre-claim status SCHEDULED
-    X->>DB: Conditionally claim as IN_PROGRESS with token and deadline
+    X->>DB: Persist IN_PROGRESS with token and deadline
     activate DB
     DB-->>X: Claim accepted
     deactivate DB
@@ -292,9 +292,9 @@ sequenceDiagram
 
     P-->>X: Result
     deactivate P
-    X->>DB: Conditionally complete using claim token
+    X->>DB: Reload task and verify claim token
     activate DB
-    DB-->>X: Completion accepted
+    DB-->>X: Claim ownership confirmed
     deactivate DB
     X->>Q: remove(taskId)
     activate Q
@@ -329,9 +329,9 @@ sequenceDiagram
     Q-->>X2: Message becomes visible before deadline
     deactivate Q
     activate X2
-    X2->>DB: Attempt conditional claim
+    X2->>DB: Load persisted task and active claim
     activate DB
-    DB-->>X2: Reject because active claim has not expired
+    DB-->>X2: Return unexpired active claim
     deactivate DB
     X2->>Q: Hide message for remaining claim duration
     activate Q
@@ -341,9 +341,9 @@ sequenceDiagram
     deactivate X2
     P-->>X1: Original result
     deactivate P
-    X1->>DB: Conditionally complete using claim token
+    X1->>DB: Reload task and verify claim token
     activate DB
-    DB-->>X1: Completion accepted
+    DB-->>X1: Claim ownership confirmed
     deactivate DB
     deactivate X1
 ```
@@ -373,7 +373,7 @@ sequenceDiagram
     activate DB
     DB-->>X2: Return expired active attempt
     deactivate DB
-    X2->>DB: Conditionally mark claim token TIMED_OUT
+    X2->>DB: Persist TIMED_OUT for expired claim
     activate DB
     DB-->>X2: Timeout persisted
     deactivate DB
@@ -391,7 +391,7 @@ sequenceDiagram
     deactivate X2
     P-->>X1: Original call eventually returns
     deactivate P
-    X1->>DB: Conditionally complete using expired claim token
+    X1->>DB: Reload task and verify expired claim token
     activate DB
     DB-->>X1: Reject because attempt is already TIMED_OUT
     deactivate DB
@@ -401,7 +401,7 @@ sequenceDiagram
 
 The resulting steady-state difference is:
 
-| State while provider call runs | `main` | Proposed combined design |
+| State while provider call runs | `main` | Current combined design |
 |---|---|---|
 | Persisted task status | `SCHEDULED` | `IN_PROGRESS` |
 | Queue row/message | Absent after ACK | Present and unacked |
@@ -416,29 +416,17 @@ The resulting steady-state difference is:
 
 The minimal implementation on this branch persists the token on `TaskModel` and
 checks it again before publishing a result. This closes the observed sequential
-redelivery and late-write paths, but it is an integration step toward, not a
-substitute for, the persistence-level conditional operations below. Two nodes
-that read the same eligible state concurrently can still race while assigning
-their tokens.
+redelivery and late-write paths exercised below. This is not a persistence-level
+compare-and-set: claim assignment and result publication are separate reads and
+writes. Conductor's queue de-duplicates a task ID and normally serializes its
+delivery; a DAO conditional update would be additional protection for a backend
+that permits simultaneous delivery of the same task ID.
 
-The persistence abstraction should expose a conditional claim operation in
-`core`, with implementations in each persistence module. A successful claim
-returns an execution envelope containing at least:
-
-- the loaded `TaskModel`;
-- its pre-claim status (`SCHEDULED` or callback-due `IN_PROGRESS`);
-- a unique claim token/attempt generation;
-- the claim deadline derived from `responseTimeout`;
-- whether dispatch must call `start()` or `execute()`.
-
-Claim and completion updates must be conditional. A claim succeeds only when the
-task is eligible and does not have another unexpired owner. Completion succeeds
-only when the token still owns a non-terminal attempt. This is what makes timeout,
-retry, and late completion mutually exclusive rather than last-write-wins.
-
-Queue reservation is fail-closed: if `setUnackTimeout()` throws or returns false,
-the executor must not invoke external work. The claimed task remains recoverable,
-and the message is allowed to reappear for timeout/reconciliation.
+Queue reservation remains fail-open. `reserveInflightMessage()` logs an exception
+but continues, and it does not check a `false` return from `setUnackTimeout()`.
+The persisted claim still rejects a later sequential delivery, but reservation
+failure itself is not covered by the Redis integration test because the real Redis
+DAO does not expose a way to inject that failure.
 
 Worker-requested callbacks remain distinct from an active execution claim. When a
 worker returns `IN_PROGRESS` with `callbackAfterSeconds`, the current claim ends
@@ -472,74 +460,73 @@ and is the price of not letting repair fight in-flight tasks.
 - **Non-blocking poll model (#1359):** run the method off the worker thread and poll
   a future — eliminates the in-flight window, but a much larger change.
 
-## Risks in the current branch and proposed mitigations
+## Remaining risks and coverage boundaries
 
-The normal sweeper-driven duplicate is fixed by the current branch, but the
-following boundaries remain in its implementation. The combined design above
-directly addresses items 1–5; items 6–7 remain operational and verification
-requirements.
+1. **Reservation failure is fail-open and not integration-tested.** The claim
+   protects a sequential redelivery, but the executor still invokes external work
+   when `setUnackTimeout()` throws or returns `false`. A deterministic test requires
+   a fault-injecting `QueueDAO`; the Redis production-path test uses the real DAO.
 
-1. **Reservation failure is fail-open.** `reserveInflightMessage()` catches an
-   exception and continues into `start()`, and it does not check a `false` return
-   from `setUnackTimeout()`. The message can therefore become visible on the
-   backend's default unack schedule while the provider call is still running.
-   Because the task remains `SCHEDULED` and is not yet stale by `responseTimeout`,
-   the redelivery calls `start()` again. Reservation must succeed before external
-   work begins; failure should postpone/requeue without invoking the task.
-
-2. **Visibility before `responseTimeout` still duplicates the invocation.** The
-   Redis integration test forced the reserved message visible after one second
-   while `responseTimeout` was 45 seconds. The second executor loaded the same
-   `SCHEDULED` task, refreshed its reservation, and entered the annotated method;
-   the invocation counter changed from one to two. A persisted claim or equivalent
-   ownership token is needed to reject an early redelivery independently of queue
-   visibility.
-
-3. **An active invocation remains subject to poll timeout.**
-   `DeciderService.checkTaskPollTimeout()` applies specifically to `SCHEDULED`
-   tasks. Since this branch leaves the task `SCHEDULED` during the provider call,
-   a decider evaluation can apply `pollTimeoutSeconds` to work that has already
-   been picked up. Persisting `IN_PROGRESS` would avoid this, but the executor must
-   separately preserve the pre-claim status so first delivery still dispatches to
-   `start()` rather than `execute()`.
-
-4. **Zombie late-write (#1322) is confirmed.** With a two-second response timeout,
-   the integration test observed `TIMED_OUT` after redelivery and then `COMPLETED`
-   after releasing the original invocation. The original executor writes its stale
-   `TaskModel` directly in `finally`. Completion needs an attempt/version-aware
-   conditional update so an expired invocation cannot overwrite a terminal attempt
-   or its retry state.
-
-5. **Worker callbacks and execution expiry share time arithmetic.** A non-terminal
-   worker can request re-evaluation with `callbackAfterSeconds`. On that legitimate
-   redelivery, `hasExceededResponseTimeout()` compares only `now - updateTime` with
-   `responseTimeout`. If the requested callback delay equals or exceeds the
-   response timeout, it can be classified as an overrun rather than a due callback.
-   Callback scheduling and the in-flight execution lease need distinguishable
-   state, or the allowed interval must account for the callback delay.
-
-6. **Crash recovery is intentionally delayed.** A node crash mid-invocation leaves
+2. **Crash recovery is intentionally delayed.** A node crash mid-invocation leaves
    the message hidden until `responseTimeout`; a task without a configured response
    timeout uses the one-hour fallback. This is bounded but slower than the prior
    sweeper repair interval and should be visible operationally.
 
-7. **Queue semantics need backend integration coverage.** Correctness requires
+3. **Queue semantics need backend integration coverage.** Correctness requires
    `containsMessage()` to include unacked messages and `setUnackTimeout()` to move
    their visibility deadline. The current production-path characterization test
    uses Redis. The same scenarios should run against PostgreSQL and MySQL to verify
    their `popped`, `deliver_on`, ACK, and unack-reaper behavior.
 
-## Testing
+4. **Simultaneous duplicate delivery is outside the tested queue contract.** The
+   tests prove sequential queue redelivery and sweeper repair. They do not force two
+   executors to load the same unclaimed task before either persists its token.
+   Standard Conductor queues de-duplicate by task ID; a persistence compare-and-set
+   would be required if a queue backend allowed that simultaneous delivery.
 
-- `AsyncSystemTaskExecutorTest`: a SCHEDULED task is reserved via
-  `queueDAO.setUnackTimeout(queue, taskId, responseTimeout*1000)` before `start()`;
-  a task with no `responseTimeout` falls back to `TaskDef.ONE_HOUR` (3600s); a
-  redelivered task that outlived `responseTimeout` is marked `TIMED_OUT` and **not**
-  re-invoked.
-- `TestSystemTaskWorker`: the poll hands the task to the executor and does **not**
-  `ack`/`remove` the message.
-- `Issue1321DuplicateAsyncSystemTaskSpec` (Redis-backed production path): verifies
-  that the normal reservation prevents redelivery, demonstrates that forced early
-  visibility invokes the annotated worker twice, and demonstrates the
-  `TIMED_OUT` → stale `COMPLETED` overwrite after the original call returns. Its
-  state-transition logs use the `ISSUE1321` prefix in the Gradle XML output.
+## Audit against PR #1369's call-outs
+
+The combined design addresses every correctness gap that PR #1369 identified in
+the normal execution path, including the zombie late-write problem that the PR
+explicitly deferred to #1322. It does not prove every operational failure mode or
+every queue backend.
+
+| PR #1369 call-out | Current status | Evidence or remaining gap |
+|---|---|---|
+| Poll must not ACK/remove the message before execution because the sweeper repairs the missing message | Addressed | The worker neither ACKs nor removes at poll in [`TestSystemTaskWorker.java`, lines 88–110](../../core/src/test/java/com/netflix/conductor/core/execution/tasks/TestSystemTaskWorker.java#L88-L110); the real-sweeper integration scenario is linked below. |
+| Reserve the popped message for `responseTimeoutSeconds` | Addressed | Real Redis visibility is covered by the normal and early-redelivery integration scenarios below. |
+| Use the one-hour default when no response timeout is configured | Addressed | Unit evidence is linked below; this is backend-independent arithmetic. |
+| A run exceeding `responseTimeout` must time out instead of invoking the same attempt again | Addressed | The natural-expiry integration scenario proves timeout and no second provider invocation. |
+| Persist the first start before invoking task code, without breaking `SUB_WORKFLOW.start()`'s `SCHEDULED` input contract | Addressed | [`AsyncSystemTaskExecutorTest.groovy`, lines 70–107](../../core/src/test/groovy/com/netflix/conductor/core/execution/AsyncSystemTaskExecutorTest.groovy#L70-L107) proves the supplied `SUB_WORKFLOW` task starts correctly while the persisted/result state becomes `IN_PROGRESS`. |
+| Normal terminal, non-terminal callback, and async-complete queue outcomes remain owned by the executor | Addressed | Callback behavior has real integration evidence below. Terminal completion and async-complete behavior are unit-covered in [`AsyncSystemTaskExecutorTest.groovy`, lines 396–488](../../core/src/test/groovy/com/netflix/conductor/core/execution/AsyncSystemTaskExecutorTest.groovy#L396-L488). |
+| A late result from an expired attempt must not overwrite timeout/retry state (#1322) | Addressed beyond PR #1369 | The natural-expiry and workflow-termination integration scenarios below prove stale-result rejection. |
+| Crash recovery occurs only after the reservation expires | Behavior retained, not proven end-to-end | A deterministic process-kill test is still missing; recovery can be delayed up to the configured timeout or one-hour fallback. |
+| Queue reservation succeeds | Not fully addressed | Reservation is fail-open on exception or a `false` DAO result. A fault-injecting DAO test and a decision on fail-closed behavior are still needed. |
+| Equivalent queue semantics across supported persistence backends | Not proven | The integration suite currently proves Redis only; PostgreSQL and MySQL remain coverage gaps. |
+| Two executors simultaneously claim an unclaimed task | Not claimed by PR #1369 and not proven | The token prevents sequential redelivery and stale completion, but claim acquisition is not a persistence compare-and-set. |
+
+## Test evidence
+
+`Issue1321DuplicateAsyncSystemTaskSpec` runs through the real annotated-task
+adapter, executor, Redis queue, task persistence, and `WorkflowSweeper`:
+
+| Design scenario | Evidence |
+|---|---|
+| Reserved unacked message remains hidden, task is persisted `IN_PROGRESS`, and an actual sweep does not create a pollable duplicate | [`Issue1321DuplicateAsyncSystemTaskSpec.groovy`, lines 119–174](../../test-harness/src/test/groovy/com/netflix/conductor/test/integration/Issue1321DuplicateAsyncSystemTaskSpec.groovy#L119-L174) |
+| Forced visibility before the claim deadline is delivered but does not invoke the provider twice | [`Issue1321DuplicateAsyncSystemTaskSpec.groovy`, lines 176–210](../../test-harness/src/test/groovy/com/netflix/conductor/test/integration/Issue1321DuplicateAsyncSystemTaskSpec.groovy#L176-L210) |
+| Natural visibility after `responseTimeout` produces `TIMED_OUT`; the original late return cannot overwrite it | [`Issue1321DuplicateAsyncSystemTaskSpec.groovy`, lines 212–254](../../test-harness/src/test/groovy/com/netflix/conductor/test/integration/Issue1321DuplicateAsyncSystemTaskSpec.groovy#L212-L254) |
+| A deliberately missing message is repaired by the real sweeper; processing that repaired delivery does not re-enter the provider | [`Issue1321DuplicateAsyncSystemTaskSpec.groovy`, lines 256–290](../../test-harness/src/test/groovy/com/netflix/conductor/test/integration/Issue1321DuplicateAsyncSystemTaskSpec.groovy#L256-L290) |
+| A completed invocation releases its claim and a legitimate callback executes as a new invocation | [`Issue1321DuplicateAsyncSystemTaskSpec.groovy`, lines 292–318](../../test-harness/src/test/groovy/com/netflix/conductor/test/integration/Issue1321DuplicateAsyncSystemTaskSpec.groovy#L292-L318) |
+| Workflow termination remains authoritative when the blocked provider returns late | [`Issue1321DuplicateAsyncSystemTaskSpec.groovy`, lines 320–348](../../test-harness/src/test/groovy/com/netflix/conductor/test/integration/Issue1321DuplicateAsyncSystemTaskSpec.groovy#L320-L348) |
+| A requested callback longer than `responseTimeout` is treated as a callback, not an expired active invocation | [`Issue1321DuplicateAsyncSystemTaskSpec.groovy`, lines 350–378](../../test-harness/src/test/groovy/com/netflix/conductor/test/integration/Issue1321DuplicateAsyncSystemTaskSpec.groovy#L350-L378) |
+
+Focused unit evidence covers the fallback and mapper boundary that are expensive or
+backend-independent:
+
+- Explicit and default reservation durations: [`AsyncSystemTaskExecutorTest.groovy`, lines 265–304](../../core/src/test/groovy/com/netflix/conductor/core/execution/AsyncSystemTaskExecutorTest.groovy#L265-L304).
+- Expired active claim timeout without provider re-entry: [`AsyncSystemTaskExecutorTest.groovy`, lines 306–339](../../core/src/test/groovy/com/netflix/conductor/core/execution/AsyncSystemTaskExecutorTest.groovy#L306-L339).
+- A mapper-populated `startTime` with no `updateTime` is not falsely timed out: [`AsyncSystemTaskExecutorTest.groovy`, lines 341–361](../../core/src/test/groovy/com/netflix/conductor/core/execution/AsyncSystemTaskExecutorTest.groovy#L341-L361).
+
+The integration evidence is Redis-specific. Reservation failure injection,
+PostgreSQL/MySQL queue behavior, node-crash recovery time, and simultaneous
+duplicate delivery are explicitly not claimed as proven by this suite.
