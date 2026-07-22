@@ -14,6 +14,7 @@ package org.conductoross.conductor.ai.agentspan.runtime.service;
 
 import java.util.Map;
 
+import org.conductoross.conductor.ai.a2a.A2AService;
 import org.conductoross.conductor.ai.agent.ConductorAgentCancelRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentClient;
 import org.conductoross.conductor.ai.agent.ConductorAgentRespondRequest;
@@ -46,6 +47,11 @@ public class ServiceConductorAgentClient implements ConductorAgentClient {
 
     public ServiceConductorAgentClient(AgentService agentService) {
         this.agentService = agentService;
+    }
+
+    @Override
+    public String agentType() {
+        return A2AService.AGENT_TYPE_CONDUCTOR;
     }
 
     @Override

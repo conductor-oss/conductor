@@ -13,6 +13,7 @@
 package org.conductoross.conductor.ai.a2a;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -85,7 +86,7 @@ class A2ADurabilityTest {
     }
 
     private A2AWorkers newWorkers(A2AService service) {
-        return new A2AWorkers(service, unusedAgentClient(), callbackUrl);
+        return new A2AWorkers(service, List.of(unusedAgentClient()), callbackUrl);
     }
 
     private Task taskModel(

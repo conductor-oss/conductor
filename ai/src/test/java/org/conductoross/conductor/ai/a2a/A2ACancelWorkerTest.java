@@ -13,6 +13,7 @@
 package org.conductoross.conductor.ai.a2a;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.conductoross.conductor.ai.a2a.model.A2ATask;
@@ -48,7 +49,8 @@ class A2ACancelWorkerTest {
     void setUp() {
         a2aService = mock(A2AService.class);
         conductorAgentClient = mock(ConductorAgentClient.class);
-        workers = new A2AWorkers(a2aService, conductorAgentClient);
+        when(conductorAgentClient.agentType()).thenReturn("conductor");
+        workers = new A2AWorkers(a2aService, List.of(conductorAgentClient));
     }
 
     @Test

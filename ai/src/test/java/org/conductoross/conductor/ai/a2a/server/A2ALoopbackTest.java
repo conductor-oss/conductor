@@ -194,7 +194,7 @@ class A2ALoopbackTest {
     @Test
     void fullRoundTrip_clientTaskDrivesServerWorkflowToCompletion() {
         A2AService service = clientService();
-        A2AWorkers workers = new A2AWorkers(service, unusedAgentClient());
+        A2AWorkers workers = new A2AWorkers(service, List.of(unusedAgentClient()));
 
         Task task = new Task();
         task.setTaskId("client-task-1");

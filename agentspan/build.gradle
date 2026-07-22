@@ -9,6 +9,9 @@ dependencies {
     implementation project(':conductor-core')
     implementation project(':conductor-ai')
 
+    // AWS Bedrock Agent Runtime — for BedrockAgentClient
+    implementation "software.amazon.awssdk:bedrockagentruntime:${revAwsSdk}"
+
     // Exercise the adapters against a real persisted backend rather than mocked DAOs.
     testImplementation project(':conductor-sqlite-persistence')
 
