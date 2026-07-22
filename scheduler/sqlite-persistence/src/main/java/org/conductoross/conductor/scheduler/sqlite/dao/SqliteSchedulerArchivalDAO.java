@@ -36,8 +36,8 @@ import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
  * SQLite implementation of {@link SchedulerArchivalDAO}.
  *
  * <p>Stores execution records in the {@code workflow_scheduled_executions} table with individual
- * columns for efficient querying and filtering. Managed by Flyway ({@code
- * db/migration_scheduler_sqlite}).
+ * columns for efficient querying and filtering. Managed by the core SQLite Flyway chain ({@code
+ * db/migration_sqlite}).
  */
 public class SqliteSchedulerArchivalDAO implements SchedulerArchivalDAO {
 

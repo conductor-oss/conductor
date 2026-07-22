@@ -41,7 +41,7 @@ import io.orkes.conductor.scheduler.model.WorkflowScheduleModel;
  * scheduler_execution} table additionally carries {@code schedule_name} and {@code state} columns
  * to support efficient queries (OSS has no queue infrastructure to offload this work).
  *
- * <p>Managed by Flyway ({@code db/migration_scheduler_sqlite}).
+ * <p>Managed by the core SQLite Flyway chain ({@code db/migration_sqlite}).
  */
 public class SqliteSchedulerDAO implements SchedulerDAO {
 

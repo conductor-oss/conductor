@@ -16,7 +16,6 @@ import javax.sql.DataSource;
 
 import org.conductoross.conductor.scheduler.sqlite.dao.SqliteSchedulerArchivalDAO;
 import org.conductoross.conductor.scheduler.sqlite.dao.SqliteSchedulerDAO;
-import org.flywaydb.core.Flyway;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
@@ -31,34 +30,22 @@ import io.orkes.conductor.dao.scheduler.SchedulerDAO;
  * SchedulerArchivalDAO}.
  *
  * <p>Active when {@code conductor.db.type=sqlite} AND {@code conductor.scheduler.enabled=true}.
- * Runs Flyway migrations for the scheduler tables in a dedicated history table so they do not
- * conflict with the main Conductor migration history.
+ * Scheduler tables are created by the core SQLite Flyway chain ({@code db/migration_sqlite},
+ * V6/V7).
  */
 @AutoConfiguration
 @ConditionalOnExpression(
         "'${conductor.db.type:}' == 'sqlite' && '${conductor.scheduler.enabled:false}' == 'true'")
 public class SqliteSchedulerConfiguration {
 
-    @Bean(initMethod = "migrate")
-    public Flyway flywayForScheduler(DataSource dataSource) {
-        return Flyway.configure()
-                .locations("classpath:db/migration_scheduler_sqlite")
-                .dataSource(dataSource)
-                .table("flyway_schema_history_scheduler")
-                .outOfOrder(true)
-                .baselineOnMigrate(true)
-                .baselineVersion("0")
-                .load();
-    }
-
     @Bean
-    @DependsOn("flywayForScheduler")
+    @DependsOn("flywayForPrimaryDb")
     public SchedulerDAO schedulerDAO(DataSource dataSource, ObjectMapper objectMapper) {
         return new SqliteSchedulerDAO(dataSource, objectMapper);
     }
 
     @Bean
-    @DependsOn("flywayForScheduler")
+    @DependsOn("flywayForPrimaryDb")
     public SchedulerArchivalDAO schedulerArchivalDAO(
             DataSource dataSource, ObjectMapper objectMapper) {
         return new SqliteSchedulerArchivalDAO(dataSource, objectMapper);
