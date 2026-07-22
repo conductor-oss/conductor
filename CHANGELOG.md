@@ -3,6 +3,11 @@
 ## [Unreleased]
 
 ### Breaking Changes
+- **Scheduler DB migrations folded into the core Flyway chain (one chain per SQL backend)**
+  - Scheduler DDL now ships in the core migrations: MySQL `V11`/`V12`, Postgres `V18`/`V19`, SQLite `V6`/`V7`
+  - Dedicated scheduler Flyway and its `flyway_schema_history_scheduler` table removed; existing databases upgrade automatically (idempotent no-op apply, orphan history table dropped)
+  - `conductor-scheduler-{mysql,postgres,sqlite}-persistence` modules removed — scheduler DAOs now live in the core persistence modules (Java packages unchanged)
+  - Scheduler tables are now created on every SQL deployment, even with `conductor.scheduler.enabled=false`
 - **`GET /api/scheduler/schedules/{name}` now returns 404 for an unknown schedule**
   - Previously returned `200 OK` with an empty body when the schedule did not exist
   - Now returns `404 Not Found` with the standard error body, matching every other not-found
@@ -34,6 +39,8 @@
   - Enterprise stability improvement
 
 ### Fixed
+- Fresh-database startup no longer order-dependent between the core and scheduler migrations ("Found non-empty schema(s) but no schema history table")
+- MySQL server boot with the scheduler enabled no longer fails on an ambiguous `RetryTemplate` bean
 - JavaScript evaluation now works on Java 17, 21, and future LTS versions
 - Improved security with sandboxed JavaScript execution
 - Deep copy protection to prevent PolyglotMap issues in workflow task data
