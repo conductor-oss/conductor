@@ -41,6 +41,19 @@ public class ElasticSearchPropertiesTest {
     }
 
     @Test
+    public void testRefreshOnWriteDefaultsToFalse() {
+        ElasticSearchProperties properties = new ElasticSearchProperties();
+        assertFalse("refreshOnWrite should default to false", properties.isRefreshOnWrite());
+    }
+
+    @Test
+    public void testRefreshOnWriteCanBeEnabled() {
+        ElasticSearchProperties properties = new ElasticSearchProperties();
+        properties.setRefreshOnWrite(true);
+        assertTrue("refreshOnWrite should be configurable to true", properties.isRefreshOnWrite());
+    }
+
+    @Test
     public void testDefaultUrlUsesHttpPort9200() {
         ElasticSearchProperties properties = new ElasticSearchProperties();
         assertEquals("localhost:9200", properties.getUrl());
