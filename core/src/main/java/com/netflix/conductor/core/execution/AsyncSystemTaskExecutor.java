@@ -120,7 +120,7 @@ public class AsyncSystemTaskExecutor {
         boolean hasTaskExecutionCompleted = false;
         boolean shouldRemoveTaskFromQueue = false;
         boolean invocationFailed = false;
-        boolean shouldPersistTaskResult = true;
+        boolean shouldProcessTask = true;
         String claimToken = task.getSystemTaskClaimToken();
         String workflowId = task.getWorkflowInstanceId();
         // if we are here the Task object is updated and needs to be persisted regardless of an
@@ -155,7 +155,7 @@ public class AsyncSystemTaskExecutor {
             if (claimToken != null
                     && task.getSystemTaskClaimDeadline() > System.currentTimeMillis()) {
                 reserveInflightMessage(queueName, task);
-                shouldPersistTaskResult = false;
+                shouldProcessTask = false;
                 return;
             }
 
@@ -258,25 +258,25 @@ public class AsyncSystemTaskExecutor {
             Monitors.error(AsyncSystemTaskExecutor.class.getSimpleName(), "executeSystemTask");
             LOGGER.error("Error executing system task - {}, with id: {}", systemTask, taskId, e);
         } finally {
-            if (shouldPersistTaskResult && claimToken != null) {
+            if (shouldProcessTask && claimToken != null) {
                 TaskModel persistedTask = loadTaskQuietly(taskId);
-                shouldPersistTaskResult =
+                shouldProcessTask =
                         !invocationFailed && isTaskClaimOwner(claimToken, persistedTask);
-                if (!shouldPersistTaskResult) {
+                if (!shouldProcessTask) {
                     LOGGER.warn("Rejecting stale system task completion for taskId: {}", taskId);
                 }
             }
-            if (shouldPersistTaskResult) {
+            if (shouldProcessTask) {
                 task.setSystemTaskClaimToken(null);
                 task.setSystemTaskClaimDeadline(0);
                 executionDAOFacade.updateTask(task);
             }
-            if (shouldPersistTaskResult && shouldRemoveTaskFromQueue) {
+            if (shouldProcessTask && shouldRemoveTaskFromQueue) {
                 queueDAO.remove(queueName, task.getTaskId());
                 LOGGER.debug("{} removed from queue: {}", task, queueName);
             }
             // if the current task execution has completed, then the workflow needs to be evaluated
-            if (shouldPersistTaskResult && hasTaskExecutionCompleted) {
+            if (shouldProcessTask && hasTaskExecutionCompleted) {
                 workflowExecutor.decide(workflowId);
             }
         }
