@@ -14,7 +14,10 @@ package org.conductoross.conductor.model.file;
 
 import java.util.Objects;
 
-/** Response to {@code GET /api/files/{fileId}/download-url}. Requires status {@code UPLOADED}. */
+/**
+ * Response to {@code GET /api/files/{workflowId}/{fileId}/download-url}. Requires status {@code
+ * UPLOADED}.
+ */
 public class FileDownloadUrlResponse {
 
     private String fileHandleId;

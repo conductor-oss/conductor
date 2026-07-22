@@ -15,6 +15,12 @@ package org.conductoross.conductor.ai.a2a;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.conductoross.conductor.ai.agent.ConductorAgentCancelRequest;
+import org.conductoross.conductor.ai.agent.ConductorAgentClient;
+import org.conductoross.conductor.ai.agent.ConductorAgentRespondRequest;
+import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
+import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
+import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
 import org.conductoross.conductor.ai.model.A2ACallRequest;
 import org.conductoross.conductor.ai.model.A2ACallResult;
 import org.conductoross.conductor.ai.model.A2ACancelRequest;
@@ -33,8 +39,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public final class A2AWorkerTestSupport {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapperProvider().getObjectMapper();
+    private static final ConductorAgentClient UNUSED_AGENT_CLIENT =
+            new UnusedConductorAgentClient();
 
     private A2AWorkerTestSupport() {}
+
+    /**
+     * Returns a fail-fast client for tests that exercise only remote A2A agents.
+     *
+     * <p>{@link A2AWorkers} requires both agent transports. Supplying this explicit test client
+     * keeps that production contract visible and catches accidental routing to a Conductor agent.
+     */
+    public static ConductorAgentClient unusedAgentClient() {
+        return UNUSED_AGENT_CLIENT;
+    }
 
     public static Task task(Map<String, Object> input) {
         Task task = new Task();
@@ -99,4 +117,32 @@ public final class A2AWorkerTestSupport {
     }
 
     private record Invocation<T>(T output, TaskResult taskResult) {}
+
+    private static final class UnusedConductorAgentClient implements ConductorAgentClient {
+
+        @Override
+        public ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request) {
+            throw unexpectedInvocation();
+        }
+
+        @Override
+        public ConductorAgentStatusResponse getAgentStatus(String executionId) {
+            throw unexpectedInvocation();
+        }
+
+        @Override
+        public void respond(ConductorAgentRespondRequest request) {
+            throw unexpectedInvocation();
+        }
+
+        @Override
+        public void cancelAgent(ConductorAgentCancelRequest request) {
+            throw unexpectedInvocation();
+        }
+
+        private IllegalStateException unexpectedInvocation() {
+            return new IllegalStateException(
+                    "A Conductor ConductorAgentClient was invoked by an A2A-only test");
+        }
+    }
 }

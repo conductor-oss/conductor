@@ -832,6 +832,7 @@ public abstract class AbstractProtoMapper {
         if (from.getParentTaskId() != null) {
             to.setParentTaskId( from.getParentTaskId() );
         }
+        to.putAllRuntimeMetadata( from.getRuntimeMetadata() );
         return to.build();
     }
 
@@ -896,6 +897,7 @@ public abstract class AbstractProtoMapper {
             to.setExecutionMetadata( fromProto( from.getExecutionMetadata() ) );
         }
         to.setParentTaskId( from.getParentTaskId() );
+        to.setRuntimeMetadata( from.getRuntimeMetadataMap() );
         return to;
     }
 

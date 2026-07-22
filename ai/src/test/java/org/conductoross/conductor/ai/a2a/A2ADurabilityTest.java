@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
 
 import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.invoke;
+import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.unusedAgentClient;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -84,10 +85,7 @@ class A2ADurabilityTest {
     }
 
     private A2AWorkers newWorkers(A2AService service) {
-        return new A2AWorkers(
-                service,
-                new org.conductoross.conductor.ai.agent.UnavailableAgentClient(),
-                callbackUrl);
+        return new A2AWorkers(service, unusedAgentClient(), callbackUrl);
     }
 
     private Task taskModel(

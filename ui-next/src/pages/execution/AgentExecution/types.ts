@@ -35,6 +35,17 @@ export enum AgentStrategy {
   ROUTER = "router",
 }
 
+/**
+ * A timeline item can be lifecycle work around the agent's conversational
+ * turns.  Preparation and finalization remain inspectable, but do not inflate
+ * the agent-turn count or shift the numbered turns shown to users.
+ */
+export enum AgentTimelineKind {
+  PREPARATION = "PREPARATION",
+  TURN = "TURN",
+  FINALIZATION = "FINALIZATION",
+}
+
 export interface TokenUsage {
   promptTokens: number;
   completionTokens: number;
@@ -68,6 +79,8 @@ export interface AgentEvent {
   baseUrl?: string;
   /** For TOOL_CALL: tool arguments */
   toolArgs?: Record<string, unknown>;
+  /** Explicit fork/join group for concurrently executed tool calls. */
+  parallelGroup?: string;
   /** For HANDOFF: target agent name */
   targetAgent?: string;
   /** For ERROR: error message */
@@ -108,6 +121,10 @@ export interface AgentEvent {
 }
 
 export interface AgentTurn {
+  /** Stable selection key. Legacy/mock turns may omit this. */
+  id?: string;
+  /** Defaults to TURN for legacy/mock data. */
+  kind?: AgentTimelineKind;
   turnNumber: number;
   events: AgentEvent[];
   status: AgentStatus;
@@ -122,6 +139,8 @@ export interface AgentTurn {
 export interface AgentRunData {
   id: string;
   agentName: string;
+  /** Runtime/protocol that executes this agent, for example `conductor` or `a2a`. */
+  agentType?: string;
   model?: string;
   turns: AgentTurn[];
   status: AgentStatus;
@@ -129,12 +148,14 @@ export interface AgentRunData {
   totalDurationMs: number;
   finishReason?: FinishReason;
   strategy?: AgentStrategy;
+  /** The parent's orchestration mode for this particular invocation. */
+  invocationStrategy?: AgentStrategy;
   /** Conductor sub-workflow ID — present when this run can be fetched for full details */
   subWorkflowId?: string;
-  /** Initial input/prompt given to this agent */
-  input?: string;
-  /** Final output text from this agent */
-  output?: string;
+  /** Initial input given to this agent. May be structured workflow data. */
+  input?: unknown;
+  /** Final output from this agent. May be structured workflow data. */
+  output?: unknown;
   /** Failure reason if status is FAILED */
   failureReason?: string;
   /** Agent definition from workflow.definition.metadata.agentDef */

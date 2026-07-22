@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.core.execution;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.function.Predicate;
@@ -1796,7 +1797,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         startReq.setInput(input);
 
         Set<String> startWorkerNames = def.collectSimpleTaskNames();
-        config.collectDynamicTransferNames(startWorkerNames);
+        config.collectDeclaredWorkerTaskNames(startWorkerNames);
         List<String> requiredWorkers = new ArrayList<>(startWorkerNames);
 
         // Domain-based task routing for stateful agents.
@@ -1822,22 +1823,21 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             }
         }
 
-        // Idempotency: use the key as correlationId and check for existing executions
+        // The correlation-id lookup uses asynchronous search on Redis-backed deployments. Use a
+        // stable workflow ID as well so immediate and concurrent retries reuse the durable
+        // execution record instead of depending on index visibility.
         if (request.getIdempotencyKey() != null && !request.getIdempotencyKey().isEmpty()) {
             startReq.setCorrelationId(request.getIdempotencyKey());
             startReq.setIdempotencyKey(request.getIdempotencyKey());
-            String existing = findExistingExecution(def.getName(), request.getIdempotencyKey());
-            if (existing != null) {
-                LOGGER.info(
-                        "Idempotent hit: returning existing workflow {} for key '{}'",
-                        existing,
-                        request.getIdempotencyKey());
-                return AgentStartResponse.builder()
-                        .executionId(existing)
-                        .agentName(def.getName())
-                        .requiredWorkers(requiredWorkers)
-                        .build();
-            }
+            StartWorkflowInput idempotentInput = new StartWorkflowInput(startReq);
+            idempotentInput.setWorkflowId(
+                    agentIdempotencyWorkflowId(def.getName(), request.getIdempotencyKey()));
+            WorkflowModel execution = startWorkflowIdempotent(idempotentInput);
+            return AgentStartResponse.builder()
+                    .executionId(execution.getWorkflowId())
+                    .agentName(def.getName())
+                    .requiredWorkers(requiredWorkers)
+                    .build();
         }
         String executionId = startWorkflow(new StartWorkflowInput(startReq));
         LOGGER.debug("Started agent workflow: {} (id={})", def.getName(), executionId);
@@ -1849,10 +1849,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 .build();
     }
 
-    private String findExistingExecution(String workflowName, String idempotencyKey) {
-        List<Workflow> existing =
-                executionDAOFacade.getWorkflowsByCorrelationId(workflowName, idempotencyKey, false);
-        return existing.stream().findFirst().map(Workflow::getWorkflowId).orElse(null);
+    private static String agentIdempotencyWorkflowId(String workflowName, String idempotencyKey) {
+        return UUID.nameUUIDFromBytes(
+                        ("agent:" + workflowName + ":" + idempotencyKey)
+                                .getBytes(StandardCharsets.UTF_8))
+                .toString();
     }
 
     private void addTaskToQueue(TaskModel task) {

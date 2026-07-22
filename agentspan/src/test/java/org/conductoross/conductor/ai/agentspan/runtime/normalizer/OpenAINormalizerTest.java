@@ -118,4 +118,18 @@ class OpenAINormalizerTest {
         assertThat(nested.getName()).isEqualTo("sentiment_agent");
         assertThat(nested.getModel()).isEqualTo("openai/gpt-4o");
     }
+
+    @Test
+    void normalizeWebSearchRecordsTheProviderNativeCapabilityWithoutCreatingAnHttpTool() {
+        AgentConfig config =
+                normalizer.normalize(
+                        Map.of(
+                                "name",
+                                "researcher",
+                                "tools",
+                                List.of(Map.of("_type", "WebSearchTool"))));
+
+        assertThat(config.getTools()).isNullOrEmpty();
+        assertThat(config.getMetadata()).containsEntry("_builtin_web_search", true);
+    }
 }

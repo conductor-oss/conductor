@@ -22,6 +22,7 @@ import org.conductoross.conductor.model.secret.CredentialMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -111,8 +112,12 @@ public class SecretController {
         if (value == null || value.isEmpty()) {
             return ResponseEntity.badRequest().body("value is required");
         }
-        secretsDAO.putSecret(key, value);
-        return ResponseEntity.ok().build();
+        try {
+            secretsDAO.putSecret(key, value);
+            return ResponseEntity.ok().build();
+        } catch (UnsupportedOperationException e) {
+            return readOnlyBackend(e);
+        }
     }
 
     /** DELETE /api/secrets/{key} — returns 200 OK (Conductor parity). */
@@ -120,8 +125,12 @@ public class SecretController {
     public ResponseEntity<?> deleteSecret(@PathVariable("key") String key) {
         ResponseEntity<?> err = validateKey(key);
         if (err != null) return err;
-        secretsDAO.deleteSecret(key);
-        return ResponseEntity.ok().build();
+        try {
+            secretsDAO.deleteSecret(key);
+            return ResponseEntity.ok().build();
+        } catch (UnsupportedOperationException e) {
+            return readOnlyBackend(e);
+        }
     }
 
     /** GET /api/secrets/{key}/exists. */
@@ -153,5 +162,14 @@ public class SecretController {
                                     + " (alphanumeric, underscore, dash only)");
         }
         return null;
+    }
+
+    /**
+     * Environment and disabled secret stores are intentionally read-only. Surface that capability
+     * limitation as a stable HTTP contract instead of leaking an internal 500 to SDK callers.
+     */
+    private ResponseEntity<String> readOnlyBackend(UnsupportedOperationException e) {
+        log.info("Secret mutation rejected because the configured backend is read-only");
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(e.getMessage());
     }
 }

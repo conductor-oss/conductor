@@ -145,6 +145,21 @@ class SwarmScriptsTest {
     }
 
     @Test
+    void extractAllowlistDoesNotTreatTransferLookingUserToolAsAControl() {
+        Map<String, Object> userTool = new LinkedHashMap<>();
+        userTool.put("name", "search_transfer_to_engineering_notes");
+        userTool.put("inputParameters", Map.of("message", "ordinary tool output"));
+        graalCtx.getBindings("js").putMember("javaCalls", List.of(userTool));
+
+        String script =
+                "var $ = {tool_calls: javaCalls}; "
+                        + JavaScriptBuilder.extractTransferMessageScript(
+                                Map.of("ceo_transfer_to_engineering", "engineering"));
+
+        assertThat(graalCtx.eval("js", script).asString()).isEmpty();
+    }
+
+    @Test
     void extractHandlesMissingMessageAndNullCalls() {
         Map<String, Object> call = new LinkedHashMap<>();
         call.put("name", "ceo_transfer_to_engineering_lead");
