@@ -120,7 +120,7 @@ public class AsyncSystemTaskExecutor {
         boolean hasTaskExecutionCompleted = false;
         boolean shouldRemoveTaskFromQueue = false;
         boolean invocationFailed = false;
-        boolean skipTaskUpdate = false;
+        boolean shouldPersistTaskResult = true;
         String claimToken = task.getSystemTaskClaimToken();
         String workflowId = task.getWorkflowInstanceId();
         // if we are here the Task object is updated and needs to be persisted regardless of an
@@ -155,7 +155,7 @@ public class AsyncSystemTaskExecutor {
             if (claimToken != null
                     && task.getSystemTaskClaimDeadline() > System.currentTimeMillis()) {
                 reserveInflightMessage(queueName, task);
-                skipTaskUpdate = true;
+                shouldPersistTaskResult = false;
                 return;
             }
 
@@ -258,28 +258,25 @@ public class AsyncSystemTaskExecutor {
             Monitors.error(AsyncSystemTaskExecutor.class.getSimpleName(), "executeSystemTask");
             LOGGER.error("Error executing system task - {}, with id: {}", systemTask, taskId, e);
         } finally {
-            if (!skipTaskUpdate && claimToken != null) {
+            if (shouldPersistTaskResult && claimToken != null) {
                 TaskModel persistedTask = loadTaskQuietly(taskId);
-                skipTaskUpdate =
-                        invocationFailed
-                                || persistedTask == null
-                                || persistedTask.getStatus().isTerminal()
-                                || !claimToken.equals(persistedTask.getSystemTaskClaimToken());
-                if (skipTaskUpdate) {
+                shouldPersistTaskResult =
+                        !invocationFailed && isTaskClaimOwner(claimToken, persistedTask);
+                if (!shouldPersistTaskResult) {
                     LOGGER.warn("Rejecting stale system task completion for taskId: {}", taskId);
                 }
             }
-            if (!skipTaskUpdate) {
+            if (shouldPersistTaskResult) {
                 task.setSystemTaskClaimToken(null);
                 task.setSystemTaskClaimDeadline(0);
                 executionDAOFacade.updateTask(task);
             }
-            if (!skipTaskUpdate && shouldRemoveTaskFromQueue) {
+            if (shouldPersistTaskResult && shouldRemoveTaskFromQueue) {
                 queueDAO.remove(queueName, task.getTaskId());
                 LOGGER.debug("{} removed from queue: {}", task, queueName);
             }
             // if the current task execution has completed, then the workflow needs to be evaluated
-            if (!skipTaskUpdate && hasTaskExecutionCompleted) {
+            if (shouldPersistTaskResult && hasTaskExecutionCompleted) {
                 workflowExecutor.decide(workflowId);
             }
         }
@@ -342,5 +339,11 @@ public class AsyncSystemTaskExecutor {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private boolean isTaskClaimOwner(String claimToken, TaskModel persistedTask) {
+        return persistedTask != null
+                && !persistedTask.getStatus().isTerminal()
+                && claimToken.equals(persistedTask.getSystemTaskClaimToken());
     }
 }
